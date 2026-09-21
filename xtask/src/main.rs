@@ -573,41 +573,69 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
             .map_err(|io_error| format!("{name}: {io_error}"))?;
     }
 
-    // Downstream tree manifest: when the package directory was created by cargo,
-    // generate MANIFEST.sha256 so downstream locked consumers (such as PrismPM)
-    // can verify the exact unpacked crate tree without source assumptions.
+    // Downstream tree manifest: generate MANIFEST.sha256 over the unpacked crate tree
+    // so downstream locked consumers (such as PrismPM) can verify the exact unpacked
+    // crate tree without source assumptions.
     let pkg_unpacked = root
         .join("target")
         .join("package")
         .join(format!("lexlean-{version}"));
-    let manifest_sha256 = if pkg_unpacked.is_dir() {
-        let mut pkg_rows: Vec<String> = Vec::new();
-        for entry in walkdir::WalkDir::new(&pkg_unpacked)
-            .sort_by_file_name()
-            .into_iter()
-            .flatten()
-        {
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let relative = entry
-                .path()
-                .strip_prefix(&pkg_unpacked)?
-                .to_string_lossy()
-                .replace('\\', "/");
-            let bytes = std::fs::read(entry.path())?;
-            pkg_rows.push(format!(
-                "{}  {relative}",
-                lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex()
-            ));
-        }
-        pkg_rows.sort();
-        let manifest_content = format!("{}\n", pkg_rows.join("\n"));
-        std::fs::write(release.join("MANIFEST.sha256"), &manifest_content)?;
-        Some(lexlean::artifact::content_id::Sha256Digest::of(manifest_content.as_bytes()).to_hex())
+    let temp_unpacked;
+    let unpacked_tree = if pkg_unpacked.is_dir() {
+        pkg_unpacked.clone()
     } else {
-        None
+        temp_unpacked = tempfile::Builder::new()
+            .prefix("lexlean-manifest-unpack-")
+            .tempdir()?;
+        let crate_file = release.join("lexlean.crate");
+        let status = std::process::Command::new("tar")
+            .args([
+                "-xzf",
+                crate_file
+                    .to_str()
+                    .ok_or("crate file path is not valid utf-8")?,
+                "-C",
+                temp_unpacked
+                    .path()
+                    .to_str()
+                    .ok_or("temp path is not valid utf-8")?,
+            ])
+            .status()?;
+        if !status.success() {
+            return Err(format!("failed to unpack crate for manifest generation: {status}").into());
+        }
+        let inner = temp_unpacked.path().join(format!("lexlean-{version}"));
+        if inner.is_dir() {
+            inner
+        } else {
+            temp_unpacked.path().to_path_buf()
+        }
     };
+    let mut pkg_rows: Vec<String> = Vec::new();
+    for entry in walkdir::WalkDir::new(&unpacked_tree)
+        .sort_by_file_name()
+        .into_iter()
+        .flatten()
+    {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let relative = entry
+            .path()
+            .strip_prefix(&unpacked_tree)?
+            .to_string_lossy()
+            .replace('\\', "/");
+        let bytes = std::fs::read(entry.path())?;
+        pkg_rows.push(format!(
+            "{}  {relative}",
+            lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex()
+        ));
+    }
+    pkg_rows.sort();
+    let manifest_content = format!("{}\n", pkg_rows.join("\n"));
+    std::fs::write(release.join("MANIFEST.sha256"), &manifest_content)?;
+    let manifest_sha256 =
+        lexlean::artifact::content_id::Sha256Digest::of(manifest_content.as_bytes()).to_hex();
 
     // Immutable release identity provenance package for downstream consumers.
     let crate_bytes = std::fs::read(release.join("lexlean.crate"))?;
