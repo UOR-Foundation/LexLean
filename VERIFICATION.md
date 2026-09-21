@@ -597,3 +597,19 @@ LexLean's first-party package identity is verified and bound to reproducible sou
   - Crate archive: `lexlean-0.3.0.crate`
   - SHA-256 digest: `9fd5c7a10e3904df8c465dea15f880e12f0d88361c1d4e948bbc7cd190e42d3e`
   - Package closure: 712 packaged files, 2.0 MiB uncompressed, 411 KiB compressed.
+
+## Release identity and downstream provenance closure (Issue #3)
+
+LexLean delivers an immutable, replayable release identity package for downstream consumers (including PrismPM 0.3.0 acceptance flows):
+- Machine-readable release identity: `release/release-identity.json` specifies:
+  - `spec`: `lexlean/release-identity/1`
+  - `package`: `lexlean`
+  - `version`: `0.3.0`
+  - `compiler_semantics_id`: `95deb33a8d416d7bf60f02a36e251a71c3ee6f046b7e475d7bae2fc5ddc3767d`
+  - `lean_toolchain`: `leanprover/lean4:v4.32.1`
+  - `crate_sha256`: `e4f014979938722aadf17a73f97a4f839938e322fb32d3ce3d0abf760995726f`
+  - `manifest_sha256`: `c3e5ca77f22c32290c73b4a10b6a256e6d179d7a95dbd2c45405dc8b4bde53b7`
+  - `host_targets`: `["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-pc-windows-msvc"]`
+- Tree manifest binding: `release/MANIFEST.sha256` enumerates the exact SHA-256 for each of the 712 files inside the packaged crate, enabling downstream consumers to verify vendored trees via `audit_tree_manifest` without source-only assumptions.
+- Complete release checksum manifest: `release/checksums.txt` covers all release assets, ensuring immutable binding across source, toolchain, and package artifacts.
+- Downstream independence: PrismPM step-1 dependency checks verify the published artifacts and tree manifests completely offline using canonical cryptographic digests.

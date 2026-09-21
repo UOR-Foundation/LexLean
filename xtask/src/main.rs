@@ -573,6 +573,60 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
             .map_err(|io_error| format!("{name}: {io_error}"))?;
     }
 
+    // Downstream tree manifest: when the package directory was created by cargo,
+    // generate MANIFEST.sha256 so downstream locked consumers (such as PrismPM)
+    // can verify the exact unpacked crate tree without source assumptions.
+    let pkg_unpacked = root
+        .join("target")
+        .join("package")
+        .join(format!("lexlean-{version}"));
+    let manifest_sha256 = if pkg_unpacked.is_dir() {
+        let mut pkg_rows: Vec<String> = Vec::new();
+        for entry in walkdir::WalkDir::new(&pkg_unpacked)
+            .sort_by_file_name()
+            .into_iter()
+            .flatten()
+        {
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            let relative = entry
+                .path()
+                .strip_prefix(&pkg_unpacked)?
+                .to_string_lossy()
+                .replace('\\', "/");
+            let bytes = std::fs::read(entry.path())?;
+            pkg_rows.push(format!(
+                "{}  {relative}",
+                lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex()
+            ));
+        }
+        pkg_rows.sort();
+        let manifest_content = format!("{}\n", pkg_rows.join("\n"));
+        std::fs::write(release.join("MANIFEST.sha256"), &manifest_content)?;
+        Some(lexlean::artifact::content_id::Sha256Digest::of(manifest_content.as_bytes()).to_hex())
+    } else {
+        None
+    };
+
+    // Immutable release identity provenance package for downstream consumers.
+    let crate_bytes = std::fs::read(release.join("lexlean.crate"))?;
+    let crate_sha256 = lexlean::artifact::content_id::Sha256Digest::of(&crate_bytes).to_hex();
+    let release_identity = serde_json::json!({
+        "spec": "lexlean/release-identity/1",
+        "package": "lexlean",
+        "version": version,
+        "compiler_semantics_id": semantics,
+        "lean_toolchain": "leanprover/lean4:v4.32.1",
+        "crate_sha256": crate_sha256,
+        "manifest_sha256": manifest_sha256,
+        "host_targets": repo_model::release::HOST_TARGETS,
+    });
+    std::fs::write(
+        release.join("release-identity.json"),
+        format!("{}\n", serde_json::to_string_pretty(&release_identity)?),
+    )?;
+
     // The checksum manifest over everything else under release/, in the
     // sorted project-relative order the criterion reads back.
     let checksums_path = release.join("checksums.txt");
