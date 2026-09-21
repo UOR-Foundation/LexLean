@@ -356,11 +356,15 @@ jobs:
         run: tar -czf "release/lexlean-${VERSION}-binaries.tar.gz" -C release bin
       - name: Checksum every assembled file
         run: cargo xtask release-artifacts
-      - uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
+      - name: Acquire crates.io trusted-publisher token
+        if: ${{ env.HAVE_OWNER_BOOTSTRAP_TOKEN != 'true' }}
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
         id: crates-auth
+        env:
+          HAVE_OWNER_BOOTSTRAP_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
       - name: Publish the exact verified crate to crates.io
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.crates-auth.outputs.token }}
           VERSION: ${{ needs.identity.outputs.version }}
         shell: bash
         run: |
