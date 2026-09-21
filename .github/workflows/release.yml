@@ -437,6 +437,8 @@ jobs:
             --notes-file notes.md \
             --verify-tag \
             release/checksums.txt \
+            release/release-identity.json \
+            release/MANIFEST.sha256 \
             release/lexlean.crate \
             release/sbom.json \
             release/vv-evidence.txt \
