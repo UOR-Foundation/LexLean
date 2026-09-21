@@ -555,3 +555,14 @@ after restoration.
 The literal §29 example verifies against real `leanprover/lean4:v4.32.1`: probe elaboration, module compilation, separate-process `leanchecker` replay, exact `#print axioms` parsing, and the `\noaxioms` policy over an empty observed set (`conformance_ex_01`). The required §29.6 mutations are mechanized: a false proposition fails inside Lean and remaps to the source proof sentence (`conformance_ex_02`, `conformance_pf_18`); an undeclared title word fails lexical closure (`conformance_ex_03`); an indistinguishable same-surface entry is ambiguity, never priority (`conformance_ex_04`); an insufficient axiom allow-list fails policy checking with the observed excess recorded (`conformance_ex_05`, `conformance_vr_16`); and two clean builds in distinct paths publish byte-identical trees (`conformance_ex_06`, plus `just repro`).
 
 The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
+
+## Generic language delta verification (Issue #4)
+
+All generic language extensions admitted for production-system modeling (including reserved-segment identifier quotation, Lean escape grammar for string literals, bounded semantic elaboration, and typed ambiguity/cycle diagnostic detail) are generic compiler features modeled under Language 1.1 (§17.11).
+
+In accordance with gate discipline (R4, R8):
+1. No Prism-specific parser branch, vocabulary, or handwritten Lean escape hatch is introduced;
+2. Conformance cases `SM-19` (`strings::verify()`, `names::verify()`, and large byte declarations) and `CL-21` execute live Lean verification and negative falsifiability assertions;
+3. Falsifiability is demonstrated by `semantic string lowering can fail` and `semantic identifier lowering can fail` above;
+4. The full normative acceptance gate passes cleanly without deferral or narrowing.
+
