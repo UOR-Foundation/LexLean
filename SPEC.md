@@ -2981,6 +2981,7 @@ All normative JSON uses this restricted canonical form:
 - arrays in specified semantic order;
 - integers in shortest decimal form;
 - strings use required JSON escapes and otherwise raw UTF-8;
+- Unicode scalar sequences in strings and keys are preserved exactly as provided; no normalization is applied;
 - no insignificant whitespace;
 - one final LF in the file;
 - hash recipes over canonical payload omit the final file LF unless they explicitly hash file bytes.
