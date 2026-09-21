@@ -185,6 +185,45 @@ pub struct AuthorityRow {
     /// The conformance IDs that are evidence this library realizes it.
     #[serde(default)]
     pub realized_by: Vec<String>,
+    /// Organization or upstream project that owns the cited material.
+    #[serde(default)]
+    pub issuer: Option<String>,
+    /// Canonical standard or source identifier.
+    #[serde(default)]
+    pub canonical_identifier: Option<String>,
+    /// Exact edition or version.
+    #[serde(default)]
+    pub edition: Option<String>,
+    /// Role of the acquired source (`normative`, `informative`, or `binding-only`).
+    #[serde(default)]
+    pub source_role: Option<String>,
+    /// Immutable acquired-byte URL.
+    #[serde(default)]
+    pub immutable_url: Option<String>,
+    /// Exact source commit.
+    #[serde(default)]
+    pub revision: Option<String>,
+    /// SHA-256 of acquired bytes.
+    #[serde(default)]
+    pub acquired_sha256: Option<String>,
+    /// Published signature identity.
+    #[serde(default)]
+    pub signature: Option<String>,
+    /// Media type of the acquired source.
+    #[serde(default)]
+    pub media_type: Option<String>,
+    /// Applicable source license.
+    #[serde(default)]
+    pub license: Option<String>,
+    /// Redistribution decision.
+    #[serde(default)]
+    pub redistribution: Option<String>,
+    /// Acquisition date; evidence metadata, never a content identity input.
+    #[serde(default)]
+    pub retrieval_date: Option<String>,
+    /// Explicit supersession policy.
+    #[serde(default)]
+    pub supersession_policy: Option<String>,
 }
 
 /// `model/errors.toml` --- the closed public diagnostic registry (§26.1).
