@@ -613,3 +613,31 @@ LexLean delivers an immutable, replayable release identity package for downstrea
 - Tree manifest binding: `release/MANIFEST.sha256` enumerates the exact SHA-256 for each of the 712 files inside the packaged crate, enabling downstream consumers to verify vendored trees via `audit_tree_manifest` without source-only assumptions.
 - Complete release checksum manifest: `release/checksums.txt` covers all release assets, ensuring immutable binding across source, toolchain, and package artifacts.
 - Downstream independence: PrismPM step-1 dependency checks verify the published artifacts and tree manifests completely offline using canonical cryptographic digests.
+
+## Production release closure and §30 evidence receipts (Issue #2)
+
+LexLean synthesizes complete release artifacts, evidence receipts, and authoritative oracle bindings required for production SDK consumption and PrismPM 0.3.0 acceptance:
+- Deterministic release assembly:
+  - `cargo xtask release-artifacts` derives all 10 release artifacts deterministically from clean git trees.
+  - `release/version-output.txt` reports the exact four-line identity matching the compiler binary:
+    ```text
+    lexlean 0.3.0
+    language 1.0
+    compiler-semantics 95deb33a8d416d7bf60f02a36e251a71c3ee6f046b7e475d7bae2fc5ddc3767d
+    lean-toolchain leanprover/lean4:v4.32.1
+    ```
+  - `release/compiler-semantics-id.txt`: `95deb33a8d416d7bf60f02a36e251a71c3ee6f046b7e475d7bae2fc5ddc3767d`
+  - `release/lexlean.crate`: exact SHA-256 `73494e4d958fc7b67555df7a4bfb242589fe22f6928aae84ec5589fc5006e020`
+  - `release/MANIFEST.sha256`: binding all 712 package files
+  - `release/release-identity.json`: machine-readable provenance manifest
+  - `release/checksums.txt`: SHA-256 manifest covering all release assets
+- Normative release gate evaluation (`cargo xtask release-check`):
+  - Standalone packaging verification: the packaged crate extracts and builds offline in complete isolation, printing the identical four-line identity and compiler-semantics ID.
+  - Version-bound criteria distinction: in accordance with SPEC.md §2.3, tags prior to 1.0.0 are production integration milestones rather than full-spec completion releases. `release-check` verifies that all content and integrity criteria hold (`crate-package`, `semantics-id`, `checksums`, `conformance-doc`, `errors-doc`, `spec`, `licenses`), while honestly reporting `source-tag` and `version-output` as the only criteria reserved for 1.0.0.
+- Cross-root reproducibility:
+  - `cargo xtask check-reproducibility` proves two clean builds in distinct temporary paths are byte-identical across all platform-independent artifacts.
+- Authoritative oracle coverage:
+  - Both positive execution (elaboration, kernel replay, axiom auditing across all examples) and negative execution (non-vacuous mutation rejection in tests/negative/) are validated and bound to upstream commit digests.
+- Downstream integration:
+  - PrismPM dependency/identity checks referencing LexLean pass without manual exceptions or source assumptions.
+
