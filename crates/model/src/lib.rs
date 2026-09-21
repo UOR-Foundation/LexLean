@@ -134,7 +134,9 @@ impl Model {
         if self.ledger.spec != "lexlean/ledger/1" {
             return Err(bad(format!("ledger.toml has spec `{}`", self.ledger.spec)));
         }
-        if self.authorities.spec != "lexlean/authorities/1" {
+        if self.authorities.spec != "lexlean/authorities/1"
+            && self.authorities.spec != "lexlean/authorities/2"
+        {
             return Err(bad(format!(
                 "authorities.toml has spec `{}`",
                 self.authorities.spec

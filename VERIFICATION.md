@@ -566,3 +566,17 @@ In accordance with gate discipline (R4, R8):
 3. Falsifiability is demonstrated by `semantic string lowering can fail` and `semantic identifier lowering can fail` above;
 4. The full normative acceptance gate passes cleanly without deferral or narrowing.
 
+## Authority and oracle evidence closure (Issue #6)
+
+Every upstream authority cited by LexLean (`model/authorities.toml`) is bound to immutable, content-addressed references:
+- `LEAN-REL-4-32-1`: Lean 4.32.1 release (source revision `f054605aea4b840552cca2e725580bffd1e1b704`, archive SHA-256 `6dec8667fbf57ba480a18a8b0c353b2ee157346b2630b211ccbefeedf20545f8`).
+- `LAKE-4-32-1`: Lake toolchain component (same source commit and acquired archive SHA-256).
+- `LEANCHECKER-4-32-1`: leanchecker kernel replay utility (same source commit and acquired archive SHA-256).
+- `PRINT-AXIOMS-4-32-1`: Lean `#print axioms` output behavior bound by toolchain revision and committed test vectors (`tests/golden/axiom-parser/`).
+
+Oracle execution evidence binds positive and negative paths:
+- Positive execution: End-to-end elaboration, kernel replay, and axiom auditing across all examples (`list-induction`, `nat-add-zero`, `peano-arithmetic`, `propositional-logic`, `semantic-1.1`, `uor-atlas`).
+- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), and PDF mismatch (`LLS8004`).
+- Non-executable boundaries: Lean's mathematical correctness is an external authority guarantee (`some-true`), not proven by LexLean; `leanchecker` is a same-kernel replay mechanism rather than an independent verifier.
+
+
