@@ -91,6 +91,10 @@ fn canonical_json_is_restricted() {
     let object = Json::object(vec![("b", Json::from_usize(2)), ("a", Json::from_usize(1))]);
     assert_eq!(object.to_canonical_string(), "{\"a\":1,\"b\":2}");
     assert_eq!(object.to_file_bytes(), b"{\"a\":1,\"b\":2}\n");
+    // Same text, different scalar sequence: `e` + U+0301 (NFD) vs U+00E9 (NFC).
+    let nfd = Json::object(vec![("cafe\u{0301}", Json::from_usize(1))]);
+    let nfc = Json::object(vec![("café", Json::from_usize(1))]); // U+00E9
+    assert_ne!(nfd.to_canonical_string(), nfc.to_canonical_string());
 }
 
 /// §17.9: the canonical key is alpha-safe --- spelling changes nothing.
