@@ -26,6 +26,21 @@ versions, and the entries below say what each tag does and does not claim.
 - Treat Lean comment delimiters inside generated string literals as data while
   retaining the backend invariant that generated Lean syntax contains no line
   or block comments.
+- Generic language support for production modeling: generic semantic identifier
+  quotation for reserved Lean keywords/segments, full Lean string escape sequence
+  support without parser divergence, and bounded semantic elaboration for large byte
+  constants.
+- Immutable typed authority binding and oracle evidence: Lean 4.32.1, Lake,
+  leanchecker, and `#print axioms` bound to upstream Lean FRO release 4.32.1, source commit
+  `f054605aea4b840552cca2e725580bffd1e1b704`, and archive SHA-256
+  `6dec8667fbf57ba480a18a8b0c353b2ee157346b2630b211ccbefeedf20545f8`, with positive
+  and negative oracle execution records.
+- First-party package identity and publishing bootstrap: owner-controlled initial token
+  upload support in release workflow before OIDC trusted publishing transition, and
+  standalone offline package verification (`cargo xtask check-package`).
+- Release identity provenance and tree manifest package: `release/release-identity.json`
+  and `release/MANIFEST.sha256` binding all 712 packaged files, consumed by PrismPM
+  without source-only assumptions.
 
 ## 0.2.0
 
