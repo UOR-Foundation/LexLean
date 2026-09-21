@@ -79,7 +79,12 @@ fixtures-write:
 verify-write:
     cargo xtask verify-examples --write
 
+# §30.3, RP-12: verify the packaged crate builds standalone offline and matches repository identity.
+check-package:
+    cargo xtask check-package
+
 # RP-12: a release is refused unless the complete §30 criterion holds. The
 # gate itself must pass first; refusal is expected until 1.0.0.
 release: vv
     cargo xtask release-check
+
