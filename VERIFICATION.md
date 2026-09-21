@@ -579,4 +579,21 @@ Oracle execution evidence binds positive and negative paths:
 - Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), and PDF mismatch (`LLS8004`).
 - Non-executable boundaries: Lean's mathematical correctness is an external authority guarantee (`some-true`), not proven by LexLean; `leanchecker` is a same-kernel replay mechanism rather than an independent verifier.
 
+## First-party package identity and publishing bootstrap closure (Issue #5)
 
+LexLean's first-party package identity is verified and bound to reproducible source and release evidence:
+- Package identity: `lexlean` version `0.3.0`, Rust 2021 edition, license `MIT OR Apache-2.0`.
+- Offline standalone verification: `cargo xtask check-package` executes `repo_conformance::support::packaged_crate_version`, extracting `lexlean-0.3.0.crate` into an isolated temporary workspace and building it with `--offline --locked`. It verifies that the standalone binary reports the exact four-line identity:
+  ```text
+  lexlean 0.3.0
+  language 1.0
+  compiler-semantics 95deb33a8d416d7bf60f02a36e251a71c3ee6f046b7e475d7bae2fc5ddc3767d
+  lean-toolchain leanprover/lean4:v4.32.1
+  ```
+- Dependency closure: Package contains 0 repository-only dependencies (`repo-model`, `repo-conformance`, `xtask`), strictly enforced by `audit-shipped` (Rule R6).
+- Embedded normative data: All normative files (`language/`, `schemas/`, `model/errors.toml`, `tests/golden/`, `LICENSE-APACHE`, `LICENSE-MIT`) are embedded without drift via canonical in-crate symlinks dereferenced by `cargo package`.
+- Owner-controlled bootstrap protocol: Initial publication of first-party crates to crates.io requires owner-level credentials before trusted publishing OIDC can be configured. `.github/workflows/release.yml` accepts `secrets.CARGO_REGISTRY_TOKEN` for owner-controlled first upload and bootstrap checks, and transitions to short-lived GitHub Actions OIDC trusted publishing (`rust-lang/crates-io-auth-action`) once registered.
+- Verification receipt:
+  - Crate archive: `lexlean-0.3.0.crate`
+  - SHA-256 digest: `9fd5c7a10e3904df8c465dea15f880e12f0d88361c1d4e948bbc7cd190e42d3e`
+  - Package closure: 712 packaged files, 2.0 MiB uncompressed, 411 KiB compressed.

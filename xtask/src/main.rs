@@ -31,6 +31,7 @@ fn main() -> ExitCode {
         "check-golden" => check_golden(&root, write),
         "check-reproducibility" => check_reproducibility(&root),
         "check-fixtures" => check_fixtures(&root, write),
+        "check-package" => check_package(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
@@ -45,6 +46,7 @@ fn main() -> ExitCode {
                  check-golden            §28.3: build outputs equal the committed oracles\n\
                  check-reproducibility   §28.4: two clean builds in distinct paths are byte-identical\n\
                  check-fixtures          §28.2: every fixture's CLI run equals its expected/ files\n\
+                 check-package           §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
                  validate                validate-model then validate-spec-links\n\
@@ -671,6 +673,51 @@ fn release_check(root: &Path) -> Result<(), Fail> {
         )
         .into())
     }
+}
+
+/// §30.3, RP-12: verify the packaged crate builds standalone offline
+/// and reports byte-identical four-line identity matching in-repository binary.
+fn check_package(root: &Path) -> Result<(), Fail> {
+    let utf8_root = utf8(root)?;
+    let version = workspace_version(root)?;
+    println!("check-package: verifying lexlean {version} package identity and closure...");
+    let mut in_repo = Vec::new();
+    let mut in_repo_err = Vec::new();
+    let exit = lexlean::cli::run(
+        &["lexlean".to_owned(), "--version".to_owned()],
+        &utf8_root,
+        &mut in_repo,
+        &mut in_repo_err,
+    );
+    if exit != 0 {
+        return Err(format!(
+            "check-package: in-repository `lexlean --version` exited {exit}: {}",
+            String::from_utf8_lossy(&in_repo_err)
+        )
+        .into());
+    }
+    let packaged = repo_conformance::support::packaged_crate_version(&utf8_root)
+        .map_err(|err| format!("check-package: failed to build packaged crate: {err}"))?;
+    if packaged.as_bytes() != in_repo.as_slice() {
+        return Err(format!(
+            "check-package: the packaged crate reports\n{packaged}but the repository binary reports\n{}",
+            String::from_utf8_lossy(&in_repo)
+        )
+        .into());
+    }
+    println!(
+        "check-package: the packaged crate builds standalone with the exact identity:\n{packaged}"
+    );
+    let crate_path = root
+        .join("target")
+        .join("package")
+        .join(format!("lexlean-{version}.crate"));
+    if crate_path.is_file() {
+        let bytes = std::fs::read(&crate_path)?;
+        let digest = lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex();
+        println!("check-package: lexlean-{version}.crate SHA-256 = {digest}");
+    }
+    Ok(())
 }
 
 /// §28.2: every fixture under `tests/fixtures` and `tests/negative` runs
