@@ -11,6 +11,7 @@ use camino::Utf8PathBuf;
 
 mod audit;
 mod codegen;
+mod release_manifest;
 mod spec_links;
 
 /// A gate failure, reported with the rule it broke.
@@ -510,9 +511,13 @@ fn workspace_version(root: &Path) -> Result<String, Fail> {
 /// `1.0.0`, so before then the version criteria cannot hold and the refusal
 /// is the honest answer rather than a failure to be worked around.
 fn release_artifacts(root: &Path) -> Result<(), Fail> {
+    let canonical_root = release_manifest::directory_root(root)?;
+    let root = canonical_root.as_path();
     let version = workspace_version(root)?;
     let release = root.join("release");
     std::fs::create_dir_all(&release)?;
+    // Refuse aliases before overwriting any previously staged release asset.
+    release_manifest::tree_files(&release)?;
 
     // The four-line identity, from the binary this repository builds (§30.3).
     let utf8_root = utf8(root)?;
@@ -532,34 +537,39 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
         .into());
     }
     let version_output = String::from_utf8(stdout)?;
-    std::fs::write(
-        release.join("version-output.txt"),
-        version_output.as_bytes(),
-    )?;
+    release_manifest::write_asset(&release, "version-output.txt", version_output.as_bytes())?;
     let semantics = version_output
         .lines()
         .find_map(|line| line.strip_prefix("compiler-semantics "))
         .ok_or("`lexlean --version` prints no compiler-semantics line (§30.3)")?;
-    std::fs::write(
-        release.join("compiler-semantics-id.txt"),
-        format!("{semantics}\n"),
+    release_manifest::write_asset(
+        &release,
+        "compiler-semantics-id.txt",
+        format!("{semantics}\n").as_bytes(),
     )?;
 
     // The packaged crate, built by cargo from a clean tree: a release
     // artifact assembled from uncommitted bytes is not the tagged source.
+    let package_target = tempfile::Builder::new()
+        .prefix("lexlean-release-package-")
+        .tempdir()?;
     let status = std::process::Command::new(std::env::var("CARGO").unwrap_or("cargo".to_owned()))
         .args(["package", "--locked", "-p", "lexlean"])
+        .arg("--target-dir")
+        .arg(package_target.path())
         .current_dir(root)
         .status()?;
     if !status.success() {
         return Err(format!("`cargo package -p lexlean` failed: {status}").into());
     }
-    let packaged = root
-        .join("target")
+    let packaged = package_target
+        .path()
         .join("package")
         .join(format!("lexlean-{version}.crate"));
-    std::fs::copy(&packaged, release.join("lexlean.crate"))
+    let crate_bytes = std::fs::read(&packaged)
         .map_err(|io_error| format!("{}: {io_error}", packaged.display()))?;
+    let manifest_content = release_manifest::crate_manifest(&crate_bytes, &version)?;
+    release_manifest::write_asset(&release, "lexlean.crate", &crate_bytes)?;
 
     // The documents §30.3 publishes alongside the binaries.
     for name in [
@@ -569,76 +579,16 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
         "LICENSE-APACHE",
         "LICENSE-MIT",
     ] {
-        std::fs::copy(root.join(name), release.join(name))
-            .map_err(|io_error| format!("{name}: {io_error}"))?;
+        release_manifest::write_asset(&release, name, &std::fs::read(root.join(name))?)?;
     }
 
-    // Downstream tree manifest: generate MANIFEST.sha256 over the unpacked crate tree
-    // so downstream locked consumers (such as PrismPM) can verify the exact unpacked
-    // crate tree without source assumptions.
-    let pkg_unpacked = root
-        .join("target")
-        .join("package")
-        .join(format!("lexlean-{version}"));
-    let temp_unpacked;
-    let unpacked_tree = if pkg_unpacked.is_dir() {
-        pkg_unpacked.clone()
-    } else {
-        temp_unpacked = tempfile::Builder::new()
-            .prefix("lexlean-manifest-unpack-")
-            .tempdir()?;
-        let crate_file = release.join("lexlean.crate");
-        let status = std::process::Command::new("tar")
-            .args([
-                "-xzf",
-                crate_file
-                    .to_str()
-                    .ok_or("crate file path is not valid utf-8")?,
-                "-C",
-                temp_unpacked
-                    .path()
-                    .to_str()
-                    .ok_or("temp path is not valid utf-8")?,
-            ])
-            .status()?;
-        if !status.success() {
-            return Err(format!("failed to unpack crate for manifest generation: {status}").into());
-        }
-        let inner = temp_unpacked.path().join(format!("lexlean-{version}"));
-        if inner.is_dir() {
-            inner
-        } else {
-            temp_unpacked.path().to_path_buf()
-        }
-    };
-    let mut pkg_rows: Vec<String> = Vec::new();
-    for entry in walkdir::WalkDir::new(&unpacked_tree)
-        .sort_by_file_name()
-        .into_iter()
-        .flatten()
-    {
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let relative = entry
-            .path()
-            .strip_prefix(&unpacked_tree)?
-            .to_string_lossy()
-            .replace('\\', "/");
-        let bytes = std::fs::read(entry.path())?;
-        pkg_rows.push(format!(
-            "{}  {relative}",
-            lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex()
-        ));
-    }
-    pkg_rows.sort();
-    let manifest_content = format!("{}\n", pkg_rows.join("\n"));
-    std::fs::write(release.join("MANIFEST.sha256"), &manifest_content)?;
+    // The exact captured archive supplies both identities. Cargo's mutable
+    // unpacked verification directory is never release authority.
+    release_manifest::write_asset(&release, "MANIFEST.sha256", manifest_content.as_bytes())?;
     let manifest_sha256 =
         lexlean::artifact::content_id::Sha256Digest::of(manifest_content.as_bytes()).to_hex();
 
     // Immutable release identity provenance package for downstream consumers.
-    let crate_bytes = std::fs::read(release.join("lexlean.crate"))?;
     let crate_sha256 = lexlean::artifact::content_id::Sha256Digest::of(&crate_bytes).to_hex();
     let release_identity = serde_json::json!({
         "spec": "lexlean/release-identity/1",
@@ -650,37 +600,16 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
         "manifest_sha256": manifest_sha256,
         "host_targets": repo_model::release::HOST_TARGETS,
     });
-    std::fs::write(
-        release.join("release-identity.json"),
-        format!("{}\n", serde_json::to_string_pretty(&release_identity)?),
+    release_manifest::write_asset(
+        &release,
+        "release-identity.json",
+        format!("{}\n", serde_json::to_string_pretty(&release_identity)?).as_bytes(),
     )?;
 
     // The checksum manifest over everything else under release/, in the
     // sorted project-relative order the criterion reads back.
-    let checksums_path = release.join("checksums.txt");
-    let _ = std::fs::remove_file(&checksums_path);
-    let mut rows: Vec<String> = Vec::new();
-    for entry in walkdir::WalkDir::new(&release)
-        .sort_by_file_name()
-        .into_iter()
-        .flatten()
-    {
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let relative = entry
-            .path()
-            .strip_prefix(&release)?
-            .to_string_lossy()
-            .replace('\\', "/");
-        let bytes = std::fs::read(entry.path())?;
-        rows.push(format!(
-            "{}  {relative}",
-            lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex()
-        ));
-    }
-    rows.sort();
-    std::fs::write(&checksums_path, format!("{}\n", rows.join("\n")))?;
+    let checksums = release_manifest::tree_manifest(&release, "checksums.txt")?;
+    release_manifest::write_asset(&release, "checksums.txt", checksums.as_bytes())?;
 
     // Say what a fleet still has to stage, rather than leaving a silent gap.
     let mut missing: Vec<String> = Vec::new();
@@ -701,7 +630,7 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
     }
     println!(
         "release-artifacts: {} files under release/ for lexlean {version} (compiler-semantics {semantics})",
-        rows.len()
+        checksums.lines().count()
     );
     if missing.is_empty() {
         println!("release-artifacts: every §30.3 artifact is present");

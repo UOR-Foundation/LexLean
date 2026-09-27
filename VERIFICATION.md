@@ -39,6 +39,25 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### release inventory can fail
+
+`release-artifacts` derives the tree manifest directly from the captured crate
+produced in a fresh Cargo target. An existing unpacked verification cache is
+not an input. Archive tests reject wrong package roots, duplicate/aliased
+members, links, special files, truncation, corruption and trailing archives.
+Release-tree traversal propagates errors and refuses aliases before writes.
+Canonical path spelling is normalized after ancestor checks; each derived
+asset replaces its directory entry atomically without changing external hard
+links. This is not whole-release or power-loss atomicity.
+
+In the non-root devcontainer, replacing the traversal error propagation with
+the previous error-discarding behavior made
+`release_manifest::tests::tree_inventory_rejects_symlinks_hardlinks_and_unreadable_directories`
+fail at `assertion failed: result.is_err()` on an actual unreadable directory.
+Restoring propagation passed the same test. The nine complete xtask tests,
+model audits, scoped Clippy and dependency policy checks passed; these checks
+alone are not complete release or publication acceptance.
+
 ### release workflow validation can fail
 
 GitHub run `35777451352` rejected the release workflow before starting any job:
