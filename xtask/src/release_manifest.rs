@@ -428,9 +428,26 @@ mod tests {
         assert!(write_asset(&ordinary, "../outside", b"bad").is_err());
     }
 
-    #[cfg(unix)]
     #[test]
     fn tree_inventory_rejects_symlinks_hardlinks_and_unreadable_directories() {
+        let work = tempfile::tempdir().unwrap();
+        let root = work.path().canonicalize().unwrap();
+        std::fs::write(root.join("file"), b"file").unwrap();
+        assert_eq!(
+            tree_manifest(&root, "checksums.txt").unwrap(),
+            format!("{}  file\n", Sha256Digest::of(b"file").to_hex())
+        );
+        #[cfg(unix)]
+        unix_release_path_refusals();
+        #[cfg(not(unix))]
+        repo_conformance::support::unix_only(
+            "RP-12",
+            "Unix symlink/link-count/permission semantics",
+        );
+    }
+
+    #[cfg(unix)]
+    fn unix_release_path_refusals() {
         use std::os::unix::fs::{symlink, PermissionsExt};
         let work = tempfile::tempdir().unwrap();
         let root = work.path().canonicalize().unwrap();

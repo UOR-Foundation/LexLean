@@ -70,6 +70,11 @@ manifest SHA-256:
 This checks package assembly, not the separately required build fleet, SBOM,
 complete V&V evidence or publication.
 
+CI run `36343661044` caught a hidden-test registration: an outer Unix `cfg`
+hid the path-refusal test on other hosts. The test now always runs its portable
+inventory assertions; its Unix-specific assertions use the repository's
+explicit host-reporting convention. No test or release-gate exemption was added.
+
 ### release workflow validation can fail
 
 GitHub run `35777451352` rejected the release workflow before starting any job:
