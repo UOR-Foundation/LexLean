@@ -376,9 +376,11 @@ mod tests {
     fn tree_inventory_is_complete_sorted_and_propagates_failures() {
         let work = tempfile::tempdir().unwrap();
         let root = work.path().canonicalize().unwrap();
+        assert!(tree_manifest(&root, "checksums.txt").is_err());
+        std::fs::write(root.join("checksums.txt"), b"old").unwrap();
+        assert!(tree_manifest(&root, "checksums.txt").is_err());
         std::fs::write(root.join("z"), b"last").unwrap();
         std::fs::write(root.join("a"), b"first").unwrap();
-        std::fs::write(root.join("checksums.txt"), b"old").unwrap();
         let expected = format!(
             "{}  a\n{}  z\n",
             Sha256Digest::of(b"first").to_hex(),

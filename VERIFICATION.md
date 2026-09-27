@@ -58,6 +58,18 @@ Restoring propagation passed the same test. The nine complete xtask tests,
 model audits, scoped Clippy and dependency policy checks passed; these checks
 alone are not complete release or publication acceptance.
 
+From clean revision `9426d49`, the non-root devcontainer also ran
+`cargo xtask release-artifacts` with a deliberately stale unpacked Cargo
+manifest and extra cache file. Cargo packaged and verified 712 files in a fresh
+target. Independent GNU tar extraction and Node SHA-256 inventory matched
+every manifest row and all ten release-asset checksums; neither stale cache
+input appeared. Crate SHA-256:
+`b33f02625b7792e214379635b812e7eaa3f9282cad050d2606b412b546f28c7c`;
+manifest SHA-256:
+`5cff3e392b68ab1df90b117d400d7957cdf970fb0d387c5409956275fbb729c8`.
+This checks package assembly, not the separately required build fleet, SBOM,
+complete V&V evidence or publication.
+
 ### release workflow validation can fail
 
 GitHub run `35777451352` rejected the release workflow before starting any job:
