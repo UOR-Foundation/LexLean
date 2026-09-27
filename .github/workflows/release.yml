@@ -265,6 +265,8 @@ jobs:
     # binaries, and the image by reaching here.
     if: needs.identity.outputs.tagged == 'true' 
     environment: crates.io
+    env:
+      HAS_CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
     permissions:
       contents: write
       id-token: write
@@ -357,7 +359,7 @@ jobs:
       - name: Checksum every assembled file
         run: cargo xtask release-artifacts
       - name: Acquire crates.io trusted-publisher token
-        if: ${{ !secrets.CARGO_REGISTRY_TOKEN }}
+        if: env.HAS_CARGO_REGISTRY_TOKEN != 'true'
         uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
         id: crates-auth
       - name: Publish the exact verified crate to crates.io

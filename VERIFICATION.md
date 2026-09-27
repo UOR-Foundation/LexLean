@@ -39,6 +39,17 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### release workflow validation can fail
+
+GitHub run `35777451352` rejected the release workflow before starting any job:
+`Unrecognized named-value: 'secrets'` in its token-selection condition.
+Actionlint 1.7.8 reproduced the context error in the pinned container
+`rhysd/actionlint@sha256:96d4a8c87dbbfb3bdd324f8fdc285fc3df5261e2decc619a4dd7e8ee52bbfd46`.
+After moving only secret presence into the publish job's environment Boolean,
+the same validator accepted every workflow with its default checks enabled.
+The owner-token and trusted-publisher paths are preserved; no upload, release,
+or full acceptance run is established by this syntax check.
+
 ### semantic string lowering can fail
 
 Accepted NUL and C1-control literals produced Rust debug escapes rejected by
@@ -640,4 +651,3 @@ LexLean synthesizes complete release artifacts, evidence receipts, and authorita
   - Both positive execution (elaboration, kernel replay, axiom auditing across all examples) and negative execution (non-vacuous mutation rejection in tests/negative/) are validated and bound to upstream commit digests.
 - Downstream integration:
   - PrismPM dependency/identity checks referencing LexLean pass without manual exceptions or source assumptions.
-
