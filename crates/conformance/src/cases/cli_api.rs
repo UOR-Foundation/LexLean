@@ -518,6 +518,28 @@ pub(crate) fn run(id: &str) {
                 70,
                 "internal failures map to 70"
             );
+            // Every registered code's class, and so its exit code, is the
+            // one the registry documents (R1: the registry is the source).
+            let model = repo_model::Model::load_from_repo_root().expect("the model loads");
+            let mut mismatches = Vec::new();
+            for row in &model.errors.error {
+                let code: &'static str = Box::leak(row.code.clone().into_boxed_str());
+                let class = lexlean::diagnostic::DiagnosticCode::from_validated(code).class();
+                if class.as_str() != row.class || class.exit_code() != i32::from(row.exit) {
+                    mismatches.push(format!(
+                        "{}: registered {} (exit {}), mapped {} (exit {})",
+                        row.code,
+                        row.class,
+                        row.exit,
+                        class.as_str(),
+                        class.exit_code()
+                    ));
+                }
+            }
+            assert!(
+                mismatches.is_empty(),
+                "§23.6: codes whose mapped class differs from model/errors.toml: {mismatches:?}"
+            );
         }
         // §23.7, §20.6: exact stream, color, and path discipline in both
         // modes.

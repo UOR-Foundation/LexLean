@@ -15,6 +15,28 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Semantic preservation from the source to the realization calculus
+  (SPEC.md §17.17, `SP-01`..`SP-05`): every production root is lowered to a
+  target program and certified by a kernel-checked Lean theorem (certificate
+  A) that the lowered program converges on the encoded arguments to the
+  encoded source value, or to overflow exactly where the width predicate
+  fails. The hand-written proof library and the calculus modules ship as
+  language data under `language/preservation-1.2/`, with every library
+  declaration's axioms pinned in `library.toml`. `lexlean verify` checks the
+  certificates after named-root extraction, publishes them with
+  `preserve/preservation.json` (`schemas/preservation.schema.json`), binds the
+  record in the attestation, and fails closed with `LLV7013` (a rejected
+  certificate) or `LLV7014` (a drifted preservation environment). The
+  compiler project's module prefix is now `LexLeanTarget`.
+- The graph templates of the calculus library now count and order every
+  node, successors without their own entry included, as the Lean rendering
+  does; `graph_topological`'s instance is in first-binding order.
+- Fixed a pre-existing defect: `LLV7012` (Lean compiler-front-end authority
+  drift) is registered in the environment class with exit code 3, but the
+  compiler mapped it to the language class and exited 1. The code now exits
+  3, `conformance_cl_11` asserts every registered code's class and exit code
+  against `model/errors.toml`, and the `extraction-authority-drift` fixture
+  expects exit 3.
 - Language 1.2 (SPEC.md §17.12): a strict extension of language 1.1 selected
   by `language = "1.2"`, with builtin packages at `1.2.0`, the lock schema
   `lexlean/lock/2`, the semantic-module schema `lexlean/semantic-module/2`,

@@ -762,6 +762,24 @@ pub(crate) fn run(id: &str) {
                     "production/compiler-input.json",
                     Box::new(|f: &str| f == "production/compiler-input.json"),
                 ),
+                (
+                    "preserve/LexLeanPreserve/*/*.lean",
+                    Box::new(|f: &str| {
+                        f.starts_with("preserve/LexLeanPreserve/") && f.ends_with(".lean")
+                    }),
+                ),
+                (
+                    "preserve/audit.txt",
+                    Box::new(|f: &str| f == "preserve/audit.txt"),
+                ),
+                (
+                    "preserve/preservation.json",
+                    Box::new(|f: &str| f == "preserve/preservation.json"),
+                ),
+                (
+                    "process/preserve/*.json",
+                    Box::new(|f: &str| f.starts_with("process/preserve/")),
+                ),
             ];
             let patterns: Vec<(&str, Matcher)> = vec![
                 (

@@ -803,6 +803,22 @@ preservation sources match no construct by default. `conformance_sp_01` plants
 an `if let`, a `matches!`, and a wildcard arm in each source and requires
 the audit to refuse every one.
 
+### CL-11 covers every registered code's class
+
+Planted: `LLV7012` absent from the environment arm of
+`DiagnosticCode::class` (`crates/lexlean/src/diagnostic.rs`), the state the
+repository was in before the fix. Command: `cargo test -p repo-conformance
+--test conformance conformance_cl_11`. Expected: the code's mapped class and
+exit code differ from its `model/errors.toml` row (§23.6, R1).
+
+```text
+thread 'conformance_cl_11' panicked at crates/conformance/src/cases/cli_api.rs:539:13:
+§23.6: codes whose mapped class differs from model/errors.toml: ["LLV7012: registered environment (exit 3), mapped language (exit 1)"]
+```
+
+Removed: `LLV7012` was added to the environment arm (with `LLV7014`); the case
+passes, and the `extraction-authority-drift` fixture expects exit 3.
+
 ### calculus kernel oracle can fail
 
 Planted: the reference interpreter computed `int_rem` as a Euclidean

@@ -107,11 +107,26 @@ pub struct Checked {
     pub audit_output: String,
 }
 
-fn lean(root: &Path, arguments: &[String]) -> std::process::Output {
-    Command::new(toolchain_bin().join("lean"))
-        .args(arguments)
+/// A pinned-toolchain command: the toolchain's `bin` leads `PATH`, so a
+/// tool that spawns `lean` (as `leanchecker` does) finds the pinned binary
+/// rather than an elan proxy, whatever `ELAN_HOME` a concurrent test holds.
+fn pinned(program: &str, root: &Path) -> Command {
+    let bin = toolchain_bin();
+    let path = std::env::join_paths(std::iter::once(bin.clone()).chain(std::env::split_paths(
+        &std::env::var_os("PATH").unwrap_or_default(),
+    )))
+    .expect("a search path");
+    let mut command = Command::new(bin.join(program));
+    command
         .current_dir(root)
-        .env("LEAN_PATH", root.join("build"))
+        .env("PATH", path)
+        .env("LEAN_PATH", root.join("build"));
+    command
+}
+
+fn lean(root: &Path, arguments: &[String]) -> std::process::Output {
+    pinned("lean", root)
+        .args(arguments)
         .output()
         .expect("lean runs")
 }
@@ -155,10 +170,8 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
         }
     }
     for module in &workspace.certificates {
-        let output = Command::new(toolchain_bin().join("leanchecker"))
+        let output = pinned("leanchecker", root)
             .arg(module)
-            .current_dir(root)
-            .env("LEAN_PATH", root.join("build"))
             .output()
             .expect("leanchecker runs");
         if !output.status.success() {
