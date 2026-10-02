@@ -179,9 +179,26 @@ impl Ctx {
 
 /// A proof that a term's lowering converges to the relation of its fits
 /// predicate and denotation, and that predicate.
+#[derive(Clone)]
 struct Proof {
     proof: String,
     fits: String,
+}
+
+/// A function-typed argument with its companions.
+struct FunctionArgument {
+    /// The source value.
+    value: String,
+    /// Its fits function.
+    fits: String,
+    /// Its closure's function index.
+    index: String,
+    /// Its closure's encoded captures.
+    captures: String,
+    /// Its relation, a function of its parameters.
+    relation: String,
+    /// The proof of the closure expression.
+    proof: Proof,
 }
 
 /// How a function's relation theorem recurses.
@@ -2005,14 +2022,39 @@ impl Gen<'_> {
         argument: &SemanticTerm,
         ctx: &Ctx,
     ) -> Result<(String, String, Proof), String> {
-        let ty = self.source.infer(argument, &ctx.sources(), &ctx.site)?;
-        let parameters = match function_type(&ty) {
-            Some((parameters, _)) => parameters.to_vec(),
+        match self.function_argument(argument, ctx)? {
+            Some(companion) => Ok((
+                format!("({}) ({})", companion.value, companion.fits),
+                format!(
+                    "({}) ({}) ({}) ({}) ({})",
+                    companion.value,
+                    companion.fits,
+                    companion.index,
+                    companion.captures,
+                    companion.relation
+                ),
+                companion.proof,
+            )),
             None => {
                 let proof = self.prove(argument, ctx)?;
                 let value = format!("({})", self.src(argument, ctx)?);
-                return Ok((value.clone(), value, proof));
+                Ok((value.clone(), value, proof))
             }
+        }
+    }
+
+    /// A function-typed argument's value and companions: its fits function,
+    /// closure index, encoded captures, and relation; `None` for a
+    /// first-order argument.
+    fn function_argument(
+        &mut self,
+        argument: &SemanticTerm,
+        ctx: &Ctx,
+    ) -> Result<Option<FunctionArgument>, String> {
+        let ty = self.source.infer(argument, &ctx.sources(), &ctx.site)?;
+        let parameters = match function_type(&ty) {
+            Some((parameters, _)) => parameters.to_vec(),
+            None => return Ok(None),
         };
         let binders: Vec<String> = (0..parameters.len())
             .map(|index| format!("__p{index}"))
@@ -2031,18 +2073,17 @@ impl Gen<'_> {
                     .companion
                     .as_ref()
                     .ok_or_else(|| format!("function-typed `{name}` has no companion"))?;
-                let value = identifier(name);
-                Ok((
-                    format!("({value}) ({})", companion.fits),
-                    format!(
-                        "({value}) ({}) ({}) ({}) ({})",
-                        companion.fits, companion.index, companion.captures, companion.relation
-                    ),
-                    Proof {
+                Ok(Some(FunctionArgument {
+                    value: identifier(name),
+                    fits: companion.fits.clone(),
+                    index: companion.index.clone(),
+                    captures: companion.captures.clone(),
+                    relation: companion.relation.clone(),
+                    proof: Proof {
                         proof: format!("({} rfl)", lib("conv_var")),
                         fits: "true".to_owned(),
                     },
-                ))
+                }))
             }
             SemanticTerm::Lambda {
                 parameters: _,
@@ -2080,18 +2121,17 @@ impl Gen<'_> {
                     });
                 }
                 let captured = operands(proofs);
-                let value = self.src(argument, ctx)?;
-                Ok((
-                    format!("({value}) (fun{typed} => __fits_{index}{fits_captures} {applied})"),
-                    format!(
-                        "({value}) (fun{typed} => __fits_{index}{fits_captures} {applied}) ({index}) ([{}]) (fun{typed} => __rel_{index}{relation_captures} {applied})",
-                        encoded.join(", ")
-                    ),
-                    Proof {
+                Ok(Some(FunctionArgument {
+                    value: self.src(argument, ctx)?,
+                    fits: format!("fun{typed} => __fits_{index}{fits_captures} {applied}"),
+                    index: index.to_string(),
+                    captures: format!("[{}]", encoded.join(", ")),
+                    relation: format!("fun{typed} => __rel_{index}{relation_captures} {applied}"),
+                    proof: Proof {
                         proof: format!("({} {})", lib("conv_closure"), captured.proof),
                         fits: captured.fits,
                     },
-                ))
+                }))
             }
             SemanticTerm::FunctionRef {
                 function,
@@ -2103,17 +2143,17 @@ impl Gen<'_> {
                     .map(|argument| self.source.close(argument, &ctx.site))
                     .collect();
                 let index = self.instance_index(&module, &function.name, &closed)?;
-                let value = self.src(argument, ctx)?;
-                Ok((
-                    format!("({value}) (fun{typed} => __fits_{index} {applied})"),
-                    format!(
-                        "({value}) (fun{typed} => __fits_{index} {applied}) ({index}) ([]) (fun{typed} => __rel_{index} {applied})"
-                    ),
-                    Proof {
+                Ok(Some(FunctionArgument {
+                    value: self.src(argument, ctx)?,
+                    fits: format!("fun{typed} => __fits_{index} {applied}"),
+                    index: index.to_string(),
+                    captures: "[]".to_owned(),
+                    relation: format!("fun{typed} => __rel_{index} {applied}"),
+                    proof: Proof {
                         proof: format!("({} {})", lib("conv_closure"), lib("convL_nil")),
                         fits: "true".to_owned(),
                     },
-                ))
+                }))
             }
             SemanticTerm::Nat { value: _ }
             | SemanticTerm::Integer {
@@ -4204,11 +4244,9 @@ impl<'a> Gen<'a> {
             Some(nested) => Ok(match &nested.ty {
                 SemanticType::List { element: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::Map { key: _, value: _ } => format!(
-                    "({} (__items_{} {arg}))",
-                    value_ctor("list"),
-                    nested.index
-                ),
+                | SemanticType::Map { key: _, value: _ } => {
+                    format!("({} (__items_{} {arg}))", value_ctor("list"), nested.index)
+                }
                 SemanticType::Option { value: _ }
                 | SemanticType::Result { ok: _, error: _ }
                 | SemanticType::Product { left: _, right: _ }
@@ -4372,7 +4410,9 @@ impl<'a> Gen<'a> {
                 || components(&graph)
                     .iter()
                     .any(|component| component.len() > 1 && component.contains(&index))
-                || graph.get(&index).is_some_and(|edges| edges.contains(&index));
+                || graph
+                    .get(&index)
+                    .is_some_and(|edges| edges.contains(&index));
             let text = if shape.kind == "inductive" || recursive {
                 let owner = self.ty(&adt.ty)?;
                 let owner = owner
@@ -4437,7 +4477,8 @@ impl<'a> Gen<'a> {
         }
         let mut out = String::new();
         for component in components(&graph) {
-            let mut items: Vec<String> = component.iter().map(|index| texts[index].clone()).collect();
+            let mut items: Vec<String> =
+                component.iter().map(|index| texts[index].clone()).collect();
             let mut bundles = String::new();
             let mut nested: Vec<&Nested> = self
                 .nested
@@ -5256,19 +5297,780 @@ impl<'a> Gen<'a> {
     }
 }
 
+/// A clause proof that unfolds a collection-runtime function once and
+/// rewrites by the comparison hypothesis `h`, with `binders` wildcards
+/// before it.
+fn clause(binders: usize, function: &str) -> String {
+    format!(
+        "(fun{} h => by simp only [{function}, h])",
+        " _".repeat(binders)
+    )
+}
+
+/// A clause of the pair key order: the order's instances unfold in the
+/// hypothesis and the goal alike before the hypothesis rewrites.
+fn pair_clause(compare: &str) -> String {
+    format!("(fun _ _ h => by simp only [{compare}] at h ⊢; simp only [h])")
+}
+
+/// A clause that holds by computation, over `binders` arguments.
+fn computed(binders: usize) -> String {
+    match binders {
+        0 => "rfl".to_owned(),
+        _ => format!("(fun{} => rfl)", " _".repeat(binders)),
+    }
+}
+
+/// The key type, value type, and node type of a template instance.
+fn instance_type(instance: &[SemanticType], position: usize) -> Result<SemanticType, String> {
+    instance
+        .get(position)
+        .cloned()
+        .ok_or_else(|| format!("a template instance lacks type argument {position}"))
+}
+
 impl Gen<'_> {
+    /// The target type of a closed source type, with document types read
+    /// from the layout.
+    fn target_ty(&self, ty: &SemanticType) -> Result<Ty, String> {
+        Ok(match ty {
+            SemanticType::Nat => Ty::Nat,
+            SemanticType::Bool => Ty::Bool,
+            SemanticType::Unit => Ty::Unit,
+            SemanticType::Int => Ty::Int,
+            SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64 => Ty::Fixed {
+                width: fixed_kind(ty).ok_or("a fixed width without a kind")?,
+            },
+            SemanticType::String => Ty::String,
+            SemanticType::Bytes => Ty::Bytes,
+            SemanticType::Ordering => Ty::Ordering,
+            SemanticType::Option { value } => Ty::Option {
+                value: Box::new(self.target_ty(value)?),
+            },
+            SemanticType::Result { ok, error } => Ty::Result {
+                ok: Box::new(self.target_ty(ok)?),
+                error: Box::new(self.target_ty(error)?),
+            },
+            SemanticType::List { element } | SemanticType::Set { element } => Ty::List {
+                element: Box::new(self.target_ty(element)?),
+            },
+            SemanticType::Product { left, right } => Ty::Pair {
+                left: Box::new(self.target_ty(left)?),
+                right: Box::new(self.target_ty(right)?),
+            },
+            SemanticType::Map { key, value } => Ty::List {
+                element: Box::new(Ty::Pair {
+                    left: Box::new(self.target_ty(key)?),
+                    right: Box::new(self.target_ty(value)?),
+                }),
+            },
+            SemanticType::Function { parameters, result } => Ty::Fn {
+                parameters: parameters
+                    .iter()
+                    .map(|parameter| self.target_ty(parameter))
+                    .collect::<Result<Vec<_>, _>>()?,
+                result: Box::new(self.target_ty(result)?),
+            },
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => {
+                let text = self.source.type_text(ty);
+                Ty::Adt {
+                    index: *self
+                        .adts
+                        .get(&text)
+                        .ok_or_else(|| format!("`{text}` has no ADT in the layout"))?,
+                }
+            }
+            SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+                return Err(format!(
+                    "`{}` has no runtime realization",
+                    self.source.type_text(ty)
+                ));
+            }
+        })
+    }
+
+    /// The source key order of `ty` in the collection runtime `coll`.
+    fn key_order(&self, ty: &SemanticType, coll: &str) -> Result<String, String> {
+        let lean = self.ty(ty)?;
+        Ok(format!(
+            "({coll}.Key.compare : {lean} -> {lean} -> Ordering)"
+        ))
+    }
+
+    /// The proof that the realization's comparison agrees with the key
+    /// order of `ty` in the collection runtime `coll`.
+    fn key_spec(&self, ty: &SemanticType, coll: &str) -> Result<String, String> {
+        let order = self.key_order(ty, coll)?;
+        let scalar = |lemma: &str| format!("({} {order} (fun _ _ => rfl))", lib(lemma));
+        Ok(match ty {
+            SemanticType::Nat => scalar("keySpec_nat"),
+            SemanticType::Int => scalar("keySpec_int"),
+            SemanticType::Bool => scalar("keySpec_bool"),
+            SemanticType::Int8 => scalar("keySpec_i8"),
+            SemanticType::Int16 => scalar("keySpec_i16"),
+            SemanticType::Int32 => scalar("keySpec_i32"),
+            SemanticType::Int64 => scalar("keySpec_i64"),
+            SemanticType::UInt8 => scalar("keySpec_u8"),
+            SemanticType::UInt16 => scalar("keySpec_u16"),
+            SemanticType::UInt32 => scalar("keySpec_u32"),
+            SemanticType::UInt64 => scalar("keySpec_u64"),
+            SemanticType::String => {
+                let codes = format!("{coll}.compareCodes");
+                format!(
+                    "({} {codes} rfl (fun _ _ => rfl) (fun _ _ => rfl) {} {} {} {order} (fun _ _ => rfl))",
+                    lib("keySpec_string"),
+                    clause(4, &codes),
+                    clause(4, &codes),
+                    clause(4, &codes)
+                )
+            }
+            SemanticType::Product { left, right } => {
+                let compare = format!("{coll}.Key.compare");
+                format!(
+                    "({} {} {} {order} {} {} {})",
+                    lib("keySpec_pair"),
+                    self.key_spec(left, coll)?,
+                    self.key_spec(right, coll)?,
+                    pair_clause(&compare),
+                    pair_clause(&compare),
+                    pair_clause(&compare)
+                )
+            }
+            SemanticType::Unit
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::Option { value: _ }
+            | SemanticType::Result { ok: _, error: _ }
+            | SemanticType::List { element: _ }
+            | SemanticType::Set { element: _ }
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::Named {
+                member: _,
+                arguments: _,
+            }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ } => {
+                return Err(format!("`{}` has no key order", self.source.type_text(ty)));
+            }
+        })
+    }
+
+    /// The set-runtime clauses of key type `ty`.
+    fn set_ops(&self, ty: &SemanticType, coll: &str) -> Result<String, String> {
+        let insert = format!("{coll}.insertElement");
+        let remove = format!("{coll}.removeElement");
+        let contains = format!("{coll}.containsElement");
+        Ok(format!(
+            "(⟨{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}⟩ : {} {} {insert} {remove} {contains})",
+            computed(1),
+            clause(3, &insert),
+            clause(3, &insert),
+            clause(3, &insert),
+            computed(1),
+            clause(3, &remove),
+            clause(3, &remove),
+            clause(3, &remove),
+            computed(1),
+            clause(3, &contains),
+            clause(3, &contains),
+            clause(3, &contains),
+            lib("SetOps"),
+            self.key_order(ty, coll)?
+        ))
+    }
+
+    /// The lookup-runtime clauses of key type `key` and value type `value`.
+    fn look_ops(
+        &self,
+        key: &SemanticType,
+        value: &SemanticType,
+        coll: &str,
+    ) -> Result<String, String> {
+        let lookup = format!("{coll}.lookupEntry");
+        Ok(format!(
+            "(⟨{}, {}, {}, {}⟩ : {} {} ({lookup} : {} -> List (Prod {} {}) -> Option {}))",
+            computed(1),
+            clause(4, &lookup),
+            clause(4, &lookup),
+            clause(4, &lookup),
+            lib("LookOps"),
+            self.key_order(key, coll)?,
+            self.ty(key)?,
+            self.ty(key)?,
+            self.ty(value)?,
+            self.ty(value)?
+        ))
+    }
+
+    /// `n` function-placement hypotheses, each discharged by computation.
+    fn placed(n: usize) -> String {
+        vec!["rfl"; n].join(" ")
+    }
+
+    /// A call of a collection template: the call's operands, then the
+    /// template's lemma instantiated at the call's runtime functions, whose
+    /// defining clauses the certificate discharges by unfolding them.
+    #[allow(clippy::too_many_lines)]
     fn template_call(
         &mut self,
         template: Template,
-        _instance: &[SemanticType],
-        _arguments: &[SemanticTerm],
-        _types: &[SemanticType],
-        _ctx: &Ctx,
+        instance: &[SemanticType],
+        arguments: &[SemanticTerm],
+        types: &[SemanticType],
+        ctx: &Ctx,
     ) -> Result<Proof, String> {
-        Err(format!(
-            "TEMPORARY: template {} not yet certified",
-            template.name()
-        ))
+        let tys = instance
+            .iter()
+            .map(|ty| self.target_ty(ty))
+            .collect::<Result<Vec<_>, _>>()?;
+        let entry = *self
+            .templates
+            .get(&(template.name().to_owned(), tys.clone()))
+            .ok_or_else(|| format!("template {} has no instance in the layout", template.name()))?;
+        let rendered: Vec<String> = tys.iter().map(render_ty).collect();
+        let coll = format!("{}.LexLeanCollections", self.lean_module(&ctx.site.module)?);
+        let mut proofs = Vec::new();
+        let mut values = Vec::new();
+        let mut functions = Vec::new();
+        for argument in arguments {
+            match self.function_argument(argument, ctx)? {
+                Some(companion) => {
+                    values.push(format!("({})", companion.value));
+                    proofs.push(companion.proof.clone());
+                    functions.push(companion);
+                }
+                None => {
+                    values.push(format!("({})", self.src(argument, ctx)?));
+                    proofs.push(self.prove(argument, ctx)?);
+                }
+            }
+        }
+        let value = |index: usize| -> Result<String, String> {
+            values
+                .get(index)
+                .cloned()
+                .ok_or_else(|| format!("template {} lacks operand {index}", template.name()))
+        };
+        let argument_type = |index: usize| -> Result<SemanticType, String> {
+            types
+                .get(index)
+                .cloned()
+                .ok_or_else(|| format!("template {} lacks operand {index}", template.name()))
+        };
+        let step = || -> Result<&FunctionArgument, String> {
+            functions
+                .first()
+                .ok_or_else(|| format!("template {} lacks its step", template.name()))
+        };
+        let at = |names: &[&str]| -> String {
+            names
+                .iter()
+                .zip(&rendered)
+                .map(|(name, ty)| format!(" ({name} := {ty})"))
+                .collect::<String>()
+        };
+        let head = format!("(p := __prog) (fi := {entry})");
+        let insert_entry = format!("{coll}.insertEntry");
+        let remove_entry = format!("{coll}.removeEntry");
+        let lookup_entry = format!("{coll}.lookupEntry");
+        let (lemma, fits) = match template {
+            Template::MapInsert => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                (
+                    format!(
+                        "({} {} {} {} (fun _ => rfl) {insert_entry} {} {} {} {} {head}{} rfl {} {} {})",
+                        lib("tpl_mapInsert"),
+                        self.key_spec(&key, &coll)?,
+                        self.enc(&stored)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(2),
+                        clause(5, &insert_entry),
+                        clause(5, &insert_entry),
+                        clause(5, &insert_entry),
+                        at(&["tk", "tw"]),
+                        value(0)?,
+                        value(1)?,
+                        value(2)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::MapRemove => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                (
+                    format!(
+                        "({} {} {} {} (fun _ => rfl) {remove_entry} {} {} {} {} {head}{} rfl {} {})",
+                        lib("tpl_mapRemove"),
+                        self.key_spec(&key, &coll)?,
+                        self.enc(&stored)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(4, &remove_entry),
+                        clause(4, &remove_entry),
+                        clause(4, &remove_entry),
+                        at(&["tk", "tw"]),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::MapLookup => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                (
+                    format!(
+                        "({} {} {} {} (fun _ => rfl) {} (fun _ => rfl) {lookup_entry} {} {} {} {} {head}{} rfl {} {})",
+                        lib("tpl_mapLookup"),
+                        self.key_spec(&key, &coll)?,
+                        self.enc(&stored)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        self.option_bundle(&SemanticType::Option {
+                            value: Box::new(stored.clone()),
+                        })?,
+                        computed(1),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        at(&["tk", "tw"]),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::MapContains => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                (
+                    format!(
+                        "({} {} {} {} (fun _ => rfl) {lookup_entry} {} {} {} {} {head}{} {} {} {})",
+                        lib("tpl_mapContains"),
+                        self.key_spec(&key, &coll)?,
+                        self.enc(&stored)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        at(&["tk", "tw"]),
+                        Self::placed(2),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::MapKeys | Template::MapValues => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                let (lemma, projected) = match template {
+                    Template::MapKeys => ("tpl_mapKeys", key.clone()),
+                    Template::MapValues => ("tpl_mapValues", stored.clone()),
+                    Template::MapInsert
+                    | Template::MapRemove
+                    | Template::MapLookup
+                    | Template::MapContains
+                    | Template::MapFold
+                    | Template::SetInsert
+                    | Template::SetRemove
+                    | Template::SetContains
+                    | Template::SetUnion
+                    | Template::SetIntersection
+                    | Template::SetDifference
+                    | Template::SetFold
+                    | Template::ListFold
+                    | Template::Iterate
+                    | Template::IterateUntil
+                    | Template::GraphSuccessors
+                    | Template::GraphReachable
+                    | Template::GraphTopological => {
+                        return Err("a projection of a non-projection template".to_owned());
+                    }
+                };
+                (
+                    format!(
+                        "({} (ek := {}) (ev := {}) {} (fun _ => rfl) {} (fun _ => rfl) {head}{} rfl {})",
+                        lib(lemma),
+                        self.enc(&key)?,
+                        self.enc(&stored)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        self.list_bundle(&SemanticType::List {
+                            element: Box::new(projected),
+                        })?,
+                        at(&["tk", "tw"]),
+                        value(0)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::MapFold => {
+                let key = instance_type(instance, 0)?;
+                let stored = instance_type(instance, 1)?;
+                let state = instance_type(instance, 2)?;
+                let step = step()?;
+                (
+                    format!(
+                        "({} (ek := {}) (ev := {}) (es := {}) {} (fun _ => rfl) {} ({}) {} {} ({}) {head}{} rfl {} {})",
+                        lib("tpl_mapFold"),
+                        self.enc(&key)?,
+                        self.enc(&stored)?,
+                        self.enc(&state)?,
+                        self.list_bundle(&argument_type(2)?)?,
+                        value(0)?,
+                        step.fits,
+                        step.index,
+                        step.captures,
+                        step.relation,
+                        at(&["tk", "tw", "ts"]),
+                        value(1)?,
+                        value(2)?
+                    ),
+                    format!(
+                        "({} (fun __st __e => ({}) __st __e.1 __e.2) (fun __st __e => {} __st __e.1 __e.2) {} {})",
+                        lib("foldFits"),
+                        step.fits,
+                        value(0)?,
+                        value(1)?,
+                        value(2)?
+                    ),
+                )
+            }
+            Template::SetInsert | Template::SetRemove | Template::SetContains => {
+                let key = instance_type(instance, 0)?;
+                let (lemma, function) = match template {
+                    Template::SetInsert => ("tpl_setInsert", "insertElement"),
+                    Template::SetRemove => ("tpl_setRemove", "removeElement"),
+                    Template::SetContains => ("tpl_setContains", "containsElement"),
+                    Template::MapInsert
+                    | Template::MapRemove
+                    | Template::MapLookup
+                    | Template::MapContains
+                    | Template::MapKeys
+                    | Template::MapValues
+                    | Template::MapFold
+                    | Template::SetUnion
+                    | Template::SetIntersection
+                    | Template::SetDifference
+                    | Template::SetFold
+                    | Template::ListFold
+                    | Template::Iterate
+                    | Template::IterateUntil
+                    | Template::GraphSuccessors
+                    | Template::GraphReachable
+                    | Template::GraphTopological => {
+                        return Err("an element operation of a non-element template".to_owned());
+                    }
+                };
+                let function = format!("{coll}.{function}");
+                (
+                    format!(
+                        "({} {} {} (fun _ => rfl) {function} {} {} {} {} {head}{} rfl {} {})",
+                        lib(lemma),
+                        self.key_spec(&key, &coll)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(3, &function),
+                        clause(3, &function),
+                        clause(3, &function),
+                        at(&["tk"]),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::SetUnion => {
+                let key = instance_type(instance, 0)?;
+                let insert = format!("{coll}.insertElement");
+                (
+                    format!(
+                        "({} {} {} (fun _ => rfl) {insert} {} {} {} {} {head}{} {} {} {})",
+                        lib("tpl_setUnion"),
+                        self.key_spec(&key, &coll)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(3, &insert),
+                        clause(3, &insert),
+                        clause(3, &insert),
+                        at(&["tk"]),
+                        Self::placed(2),
+                        value(1)?,
+                        value(0)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::SetIntersection | Template::SetDifference => {
+                let key = instance_type(instance, 0)?;
+                let contains = format!("{coll}.containsElement");
+                let lemma = match template {
+                    Template::SetIntersection => "tpl_setIntersection",
+                    Template::SetDifference => "tpl_setDifference",
+                    Template::MapInsert
+                    | Template::MapRemove
+                    | Template::MapLookup
+                    | Template::MapContains
+                    | Template::MapKeys
+                    | Template::MapValues
+                    | Template::MapFold
+                    | Template::SetInsert
+                    | Template::SetRemove
+                    | Template::SetContains
+                    | Template::SetUnion
+                    | Template::SetFold
+                    | Template::ListFold
+                    | Template::Iterate
+                    | Template::IterateUntil
+                    | Template::GraphSuccessors
+                    | Template::GraphReachable
+                    | Template::GraphTopological => {
+                        return Err("a filter of a non-filter template".to_owned());
+                    }
+                };
+                (
+                    format!(
+                        "({} {} {} (fun _ => rfl) {contains} {} {} {} {} {head}{} {} {} {})",
+                        lib(lemma),
+                        self.key_spec(&key, &coll)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(3, &contains),
+                        clause(3, &contains),
+                        clause(3, &contains),
+                        at(&["tk"]),
+                        Self::placed(2),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::SetFold | Template::ListFold => {
+                let element = instance_type(instance, 0)?;
+                let state = instance_type(instance, 1)?;
+                let step = step()?;
+                (
+                    format!(
+                        "({} (ea := {}) (es := {}) {} (fun _ => rfl) {} ({}) {} {} ({}) {head}{} rfl {} {})",
+                        lib("tpl_listFold"),
+                        self.enc(&element)?,
+                        self.enc(&state)?,
+                        self.list_bundle(&argument_type(2)?)?,
+                        value(0)?,
+                        step.fits,
+                        step.index,
+                        step.captures,
+                        step.relation,
+                        at(&["ta", "ts"]),
+                        value(1)?,
+                        value(2)?
+                    ),
+                    format!(
+                        "({} ({}) {} {} {})",
+                        lib("foldFits"),
+                        step.fits,
+                        value(0)?,
+                        value(1)?,
+                        value(2)?
+                    ),
+                )
+            }
+            Template::Iterate => {
+                let state = instance_type(instance, 0)?;
+                let step = step()?;
+                (
+                    format!(
+                        "({} (es := {}) {} ({}) {} {} ({}) ({coll}.iterate {}) {} {} {head}{} rfl {} {})",
+                        lib("tpl_iterate"),
+                        self.enc(&state)?,
+                        value(0)?,
+                        step.fits,
+                        step.index,
+                        step.captures,
+                        step.relation,
+                        value(0)?,
+                        computed(1),
+                        computed(2),
+                        at(&["ts"]),
+                        value(1)?,
+                        value(2)?
+                    ),
+                    format!(
+                        "({} ({}) {} {} {})",
+                        lib("iterateFits"),
+                        step.fits,
+                        value(0)?,
+                        value(1)?,
+                        value(2)?
+                    ),
+                )
+            }
+            Template::IterateUntil => {
+                let state = instance_type(instance, 0)?;
+                let step = step()?;
+                let until = format!("{coll}.iterateUntil");
+                (
+                    format!(
+                        "({} (es := {}) {} (fun _ => rfl) {} (fun _ => rfl) {} ({}) {} {} ({}) ({until} {}) {} {} {} {head}{} rfl {} {})",
+                        lib("tpl_iterateUntil"),
+                        self.enc(&state)?,
+                        self.option_bundle(&SemanticType::Option {
+                            value: Box::new(state.clone()),
+                        })?,
+                        self.enc(&SemanticType::Product {
+                            left: Box::new(state.clone()),
+                            right: Box::new(SemanticType::Bool),
+                        })?,
+                        value(0)?,
+                        step.fits,
+                        step.index,
+                        step.captures,
+                        step.relation,
+                        value(0)?,
+                        computed(1),
+                        clause(2, &until),
+                        clause(3, &until),
+                        at(&["ts"]),
+                        value(1)?,
+                        value(2)?
+                    ),
+                    format!(
+                        "({} ({}) {} {} {})",
+                        lib("untilFits"),
+                        step.fits,
+                        value(0)?,
+                        value(1)?,
+                        value(2)?
+                    ),
+                )
+            }
+            Template::GraphSuccessors => {
+                let node = instance_type(instance, 0)?;
+                let nodes = SemanticType::List {
+                    element: Box::new(node.clone()),
+                };
+                (
+                    format!(
+                        "({} {} {} {} (fun _ => rfl) {lookup_entry} {} {} {} {} {head}{} {} {} {})",
+                        lib("tpl_graphSuccessors"),
+                        self.key_spec(&node, &coll)?,
+                        self.list_bundle(&nodes)?,
+                        self.list_bundle(&argument_type(0)?)?,
+                        computed(1),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        clause(4, &lookup_entry),
+                        at(&["tk"]),
+                        Self::placed(2),
+                        value(0)?,
+                        value(1)?
+                    ),
+                    "true".to_owned(),
+                )
+            }
+            Template::GraphReachable | Template::GraphTopological => {
+                let node = instance_type(instance, 0)?;
+                let nodes = SemanticType::List {
+                    element: Box::new(node.clone()),
+                };
+                let graph = value(0)?;
+                let successors = format!("({coll}.graphSuccessors {graph})");
+                let common = format!(
+                    "{} {} (fun _ => rfl) {} (fun _ => rfl)",
+                    self.key_spec(&node, &coll)?,
+                    self.list_bundle(&nodes)?,
+                    self.list_bundle(&argument_type(0)?)?,
+                );
+                let fits = format!("({} {coll}.insertElement {graph})", lib("graphFits"));
+                match template {
+                    Template::GraphReachable => {
+                        let reach = format!("{coll}.reachableFrom");
+                        (
+                            format!(
+                                "({} {common} {} {} {graph} {successors} (fun _ => rfl) ({reach} {graph}) {} {} {} {head}{} {} {})",
+                                lib("tpl_graphReachable"),
+                                self.set_ops(&node, &coll)?,
+                                self.look_ops(&node, &nodes, &coll)?,
+                                computed(2),
+                                clause(3, &reach),
+                                clause(5, &reach),
+                                at(&["tk"]),
+                                Self::placed(13),
+                                value(1)?
+                            ),
+                            fits,
+                        )
+                    }
+                    Template::GraphTopological => {
+                        let topological = format!("{coll}.topological");
+                        let remove = format!("{coll}.removeElement");
+                        let contains = format!("{coll}.containsElement");
+                        (
+                            format!(
+                                "({} {common} {} (fun _ => rfl) {} {} {graph} {successors} (fun _ => rfl) (⟨{}, {}, {}, (fun _ _ _ _ h => by simp only [{topological}, h] <;> rfl), {}⟩ : {} {successors} {contains} {remove} ({topological} {graph})) {head}{} {})",
+                                lib("tpl_graphTopological"),
+                                self.option_bundle(&SemanticType::Option {
+                                    value: Box::new(nodes.clone()),
+                                })?,
+                                self.set_ops(&node, &coll)?,
+                                self.look_ops(&node, &nodes, &coll)?,
+                                computed(1),
+                                computed(3),
+                                computed(2),
+                                clause(5, &topological),
+                                lib("TopoOps"),
+                                at(&["tk"]),
+                                Self::placed(12)
+                            ),
+                            fits,
+                        )
+                    }
+                    Template::MapInsert
+                    | Template::MapRemove
+                    | Template::MapLookup
+                    | Template::MapContains
+                    | Template::MapKeys
+                    | Template::MapValues
+                    | Template::MapFold
+                    | Template::SetInsert
+                    | Template::SetRemove
+                    | Template::SetContains
+                    | Template::SetUnion
+                    | Template::SetIntersection
+                    | Template::SetDifference
+                    | Template::SetFold
+                    | Template::ListFold
+                    | Template::Iterate
+                    | Template::IterateUntil
+                    | Template::GraphSuccessors => {
+                        return Err("a traversal of a non-traversal template".to_owned());
+                    }
+                }
+            }
+        };
+        let list = operands(proofs);
+        Ok(Proof {
+            proof: format!("({} {} {lemma})", lib("conv_call"), list.proof),
+            fits: and(&list.fits, &fits),
+        })
     }
 }
 
