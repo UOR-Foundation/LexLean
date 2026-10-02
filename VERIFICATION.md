@@ -771,6 +771,38 @@ gate failed: compiler/src/TargetSemantics.lex.tex differs from its generator; ru
 Removed: the committed module was restored; the gate reports 208 generated
 files equal to their generator.
 
+### check-calculus covers the shipped calculus modules
+
+Planted: one comment line appended to
+`language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean`, the copy
+certificates import. Command: `cargo xtask check-calculus`. Expected: the
+shipped module no longer equals the compiler project's golden module (§17.17),
+reported before any file whose provenance binds the compiler-semantics ID.
+
+```text
+gate failed: <root>/language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean differs from the compiler golden <root>/compiler/expected/build/modules/LexLeanTarget/TargetSyntax.lean; run `cargo xtask check-calculus --write`
+```
+
+Removed: the line was deleted; `cargo xtask check-calculus` reports 581
+generated files equal to their generator.
+
+### audit-production covers the preservation sources
+
+Planted: `fn planted(t: Option<u8>) { if let Some(_) = t {} }` appended to
+`crates/lexlean/src/production/certificate.rs`. Command: `cargo xtask
+validate-model`. Expected: the certificate generator matches a construct by
+default (§17.17 extends §17.13's audit to the lowering, the generator, and
+the source reader).
+
+```text
+gate failed: §17.17: crates/lexlean/src/production/certificate.rs:6381: an `if let` with an implicit default would classify constructs by default
+```
+
+Removed: the function was deleted; `audit-production` reports that the three
+preservation sources match no construct by default. `conformance_sp_01` plants
+an `if let`, a `matches!`, and a wildcard arm in each source and requires
+the audit to refuse every one.
+
 ### calculus kernel oracle can fail
 
 Planted: the reference interpreter computed `int_rem` as a Euclidean

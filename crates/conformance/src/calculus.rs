@@ -2579,6 +2579,9 @@ const GENERATED_DIRECTORIES: [&str; 2] = ["compiler/fixtures", "compiler/rust"];
 /// Returns the first generated file whose committed bytes differ, or a
 /// committed fixture no generator produces.
 pub fn check(root: &Path, write: bool) -> Result<usize, String> {
+    // A drifted shipped module also changes the compiler-semantics ID every
+    // provenance binds, so it is compared first, where its report names it.
+    let shipped = if write { 0 } else { shipped_modules(root, false)? };
     let files = files();
     for directory in GENERATED_DIRECTORIES {
         for entry in walkdir::WalkDir::new(root.join(directory))
@@ -2616,7 +2619,8 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
             }
         }
     }
-    Ok(files.len() + shipped_modules(root, write)?)
+    let shipped = if write { shipped_modules(root, true)? } else { shipped };
+    Ok(files.len() + shipped)
 }
 
 /// §17.17: the calculus modules shipped for certificates are byte-equal to
