@@ -2581,7 +2581,11 @@ const GENERATED_DIRECTORIES: [&str; 2] = ["compiler/fixtures", "compiler/rust"];
 pub fn check(root: &Path, write: bool) -> Result<usize, String> {
     // A drifted shipped module also changes the compiler-semantics ID every
     // provenance binds, so it is compared first, where its report names it.
-    let shipped = if write { 0 } else { shipped_modules(root, false)? };
+    let shipped = if write {
+        0
+    } else {
+        shipped_modules(root, false)?
+    };
     let files = files();
     for directory in GENERATED_DIRECTORIES {
         for entry in walkdir::WalkDir::new(root.join(directory))
@@ -2619,7 +2623,11 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
             }
         }
     }
-    let shipped = if write { shipped_modules(root, true)? } else { shipped };
+    let shipped = if write {
+        shipped_modules(root, true)?
+    } else {
+        shipped
+    };
     Ok(files.len() + shipped)
 }
 
