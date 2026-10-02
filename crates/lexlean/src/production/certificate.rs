@@ -64,8 +64,107 @@ pub struct Certificate {
     pub text: String,
     /// The fully qualified name of the root theorem.
     pub theorem: String,
+    /// The fully qualified name of the theorem's observation, a function
+    /// of the root's arguments.
+    pub denote: String,
     /// The generated user modules the certificate imports.
     pub imports: Vec<String>,
+}
+
+/// One constructor of a closed document type, as tooling that writes
+/// source values needs it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceConstructor {
+    /// The fully qualified Lean constructor.
+    pub lean: String,
+    /// Its closed field types, in order.
+    pub fields: Vec<SemanticType>,
+}
+
+/// The Lean spelling of a closed source type and, for a document type, its
+/// constructors in declaration order (a structure has one). The
+/// differential evaluator writes its sampled source values with these, so
+/// Lean reads exactly the values the realization's interpreter receives.
+///
+/// # Errors
+///
+/// Returns `LLI9001` when the type is not closed or names no document.
+pub fn source_type(
+    modules: &BTreeMap<String, super::eligibility::LinkedModule<'_>>,
+    ty: &SemanticType,
+) -> Result<(String, Vec<SourceConstructor>), Diagnostic> {
+    let source = Source { modules };
+    let lean = lean_type_text(&source, ty, false).map_err(internal)?;
+    let constructors = match ty {
+        SemanticType::Named {
+            member,
+            arguments: _,
+        } => {
+            let module = member
+                .module
+                .clone()
+                .ok_or_else(|| internal("an unanchored document type"))?;
+            let owner = identifier(&format!(
+                "{}.{}",
+                source.lean_module(&module).map_err(internal)?,
+                member.name
+            ));
+            let shape = source.document(ty).map_err(internal)?;
+            shape
+                .names
+                .iter()
+                .zip(&shape.fields)
+                .map(|(name, fields)| SourceConstructor {
+                    lean: format!("{owner}.{}", identifier(name)),
+                    fields: fields.clone(),
+                })
+                .collect()
+        }
+        SemanticType::Type
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { value: _ }
+        | SemanticType::Result { ok: _, error: _ }
+        | SemanticType::List { element: _ }
+        | SemanticType::Product { left: _, right: _ }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Map { key: _, value: _ }
+        | SemanticType::Set { element: _ } => Vec::new(),
+    };
+    Ok((lean, constructors))
+}
+
+/// The closed parameters and result of a root definition.
+///
+/// # Errors
+///
+/// Returns `LLI9001` when `module` declares no definition `name`.
+pub fn root_signature(
+    modules: &BTreeMap<String, super::eligibility::LinkedModule<'_>>,
+    module: &str,
+    name: &str,
+) -> Result<(Vec<SemanticParameter>, SemanticType), Diagnostic> {
+    Source { modules }
+        .signature(module, name, &[])
+        .map_err(internal)
 }
 
 fn internal(reason: impl std::fmt::Display) -> Diagnostic {
@@ -363,12 +462,90 @@ pub fn certificate(
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
+        denote: format!("{module}.denote"),
         text,
         imports,
     })
 }
 
 // --- Rendering the target program -------------------------------------------
+
+/// The Lean spelling of a type; a generic one may name the type
+/// parameters a wrapper binds.
+fn lean_type_text(source: &Source<'_>, ty: &SemanticType, generic: bool) -> Result<String, String> {
+    Ok(match ty {
+        SemanticType::Nat => "Nat".to_owned(),
+        SemanticType::Bool => "Bool".to_owned(),
+        SemanticType::Unit => "Unit".to_owned(),
+        SemanticType::Int => "Int".to_owned(),
+        SemanticType::Int8 => "Int8".to_owned(),
+        SemanticType::Int16 => "Int16".to_owned(),
+        SemanticType::Int32 => "Int32".to_owned(),
+        SemanticType::Int64 => "Int64".to_owned(),
+        SemanticType::UInt8 => "UInt8".to_owned(),
+        SemanticType::UInt16 => "UInt16".to_owned(),
+        SemanticType::UInt32 => "UInt32".to_owned(),
+        SemanticType::UInt64 => "UInt64".to_owned(),
+        SemanticType::String => "String".to_owned(),
+        SemanticType::Bytes => "ByteArray".to_owned(),
+        SemanticType::Ordering => "Ordering".to_owned(),
+        SemanticType::Option { value } => {
+            format!("(Option {})", lean_type_text(source, value, generic)?)
+        }
+        SemanticType::Result { ok, error } => {
+            format!(
+                "(Except {} {})",
+                lean_type_text(source, error, generic)?,
+                lean_type_text(source, ok, generic)?
+            )
+        }
+        SemanticType::List { element } | SemanticType::Set { element } => {
+            format!("(List {})", lean_type_text(source, element, generic)?)
+        }
+        SemanticType::Product { left, right } => {
+            format!(
+                "(Prod {} {})",
+                lean_type_text(source, left, generic)?,
+                lean_type_text(source, right, generic)?
+            )
+        }
+        SemanticType::Map { key, value } => format!(
+            "(List (Prod {} {}))",
+            lean_type_text(source, key, generic)?,
+            lean_type_text(source, value, generic)?
+        ),
+        SemanticType::Function { parameters, result } => {
+            let mut out = String::from("(");
+            for parameter in parameters {
+                out.push_str(&lean_type_text(source, parameter, generic)?);
+                out.push_str(" -> ");
+            }
+            out.push_str(&lean_type_text(source, result, generic)?);
+            out.push(')');
+            out
+        }
+        SemanticType::Named { member, arguments } => {
+            let module = member.module.clone().ok_or("an unanchored document type")?;
+            let mut out = format!(
+                "({}",
+                identifier(&format!("{}.{}", source.lean_module(&module)?, member.name))
+            );
+            for argument in arguments {
+                out.push(' ');
+                out.push_str(&lean_type_text(source, argument, generic)?);
+            }
+            out.push(')');
+            out
+        }
+        SemanticType::Parameter { name } if generic => identifier(name),
+        SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+            return Err(format!(
+                "`{}` has no runtime encoding",
+                source.type_text(ty)
+            ));
+        }
+    })
+}
 
 fn kind_ctor(kind: IntKind) -> &'static str {
     kind.name()
@@ -884,78 +1061,7 @@ impl Gen<'_> {
     /// The Lean spelling of a type; a generic one may name the type
     /// parameters a wrapper binds.
     fn render_type(&self, ty: &SemanticType, generic: bool) -> Result<String, String> {
-        Ok(match ty {
-            SemanticType::Nat => "Nat".to_owned(),
-            SemanticType::Bool => "Bool".to_owned(),
-            SemanticType::Unit => "Unit".to_owned(),
-            SemanticType::Int => "Int".to_owned(),
-            SemanticType::Int8 => "Int8".to_owned(),
-            SemanticType::Int16 => "Int16".to_owned(),
-            SemanticType::Int32 => "Int32".to_owned(),
-            SemanticType::Int64 => "Int64".to_owned(),
-            SemanticType::UInt8 => "UInt8".to_owned(),
-            SemanticType::UInt16 => "UInt16".to_owned(),
-            SemanticType::UInt32 => "UInt32".to_owned(),
-            SemanticType::UInt64 => "UInt64".to_owned(),
-            SemanticType::String => "String".to_owned(),
-            SemanticType::Bytes => "ByteArray".to_owned(),
-            SemanticType::Ordering => "Ordering".to_owned(),
-            SemanticType::Option { value } => {
-                format!("(Option {})", self.render_type(value, generic)?)
-            }
-            SemanticType::Result { ok, error } => {
-                format!(
-                    "(Except {} {})",
-                    self.render_type(error, generic)?,
-                    self.render_type(ok, generic)?
-                )
-            }
-            SemanticType::List { element } | SemanticType::Set { element } => {
-                format!("(List {})", self.render_type(element, generic)?)
-            }
-            SemanticType::Product { left, right } => {
-                format!(
-                    "(Prod {} {})",
-                    self.render_type(left, generic)?,
-                    self.render_type(right, generic)?
-                )
-            }
-            SemanticType::Map { key, value } => format!(
-                "(List (Prod {} {}))",
-                self.render_type(key, generic)?,
-                self.render_type(value, generic)?
-            ),
-            SemanticType::Function { parameters, result } => {
-                let mut out = String::from("(");
-                for parameter in parameters {
-                    out.push_str(&self.render_type(parameter, generic)?);
-                    out.push_str(" -> ");
-                }
-                out.push_str(&self.render_type(result, generic)?);
-                out.push(')');
-                out
-            }
-            SemanticType::Named { member, arguments } => {
-                let module = member.module.clone().ok_or("an unanchored document type")?;
-                let mut out = format!(
-                    "({}",
-                    identifier(&format!("{}.{}", self.lean_module(&module)?, member.name))
-                );
-                for argument in arguments {
-                    out.push(' ');
-                    out.push_str(&self.render_type(argument, generic)?);
-                }
-                out.push(')');
-                out
-            }
-            SemanticType::Parameter { name } if generic => identifier(name),
-            SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
-                return Err(format!(
-                    "`{}` has no runtime encoding",
-                    self.source.type_text(ty)
-                ));
-            }
-        })
+        lean_type_text(&self.source, ty, generic)
     }
 
     /// The encoder of a closed first-order type into target values.
@@ -4671,6 +4777,17 @@ impl<'a> Gen<'a> {
             denotation.push_str(&format!(" {}", identifier(&local.name)));
         }
         let signature = self.signature(0, &scope, &result, &denotation)?;
+        // The theorem's observation as a definition, so the differential
+        // evaluator can compute exactly the right-hand side the theorem
+        // states and compare it with the interpreter's outcome.
+        out.push_str(&format!(
+            "def denote {} : {} :=\n  {} ({}) {}\n\n",
+            signature.fits_binders.join(" "),
+            lib("Obs"),
+            lib("Rel"),
+            signature.fits_applied,
+            signature.value
+        ));
         out.push_str(&format!(
             "theorem root {} : {} __prog 0 {} ({} ({}) {}) :=\n  {} (__rel_0 {})\n\n",
             signature.rel_binders.join(" "),

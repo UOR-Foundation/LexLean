@@ -11,6 +11,7 @@
 pub mod calculus;
 pub mod calculus_source;
 pub mod cases;
+pub mod differential;
 pub mod fixtures;
 mod lx;
 pub mod meta;

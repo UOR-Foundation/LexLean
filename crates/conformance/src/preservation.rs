@@ -193,17 +193,28 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
     }
 }
 
-/// Certify every production root of the example `name` end to end.
+/// What certifying a project established.
+#[derive(Debug, Clone)]
+pub struct Report {
+    /// Every certified root.
+    pub certified: Vec<Certified>,
+    /// The differential cases whose certificate observation equalled the
+    /// interpreter's outcome.
+    pub differential: usize,
+}
+
+/// Certify every production root of `project` end to end, then run the
+/// differential: each certificate's observation, evaluated by Lean on
+/// seeded inputs, must equal the calculus interpreter's outcome.
 ///
 /// # Panics
 ///
-/// Panics naming the first module that fails to compile or replay, or the
-/// first axiom disagreement.
+/// Panics naming the first module that fails to compile or replay, the
+/// first axiom disagreement, or every differential disagreement.
 #[must_use]
-pub fn certify_example(name: &str) -> Vec<Certified> {
-    let project = P::copy_example(name);
-    let certified = certificates(&project);
-    let staged = staged(&project, &certified);
+pub fn certify(project: &P, name: &str) -> Report {
+    let certified = certificates(project);
+    let staged = staged(project, &certified);
     let scratch = tempfile::Builder::new()
         .prefix("lexlean-preserve-")
         .tempdir()
@@ -218,5 +229,39 @@ pub fn certify_example(name: &str) -> Vec<Certified> {
         .collect();
     audit(&checked.audit_output, &certificates)
         .unwrap_or_else(|reason| panic!("{name}: axiom audit: {reason}"));
-    certified
+    let cases = crate::differential::cases(project);
+    let denotes: Vec<(String, String, Vec<crate::differential::Case>)> = certified
+        .iter()
+        .map(|entry| {
+            (
+                entry.certificate.module.clone(),
+                entry.certificate.denote.clone(),
+                cases.get(&entry.root).cloned().unwrap_or_default(),
+            )
+        })
+        .collect();
+    let path = scratch.path().join("src/LexLeanPreserve/Differential.lean");
+    std::fs::write(&path, crate::differential::module(&denotes)).expect("write");
+    let output = lean(scratch.path(), &[path.display().to_string()]);
+    let text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        output.status.success(),
+        "{name}: the differential module was rejected:\n{text}"
+    );
+    let differential = crate::differential::compare(&text, &denotes)
+        .unwrap_or_else(|failures| panic!("{name}: differential:\n{failures}"));
+    Report {
+        certified,
+        differential,
+    }
+}
+
+/// Certify every production root of the example `name` end to end.
+#[must_use]
+pub fn certify_example(name: &str) -> Report {
+    certify(&P::copy_example(name), name)
 }
