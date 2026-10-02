@@ -32,14 +32,14 @@ struct Render<'a> {
 /// The generated name of well-founded hypothesis `index`. Semantic names
 /// begin with an ASCII letter and an unused binder lowers as `_name`, so no
 /// source binder can capture a name beginning with two underscores.
-fn hypothesis(index: usize) -> String {
+pub(crate) fn hypothesis(index: usize) -> String {
     format!("__decrease{index}")
 }
 
 // Semantic names are validated data, not Lean tokens. Quoting a reserved
 // segment preserves its exact Name identity instead of narrowing the source
 // language to whatever the pinned parser happens to leave unreserved.
-fn identifier(name: &str) -> String {
+pub(crate) fn identifier(name: &str) -> String {
     name.split('.')
         .map(|segment| {
             if super::lean_tokens::is_reserved(segment) {
@@ -55,7 +55,7 @@ fn identifier(name: &str) -> String {
 // Lean's pinned parser accepts four-digit Unicode escapes, not Rust's
 // zero escape or braced Unicode debug spelling. Escape characters, never
 // substrings, so a literal backslash followed by `0` remains literal data.
-fn string_literal(value: &str) -> String {
+pub(crate) fn string_literal(value: &str) -> String {
     use std::fmt::Write as _;
 
     let mut output = String::from("\"");
@@ -130,7 +130,7 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
     }
 }
 
-fn term_uses(term: &SemanticTerm, local: &str) -> bool {
+pub(crate) fn term_uses(term: &SemanticTerm, local: &str) -> bool {
     let pair = |left: &SemanticTerm, right: &SemanticTerm| {
         term_uses(left, local) || term_uses(right, local)
     };

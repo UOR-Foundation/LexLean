@@ -7,6 +7,7 @@
 //! and formal-only content coexists with executable roots because only the
 //! computational closure of a root is ever inspected.
 
+pub mod certificate;
 pub mod eligibility;
 pub mod lcnf;
 pub mod lower;
