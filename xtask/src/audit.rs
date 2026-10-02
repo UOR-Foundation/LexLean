@@ -1561,9 +1561,15 @@ pub fn audit_production_exhaustive(root: &Path) -> Result<(), Fail> {
     let semantic = std::fs::read_to_string(root.join(repo_model::exhaustive::SEMANTIC_SOURCE))?;
     repo_model::exhaustive::audit_eligibility(&eligibility, &semantic)
         .map_err(|report| format!("§17.13: {report}"))?;
+    for path in repo_model::exhaustive::PRESERVATION_SOURCES {
+        let text = std::fs::read_to_string(root.join(path))?;
+        repo_model::exhaustive::audit_preservation(path, &text, &semantic)
+            .map_err(|report| format!("§17.17: {report}"))?;
+    }
     println!(
-        "audit-production: every construct of {} enums has an explicit disposition (PD-07)",
-        repo_model::exhaustive::AUDITED_ENUMS.len()
+        "audit-production: every construct of {} enums has an explicit disposition (PD-07), and the {} preservation sources match no construct by default",
+        repo_model::exhaustive::AUDITED_ENUMS.len(),
+        repo_model::exhaustive::PRESERVATION_SOURCES.len()
     );
     Ok(())
 }

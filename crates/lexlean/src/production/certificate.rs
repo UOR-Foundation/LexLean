@@ -48,8 +48,8 @@ use crate::code;
 use crate::diagnostic::Diagnostic;
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticDeclaration, SemanticEdge,
-    SemanticMapEntry, SemanticParameter, SemanticPrimitive, SemanticTerm, SemanticTermination,
-    SemanticType,
+    SemanticInteger, SemanticMapEntry, SemanticParameter, SemanticPrimitive, SemanticTerm,
+    SemanticTermination, SemanticType,
 };
 
 /// The preservation library namespace (§17.17.3).
@@ -1221,7 +1221,7 @@ impl Gen<'_> {
             SemanticTerm::Integer {
                 representation,
                 value,
-            } => format!("({value} : {representation:?})"),
+            } => format!("({value} : {})", integer_lean(*representation)),
             SemanticTerm::String { value } => string_literal(value),
             SemanticTerm::Bytes { hex } => format!("({})", bytes_literal(hex)?),
             SemanticTerm::Primitive {
@@ -5446,11 +5446,27 @@ fn pair_clause(compare: &str) -> String {
     format!("(fun _ _ h => by simp only [{compare}] at h ⊢; simp only [h])")
 }
 
+/// The Lean type of an integer literal's representation.
+const fn integer_lean(representation: SemanticInteger) -> &'static str {
+    match representation {
+        SemanticInteger::Int => "Int",
+        SemanticInteger::Int8 => "Int8",
+        SemanticInteger::Int16 => "Int16",
+        SemanticInteger::Int32 => "Int32",
+        SemanticInteger::Int64 => "Int64",
+        SemanticInteger::UInt8 => "UInt8",
+        SemanticInteger::UInt16 => "UInt16",
+        SemanticInteger::UInt32 => "UInt32",
+        SemanticInteger::UInt64 => "UInt64",
+    }
+}
+
 /// A clause that holds by computation, over `binders` arguments.
 fn computed(binders: usize) -> String {
-    match binders {
-        0 => "rfl".to_owned(),
-        _ => format!("(fun{} => rfl)", " _".repeat(binders)),
+    if binders == 0 {
+        "rfl".to_owned()
+    } else {
+        format!("(fun{} => rfl)", " _".repeat(binders))
     }
 }
 
