@@ -42,7 +42,7 @@ meta partial def type (e : Expr) : String :=
   | .lam .. => obj [("kind", str "unsupported"), ("expression", str "lambda")]
   | .letE .. => obj [("kind", str "unsupported"), ("expression", str "let")]
   | .lit _ => obj [("kind", str "unsupported"), ("expression", str "literal")]
-  | .mdata .. => obj [("kind", str "unsupported"), ("expression", str "metadata")]
+  | .mdata _ body => type body
   | .proj .. => obj [("kind", str "unsupported"), ("expression", str "projection")]
 
 meta def arg (a : Arg .pure) : String :=

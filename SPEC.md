@@ -463,7 +463,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
-│   └── negative/
+│   ├── negative/
+│   └── preservation/
 └── xtask/
     ├── Cargo.toml
     └── src/
