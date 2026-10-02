@@ -19,13 +19,27 @@
 //! The certificate is translation validation: one kernel-checked theorem per
 //! root, never a theorem about the lowering function itself.
 
+// A `match` naming both `Some` and `None` is used where `if let` and
+// `while let` would hide the second case; the audit forbids those forms here.
+#![allow(
+    clippy::single_match,
+    clippy::single_match_else,
+    clippy::while_let_loop
+)]
+// The compiler is the second line of defence behind the audit: a binding
+// catch-all over an enum (`other =>`) is a default too.
+#![deny(
+    clippy::wildcard_enum_match_arm,
+    clippy::match_wildcard_for_single_variants
+)]
+
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::eligibility::{integer_type, BUILTIN_OWNERS};
+use super::eligibility::BUILTIN_OWNERS;
 use super::lower::{fixed_kind, Layout, Lowered, Origin};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
-use crate::backend::semantic::{hypothesis, identifier, string_literal, term_uses};
+use crate::backend::semantic::{hypothesis, identifier, string_literal};
 use crate::calculus::library::Template;
 use crate::calculus::{
     Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value,
@@ -34,8 +48,8 @@ use crate::code;
 use crate::diagnostic::Diagnostic;
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticDeclaration, SemanticEdge,
-    SemanticInteger, SemanticMapEntry, SemanticParameter, SemanticPrimitive, SemanticTerm,
-    SemanticTermination, SemanticType,
+    SemanticMapEntry, SemanticParameter, SemanticPrimitive, SemanticTerm, SemanticTermination,
+    SemanticType,
 };
 
 /// The preservation library namespace (§17.17.3).
@@ -318,6 +332,9 @@ enum Recursion {
 }
 
 /// One function the certificate states a relation for.
+// A certificate holds one subject per function, so boxing the larger
+// variant would buy nothing but indirection.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 enum Subject<'a> {
     Definition {
@@ -589,7 +606,7 @@ fn signed(text: &str) -> String {
 fn bytes_literal(hex: &str) -> Result<String, String> {
     let mut values = Vec::new();
     let digits = hex.as_bytes();
-    if digits.len() % 2 != 0 {
+    if !digits.len().is_multiple_of(2) {
         return Err(format!("byte literal `{hex}` has odd length"));
     }
     for pair in digits.chunks(2) {
@@ -3989,7 +4006,6 @@ impl<'a> Gen<'a> {
                 scrutinee,
                 branches,
             } => {
-                let scrutinee_ty = self.source.infer(scrutinee, &ctx.sources(), &site)?;
                 self.discover(scrutinee, ctx, dependencies, counters)?;
                 for branch in branches {
                     let inner = ctx.with(self.branch_locals(branch, scrutinee, ctx)?);

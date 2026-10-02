@@ -10,6 +10,20 @@
 //! closed: type parameters are substituted and every document reference
 //! carries its module.
 
+// A `match` naming both `Some` and `None` is used where `if let` and
+// `while let` would hide the second case; the audit forbids those forms here.
+#![allow(
+    clippy::single_match,
+    clippy::single_match_else,
+    clippy::while_let_loop
+)]
+// The compiler is the second line of defence behind the audit: a binding
+// catch-all over an enum (`other =>`) is a default too.
+#![deny(
+    clippy::wildcard_enum_match_arm,
+    clippy::match_wildcard_for_single_variants
+)]
+
 use std::collections::BTreeMap;
 
 use super::eligibility::{

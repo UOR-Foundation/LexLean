@@ -475,11 +475,7 @@ pub fn workspace(
 fn printed_axioms(output: &str) -> BTreeMap<String, Vec<String>> {
     let mut found = BTreeMap::new();
     let mut rest = output;
-    loop {
-        let start = match rest.find('\'') {
-            Some(start) => start,
-            None => break,
-        };
+    while let Some(start) = rest.find('\'') {
         let after = &rest[start + 1..];
         let end = match after.find('\'') {
             Some(end) => end,
