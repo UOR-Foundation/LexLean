@@ -2,7 +2,7 @@ import LexLeanPreservation.Primitives
 namespace LexLeanPreservation
 open LexLeanTarget.TargetSyntax LexLeanTarget.TargetSemantics
 
-/-! Fixed-width primitives (SPEC.md §17.17.3): one relation per operation and
+/-! Fixed-width primitives (SPEC.md §17.17): one relation per operation and
 width. A checked operation's overflow is a value (`none`), never a target
 overflow, so every lemma here has the exact width predicate `true`. -/
 

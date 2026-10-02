@@ -1354,3 +1354,23 @@ fn conformance_rb_06() {
 fn conformance_rb_07() {
     repo_conformance::cases::run("RB-07");
 }
+
+#[test]
+fn conformance_sp_01() {
+    repo_conformance::cases::run("SP-01");
+}
+
+#[test]
+fn conformance_sp_02() {
+    repo_conformance::cases::run("SP-02");
+}
+
+#[test]
+fn conformance_sp_03() {
+    repo_conformance::cases::run("SP-03");
+}
+
+#[test]
+fn conformance_sp_04() {
+    repo_conformance::cases::run("SP-04");
+}

@@ -17,6 +17,7 @@ mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod preservation;
 mod production;
 mod proofs;
 mod repository;
@@ -54,6 +55,7 @@ pub fn run(id: &str) {
         "NE" => extraction::run(id),
         "TC" => calculus::run(id),
         "RB" => rust_backend::run(id),
+        "SP" => preservation::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

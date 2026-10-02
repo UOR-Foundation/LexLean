@@ -202,6 +202,12 @@ pub struct Report {
     /// The differential cases whose certificate observation equalled the
     /// interpreter's outcome.
     pub differential: usize,
+    /// The audit module's output.
+    pub audit_output: String,
+    /// The differential module's output.
+    pub differential_output: String,
+    /// Each certificate's module, observation, and cases.
+    pub denotes: Vec<(String, String, Vec<crate::differential::Case>)>,
 }
 
 /// Certify every production root of `project` end to end, then run the
@@ -258,6 +264,9 @@ pub fn certify(project: &P, name: &str) -> Report {
     Report {
         certified,
         differential,
+        audit_output: checked.audit_output,
+        differential_output: text,
+        denotes,
     }
 }
 
