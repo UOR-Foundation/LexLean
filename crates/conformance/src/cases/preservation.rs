@@ -58,6 +58,39 @@ fn lowered_projects() -> Vec<(String, P)> {
     out
 }
 
+/// The runtime rows of the production registry that no root of `roots`
+/// exercises: a row counts where a root's report realizes its construct,
+/// and `type.parameter` where a root instantiates a generic definition.
+fn unexercised(reports: &[&lexlean::production::RootReport]) -> Vec<String> {
+    let mut seen: BTreeSet<String> = BTreeSet::new();
+    for report in reports {
+        seen.extend(report.constructs.keys().cloned());
+        if report
+            .runtime
+            .iter()
+            .any(|member| !member.type_arguments.is_empty())
+        {
+            seen.insert("type.parameter".to_owned());
+        }
+    }
+    let text = std::fs::read_to_string(
+        repo_root()
+            .join(lexlean::production::REGISTRY_PATH)
+            .as_std_path(),
+    )
+    .expect("the production registry");
+    let registry: toml::Value = toml::from_str(&text).expect("the registry parses");
+    registry["construct"]
+        .as_array()
+        .expect("construct rows")
+        .iter()
+        .filter(|row| row["disposition"].as_str() == Some("runtime"))
+        .filter_map(|row| row["key"].as_str())
+        .filter(|key| !seen.contains(*key))
+        .map(str::to_owned)
+        .collect()
+}
+
 /// Run one preservation case.
 ///
 /// # Panics
@@ -355,6 +388,36 @@ pub fn run(id: &str) {
                     "{fixture}: nothing is published"
                 );
             }
+        }
+        // §17.13, §17.17: the corpus exercises the registry.
+        "SP-06" => {
+            let mut held = Vec::new();
+            for (_, project) in certified_projects() {
+                held.push(support::checked_project(&project));
+            }
+            let all: Vec<_> = held
+                .iter()
+                .map(|checked| roots(checked).expect("the reports"))
+                .collect();
+            let reports: Vec<&lexlean::production::RootReport> =
+                all.iter().flatten().map(|root| root.report).collect();
+            let missing = unexercised(&reports);
+            assert!(
+                missing.is_empty(),
+                "runtime constructs no certified root exercises: {missing:?}"
+            );
+            // Withholding the collection roots leaves their constructs
+            // unexercised, and the check says so.
+            let withheld: Vec<&lexlean::production::RootReport> = reports
+                .iter()
+                .copied()
+                .filter(|report| !report.root.starts_with("Coverage.Colls."))
+                .collect();
+            let missing = unexercised(&withheld);
+            assert!(
+                missing.iter().any(|key| key == "primitive.map_insert"),
+                "withheld collection roots are reported: {missing:?}"
+            );
         }
         _ => panic!("no preservation case is wired for {id}"),
     }

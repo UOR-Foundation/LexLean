@@ -3375,8 +3375,9 @@ the certificate's byte length and SHA-256, which the attestation binds.
 
 **Evidence.** The conformance suite certifies every production root of `examples/production` and
 of the preservation corpus `tests/preservation/coverage`, a project the suite
-certifies but does not verify, whose roots exercise every runtime construct
-family: natural, integer, and fixed-width arithmetic, text and bytes,
+certifies but does not verify. Together these roots exercise every runtime
+row of the production registry (§17.13), a type parameter through an instance
+of a generic definition: arithmetic at every width, text and bytes,
 documents, records, instances, generic and nested inductive types,
 higher-order functions with captures, structural, mutual, and well-founded
 recursion, every collection template, and every key order. It regenerates
@@ -5686,8 +5687,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production and the preservation corpus, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
+| `SP-06` | `preservation` | The certified roots of examples/production and the preservation corpus together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 
-**Total required capability IDs:** 275.
+**Total required capability IDs:** 276.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

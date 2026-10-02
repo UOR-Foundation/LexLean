@@ -36,3 +36,10 @@ Feature: preservation
     When each is verified
     Then the production example publishes every certificate, the audit output, and a schema-valid preservation.json bound by its attestation
     And the planted certificate fails with LLV7013 and the drifted library with LLV7014, each with nothing published
+
+  @SP-06 @build
+  Scenario: The certified roots of examples/production and the preservation corpus together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported.
+    Given the eligibility reports of every certified root and the runtime rows of the production registry
+    When the constructs the roots realize are collected, with a type parameter counted where a generic definition is instantiated
+    Then every runtime row is exercised by some certified root
+    And with the corpus's collection roots withheld, their constructs are reported as unexercised

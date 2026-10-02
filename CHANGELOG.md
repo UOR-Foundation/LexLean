@@ -16,7 +16,7 @@ versions, and the entries below say what each tag does and does not claim.
 ## Unreleased
 
 - Semantic preservation from the source to the realization calculus
-  (SPEC.md §17.17, `SP-01`..`SP-05`): every production root is lowered to a
+  (SPEC.md §17.17, `SP-01`..`SP-06`): every production root is lowered to a
   target program and certified by a kernel-checked Lean theorem (certificate
   A) that the lowered program converges on the encoded arguments to the
   encoded source value, or to overflow exactly where the width predicate

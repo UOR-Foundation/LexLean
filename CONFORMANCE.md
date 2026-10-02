@@ -252,6 +252,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `SP-03` | `build` | On seeded inputs to every production root of examples/production and the preservation corpus, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. |
 | `SP-04` | `build` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. |
 | `SP-05` | `build` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. |
+| `SP-06` | `build` | The certified roots of examples/production and the preservation corpus together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. |
 
 ## production
 

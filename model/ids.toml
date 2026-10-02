@@ -1657,3 +1657,9 @@ id = "SP-05"
 level = "build"
 suite = "preservation"
 statement = "Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication."
+
+[[id]]
+id = "SP-06"
+level = "build"
+suite = "preservation"
+statement = "The certified roots of examples/production and the preservation corpus together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported."
