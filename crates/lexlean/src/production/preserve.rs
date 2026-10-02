@@ -245,6 +245,145 @@ fn audit_text(library: &Library, certificates: &[Certificate]) -> String {
     text
 }
 
+/// Tokens no library module or certificate may contain: each either
+/// admits a statement without proof, trusts code the kernel does not
+/// check, or changes how the source is read.
+pub const FORBIDDEN_TOKENS: [&str; 27] = [
+    "sorry",
+    "admit",
+    "axiom",
+    "opaque",
+    "unsafe",
+    "partial",
+    "native_decide",
+    "kernel",
+    "ofReduceBool",
+    "ofReduceNat",
+    "implemented_by",
+    "extern",
+    "macro",
+    "macro_rules",
+    "syntax",
+    "elab",
+    "elab_rules",
+    "notation",
+    "infix",
+    "infixl",
+    "infixr",
+    "prefix",
+    "postfix",
+    "#eval",
+    "run_cmd",
+    "run_tac",
+    "sorryAx",
+];
+
+/// The forbidden constants, rejected in any qualified spelling; the other
+/// forbidden tokens are keywords and attributes, rejected as written, so a
+/// user declaration that happens to share a keyword's spelling inside its
+/// module's namespace is not one.
+const FORBIDDEN_CONSTANTS: [&str; 3] = ["ofReduceBool", "ofReduceNat", "sorryAx"];
+
+/// The options a library module or certificate may set: none weakens
+/// what the kernel checks.
+pub const ALLOWED_OPTIONS: [&str; 5] = [
+    "autoImplicit",
+    "maxRecDepth",
+    "maxHeartbeats",
+    "linter.unusedVariables",
+    "linter.unusedSimpArgs",
+];
+
+/// `text` without its comments and string literals, so prose and data
+/// never read as tokens.
+fn code_only(text: &str) -> String {
+    let mut out = String::new();
+    let mut chars = text.chars().peekable();
+    let mut depth = 0usize;
+    while let Some(character) = chars.next() {
+        if depth > 0 {
+            if character == '/' && chars.peek() == Some(&'-') {
+                chars.next();
+                depth += 1;
+            } else if character == '-' && chars.peek() == Some(&'/') {
+                chars.next();
+                depth -= 1;
+            }
+            continue;
+        }
+        match character {
+            '/' if chars.peek() == Some(&'-') => {
+                chars.next();
+                depth = 1;
+                out.push(' ');
+            }
+            '-' if chars.peek() == Some(&'-') => {
+                for skipped in chars.by_ref() {
+                    if skipped == '\n' {
+                        out.push('\n');
+                        break;
+                    }
+                }
+            }
+            '"' => {
+                let mut escaped = false;
+                for skipped in chars.by_ref() {
+                    if escaped {
+                        escaped = false;
+                    } else if skipped == '\\' {
+                        escaped = true;
+                    } else if skipped == '"' {
+                        break;
+                    }
+                }
+                out.push_str(" \"\" ");
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// Check one library module or certificate: no forbidden token, only
+/// allowed options, and imports only of `imports`.
+///
+/// # Errors
+///
+/// Returns the first violation.
+pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String> {
+    let code = code_only(text);
+    let tokens: Vec<&str> = code
+        .split(|character: char| {
+            !(character.is_alphanumeric()
+                || matches!(character, '_' | '\'' | '.' | '#' | '!' | '?'))
+        })
+        .filter(|token| !token.is_empty())
+        .collect();
+    for (index, token) in tokens.iter().enumerate() {
+        if FORBIDDEN_TOKENS.contains(token) {
+            return Err(format!("the forbidden token `{token}`"));
+        }
+        for segment in token.split('.') {
+            if FORBIDDEN_CONSTANTS.contains(&segment) {
+                return Err(format!("the forbidden constant `{segment}` (in `{token}`)"));
+            }
+        }
+        if *token == "set_option" {
+            let option = tokens.get(index + 1).copied().unwrap_or_default();
+            if !ALLOWED_OPTIONS.contains(&option) {
+                return Err(format!("the option `{option}` is not allowed"));
+            }
+        }
+        if *token == "import" {
+            let module = tokens.get(index + 1).copied().unwrap_or_default();
+            if !imports.contains(module) {
+                return Err(format!("the import of `{module}` is not allowed"));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// The audit module's name.
 pub const AUDIT_MODULE: &str = "LexLeanPreserve.Audit";
 
@@ -260,15 +399,25 @@ pub fn workspace(
     certificates: &[Certificate],
 ) -> Result<Workspace, Diagnostic> {
     let library = library()?;
+    let mut environment: BTreeSet<String> = TARGET_MODULES
+        .iter()
+        .map(|module| (*module).to_owned())
+        .collect();
     let mut files = Vec::new();
     for module in TARGET_MODULES
         .iter()
         .map(|module| (*module).to_owned())
         .chain(library.modules.clone())
     {
+        let text = module_text(&module)?;
+        if library.modules.contains(&module) {
+            audit_tokens(text, &environment)
+                .map_err(|reason| internal(format!("the library module `{module}`: {reason}")))?;
+        }
+        environment.insert(module.clone());
         files.push(StagedFile {
             path: module_path(&module),
-            text: module_text(&module)?.to_owned(),
+            text: text.to_owned(),
             module,
         });
     }
@@ -287,7 +436,14 @@ pub fn workspace(
             text,
         });
     }
+    environment.extend(user.iter().map(|(module, _)| module.clone()));
     for certificate in certificates {
+        audit_tokens(&certificate.text, &environment).map_err(|reason| {
+            internal(format!(
+                "the certificate `{}`: {reason}",
+                certificate.module
+            ))
+        })?;
         if !certificate.module.starts_with("LexLeanPreserve.") {
             return Err(internal(format!(
                 "the certificate `{}` lies outside `LexLeanPreserve`",

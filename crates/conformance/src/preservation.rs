@@ -7,6 +7,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use lexlean::calculus::{Expr, Program, Ty, Value};
 use lexlean::production::certificate::{certificate, Certificate};
 use lexlean::production::lower::{linked_modules, lower_root, roots};
 use lexlean::production::preserve::{audit, workspace, Workspace};
@@ -264,4 +265,252 @@ pub fn certify(project: &P, name: &str) -> Report {
 #[must_use]
 pub fn certify_example(name: &str) -> Report {
     certify(&P::copy_example(name), name)
+}
+
+/// A defect planted in a lowered program after lowering, while the
+/// certificate's proof is still derived from the source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Mutation {
+    /// The first conditional's branches are swapped.
+    Branches,
+    /// The first natural addition subtracts.
+    Arithmetic,
+    /// The first constructed document value takes the next constructor,
+    /// or the first boolean is negated.
+    Constructor,
+    /// The first call calls a neighbouring function.
+    Recursion,
+    /// The first natural literal is one larger.
+    Literal,
+}
+
+impl Mutation {
+    /// Every mutation.
+    pub const ALL: [Self; 5] = [
+        Self::Branches,
+        Self::Arithmetic,
+        Self::Constructor,
+        Self::Recursion,
+        Self::Literal,
+    ];
+}
+
+fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
+    use lexlean::calculus::{Prim, Shape};
+    let here = match (mutation, &mut *expr) {
+        (
+            Mutation::Branches,
+            Expr::Cond {
+                condition: _,
+                then_branch,
+                else_branch,
+            },
+        ) => {
+            std::mem::swap(then_branch, else_branch);
+            true
+        }
+        (
+            Mutation::Arithmetic,
+            Expr::Prim {
+                operation,
+                operands: _,
+            },
+        ) if *operation == Prim::NatAdd => {
+            *operation = Prim::NatSub;
+            true
+        }
+        (
+            Mutation::Constructor,
+            Expr::Build {
+                shape,
+                ty,
+                operands: _,
+            },
+        ) => match (shape, ty) {
+            (Shape::Adt { constructor }, Ty::Adt { index }) => {
+                let count = program.adts[usize::try_from(*index).expect("an index")]
+                    .constructors
+                    .len() as u64;
+                if count > 1 {
+                    *constructor = (*constructor + 1) % count;
+                    true
+                } else {
+                    false
+                }
+            }
+            (shape @ Shape::True, _) => {
+                *shape = Shape::False;
+                true
+            }
+            (shape @ Shape::False, _) => {
+                *shape = Shape::True;
+                true
+            }
+            _ => false,
+        },
+        (
+            Mutation::Recursion,
+            Expr::Call {
+                function,
+                operands: _,
+            },
+        ) => {
+            *function = if *function + 1 < program.functions.len() as u64 {
+                *function + 1
+            } else {
+                function.saturating_sub(1)
+            };
+            true
+        }
+        (
+            Mutation::Literal,
+            Expr::Value {
+                ty: _,
+                value: Value::Nat { value },
+            },
+        ) => {
+            let number: u128 = value.parse().expect("a natural literal");
+            *value = (number + 1).to_string();
+            true
+        }
+        _ => false,
+    };
+    if here {
+        return true;
+    }
+    match expr {
+        Expr::Value { .. } | Expr::Var { .. } => false,
+        Expr::Let { bound, body, .. } => {
+            mutate_expr(bound, mutation, program) || mutate_expr(body, mutation, program)
+        }
+        Expr::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            mutate_expr(condition, mutation, program)
+                || mutate_expr(then_branch, mutation, program)
+                || mutate_expr(else_branch, mutation, program)
+        }
+        Expr::Match {
+            scrutinee, arms, ..
+        } => {
+            mutate_expr(scrutinee, mutation, program)
+                || arms
+                    .iter_mut()
+                    .any(|arm| mutate_expr(&mut arm.body, mutation, program))
+        }
+        Expr::Build { operands, .. }
+        | Expr::Call { operands, .. }
+        | Expr::Prim { operands, .. }
+        | Expr::Closure {
+            captures: operands, ..
+        } => operands
+            .iter_mut()
+            .any(|operand| mutate_expr(operand, mutation, program)),
+        Expr::Apply { target, operands } => {
+            mutate_expr(target, mutation, program)
+                || operands
+                    .iter_mut()
+                    .any(|operand| mutate_expr(operand, mutation, program))
+        }
+        Expr::First { value } | Expr::Second { value } | Expr::Field { value, .. } => {
+            mutate_expr(value, mutation, program)
+        }
+    }
+}
+
+/// `program` with `mutation` planted at its first applicable site, if any.
+#[must_use]
+pub fn mutate(program: &Program, mutation: Mutation) -> Option<Program> {
+    let mut mutated = program.clone();
+    let original = program.clone();
+    for function in &mut mutated.functions {
+        if mutate_expr(&mut function.body, mutation, &original) {
+            return Some(mutated);
+        }
+    }
+    None
+}
+
+/// One planted mutation and what Lean made of its certificate.
+#[derive(Debug, Clone)]
+pub struct Planted {
+    /// The root whose program was mutated.
+    pub root: String,
+    /// The mutation.
+    pub mutation: Mutation,
+    /// Lean's output on the mutated certificate; empty when it was
+    /// accepted, which is a failure of the certificate.
+    pub rejection: String,
+}
+
+/// Plant every mutation in the first root of `project` whose program
+/// admits it, regenerate that root's certificate against the mutated
+/// program, and compile it.
+///
+/// # Panics
+///
+/// Panics when the unmutated environment does not compile.
+#[must_use]
+pub fn plant(project: &P) -> Vec<Planted> {
+    let checked = support::checked_project(project);
+    let modules = linked_modules(&checked);
+    let rendered = support::rendered(project);
+    let user: Vec<(String, String)> = rendered
+        .modules
+        .iter()
+        .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
+        .collect();
+    let base = workspace(&user, &[]).expect("the workspace stages");
+    let scratch = tempfile::Builder::new()
+        .prefix("lexlean-plant-")
+        .tempdir()
+        .expect("tempdir");
+    let compiled = check(&base, scratch.path());
+    assert!(compiled.failure.is_none(), "{:?}", compiled.failure);
+    let roots = roots(&checked).expect("the eligibility reports");
+    let mut out = Vec::new();
+    for mutation in Mutation::ALL {
+        for root in &roots {
+            let mut lowered = lower_root(&modules, &root.module, &root.name, root.report)
+                .expect("an eligible root lowers");
+            let Some(program) = mutate(&lowered.program, mutation) else {
+                continue;
+            };
+            lowered.program = program;
+            let module = format!("LexLeanPreserve.Planted.{mutation:?}");
+            let certificate = certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+            )
+            .expect("the certificate is generated from the source");
+            let path = scratch
+                .path()
+                .join("src")
+                .join(lexlean::production::preserve::module_path(&module));
+            std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
+            std::fs::write(&path, &certificate.text).expect("write");
+            let output = lean(scratch.path(), &[path.display().to_string()]);
+            out.push(Planted {
+                root: root.report.root.clone(),
+                mutation,
+                rejection: if output.status.success() {
+                    String::new()
+                } else {
+                    format!(
+                        "{}{}",
+                        String::from_utf8_lossy(&output.stdout),
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                },
+            });
+            break;
+        }
+    }
+    out
 }

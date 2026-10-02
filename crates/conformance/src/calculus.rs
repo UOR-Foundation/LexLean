@@ -2616,5 +2616,34 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
             }
         }
     }
-    Ok(files.len())
+    Ok(files.len() + shipped_modules(root, write)?)
+}
+
+/// §17.17: the calculus modules shipped for certificates are byte-equal to
+/// the compiler project's golden modules; `write` copies the golden.
+///
+/// # Errors
+///
+/// Returns the first shipped module that differs or is missing.
+pub fn shipped_modules(root: &Path, write: bool) -> Result<usize, String> {
+    use lexlean::production::preserve::{module_path, MODULES_DIR, TARGET_MODULES};
+    for module in TARGET_MODULES {
+        let golden = root
+            .join("compiler/expected/build/modules")
+            .join(module_path(module));
+        let shipped = root.join(MODULES_DIR).join(module_path(module));
+        let bytes =
+            std::fs::read(&golden).map_err(|error| format!("{}: {error}", golden.display()))?;
+        if write {
+            std::fs::write(&shipped, &bytes)
+                .map_err(|error| format!("{}: {error}", shipped.display()))?;
+        } else if std::fs::read(&shipped).ok().as_deref() != Some(bytes.as_slice()) {
+            return Err(format!(
+                "{} differs from the compiler golden {}; run `cargo xtask check-calculus --write`",
+                shipped.display(),
+                golden.display()
+            ));
+        }
+    }
+    Ok(TARGET_MODULES.len())
 }
