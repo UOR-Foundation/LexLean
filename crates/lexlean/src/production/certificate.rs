@@ -243,6 +243,20 @@ struct Gen<'a> {
     subjects: BTreeMap<u64, Subject<'a>>,
     /// Lambdas found while walking each function, by ordinal.
     found: BTreeMap<u64, u64>,
+    /// Container types nested inside a recursive group of document types, by
+    /// type text: their encoders must join the group's mutual block, because
+    /// Lean accepts structural recursion through a nested occurrence only
+    /// when the container gets its own auxiliary function.
+    nested: BTreeMap<String, Nested>,
+}
+
+/// A container type that occurs nested in a recursive group of document
+/// types.
+struct Nested {
+    index: u64,
+    ty: SemanticType,
+    /// The first ADT of the group, which names its mutual block.
+    group: u64,
 }
 
 /// Generate the certificate of one lowered root as module `module`.
@@ -318,7 +332,9 @@ pub fn certificate(
         adts,
         subjects: BTreeMap::new(),
         found: BTreeMap::new(),
+        nested: BTreeMap::new(),
     };
+    generator.nest().map_err(internal)?;
     let text = generator
         .module(root_module, root_name, report, module)
         .map_err(internal)?;
@@ -927,6 +943,14 @@ impl Gen<'_> {
 
     /// The encoder of a closed first-order type into target values.
     fn enc(&self, ty: &SemanticType) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => Ok(nested_enc(nested)),
+            None => self.plain_enc(ty),
+        }
+    }
+
+    /// The encoder of a type with no nested auxiliary encoder.
+    fn plain_enc(&self, ty: &SemanticType) -> Result<String, String> {
         Ok(match ty {
             SemanticType::Nat => value_ctor("nat"),
             SemanticType::Bool => value_ctor("bool"),
@@ -1764,18 +1788,43 @@ impl Gen<'_> {
                 lib(&format!("prim_checkedSub_{}", width_suffix(first)?)),
                 Width::Exact,
             ),
-            SemanticPrimitive::CheckedMultiply => rule(
-                lib(&format!("prim_checkedMul_{}", width_suffix(first)?)),
-                Width::Exact,
-            ),
+            // The 64-bit signed loops are taken by their clauses (§17.17.3).
+            SemanticPrimitive::CheckedMultiply => {
+                let suffix = width_suffix(first)?;
+                PrimRule {
+                    lemma: lib(&format!("prim_checkedMul_{suffix}")),
+                    prefix: if suffix == "i64" {
+                        vec![
+                            self.runtime(site, "LexLeanRuntime", "multiplyMagnitudeInt64")?,
+                            "(fun _ _ _ _ => rfl)".to_owned(),
+                            "(fun _ _ _ _ _ => rfl)".to_owned(),
+                        ]
+                    } else {
+                        Vec::new()
+                    },
+                    width: Width::Exact,
+                }
+            }
             SemanticPrimitive::CheckedNegate => rule(
                 lib(&format!("prim_checkedNeg_{}", width_suffix(first)?)),
                 Width::Exact,
             ),
-            SemanticPrimitive::CheckedQuotient => rule(
-                lib(&format!("prim_checkedQuot_{}", width_suffix(first)?)),
-                Width::Exact,
-            ),
+            SemanticPrimitive::CheckedQuotient => {
+                let suffix = width_suffix(first)?;
+                PrimRule {
+                    lemma: lib(&format!("prim_checkedQuot_{suffix}")),
+                    prefix: if suffix == "i64" {
+                        vec![
+                            self.runtime(site, "LexLeanRuntime", "divideMagnitudeInt64")?,
+                            "(fun _ _ _ _ => rfl)".to_owned(),
+                            "(fun _ _ _ _ _ => rfl)".to_owned(),
+                        ]
+                    } else {
+                        Vec::new()
+                    },
+                    width: Width::Exact,
+                }
+            }
             SemanticPrimitive::BitAnd => rule(
                 lib(&format!("prim_bitAnd_{}", width_suffix(first)?)),
                 Width::Exact,
@@ -1801,18 +1850,18 @@ impl Gen<'_> {
                 Width::Exact,
             ),
             SemanticPrimitive::Append => match sequence(first)? {
-                Sequence::List(element) => PrimRule {
+                Sequence::List(_) => PrimRule {
                     lemma: lib("prim_append_list"),
-                    prefix: vec![self.enc(&element)?],
+                    prefix: vec![self.list_bundle(first)?],
                     width: Width::Exact,
                 },
                 Sequence::Bytes => rule(lib("prim_append_bytes"), Width::Exact),
                 Sequence::String => return Err("Append of strings".to_owned()),
             },
             SemanticPrimitive::Length => match sequence(first)? {
-                Sequence::List(element) => PrimRule {
+                Sequence::List(_) => PrimRule {
                     lemma: lib("prim_length_list"),
-                    prefix: vec![self.enc(&element)?],
+                    prefix: vec![self.list_bundle(first)?],
                     width: Width::Nat,
                 },
                 Sequence::Bytes => rule(lib("prim_length_bytes"), Width::Nat),
@@ -1820,14 +1869,18 @@ impl Gen<'_> {
             },
             SemanticPrimitive::MapSize | SemanticPrimitive::SetSize => PrimRule {
                 lemma: lib("prim_length_list"),
-                prefix: vec![self.enc(&element_of(first)?)?],
+                prefix: vec![self.list_bundle(first)?],
                 width: Width::Nat,
             },
             SemanticPrimitive::Index => match sequence(first)? {
                 Sequence::List(element) => PrimRule {
                     lemma: lib("prim_index_list"),
                     prefix: vec![
-                        self.enc(&element)?,
+                        self.list_bundle(first)?,
+                        self.option_bundle(&SemanticType::Option {
+                            value: Box::new(element),
+                        })?,
+                        "(fun _ => rfl)".to_owned(),
                         self.runtime(site, "LexLeanRuntime", "listIndex")?,
                         "(fun _ => rfl)".to_owned(),
                         "(fun _ _ => rfl)".to_owned(),
@@ -1839,9 +1892,15 @@ impl Gen<'_> {
                 Sequence::String => return Err("Index of a string".to_owned()),
             },
             SemanticPrimitive::Slice => match sequence(first)? {
-                Sequence::List(element) => PrimRule {
+                Sequence::List(_) => PrimRule {
                     lemma: lib("prim_slice_list"),
-                    prefix: vec![self.enc(&element)?],
+                    prefix: vec![
+                        self.list_bundle(first)?,
+                        self.option_bundle(&SemanticType::Option {
+                            value: Box::new(first.clone()),
+                        })?,
+                        "(fun _ => rfl)".to_owned(),
+                    ],
                     width: Width::Exact,
                 },
                 Sequence::Bytes => rule(lib("prim_slice_bytes"), Width::Exact),
@@ -3954,6 +4013,48 @@ fn named_types(ty: &SemanticType, out: &mut Vec<SemanticType>) {
     }
 }
 
+/// The encoder of a nested container outside its group's mutual block.
+fn nested_enc(nested: &Nested) -> String {
+    match &nested.ty {
+        SemanticType::List { element: _ }
+        | SemanticType::Set { element: _ }
+        | SemanticType::Map { key: _, value: _ } => {
+            format!("({} __L_{})", lib("ListEnc.enc"), nested.index)
+        }
+        SemanticType::Option { value: _ } => {
+            format!("({} __O_{})", lib("OptEnc.enc"), nested.index)
+        }
+        SemanticType::Result { ok: _, error: _ }
+        | SemanticType::Product { left: _, right: _ }
+        | SemanticType::Named {
+            member: _,
+            arguments: _,
+        }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering => format!("__aux_{}", nested.index),
+    }
+}
+
 fn mutual_block(items: &[String]) -> String {
     if items.len() == 1 {
         return items[0].clone();
@@ -3962,15 +4063,12 @@ fn mutual_block(items: &[String]) -> String {
 }
 
 impl<'a> Gen<'a> {
-    /// The encoder definitions of every document type the program realizes,
-    /// dependencies first; a mutual group of types gets one mutual block.
-    fn encoders(&self) -> Result<String, String> {
+    /// The dependency graph of the program's document types: each ADT points
+    /// at the ADTs its fields mention.
+    fn adt_graph(&self) -> Result<BTreeMap<u64, BTreeSet<u64>>, String> {
         let mut graph: BTreeMap<u64, BTreeSet<u64>> = BTreeMap::new();
-        let mut texts: BTreeMap<u64, String> = BTreeMap::new();
         for (index, adt) in self.layout.adts.iter().enumerate() {
-            let index = index as u64;
             let shape = self.source.document(&adt.ty)?;
-            let lean = self.ty(&adt.ty)?;
             let mut dependencies = BTreeSet::new();
             for fields in &shape.fields {
                 for field in fields {
@@ -3987,8 +4085,295 @@ impl<'a> Gen<'a> {
                     }
                 }
             }
-            graph.insert(index, dependencies);
-            let text = if shape.kind == "inductive" {
+            graph.insert(index as u64, dependencies);
+        }
+        Ok(graph)
+    }
+
+    /// Register every container type nested inside a recursive group of
+    /// document types.
+    fn nest(&mut self) -> Result<(), String> {
+        let graph = self.adt_graph()?;
+        for component in components(&graph) {
+            let members: BTreeSet<u64> = component.iter().copied().collect();
+            let recursive = component.len() > 1
+                || component
+                    .iter()
+                    .any(|index| graph.get(index).is_some_and(|edges| edges.contains(index)));
+            if !recursive {
+                continue;
+            }
+            for index in &component {
+                let ty = self.layout.adts[*index as usize].ty.clone();
+                let shape = self.source.document(&ty)?;
+                for fields in &shape.fields {
+                    for field in fields {
+                        self.register(field, &members, component[0])?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Register `ty` and its nested containers when it mentions a member of
+    /// the group; inner containers first, so indices follow dependencies.
+    fn register(
+        &mut self,
+        ty: &SemanticType,
+        members: &BTreeSet<u64>,
+        group: u64,
+    ) -> Result<(), String> {
+        let mut named = Vec::new();
+        named_types(ty, &mut named);
+        let touches = named.iter().any(|named| {
+            self.adts
+                .get(&self.source.type_text(named))
+                .is_some_and(|index| members.contains(index))
+        });
+        if !touches {
+            return Ok(());
+        }
+        match ty {
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => return Ok(()),
+            SemanticType::Option { value: inner }
+            | SemanticType::List { element: inner }
+            | SemanticType::Set { element: inner } => self.register(inner, members, group)?,
+            SemanticType::Map { key, value } => self.register(
+                &SemanticType::Product {
+                    left: key.clone(),
+                    right: value.clone(),
+                },
+                members,
+                group,
+            )?,
+            SemanticType::Result {
+                ok: left,
+                error: right,
+            }
+            | SemanticType::Product { left, right } => {
+                self.register(left, members, group)?;
+                self.register(right, members, group)?;
+            }
+            SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering => {
+                return Err(format!(
+                    "`{}` cannot hold a document type in a field",
+                    self.source.type_text(ty)
+                ));
+            }
+        }
+        let text = self.source.type_text(ty);
+        let index = self.nested.len() as u64;
+        self.nested.entry(text).or_insert(Nested {
+            index,
+            ty: ty.clone(),
+            group,
+        });
+        Ok(())
+    }
+
+    /// `arg` encoded inside a recursive group's mutual block, where a nested
+    /// container's bundle is not yet defined and its auxiliary function is
+    /// applied directly, as structural recursion requires.
+    fn raw_apply(&self, ty: &SemanticType, arg: &str) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => Ok(match &nested.ty {
+                SemanticType::List { element: _ }
+                | SemanticType::Set { element: _ }
+                | SemanticType::Map { key: _, value: _ } => format!(
+                    "({} (__items_{} {arg}))",
+                    value_ctor("list"),
+                    nested.index
+                ),
+                SemanticType::Option { value: _ }
+                | SemanticType::Result { ok: _, error: _ }
+                | SemanticType::Product { left: _, right: _ }
+                | SemanticType::Named {
+                    member: _,
+                    arguments: _,
+                }
+                | SemanticType::Function {
+                    parameters: _,
+                    result: _,
+                }
+                | SemanticType::Type
+                | SemanticType::Prop
+                | SemanticType::Parameter { name: _ }
+                | SemanticType::Nat
+                | SemanticType::Bool
+                | SemanticType::Unit
+                | SemanticType::Int
+                | SemanticType::Int8
+                | SemanticType::Int16
+                | SemanticType::Int32
+                | SemanticType::Int64
+                | SemanticType::UInt8
+                | SemanticType::UInt16
+                | SemanticType::UInt32
+                | SemanticType::UInt64
+                | SemanticType::String
+                | SemanticType::Bytes
+                | SemanticType::Ordering => format!("(__aux_{} {arg})", nested.index),
+            }),
+            None => Ok(format!("({} {arg})", self.enc(ty)?)),
+        }
+    }
+
+    /// The list encoder bundle of a list, set or map type.
+    fn list_bundle(&self, ty: &SemanticType) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => Ok(format!("__L_{}", nested.index)),
+            None => Ok(format!(
+                "({} {})",
+                lib("listEnc"),
+                self.enc(&element_of(ty)?)?
+            )),
+        }
+    }
+
+    /// The option encoder bundle of an option type.
+    fn option_bundle(&self, ty: &SemanticType) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => Ok(format!("__O_{}", nested.index)),
+            None => Ok(format!(
+                "({} {})",
+                lib("optEnc"),
+                self.enc(&option_value(ty)?)?
+            )),
+        }
+    }
+
+    /// The auxiliary function of a nested container, and its bundle when the
+    /// container is a list or an option.
+    fn auxiliary(&self, nested: &Nested) -> Result<(String, String), String> {
+        let lean = self.ty(&nested.ty)?;
+        let n = nested.index;
+        let value = format!("{SYNTAX}.Value");
+        Ok(match &nested.ty {
+            SemanticType::List { element: _ }
+            | SemanticType::Set { element: _ }
+            | SemanticType::Map { key: _, value: _ } => {
+                let element = element_of(&nested.ty)?;
+                (
+                    format!(
+                        "def __items_{n} : {lean} -> List {value}\n  | [] => []\n  | __x0 :: __x1 => {} :: __items_{n} __x1\n\n",
+                        self.raw_apply(&element, "__x0")?
+                    ),
+                    format!(
+                        "def __L_{n} : {} {} :=\n  ⟨{}, __items_{n}, __items_{n}.eq_1, __items_{n}.eq_2⟩\n\n",
+                        lib("ListEnc"),
+                        self.ty(&element)?,
+                        self.enc(&element)?
+                    ),
+                )
+            }
+            SemanticType::Option { value: inner } => (
+                format!(
+                    "def __aux_{n} : {lean} -> {value}\n  | none => {}\n  | some __x0 => {} {}\n\n",
+                    value_ctor("none"),
+                    value_ctor("some"),
+                    self.raw_apply(inner, "__x0")?
+                ),
+                format!(
+                    "def __O_{n} : {} {} :=\n  ⟨{}, __aux_{n}, __aux_{n}.eq_1, __aux_{n}.eq_2⟩\n\n",
+                    lib("OptEnc"),
+                    self.ty(inner)?,
+                    self.enc(inner)?
+                ),
+            ),
+            SemanticType::Product { left, right } => (
+                format!(
+                    "def __aux_{n} : {lean} -> {value}\n  | (__x0, __x1) => {} {} {}\n\n",
+                    value_ctor("pair"),
+                    self.raw_apply(left, "__x0")?,
+                    self.raw_apply(right, "__x1")?
+                ),
+                String::new(),
+            ),
+            SemanticType::Result { ok, error } => (
+                format!(
+                    "def __aux_{n} : {lean} -> {value}\n  | Except.error __x0 => {} {}\n  | Except.ok __x0 => {} {}\n\n",
+                    value_ctor("error"),
+                    self.raw_apply(error, "__x0")?,
+                    value_ctor("ok"),
+                    self.raw_apply(ok, "__x0")?
+                ),
+                String::new(),
+            ),
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering => {
+                return Err(format!(
+                    "`{}` is not a nested container",
+                    self.source.type_text(&nested.ty)
+                ));
+            }
+        })
+    }
+
+    /// The encoder definitions of every document type the program realizes,
+    /// dependencies first; a mutual group of types gets one mutual block,
+    /// joined by the auxiliary encoders of the containers nested in it.
+    fn encoders(&self) -> Result<String, String> {
+        let graph = self.adt_graph()?;
+        let mut texts: BTreeMap<u64, String> = BTreeMap::new();
+        for (index, adt) in self.layout.adts.iter().enumerate() {
+            let index = index as u64;
+            let shape = self.source.document(&adt.ty)?;
+            let lean = self.ty(&adt.ty)?;
+            let recursive = self.nested.values().any(|nested| nested.group == index)
+                || components(&graph)
+                    .iter()
+                    .any(|component| component.len() > 1 && component.contains(&index))
+                || graph.get(&index).is_some_and(|edges| edges.contains(&index));
+            let text = if shape.kind == "inductive" || recursive {
                 let owner = self.ty(&adt.ty)?;
                 let owner = owner
                     .trim_start_matches('(')
@@ -4007,17 +4392,22 @@ impl<'a> Gen<'a> {
                     let encoded = fields
                         .iter()
                         .zip(&binders)
-                        .map(|(field, binder)| {
-                            Ok::<String, String>(format!("({} {binder})", self.enc(field)?))
-                        })
+                        .map(|(field, binder)| self.raw_apply(field, binder))
                         .collect::<Result<Vec<_>, _>>()?;
+                    let pattern = if shape.kind == "inductive" {
+                        format!(
+                            "{owner}.{}{}",
+                            identifier(constructor),
+                            binders
+                                .iter()
+                                .map(|binder| format!(" {binder}"))
+                                .collect::<String>()
+                        )
+                    } else {
+                        format!("⟨{}⟩", binders.join(", "))
+                    };
                     text.push_str(&format!(
-                        "  | {owner}.{}{} => {} {position} [{}]\n",
-                        identifier(constructor),
-                        binders
-                            .iter()
-                            .map(|binder| format!(" {binder}"))
-                            .collect::<String>(),
+                        "  | {pattern} => {} {position} [{}]\n",
                         value_ctor("adt"),
                         encoded.join(", ")
                     ));
@@ -4047,8 +4437,21 @@ impl<'a> Gen<'a> {
         }
         let mut out = String::new();
         for component in components(&graph) {
-            let items: Vec<String> = component.iter().map(|index| texts[index].clone()).collect();
+            let mut items: Vec<String> = component.iter().map(|index| texts[index].clone()).collect();
+            let mut bundles = String::new();
+            let mut nested: Vec<&Nested> = self
+                .nested
+                .values()
+                .filter(|nested| nested.group == component[0])
+                .collect();
+            nested.sort_by_key(|nested| nested.index);
+            for nested in nested {
+                let (auxiliary, bundle) = self.auxiliary(nested)?;
+                items.push(auxiliary);
+                bundles.push_str(&bundle);
+            }
             out.push_str(&mutual_block(&items));
+            out.push_str(&bundles);
         }
         Ok(out)
     }
@@ -4615,8 +5018,14 @@ impl<'a> Gen<'a> {
                                 for _ in 0..branch_index {
                                     arm = format!("({} rfl {arm})", lib("convA_miss"));
                                 }
+                                // The arm rewrites by the fits equation
+                                // rather than leaving the unifier to unfold
+                                // `__fits`: through a nested inductive Lean
+                                // has no smart unfolding, and full unfolding
+                                // also reduces the leading `true &&`, which
+                                // misaligns the conjunction.
                                 rel_equations.push_str(&format!(
-                                    "  | {} => {} rfl rfl ({} ({} rfl) {arm})\n",
+                                    "  | {} => by rw [__fits_{index}.eq_def]; exact {} rfl rfl ({} ({} rfl) {arm})\n",
                                     patterns.join(", "),
                                     lib("funRel_intro"),
                                     lib("conv_match"),
@@ -4752,7 +5161,7 @@ impl<'a> Gen<'a> {
                                     proof.fits
                                 ),
                                 format!(
-                                    "theorem __rel_{index} {} : {statement} := by\n  rw [{}.eq_1, __fits_{index}.eq_1]\n  exact {} rfl rfl {}\ntermination_by {measure}\n{decreasing}\n",
+                                    "theorem __rel_{index} {} : {statement} := by\n  rw [{}.eq_def, __fits_{index}.eq_def]\n  exact {} rfl rfl {}\ntermination_by {measure}\n{decreasing}\n",
                                     signature.rel_binders.join(" "),
                                     identifier(&self.source.lean_name(&module, &MemberRef {
                                         module: Some(module.clone()),
