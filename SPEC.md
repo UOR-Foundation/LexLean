@@ -448,6 +448,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── lock.schema.json
 │   ├── lock-1.1.schema.json
 │   ├── lock-v2.schema.json
+│   ├── preservation.schema.json
 │   ├── production-eligibility.schema.json
 │   ├── project.schema.json
 │   ├── project-v2.schema.json
@@ -3358,8 +3359,21 @@ modules. Each is replayed by `leanchecker`, which shares Lean's kernel
 every root theorem's must be exactly `Classical.choice`, `Quot.sound`, and
 `propext`.
 
-**Evidence.** Verification does not check certificates; the conformance
-suite does. It certifies every production root of `examples/production` and
+**Verification.** `lexlean verify` checks certificate A after named-root
+extraction (§22.1 stage 12): it stages the shipped environment, compiles each
+module and certificate silently with the pinned Lean, replays each
+certificate through `leanchecker`, and audits the axioms. A shipped module
+that fails its token audit or does not compile silently, or a library
+declaration whose axioms differ from its registry row, is `LLV7014`; a
+certificate that does not compile silently, fails its replay, or whose root
+theorem's axioms are not exactly the three above is `LLV7013`. It publishes
+each certificate under `preserve/`, the audit output, process records, and
+`preserve/preservation.json` (`lexlean/preservation/1`,
+`schemas/preservation.schema.json`): the registry's SHA-256, the root
+theorem axioms, and per root its targets, certificate module, theorem, and
+the certificate's byte length and SHA-256, which the attestation binds.
+
+**Evidence.** The conformance suite certifies every production root of `examples/production` and
 of the preservation corpus `tests/preservation/coverage`, a project the suite
 certifies but does not verify, whose roots exercise every runtime construct
 family: natural, integer, and fixed-width arithmetic, text and bytes,
@@ -3857,7 +3871,8 @@ tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `schemas/build-manifest-v2.schema.json`,
 `schemas/compiler-input.schema.json`,
 `schemas/lexicon-v2.schema.json`, `schemas/lock-1.1.schema.json`,
-`schemas/lock-v2.schema.json`, `schemas/production-eligibility.schema.json`,
+`schemas/lock-v2.schema.json`, `schemas/preservation.schema.json`,
+`schemas/production-eligibility.schema.json`,
 `schemas/project-v2.schema.json`, `schemas/rust-package.schema.json`,
 `schemas/rust-provenance.schema.json`,
 `schemas/semantic-module-v2.schema.json`,
@@ -4030,13 +4045,13 @@ A failed command removes its staging tree and leaves no verified artifact.
 9. process-sized axiom-audit module-family generation and execution;
 10. exact axiom-output parsing;
 11. per-declaration policy enforcement;
-12. named-root extraction, when the project has a production root (§22.10);
+12. named-root extraction, then certificate A for every production root, when the project has a production root (§22.10, §17.17);
 13. optional configured PDF rendering;
 14. process-output normalization;
 15. verification-attestation construction;
 16. atomic publication.
 
-No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction only when no module declares a production root.
+No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificate A only when no module declares a production root.
 
 ### 22.2 Lake-resolved execution
 
@@ -4161,6 +4176,10 @@ production/*.eligibility.json              # when a production root exists
 extract/<extraction-module>.lean           # when a production root exists
 extract/process.json                       # when a production root exists
 production/compiler-input.json             # when a production root exists
+preserve/LexLeanPreserve/*/*.lean          # when a production root exists
+preserve/audit.txt                         # when a production root exists
+preserve/preservation.json                 # when a production root exists
+process/preserve/*.json                    # when a production root exists
 pdf/*                                      # when configured
 ```
 
@@ -4189,14 +4208,15 @@ The body records:
 - generated `.olean` hashes;
 - axiom policies and observed sets;
 - the canonical compiler input's byte length and SHA-256, when a production root exists;
+- `preservation.json`'s byte length and SHA-256, when a production root exists;
 - optional PDF process and bytes;
 - overall status exactly `verified`.
 
 A language-1.0 or 1.1 project's attestation is `lexlean/attestation/1`
 (`schemas/attestation.schema.json`). A language-1.2 project's is
 `lexlean/attestation/2` (`schemas/attestation-v2.schema.json`, in the 1.2-only
-partition): the same body plus `compiler_input`, present exactly when a
-production root exists. Routing is fixed by the project language.
+partition): the same body plus `compiler_input` and `preservation`, each
+present exactly when a production root exists. Routing is fixed by the project language.
 
 There is no timestamp in the hashed attestation. Digital signing is outside language 1.0; release automation may sign the completed file without changing its contents.
 
@@ -4806,6 +4826,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7007` | Lake workspace lock or dependency availability mismatch. |
 | `LLV7011` | Named-root extraction rejected (§22.10). |
 | `LLV7012` | Lean compiler-front-end authority drift (§22.10). |
+| `LLV7013` | Certificate A rejected (§17.17). |
+| `LLV7014` | Preservation environment drift (§17.17). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit project resource limit exceeded. |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -5663,8 +5685,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-02` | `preservation` | Every production root of examples/production and the preservation corpus has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production and the preservation corpus, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
+| `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
 
-**Total required capability IDs:** 274.
+**Total required capability IDs:** 275.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

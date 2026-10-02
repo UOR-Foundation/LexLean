@@ -282,6 +282,80 @@ pub fn run(id: &str) {
                 audit(&drifted, &certificates).expect_err("a drifted declaration is refused");
             }
         }
+        // §17.17, §22.8, §22.9: certificate A in verification.
+        "SP-05" => {
+            if !support::lean_backed("SP-05") {
+                return;
+            }
+            let project = P::copy_example("production");
+            let verified = support::verify_ok(&project);
+            let root = verified.root.as_std_path();
+            let record_bytes =
+                std::fs::read(root.join("preserve/preservation.json")).expect("preservation.json");
+            let record: serde_json::Value =
+                serde_json::from_slice(&record_bytes).expect("preservation.json is JSON");
+            support::assert_schema("preservation", "preservation.json", &record);
+            let rows = record["roots"].as_array().expect("roots");
+            let checked = support::checked_project(&project);
+            assert_eq!(
+                rows.len(),
+                roots(&checked).expect("the eligibility reports").len(),
+                "one certificate per production root"
+            );
+            for row in rows {
+                let module = row["module"].as_str().expect("a module");
+                let text = std::fs::read(
+                    root.join("preserve")
+                        .join(lexlean::production::preserve::module_path(module)),
+                )
+                .expect("the published certificate");
+                assert_eq!(
+                    row["sha256"].as_str(),
+                    Some(
+                        lexlean::artifact::content_id::Sha256Digest::of(&text)
+                            .to_hex()
+                            .as_str()
+                    ),
+                    "{module}: the record binds the published certificate"
+                );
+            }
+            let attestation: serde_json::Value = serde_json::from_slice(
+                &std::fs::read(root.join("attestation.json")).expect("attestation"),
+            )
+            .expect("attestation JSON");
+            assert_eq!(
+                attestation["preservation"]["sha256"].as_str(),
+                Some(
+                    lexlean::artifact::content_id::Sha256Digest::of(&record_bytes)
+                        .to_hex()
+                        .as_str()
+                ),
+                "the attestation binds preservation.json"
+            );
+            for (fixture, code) in [
+                ("certificate-rejected", "LLV7013"),
+                ("preservation-drift", "LLV7014"),
+            ] {
+                let case =
+                    crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
+                        .expect("the fixture loads");
+                let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+                assert_eq!(observed.codes, [code], "{fixture}");
+                assert!(
+                    !observed.project.root.join(".lexlean/verified").exists()
+                        || std::fs::read_dir(
+                            observed
+                                .project
+                                .root
+                                .join(".lexlean/verified")
+                                .as_std_path()
+                        )
+                        .map(|mut entries| entries.next().is_none())
+                        .unwrap_or(true),
+                    "{fixture}: nothing is published"
+                );
+            }
+        }
         _ => panic!("no preservation case is wired for {id}"),
     }
 }

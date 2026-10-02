@@ -1651,3 +1651,9 @@ id = "SP-04"
 level = "build"
 suite = "preservation"
 statement = "Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused."
+
+[[id]]
+id = "SP-05"
+level = "build"
+suite = "preservation"
+statement = "Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication."

@@ -553,3 +553,165 @@ pub fn audit(output: &str, certificates: &[Certificate]) -> Result<(), String> {
     }
     Ok(())
 }
+
+/// The modules verification compiles to check a project's certificates, in
+/// order: the calculus modules and the library (the environment), then the
+/// certificates, then the audit module.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Stage {
+    pub environment: Vec<StagedFile>,
+    pub certificates: Vec<StagedFile>,
+    pub audit: StagedFile,
+}
+
+/// Stage a project's certificates for verification (§17.17): the shipped
+/// environment, audited token by token, then each certificate, audited
+/// against the environment and the project's generated `modules`.
+///
+/// # Errors
+///
+/// Returns `LLV7014` when the shipped environment fails its audit, and
+/// `LLI9001` when a generated certificate does.
+pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, Diagnostic> {
+    let drift = |reason: String| {
+        Diagnostic::new(
+            code!("LLV7014"),
+            format!("preservation environment: {reason}"),
+        )
+    };
+    let library = library().map_err(|diagnostic| drift(diagnostic.message))?;
+    let mut imports: BTreeSet<String> = TARGET_MODULES
+        .iter()
+        .map(|module| (*module).to_owned())
+        .collect();
+    let mut environment = Vec::new();
+    for module in TARGET_MODULES
+        .iter()
+        .map(|module| (*module).to_owned())
+        .chain(library.modules.clone())
+    {
+        let text = module_text(&module).map_err(|diagnostic| drift(diagnostic.message))?;
+        if library.modules.contains(&module) {
+            audit_tokens(text, &imports)
+                .map_err(|reason| drift(format!("the library module `{module}`: {reason}")))?;
+        }
+        imports.insert(module.clone());
+        environment.push(StagedFile {
+            path: module_path(&module),
+            text: text.to_owned(),
+            module,
+        });
+    }
+    imports.extend(modules.iter().cloned());
+    let mut staged = Vec::new();
+    for certificate in certificates {
+        audit_tokens(&certificate.text, &imports).map_err(|reason| {
+            internal(format!(
+                "the certificate `{}`: {reason}",
+                certificate.module
+            ))
+        })?;
+        staged.push(StagedFile {
+            path: module_path(&certificate.module),
+            module: certificate.module.clone(),
+            text: certificate.text.clone(),
+        });
+    }
+    Ok(Stage {
+        environment,
+        certificates: staged,
+        audit: StagedFile {
+            path: module_path(AUDIT_MODULE),
+            module: AUDIT_MODULE.to_owned(),
+            text: audit_text(&library, certificates),
+        },
+    })
+}
+
+/// Classify the audit module's output: a library declaration whose axioms
+/// differ from the registry is environment drift (`LLV7014`); a root
+/// theorem whose axioms are not exactly [`CERTIFICATE_AXIOMS`] is a rejected
+/// certificate (`LLV7013`).
+///
+/// # Errors
+///
+/// Returns the first disagreement.
+pub fn classify_audit(output: &str, certificates: &[Certificate]) -> Result<(), Diagnostic> {
+    audit(output, certificates).map_err(|reason| {
+        if reason.starts_with("the library declaration") {
+            Diagnostic::new(
+                code!("LLV7014"),
+                format!("preservation environment: {reason}"),
+            )
+        } else {
+            Diagnostic::new(code!("LLV7013"), format!("certificate A: {reason}"))
+        }
+    })
+}
+
+/// One certified root as `preservation.json` records it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertifiedRoot {
+    pub root: String,
+    pub targets: Vec<String>,
+    pub certificate: Certificate,
+}
+
+/// The tag of `preservation.json`.
+pub const PRESERVATION_SPEC: &str = "lexlean/preservation/1";
+
+/// `preservation.json`: the registry identity, and per root its targets,
+/// certificate module, theorem, and certificate source identity.
+#[must_use]
+pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json {
+    use crate::artifact::canonical_json::Json;
+    use crate::artifact::content_id::Sha256Digest;
+    let registry = embedded_text(LIBRARY_PATH).unwrap_or_default();
+    Json::object(vec![
+        ("spec", Json::Str(PRESERVATION_SPEC.to_owned())),
+        (
+            "library",
+            Json::object(vec![
+                (
+                    "registry_sha256",
+                    Json::Str(Sha256Digest::of(registry.as_bytes()).to_hex()),
+                ),
+                (
+                    "axioms",
+                    Json::Arr(
+                        CERTIFICATE_AXIOMS
+                            .iter()
+                            .map(|axiom| Json::Str((*axiom).to_owned()))
+                            .collect(),
+                    ),
+                ),
+            ]),
+        ),
+        (
+            "roots",
+            Json::Arr(
+                roots
+                    .iter()
+                    .map(|root| {
+                        Json::object(vec![
+                            ("root", Json::Str(root.root.clone())),
+                            (
+                                "targets",
+                                Json::Arr(root.targets.iter().cloned().map(Json::Str).collect()),
+                            ),
+                            ("module", Json::Str(root.certificate.module.clone())),
+                            ("theorem", Json::Str(root.certificate.theorem.clone())),
+                            ("byte_length", Json::from_usize(root.certificate.text.len())),
+                            (
+                                "sha256",
+                                Json::Str(
+                                    Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
+                                ),
+                            ),
+                        ])
+                    })
+                    .collect(),
+            ),
+        ),
+    ])
+}

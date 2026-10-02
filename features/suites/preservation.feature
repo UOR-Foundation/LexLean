@@ -29,3 +29,10 @@ Feature: preservation
     When the library is compiled and every declaration's axioms printed, and the shipped modules are compared with the compiler golden
     Then every declaration's axioms equal the registry and every shipped module equals its golden
     And a library module with a planted forbidden token, option, or import is refused
+
+  @SP-05 @build
+  Scenario: Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication.
+    Given examples/production, and the fixtures that plant a mutated certificate and a drifted library under the pinned toolchain
+    When each is verified
+    Then the production example publishes every certificate, the audit output, and a schema-valid preservation.json bound by its attestation
+    And the planted certificate fails with LLV7013 and the drifted library with LLV7014, each with nothing published

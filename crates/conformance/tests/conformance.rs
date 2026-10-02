@@ -1374,3 +1374,8 @@ fn conformance_sp_03() {
 fn conformance_sp_04() {
     repo_conformance::cases::run("SP-04");
 }
+
+#[test]
+fn conformance_sp_05() {
+    repo_conformance::cases::run("SP-05");
+}

@@ -1638,6 +1638,11 @@ calculus modules with the compiler golden, and refuses planted `sorry`,
 `axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
 import. Each theorem is a kernel-checked proof about the root it names; the
 generator, the library's coverage of constructs, and the corpus are `build`
-evidence for roots not certified. Certificates are checked by the
-conformance suite, not by `lexlean verify`.
+evidence for roots not certified. `conformance_sp_05` verifies
+`examples/production` and requires every certificate, the audit output, and a
+schema-valid `preservation.json` bound by the attestation in the published
+set; the negative fixtures `certificate-rejected` (a lake overlay turns the
+certificates' natural additions into subtractions) and `preservation-drift`
+(it appends a false theorem to the shipped library) must fail with `LLV7013`
+and `LLV7014` with nothing published.
 
