@@ -23,7 +23,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
-- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, the generated `TargetFixtures` module, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture set, the calculus's definition in `crates/conformance/src/calculus_source.rs`, and the renderer produce (§17.14); `just test` enforces the same comparison through `conformance_tc_03`. `just calculus-write` is the only rewrite path.
+- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, the generated `TargetFixtures` module, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture set, the calculus's definition in `crates/conformance/src/calculus_source.rs`, and the renderer produce (§17.14), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03`. `just calculus-write` is the only rewrite path.
 - `just verify-write` (`cargo xtask verify-examples --write`) is the only path that rewrites `examples/*/expected/verify/`.
 - `just release` runs `vv` and then `cargo xtask release-check` (RP-12): every §30.3 artifact by content, the §30.4 completion criteria, and the crate-packaging round trip (`cargo package`, extract, offline build, `--version` equal to the in-repository binary). It is refused until 1.0.0.
 
@@ -1579,3 +1579,33 @@ LexLean synthesizes complete release artifacts, evidence receipts, and authorita
   - Both positive execution (elaboration, kernel replay, axiom auditing across all examples) and negative execution (non-vacuous mutation rejection in tests/negative/) are validated and bound to upstream commit digests.
 - Downstream integration:
   - PrismPM dependency/identity checks referencing LexLean pass without manual exceptions or source assumptions.
+
+## Semantic preservation (Issue #25)
+
+`conformance_sp_01` lowers every production root of the language-1.2 examples
+and of the preservation corpus `tests/preservation/coverage` twice and
+requires one valid program in first-binding order, an origin for every
+function and ADT, and exactly the root's eligibility closure; a report with a
+member removed must fail with `LLI9001`, and `validate-model` audits the
+lowering, the certificate generator, and the source reader for default
+matches. `conformance_sp_02` generates certificate A for every production root
+of `examples/production` (6 roots) and of the corpus (32 roots), compiles each
+with the pinned Lean beside the shipped library, the shipped calculus modules,
+and the generated modules, replays each through `leanchecker` (the same
+kernel, §22.4), and requires every root theorem to depend on exactly
+`Classical.choice`, `Quot.sound`, and `propext`; it then regenerates
+certificates against programs with a planted branch swap, an addition that
+subtracts, a wrong constructor, a wrong callee, and a wrong literal, and
+requires Lean to reject all five. `conformance_sp_03` runs six seeded inputs
+per root through the calculus interpreter and through Lean's evaluation of
+each certificate's `denote`, requires every pair to agree (228 cases), and
+requires one altered outcome to be reported. `conformance_sp_04` compares
+every library declaration's printed axioms with
+`language/preservation-1.2/library.toml` (406 declarations), the shipped
+calculus modules with the compiler golden, and refuses planted `sorry`,
+`axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
+import. Each theorem is a kernel-checked proof about the root it names; the
+generator, the library's coverage of constructs, and the corpus are `build`
+evidence for roots not certified. Certificates are checked by the
+conformance suite, not by `lexlean verify`.
+
