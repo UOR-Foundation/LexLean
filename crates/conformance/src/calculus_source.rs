@@ -2798,7 +2798,7 @@ fn configuration() -> [(&'static str, String); 4] {
             "name = \"compiler\"",
         ),
         "module_prefix = \"Production\"",
-        "module_prefix = \"Compiler\"",
+        "module_prefix = \"LexLeanTarget\"",
     );
     [
         ("compiler/lexlean.toml", lexlean),

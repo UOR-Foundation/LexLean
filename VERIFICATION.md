@@ -780,7 +780,7 @@ the stated expectation of `int-arithmetic` changed from -1 to 1. The oracle
 is Lean's kernel. Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   intArithmeticRun
 is not definitionally equal to the right-hand side
 ```
@@ -903,7 +903,7 @@ fixtures from it. The oracle is Lean's kernel over the LexLean denotation.
 Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
   TargetSemantics.Outcome.value (TargetSyntax.Value.nat 37) 49
@@ -922,7 +922,7 @@ the new fixture `byte-compare` applies `compare_bytes` alone. Command:
 `byte-compare`:
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   byteCompareRun
 is not definitionally equal to the right-hand side
 ```
@@ -1040,7 +1040,7 @@ module can no longer reduce `run`, which `TargetSemantics` defines through
 `LexLeanRuntime.index`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
 ```
