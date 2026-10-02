@@ -1,0 +1,25 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Rose}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Constructor \texttt{node}: \texttt{(Item, List (Rose (Item)))}.\par
+\subsection*{\texttt{Expr}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Syntax}.\par
+\noindent Constructor \texttt{literal}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{plus}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{block}: \texttt{(List (Stmt), Expr)}.\par
+\subsection*{\texttt{Stmt}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Syntax}.\par
+\noindent Constructor \texttt{assign}: \texttt{(String, Expr)}.\par
+\noindent Constructor \texttt{sequence}: \texttt{(Stmt, Stmt)}.\par
+\subsection*{\texttt{Term}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{literal}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{plus}: \texttt{(Term, Term)}.\par
+\end{document}

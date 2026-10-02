@@ -257,24 +257,6 @@ impl P {
         Self { temp, root }
     }
 
-    /// A fresh copy of the preservation corpus `tests/preservation/<name>`,
-    /// a project certified but not verified as an example.
-    #[must_use]
-    pub fn copy_preservation(name: &str) -> Self {
-        let temp = tempfile::Builder::new()
-            .prefix("lexlean-preservation-case-")
-            .tempdir()
-            .expect("tempdir");
-        let source = repo_root().join("tests/preservation").join(name);
-        assert!(
-            source.is_dir(),
-            "the preservation corpus `{name}` is required"
-        );
-        copy_tree(source.as_std_path(), temp.path(), &[".lexlean"]);
-        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
-        Self { temp, root }
-    }
-
     /// A fresh copy of the `compiler` project, which defines the production
     /// realization calculus (§17.14), without build output or oracles.
     #[must_use]

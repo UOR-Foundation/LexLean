@@ -1,0 +1,18 @@
+#!/bin/sh
+# Passes every invocation to the pinned lake except `lake env lean` on the
+# extraction module, whose record is rewritten to report the core definition
+# `instMulNat` as its module system would export an unexposed one, an axiom,
+# but without compiled code; the host admits an exported axiom only as a
+# computable definition Lean compiled (SPEC.md 22.10: extraction rejection).
+real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
+if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
+  case "$3" in
+    */extract/LexLeanExtract.*.lean)
+      out="$("$real" "$@")"
+      code=$?
+      printf '%s\n' "$out" | sed 's/\("name":"instMulNat","kind":\)"definition"\([^}]*"compiled":\)true/\1"axiom"\2false/'
+      exit $code
+      ;;
+  esac
+fi
+exec "$real" "$@"

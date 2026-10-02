@@ -1,0 +1,38 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{roseTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{Coverage.Recur.roseSize (Nat) (Coverage.Syntax.Rose.node (n) ((Coverage.Syntax.Rose.node (1) (([] : List (Coverage.Syntax.Rose (Nat)))) :: ([] : List (Coverage.Syntax.Rose (Nat))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{syntaxTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : Coverage.Syntax.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{Coverage.Recur.exprSize (e)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wellFounded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Nat) (b : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow, recursion}.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Nat) (Nat))))}.\par
+\noindent Definition: \texttt{(Coverage.Recur.countdown (a) (0), (Coverage.Recur.reduce (a) (b), Coverage.Recur.search (a) (0) (b)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{rewrite}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(t : Coverage.Syntax.Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, recursion}.\par
+\noindent Type: \texttt{(Prod (Coverage.Syntax.Term) (Coverage.Syntax.Term))}.\par
+\noindent Definition: \texttt{(Coverage.Recur.reassociate (t), Coverage.Recur.prune (t))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

@@ -11,11 +11,15 @@ use crate::preservation::{self, Mutation, Report};
 use crate::support::{self, repo_root, P};
 
 /// The projects whose every production root is certified: the example that
-/// declares production roots and the preservation corpus.
+/// declares production roots and the coverage example, whose roots exercise
+/// every runtime row of the production registry.
 fn certified_projects() -> [(&'static str, P); 2] {
     [
         ("production", P::copy_example("production")),
-        ("coverage", P::copy_preservation("coverage")),
+        (
+            "production-coverage",
+            P::copy_example("production-coverage"),
+        ),
     ]
 }
 
@@ -30,7 +34,7 @@ fn reports() -> &'static Vec<(&'static str, Report)> {
     })
 }
 
-/// Every language-1.2 example with production roots, and the corpus.
+/// Every language-1.2 example.
 fn lowered_projects() -> Vec<(String, P)> {
     let mut out = Vec::new();
     let mut names: Vec<String> = std::fs::read_dir(repo_root().join("examples").as_std_path())
@@ -54,7 +58,6 @@ fn lowered_projects() -> Vec<(String, P)> {
             out.push((name.clone(), P::copy_example(&name)));
         }
     }
-    out.push(("coverage".to_owned(), P::copy_preservation("coverage")));
     out
 }
 
@@ -145,10 +148,7 @@ pub fn run(id: &str) {
                     lowered += 1;
                 }
             }
-            assert!(
-                lowered > 0,
-                "the corpus and the examples declare production roots"
-            );
+            assert!(lowered > 0, "the examples declare production roots");
             let semantic = std::fs::read_to_string(
                 repo_root()
                     .join(repo_model::exhaustive::SEMANTIC_SOURCE)
@@ -199,12 +199,12 @@ pub fn run(id: &str) {
             for (name, report) in reports() {
                 assert!(!report.certified.is_empty(), "{name}: certified roots");
             }
-            let planted = preservation::plant(&P::copy_preservation("coverage"));
+            let planted = preservation::plant(&P::copy_example("production-coverage"));
             let kinds: BTreeSet<Mutation> = planted.iter().map(|plant| plant.mutation).collect();
             assert_eq!(
                 kinds,
                 Mutation::ALL.into_iter().collect(),
-                "every mutation is planted somewhere in the corpus"
+                "every mutation is planted somewhere in the coverage example"
             );
             for plant in &planted {
                 assert!(
@@ -389,7 +389,7 @@ pub fn run(id: &str) {
                 );
             }
         }
-        // §17.13, §17.17: the corpus exercises the registry.
+        // §17.13, §17.17: the certified examples exercise the registry.
         "SP-06" => {
             let mut held = Vec::new();
             for (_, project) in certified_projects() {

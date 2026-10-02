@@ -37,6 +37,24 @@ versions, and the entries below say what each tag does and does not claim.
   3, `conformance_cl_11` asserts every registered code's class and exit code
   against `model/errors.toml`, and the `extraction-authority-drift` fixture
   expects exit 3.
+- Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
+  refused every root that reached an `Init` function whose module does not
+  expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,
+  `String.intercalate`, `List.takeTR`), because the module system exports
+  such a definition as an axiom, and every root whose LCNF types carry the
+  `borrowed` annotation (an instance over `Nat.div` or `Int.div`), because
+  the adapter recorded all metadata as unsupported. The adapter now records
+  each constant's declared kind (`Lean.getOriginalConstKind?`), whether
+  Lean's compiler holds an external's code (`Lean.IR.findEnvDecl`), and the
+  `borrowed` annotation (`Lean.annotation?`), each registered in
+  `language/lcnf-1.2/authority.toml`; the host admits an exported axiom
+  exactly when it was declared a computable definition with compiled code,
+  as Lean's own code generator does, and reads a borrowed type as the type
+  it annotates. Declared axioms, opaques, unsafe, partial, and noncomputable
+  dependencies, other metadata, and a kind that differs from the declared
+  kind still fail with `LLV7011` (`NE-03`). The coverage corpus that these
+  defects had kept out of verification is now the verified example
+  `examples/production-coverage`, whose certificates `lexlean verify` checks.
 - Language 1.2 (SPEC.md §17.12): a strict extension of language 1.1 selected
   by `language = "1.2"`, with builtin packages at `1.2.0`, the lock schema
   `lexlean/lock/2`, the semantic-module schema `lexlean/semantic-module/2`,

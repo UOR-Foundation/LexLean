@@ -464,8 +464,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
-│   ├── negative/
-│   └── preservation/
+│   └── negative/
 └── xtask/
     ├── Cargo.toml
     └── src/
@@ -3373,9 +3372,10 @@ each certificate under `preserve/`, the audit output, process records, and
 theorem axioms, and per root its targets, certificate module, theorem, and
 the certificate's byte length and SHA-256, which the attestation binds.
 
-**Evidence.** The conformance suite certifies every production root of `examples/production` and
-of the preservation corpus `tests/preservation/coverage`, a project the suite
-certifies but does not verify. Together these roots exercise every runtime
+**Evidence.** The conformance suite certifies every production root of
+`examples/production` and `examples/production-coverage`, and verification
+checks both examples' certificates as part of their published sets. Together
+these roots exercise every runtime
 row of the production registry (§17.13), a type parameter through an instance
 of a generic definition: arithmetic at every width, text and bytes,
 documents, records, instances, generic and nested inductive types,
@@ -4256,13 +4256,19 @@ every translated definition: a constant of the project's generated modules
 generates code for is translated with `Lean.Compiler.LCNF.toDecl` in the base
 phase, and no LCNF pass runs afterwards. It records, for every project
 constant reached through code or named by a reached kernel value, its kind,
-defining module, computability, whether code is generated for it, whether it
-is a compiler-generated helper, and the constants its kernel value names; for
-a translated definition, its safety, universe parameters, LCNF type,
+the kind it was declared with (`Lean.getOriginalConstKind?`), defining
+module, computability, whether code is generated for it, whether it is a
+compiler-generated helper, and the constants its kernel value names; for a
+translated definition, its safety, universe parameters, LCNF type,
 parameters, code, and the constants that code names; for a project inductive,
 its constructors with their LCNF types; and, for every other constant
-translated code names, the same facts. Universe levels are recorded wherever
-a constant is instantiated. It prints one `lexlean/lcnf-extraction/2` record.
+translated code names, the same facts and whether Lean's compiler holds code
+for it (`Lean.IR.findEnvDecl`). Universe levels are recorded wherever a
+constant is instantiated. An LCNF type's only metadata, the `borrowed`
+annotation `toLCNFType` places on the domain of an arrow whose parameter is
+borrowed (`Lean/Compiler/LCNF/Types.lean`), is recorded as such; any other
+metadata is recorded as an unsupported form. It prints one
+`lexlean/lcnf-extraction/2` record.
 
 **Driver.** Verification generates the module `LexLeanExtract.X<hex32>` (the
 first 32 hex digits of the semantic ID; a reserved module name) with exactly:
@@ -4318,6 +4324,26 @@ schema and rejects:
   a variable used outside the lexical scope that binds it;
 - an external that is not a constant of Lean's `Init` library, or that is an
   axiom, opaque, or noncomputable (an unresolved dependency);
+- a constant whose reported kind differs from the kind it was declared with,
+  except a definition exported as an axiom (below).
+
+*Exported axioms.* A `module` exports a definition whose body it does not
+expose as an axiom, so `Init` functions such as `String.toInt?`,
+`String.toUTF8`, and `List.takeTR` appear as axioms to the generated modules
+that import them. Lean's code generator decides such a reference by the kind
+the constant was declared with (`checkComputable`,
+`Lean/Compiler/LCNF/ToLCNF.lean`), and so does the host: an `Init` external
+reported as an axiom is admitted exactly when it was declared a definition,
+is computable, and Lean's compiler holds its code, and the compiler input
+records it as that definition with that code. A constant declared an axiom,
+an opaque, a theorem, or any other kind remains refused, and a project
+constant, whose module is imported in full, must report the kind it was
+declared with. The ownership hint of a `borrowed` annotation is each
+parameter's own `borrow` fact and LCNF type equivalence looks through it
+(`eqvTypes`, `Lean/Compiler/LCNF/InferType.lean`), so the host reads an
+annotated type as the type it annotates; a canonical type carries no
+metadata. An external's compiler-input `kind` is the kind it was declared
+with and its `generates_code` whether Lean's compiler holds its code.
 - a constant translated code names that is neither reported as a project
   constant nor recorded as an external (a dropped dependency), and a project
   constant a kernel value names that is not reported (an unresolved
@@ -5664,7 +5690,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PD-07` | `production` | The eligibility analysis classifies every semantic construct by an explicit exhaustive match, and the exhaustiveness audit rejects a planted wildcard arm, rest pattern, implicit-default binding form, or unnamed IR variant. | §17.13, §27.10 |
 | `NE-01` | `extraction` | Verifying a project with production roots extracts every root through Lean's compiler front end into one canonical compiler input whose bytes and ID are schema-valid, recorded in the attestation, and identical from distinct project directories, and a project without a production root publishes none. | §22.10, §26.3 |
 | `NE-02` | `extraction` | Each root's extracted closure is exactly its computational dependencies, equals its production-eligibility closure, carries its runtime members and monomorphization instances, names every constant its code uses, marks recursion from the use graph, and records proof-only dependencies as erased and never as runtime members. | §22.10, §26.3 |
-| `NE-03` | `extraction` | An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, and a malformed, noisy, or foreign extraction record fail closed with LLV7011. | §22.10, §26.3 |
+| `NE-03` | `extraction` | An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates. | §22.10, §26.3 |
 | `NE-04` | `extraction` | Every constant the extraction adapter uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012. | §22.10, §26.3 |
 | `NE-05` | `extraction` | A dependency dropped from Lean's extracted facts or from the production-eligibility closure fails extraction with LLV7011 before any compiler input is published. | §22.10, §26.3 |
 | `NE-06` | `extraction` | A proof-only dependency presented as a runtime closure member fails extraction with LLV7011 before any compiler input is published. | §22.10, §26.3 |
@@ -5682,12 +5708,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-05` | `rust-backend` | A function that can overflow returns R<T> and every call to it propagates, any other returns its value, an export whose declared errors differ from its function's fails with LLB6005, and a crate that drops, invents, or misreturns a failure is refused. | §17.16 |
 | `RB-06` | `rust-backend` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with three documented exceptions, and its exported function, called from a separate crate, prints exactly the denotation's observable outcome; a planted lint and a planted semantic mutation are detected. | §17.16 |
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: two renderings written under two roots are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, and the provenance binds the SHA-256 of each file, the program identity, the runtime, the sources, and the language-1.2 compiler-semantics ID. | §17.16, §21.7 |
-| `SP-01` | `preservation` | Every production root of the committed examples and the preservation corpus lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
-| `SP-02` | `preservation` | Every production root of examples/production and the preservation corpus has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected. | §17.17 |
-| `SP-03` | `preservation` | On seeded inputs to every production root of examples/production and the preservation corpus, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
+| `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
+| `SP-02` | `preservation` | Every production root of examples/production and examples/production-coverage has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected. | §17.17 |
+| `SP-03` | `preservation` | On seeded inputs to every production root of examples/production and examples/production-coverage, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
-| `SP-06` | `preservation` | The certified roots of examples/production and the preservation corpus together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
+| `SP-06` | `preservation` | The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 
 **Total required capability IDs:** 276.
 

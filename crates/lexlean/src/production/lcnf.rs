@@ -375,7 +375,12 @@ pub fn classify_failure(driver: &Driver, output: &str) -> Rejection {
 
 /// An LCNF type.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(
+    tag = "kind",
+    rename_all = "snake_case",
+    deny_unknown_fields,
+    from = "WireType"
+)]
 pub enum LcnfType {
     Erased,
     Any,
@@ -404,6 +409,65 @@ pub enum LcnfType {
     Unsupported {
         expression: String,
     },
+}
+
+/// An LCNF type as the adapter reports it. Lean's `toLCNFType` marks the
+/// domain of an arrow whose parameter is borrowed with the `borrowed`
+/// annotation (`Lean/Compiler/LCNF/Types.lean`), the only metadata an LCNF
+/// type carries; LCNF type equivalence (`eqvTypes`,
+/// `Lean/Compiler/LCNF/InferType.lean`) looks through it, and the ownership
+/// hint it records is the parameter's own `borrow` fact. It is unwrapped on
+/// reading, so no canonical type carries it.
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum WireType {
+    Erased,
+    Any,
+    Const {
+        name: String,
+        levels: Vec<String>,
+    },
+    App {
+        head: Box<LcnfType>,
+        arguments: Vec<LcnfType>,
+    },
+    Arrow {
+        domain: Box<LcnfType>,
+        codomain: Box<LcnfType>,
+    },
+    Fvar {
+        id: String,
+    },
+    Bvar {
+        index: u64,
+    },
+    Sort {
+        level: String,
+    },
+    Borrowed {
+        #[serde(rename = "type")]
+        ty: Box<LcnfType>,
+    },
+    Unsupported {
+        expression: String,
+    },
+}
+
+impl From<WireType> for LcnfType {
+    fn from(wire: WireType) -> Self {
+        match wire {
+            WireType::Erased => Self::Erased,
+            WireType::Any => Self::Any,
+            WireType::Const { name, levels } => Self::Const { name, levels },
+            WireType::App { head, arguments } => Self::App { head, arguments },
+            WireType::Arrow { domain, codomain } => Self::Arrow { domain, codomain },
+            WireType::Fvar { id } => Self::Fvar { id },
+            WireType::Bvar { index } => Self::Bvar { index },
+            WireType::Sort { level } => Self::Sort { level },
+            WireType::Borrowed { ty } => *ty,
+            WireType::Unsupported { expression } => Self::Unsupported { expression },
+        }
+    }
 }
 
 /// An LCNF argument.
@@ -580,6 +644,9 @@ struct RawConstant {
     module: String,
     computable: bool,
     generates_code: bool,
+    /// The kind it was declared with, which a project module imported in
+    /// full reports unchanged.
+    original_kind: String,
     internal: bool,
     /// The constants its kernel value names.
     kernel_uses: Vec<String>,
@@ -596,6 +663,12 @@ struct RawExternal {
     module: String,
     computable: bool,
     generates_code: bool,
+    /// The kind it was declared with. The module system exports a
+    /// definition whose body its module does not expose as an axiom; this
+    /// is what it was before that.
+    original_kind: String,
+    /// Whether Lean's compiler holds code for it (`Lean.IR.findEnvDecl`).
+    compiled: bool,
     internal: bool,
     #[serde(default)]
     inductive_type: Option<String>,
@@ -1028,6 +1101,14 @@ fn unique<'a>(values: impl Iterator<Item = &'a String>) -> bool {
 
 /// Whether a constant outside the project is one LexLean may hand to a
 /// compiler: a computable constant of Lean's own `Init` library.
+///
+/// A definition of a `module` whose body that module does not expose is
+/// exported as an axiom (`Lean.Environment.setExporting`); Lean's code
+/// generator decides such a reference by the kind the constant was declared
+/// with (`checkComputable`, `Lean/Compiler/LCNF/ToLCNF.lean`), and so does
+/// this. It is admitted as the definition it was declared as only when it is
+/// computable and Lean's compiler holds its code; a constant declared an
+/// axiom, an opaque, or anything other than a definition is not.
 fn admissible_external(external: &RawExternal) -> Result<(), String> {
     if external.module != "Init" && !external.module.starts_with("Init.") {
         return Err(format!(
@@ -1037,11 +1118,31 @@ fn admissible_external(external: &RawExternal) -> Result<(), String> {
             external.module
         ));
     }
-    match external.kind.as_str() {
+    let weakened = external.kind == "axiom" && external.original_kind == "definition";
+    if declared_kind(&external.kind) != external.original_kind && !weakened {
+        return Err(format!(
+            "the extraction record reports `{}` as {} declared as {}, which no exported view produces",
+            external.name,
+            article(&external.kind),
+            article(&external.original_kind)
+        ));
+    }
+    let kind = if weakened {
+        "definition"
+    } else {
+        external.kind.as_str()
+    };
+    match kind {
         "inductive" | "constructor" => Ok(()),
-        "definition" if external.computable && external.generates_code => Ok(()),
+        "definition"
+            if external.computable
+                && external.compiled
+                && (weakened || external.generates_code) =>
+        {
+            Ok(())
+        }
         "definition" => Err(format!(
-            "`{}` is noncomputable or generates no code, so no compiler can realize it",
+            "`{}` is noncomputable or has no compiled code, so no compiler can realize it",
             external.name
         )),
         other => Err(format!(
@@ -1049,6 +1150,15 @@ fn admissible_external(external: &RawExternal) -> Result<(), String> {
             external.name,
             article(other)
         )),
+    }
+}
+
+/// The kind `getOriginalConstKind?` reports for a constant of a reported
+/// kind: Lean's `ConstantKind` has no unsafe definition.
+fn declared_kind(kind: &str) -> &str {
+    match kind {
+        "unsafe-definition" => "definition",
+        other => other,
     }
 }
 
@@ -1171,6 +1281,14 @@ pub fn compiler_input(
                 "`{}` carries a translation, but it is {} that Lean does not compile",
                 constant.name,
                 article(&constant.kind)
+            )));
+        }
+        if constant.original_kind != declared_kind(&constant.kind) {
+            return Err(Rejection::Rejected(format!(
+                "the extraction record reports the project constant `{}` as {} declared as {}",
+                constant.name,
+                article(&constant.kind),
+                article(&constant.original_kind)
             )));
         }
     }
@@ -1457,10 +1575,10 @@ pub fn compiler_input(
         .filter_map(|name| externals.get(name.as_str()))
         .map(|external| LcnfExternal {
             name: external.name.clone(),
-            kind: external.kind.clone(),
+            kind: external.original_kind.clone(),
             module: external.module.clone(),
             computable: external.computable,
-            generates_code: external.generates_code,
+            generates_code: external.compiled,
         })
         .collect();
     Ok(CompilerInput {

@@ -1541,7 +1541,7 @@ The literal §29 example verifies against real `leanprover/lean4:v4.32.1`: probe
 
 The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_sp_06` collects the constructs every
 certified root realizes and requires every runtime row of
-`language/production-1.2.toml` among them; with the corpus's collection roots
+`language/production-1.2.toml` among them; with the coverage example's collection roots
 withheld, `primitive.map_insert` and the other collection rows are reported. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
 
 ## Generic language delta verification (Issue #4)
@@ -1634,13 +1634,13 @@ LexLean synthesizes complete release artifacts, evidence receipts, and authorita
 ## Semantic preservation (Issue #25)
 
 `conformance_sp_01` lowers every production root of the language-1.2 examples
-and of the preservation corpus `tests/preservation/coverage` twice and
+(`examples/production-coverage` among them) twice and
 requires one valid program in first-binding order, an origin for every
 function and ADT, and exactly the root's eligibility closure; a report with a
 member removed must fail with `LLI9001`, and `validate-model` audits the
 lowering, the certificate generator, and the source reader for default
 matches. `conformance_sp_02` generates certificate A for every production root
-of `examples/production` (6 roots) and of the corpus (32 roots), compiles each
+of `examples/production` (6 roots) and `examples/production-coverage` (33 roots), compiles each
 with the pinned Lean beside the shipped library, the shipped calculus modules,
 and the generated modules, replays each through `leanchecker` (the same
 kernel, §22.4), and requires every root theorem to depend on exactly
@@ -1649,14 +1649,14 @@ certificates against programs with a planted branch swap, an addition that
 subtracts, a wrong constructor, a wrong callee, and a wrong literal, and
 requires Lean to reject all five. `conformance_sp_03` runs six seeded inputs
 per root through the calculus interpreter and through Lean's evaluation of
-each certificate's `denote`, requires every pair to agree (228 cases), and
+each certificate's `denote`, requires every pair to agree (234 cases), and
 requires one altered outcome to be reported. `conformance_sp_04` compares
 every library declaration's printed axioms with
 `language/preservation-1.2/library.toml` (406 declarations), the shipped
 calculus modules with the compiler golden, and refuses planted `sorry`,
 `axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
 import. Each theorem is a kernel-checked proof about the root it names; the
-generator, the library's coverage of constructs, and the corpus are `build`
+generator, the library's coverage of constructs, and the coverage example are `build`
 evidence for roots not certified. `conformance_sp_05` verifies
 `examples/production` and requires every certificate, the audit output, and a
 schema-valid `preservation.json` bound by the attestation in the published

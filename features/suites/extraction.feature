@@ -17,10 +17,11 @@ Feature: extraction
     And every external is a Lean core constant or a runtime member, and a disagreement on erased proofs is rejected
 
   @NE-03 @build
-  Scenario: An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, and a malformed, noisy, or foreign extraction record fail closed with LLV7011.
+  Scenario: An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates.
     Given the committed extraction record
     When one closure member is made opaque, an axiom, partial, unsafe, noncomputable, or external, a type unsupported, an external foreign or axiomatic, a root unknown, or the record noisy, extended, or answering other roots
     Then each fails with LLV7011 naming the rejection class
+    And an external exported as an axiom is admitted only when declared a computable definition with compiled code, and a borrowed domain canonicalizes away
     And pinned Lean itself refuses an extraction module whose root does not exist
 
   @NE-04 @build

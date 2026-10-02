@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 109] = [
+            let prescribed: [(&str, &str); 110] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -195,6 +195,7 @@ pub(crate) fn run(id: &str) {
                 ("leanchecker-failure", "LLV7003"),
                 ("malformed-axiom-output", "LLV7004"),
                 ("extraction-rejected", "LLV7011"),
+                ("extraction-uncompiled-external", "LLV7011"),
                 ("extraction-authority-drift", "LLV7012"),
                 // §17.17: certificate A fails closed before publication.
                 ("certificate-rejected", "LLV7013"),
