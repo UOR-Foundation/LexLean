@@ -292,7 +292,11 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     ] {
         let built = std::process::Command::new(&lean)
             .arg("-o")
-            .arg(compiled.join("LexLeanTarget").join(format!("{module}.olean")))
+            .arg(
+                compiled
+                    .join("LexLeanTarget")
+                    .join(format!("{module}.olean")),
+            )
             .arg(format!("LexLeanTarget/{module}.lean"))
             // Lean names a module by its path relative to the working
             // directory.

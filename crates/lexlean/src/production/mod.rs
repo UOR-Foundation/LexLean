@@ -11,6 +11,7 @@ pub mod certificate;
 pub mod eligibility;
 pub mod lcnf;
 pub mod lower;
+pub mod preserve;
 pub(crate) mod source;
 
 use std::collections::{BTreeMap, BTreeSet};

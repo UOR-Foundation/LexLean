@@ -14,6 +14,7 @@ pub mod cases;
 pub mod fixtures;
 mod lx;
 pub mod meta;
+pub mod preservation;
 pub mod runner;
 pub mod rust_packages;
 pub mod schema;

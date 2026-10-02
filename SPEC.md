@@ -406,6 +406,10 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── lcnf-1.2/
 │   │   ├── authority.toml
 │   │   └── extract.lean
+│   ├── preservation-1.2/
+│   │   ├── library.toml
+│   │   ├── library/
+│   │   └── modules/
 │   ├── core/
 │   │   ├── lexicon.toml
 │   │   └── entries/
@@ -3746,7 +3750,8 @@ Each language's compiler-semantics ID is the §11.5 tree digest of a fixed,
 nested partition of the embedded tree. The language-1.2 ID covers the whole
 tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `language/bootstrap-1.2.toml`, `language/semantics-1.2.toml`,
-`language/production-1.2.toml`, `language/lcnf-1.2/`, `language/core-1.2/`,
+`language/production-1.2.toml`, `language/lcnf-1.2/`,
+`language/preservation-1.2/`, `language/core-1.2/`,
 `language/std/{bool,int,nat}-1.2/`, `schemas/attestation-v2.schema.json`,
 `schemas/build-manifest-v2.schema.json`,
 `schemas/compiler-input.schema.json`,
