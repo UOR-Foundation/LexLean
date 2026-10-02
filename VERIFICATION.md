@@ -819,6 +819,34 @@ thread 'conformance_cl_11' panicked at crates/conformance/src/cases/cli_api.rs:5
 Removed: `LLV7012` was added to the environment arm (with `LLV7014`); the case
 passes, and the `extraction-authority-drift` fixture expects exit 3.
 
+### NE-03 admits an exported axiom only as a compiled definition
+
+Planted, one at a time, in `admissible_external` and the record reader
+(`crates/lexlean/src/production/lcnf.rs`): (1) the `compiled` requirement
+dropped; (2) the `borrowed` annotation read as an unsupported form, the state
+before the fix; (3) every external reported as an axiom treated as an
+exported definition, whatever kind it was declared with. Command: `cargo test
+-p repo-conformance --all-features --test conformance conformance_ne_03
+conformance_ex_07`. Expected: the planted rule admits what §22.10 refuses, or
+refuses what it admits.
+
+```text
+(1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:382:13:
+/home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
+(2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:666:18:
+a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
+(3) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is an axiom", got Ok(CompilerInput { …
+```
+
+Removed: each plant restored; both cases pass. Before the fix, verifying
+`examples/production-coverage` failed with `LLV7011` at `String.toInt?`,
+`String.toUTF8`, and `List.takeTR` (axioms in the exported view) and at the
+`metadata` type of `instQuotientNat`; it now verifies, its 33 certificates
+included.
+
 ### calculus kernel oracle can fail
 
 Planted: the reference interpreter computed `int_rem` as a Euclidean
@@ -1566,7 +1594,7 @@ Every upstream authority cited by LexLean (`model/authorities.toml`) is bound to
 
 Oracle execution evidence binds positive and negative paths:
 - Positive execution: End-to-end elaboration, kernel replay, and axiom auditing across all examples (`list-induction`, `nat-add-zero`, `peano-arithmetic`, `propositional-logic`, `semantic-1.1`, `uor-atlas`).
-- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
+- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`, `extraction-uncompiled-external`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
 - Non-executable boundaries: Lean's mathematical correctness is an external authority guarantee (`some-true`), not proven by LexLean; `leanchecker` is a same-kernel replay mechanism rather than an independent verifier.
 
 ## First-party package identity and publishing bootstrap closure (Issue #5)
