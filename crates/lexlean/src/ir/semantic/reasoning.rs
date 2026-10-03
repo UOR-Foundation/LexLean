@@ -1546,6 +1546,65 @@ fn require_obligation(
     model::require_statement(env, &obligation.theorem, obligation, code)
 }
 
+/// The nodes of the terms and types an elaboration copies, at most: each
+/// appears in a bounded number of generated declarations and theorems.
+fn weight(terms: &[&SemanticTerm], types: &[&SemanticType]) -> u64 {
+    terms
+        .iter()
+        .map(|term| super::term_node_count(term))
+        .chain(types.iter().map(|ty| super::type_node_count(ty) + 1))
+        .fold(0_u64, u64::saturating_add)
+}
+
+/// Charge `what`, which elaborates to at most `bound` nodes, before it
+/// elaborates (§17.12 reasoning rule 12).
+fn charge(artifacts: &model::ArtifactStore, what: &str, bound: u64) -> Result<(), SemanticFailure> {
+    artifacts.charge_nodes(what, bound)
+}
+
+/// The nodes a lowering holds: its declarations, obligation statements, and
+/// generated theorems, counted as linking counts an elaboration.
+fn lowering_nodes(lowering: &Lowering) -> u64 {
+    let declarations: u64 = lowering
+        .declarations
+        .iter()
+        .map(super::declaration_node_count)
+        .fold(0, u64::saturating_add);
+    let theorems: u64 = lowering
+        .theorems
+        .iter()
+        .map(theorem_node_count)
+        .fold(0, u64::saturating_add);
+    let obligations: u64 = lowering
+        .obligations
+        .iter()
+        .map(|obligation| {
+            super::term_node_count(&obligation.statement)
+                + obligation
+                    .parameters
+                    .iter()
+                    .map(|parameter| super::type_node_count(&parameter.r#type))
+                    .sum::<u64>()
+        })
+        .fold(0, u64::saturating_add);
+    declarations
+        .saturating_add(theorems)
+        .saturating_add(obligations)
+}
+
+/// An elaboration never exceeds the bound it was charged: a larger one is a
+/// defect of the bound, reported as one and never as a refusal of the input.
+fn within(what: &str, bound: u64, lowering: &Lowering) -> Result<(), SemanticFailure> {
+    let actual = lowering_nodes(lowering);
+    if actual > bound {
+        return Err(format!(
+            "internal: {what} elaborated to {actual} nodes, beyond the {bound} it was charged"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 /// Every binder a reasoning declaration's source writes is a source name:
 /// its elaborated copy is checked admitting generated binders, so the
 /// source is checked first, as for an ordinary declaration (§17.12).
@@ -1595,6 +1654,7 @@ fn lower_source(
 fn check_logic(
     declaration: &SemanticDeclaration,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::Logic {
         name,
@@ -1618,6 +1678,10 @@ fn check_logic(
     )?;
     let arguments = parameter_types(type_parameters);
     let s = &state.r#type;
+    let bound = 200u64.saturating_add(
+        20u64.saturating_mul(weight(&[], &[s]).saturating_add(type_parameters.len() as u64)),
+    );
+    charge(artifacts, &format!("logic `{name}`"), bound)?;
     require_signature(
         relation,
         &arguments,
@@ -1688,6 +1752,7 @@ fn check_logic(
             ranking: ranking.clone(),
         },
     );
+    within(&format!("logic `{name}`"), bound, &lowering)?;
     Ok(lowering)
 }
 
@@ -1698,6 +1763,7 @@ fn check_logic(
 fn check_rule(
     declaration: &SemanticDeclaration,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::InferenceRule {
         name,
@@ -1785,6 +1851,17 @@ fn check_rule(
     })();
     env.derived = false;
     typed?;
+    let rule_terms: Vec<&SemanticTerm> = candidates_term
+        .iter()
+        .chain([&guard_term, &conclusion_term])
+        .collect();
+    let rule_types: Vec<&SemanticType> = std::iter::once(&s)
+        .chain(binding.iter().map(|binding| &binding.r#type))
+        .collect();
+    let bound = 400u64.saturating_add(12u64.saturating_mul(
+        weight(&rule_terms, &rule_types).saturating_add(type_parameters.len() as u64),
+    ));
+    charge(artifacts, &format!("inference rule `{name}`"), bound)?;
     let own = parameter_types(type_parameters);
     let local_member = |suffix: &str| local(&format!("{name}.{suffix}"));
     let mut parameters = vec![parameter(&at.state_binder, &s)];
@@ -1961,6 +2038,7 @@ fn check_rule(
         format!("{name}.conclusion"),
         "the unguarded conclusion of a rule",
     );
+    within(&format!("inference rule `{name}`"), bound, &lowering)?;
     Ok(lowering)
 }
 
@@ -1970,6 +2048,7 @@ fn check_rule(
 fn check_verifier(
     declaration: &SemanticDeclaration,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::Verifier {
         name,
@@ -1994,6 +2073,13 @@ fn check_verifier(
         env,
     )?;
     let arguments = parameter_types(type_parameters);
+    let bound = 200u64.saturating_add(
+        20u64.saturating_mul(
+            weight(&[], &[&subject.r#type, &candidate.r#type])
+                .saturating_add(type_parameters.len() as u64),
+        ),
+    );
+    charge(artifacts, &format!("verifier `{name}`"), bound)?;
     let interface = [subject.r#type.clone(), candidate.r#type.clone()];
     require_signature(
         specification,
@@ -2076,6 +2162,7 @@ fn check_verifier(
             sound: sound.clone(),
         },
     );
+    within(&format!("verifier `{name}`"), bound, &lowering)?;
     Ok(lowering)
 }
 
@@ -2170,6 +2257,26 @@ impl Counts {
             self.verifications,
             self.frontier,
         ]
+    }
+}
+
+/// Combine `items` as a balanced binary tree, left to right: the combination
+/// is associative in every use, so the result means what the left-nested
+/// combination means, at a depth of the logarithm of the number of items.
+///
+/// The empty combination is `empty`; a reasoner always has a rule, so it is
+/// the value of no reasoner, only the total answer of the function.
+fn balanced<T: Clone>(items: &[T], empty: &T, combine: &impl Fn(T, T) -> T) -> T {
+    match items {
+        [] => empty.clone(),
+        [only] => only.clone(),
+        _ => {
+            let (left, right) = items.split_at(items.len() / 2);
+            combine(
+                balanced(left, empty, combine),
+                balanced(right, empty, combine),
+            )
+        }
     }
 }
 
@@ -2365,6 +2472,7 @@ fn sorted_claims(name: &str, claims: &[ReasoningClaim]) -> Result<Claims, Semant
 fn check_reasoner(
     declaration: &SemanticDeclaration,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::Reasoner {
         name,
@@ -2385,7 +2493,7 @@ fn check_reasoner(
     };
     check_axioms(name, axioms)?;
     if let ReasoningStrategy::GenerateAndVerify { generator, budget } = strategy {
-        return check_generator(declaration, generator, budget.as_ref(), env);
+        return check_generator(declaration, generator, budget.as_ref(), env, artifacts);
     }
     let (Some(logic), Some(observe), Some(answer)) = (logic, observe, answer) else {
         return Err(mismatch(format!(
@@ -2614,6 +2722,29 @@ fn check_reasoner(
         require_obligation(env, &obligation, code!("LLT4010"))?;
         lowering.obligations.push(obligation);
     }
+    // Charged before anything is elaborated: the elaboration copies the
+    // state, answer, and observation types and the source terms into many
+    // declarations, and every rule into several, so it is larger than its
+    // source by a bounded factor.
+    let reasoner_terms: Vec<&SemanticTerm> = sources.iter().collect();
+    let bindings = resolved
+        .iter()
+        .filter_map(|rule| rule.binding.as_ref())
+        .map(|(_, ty)| super::type_node_count(ty) + 1)
+        .fold(0_u64, u64::saturating_add);
+    let bound = 1500u64
+        .saturating_add(
+            40u64.saturating_mul(
+                weight(
+                    &reasoner_terms,
+                    &[&state, &answer.r#type, &observation.r#type],
+                )
+                .saturating_add(type_parameters.len() as u64),
+            ),
+        )
+        .saturating_add(250u64.saturating_mul(resolved.len() as u64))
+        .saturating_add(40u64.saturating_mul(bindings));
+    charge(artifacts, &format!("reasoner `{name}`"), bound)?;
     let engine = Engine {
         name,
         logic: at,
@@ -2650,6 +2781,7 @@ fn check_reasoner(
         );
     }
     generalize(name, type_parameters, &mut lowering);
+    within(&format!("reasoner `{name}`"), bound, &lowering)?;
     Ok(lowering)
 }
 
@@ -2738,6 +2870,7 @@ fn check_generator(
     generator: &SemanticTerm,
     budget: Option<&SemanticTerm>,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::Reasoner {
         name,
@@ -2821,6 +2954,16 @@ fn check_generator(
     })();
     env.derived = false;
     typed?;
+    let bound = 1500u64.saturating_add(
+        40u64.saturating_mul(
+            weight(
+                &[&sources[0], &sources[1]],
+                &[&observation.r#type, &answer_type],
+            )
+            .saturating_add(type_parameters.len() as u64),
+        ),
+    );
+    charge(artifacts, &format!("reasoner `{name}`"), bound)?;
     let engine = Generate {
         name,
         verifier: verifier_at,
@@ -2835,6 +2978,7 @@ fn check_generator(
     let mut lowering = Lowering::default();
     elaborate_generate(&engine, &mut lowering);
     generalize(name, type_parameters, &mut lowering);
+    within(&format!("reasoner `{name}`"), bound, &lowering)?;
     Ok(lowering)
 }
 
@@ -3732,9 +3876,14 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
     // E.select: the first applicable step. Each rule is tried in declared
     // order and each binding in candidate order; nothing is allocated for a
     // binding-free rule.
-    let mut select = none_of(&step);
-    for rule in engine.rules.iter().rev() {
-        select = match &rule.binding {
+    // The rules are combined as a balanced tree, so the depth of the
+    // elaboration grows with the logarithm of the number of rules, not with
+    // the number of rules (every pass over a term recurses on its depth).
+    // Combining is associative, so the order is exactly declared order.
+    let leaves: Vec<SemanticTerm> = engine
+        .rules
+        .iter()
+        .map(|rule| match &rule.binding {
             None => if_then(
                 call(
                     &rule.companion("guard"),
@@ -3742,55 +3891,58 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                     vec![var("__s")],
                 ),
                 some_of(&step, engine.step_value(rule, None)),
-                select,
+                none_of(&step),
             ),
-            Some((_, binding)) => matching(
-                list_fold(
-                    lambda(
-                        vec![("__acc", option_step.clone()), ("__b", binding.clone())],
-                        matching(
-                            var("__acc"),
-                            vec![
-                                (
-                                    "Option.some",
-                                    vec!["__found"],
-                                    some_of(&step, var("__found")),
-                                ),
-                                (
-                                    "Option.none",
-                                    vec![],
-                                    if_then(
-                                        call(
-                                            &rule.companion("guard"),
-                                            &rule.type_arguments,
-                                            vec![var("__s"), var("__b")],
-                                        ),
-                                        some_of(&step, engine.step_value(rule, Some(var("__b")))),
-                                        none_of(&step),
+            Some((_, binding)) => list_fold(
+                lambda(
+                    vec![("__acc", option_step.clone()), ("__b", binding.clone())],
+                    matching(
+                        var("__acc"),
+                        vec![
+                            (
+                                "Option.some",
+                                vec!["__found"],
+                                some_of(&step, var("__found")),
+                            ),
+                            (
+                                "Option.none",
+                                vec![],
+                                if_then(
+                                    call(
+                                        &rule.companion("guard"),
+                                        &rule.type_arguments,
+                                        vec![var("__s"), var("__b")],
                                     ),
+                                    some_of(&step, engine.step_value(rule, Some(var("__b")))),
+                                    none_of(&step),
                                 ),
-                            ],
-                        ),
+                            ),
+                        ],
                     ),
-                    none_of(&step),
-                    call(
-                        &rule.companion("candidates"),
-                        &rule.type_arguments,
-                        vec![var("__s")],
-                    ),
-                    option_step.clone(),
                 ),
-                vec![
-                    (
-                        "Option.some",
-                        vec!["__found"],
-                        some_of(&step, var("__found")),
-                    ),
-                    ("Option.none", vec![], select),
-                ],
+                none_of(&step),
+                call(
+                    &rule.companion("candidates"),
+                    &rule.type_arguments,
+                    vec![var("__s")],
+                ),
+                option_step.clone(),
             ),
-        };
-    }
+        })
+        .collect();
+    let select = balanced(&leaves, &none_of(&step), &|first, rest| {
+        matching(
+            first,
+            vec![
+                (
+                    "Option.some",
+                    vec!["__found"],
+                    some_of(&step, var("__found")),
+                ),
+                ("Option.none", vec![], rest),
+            ],
+        )
+    });
     lowering.declarations.push(engine.define(
         "select",
         vec![parameter("__s", &s)],
@@ -3800,57 +3952,79 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
     // E.attempts: the guard evaluations `select` makes on a state, in the
     // same order, so the ledger accounts every rule tried, not only every
     // rule fired.
-    let mut attempts = nat(0);
-    for rule in engine.rules.iter().rev() {
-        attempts = match &rule.binding {
-            None => if_then(
+    let tried = product(SemanticType::Bool, SemanticType::Nat);
+    let leaves: Vec<SemanticTerm> = engine
+        .rules
+        .iter()
+        .map(|rule| match &rule.binding {
+            None => pair(
                 call(
                     &rule.companion("guard"),
                     &rule.type_arguments,
                     vec![var("__s")],
                 ),
                 nat(1),
-                succ(attempts),
             ),
             Some((_, binding)) => {
-                let tried = product(SemanticType::Bool, SemanticType::Nat);
                 let acc = var("__acc");
-                let_in(
-                    "__tried",
-                    tried.clone(),
-                    list_fold(
-                        lambda(
-                            vec![("__acc", tried.clone()), ("__b", binding.clone())],
-                            if_then(
-                                model::first(acc.clone()),
-                                acc.clone(),
-                                pair(
-                                    call(
-                                        &rule.companion("guard"),
-                                        &rule.type_arguments,
-                                        vec![var("__s"), var("__b")],
-                                    ),
-                                    succ(model::second(acc)),
+                list_fold(
+                    lambda(
+                        vec![("__acc", tried.clone()), ("__b", binding.clone())],
+                        if_then(
+                            model::first(acc.clone()),
+                            acc.clone(),
+                            pair(
+                                call(
+                                    &rule.companion("guard"),
+                                    &rule.type_arguments,
+                                    vec![var("__s"), var("__b")],
                                 ),
+                                succ(model::second(acc)),
                             ),
                         ),
-                        pair(boolean(false), nat(0)),
-                        call(
-                            &rule.companion("candidates"),
-                            &rule.type_arguments,
-                            vec![var("__s")],
-                        ),
-                        tried,
                     ),
-                    if_then(
-                        model::first(var("__tried")),
-                        model::second(var("__tried")),
-                        add(model::second(var("__tried")), attempts),
+                    pair(boolean(false), nat(0)),
+                    call(
+                        &rule.companion("candidates"),
+                        &rule.type_arguments,
+                        vec![var("__s")],
                     ),
+                    tried.clone(),
                 )
             }
-        };
-    }
+        })
+        .collect();
+    // Combine two scans: stop at the first rule that applies, else add the
+    // evaluations of the rest. Each combination binds its own names, because
+    // a `let` may not shadow a local.
+    let combined = std::cell::Cell::new(0_u64);
+    let attempts = model::second(balanced(
+        &leaves,
+        &pair(boolean(false), nat(0)),
+        &|first, rest| {
+            let n = combined.get();
+            combined.set(n + 1);
+            let (left, right) = (format!("__scan{n}l"), format!("__scan{n}r"));
+            let_in(
+                &left,
+                tried.clone(),
+                first,
+                if_then(
+                    model::first(var(&left)),
+                    var(&left),
+                    let_in(
+                        &right,
+                        tried.clone(),
+                        rest,
+                        pair(
+                            model::first(var(&right)),
+                            add(model::second(var(&left)), model::second(var(&right))),
+                        ),
+                    ),
+                ),
+            )
+        },
+    ));
     lowering.declarations.push(engine.define(
         "attempts",
         vec![parameter("__s", &s)],
@@ -4773,10 +4947,9 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
             vec![var("__node")],
         ));
     }
-    let mut all = nil(&node);
-    for list in successor_lists.into_iter().rev() {
-        all = append(list, all, &node);
-    }
+    let all = balanced(&successor_lists, &nil(&node), &|first, rest| {
+        append(first, rest, &node)
+    });
     lowering.declarations.push(engine.define(
         "successors",
         vec![parameter("__node", &node)],
@@ -4872,10 +5045,12 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
     ));
     // E.attempts: every guard evaluation expanding a node makes, one per
     // binding-free rule and one per candidate of a binding rule.
-    let mut attempts = nat(0);
-    for rule in engine.rules.iter().rev() {
-        attempts = add(Engine::guard_count(rule, var("__s")), attempts);
-    }
+    let counts: Vec<SemanticTerm> = engine
+        .rules
+        .iter()
+        .map(|rule| Engine::guard_count(rule, var("__s")))
+        .collect();
+    let attempts = balanced(&counts, &nat(0), &|first, rest| add(first, rest));
     lowering.declarations.push(engine.define(
         "attempts",
         vec![parameter("__s", &s)],
@@ -5175,23 +5350,29 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
         ));
         successor_oks.push(local(&format!("{prefix}.successors_ok")));
     }
-    let mut chain = lemma(Lemma::AllNil, Vec::new());
-    for ok in successor_oks.iter().rev() {
-        chain = lemma(
+    let oks: Vec<ProofTerm> = successor_oks
+        .iter()
+        .map(|ok| {
+            cite(
+                ok,
+                &[],
+                vec![given(var(x)), given(var("__node")), hypothesis("llH")],
+            )
+        })
+        .collect();
+    // The proof has the shape of the concatenation it is about.
+    let chain = balanced(&oks, &lemma(Lemma::AllNil, Vec::new()), &|first, rest| {
+        lemma(
             Lemma::AllAppend,
             vec![
                 ProofTerm::Infer,
                 ProofTerm::Infer,
                 ProofTerm::Infer,
-                cite(
-                    ok,
-                    &[],
-                    vec![given(var(x)), given(var("__node")), hypothesis("llH")],
-                ),
-                chain,
+                first,
+                rest,
             ],
-        );
-    }
+        )
+    });
     lowering.theorems.push(theorem(
         &engine.own_name("successors_ok"),
         &[],
@@ -5438,15 +5619,16 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
 pub(super) fn check_declaration(
     declaration: &SemanticDeclaration,
     env: &mut Environment<'_>,
+    artifacts: &model::ArtifactStore,
     generated_names: &mut BTreeSet<String>,
 ) -> Result<Lowering, SemanticFailure> {
     let kind = declaration_construct(declaration).unwrap_or("declaration");
     super::require_language_1_2(env, kind)?;
     let lowering = match declaration {
-        SemanticDeclaration::Logic { .. } => check_logic(declaration, env)?,
-        SemanticDeclaration::InferenceRule { .. } => check_rule(declaration, env)?,
-        SemanticDeclaration::Verifier { .. } => check_verifier(declaration, env)?,
-        SemanticDeclaration::Reasoner { .. } => check_reasoner(declaration, env)?,
+        SemanticDeclaration::Logic { .. } => check_logic(declaration, env, artifacts)?,
+        SemanticDeclaration::InferenceRule { .. } => check_rule(declaration, env, artifacts)?,
+        SemanticDeclaration::Verifier { .. } => check_verifier(declaration, env, artifacts)?,
+        SemanticDeclaration::Reasoner { .. } => check_reasoner(declaration, env, artifacts)?,
         SemanticDeclaration::Structure { .. }
         | SemanticDeclaration::Class { .. }
         | SemanticDeclaration::Instance { .. }

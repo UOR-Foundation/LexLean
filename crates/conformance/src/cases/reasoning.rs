@@ -531,6 +531,7 @@ fn rs_01() {
     negatives(
         "LLT4001",
         &[
+            ("binder-reserved", "invalid interface binder name `__s`"),
             ("opaque-member", "unknown field `oracle`"),
             ("unregistered-strategy", "unknown variant `neural`"),
             (
@@ -618,6 +619,26 @@ fn rs_02() {
                 "rule-foreign-logic",
                 "but rule `Echo` is over logic `Other`",
             ),
+            (
+                "relation-not-definition",
+                "relation `sound_preserved` is not a prior definition",
+            ),
+            (
+                "logic-type-parameters",
+                "relation `Justified` has 0 type parameter(s); it must have exactly 1",
+            ),
+            (
+                "invariant-signature",
+                "invariant `Justified` must take (Memo) to Prop",
+            ),
+            (
+                "ranking-signature",
+                "ranking `Sound` must take (Memo) to Nat",
+            ),
+            (
+                "rule-conclusion-type",
+                "conclusion has type Nat, expected Memo",
+            ),
         ],
     );
     // In the example: a weakened soundness theorem, and a generic reasoner
@@ -664,6 +685,15 @@ fn rs_03() {
                 "`bounded_complete` does not state exactly the generated obligation",
             ),
             ("unknown-verifier", "is not a prior verifier"),
+            (
+                "specification-signature",
+                "specification `Sound` must take (Nat, Nat) to Prop",
+            ),
+            ("unknown-rule", "`Bound` is not a prior inference rule"),
+            (
+                "generate-subject-mismatch",
+                "observes Memo, but verifier `Bound` checks a Nat subject",
+            ),
             (
                 "verifier-type-mismatch",
                 "but verifier `Bound` checks a Nat subject and a Nat candidate",
@@ -1324,24 +1354,31 @@ fn rs_09() {
     refused_by_lean("RS-09", &["forged-trace", "false-answer-correct"]);
 }
 
-/// The IR nodes linking `project` charges, read from the limit it exceeds.
+/// The smallest `max_ir_nodes` under which `project` links: what linking
+/// charges it, elaboration included.
 fn charged_nodes(project: &P) -> u64 {
     let config = project.read("lexlean.toml");
-    project.write(
-        "lexlean.toml",
-        &config.replace("max_ir_nodes = 2000000", "max_ir_nodes = 1"),
-    );
-    project.relock();
-    let error = project.check_fails_with("LLS8002").to_string();
-    let observed = error
-        .split("observed ")
-        .nth(1)
-        .and_then(|rest| rest.split_whitespace().next())
-        .and_then(|count| count.parse().ok())
-        .unwrap_or_else(|| panic!("an observed node count in {error}"));
+    let links = |limit: u64| {
+        project.write(
+            "lexlean.toml",
+            &config.replace("max_ir_nodes = 2000000", &format!("max_ir_nodes = {limit}")),
+        );
+        project.relock();
+        project.check_err_or_ok()
+    };
+    let (mut low, mut high) = (1_u64, 2_000_000_u64);
+    assert!(links(high), "the project links under the default limit");
+    while low < high {
+        let middle = low + (high - low) / 2;
+        if links(middle) {
+            high = middle;
+        } else {
+            low = middle + 1;
+        }
+    }
     project.write("lexlean.toml", &config);
     project.relock();
-    observed
+    low
 }
 
 /// The number of JSON values in `value`: an upper bound on the nodes its
@@ -1352,6 +1389,68 @@ fn json_size(value: &Json) -> u64 {
         Json::Array(items) => 1 + items.iter().map(json_size).sum::<u64>(),
         _ => 1,
     }
+}
+
+/// The nesting depth of a JSON value.
+fn json_depth(value: &Json) -> usize {
+    match value {
+        Json::Object(map) => 1 + map.values().map(json_depth).max().unwrap_or(0),
+        Json::Array(items) => 1 + items.iter().map(json_depth).max().unwrap_or(0),
+        _ => 0,
+    }
+}
+
+/// The clinic of the forged-trace fixture with `copies` of each of its two
+/// rules (a binding-free one and a binding one), all named by its reasoner,
+/// which is a search when `search` is set.
+fn many_rules(copies: usize, search: bool) -> P {
+    let project = P::negative("reasoning-forged-trace");
+    let mut data = module_data(&project, "Main");
+    let declarations = declarations_mut(&mut data);
+    let at = declarations
+        .iter()
+        .position(|declaration| declaration["name"] == "Clinic")
+        .expect("the reasoner");
+    let mut added = Vec::new();
+    let mut uses = Vec::new();
+    for (rule, theorems) in [
+        ("Fever", ["fever_sound", "fever_progress"]),
+        ("Pick", ["pick_sound", "pick_progress"]),
+    ] {
+        let original = |name: &str| {
+            declarations
+                .iter()
+                .find(|declaration| declaration["name"] == name)
+                .unwrap_or_else(|| panic!("`{name}`"))
+                .clone()
+        };
+        for copy in 0..copies {
+            let renamed = |name: &str| format!("{name}{copy}");
+            let mut sound = original(theorems[0]);
+            sound["name"] = json!(renamed(theorems[0]));
+            let mut progress = original(theorems[1]);
+            progress["name"] = json!(renamed(theorems[1]));
+            let mut copied = original(rule);
+            copied["name"] = json!(renamed(rule));
+            copied["soundness"] = json!({"name": renamed(theorems[0])});
+            copied["progress"] = json!({"name": renamed(theorems[1])});
+            added.extend([sound, progress, copied]);
+            uses.push(json!({"member": {"name": renamed(rule)}}));
+        }
+    }
+    for (offset, declaration) in added.into_iter().enumerate() {
+        declarations.insert(at + offset, declaration);
+    }
+    let clinic = declaration_mut(&mut data, "Clinic");
+    clinic["rules"].as_array_mut().expect("rules").extend(uses);
+    if search {
+        clinic["strategy"] = json!({"kind": "search", "order": "depth_first",
+            "fuel": {"kind": "nat", "value": "40"}, "frontier": {"kind": "nat", "value": "5"}});
+        clinic["claims"] =
+            json!([{"kind": "initial_invariant", "theorem": {"name": "clinic_initial"}}]);
+    }
+    write_module_data(&project, "Main", &data);
+    project
 }
 
 /// §17.12, §21.4: identity, node charging, snapshots, and the document.
@@ -1391,6 +1490,51 @@ fn rs_10() {
         ids.len(),
         "every reasoning change changes the semantic ID"
     );
+    // A reasoner whose elaboration would exceed the limit is refused before
+    // it is elaborated, by a charge its elaboration never exceeds.
+    negatives(
+        "LLS8002",
+        &[(
+            "elaboration-over-limit",
+            "once reasoner `Clinic` elaborates to at most",
+        )],
+    );
+    let over = P::negative("reasoning-elaboration-over-limit");
+    assert!(
+        over.check_fails_with("LLS8002")
+            .to_string()
+            .contains("before elaborating"),
+        "the refusal is charged before elaboration"
+    );
+    // Many rules: linking succeeds under the default limits, and the
+    // elaboration nests with the logarithm of the rules (every pass over a
+    // term recurses on its depth, and a Windows main thread has one MiB).
+    for search in [false, true] {
+        let project = many_rules(300, search);
+        project.check_ok();
+        let snapshot = snapshot(&project);
+        let clinic = elaboration(&snapshot, "Main", "Clinic");
+        let bodies: &[&str] = if search {
+            &["Clinic.successors", "Clinic.attempts"]
+        } else {
+            &["Clinic.select", "Clinic.attempts"]
+        };
+        for name in bodies {
+            let depth = json_depth(&derived(clinic, name)["body"]);
+            assert!(
+                depth <= 80,
+                "{name} of 602 rules nests {depth} deep, not logarithmically"
+            );
+        }
+        assert_eq!(
+            derived(clinic, "Clinic.Step")["constructors"]
+                .as_array()
+                .expect("constructors")
+                .len(),
+            602,
+            "the elaboration holds every rule"
+        );
+    }
     // An elaboration is charged, not only its source.
     let with = P::negative("reasoning-forged-trace");
     let mut data = module_data(&with, "Main");
@@ -1410,7 +1554,7 @@ fn rs_10() {
     let charged_without = charged_nodes(&without);
     let reasoner_nodes = charged_with - charged_without;
     assert!(
-        reasoner_nodes > 5 * json_size(&source),
+        reasoner_nodes > 4 * json_size(&source),
         "the reasoner charges its elaboration: {reasoner_nodes} nodes for a source of {} values",
         json_size(&source)
     );

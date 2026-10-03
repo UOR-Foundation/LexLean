@@ -432,6 +432,16 @@ impl P {
             .expect("relock");
     }
 
+    /// Whether the entrypoints check.
+    #[must_use]
+    pub fn check_err_or_ok(&self) -> bool {
+        self.engine()
+            .check(CheckRequest {
+                selection: Selection::Entrypoints,
+            })
+            .is_ok()
+    }
+
     /// Check the entrypoints, expecting success.
     pub fn check_ok(&self) -> lexlean::ProjectResultSet<lexlean::CheckedUnit> {
         self.engine()

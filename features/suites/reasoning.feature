@@ -66,11 +66,11 @@ Feature: reasoning
     And a forged trace or an inapplicable application replays to invalid_step and a genuine trace replays to the reasoner's state, as the kernel decides
 
   @RS-10 @build
-  Scenario: Reasoning declarations and their elaborations are part of the semantic ID and charged to max_ir_nodes; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified.
-    Given the reasoning example
-    When its snapshot, identities, and canonical document are generated
-    Then each elaboration and generated theorem is in the snapshot and the semantic ID, and its nodes are charged
-    And the document lists the closed catalog with no trace value and no verification claim
+  Scenario: Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified.
+    Given the reasoning example, and a reasoner over many rules
+    When its snapshot, identities, and canonical document are generated, and a reasoner is linked under a limit its elaboration would exceed
+    Then each elaboration and generated theorem is in the snapshot and the semantic ID, the many-rule elaboration is shallow, and the document lists the closed catalog with no trace value and no verification claim
+    And the reasoner over the limit fails with LLS8002 before it is elaborated
 
   @RS-11 @build
   Scenario: Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds or budget, rule order, ledger counters, and the theorems bounding them, and the example's rust-core and rust-std reasoning roots extract through Lean.

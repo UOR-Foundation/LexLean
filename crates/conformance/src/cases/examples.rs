@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 196] = [
+            let prescribed: [(&str, &str); 206] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -379,6 +379,16 @@ pub(crate) fn run(id: &str) {
                 ("reasoning-answer-correct-inexact", "LLT4010"),
                 ("reasoning-answer-correct-unsorted", "LLT4010"),
                 ("reasoning-false-answer-correct", "LLV7002"),
+                ("reasoning-elaboration-over-limit", "LLS8002"),
+                ("reasoning-relation-not-definition", "LLT4010"),
+                ("reasoning-logic-type-parameters", "LLT4010"),
+                ("reasoning-invariant-signature", "LLT4010"),
+                ("reasoning-ranking-signature", "LLT4010"),
+                ("reasoning-specification-signature", "LLT4010"),
+                ("reasoning-unknown-rule", "LLT4010"),
+                ("reasoning-rule-conclusion-type", "LLT4010"),
+                ("reasoning-binder-reserved", "LLT4001"),
+                ("reasoning-generate-subject-mismatch", "LLT4010"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())

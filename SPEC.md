@@ -3340,7 +3340,21 @@ and the axiom audit read only the elaboration.
 12. **Identity, accounting, document, snapshot, and production.** Reasoning
     declarations are linked IR and part of the semantic ID (§21.4); every
     source node, elaborated declaration, obligation, and generated theorem
-    is charged to `max_ir_nodes`. A language-1.2 snapshot carries each
+    is charged to `max_ir_nodes`. An elaboration is larger than its source
+    by a bounded factor (a rule use in a reasoner is a few source nodes and
+    about a hundred elaborated ones), so each logic, rule, verifier, and
+    reasoner is charged for the most its elaboration can be, computed from
+    its source terms and types and the number of rules it names, *before*
+    any of it is built, running across the link like an artifact's decoded
+    value (rule 2); exceeding the limit is `LLS8002` naming the declaration
+    and "before elaborating". The bound is never an estimate to be
+    exceeded: an elaboration that exceeded its bound is a defect of the
+    bound, reported as an internal error, never a silent overrun. The rules
+    of a reasoner are combined as balanced trees, in their declared order,
+    wherever the elaboration combines them (selection, guard-evaluation
+    counts, successors, and the proof that successors replay), so the
+    nesting of an elaboration, which every later pass recurses on, grows
+    with the logarithm of the number of rules and not with the number. A language-1.2 snapshot carries each
     reasoning declaration's elaboration with its generated theorems (name,
     type parameters, parameters, statement, and template). The canonical
     document renders each as a closed catalog (interfaces, rules in
@@ -3378,7 +3392,11 @@ under *Models, contracts, realizations, and evidence*). An elaboration is
 described by its own `elaboration_*` definitions, identical to the source
 definitions except that their names also admit the reserved spelling with two
 leading underscores that only generated binders use; the source definitions,
-and so every `linked_ir`, keep rejecting it, as linking does.
+and so every `linked_ir`, keep rejecting it, as linking does. An elaboration
+also carries the `theorems` a reasoning declaration generates, each with its
+name, type parameters, parameters, statement (an ordinary proposition, a fixed
+`LexLeanReasoning` proposition, or an implication between them), and the
+closed `template` that proves it (`generatedTheorem`).
 `schemas/lock-v2.schema.json` has the lock shape of
 `schemas/lock.schema.json` with `spec` fixed to `lexlean/lock/2` and
 `language` fixed to `1.2`.
@@ -3494,6 +3512,20 @@ reaches them, while a contract's validators are ordinary executable
 definitions. The `contract_violation` type is `runtime` plain data, and
 `less_than` a `runtime` key comparison.
 
+Language-1.2 reasoning declarations enter a closure the same way (§17.12,
+*Reasoning machines*, rule 12): inference rules (`declaration.inference_rule`)
+and reasoners (`declaration.reasoner`) are `runtime`, a closure member they
+generate is reported with that construct and walked as the ordinary
+definition it is, and logics (`declaration.logic`) and verifiers
+(`declaration.verifier`) are `erased` and elaborate to no runtime definition
+(a verifier's check is an ordinary executable definition). The
+`reasoning_failure` type is `runtime` plain data. The `LexLeanReasoning`
+runtime and every generated theorem are formal-only and in no closure. A
+reasoner's search is bounded by its explicit fuel, frontier, or budget, whose
+terms are ordinary closure members, and a natural-number counter of its
+ledger is subject to the same width rule as any natural number, so a root
+that runs a reasoner admits `overflow` where the target requires it.
+
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
 violation nearest the root, the closure member it occurs in, and the call path
@@ -3546,7 +3578,15 @@ members using it, and, per target, each realized effect with every
 representation crossing the root boundary (`parameter <name>` or `result`,
 directly or inside a container or a named type's fields) with the width in
 which the target realizes it, so the first realization obligation above is
-stated per root. The report is a deterministic function of the
+stated per root. A root whose closure runs a reasoner also records, in
+`reasoning`, one row per reasoner: its qualified name, its strategy
+(`forward`, `breadth_first`, `depth_first`, or `generate_and_verify`),
+whether a search deduplicates, the canonical semantic JSON of its fuel, or of
+its budget, and of its frontier, its rules qualified and in priority order,
+the six counters of its ledger, and the generated theorems that bound them
+(`E.iterations_bounded`, `E.frontier_bounded`, `E.verifications_bounded`,
+`E.saturates`), so the search a production claim relies on is explicit. The
+report is a deterministic function of the
 linked semantic modules and the registry. Verification checks every root's
 runtime closure and erased dependencies against the closure Lean's own
 compiler front end extracts (§22.10); any difference fails verification.
@@ -3566,8 +3606,9 @@ Production compilation targets one closed calculus, defined before any
 optimizer and independently of every renderer. The calculus is LexLean: the
 language-1.2 project `compiler/` defines its syntax (`TargetSyntax`), its
 denotation (`TargetSemantics`), encoders of LexLean collection values
-(`TargetOracle`), and the statements about its fixtures (`TargetFixtures`).
-Lean elaborates, replays, and axiom-audits these modules like any other
+(`TargetOracle`), the clinical reasoning declarations the reasoning
+fixtures are compared with (`ReasoningOracle`, §17.15), and the statements
+about its fixtures (`TargetFixtures`). Lean elaborates, replays, and axiom-audits these modules like any other
 LexLean program, and `compiler/` passes the verify, golden, and
 reproducibility gates of §28.6. No meaning is read from rendered Rust text.
 
@@ -3916,6 +3957,26 @@ A wrong answer, an answer computed from a universe with a system omitted, a
 tie with a member dropped, and a universe with a system omitted are
 rejected by Lean. The GNAF schemas are generated with the fixtures, and
 their calculus definitions are `schemas/target-program.schema.json`'s own.
+
+**Reasoning plans.** A reasoner's rule search is execution: every guard it
+evaluates and every rule it fires is work of the system that runs it, charged
+as calculus steps like any other work, and it is never an action charged
+separately. The `compiler` project's module `ReasoningOracle` states exactly
+the declarations of `examples/reasoning/src/Clinic.lex.tex`, so Lean
+elaborates the clinical reasoners `Triage` and `Review` there to the same
+definitions the example verifies (`RS-12`). The fixtures `reasoning-*`
+(§17.14) hand-transcribe those elaborations to calculus programs, each stated
+equal to the oracle's verdict, explained answer, or account by Lean's kernel,
+and each charges at least the guard evaluations and firings of the oracle's
+account in steps. The requests `reasoning-argmin` and `reasoning-frontier`
+pose the same problem over three forward-chaining plans (priority-order
+chaining, one sweep, and a goal-directed decision) over findings held as the
+bits of a natural number, so the plans that search more are charged more and
+the argmin is the plan that searches least. `reject-reasoning-free-search`
+(`hidden_cost`) charges the search nothing, and
+`reject-reasoning-discovered-universe` (`discovered_universe`) takes the
+candidates one search encountered as its universe; both are refused. No
+reasoning claim is a claim over a universe its search discovered.
 
 **Authority vectors, dependency manifest, and honesty.** The authority's
 normative fixtures GNAF-VEC-01 (the compositions of its operations, with
@@ -5978,8 +6039,14 @@ Tests MUST establish that LexLean rejects, at minimum:
 - a logic declaration under language 1.1, a reasoner with an oracle member
   outside the closed schema, an unregistered strategy, and an unregistered
   reasoner claim kind (`LLT4001`);
+- a binder spelled with the reserved generated prefix (`LLT4001`);
 - a logic binding its state and next-state names alike, a relation of
-  another signature, an invariant-preservation theorem stating another
+  another signature or that is not a definition or takes other type
+  parameters than the logic's, an invariant or a ranking of another
+  signature, a verifier specification of another signature, a reasoner
+  naming a declaration that is not a rule, a rule whose conclusion is not of
+  its state type, a generate-and-verify reasoner whose observation is not its
+  verifier's subject, an invariant-preservation theorem stating another
   obligation, a rule over a declaration that is not a logic or with type
   arguments its logic does not take, a guard that is not Boolean, candidates
   that are not a list, a soundness or progress theorem stating another
@@ -5999,6 +6066,8 @@ Tests MUST establish that LexLean rejects, at minimum:
   (`LLT4010`);
 - a generate-and-verify reasoner without a budget, and a budget that is not
   a natural number (`LLT4011`);
+- a reasoner whose elaboration would exceed `max_ir_nodes`, refused before it
+  is elaborated (`LLS8002`);
 - a forward reasoner without fuel, a search without a frontier, a frontier
   of zero, deduplication over a state type without a canonical order, a
   fuel or frontier that is not a natural number, a termination claim by a
@@ -6572,7 +6641,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RS-07` | `reasoning` | A terminates claim requires a ranking, a statement-exact progress theorem on every rule, an initial-invariant claim when progress assumes the invariant, and a statement-exact fuel-bound theorem, and generates a kernel-checked theorem that the forward reasoner saturates within its fuel; a claim without that evidence fails with LLT4011, and a false progress theorem for a rule that undoes another is refused by verification with LLV7002. | §17.12, §22.6 |
 | `RS-08` | `reasoning` | Each logic, rule, verifier, and reasoner generates fixed-template theorems over its elaboration, among them guarded-application soundness, trace replay, derivation, invariant preservation, iteration, frontier, and verification bounds, saturation, and answer soundness, whose proofs apply only the emitted, axiom-free LexLeanReasoning runtime and the declaration's own theorems; every runtime lemma and every template is used by the committed example and accepted by pinned Lean, and a mutated runtime lemma statement is refused by Lean. | §17.12, §22.6 |
 | `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
-| `RS-10` | `reasoning` | Reasoning declarations and their elaborations are part of the semantic ID and charged to max_ir_nodes; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified. | §17.12, §21.4 |
+| `RS-10` | `reasoning` | Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified. | §17.12, §21.4 |
 | `RS-11` | `reasoning` | Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds or budget, rule order, ledger counters, and the theorems bounding them, and the example's rust-core and rust-std reasoning roots extract through Lean. | §17.13, §17.14, §22.10 |
 | `RS-12` | `reasoning` | The compiler project's reasoning oracle declares exactly the declarations of the reasoning example's clinical module, and calculus transcriptions of its forward engines produce the oracle's verdicts, explained answer, and account on every fixture argument as the kernel decides, compile to committed rust-core and rust-std packages, and charge at least the guard evaluations and firings of the reasoner's account in calculus steps. | §17.14, §17.16 |
 | `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |

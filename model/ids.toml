@@ -1806,7 +1806,7 @@ statement = "Executable code reaches a rule's conclusion only through the rule's
 id = "RS-10"
 level = "build"
 suite = "reasoning"
-statement = "Reasoning declarations and their elaborations are part of the semantic ID and charged to max_ir_nodes; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified."
+statement = "Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified."
 
 [[id]]
 id = "RS-11"

@@ -451,6 +451,26 @@ impl ArtifactStore {
             .set(self.source_bytes.get().max(source_bytes));
     }
 
+    /// Charge a declaration that elaborates to at most `nodes` IR nodes,
+    /// before anything is elaborated (§17.12 reasoning rule 12): linking
+    /// builds an elaboration proportional to the declaration it reads, so a
+    /// declaration is refused for the size it would reach, not once it has
+    /// reached it.
+    pub(super) fn charge_nodes(&self, what: &str, nodes: u64) -> Result<(), SemanticFailure> {
+        let total = self.ir_nodes.get().saturating_add(nodes);
+        if total > self.max_ir_nodes {
+            return Err(fail(
+                code!("LLS8002"),
+                format!(
+                    "max_ir_nodes exceeded: configured {}, observed {total} IR nodes once {what} elaborates to at most {nodes}, before elaborating",
+                    self.max_ir_nodes
+                ),
+            ));
+        }
+        self.ir_nodes.set(total);
+        Ok(())
+    }
+
     /// Charge artifact declaration `name`, of `length` bytes decoding to
     /// `nodes` IR nodes, before anything is materialized.
     fn charge(&self, name: &str, length: u64, nodes: u64) -> Result<(), SemanticFailure> {

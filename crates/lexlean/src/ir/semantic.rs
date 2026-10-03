@@ -8660,8 +8660,12 @@ impl SemanticModule {
                 | SemanticDeclaration::InferenceRule { .. }
                 | SemanticDeclaration::Verifier { .. }
                 | SemanticDeclaration::Reasoner { .. } => {
-                    let lowering =
-                        reasoning::check_declaration(declaration, &mut env, &mut generated_names)?;
+                    let lowering = reasoning::check_declaration(
+                        declaration,
+                        &mut env,
+                        artifacts,
+                        &mut generated_names,
+                    )?;
                     elaboration.record(index, lowering);
                 }
             }
