@@ -779,7 +779,13 @@ impl Render<'_> {
                         let pair = core::str::from_utf8(pair).expect("validated byte literal");
                         u8::from_str_radix(pair, 16).expect("validated byte literal")
                     })
-                    .map(|value| value.to_string())
+                    .map(|value| {
+                        if !self.document {
+                            format!("UInt8.ofNat (nat_lit {value})")
+                        } else {
+                            value.to_string()
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("ByteArray.mk #[{values}]")
@@ -3278,6 +3284,50 @@ mod declaration_span_tests {
 
 #[cfg(test)]
 mod comment_tests {
+    #[test]
+    fn byte_literals_use_explicit_u8_construction() {
+        let render = super::Render {
+            prefix: "ByteFixture",
+            hypotheses: std::collections::BTreeMap::new(),
+            runtime: false,
+            document: false,
+            qualify: None,
+        };
+        for values in [
+            Vec::new(),
+            (0..=255).collect::<Vec<u8>>(),
+            vec![0, 255, 128, 0],
+        ] {
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let expected = values
+                .iter()
+                .map(|value| format!("UInt8.ofNat (nat_lit {value})"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                render.term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("ByteArray.mk #[{expected}]")
+            );
+            let document = super::Render {
+                prefix: "ByteFixture",
+                hypotheses: std::collections::BTreeMap::new(),
+                runtime: false,
+                document: true,
+                qualify: None,
+            };
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let decimal = values
+                .iter()
+                .map(u8::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                document.term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("ByteArray.mk #[{decimal}]")
+            );
+        }
+    }
+
     #[test]
     fn string_literals_use_the_pinned_lean_escape_grammar() {
         for code in (0..=0x1f).chain(0x7f..=0x9f) {

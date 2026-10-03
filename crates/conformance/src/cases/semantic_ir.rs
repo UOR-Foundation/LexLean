@@ -7,6 +7,7 @@ use sha2::Digest;
 
 use crate::support::{self, P};
 
+mod bytes;
 mod names;
 mod strings;
 
@@ -153,7 +154,12 @@ fn verify_large_byte_declaration(varied: bool) {
                 .map(|value| {
                     format!(
                         "{:02x}",
-                        value.parse::<u8>().expect("exact generated UInt8 literal")
+                        value
+                            .strip_prefix("UInt8.ofNat (nat_lit ")
+                            .and_then(|value| value.strip_suffix(')'))
+                            .expect("explicit generated UInt8 construction")
+                            .parse::<u8>()
+                            .expect("exact generated UInt8 literal")
                     )
                 })
                 .collect::<String>()
@@ -1097,6 +1103,7 @@ pub(crate) fn run(id: &str) {
             );
         }
         "SM-19" => {
+            bytes::verify();
             strings::verify();
             names::verify();
             verify_large_byte_declaration(false);

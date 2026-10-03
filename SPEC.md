@@ -2462,6 +2462,14 @@ source/IR limits, kernel replay, and exact axiom policies remain unchanged.
 Exhausting a finite Lean budget still fails verification; the budgets do not
 assert that every resource-bounded source can be verified on every host.
 
+Semantic Lean backend revisions 10 (language 1.1) and 17 (language 1.2)
+emit byte-array elements as explicit `UInt8.ofNat (nat_lit n)` applications,
+where `n` is the decoded byte in 0..255. This avoids overloaded numeral
+elaboration without changing byte values, order, or empty arrays. Canonical
+LaTeX retains its decimal rendering. These revisions change the 1.1 and 1.2
+compiler-semantics identities; existing locks require explicit regeneration.
+Language 1.0 artifacts remain unchanged.
+
 ### 17.12 Language 1.2 and the compatibility/migration contract
 
 Language 1.2 is selected by `language = "1.2"` in `lexlean.toml`. It is a

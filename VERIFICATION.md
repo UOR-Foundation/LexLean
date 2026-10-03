@@ -38,6 +38,26 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### explicit byte lowering can fail
+
+SM-19 verifies and independently observes all 256 byte values, empty arrays,
+and mixed non-UTF-8 arrays under languages 1.1 and 1.2. Its existing large
+repeated/varied nested-byte cases remain mandatory. Changing the actual Lean
+lowerer to increment each byte modulo 256 failed the observed-value assertion
+after successful kernel verification (4.08 seconds). Restoring exact byte
+construction retains the complete acceptance inventory. The spelling unit
+test first failed against overloaded decimal emission and passes with explicit
+`UInt8.ofNat (nat_lit n)` construction; LaTeX remains unchanged.
+
+On the integration backport based on `1a96a19c`, the non-root pinned
+container passed complete SM-19 in 69.35 seconds and
+workspace all-target Clippy. A separately generated 53-module PrismPM corpus
+compiled in 273.289 seconds within its unchanged 300-second deadline. This
+is a component diagnostic, not full LexLean or downstream release acceptance.
+Raw logs are retained in the integration workspace as
+`typed-byte-value-mutant.log`, `typed-byte-verified-gates.log`, and
+`typed-byte-full-corpus-diagnostic-retry.log`.
+
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
 ### release inventory can fail
