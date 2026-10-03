@@ -489,10 +489,14 @@ versions, and the entries below say what each tag does and does not claim.
     refused (`LLT4012`).
   - New diagnostics `LLT4010`, `LLT4011`, and `LLT4012`; new conformance IDs
     `RS-01` to `RS-14`; new example `examples/reasoning` (five modules and a
-    title glossary); 56 new negative fixtures; the `compiler` project's
+    title glossary); 66 new negative fixtures; the `compiler` project's
     `ReasoningOracle` with five calculus transcriptions of the clinical
     engine and their rust-core and rust-std packages; GNAF requests over
     forward-chaining plans.
+  - Every logic, rule, verifier, and reasoner is charged to `max_ir_nodes`
+    for the most its elaboration can be before it is elaborated
+    (`LLS8002`), and the rules of a reasoner are combined as balanced
+    trees, so an elaboration nests with the logarithm of its rule count.
   - The language-1.2 `semantic_ir`, `lean_backend`, and `latex_backend`
     versions are bumped; `linear_arithmetic` also rewrites with
     `Bool.and_eq_true`, `Bool.or_eq_true`, `Bool.not_eq_true'`, `and_true`,

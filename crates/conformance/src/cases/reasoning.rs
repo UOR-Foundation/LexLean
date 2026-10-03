@@ -216,6 +216,61 @@ fn calls(value: &Json) -> Vec<String> {
         .collect()
 }
 
+/// The guards a term evaluates, in the order it evaluates them: a `match`
+/// its scrutinee then its branches, an `if` its condition and branches, a
+/// `let` its value before its body. Document order of canonical JSON is
+/// alphabetical by key, so it says nothing about evaluation.
+fn guards_evaluated(value: &Json, out: &mut Vec<String>) {
+    let each = |children: &[&str], out: &mut Vec<String>| {
+        for child in children {
+            guards_evaluated(&value[*child], out);
+        }
+    };
+    match value["kind"].as_str() {
+        Some("match") => {
+            guards_evaluated(&value["scrutinee"], out);
+            for branch in value["branches"].as_array().into_iter().flatten() {
+                guards_evaluated(&branch["body"], out);
+            }
+        }
+        Some("if") => each(&["condition", "then_value", "else_value"], out),
+        Some("let") => each(&["value", "body"], out),
+        Some("call") => {
+            let name = value["function"]["name"].as_str().unwrap_or_default();
+            if name.ends_with(".guard") {
+                out.push(name.to_owned());
+            }
+            for argument in value["arguments"].as_array().into_iter().flatten() {
+                guards_evaluated(argument, out);
+            }
+        }
+        Some("primitive") => {
+            for argument in value["arguments"].as_array().into_iter().flatten() {
+                guards_evaluated(argument, out);
+            }
+        }
+        _ => match value {
+            Json::Object(map) => {
+                for child in map.values() {
+                    guards_evaluated(child, out);
+                }
+            }
+            Json::Array(items) => {
+                for item in items {
+                    guards_evaluated(item, out);
+                }
+            }
+            _ => {}
+        },
+    }
+}
+
+fn evaluated_guards(value: &Json) -> Vec<String> {
+    let mut out = Vec::new();
+    guards_evaluated(value, &mut out);
+    out
+}
+
 fn verified_reasoning() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
@@ -814,14 +869,14 @@ fn rs_05() {
     let triage = elaboration(&snapshot, "Clinic", "Triage");
     let guards: Vec<String> = RULES.iter().map(|rule| format!("{rule}.guard")).collect();
     assert_eq!(
-        calls(&derived(triage, "Triage.select")["body"]),
+        evaluated_guards(&derived(triage, "Triage.select")["body"]),
         guards,
         "select tries the rules in declared priority order"
     );
     assert_eq!(
-        calls(&derived(triage, "Triage.attempts")["body"]),
+        evaluated_guards(&derived(triage, "Triage.attempts")["body"]),
         guards,
-        "attempts counts exactly the guards select evaluates"
+        "attempts counts exactly the guards select evaluates, in its order"
     );
     let applications: Vec<String> = RULES.iter().map(|rule| format!("{rule}.apply")).collect();
     assert_eq!(
@@ -859,7 +914,7 @@ fn rs_05() {
     let mut backwards = guards.clone();
     backwards.reverse();
     assert_eq!(
-        calls(
+        evaluated_guards(
             &derived(
                 elaboration(&reversed_snapshot, "Clinic", "Triage"),
                 "Triage.select"

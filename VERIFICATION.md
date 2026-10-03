@@ -2478,10 +2478,10 @@ Removed: the copy was discarded; the committed example verifies.
 
 ### reasoning rule priority order can fail
 
-Planted: `E.select` was built over the rules in declared order (`for rule in engine.rules.iter()` in `elaborate_forward`), so the last rule is tried first. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a forward reasoner that fires rules out of their declared priority order.
+Planted: the leaves of `E.select` were combined in reverse of the declared order (`leaves.into_iter().rev()` before `balanced` in `elaborate_forward`), so the last rule is tried first. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a forward reasoner that fires rules out of their declared priority order. The case reads the order the select term evaluates its guards in (a `match` scrutinee before its branches, a `let` value before its body), not document order, because canonical JSON orders object keys alphabetically.
 
 ```text
-thread 'conformance_rs_05' (5065) panicked at crates/conformance/src/cases/reasoning.rs:768:5:
+thread 'conformance_rs_05' (4138) panicked at crates/conformance/src/cases/reasoning.rs:871:5:
 assertion `left == right` failed: select tries the rules in declared priority order
   left: ["Escalate.guard", "Shock.guard", "Sepsis.guard", "Sirs.guard", "Leukocytosis.guard", "Tachypnea.guard", "Tachycardia.guard", "Fever.guard"]
  right: ["Fever.guard", "Tachycardia.guard", "Tachypnea.guard", "Leukocytosis.guard", "Sirs.guard", "Sepsis.guard", "Shock.guard", "Escalate.guard"]
@@ -2495,7 +2495,7 @@ Removed: the reversal was restored; `conformance_rs_05` passes, and its Lean-bac
 Planted: each arm of `E.fire` applied the rule's conclusion directly (`some (N.conclusion s)`) instead of its guarded application. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a reasoner step that applies a rule whose guard does not hold.
 
 ```text
-thread 'conformance_rs_05' (5662) panicked at crates/conformance/src/cases/reasoning.rs:816:5:
+thread 'conformance_rs_05' (5662) panicked at crates/conformance/src/cases/reasoning.rs:882:5:
 assertion `left == right` failed: every step fires through its rule's guarded application
   left: ["Fever.conclusion", "Tachycardia.conclusion", "Tachypnea.conclusion", "Leukocytosis.conclusion", "Sirs.conclusion", "Sepsis.conclusion", "Shock.conclusion", "Escalate.conclusion"]
  right: ["Fever.apply", "Tachycardia.apply", "Tachypnea.apply", "Leukocytosis.apply", "Sirs.apply", "Sepsis.apply", "Shock.apply", "Escalate.apply"]
@@ -2509,7 +2509,7 @@ Removed: the guarded application was restored; `conformance_rs_05` passes.
 Planted: a forward step's ledger kept its `attempts` counter instead of adding `E.attempts` of the state it scanned. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a ledger that charges firings but not the rules tried.
 
 ```text
-thread 'conformance_rs_05' (7028) panicked at crates/conformance/src/cases/reasoning.rs:802:5:
+thread 'conformance_rs_05' (7028) panicked at crates/conformance/src/cases/reasoning.rs:887:5:
 assertion failed: calls(&derived(triage,
                     "Triage.step")["body"]).contains(&"Triage.attempts".to_owned())
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.84s
@@ -2534,7 +2534,7 @@ Removed: the refusal was restored; `conformance_rs_09` passes.
 Planted: `E.accept` always ran the verifier's check (`match &None::<MemberRef>` for the claim in `elaborate_common`), so an `answer_correct` claim erased nothing. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: a check proved unnecessary still runs, so the claim states a runtime effect it does not have.
 
 ```text
-thread 'conformance_rs_09' (6308) panicked at crates/conformance/src/cases/reasoning.rs:1312:5:
+thread 'conformance_rs_09' (6308) panicked at crates/conformance/src/cases/reasoning.rs:1367:5:
 assertion `left == right` failed
   left: ["gradedCheck", "Grade.extract"]
  right: ["Grade.extract"]
@@ -2548,7 +2548,7 @@ Removed: the erasure was restored; `conformance_rs_09` passes.
 Planted: `E.try` checked a candidate while fewer than the budget plus one had been checked, so a generate-and-verify reasoner could exceed its budget. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_06`. Expected: the generated `E.try_count` and `E.verifications_bounded` theorems are refused by pinned Lean.
 
 ```text
-thread 'conformance_rs_06' (10047) panicked at crates/conformance/src/cases/reasoning.rs:229:14:
+thread 'conformance_rs_06' (10047) panicked at crates/conformance/src/cases/reasoning.rs:284:14:
 the reasoning example verifies under pinned Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Reasoning.Screening` (error): Application type mismatch: The argument\n  llB\nhas type\n  __t.ledger.verifications.blt (3 + 1) = true\nbut is expected to have type\n  __t.ledger.verifications.blt 3 = true ...
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 20.39s
 ```
@@ -2572,7 +2572,7 @@ Removed: the call was restored; `conformance_rs_04` passes.
 Planted: the eligibility report omitted every root's `reasoning` rows (`if false && !root.reasoning.is_empty()` in `production/mod.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_11`. Expected: a production root whose search resources are unreported.
 
 ```text
-thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:1778:32:
+thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:1833:32:
 Reasoning.Main.triageLevel records its reasoning
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.73s
 ```
@@ -2584,7 +2584,7 @@ Removed: the rows were restored; `conformance_rs_11` passes.
 Planted: the traced transcription of `Triage` counted no guard evaluation per step (`nat(0)` for the step's attempts in `calculus/reasoning.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_12`. Expected: a transcription whose account charges firings it never searched for.
 
 ```text
-thread 'conformance_rs_12' (9480) panicked at crates/conformance/src/cases/reasoning.rs:1689:5:
+thread 'conformance_rs_12' (9480) panicked at crates/conformance/src/cases/reasoning.rs:2077:5:
 every firing follows a guard evaluation
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.17s
 ```
