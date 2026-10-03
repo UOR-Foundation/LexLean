@@ -1453,6 +1453,124 @@ fn many_rules(copies: usize, search: bool) -> P {
     project
 }
 
+/// A right-nested pair of `fields` terms.
+fn nested(fields: usize, leaf: &dyn Fn(usize) -> Json) -> Json {
+    (0..fields - 1).rev().fold(
+        leaf(fields - 1),
+        |tail, index| json!({"kind": "pair", "left": leaf(index), "right": tail}),
+    )
+}
+
+/// A right-nested product of `fields` copies of `base`.
+fn nested_type(fields: usize, base: &Json) -> Json {
+    (0..fields - 1).fold(
+        base.clone(),
+        |tail, _| json!({"kind": "product", "left": base, "right": tail}),
+    )
+}
+
+/// A reasoner over a state of `fields` natural numbers with `rules` rules,
+/// each concluding a whole new state, half of them binding a tuple drawn from
+/// a list of candidates: the shapes that stress what linking charges for an
+/// elaboration, which is larger than its source by the weight of the types
+/// and terms it copies.
+#[allow(clippy::too_many_lines)]
+fn wide_reasoner(strategy: &str, rules: usize, fields: usize, width: usize) -> P {
+    let project = P::negative("reasoning-forged-trace");
+    let nat = json!({"kind": "nat"});
+    let number = |value: usize| json!({"kind": "nat", "value": value.to_string()});
+    let var = |name: &str| json!({"kind": "var", "name": name});
+    let state_type = nested_type(fields, &nat);
+    let tuple_type = nested_type(width, &nat);
+    let call = |name: &str, arguments: Vec<Json>| json!({"kind": "call", "function": {"name": name}, "arguments": arguments});
+    let first = |value: Json| json!({"kind": "first", "value": value});
+    let truth = json!({"kind": "bool", "value": true});
+    let trivial = json!({"kind": "le", "left": number(0), "right": number(0)});
+    let mut declarations = vec![
+        json!({"kind": "definition", "name": "Rel", "parameters": [
+            {"name": "s", "type": state_type}, {"name": "t", "type": state_type}],
+            "result": {"kind": "prop"}, "body": trivial}),
+        json!({"kind": "logic", "name": "L",
+            "state": {"name": "s", "next": "t", "type": state_type}, "relation": {"name": "Rel"}}),
+        json!({"kind": "definition", "name": "Spec", "parameters": [
+            {"name": "x", "type": nat}, {"name": "r", "type": nat}],
+            "result": {"kind": "prop"}, "body": trivial}),
+        json!({"kind": "definition", "name": "chk", "executable": true, "parameters": [
+            {"name": "x", "type": nat}, {"name": "r", "type": nat}],
+            "result": {"kind": "bool"}, "body": truth}),
+        json!({"kind": "theorem", "name": "chk_sound", "parameters": [
+            {"name": "x", "type": nat}, {"name": "r", "type": nat}],
+            "statement": {"kind": "implies",
+                "premise": {"kind": "eq", "left": call("chk", vec![var("x"), var("r")]), "right": truth},
+                "conclusion": call("Spec", vec![var("x"), var("r")])},
+            "proof": {"kind": "linear_arithmetic", "definitions": [{"name": "Spec"}, {"name": "chk"}]}}),
+        json!({"kind": "verifier", "name": "V", "subject": {"name": "x", "type": nat},
+            "candidate": {"name": "r", "type": nat}, "specification": {"name": "Spec"},
+            "check": {"name": "chk"}, "sound": {"name": "chk_sound"}}),
+    ];
+    let mut uses = Vec::new();
+    for index in 0..rules {
+        let name = format!("R{index}");
+        let sound = format!("r{index}_sound");
+        let state = var("s");
+        let conclusion = nested(
+            fields,
+            &|field| json!({"kind": "add", "left": first(state.clone()), "right": number(field + index)}),
+        );
+        let mut parameters = vec![json!({"name": "s", "type": state_type})];
+        let mut guard =
+            json!({"kind": "blt", "left": number(index), "right": first(state.clone())});
+        let mut binding = None;
+        if index % 2 == 1 {
+            let candidates: Vec<Json> = (0..4)
+                .map(|candidate| nested(width, &|field| number(field + candidate)))
+                .collect();
+            parameters.push(json!({"name": "b", "type": tuple_type}));
+            guard = json!({"kind": "and",
+                "left": {"kind": "blt", "left": first(var("b")), "right": first(state.clone())},
+                "right": guard});
+            binding = Some(json!({"name": "b", "type": tuple_type,
+                "candidates": candidates.iter().rev().fold(
+                    json!({"kind": "nil", "element": tuple_type}),
+                    |tail, head| json!({"kind": "cons", "head": head, "tail": tail}))}));
+        }
+        declarations.push(
+            json!({"kind": "theorem", "name": sound, "parameters": parameters,
+            "statement": {"kind": "implies",
+                "premise": {"kind": "eq", "left": guard, "right": truth},
+                "conclusion": call("Rel", vec![state.clone(), conclusion.clone()])},
+            "proof": {"kind": "linear_arithmetic", "definitions": [{"name": "Rel"}]}}),
+        );
+        let mut rule = json!({"kind": "inference_rule", "name": name, "logic": {"member": {"name": "L"}},
+            "guard": guard, "conclusion": conclusion, "soundness": {"name": sound}, "executable": true});
+        if let Some(binding) = binding {
+            rule["binding"] = binding;
+        }
+        declarations.push(rule);
+        uses.push(json!({"member": {"name": name}}));
+    }
+    let strategy = match strategy {
+        "forward" => json!({"kind": "forward", "fuel": number(50)}),
+        "breadth_first" => json!({"kind": "search", "order": "breadth_first", "fuel": number(50),
+            "frontier": number(20), "deduplicate": true}),
+        _ => {
+            json!({"kind": "search", "order": "depth_first", "fuel": number(50), "frontier": number(20)})
+        }
+    };
+    declarations.push(json!({"kind": "reasoner", "name": "E", "logic": {"member": {"name": "L"}},
+        "observation": {"name": "x", "type": nat},
+        "observe": nested(fields, &|field| json!({"kind": "add", "left": var("x"), "right": number(field)})),
+        "rules": uses, "strategy": strategy,
+        "answer": {"name": "s", "type": nat, "value": {"kind": "constructor",
+            "constructor": {"name": "Option.some"}, "type_arguments": [nat],
+            "arguments": [first(var("s"))]}},
+        "verifier": {"member": {"name": "V"}}, "executable": true}));
+    let mut data = module_data(&project, "Main");
+    data["declarations"] = Json::Array(declarations);
+    write_module_data(&project, "Main", &data);
+    project
+}
+
 /// §17.12, §21.4: identity, node charging, snapshots, and the document.
 #[allow(clippy::too_many_lines)]
 fn rs_10() {
@@ -1534,6 +1652,21 @@ fn rs_10() {
             602,
             "the elaboration holds every rule"
         );
+    }
+    // Large states, bindings, and terms: the charge covers every shape's
+    // elaboration (an elaboration beyond its charge is an internal error, so
+    // each of these linking is the check).
+    for (strategy, rules, fields, width) in [
+        ("forward", 20, 40, 4),
+        ("breadth_first", 20, 40, 4),
+        ("depth_first", 40, 12, 4),
+        ("forward", 3, 100, 4),
+        ("breadth_first", 12, 100, 4),
+        // A wide binding over a small state.
+        ("forward", 12, 2, 100),
+        ("depth_first", 12, 2, 100),
+    ] {
+        wide_reasoner(strategy, rules, fields, width).check_ok();
     }
     // An elaboration is charged, not only its source.
     let with = P::negative("reasoning-forged-trace");
