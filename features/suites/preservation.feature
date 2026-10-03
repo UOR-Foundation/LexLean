@@ -55,3 +55,9 @@ Feature: preservation
     Given every production root's crate in each target and every renderer fixture's crate in each profile
     When the aligner derives each crate's correspondence and the pinned Lean checks, replays, and audits it
     Then every rule the aligner emits is a constructor of the correspondence and a case of its soundness theorem, every rule is used and every calculus construct named, every derivation checks, every simulation theorem has exactly the three axioms, and every mutated crate is refused
+
+  @SP-09 @build
+  Scenario: Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, invoked on the encoded source arguments, realizes certificate A's observation of the source; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition.
+    Given every production root's certificates A and B in each of its targets
+    When the composition is generated, checked, replayed, and audited by the pinned Lean, and restated with the other result shape and with another function
+    Then every composition checks with exactly the three axioms, every restatement is refused, and verification reports a rejected composition as LLV7016

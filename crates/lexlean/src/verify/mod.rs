@@ -1640,9 +1640,31 @@ pub fn run(
                             ),
                         ))
                     })?;
+                // Certificate E: A and B composed, for the root's rendering.
+                let module_e = rust_cert::module_for(&format!("{module}.Compose"), &row.target)
+                    .ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust target", row.target)))
+                    })?;
+                let fallible = crate::calculus::rust::fallible_functions(&lowered.program)
+                    .map_err(|reason| fail(internal(reason)))?
+                    .get(lowered.entry() as usize)
+                    .copied()
+                    .ok_or_else(|| fail(internal("a lowered program without its entry")))?;
+                let composed = crate::production::certificate::certificate_e(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    &lowered,
+                    &module,
+                    &module_b,
+                    &module_e,
+                    fallible,
+                )
+                .map_err(fail)?;
                 renderings.push(CertifiedRendering {
                     target: row.target.clone(),
                     certificate: certificate_b.into_certificate(),
+                    composed,
                 });
             }
             certified.push(CertifiedRoot {
@@ -1669,9 +1691,18 @@ pub fn run(
                     .map(|rendering| rendering.certificate.clone())
             })
             .collect();
+        let composed_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.composed.clone())
+            })
+            .collect();
         let staged_certificates: Vec<crate::production::certificate::Certificate> = certificates
             .iter()
             .chain(&rendered_certificates)
+            .chain(&composed_certificates)
             .cloned()
             .collect();
         let is_b = |module: &str| {
@@ -1679,8 +1710,21 @@ pub fn run(
                 .iter()
                 .any(|certificate| certificate.module == module)
         };
+        let is_e = |module: &str| {
+            composed_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
         let reject = |module: &str, output: &str| {
-            if is_b(module) {
+            if is_e(module) {
+                Diagnostic::new(
+                    code!("LLV7016"),
+                    format!(
+                        "certificate E: `{module}` was rejected: {}",
+                        first_error(output)
+                    ),
+                )
+            } else if is_b(module) {
                 Diagnostic::new(
                     code!("LLV7015"),
                     format!(
@@ -1815,7 +1859,12 @@ pub fn run(
         if audit_record.exit_code != 0 {
             return Err(fail(rejected(&stage.audit.module, &audit_output)));
         }
-        preserve::classify_audit(&audit_output, &certificates, &rendered_certificates)
+        preserve::classify_audit(
+            &audit_output,
+            &certificates,
+            &rendered_certificates,
+            &composed_certificates,
+        )
             .map_err(fail)?;
         write_staged(
             staging.path(),

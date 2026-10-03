@@ -25,7 +25,8 @@ pub struct Rendered {
     /// The crate.
     pub krate: ast::Crate,
     /// Whether the entry function returns `R<T>`.
-    pub entry_fallible: bool,
+    /// Whether each function's rendering returns `R<T>`.
+    pub fallible: Vec<bool>,
 }
 
 /// The crate of every certified root in every target it is eligible for.
@@ -49,7 +50,7 @@ pub fn crates(certified: &[Certified]) -> Vec<Rendered> {
                 root: entry.root.clone(),
                 target: target.clone(),
                 krate,
-                entry_fallible: fallible.first().copied().unwrap_or(false),
+                fallible: fallible.clone(),
             });
         }
     }
@@ -123,8 +124,9 @@ pub fn module(rendered: &[Rendered], cases: &BTreeMap<String, Vec<Case>>) -> Str
                 .map(|value| render_value(value).expect("a value term"))
                 .collect();
             text.push_str(&format!(
-                "#eval IO.println (\"case {index}: \" ++ __robs {} (LexLeanTarget.RustSemantics.invoke {FUEL} __crate{position} (.generated .function 0) [{}]))\n",
-                crate_.entry_fallible,
+                "#eval IO.println (\"case {index}: \" ++ __robs {} (LexLeanTarget.RustSemantics.invoke {FUEL} __crate{position} (.generated .function {}) [{}]))\n",
+                crate_.fallible[case.function as usize],
+                case.function,
                 arguments.join(", ")
             ));
             index += 1;

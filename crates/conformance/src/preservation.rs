@@ -31,6 +31,19 @@ pub struct Certified {
     pub program: lexlean::calculus::Program,
     /// Certificate B of the program's crate in each target.
     pub renderings: Vec<(String, Certificate)>,
+    /// Certificate E, A and B composed, in each target.
+    pub composed: Vec<(String, Certificate)>,
+}
+
+impl Certified {
+    /// Every certificate of the root: A, then B and E in each target.
+    #[must_use]
+    pub fn all(&self) -> Vec<Certificate> {
+        std::iter::once(self.certificate.clone())
+            .chain(self.renderings.iter().map(|(_, b)| b.clone()))
+            .chain(self.composed.iter().map(|(_, e)| e.clone()))
+            .collect()
+    }
 }
 
 /// The certificates of every production root of `project`, in root order.
@@ -91,6 +104,35 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                     (row.target.clone(), certificate_b.into_certificate())
                 })
                 .collect();
+            let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
+                .expect("a valid program")[lowered.entry() as usize];
+            let composed = root
+                .report
+                .targets
+                .iter()
+                .map(|row| {
+                    let module_b = module_for(&module, &row.target).expect("a Rust target");
+                    let module_e =
+                        module_for(&format!("{module}.Compose"), &row.target).expect("a target");
+                    let certificate_e = lexlean::production::certificate::certificate_e(
+                        &modules,
+                        &root.module,
+                        &root.name,
+                        &lowered,
+                        &module,
+                        &module_b,
+                        &module_e,
+                        fallible,
+                    )
+                    .unwrap_or_else(|diagnostic| {
+                        panic!(
+                            "{} on {}: certificate E: {diagnostic:?}",
+                            root.report.root, row.target
+                        )
+                    });
+                    (row.target.clone(), certificate_e)
+                })
+                .collect();
             Certified {
                 root: root.report.root.clone(),
                 targets: root
@@ -102,6 +144,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                 certificate,
                 program: lowered.program,
                 renderings,
+                composed,
             }
         })
         .collect()
@@ -116,15 +159,7 @@ pub fn staged(project: &P, certified: &[Certified]) -> Workspace {
         .iter()
         .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
         .collect();
-    let certificates: Vec<Certificate> = certified
-        .iter()
-        .map(|entry| entry.certificate.clone())
-        .chain(
-            certified
-                .iter()
-                .flat_map(|entry| entry.renderings.iter().map(|(_, b)| b.clone())),
-        )
-        .collect();
+    let certificates: Vec<Certificate> = certified.iter().flat_map(Certified::all).collect();
     workspace(&user, &certificates).expect("the workspace stages")
 }
 
@@ -177,8 +212,8 @@ fn joined(output: &std::process::Output) -> String {
 }
 
 /// Run `job` over `items` on a few threads, returning the results in
-/// `items` order. Certificates import the environment and nothing of one
-/// another, so they compile and replay independently; the pool is small
+/// `items` order. Certificates within one wave import the environment and
+/// nothing of one another, so they compile and replay independently; the pool is small
 /// because each Lean process holds the whole environment in memory.
 fn parallel<T: Sync, R: Send>(items: &[T], job: impl Fn(&T) -> R + Sync) -> Vec<R> {
     let workers = std::thread::available_parallelism()
@@ -246,15 +281,36 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
             };
         }
     }
-    if let Some(failure) = parallel(&certificates, |file| compile(file))
-        .into_iter()
-        .flatten()
-        .next()
-    {
-        return Checked {
-            failure: Some(failure),
-            audit_output: String::new(),
-        };
+    // Certificate E imports the certificates A and B it composes, so the
+    // certificates compile in waves: each wave is every certificate whose
+    // imported certificates an earlier wave compiled.
+    let imports = |file: &lexlean::production::preserve::StagedFile| -> Vec<String> {
+        file.text
+            .lines()
+            .filter_map(|line| line.strip_prefix("import "))
+            .map(|module| module.trim().to_owned())
+            .filter(|module| workspace.certificates.contains(module))
+            .collect()
+    };
+    let mut compiled: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut pending = certificates;
+    while !pending.is_empty() {
+        let (wave, rest): (Vec<_>, Vec<_>) = pending
+            .into_iter()
+            .partition(|file| imports(file).iter().all(|module| compiled.contains(module)));
+        assert!(!wave.is_empty(), "the certificates import one another in a cycle");
+        if let Some(failure) = parallel(&wave, |file| compile(file))
+            .into_iter()
+            .flatten()
+            .next()
+        {
+            return Checked {
+                failure: Some(failure),
+                audit_output: String::new(),
+            };
+        }
+        compiled.extend(wave.iter().map(|file| file.module.clone()));
+        pending = rest;
     }
     let replayed = parallel(&workspace.certificates, |module| {
         let output = pinned("leanchecker", root)
@@ -304,6 +360,52 @@ pub struct Report {
     /// The cases on which the declared Rust machine, evaluating each crate,
     /// agreed with the interpreter.
     pub machine: usize,
+    /// Every root's first certificate E restated with a planted defect,
+    /// and the pinned Lean's verdict on it.
+    pub composed_plants: Vec<ComposedPlant>,
+}
+
+/// A defect planted in a certificate E's statement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum CompositionMutation {
+    /// The root's Rust function is claimed with the other result shape:
+    /// `R<T>` for a plain function, or a plain result for a fallible one.
+    Fallibility,
+    /// The rendering of another function is claimed to realize the root.
+    Function,
+}
+
+impl CompositionMutation {
+    /// Every mutation.
+    pub const ALL: [Self; 2] = [Self::Fallibility, Self::Function];
+
+    /// `text` with this defect planted, or `None` when it does not apply.
+    #[must_use]
+    pub fn plant(self, text: &str) -> Option<String> {
+        let (from, to) = match self {
+            Self::Fallibility if text.contains("Rust.RealizesFn true ") => {
+                ("Rust.RealizesFn true ", "Rust.RealizesFn false ")
+            }
+            Self::Fallibility => ("Rust.RealizesFn false ", "Rust.RealizesFn true "),
+            Self::Function => ("Rust.fnIdent 0)", "Rust.fnIdent 1)"),
+        };
+        text.contains(from).then(|| text.replacen(from, to, 1))
+    }
+}
+
+/// One planted certificate E and the pinned Lean's verdict.
+#[derive(Debug, Clone)]
+pub struct ComposedPlant {
+    /// The certified root.
+    pub root: String,
+    /// The target whose certificate E was planted.
+    pub target: String,
+    /// The defect.
+    pub mutation: CompositionMutation,
+    /// Whether the pinned Lean accepted the planted module.
+    pub accepted: bool,
+    /// The pinned Lean's output.
+    pub output: String,
 }
 
 /// Certify every production root of `project` end to end, then run the
@@ -326,26 +428,28 @@ pub fn certify(project: &P, name: &str) -> Report {
     if let Some((module, output)) = checked.failure {
         panic!("{name}: `{module}` was rejected:\n{output}");
     }
-    let certificates: Vec<Certificate> = certified
-        .iter()
-        .map(|entry| entry.certificate.clone())
-        .chain(
-            certified
-                .iter()
-                .flat_map(|entry| entry.renderings.iter().map(|(_, b)| b.clone())),
-        )
-        .collect();
+    let certificates: Vec<Certificate> = certified.iter().flat_map(Certified::all).collect();
     audit(&checked.audit_output, &certificates)
         .unwrap_or_else(|reason| panic!("{name}: axiom audit: {reason}"));
+    let composed_plants = plant_composed(&certified, scratch.path());
     let cases = crate::differential::cases(project);
+    // Each root's cases through the root are observed by `denote`, and
+    // those through its entry by `denoteEntry` (§17.17).
     let denotes: Vec<(String, String, Vec<crate::differential::Case>)> = certified
         .iter()
-        .map(|entry| {
-            (
-                entry.certificate.module.clone(),
-                entry.certificate.denote.clone(),
-                cases.get(&entry.root).cloned().unwrap_or_default(),
-            )
+        .flat_map(|entry| {
+            let (direct, entered): (Vec<_>, Vec<_>) = cases
+                .get(&entry.root)
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .partition(|case| case.function == 0);
+            let module = entry.certificate.module.clone();
+            let mut rows = vec![(module.clone(), entry.certificate.denote.clone(), direct)];
+            if !entered.is_empty() {
+                rows.push((module.clone(), format!("{module}.denoteEntry"), entered));
+            }
+            rows
         })
         .collect();
     let path = scratch.path().join("src/LexLeanPreserve/Differential.lean");
@@ -385,7 +489,43 @@ pub fn certify(project: &P, name: &str) -> Report {
         denotes,
         crates,
         machine,
+        composed_plants,
     }
+}
+
+/// Restate every root's first certificate E with each planted defect and
+/// compile it beside the checked workspace below `root`.
+fn plant_composed(certified: &[Certified], root: &Path) -> Vec<ComposedPlant> {
+    let mut jobs = Vec::new();
+    for entry in certified {
+        let Some((target, composed)) = entry.composed.first() else {
+            continue;
+        };
+        for mutation in CompositionMutation::ALL {
+            let text = mutation
+                .plant(&composed.text)
+                .unwrap_or_else(|| panic!("{mutation:?} applies to `{}`", composed.module));
+            jobs.push((entry.root.clone(), target.clone(), mutation, text));
+        }
+    }
+    let directory = root.join("src/LexLeanPreserve/Planted");
+    std::fs::create_dir_all(&directory).expect("mkdir");
+    parallel(&jobs, |(root_name, target, mutation, text)| {
+        let index = jobs
+            .iter()
+            .position(|job| job.0 == *root_name && job.1 == *target && job.2 == *mutation)
+            .expect("the job");
+        let path = directory.join(format!("E{index}.lean"));
+        std::fs::write(&path, text).expect("write");
+        let output = lean(root, &[path.display().to_string()]);
+        ComposedPlant {
+            root: root_name.clone(),
+            target: target.clone(),
+            mutation: *mutation,
+            accepted: output.status.success(),
+            output: joined(&output),
+        }
+    })
 }
 
 /// Certify every production root of the example `name` end to end.
@@ -409,21 +549,76 @@ pub enum Mutation {
     Recursion,
     /// The first natural literal is one larger.
     Literal,
+    /// The entry calls the root without its first validator's check
+    /// (§17.17): an invariant is no longer checked at the boundary.
+    Validation,
+    /// The last order-checking validator admits an equal successor: a map
+    /// with a repeated key, or a set with a repeated element, passes.
+    Weakening,
 }
 
 impl Mutation {
-    /// Every mutation.
-    pub const ALL: [Self; 5] = [
+    /// The mutations of the lowered closure.
+    pub const LOWERING: [Self; 5] = [
         Self::Branches,
         Self::Arithmetic,
         Self::Constructor,
         Self::Recursion,
         Self::Literal,
     ];
+
+    /// The mutations of the boundary.
+    pub const BOUNDARY: [Self; 2] = [Self::Validation, Self::Weakening];
+}
+
+/// Whether `expr` is a validator's key comparison: `less_than` as the
+/// templates write it, `true` exactly when the order says `lt`.
+fn key_comparison(arms: &[lexlean::calculus::Arm]) -> bool {
+    use lexlean::calculus::Shape;
+    let constant = |expr: &Expr, wanted: Shape| {
+        matches!(expr, Expr::Build { shape, operands, .. } if *shape == wanted && operands.is_empty())
+    };
+    arms.len() == 3
+        && arms[0].shape == Shape::Lt
+        && constant(&arms[0].body, Shape::True)
+        && arms[1].shape == Shape::Eq
+        && constant(&arms[1].body, Shape::False)
 }
 
 fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
     use lexlean::calculus::{Prim, Shape};
+    match (mutation, &mut *expr) {
+        (
+            Mutation::Validation,
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            },
+        ) if matches!(**condition, Expr::Call { .. })
+            && matches!(**else_branch, Expr::Build { shape: Shape::None, .. }) =>
+        {
+            let kept = (**then_branch).clone();
+            *expr = kept;
+            return true;
+        }
+        (
+            Mutation::Weakening,
+            Expr::Match {
+                ty: _,
+                scrutinee,
+                arms,
+            },
+        ) if matches!(**scrutinee, Expr::Prim { operation: Prim::Compare, .. })
+            && key_comparison(arms) =>
+        {
+            if let Expr::Build { shape, .. } = &mut arms[1].body {
+                *shape = Shape::True;
+            }
+            return true;
+        }
+        _ => {}
+    }
     let here = match (mutation, &mut *expr) {
         (
             Mutation::Branches,
@@ -547,13 +742,26 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
     }
 }
 
-/// `program` with `mutation` planted at its first applicable site, if any.
+/// The lowered program with `mutation` planted at its first applicable
+/// site, if any: a boundary mutation in the entry or a validator, from the
+/// last back; any other in the closure, from the root on.
 #[must_use]
-pub fn mutate(program: &Program, mutation: Mutation) -> Option<Program> {
+pub fn mutate(lowered: &lexlean::production::lower::Lowered, mutation: Mutation) -> Option<Program> {
+    use lexlean::production::lower::Origin;
+    let program = &lowered.program;
     let mut mutated = program.clone();
-    let original = program.clone();
-    for function in &mut mutated.functions {
-        if mutate_expr(&mut function.body, mutation, &original) {
+    let boundary = Mutation::BOUNDARY.contains(&mutation);
+    let count = mutated.functions.len();
+    for position in 0..count {
+        let index = if boundary { count - 1 - position } else { position };
+        let at_boundary = matches!(
+            lowered.layout.functions[index],
+            Origin::Validator { .. } | Origin::Entry { .. }
+        );
+        if at_boundary != boundary {
+            continue;
+        }
+        if mutate_expr(&mut mutated.functions[index].body, mutation, program) {
             return Some(mutated);
         }
     }
@@ -572,7 +780,7 @@ pub struct Planted {
     pub rejection: String,
 }
 
-/// Plant every mutation in the first root of `project` whose program
+/// Plant each of `mutations` in the first root of `project` whose program
 /// admits it, regenerate that root's certificate against the mutated
 /// program, and compile it.
 ///
@@ -580,7 +788,7 @@ pub struct Planted {
 ///
 /// Panics when the unmutated environment does not compile.
 #[must_use]
-pub fn plant(project: &P) -> Vec<Planted> {
+pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
     let checked = support::checked_project(project);
     let modules = linked_modules(&checked);
     let rendered = support::rendered(project);
@@ -598,11 +806,11 @@ pub fn plant(project: &P) -> Vec<Planted> {
     assert!(compiled.failure.is_none(), "{:?}", compiled.failure);
     let roots = roots(&checked).expect("the eligibility reports");
     let mut out = Vec::new();
-    for mutation in Mutation::ALL {
+    for mutation in mutations.iter().copied() {
         for root in &roots {
             let mut lowered = lower_root(&modules, &root.module, &root.name, root.report)
                 .expect("an eligible root lowers");
-            let Some(program) = mutate(&lowered.program, mutation) else {
+            let Some(program) = mutate(&lowered, mutation) else {
                 continue;
             };
             lowered.program = program;

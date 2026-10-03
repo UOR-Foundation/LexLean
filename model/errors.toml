@@ -454,3 +454,10 @@ class = "language"
 exit = 1
 title = "Certificate B rejected"
 statement = "A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."
+
+[[error]]
+code = "LLV7016"
+class = "language"
+exit = 1
+title = "Certificate E rejected"
+statement = "The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."

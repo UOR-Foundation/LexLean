@@ -4037,8 +4037,9 @@ program enters the proof only as the literal the kernel evaluates.
 
 **Library.** `language/preservation-1.2/library/LexLeanPreservation/` holds
 the hand-written proof library (`Core`, `Values`, `Primitives`, `Fixed`,
-`Keys`, `Templates`, and certificate B's `RustBase`, `RustCorr`,
-`RustLemmas`, `RustMatches`, `RustSound`); `language/preservation-1.2/library.toml`
+`Keys`, `Templates`, certificate B's `RustBase`, `RustCorr`,
+`RustLemmas`, `RustMatches`, `RustSound`, the boundary validators'
+`Validate`, and certificate E's `Compose`); `language/preservation-1.2/library.toml`
 (`lexlean/preservation-library/1`) lists its modules in dependency order and
 every declaration with its exact axioms. `language/preservation-1.2/modules/`
 ships the calculus modules `LexLeanTarget.TargetSyntax` and
@@ -4062,9 +4063,9 @@ modules. Each is replayed by `leanchecker`, which shares Lean's kernel
 every root theorem's must be exactly `Classical.choice`, `Quot.sound`, and
 `propext`.
 
-**Verification.** `lexlean verify` checks certificates A and B after
+**Verification.** `lexlean verify` checks certificates A, B, and E after
 named-root extraction (§22.1 stage 12): it renders each root's program in
-each of its targets, derives certificate B, stages the shipped environment,
+each of its targets, derives certificate B, composes certificate E, stages the shipped environment,
 compiles each module and certificate silently with the pinned Lean, replays
 each certificate through `leanchecker`, and audits the axioms. A shipped
 module that fails its token audit or does not compile silently, or a library
@@ -4072,13 +4073,15 @@ declaration whose axioms differ from its registry row, is `LLV7014`; a
 certificate A that does not compile silently, fails its replay, or whose
 root theorem's axioms are not exactly the three above is `LLV7013`; a
 rendering the aligner derives no correspondence for, or a certificate B that
-fails any of the same checks, is `LLV7015`. It publishes each certificate
+fails any of the same checks, is `LLV7015`; a certificate E that fails
+them is `LLV7016`. It publishes each certificate
 under `preserve/`, the audit output, process records, and
 `preserve/preservation.json` (`lexlean/preservation/1`,
 `schemas/preservation.schema.json`): the registry's SHA-256, the root
 theorem axioms, and per root its targets, certificate module, theorem, and
 the certificate's byte length and SHA-256, and per target its certificate
-B's module, theorem, byte length, and SHA-256, which the attestation binds.
+B's module, theorem, byte length, and SHA-256 and its certificate E's
+module, theorem, byte length, and SHA-256, which the attestation binds.
 
 **Rust machine.** The meaning of a rendered crate (§17.16) is declared by two
 generated LexLean modules of the `compiler` project, verified and shipped
@@ -4162,6 +4165,30 @@ default. The correspondence and its side conditions are vocabulary of the
 hand-written library rather than generated, because they are the statement
 the library's proofs are about; the machine they relate is the generated
 `RustSemantics`.
+
+**Certificate E.** Certificates A and B compose into the end-to-end
+statement, the module `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or
+`.Compose.RustStd`, which imports both and proves
+
+```lean
+theorem root (x₁ … xₙ) :
+    ∃ ro, RealizesFn F (denote x₁ … xₙ) ro ∧
+      RCI krate (fnIdent 0) [enc x₁, …, enc xₙ] ro
+```
+
+where `denote` is certificate A's observation, `krate` certificate B's
+crate, `F` whether the root's Rust function returns `R<T>`, and `RCI c f
+args ro` that the machine, invoked on the Rust function `f` with `args`,
+ends in the outcome `ro`: for every source argument, the rendered root
+returns the encoded source result, `Err(Overflow)` exactly when the width
+predicate fails and the function is fallible, or the machine's abort. The
+proof is the library's `compose` applied to the two theorems and to a
+generated proof that every encoded argument is well typed for the root's
+parameters, `WT (enc x) t`, written construct by construct over the
+encoders: one theorem per encoder, mutual over a recursive group as the
+encoders are, with the library's lemmas for every primitive and container
+value. A certificate E that does not compile silently, fails its replay,
+or whose theorem's axioms are not exactly the three above is `LLV7016`.
 
 **Evidence.** The conformance suite certifies every production root of
 `examples/production` and `examples/production-coverage`, and verification
@@ -4852,13 +4879,13 @@ A failed command removes its staging tree and leaves no verified artifact.
 9. process-sized axiom-audit module-family generation and execution;
 10. exact axiom-output parsing;
 11. per-declaration policy enforcement;
-12. named-root extraction, then certificate A for every production root and certificate B for its rendering in each of its targets, when the project has a production root (§22.10, §17.17);
+12. named-root extraction, then certificate A for every production root and certificates B and E for its rendering in each of its targets, when the project has a production root (§22.10, §17.17);
 13. optional configured PDF rendering;
 14. process-output normalization;
 15. verification-attestation construction;
 16. atomic publication.
 
-No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificates A and B only when no module declares a production root.
+No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificates A, B, and E only when no module declares a production root.
 
 ### 22.2 Lake-resolved execution
 
@@ -5677,6 +5704,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7013` | Certificate A rejected (§17.17). |
 | `LLV7014` | Preservation environment drift (§17.17). |
 | `LLV7015` | Certificate B rejected (§17.17). |
+| `LLV7016` | Certificate E rejected (§17.17). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -6586,6 +6614,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
 | `SP-08` | `preservation` | Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused. | §17.16, §17.17 |
+| `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, invoked on the encoded source arguments, realizes certificate A's observation of the source; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition. | §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -6599,7 +6628,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `MD-11` | `models` | Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean. | §17.13, §17.14, §22.10 |
 | `MD-12` | `models` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. | §17.12, §28.6 |
 
-**Total required capability IDs:** 298.
+**Total required capability IDs:** 299.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -36,7 +36,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::eligibility::BUILTIN_OWNERS;
-use super::lower::{fixed_kind, Layout, Lowered, Origin};
+use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
 use crate::backend::semantic::{hypothesis, identifier, string_literal};
@@ -56,13 +56,14 @@ use crate::ir::semantic::{
 pub const LIBRARY: &str = "LexLeanPreservation";
 
 /// The library modules every certificate imports, in import order.
-pub const LIBRARY_MODULES: [&str; 6] = [
+pub const LIBRARY_MODULES: [&str; 7] = [
     "LexLeanPreservation.Core",
     "LexLeanPreservation.Values",
     "LexLeanPreservation.Primitives",
     "LexLeanPreservation.Fixed",
     "LexLeanPreservation.Keys",
     "LexLeanPreservation.Templates",
+    "LexLeanPreservation.Validate",
 ];
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
@@ -393,20 +394,79 @@ struct Nested {
     group: u64,
 }
 
-/// Generate the certificate of one lowered root as module `module`.
+/// Certificate E of one lowered root in one target (SPEC.md §17.17):
+/// certificate A's observation of the root on its encoded arguments,
+/// realized by the root's rendering, composed from certificate A (module
+/// `module_a`) and certificate B (module `module_b`), as module `module`.
+/// `fallible` is whether the rendering of the root returns `R<T>`.
 ///
 /// # Errors
 ///
 /// Returns `LLI9001` when the layout and the source disagree, which a
 /// lowering produced by [`super::lower::lower_root`] rules out.
-pub fn certificate(
+#[allow(clippy::too_many_arguments)]
+pub fn certificate_e(
     modules: &BTreeMap<String, super::eligibility::LinkedModule<'_>>,
     root_module: &str,
     root_name: &str,
-    report: &RootReport,
     lowered: &Lowered,
+    module_a: &str,
+    module_b: &str,
     module: &str,
+    fallible: bool,
 ) -> Result<Certificate, Diagnostic> {
+    let mut generator = generator(modules, lowered);
+    generator.nest().map_err(internal)?;
+    let text = generator
+        .compose(root_module, root_name, module_a, module_b, module, fallible)
+        .map_err(internal)?;
+    Ok(Certificate {
+        module: module.to_owned(),
+        theorem: format!("{module}.root"),
+        denote: format!("{module_a}.denote"),
+        text,
+        imports: Vec::new(),
+    })
+}
+
+/// `text` with every name certificate A defines (its encoders and their
+/// bundles and auxiliaries) qualified by A's module.
+fn qualify(text: &str, module_a: &str) -> String {
+    const DEFINED: [&str; 5] = ["__enc_", "__L_", "__O_", "__aux_", "__items_"];
+    let mut out = String::new();
+    let mut rest = text;
+    loop {
+        let found = DEFINED
+            .iter()
+            .filter_map(|prefix| rest.find(prefix).map(|at| (at, *prefix)))
+            .min();
+        match found {
+            Some((at, prefix)) => {
+                let boundary = rest[..at]
+                    .chars()
+                    .next_back()
+                    .is_none_or(|before| !(before.is_alphanumeric() || before == '_' || before == '.'));
+                out.push_str(&rest[..at]);
+                if boundary {
+                    out.push_str(module_a);
+                    out.push('.');
+                }
+                out.push_str(prefix);
+                rest = &rest[at + prefix.len()..];
+            }
+            None => {
+                out.push_str(rest);
+                return out;
+            }
+        }
+    }
+}
+
+/// The generator of a lowered root's certificates, before nesting.
+fn generator<'a>(
+    modules: &'a BTreeMap<String, super::eligibility::LinkedModule<'a>>,
+    lowered: &'a Lowered,
+) -> Gen<'a> {
     let source = Source { modules };
     let mut instances = BTreeMap::new();
     let mut lambdas = BTreeMap::new();
@@ -447,6 +507,14 @@ pub fn certificate(
                     templates.insert((template.name().to_owned(), types.clone()), *entry);
                 }
             }
+            // The boundary's functions are related by their own theorems,
+            // which no source construct calls.
+            Origin::Validator {
+                ty: _,
+                module: _,
+                kind: _,
+            }
+            | Origin::Entry { validators: _ } => {}
         }
     }
     let adts = lowered
@@ -456,7 +524,7 @@ pub fn certificate(
         .enumerate()
         .map(|(index, adt)| (adt.text.clone(), index as u64))
         .collect();
-    let mut generator = Gen {
+    Gen {
         source,
         layout: &lowered.layout,
         program: &lowered.program,
@@ -467,7 +535,24 @@ pub fn certificate(
         subjects: BTreeMap::new(),
         found: BTreeMap::new(),
         nested: BTreeMap::new(),
-    };
+    }
+}
+
+/// Generate the certificate of one lowered root as module `module`.
+///
+/// # Errors
+///
+/// Returns `LLI9001` when the layout and the source disagree, which a
+/// lowering produced by [`super::lower::lower_root`] rules out.
+pub fn certificate(
+    modules: &BTreeMap<String, super::eligibility::LinkedModule<'_>>,
+    root_module: &str,
+    root_name: &str,
+    report: &RootReport,
+    lowered: &Lowered,
+    module: &str,
+) -> Result<Certificate, Diagnostic> {
+    let mut generator = generator(modules, lowered);
     generator.nest().map_err(internal)?;
     let text = generator
         .module(root_module, root_name, report, module)
@@ -4103,7 +4188,13 @@ impl<'a> Gen<'a> {
                     types: _,
                     entry: _,
                     member: _,
-                } => {}
+                }
+                | Origin::Validator {
+                    ty: _,
+                    module: _,
+                    kind: _,
+                }
+                | Origin::Entry { validators: _ } => {}
             }
         }
         // Lambdas were registered as their owners were walked; walk each
@@ -5236,6 +5327,7 @@ impl<'a> Gen<'a> {
             lib("run_of_funRel"),
             signature.names.join(" ")
         ));
+        out.push_str(&self.boundary(&signature, &signature.names)?);
         out.push_str(&format!("end {name}\n"));
         Ok(out)
     }
@@ -6871,5 +6963,1069 @@ impl Gen<'_> {
         }
         out.push_str(&format!(" {scrutinee_src}{arguments})"));
         Ok(out)
+    }
+}
+
+impl Gen<'_> {
+    /// The proof that every value of `ty`, encoded, is well typed: a term
+    /// of `∀ x, WT p c A (enc x) ty`.
+    fn wtf(&self, ty: &SemanticType, module_a: &str) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => {
+                let n = nested.index;
+                return Ok(match &nested.ty {
+                    SemanticType::List { element: _ }
+                    | SemanticType::Set { element: _ }
+                    | SemanticType::Map { key: _, value: _ }
+                    | SemanticType::ContractViolation => format!(
+                        "({} {module_a}.__L_{n} {})",
+                        lib("Rust.wt_listEnc"),
+                        self.wtf(&element_of(ty)?, module_a)?
+                    ),
+                    SemanticType::Option { value } => format!(
+                        "({} {module_a}.__O_{n} {})",
+                        lib("Rust.wt_optEnc"),
+                        self.wtf(value, module_a)?
+                    ),
+                    SemanticType::Result { ok: _, error: _ }
+                    | SemanticType::Product { left: _, right: _ }
+                    | SemanticType::Named {
+                        member: _,
+                        arguments: _,
+                    }
+                    | SemanticType::Function {
+                        parameters: _,
+                        result: _,
+                    }
+                    | SemanticType::Type
+                    | SemanticType::Prop
+                    | SemanticType::Parameter { name: _ }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering => format!("__wtAux_{n}"),
+                });
+            }
+            None => {}
+        }
+        let rust = |name: &str| lib(&format!("Rust.{name}"));
+        Ok(match ty {
+            SemanticType::Nat => rust("wt_nat"),
+            SemanticType::Int => rust("wt_int"),
+            SemanticType::Bool => rust("wt_bool"),
+            SemanticType::String => rust("wt_string"),
+            SemanticType::Bytes => rust("wt_bytes"),
+            SemanticType::Unit => rust("wt_encUnit"),
+            SemanticType::Ordering => rust("wt_encOrdering"),
+            SemanticType::UInt8 => rust("wt_u8"),
+            SemanticType::UInt16 => rust("wt_u16"),
+            SemanticType::UInt32 => rust("wt_u32"),
+            SemanticType::UInt64 => rust("wt_u64"),
+            SemanticType::Int8 => rust("wt_i8"),
+            SemanticType::Int16 => rust("wt_i16"),
+            SemanticType::Int32 => rust("wt_i32"),
+            SemanticType::Int64 => rust("wt_i64"),
+            SemanticType::Option { value } => {
+                format!("({} {})", rust("wt_encOption"), self.wtf(value, module_a)?)
+            }
+            SemanticType::Result { ok, error } => format!(
+                "({} {} {})",
+                rust("wt_encExcept"),
+                self.wtf(error, module_a)?,
+                self.wtf(ok, module_a)?
+            ),
+            SemanticType::List { element } | SemanticType::Set { element } => {
+                format!("({} {})", rust("wt_encList"), self.wtf(element, module_a)?)
+            }
+            SemanticType::Map { key, value } => format!(
+                "({} ({} {} {}))",
+                rust("wt_encList"),
+                rust("wt_encPair"),
+                self.wtf(key, module_a)?,
+                self.wtf(value, module_a)?
+            ),
+            SemanticType::Product { left, right } => format!(
+                "({} {} {})",
+                rust("wt_encPair"),
+                self.wtf(left, module_a)?,
+                self.wtf(right, module_a)?
+            ),
+            SemanticType::ContractViolation => format!(
+                "({} {} {})",
+                rust("wt_encPair"),
+                rust("wt_bool"),
+                rust("wt_bool")
+            ),
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => {
+                let text = self.source.type_text(ty);
+                let index = self
+                    .adts
+                    .get(&text)
+                    .ok_or_else(|| format!("`{text}` has no ADT in the layout"))?;
+                format!("__wt_{index}")
+            }
+            SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ } => {
+                return Err(format!(
+                    "`{}` crosses no root boundary",
+                    self.source.type_text(ty)
+                ));
+            }
+        })
+    }
+
+    /// The well-typedness proof of `arg` encoded as a field inside a
+    /// recursive group, as [`Self::raw_apply`] encodes it.
+    fn wt_apply(&self, ty: &SemanticType, arg: &str, module_a: &str) -> Result<String, String> {
+        match self.nested.get(&self.source.type_text(ty)) {
+            Some(nested) => Ok(match &nested.ty {
+                SemanticType::List { element: _ }
+                | SemanticType::Set { element: _ }
+                | SemanticType::Map { key: _, value: _ }
+                | SemanticType::ContractViolation => format!(
+                    "({} (__wtItems_{} {arg}))",
+                    lib("Rust.wt_list"),
+                    nested.index
+                ),
+                SemanticType::Option { value: _ }
+                | SemanticType::Result { ok: _, error: _ }
+                | SemanticType::Product { left: _, right: _ }
+                | SemanticType::Named {
+                    member: _,
+                    arguments: _,
+                }
+                | SemanticType::Function {
+                    parameters: _,
+                    result: _,
+                }
+                | SemanticType::Type
+                | SemanticType::Prop
+                | SemanticType::Parameter { name: _ }
+                | SemanticType::Nat
+                | SemanticType::Bool
+                | SemanticType::Unit
+                | SemanticType::Int
+                | SemanticType::Int8
+                | SemanticType::Int16
+                | SemanticType::Int32
+                | SemanticType::Int64
+                | SemanticType::UInt8
+                | SemanticType::UInt16
+                | SemanticType::UInt32
+                | SemanticType::UInt64
+                | SemanticType::String
+                | SemanticType::Bytes
+                | SemanticType::Ordering => format!("(__wtAux_{} {arg})", nested.index),
+            }),
+            None => Ok(format!("({} {arg})", self.wtf(ty, module_a)?)),
+        }
+    }
+
+    /// A list of well-typedness proofs as one proof of `WTL`.
+    fn wtl(proofs: &[String]) -> String {
+        proofs.iter().rev().fold(lib("Rust.wtl_nil"), |tail, head| {
+            format!("({} {head} {tail})", lib("Rust.wtl_cons"))
+        })
+    }
+
+    /// The well-typedness theorems of every document type's encoder and of
+    /// the auxiliaries nested in a recursive group, by the same recursion
+    /// as the encoders: one mutual block per group.
+    fn wt_theorems(&self, module_a: &str, sem: &str) -> Result<String, String> {
+        let graph = self.adt_graph()?;
+        let mut texts: BTreeMap<u64, String> = BTreeMap::new();
+        for (index, adt) in self.layout.adts.iter().enumerate() {
+            let index = index as u64;
+            let shape = self.source.document(&adt.ty)?;
+            let lean = self.ty(&adt.ty)?;
+            let recursive = self.nested.values().any(|nested| nested.group == index)
+                || components(&graph)
+                    .iter()
+                    .any(|component| component.len() > 1 && component.contains(&index))
+                || graph
+                    .get(&index)
+                    .is_some_and(|edges| edges.contains(&index));
+            let statement = |binder: &str| {
+                format!(
+                    "{} {sem} ({module_a}.__enc_{index} {binder}) (.adt {index})",
+                    lib("Rust.WT")
+                )
+            };
+            let text = if shape.kind == "inductive" || recursive {
+                let owner = lean
+                    .trim_start_matches('(')
+                    .split(' ')
+                    .next()
+                    .unwrap_or_default()
+                    .trim_end_matches(')')
+                    .to_owned();
+                let mut text = format!(
+                    "theorem __wt_{index} : ∀ (__v : {lean}), {}\n",
+                    statement("__v")
+                );
+                for (constructor, fields) in shape.names.iter().zip(&shape.fields) {
+                    let binders: Vec<String> = (0..fields.len())
+                        .map(|field| format!("__x{field}"))
+                        .collect();
+                    let proofs = fields
+                        .iter()
+                        .zip(&binders)
+                        .map(|(field, binder)| self.wt_apply(field, binder, module_a))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    let pattern = if shape.kind == "inductive" {
+                        format!(
+                            "{owner}.{}{}",
+                            identifier(constructor),
+                            binders
+                                .iter()
+                                .map(|binder| format!(" {binder}"))
+                                .collect::<String>()
+                        )
+                    } else {
+                        format!("⟨{}⟩", binders.join(", "))
+                    };
+                    text.push_str(&format!(
+                        "  | {pattern} => {} rfl {}\n",
+                        lib("Rust.wt_adt"),
+                        Self::wtl(&proofs)
+                    ));
+                }
+                text.push('\n');
+                text
+            } else {
+                let proofs = shape
+                    .field_names
+                    .iter()
+                    .zip(&shape.fields[0])
+                    .map(|(name, ty)| {
+                        Ok::<String, String>(format!(
+                            "({} (__s).{})",
+                            self.wtf(ty, module_a)?,
+                            identifier(name)
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                format!(
+                    "theorem __wt_{index} : ∀ (__s : {lean}), {} :=\n  fun __s => {} rfl {}\n\n",
+                    statement("__s"),
+                    lib("Rust.wt_adt"),
+                    Self::wtl(&proofs)
+                )
+            };
+            texts.insert(index, text);
+        }
+        let mut out = String::new();
+        for component in components(&graph) {
+            let mut items: Vec<String> =
+                component.iter().map(|index| texts[index].clone()).collect();
+            let mut nested: Vec<&Nested> = self
+                .nested
+                .values()
+                .filter(|nested| nested.group == component[0])
+                .collect();
+            nested.sort_by_key(|nested| nested.index);
+            for nested in nested {
+                items.push(self.wt_auxiliary(nested, module_a, sem)?);
+            }
+            out.push_str(&mutual_block(&items));
+        }
+        Ok(out)
+    }
+
+    /// The well-typedness theorem of a nested container's auxiliary.
+    fn wt_auxiliary(&self, nested: &Nested, module_a: &str, sem: &str) -> Result<String, String> {
+        let lean = self.ty(&nested.ty)?;
+        let n = nested.index;
+        let target = render_ty(&self.target_ty(&nested.ty)?);
+        let wt = lib("Rust.WT");
+        Ok(match &nested.ty {
+            SemanticType::List { element: _ }
+            | SemanticType::Set { element: _ }
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::ContractViolation => {
+                let element = element_of(&nested.ty)?;
+                format!(
+                    "theorem __wtItems_{n} : ∀ (__v : {lean}), {} {sem} ({module_a}.__items_{n} __v) {}\n  | [] => {}\n  | __x0 :: __x1 => {} {} (__wtItems_{n} __x1)\n\n",
+                    lib("Rust.WTAll"),
+                    render_ty(&self.target_ty(&element)?),
+                    lib("Rust.wtAll_nil"),
+                    lib("Rust.wtAll_cons"),
+                    self.wt_apply(&element, "__x0", module_a)?
+                )
+            }
+            SemanticType::Option { value: inner } => format!(
+                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | none => {}\n  | some __x0 => {} {}\n\n",
+                lib("Rust.wt_noneV"),
+                lib("Rust.wt_someV"),
+                self.wt_apply(inner, "__x0", module_a)?
+            ),
+            SemanticType::Product { left, right } => format!(
+                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | (__x0, __x1) => {} {} {}\n\n",
+                lib("Rust.wt_pairV"),
+                self.wt_apply(left, "__x0", module_a)?,
+                self.wt_apply(right, "__x1", module_a)?
+            ),
+            SemanticType::Result { ok, error } => format!(
+                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | Except.error __x0 => {} {}\n  | Except.ok __x0 => {} {}\n\n",
+                lib("Rust.wt_errorV"),
+                self.wt_apply(error, "__x0", module_a)?,
+                lib("Rust.wt_okV"),
+                self.wt_apply(ok, "__x0", module_a)?
+            ),
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering => {
+                return Err(format!(
+                    "`{}` is not a nested container",
+                    self.source.type_text(&nested.ty)
+                ));
+            }
+        })
+    }
+
+    /// The text of certificate E.
+    fn compose(
+        &self,
+        root_module: &str,
+        root_name: &str,
+        module_a: &str,
+        module_b: &str,
+        name: &str,
+        fallible: bool,
+    ) -> Result<String, String> {
+        let sem = format!("{module_b}.program {module_b}.krate {module_b}.flags");
+        let mut out = format!(
+            "import {module_a}\nimport {module_b}\nimport LexLeanPreservation.Compose\nset_option autoImplicit false\nset_option maxRecDepth 100000\nnamespace {name}\n\n"
+        );
+        out.push_str(&self.wt_theorems(module_a, &sem)?);
+        let (parameters, _) = self.source.signature(root_module, root_name, &[])?;
+        let mut binders = Vec::new();
+        let mut names = Vec::new();
+        let mut arguments = Vec::new();
+        let mut proofs = Vec::new();
+        for SemanticParameter { name: local, r#type } in &parameters {
+            let local = identifier(local);
+            binders.push(format!("({local} : {})", self.ty(r#type)?));
+            arguments.push(format!("({} {local})", qualify(&self.enc(r#type)?, module_a)));
+            proofs.push(format!("({} {local})", self.wtf(r#type, module_a)?));
+            names.push(local);
+        }
+        let applied: String = names.iter().map(|local| format!(" {local}")).collect();
+        match self.entry_of() {
+            // The root's entry validates the parameters that carry an
+            // invariant before calling the root: its rendering realizes the
+            // root's observation as `some` when §17.12's invariants hold,
+            // and `none` when one fails.
+            Some((entry, _)) => out.push_str(&format!(
+                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} : ∃ ro, {} {module_b}.krate ({} {entry}) [{}] ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) ro) :=\n  match {} (fun n => {module_b}.root n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨ro, hr, hc⟩ => ⟨ro, hc, fun h => {module_a}.entry_accepts{applied} h ▸ hr, fun h => {module_a}.entry_refuses{applied} h ▸ hr⟩\n\n",
+                binders.join(" "),
+                lib("Rust.RCI"),
+                lib("Rust.fnIdent"),
+                arguments.join(", "),
+                lib("Rust.RealizesFn"),
+                lib("someObs"),
+                lib("Rust.RealizesFn"),
+                lib("Obs"),
+                lib("Rust.compose"),
+                Self::wtl(&proofs),
+                lib("Rust.rel_ne_stuck"),
+            )),
+            None => out.push_str(&format!(
+                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} : ∃ ro, {} {fallible} ({module_a}.denote{applied}) ro ∧ {} {module_b}.krate ({} 0) [{}] ro :=\n  {} (fun n => {module_b}.root n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
+                binders.join(" "),
+                lib("Rust.RealizesFn"),
+                lib("Rust.RCI"),
+                lib("Rust.fnIdent"),
+                arguments.join(", "),
+                lib("Rust.compose"),
+                Self::wtl(&proofs),
+                lib("Rust.rel_ne_stuck"),
+            )),
+        }
+        out.push_str(&format!("end {name}\n"));
+        Ok(out)
+    }
+}
+
+// --- The boundary (SPEC.md §17.17) ------------------------------------------
+
+/// One validator's four statements: its definition, its proposition, the
+/// theorem that it decides the proposition, and its relation; and, for a
+/// container of a recursive group, the theorem that the group's recursion
+/// states the library's proposition.
+struct Stated {
+    items: [String; 4],
+    corollary: String,
+}
+
+/// The components of a map, product, or result type.
+fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
+    match ty {
+        SemanticType::Map { key: left, value: right }
+        | SemanticType::Product { left, right }
+        | SemanticType::Result {
+            ok: left,
+            error: right,
+        } => Ok((left.as_ref().clone(), right.as_ref().clone())),
+        SemanticType::Type
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { value: _ }
+        | SemanticType::List { element: _ }
+        | SemanticType::Set { element: _ }
+        | SemanticType::Named {
+            member: _,
+            arguments: _,
+        }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::ContractViolation => Err(format!("{ty:?} has no two components")),
+    }
+}
+
+/// The validators a validator calls.
+fn checked(kind: &Validation) -> Vec<u64> {
+    match kind {
+        Validation::Trivial | Validation::Set => Vec::new(),
+        Validation::Map { value }
+        | Validation::List { element: value }
+        | Validation::Option { value } => vec![*value],
+        Validation::Pair { left, right } => vec![*left, *right],
+        Validation::Result { ok, error } => vec![*ok, *error],
+        Validation::Document { fields } => fields.iter().flatten().flatten().copied().collect(),
+    }
+}
+
+impl Gen<'_> {
+    /// The root's boundary validators by function index.
+    fn checks(&self) -> BTreeMap<u64, (&SemanticType, &str, &Validation)> {
+        let mut out = BTreeMap::new();
+        for (index, origin) in self.layout.functions.iter().enumerate() {
+            match origin {
+                Origin::Validator { ty, module, kind } => {
+                    out.insert(index as u64, (ty, module.as_str(), kind));
+                }
+                Origin::Definition {
+                    module: _,
+                    name: _,
+                    type_arguments: _,
+                    instance: _,
+                }
+                | Origin::Instance { module: _, name: _ }
+                | Origin::Lambda {
+                    owner: _,
+                    ordinal: _,
+                }
+                | Origin::Template {
+                    template: _,
+                    types: _,
+                    entry: _,
+                    member: _,
+                }
+                | Origin::Entry { validators: _ } => {}
+            }
+        }
+        out
+    }
+
+    /// The root's entry, if it has one: its index and the validator of
+    /// each parameter.
+    fn entry_of(&self) -> Option<(u64, &[Option<u64>])> {
+        let last = self.layout.functions.len().checked_sub(1)?;
+        match &self.layout.functions[last] {
+            Origin::Entry { validators } => Some((last as u64, validators.as_slice())),
+            Origin::Definition {
+                module: _,
+                name: _,
+                type_arguments: _,
+                instance: _,
+            }
+            | Origin::Instance { module: _, name: _ }
+            | Origin::Lambda {
+                owner: _,
+                ordinal: _,
+            }
+            | Origin::Template {
+                template: _,
+                types: _,
+                entry: _,
+                member: _,
+            }
+            | Origin::Validator {
+                ty: _,
+                module: _,
+                kind: _,
+            } => None,
+        }
+    }
+
+    /// Whether an ADT belongs to a recursive group, as its encoder does.
+    fn recursive_adt(&self, index: u64, graph: &BTreeMap<u64, BTreeSet<u64>>) -> bool {
+        self.nested.values().any(|nested| nested.group == index)
+            || components(graph)
+                .iter()
+                .any(|component| component.len() > 1 && component.contains(&index))
+            || graph.get(&index).is_some_and(|edges| edges.contains(&index))
+    }
+
+    /// Whether a validator is stated by the recursion of a recursive group
+    /// of document types: a document of the group, or a container nested in
+    /// it, whose encoder is an auxiliary of the group's mutual block.
+    fn grouped(
+        &self,
+        ty: &SemanticType,
+        kind: &Validation,
+        graph: &BTreeMap<u64, BTreeSet<u64>>,
+    ) -> Result<bool, String> {
+        let text = self.source.type_text(ty);
+        Ok(match kind {
+            Validation::Trivial => false,
+            Validation::Document { fields: _ } => {
+                let index = *self
+                    .adts
+                    .get(&text)
+                    .ok_or_else(|| format!("`{text}` has no ADT in the layout"))?;
+                self.recursive_adt(index, graph)
+            }
+            Validation::Set
+            | Validation::Map { value: _ }
+            | Validation::List { element: _ }
+            | Validation::Option { value: _ }
+            | Validation::Pair { left: _, right: _ }
+            | Validation::Result { ok: _, error: _ } => self.nested.contains_key(&text),
+        })
+    }
+
+    /// Certificate A's boundary: every validator's definition, proposition,
+    /// decision theorem, and relation, in dependency order, a recursive
+    /// group's in mutual blocks; then the entry's relation and its two
+    /// outcomes.
+    fn boundary(&self, signature: &Signature, names: &[String]) -> Result<String, String> {
+        let checks = self.checks();
+        let adt_graph = self.adt_graph()?;
+        let graph: BTreeMap<u64, BTreeSet<u64>> = checks
+            .iter()
+            .map(|(index, (_, _, kind))| (*index, checked(kind).into_iter().collect()))
+            .collect();
+        let mut out = String::new();
+        for component in components(&graph) {
+            let mut grouped = Vec::new();
+            for index in &component {
+                let (ty, _, kind) = checks[index];
+                grouped.push(self.grouped(ty, kind, &adt_graph)?);
+            }
+            let recursive = grouped.iter().any(|grouped| *grouped);
+            if (recursive && !grouped.iter().all(|grouped| *grouped))
+                || (!recursive && component.len() > 1)
+            {
+                return Err(format!(
+                    "the validators {component:?} call one another outside a recursive group"
+                ));
+            }
+            let mut members = component.clone();
+            members.sort_unstable();
+            let mut items: [Vec<String>; 4] = [Vec::new(), Vec::new(), Vec::new(), Vec::new()];
+            let mut corollaries = String::new();
+            for index in members {
+                let (ty, module, kind) = checks[&index];
+                let stated = self.stated(index, ty, module, kind, recursive)?;
+                for (slot, text) in items.iter_mut().zip(stated.items) {
+                    slot.push(text);
+                }
+                corollaries.push_str(&stated.corollary);
+            }
+            for slot in &items {
+                out.push_str(&mutual_block(slot));
+            }
+            out.push_str(&corollaries);
+        }
+        match self.entry_of() {
+            Some((entry, validators)) => {
+                out.push_str(&self.entry_section(entry, validators, signature, names)?);
+            }
+            None => {}
+        }
+        Ok(out)
+    }
+
+    /// One validator's statements.
+    #[allow(clippy::too_many_lines)]
+    fn stated(
+        &self,
+        k: u64,
+        ty: &SemanticType,
+        module: &str,
+        kind: &Validation,
+        recursive: bool,
+    ) -> Result<Stated, String> {
+        let p = LIBRARY;
+        let value = format!("{SYNTAX}.Value");
+        let lean = self.ty(ty)?;
+        let enc = self.enc(ty)?;
+        let coll = format!("{}.LexLeanCollections", self.lean_module(module)?);
+        let statements = |valid: &str, inv: &str, viff: &str, vrel: &str| Stated {
+            items: [
+                format!("def __valid_{k} : {lean} -> Bool{valid}\n\n"),
+                format!("def __inv_{k} : {lean} -> Prop{inv}\n\n"),
+                format!(
+                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = true ↔ __inv_{k} __v{viff}\n\n"
+                ),
+                format!(
+                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel true ({value}.bool (__valid_{k} __v))){vrel}\n\n"
+                ),
+            ],
+            corollary: String::new(),
+        };
+        let unfold = format!("by rw [__valid_{k}.eq_def, __inv_{k}.eq_def]; exact");
+        let unfold_valid = format!("by rw [__valid_{k}.eq_def]; exact");
+        let hit_true = format!(
+            "{p}.funRel_intro rfl rfl ({p}.conv_match ({p}.conv_var rfl) ({p}.convA_hit rfl rfl ({p}.conv_build {p}.convL_nil {p}.construct_true)))"
+        );
+        let call = |validator: &u64, operand: &str, argument: &str| {
+            format!(
+                "{p}.conv_call ({p}.convL_cons {operand} {p}.convL_nil) (__vrel_{validator} {argument})"
+            )
+        };
+        let var = format!("({p}.conv_var rfl)");
+        let falsity = format!("(fun _ => {p}.conv_build {p}.convL_nil {p}.construct_false)");
+        match (kind, recursive) {
+            (Validation::Document { fields }, _) => self.document_stated(k, ty, fields, recursive),
+            (Validation::Trivial, false) => Ok(statements(
+                " :=\n  fun _ => true",
+                " :=\n  fun _ => True",
+                &format!(" :=\n  fun __v => {p}.validTrue_inv __v"),
+                &format!(" :=\n  {p}.tpl_validTrue {enc} rfl"),
+            )),
+            (Validation::Set, false) => {
+                let key = element_of(ty)?;
+                let cmp = self.key_order(&key, &coll)?;
+                Ok(statements(
+                    &format!(" :=\n  {p}.ascSet {cmp}"),
+                    &format!(" :=\n  {p}.InvSet {cmp}"),
+                    &format!(" :=\n  {p}.ascSet_inv {cmp}"),
+                    &format!(
+                        " :=\n  {p}.tpl_validSet {} {} (fun _ => rfl) rfl",
+                        self.key_spec(&key, &coll)?,
+                        self.list_bundle(ty)?
+                    ),
+                ))
+            }
+            (Validation::Map { value: v }, false) => {
+                let (key, _) = parts(ty)?;
+                let cmp = self.key_order(&key, &coll)?;
+                Ok(statements(
+                    &format!(" :=\n  {p}.ascMap {cmp} __valid_{v}"),
+                    &format!(" :=\n  {p}.InvMap {cmp} __inv_{v}"),
+                    &format!(" :=\n  {p}.ascMap_inv {cmp} __valid_{v} __inv_{v} __viff_{v}"),
+                    &format!(
+                        " :=\n  {p}.tpl_validMap {} __valid_{v} {} (fun _ => rfl) __vrel_{v} rfl",
+                        self.key_spec(&key, &coll)?,
+                        self.list_bundle(ty)?
+                    ),
+                ))
+            }
+            (Validation::List { element: e }, false) => Ok(statements(
+                &format!(" :=\n  {p}.validList __valid_{e}"),
+                &format!(" :=\n  {p}.InvList __inv_{e}"),
+                &format!(" :=\n  {p}.validList_inv __valid_{e} __inv_{e} __viff_{e}"),
+                &format!(
+                    " :=\n  {p}.tpl_validList __valid_{e} {} (fun _ => rfl) __vrel_{e} rfl",
+                    self.list_bundle(ty)?
+                ),
+            )),
+            (Validation::Option { value: v }, false) => Ok(statements(
+                &format!(" :=\n  {p}.validOption __valid_{v}"),
+                &format!(" :=\n  {p}.InvOption __inv_{v}"),
+                &format!(" :=\n  {p}.validOption_inv __valid_{v} __inv_{v} __viff_{v}"),
+                &format!(" :=\n  {p}.tpl_validOption __valid_{v} __vrel_{v} rfl"),
+            )),
+            (Validation::Pair { left: a, right: b }, false) => Ok(statements(
+                &format!(" :=\n  {p}.validPair __valid_{a} __valid_{b}"),
+                &format!(" :=\n  {p}.InvPair __inv_{a} __inv_{b}"),
+                &format!(
+                    " :=\n  {p}.validPair_inv __valid_{a} __valid_{b} __inv_{a} __inv_{b} __viff_{a} __viff_{b}"
+                ),
+                &format!(" :=\n  {p}.tpl_validPair __valid_{a} __valid_{b} __vrel_{a} __vrel_{b} rfl"),
+            )),
+            (Validation::Result { ok: a, error: b }, false) => Ok(statements(
+                &format!(" :=\n  {p}.validExcept __valid_{b} __valid_{a}"),
+                &format!(" :=\n  {p}.InvExcept __inv_{b} __inv_{a}"),
+                &format!(
+                    " :=\n  {p}.validExcept_inv __valid_{b} __valid_{a} __inv_{b} __inv_{a} __viff_{b} __viff_{a}"
+                ),
+                &format!(" :=\n  {p}.tpl_validResult __valid_{b} __valid_{a} __vrel_{a} __vrel_{b} rfl"),
+            )),
+            // A container nested in a recursive group: the group's own
+            // structural recursion, as its encoder is.
+            (Validation::List { element: e }, true) => {
+                let mut stated = statements(
+                    &format!(
+                        "\n  | [] => true\n  | __x0 :: __x1 => if __valid_{e} __x0 then __valid_{k} __x1 else false"
+                    ),
+                    &format!("\n  | [] => True\n  | __x0 :: __x1 => __inv_{e} __x0 ∧ __inv_{k} __x1"),
+                    &format!(
+                        "\n  | [] => {unfold} {p}.trueIff\n  | __x0 :: __x1 => {unfold} {p}.condAnd_iff (__viff_{e} __x0) (__viff_{k} __x1)"
+                    ),
+                    &format!(
+                        "\n  | [] => {unfold_valid} {hit_true}\n  | __x0 :: __x1 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_miss rfl ({p}.convA_hit rfl rfl ({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then __valid_{k} __x1 else false)) (__valid_{e} __x0) ({}) (fun _ => {}) {falsity}))))) rfl",
+                        call(e, &var, "__x0"),
+                        call(&k, &var, "__x1")
+                    ),
+                );
+                stated.corollary = format!(
+                    "theorem __vinv_{k} : ∀ (__v : {lean}), __inv_{k} __v ↔ {p}.InvList __inv_{e} __v :=\n  {p}.invList_eqs __inv_{e} __inv_{k} (by rw [__inv_{k}.eq_def]) (fun _ _ => by rw [__inv_{k}.eq_def])\n\n"
+                );
+                Ok(stated)
+            }
+            (Validation::Option { value: v }, true) => {
+                let mut stated = statements(
+                    &format!("\n  | none => true\n  | some __x0 => __valid_{v} __x0"),
+                    &format!("\n  | none => True\n  | some __x0 => __inv_{v} __x0"),
+                    &format!(
+                        "\n  | none => {unfold} {p}.trueIff\n  | some __x0 => {unfold} __viff_{v} __x0"
+                    ),
+                    &format!(
+                        "\n  | none => {unfold_valid} {hit_true}\n  | some __x0 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_miss rfl ({p}.convA_hit rfl rfl ({}))))) rfl",
+                        call(v, &var, "__x0")
+                    ),
+                );
+                stated.corollary = format!(
+                    "theorem __vinv_{k} : ∀ (__v : {lean}), __inv_{k} __v ↔ {p}.InvOption __inv_{v} __v\n  | none => by rw [__inv_{k}.eq_def]; exact Iff.rfl\n  | some _ => by rw [__inv_{k}.eq_def]; exact Iff.rfl\n\n"
+                );
+                Ok(stated)
+            }
+            (Validation::Pair { left: a, right: b }, true) => {
+                let mut stated = statements(
+                    &format!(
+                        "\n  | (__x0, __x1) => if __valid_{a} __x0 then __valid_{b} __x1 else false"
+                    ),
+                    &format!("\n  | (__x0, __x1) => __inv_{a} __x0 ∧ __inv_{b} __x1"),
+                    &format!(
+                        "\n  | (__x0, __x1) => {unfold} {p}.condAnd_iff (__viff_{a} __x0) (__viff_{b} __x1)"
+                    ),
+                    &format!(
+                        "\n  | (__x0, __x1) => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then __valid_{b} __x1 else false)) (__valid_{a} __x0) ({}) (fun _ => {}) {falsity})) rfl",
+                        call(a, &format!("({p}.conv_first {var})"), "__x0"),
+                        call(b, &format!("({p}.conv_second {var})"), "__x1")
+                    ),
+                );
+                stated.corollary = format!(
+                    "theorem __vinv_{k} : ∀ (__v : {lean}), __inv_{k} __v ↔ {p}.InvPair __inv_{a} __inv_{b} __v\n  | (_, _) => by rw [__inv_{k}.eq_def]; exact Iff.rfl\n\n"
+                );
+                Ok(stated)
+            }
+            (Validation::Result { ok: a, error: b }, true) => {
+                let mut stated = statements(
+                    &format!(
+                        "\n  | Except.error __x0 => __valid_{b} __x0\n  | Except.ok __x0 => __valid_{a} __x0"
+                    ),
+                    &format!(
+                        "\n  | Except.error __x0 => __inv_{b} __x0\n  | Except.ok __x0 => __inv_{a} __x0"
+                    ),
+                    &format!(
+                        "\n  | Except.error __x0 => {unfold} __viff_{b} __x0\n  | Except.ok __x0 => {unfold} __viff_{a} __x0"
+                    ),
+                    &format!(
+                        "\n  | Except.error __x0 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_miss rfl ({p}.convA_hit rfl rfl ({}))))) rfl\n  | Except.ok __x0 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_hit rfl rfl ({})))) rfl",
+                        call(b, &var, "__x0"),
+                        call(a, &var, "__x0")
+                    ),
+                );
+                stated.corollary = format!(
+                    "theorem __vinv_{k} : ∀ (__v : {lean}), __inv_{k} __v ↔ {p}.InvExcept __inv_{b} __inv_{a} __v\n  | Except.error _ => by rw [__inv_{k}.eq_def]; exact Iff.rfl\n  | Except.ok _ => by rw [__inv_{k}.eq_def]; exact Iff.rfl\n\n"
+                );
+                Ok(stated)
+            }
+            // §17.12's positivity rule keeps a recursive occurrence out of
+            // a map or set, so neither is nested in a recursive group.
+            (Validation::Trivial | Validation::Set | Validation::Map { value: _ }, true) => {
+                Err(format!(
+                    "the validator of `{}` cannot belong to a recursive group",
+                    self.source.type_text(ty)
+                ))
+            }
+        }
+    }
+
+    /// A document type's validator: per constructor, its checked fields in
+    /// order, as the lowering's arms test them.
+    fn document_stated(
+        &self,
+        k: u64,
+        ty: &SemanticType,
+        fields: &[Vec<Option<u64>>],
+        recursive: bool,
+    ) -> Result<Stated, String> {
+        let p = LIBRARY;
+        let value = format!("{SYNTAX}.Value");
+        let shape = self.source.document(ty)?;
+        let lean = self.ty(ty)?;
+        let enc = self.enc(ty)?;
+        let var = format!("({p}.conv_var rfl)");
+        let falsity = format!("(fun _ => {p}.conv_build {p}.convL_nil {p}.construct_false)");
+        // The value, proposition, decision, and relation of the checks of
+        // `terms` from position `at` on.
+        let chain = |terms: &[(String, Option<u64>)]| -> [String; 4] {
+            let mut out = [
+                "true".to_owned(),
+                "True".to_owned(),
+                format!("{p}.trueIff"),
+                format!("{p}.conv_build {p}.convL_nil {p}.construct_true"),
+            ];
+            for (term, check) in terms.iter().rev() {
+                match check {
+                    Some(c) => {
+                        let [valid, inv, viff, vrel] = out;
+                        out = [
+                            format!("(if __valid_{c} {term} then {valid} else false)"),
+                            format!("(__inv_{c} {term} ∧ {inv})"),
+                            format!("({p}.condAnd_iff (__viff_{c} {term}) {viff})"),
+                            format!(
+                                "({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then {valid} else false)) (__valid_{c} {term}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {term})) (fun _ => {vrel}) {falsity})"
+                            ),
+                        ];
+                    }
+                    None => {}
+                }
+            }
+            out
+        };
+        if fields.len() != shape.fields.len() {
+            return Err(format!(
+                "the validator of `{lean}` checks {} constructors of {}",
+                fields.len(),
+                shape.fields.len()
+            ));
+        }
+        if shape.kind == "inductive" || recursive {
+            let owner = lean
+                .trim_start_matches('(')
+                .split(' ')
+                .next()
+                .unwrap_or_default()
+                .trim_end_matches(')')
+                .to_owned();
+            let mut items = [
+                format!("def __valid_{k} : {lean} -> Bool\n"),
+                format!("def __inv_{k} : {lean} -> Prop\n"),
+                format!(
+                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = true ↔ __inv_{k} __v\n"
+                ),
+                format!(
+                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel true ({value}.bool (__valid_{k} __v)))\n"
+                ),
+            ];
+            for (position, ((constructor, types), checks)) in shape
+                .names
+                .iter()
+                .zip(&shape.fields)
+                .zip(fields)
+                .enumerate()
+            {
+                if types.len() != checks.len() {
+                    return Err(format!("`{lean}.{constructor}`: a check per field"));
+                }
+                let binders: Vec<String> =
+                    (0..types.len()).map(|field| format!("__x{field}")).collect();
+                let pattern = if shape.kind == "inductive" {
+                    format!(
+                        "{owner}.{}{}",
+                        identifier(constructor),
+                        binders
+                            .iter()
+                            .map(|binder| format!(" {binder}"))
+                            .collect::<String>()
+                    )
+                } else {
+                    format!("⟨{}⟩", binders.join(", "))
+                };
+                let terms: Vec<(String, Option<u64>)> =
+                    binders.iter().cloned().zip(checks.iter().copied()).collect();
+                let [valid, inv, viff, vrel] = chain(&terms);
+                let misses = format!("{p}.convA_miss rfl (").repeat(position);
+                let closing = ")".repeat(position);
+                items[0].push_str(&format!("  | {pattern} => {valid}\n"));
+                items[1].push_str(&format!("  | {pattern} => {inv}\n"));
+                items[2].push_str(&format!(
+                    "  | {pattern} => by rw [__valid_{k}.eq_def, __inv_{k}.eq_def]; exact {viff}\n"
+                ));
+                items[3].push_str(&format!(
+                    "  | {pattern} => by rw [__valid_{k}.eq_def]; exact {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({misses}{p}.convA_hit rfl rfl {vrel}{closing}))) rfl\n"
+                ));
+            }
+            for item in &mut items {
+                item.push('\n');
+            }
+            return Ok(Stated {
+                items,
+                corollary: String::new(),
+            });
+        }
+        let checks = fields
+            .first()
+            .ok_or_else(|| format!("`{lean}` has no constructor"))?;
+        if shape.field_names.len() != checks.len() {
+            return Err(format!("`{lean}`: a check per field"));
+        }
+        let terms: Vec<(String, Option<u64>)> = shape
+            .field_names
+            .iter()
+            .map(|name| format!("(__s).{}", identifier(name)))
+            .zip(checks.iter().copied())
+            .collect();
+        let [valid, inv, viff, vrel] = chain(&terms);
+        Ok(Stated {
+            items: [
+                format!("def __valid_{k} (__s : {lean}) : Bool :=\n  {valid}\n\n"),
+                format!("def __inv_{k} (__s : {lean}) : Prop :=\n  {inv}\n\n"),
+                format!(
+                    "theorem __viff_{k} : ∀ (__s : {lean}), __valid_{k} __s = true ↔ __inv_{k} __s :=\n  fun __s => {viff}\n\n"
+                ),
+                format!(
+                    "theorem __vrel_{k} : ∀ (__s : {lean}), {p}.FunRel __prog {k} [({enc} __s)] ({p}.Rel true ({value}.bool (__valid_{k} __s))) :=\n  fun __s => {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_hit rfl rfl {vrel}))) rfl\n\n"
+                ),
+            ],
+            corollary: String::new(),
+        })
+    }
+
+    /// The entry's statements: its observation, the conjunction of §17.12's
+    /// propositions of its validated parameters (`accepts`), its relation,
+    /// and its two outcomes: the root's observation as `some` when the
+    /// propositions hold, and `none` when one fails.
+    fn entry_section(
+        &self,
+        entry: u64,
+        validators: &[Option<u64>],
+        signature: &Signature,
+        names: &[String],
+    ) -> Result<String, String> {
+        let p = LIBRARY;
+        let value = format!("{SYNTAX}.Value");
+        if validators.len() != names.len() {
+            return Err("the entry validates a parameter list of another length".to_owned());
+        }
+        let binders = signature.fits_binders.join(" ");
+        let applied = names.join(" ");
+        let var = format!("({p}.conv_var rfl)");
+        let mut fits = signature.fits_applied.clone();
+        let mut outcome = format!("({value}.some {})", signature.value);
+        let mut accepts = "True".to_owned();
+        let arguments = names
+            .iter()
+            .fold(format!("{p}.convL_nil"), |rest, _| {
+                format!("({p}.convL_cons {var} {rest})")
+            });
+        let mut proof = format!(
+            "{p}.conv_build ({p}.convL_cons ({p}.conv_call {arguments} (__rel_0 {applied})) {p}.convL_nil) {p}.construct_some"
+        );
+        let mut checked_names = Vec::new();
+        for (validator, name) in validators.iter().zip(names).rev() {
+            match validator {
+                Some(c) => {
+                    proof = format!(
+                        "{p}.conv_cond (fun __c => if __c then {fits} else true) (fun __c => if __c then {outcome} else {value}.none) (__valid_{c} {name}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {name})) (fun _ => {p}.Conv.fits_eq ({proof}) (by simp)) (fun _ => {p}.conv_build {p}.convL_nil {p}.construct_none)"
+                    );
+                    fits = format!("(if __valid_{c} {name} then {fits} else true)");
+                    outcome = format!("(if __valid_{c} {name} then {outcome} else {value}.none)");
+                    accepts = format!("(__inv_{c} {name} ∧ {accepts})");
+                    checked_names.push((*c, name.clone()));
+                }
+                None => {}
+            }
+        }
+        checked_names.reverse();
+        // With every validator true, each proposition holds; a validator
+        // that is false makes the entry return `none`.
+        let mut uses = String::new();
+        let mut path = "__h".to_owned();
+        let mut witnesses = Vec::new();
+        let mut refusal = String::new();
+        for (position, (c, name)) in checked_names.iter().enumerate() {
+            uses.push_str(&format!(", (__viff_{c} {name}).mpr {path}.1"));
+            path = format!("{path}.2");
+            witnesses.push(format!("(__viff_{c} {name}).mp __c{position}"));
+            let indent = "  ".repeat(position + 1);
+            let lead = if position == 0 { "  " } else { "" };
+            refusal.push_str(&format!(
+                "{lead}cases __c{position} : __valid_{c} {name}\n{indent}· simp\n{indent}· "
+            ));
+        }
+        refusal.push_str(&format!(
+            "exact absurd ⟨{}, trivial⟩ __h\n",
+            witnesses.join(", ")
+        ));
+        Ok(format!(
+            "def entryFits {binders} : Bool :=\n  {fits}\n\n\
+             def entryValue {binders} : {value} :=\n  {outcome}\n\n\
+             /-- The entry's observation. -/\n\
+             def denoteEntry {binders} : {p}.Obs :=\n  {p}.Rel (entryFits {applied}) (entryValue {applied})\n\n\
+             /-- §17.12's invariants of the validated parameters. -/\n\
+             def accepts {binders} : Prop :=\n  {accepts}\n\n\
+             theorem entry {binders} : {p}.RunConv __prog {entry} {} (denoteEntry {applied}) :=\n  {p}.run_of_funRel ({p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({proof})) (by simp [entryFits]))\n\n\
+             theorem entry_accepts {binders} (__h : accepts {applied}) : denoteEntry {applied} = {p}.someObs (denote {applied}) := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue denote {p}.Rel\n  simp only [if_true{uses}]\n  cases {} <;> rfl\n\n\
+             theorem entry_refuses {binders} (__h : ¬ accepts {applied}) : denoteEntry {applied} = {p}.Obs.value {value}.none := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue {p}.Rel\n{refusal}\n",
+            signature.arguments,
+            signature.fits_applied,
+        ))
     }
 }

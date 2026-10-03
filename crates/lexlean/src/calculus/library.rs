@@ -329,6 +329,230 @@ fn by_order(result: &Ty, key: Expr, other: Expr, less: Expr, equal: Expr, greate
     )
 }
 
+/// The boundary validators (§17.17): Boolean functions an entry calls to
+/// decide, at run time, §17.12's invariants of the values it receives. Each
+/// is the transcription of the preservation library's `Tpl.valid*Fn`, so a
+/// certificate states its index's function equal to the template by `rfl`.
+pub mod validators {
+    use super::{arm, boolean, call, cond, first, list, matching, pair, prim, second, var};
+    use crate::calculus::{Expr, Function, Prim, Shape, Ty};
+
+    fn function(types: Vec<Ty>, body: Expr) -> Function {
+        Function {
+            parameters: (0..types.len() as u64).collect(),
+            types,
+            result: Ty::Bool,
+            body,
+        }
+    }
+
+    /// `lessThanE a b`: whether the key order puts `a` strictly first.
+    fn less_than(a: Expr, b: Expr) -> Expr {
+        matching(
+            &Ty::Bool,
+            prim(Prim::Compare, vec![a, b]),
+            vec![
+                arm(Shape::Lt, Vec::new(), boolean(true)),
+                arm(Shape::Eq, Vec::new(), boolean(false)),
+                arm(Shape::Gt, Vec::new(), boolean(false)),
+            ],
+        )
+    }
+
+    /// `validTrueFn t`: a type without an invariant.
+    #[must_use]
+    pub fn trivial(ty: &Ty) -> Function {
+        function(vec![ty.clone()], boolean(true))
+    }
+
+    /// `validListFn this element t`: every element valid.
+    #[must_use]
+    pub fn list_of(this: u64, element: u64, ty: &Ty) -> Function {
+        function(
+            vec![list(ty)],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        cond(
+                            call(element, vec![var(1)]),
+                            call(this, vec![var(2)]),
+                            boolean(false),
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validSetFn this k`: the elements strictly ascending.
+    #[must_use]
+    pub fn set_of(this: u64, key: &Ty) -> Function {
+        function(
+            vec![list(key)],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        matching(
+                            &Ty::Bool,
+                            var(2),
+                            vec![
+                                arm(Shape::Nil, Vec::new(), boolean(true)),
+                                arm(
+                                    Shape::Cons,
+                                    vec![3, 4],
+                                    cond(
+                                        less_than(var(1), var(3)),
+                                        call(this, vec![var(2)]),
+                                        boolean(false),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validMapFn this value k w`: the keys strictly ascending, every
+    /// value valid.
+    #[must_use]
+    pub fn map_of(this: u64, value: u64, key: &Ty, stored: &Ty) -> Function {
+        function(
+            vec![list(&pair(key, stored))],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        cond(
+                            call(value, vec![second(var(1))]),
+                            matching(
+                                &Ty::Bool,
+                                var(2),
+                                vec![
+                                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                                    arm(
+                                        Shape::Cons,
+                                        vec![3, 4],
+                                        cond(
+                                            less_than(first(var(1)), first(var(3))),
+                                            call(this, vec![var(2)]),
+                                            boolean(false),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            boolean(false),
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validOptionFn value t`.
+    #[must_use]
+    pub fn option_of(value: u64, ty: &Ty) -> Function {
+        function(
+            vec![Ty::Option {
+                value: Box::new(ty.clone()),
+            }],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::None, Vec::new(), boolean(true)),
+                    arm(Shape::Some, vec![1], call(value, vec![var(1)])),
+                ],
+            ),
+        )
+    }
+
+    /// `validPairFn left right a b`.
+    #[must_use]
+    pub fn pair_of(left: u64, right: u64, a: &Ty, b: &Ty) -> Function {
+        function(
+            vec![pair(a, b)],
+            cond(
+                call(left, vec![first(var(0))]),
+                call(right, vec![second(var(0))]),
+                boolean(false),
+            ),
+        )
+    }
+
+    /// `validResultFn ok error a b`.
+    #[must_use]
+    pub fn result_of(ok: u64, error: u64, a: &Ty, b: &Ty) -> Function {
+        function(
+            vec![Ty::Result {
+                ok: Box::new(a.clone()),
+                error: Box::new(b.clone()),
+            }],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Ok, vec![1], call(ok, vec![var(1)])),
+                    arm(Shape::Error, vec![2], call(error, vec![var(2)])),
+                ],
+            ),
+        )
+    }
+
+    /// A document type's validator: the arm of each constructor checks its
+    /// fields that carry an invariant, in field order, with the validator
+    /// `fields[c][i]`.
+    #[must_use]
+    pub fn document(adt: u64, fields: &[Vec<Option<u64>>]) -> Function {
+        let mut next = 1;
+        let arms = fields
+            .iter()
+            .enumerate()
+            .map(|(constructor, validators)| {
+                let binders: Vec<u64> = (0..validators.len() as u64).map(|i| next + i).collect();
+                next += validators.len() as u64;
+                let body = binders.iter().zip(validators).rev().fold(
+                    boolean(true),
+                    |rest, (binder, validator)| match validator {
+                        Some(validator) => cond(
+                            call(*validator, vec![var(*binder)]),
+                            rest,
+                            boolean(false),
+                        ),
+                        None => rest,
+                    },
+                );
+                arm(
+                    Shape::Adt {
+                        constructor: constructor as u64,
+                    },
+                    binders,
+                    body,
+                )
+            })
+            .collect();
+        function(
+            vec![Ty::Adt { index: adt }],
+            matching(&Ty::Bool, var(0), arms),
+        )
+    }
+}
+
 /// Collects one instance's functions. Each method pushes its entry first and
 /// returns its index, so a helper's index is known before its caller's body
 /// is complete.

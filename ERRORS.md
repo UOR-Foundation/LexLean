@@ -393,3 +393,9 @@ Class: `environment`. Exit code: 3.
 A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
 
 Class: `language`. Exit code: 1.
+
+## `LLV7016` --- Certificate E rejected
+
+The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
+
+Class: `language`. Exit code: 1.

@@ -1,6 +1,6 @@
 spec = "lexlean/preservation-library/1"
 toolchain = "leanprover/lean4:v4.32.1"
-modules = ["LexLeanPreservation.Core", "LexLeanPreservation.Values", "LexLeanPreservation.Primitives", "LexLeanPreservation.Fixed", "LexLeanPreservation.Keys", "LexLeanPreservation.Templates", "LexLeanPreservation.RustBase", "LexLeanPreservation.RustCorr", "LexLeanPreservation.RustLemmas", "LexLeanPreservation.RustMatches", "LexLeanPreservation.RustSound"]
+modules = ["LexLeanPreservation.Core", "LexLeanPreservation.Values", "LexLeanPreservation.Primitives", "LexLeanPreservation.Fixed", "LexLeanPreservation.Keys", "LexLeanPreservation.Templates", "LexLeanPreservation.Validate", "LexLeanPreservation.RustBase", "LexLeanPreservation.RustCorr", "LexLeanPreservation.RustLemmas", "LexLeanPreservation.RustMatches", "LexLeanPreservation.RustSound", "LexLeanPreservation.Compose"]
 
 [[declaration]]
 module = "LexLeanPreservation.Core"
@@ -1613,6 +1613,16 @@ name = "LexLeanPreservation.keySpec_pair"
 axioms = ["Classical.choice", "Quot.sound", "propext"]
 
 [[declaration]]
+module = "LexLeanPreservation.Keys"
+name = "LexLeanPreservation.lessThanE"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Keys"
+name = "LexLeanPreservation.conv_lessThan"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
 module = "LexLeanPreservation.Templates"
 name = "LexLeanPreservation.ListEnc.enc_nil"
 axioms = []
@@ -2033,6 +2043,151 @@ name = "LexLeanPreservation.tpl_graphTopological"
 axioms = ["Classical.choice", "Quot.sound", "propext"]
 
 [[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.lessB"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.StrictAsc"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validList"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascSet"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascMap"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validOption"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validPair"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validExcept"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.lessB_iff"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validList_iff"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascSet_iff"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascMap_iff"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validTrueFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validListFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validSetFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validMapFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validOptionFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validPairFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.Tpl.validResultFn"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validTrue"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validList"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.lessB_lt"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.lessB_eq"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.lessB_gt"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validSet"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validMap"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validOption"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validPair"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.tpl_validResult"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
 module = "LexLeanPreservation.RustBase"
 name = "LexLeanPreservation.Rust.returned_ne"
 axioms = []
@@ -2406,6 +2561,41 @@ axioms = ["propext"]
 module = "LexLeanPreservation.RustCorr"
 name = "LexLeanPreservation.Rust.itemOK"
 axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.shapeOf"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.itemTyped"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.isFixed"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.isSeq"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.elemOf"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.fixedTyped"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustCorr"
+name = "LexLeanPreservation.Rust.primTyped"
+axioms = ["propext"]
 
 [[declaration]]
 module = "LexLeanPreservation.RustCorr"
@@ -2840,6 +3030,216 @@ axioms = ["propext"]
 [[declaration]]
 module = "LexLeanPreservation.RustLemmas"
 name = "LexLeanPreservation.Rust.runItem_eq"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.tyBeq_eq"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.tysBeq_eq"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_u8"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_u16"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_u32"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_u64"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_i8"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_i16"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_i32"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.hasWidth_i64"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_fixed"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.allWidth_of"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wtAll_iff"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_list_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_bytes_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_string_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.isSeq_eq"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wtl_three"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.takes_of_typed"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.width_of_typed"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.accepts_of_typed"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.isFixed_eq"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wtl_two"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wtl_one"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_checked"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_bitwise"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_unary"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_shift"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_convert"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_parse"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.slice_eq"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_append"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_slice"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_index"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.fromStrings_wt"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_encode"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_decode"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_join"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_format"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_split"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_fixedTyped"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.RustLemmas"
+name = "LexLeanPreservation.Rust.wt_prim"
 axioms = ["Classical.choice", "Quot.sound", "propext"]
 
 [[declaration]]
@@ -3976,3 +4376,188 @@ axioms = ["Classical.choice", "Quot.sound", "propext"]
 module = "LexLeanPreservation.RustSound"
 name = "LexLeanPreservation.Rust.simulate"
 axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.rel_ne_stuck"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.compose"
+axioms = ["Classical.choice", "Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wtl_nil"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wtl_cons"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wtAll_nil"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wtAll_cons"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_nat"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_int"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_bool"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_string"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_bytes"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_unitValue"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_ordering"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_u8"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_u16"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_u32"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_u64"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_i8"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_i16"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_i32"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_i64"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_list"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_adt"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encUnit"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encOrdering"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_noneV"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_someV"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_pairV"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_okV"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_errorV"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wtAll_map"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encList"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_listEnc"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_optEnc"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encOption"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encPair"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.wt_encExcept"
+axioms = ["propext"]

@@ -377,6 +377,77 @@ pub struct Case {
     pub values: Vec<Value>,
     /// The interpreter's outcome.
     pub outcome: Outcome,
+    /// The function invoked: the root, function 0, or its entry (§17.17).
+    pub function: u64,
+    /// Whether an input was made to break §17.12's invariants, which the
+    /// entry must refuse with `none`.
+    pub invalid: bool,
+}
+
+/// `value` of `ty` with one map's or set's members no longer strictly
+/// ascending: its first member repeated. `None` when every map and set in
+/// the value is empty, so no order can be broken.
+fn invalidate(modules: &Modules<'_>, ty: &SemanticType, value: &Value) -> Option<Value> {
+    match (ty, value) {
+        (SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ }, Value::List { items }) => {
+            let first = items.first()?.clone();
+            let mut items = items.clone();
+            items.insert(0, first);
+            Some(Value::List { items })
+        }
+        (SemanticType::Option { value: inner }, Value::Some { value }) => Some(Value::Some {
+            value: Box::new(invalidate(modules, inner, value)?),
+        }),
+        (SemanticType::Result { ok, error: _ }, Value::Ok { value }) => Some(Value::Ok {
+            value: Box::new(invalidate(modules, ok, value)?),
+        }),
+        (SemanticType::Result { ok: _, error }, Value::Error { value }) => Some(Value::Error {
+            value: Box::new(invalidate(modules, error, value)?),
+        }),
+        (SemanticType::List { element }, Value::List { items }) => {
+            items.iter().enumerate().find_map(|(position, item)| {
+                let broken = invalidate(modules, element, item)?;
+                let mut items = items.clone();
+                items[position] = broken;
+                Some(Value::List { items })
+            })
+        }
+        (SemanticType::Product { left, right }, Value::Pair { left: a, right: b }) => {
+            match invalidate(modules, left, a) {
+                Some(broken) => Some(Value::Pair {
+                    left: Box::new(broken),
+                    right: b.clone(),
+                }),
+                None => Some(Value::Pair {
+                    left: a.clone(),
+                    right: Box::new(invalidate(modules, right, b)?),
+                }),
+            }
+        }
+        (
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            },
+            Value::Adt {
+                constructor,
+                fields,
+            },
+        ) => {
+            let (_, constructors) = source_type(modules, ty).expect("a document type");
+            let types = &constructors[*constructor as usize].fields;
+            types.iter().zip(fields).enumerate().find_map(|(position, (field, item))| {
+                let broken = invalidate(modules, field, item)?;
+                let mut fields = fields.clone();
+                fields[position] = broken;
+                Some(Value::Adt {
+                    constructor: *constructor,
+                    fields,
+                })
+            })
+        }
+        _ => None,
+    }
 }
 
 /// The cases of every root of `project`, by root name.
@@ -404,17 +475,40 @@ pub fn cases(project: &P) -> BTreeMap<String, Vec<Case>> {
                 .iter()
                 .map(|parameter| sample(&modules, &mut rng, &parameter.r#type, 0))
                 .collect();
-            let outcome = interp::run(&lowered.program, FUEL, 0, &values);
-            out.entry(root.report.root.clone()).or_default().push(Case {
-                root: root.report.root.clone(),
-                arguments: parameters
-                    .iter()
-                    .zip(&values)
-                    .map(|(parameter, value)| lean_term(&modules, &parameter.r#type, value))
-                    .collect(),
-                values,
-                outcome,
-            });
+            let entry = lowered.entry();
+            let mut inputs = vec![(0, false, values.clone())];
+            // A root with an entry is also invoked through it, on the same
+            // inputs and on inputs that break an invariant, which the
+            // entry refuses.
+            if entry != 0 {
+                inputs.push((entry, false, values.clone()));
+                let broken = parameters.iter().zip(&values).enumerate().find_map(
+                    |(position, (parameter, value))| {
+                        let broken = invalidate(&modules, &parameter.r#type, value)?;
+                        let mut values = values.clone();
+                        values[position] = broken;
+                        Some(values)
+                    },
+                );
+                if let Some(broken) = broken {
+                    inputs.push((entry, true, broken));
+                }
+            }
+            for (function, invalid, values) in inputs {
+                let outcome = interp::run(&lowered.program, FUEL, function, &values);
+                out.entry(root.report.root.clone()).or_default().push(Case {
+                    root: root.report.root.clone(),
+                    arguments: parameters
+                        .iter()
+                        .zip(&values)
+                        .map(|(parameter, value)| lean_term(&modules, &parameter.r#type, value))
+                        .collect(),
+                    values,
+                    outcome,
+                    function,
+                    invalid,
+                });
+            }
         }
     }
     out
@@ -538,7 +632,9 @@ def __obs : LexLeanPreservation.Obs → String
 #[must_use]
 pub fn module(denotes: &[(String, String, Vec<Case>)]) -> String {
     let mut text = String::new();
-    for (module, _, _) in denotes {
+    let imports: std::collections::BTreeSet<&String> =
+        denotes.iter().map(|(module, _, _)| module).collect();
+    for module in imports {
         text.push_str(&format!("import {module}\n"));
     }
     text.push_str(PRINTER);

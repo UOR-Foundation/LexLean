@@ -29,12 +29,12 @@
     clippy::match_wildcard_for_single_variants
 )]
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::eligibility::{integer_type, LinkedModule};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
-use crate::calculus::library::Template;
+use crate::calculus::library::{validators, Template};
 use crate::calculus::{Adt, Arm, Expr, Function, IntKind, Prim, Program, Shape, Ty, Value};
 use crate::code;
 use crate::diagnostic::Diagnostic;
@@ -67,6 +67,40 @@ pub enum Origin {
         entry: u64,
         member: u64,
     },
+    /// The boundary validator of the closed type `ty` (§17.17): it decides
+    /// §17.12's invariants of a value of `ty` the root receives, with the
+    /// key orders of `module`'s collection runtime.
+    Validator {
+        ty: SemanticType,
+        module: String,
+        kind: Validation,
+    },
+    /// The root's entry: it calls the validator of each parameter that
+    /// carries an invariant, in parameter order, and the root on the
+    /// arguments when every one holds; otherwise it returns `none`.
+    Entry { validators: Vec<Option<u64>> },
+}
+
+/// What one boundary validator checks, by the validators it calls.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Validation {
+    /// A type without an invariant, where a container's validator needs
+    /// one for a component: always true.
+    Trivial,
+    /// A set's elements strictly ascend.
+    Set,
+    /// A map's keys strictly ascend and every value satisfies `value`.
+    Map { value: u64 },
+    /// Every element satisfies `element`.
+    List { element: u64 },
+    /// A present value satisfies `value`.
+    Option { value: u64 },
+    /// Both components satisfy theirs.
+    Pair { left: u64, right: u64 },
+    /// The value or the error satisfies its validator.
+    Result { ok: u64, error: u64 },
+    /// Each constructor's fields that carry an invariant satisfy theirs.
+    Document { fields: Vec<Vec<Option<u64>>> },
 }
 
 /// Where one target ADT came from: the closed document type it realizes.
@@ -89,6 +123,42 @@ pub struct Layout {
 pub struct Lowered {
     pub program: Program,
     pub layout: Layout,
+}
+
+impl Lowered {
+    /// The function a caller invokes: the entry when the root has one
+    /// (§17.17), else the root itself, function 0.
+    #[must_use]
+    pub fn entry(&self) -> u64 {
+        match self.layout.functions.last() {
+            Some(Origin::Entry { validators: _ }) => (self.layout.functions.len() - 1) as u64,
+            Some(
+                Origin::Definition {
+                    module: _,
+                    name: _,
+                    type_arguments: _,
+                    instance: _,
+                }
+                | Origin::Instance { module: _, name: _ }
+                | Origin::Lambda {
+                    owner: _,
+                    ordinal: _,
+                }
+                | Origin::Template {
+                    template: _,
+                    types: _,
+                    entry: _,
+                    member: _,
+                }
+                | Origin::Validator {
+                    ty: _,
+                    module: _,
+                    kind: _,
+                },
+            )
+            | None => 0,
+        }
+    }
 }
 
 fn internal(reason: impl std::fmt::Display) -> Diagnostic {
@@ -157,6 +227,8 @@ struct Lowerer<'a> {
     queue: VecDeque<Pending>,
     /// Lambdas lowered so far per owner, for their ordinals.
     lambdas: BTreeMap<u64, u64>,
+    /// Boundary validators by the type they check.
+    validators: BTreeMap<String, u64>,
 }
 
 /// Lower one eligible root. A failure is a compiler defect: eligibility
@@ -183,6 +255,7 @@ pub fn lower_root(
         adt_index: BTreeMap::new(),
         queue: VecDeque::new(),
         lambdas: BTreeMap::new(),
+        validators: BTreeMap::new(),
     };
     let root = lowerer.definition(module, name, &[]).map_err(internal)?;
     if root != 0 {
@@ -223,7 +296,13 @@ pub fn lower_root(
                 types: _,
                 entry: _,
                 member: _,
-            } => None,
+            }
+            | Origin::Validator {
+                ty: _,
+                module: _,
+                kind: _,
+            }
+            | Origin::Entry { validators: _ } => None,
         })
         .collect();
     lowered.sort();
@@ -238,6 +317,9 @@ pub fn lower_root(
             "the lowered closure {lowered:?} is not the eligible closure {admitted:?}"
         )));
     }
+    // The boundary follows the closure, so the root stays function 0 and
+    // the closure's functions keep their indices.
+    lowerer.entry(module, name).map_err(internal)?;
     let functions = lowerer
         .functions
         .into_iter()
@@ -265,14 +347,188 @@ pub fn lower_root(
             "the lowered program is not in first-binding order",
         ));
     }
-    Ok(Lowered {
+    let lowered = Lowered {
         program,
         layout: Layout {
             functions: lowerer.origins,
             adts: lowerer.adt_origins,
         },
-    })
+    };
+    audit_boundary(&lowered).map_err(internal)?;
+    Ok(lowered)
 }
+
+/// The functions an expression calls or closes over, in evaluation order.
+fn referenced(expr: &Expr, out: &mut Vec<u64>) {
+    match expr {
+        Expr::Value { ty: _, value: _ } | Expr::Var { name: _ } => {}
+        Expr::Let {
+            name: _,
+            ty: _,
+            bound,
+            body,
+        } => {
+            referenced(bound, out);
+            referenced(body, out);
+        }
+        Expr::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            referenced(condition, out);
+            referenced(then_branch, out);
+            referenced(else_branch, out);
+        }
+        Expr::Match {
+            ty: _,
+            scrutinee,
+            arms,
+        } => {
+            referenced(scrutinee, out);
+            for arm in arms {
+                referenced(&arm.body, out);
+            }
+        }
+        Expr::Build {
+            shape: _,
+            ty: _,
+            operands,
+        }
+        | Expr::Prim {
+            operation: _,
+            operands,
+        } => {
+            for operand in operands {
+                referenced(operand, out);
+            }
+        }
+        Expr::Call { function, operands } => {
+            out.push(*function);
+            for operand in operands {
+                referenced(operand, out);
+            }
+        }
+        Expr::Closure { function, captures } => {
+            out.push(*function);
+            for capture in captures {
+                referenced(capture, out);
+            }
+        }
+        Expr::Apply { target, operands } => {
+            referenced(target, out);
+            for operand in operands {
+                referenced(operand, out);
+            }
+        }
+        Expr::First { value } | Expr::Second { value } | Expr::Field { value, index: _ } => {
+            referenced(value, out);
+        }
+    }
+}
+
+/// The boundary discipline (§17.17): §17.12's invariants are checked at run
+/// time only where a value enters the program. A boundary validator is
+/// referenced by the entry and by validators only, a validator references
+/// validators only, the entry references validators and the root only and
+/// is referenced by nothing, and the entry exists exactly when some
+/// validator does. Inside the program the invariants hold by construction,
+/// as the operations' proofs establish, so a validator call there would turn
+/// a proof-only invariant into a runtime check.
+///
+/// # Errors
+///
+/// Returns the first reference that breaks the discipline.
+pub fn audit_boundary(lowered: &Lowered) -> Result<(), String> {
+    let origins = &lowered.layout.functions;
+    let role = |index: u64| match origins.get(index as usize) {
+        Some(Origin::Validator {
+            ty: _,
+            module: _,
+            kind: _,
+        }) => Role::Validator,
+        Some(Origin::Entry { validators: _ }) => Role::Entry,
+        Some(
+            Origin::Definition {
+                module: _,
+                name: _,
+                type_arguments: _,
+                instance: _,
+            }
+            | Origin::Instance { module: _, name: _ }
+            | Origin::Lambda {
+                owner: _,
+                ordinal: _,
+            }
+            | Origin::Template {
+                template: _,
+                types: _,
+                entry: _,
+                member: _,
+            },
+        )
+        | None => Role::Program,
+    };
+    let mut entries = 0;
+    let mut validators = 0;
+    for (index, function) in lowered.program.functions.iter().enumerate() {
+        let caller = role(index as u64);
+        match caller {
+            Role::Validator => validators += 1,
+            Role::Entry => {
+                entries += 1;
+                if index + 1 != lowered.program.functions.len() {
+                    return Err(format!("the entry is function {index}, not the last"));
+                }
+            }
+            Role::Program => {}
+        }
+        let mut callees = Vec::new();
+        referenced(&function.body, &mut callees);
+        for callee in callees {
+            let admitted = match (caller, role(callee)) {
+                (Role::Validator | Role::Entry, Role::Validator) | (Role::Program, Role::Program) => {
+                    true
+                }
+                (Role::Entry, Role::Program) => callee == 0,
+                (Role::Program, Role::Validator)
+                | (Role::Validator, Role::Program)
+                | (Role::Program | Role::Validator | Role::Entry, Role::Entry) => false,
+            };
+            if !admitted {
+                return Err(format!(
+                    "{} {index} references function {callee}: a boundary validator runs only at the entry, because inside the program §17.12's invariants hold by construction and are proof-only",
+                    caller.name()
+                ));
+            }
+        }
+    }
+    if entries > 1 || (entries == 1) != (validators > 0) {
+        return Err(format!(
+            "{entries} entries for {validators} boundary validators"
+        ));
+    }
+    Ok(())
+}
+
+/// A function's part in the boundary discipline.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Role {
+    Program,
+    Validator,
+    Entry,
+}
+
+impl Role {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Program => "function",
+            Self::Validator => "the boundary validator",
+            Self::Entry => "the entry",
+        }
+    }
+}
+
 
 /// The linked modules of a checked project, as the analysis reads them.
 #[must_use]
@@ -775,6 +1031,291 @@ impl Lowerer<'_> {
         }
         self.templates.insert(key, at);
         Ok(at)
+    }
+
+    /// The root's entry (§17.17), when a parameter carries an invariant of
+    /// §17.12: it validates every such parameter, in order, and calls the
+    /// root on the arguments when all hold, returning `some` of its result,
+    /// and `none` otherwise.
+    fn entry(&mut self, module: &str, name: &str) -> Result<(), String> {
+        let (parameters, result) = self.source.signature(module, name, &[])?;
+        let mut validators = Vec::new();
+        let mut types = Vec::new();
+        for SemanticParameter { name: _, r#type } in &parameters {
+            validators.push(self.validator(r#type, module)?);
+            types.push(self.ty(r#type)?);
+        }
+        if validators.iter().all(Option::is_none) {
+            return Ok(());
+        }
+        let outcome = Ty::Option {
+            value: Box::new(self.ty(&result)?),
+        };
+        let arguments = (0..types.len() as u64)
+            .map(|name| Expr::Var { name })
+            .collect();
+        let refused = || build(Shape::None, outcome.clone(), Vec::new());
+        let mut body = build(
+            Shape::Some,
+            outcome.clone(),
+            vec![Expr::Call {
+                function: 0,
+                operands: arguments,
+            }],
+        );
+        for (position, validator) in validators.iter().enumerate().rev() {
+            match validator {
+                Some(validator) => {
+                    body = cond(
+                        Expr::Call {
+                            function: *validator,
+                            operands: vec![Expr::Var {
+                                name: position as u64,
+                            }],
+                        },
+                        body,
+                        refused(),
+                    );
+                }
+                None => {}
+            }
+        }
+        let index = self.reserve(Origin::Entry { validators });
+        self.functions[index as usize] = Some(Function {
+            parameters: (0..types.len() as u64).collect(),
+            types,
+            result: outcome,
+            body,
+        });
+        Ok(())
+    }
+
+    /// Whether a value of a closed type can hold a map or a set, whose
+    /// ascending order §17.12 states as an invariant.
+    fn carries(&self, ty: &SemanticType, seen: &mut BTreeSet<String>) -> Result<bool, String> {
+        Ok(match ty {
+            SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ } => true,
+            SemanticType::Option { value: inner } | SemanticType::List { element: inner } => {
+                self.carries(inner, seen)?
+            }
+            SemanticType::Product { left, right }
+            | SemanticType::Result {
+                ok: left,
+                error: right,
+            } => self.carries(left, seen)? || self.carries(right, seen)?,
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => {
+                if !seen.insert(self.source.type_text(ty)) {
+                    return Ok(false);
+                }
+                let shape = self.source.document(ty)?;
+                let mut any = false;
+                for fields in &shape.fields {
+                    for field in fields {
+                        any = self.carries(field, seen)? || any;
+                    }
+                }
+                any
+            }
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::ContractViolation => false,
+        })
+    }
+
+    /// The boundary validator of a closed type written in `module`, or
+    /// `None` when its values carry no invariant. One validator per type;
+    /// the index is reserved before the components are validated, so a
+    /// recursive type's validator calls itself.
+    fn validator(&mut self, ty: &SemanticType, module: &str) -> Result<Option<u64>, String> {
+        if !self.carries(ty, &mut BTreeSet::new())? {
+            return Ok(None);
+        }
+        let text = self.source.type_text(ty);
+        match self.validators.get(&text) {
+            Some(index) => return Ok(Some(*index)),
+            None => {}
+        }
+        let lowered = self.ty(ty)?;
+        let index = self.reserve(Origin::Validator {
+            ty: ty.clone(),
+            module: module.to_owned(),
+            kind: Validation::Trivial,
+        });
+        self.validators.insert(text, index);
+        let (kind, function) = match ty {
+            SemanticType::Set { element } => {
+                let key = self.ty(element)?;
+                (Validation::Set, validators::set_of(index, &key))
+            }
+            SemanticType::Map { key, value } => {
+                let checked = self.component(value, module)?;
+                let key = self.ty(key)?;
+                let stored = self.ty(value)?;
+                (
+                    Validation::Map { value: checked },
+                    validators::map_of(index, checked, &key, &stored),
+                )
+            }
+            SemanticType::List { element } => {
+                let checked = self.component(element, module)?;
+                let element = self.ty(element)?;
+                (
+                    Validation::List { element: checked },
+                    validators::list_of(index, checked, &element),
+                )
+            }
+            SemanticType::Option { value } => {
+                let checked = self.component(value, module)?;
+                let value = self.ty(value)?;
+                (
+                    Validation::Option { value: checked },
+                    validators::option_of(checked, &value),
+                )
+            }
+            SemanticType::Product { left, right } => {
+                let first = self.component(left, module)?;
+                let second = self.component(right, module)?;
+                let (left, right) = (self.ty(left)?, self.ty(right)?);
+                (
+                    Validation::Pair {
+                        left: first,
+                        right: second,
+                    },
+                    validators::pair_of(first, second, &left, &right),
+                )
+            }
+            SemanticType::Result { ok, error } => {
+                let value = self.component(ok, module)?;
+                let failure = self.component(error, module)?;
+                let (ok, error) = (self.ty(ok)?, self.ty(error)?);
+                (
+                    Validation::Result {
+                        ok: value,
+                        error: failure,
+                    },
+                    validators::result_of(value, failure, &ok, &error),
+                )
+            }
+            SemanticType::Named {
+                member,
+                arguments: _,
+            } => {
+                let adt = match lowered {
+                    Ty::Adt { index } => index,
+                    Ty::Nat
+                    | Ty::Int
+                    | Ty::Bool
+                    | Ty::Unit
+                    | Ty::String
+                    | Ty::Bytes
+                    | Ty::Ordering
+                    | Ty::Fixed { width: _ }
+                    | Ty::Option { value: _ }
+                    | Ty::Result { ok: _, error: _ }
+                    | Ty::List { element: _ }
+                    | Ty::Pair { left: _, right: _ }
+                    | Ty::Fn {
+                        parameters: _,
+                        result: _,
+                    } => return Err(format!("`{}` is not an ADT", self.source.type_text(ty))),
+                };
+                // A document's fields are written in its declaring module.
+                let declaring = member.module.clone().unwrap_or_else(|| module.to_owned());
+                let shape = self.source.document(ty)?;
+                let mut fields = Vec::new();
+                for constructor in &shape.fields {
+                    let mut checked = Vec::new();
+                    for field in constructor {
+                        checked.push(self.validator(field, &declaring)?);
+                    }
+                    fields.push(checked);
+                }
+                let function = validators::document(adt, &fields);
+                (Validation::Document { fields }, function)
+            }
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::ContractViolation => {
+                return Err(format!(
+                    "`{}` carries no invariant",
+                    self.source.type_text(ty)
+                ));
+            }
+        };
+        self.origins[index as usize] = Origin::Validator {
+            ty: ty.clone(),
+            module: module.to_owned(),
+            kind,
+        };
+        self.functions[index as usize] = Some(function);
+        Ok(Some(index))
+    }
+
+    /// The validator a container needs for a component: the component's
+    /// own, or the trivial one of its type when it carries no invariant.
+    fn component(&mut self, ty: &SemanticType, module: &str) -> Result<u64, String> {
+        match self.validator(ty, module)? {
+            Some(index) => Ok(index),
+            None => {
+                let text = format!("trivial {}", self.source.type_text(ty));
+                match self.validators.get(&text) {
+                    Some(index) => return Ok(*index),
+                    None => {}
+                }
+                let lowered = self.ty(ty)?;
+                let index = self.reserve(Origin::Validator {
+                    ty: ty.clone(),
+                    module: module.to_owned(),
+                    kind: Validation::Trivial,
+                });
+                self.validators.insert(text, index);
+                self.functions[index as usize] = Some(validators::trivial(&lowered));
+                Ok(index)
+            }
+        }
     }
 
     /// The target type of a closed source type.

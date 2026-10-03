@@ -201,11 +201,12 @@ pub fn run(id: &str) {
             for (name, report) in reports() {
                 assert!(!report.certified.is_empty(), "{name}: certified roots");
             }
-            let planted = preservation::plant(&P::copy_example("production-coverage"));
+            let planted =
+                preservation::plant(&P::copy_example("production-coverage"), &Mutation::LOWERING);
             let kinds: BTreeSet<Mutation> = planted.iter().map(|plant| plant.mutation).collect();
             assert_eq!(
                 kinds,
-                Mutation::ALL.into_iter().collect(),
+                Mutation::LOWERING.into_iter().collect(),
                 "every mutation is planted somewhere in the coverage example"
             );
             for plant in &planted {
@@ -353,6 +354,27 @@ pub fn run(id: &str) {
                     ),
                     "{module}: the record binds the published certificate"
                 );
+                // Certificates B and E of each target are published and bound
+                // the same way.
+                for rendering in row["renderings"].as_array().expect("renderings") {
+                    for bound in [rendering, &rendering["composed"]] {
+                        let module = bound["module"].as_str().expect("a module");
+                        let text = std::fs::read(
+                            root.join("preserve")
+                                .join(lexlean::production::preserve::module_path(module)),
+                        )
+                        .expect("the published certificate");
+                        assert_eq!(
+                            bound["sha256"].as_str(),
+                            Some(
+                                lexlean::artifact::content_id::Sha256Digest::of(&text)
+                                    .to_hex()
+                                    .as_str()
+                            ),
+                            "{module}: the record binds the published certificate"
+                        );
+                    }
+                }
             }
             let attestation: serde_json::Value = serde_json::from_slice(
                 &std::fs::read(root.join("attestation.json")).expect("attestation"),
@@ -370,6 +392,7 @@ pub fn run(id: &str) {
             for (fixture, code) in [
                 ("certificate-rejected", "LLV7013"),
                 ("certificate-b-rejected", "LLV7015"),
+                ("certificate-e-rejected", "LLV7016"),
                 ("preservation-drift", "LLV7014"),
             ] {
                 let case =
@@ -631,6 +654,76 @@ pub fn run(id: &str) {
                     (unaligned, realigned) => {
                         panic!("{what}: {unaligned:?} / {realigned:?}")
                     }
+                }
+            }
+        }
+        // §17.17: certificate E.
+        "SP-09" => {
+            for (name, project) in certified_projects() {
+                for entry in preservation::certificates(&project) {
+                    let targets: Vec<&String> =
+                        entry.composed.iter().map(|(target, _)| target).collect();
+                    assert_eq!(
+                        targets,
+                        entry.targets.iter().collect::<Vec<_>>(),
+                        "{name}: {} has certificate E in each target",
+                        entry.root
+                    );
+                    for ((_, composed), (_, rendering)) in
+                        entry.composed.iter().zip(&entry.renderings)
+                    {
+                        // E composes exactly this root's A and B.
+                        for module in [&entry.certificate.module, &rendering.module] {
+                            assert!(
+                                composed.text.lines().any(|line| line == format!("import {module}")),
+                                "{name}: `{}` imports `{module}`",
+                                composed.module
+                            );
+                        }
+                        assert_eq!(composed.denote, entry.certificate.denote);
+                        for mutation in preservation::CompositionMutation::ALL {
+                            let planted = mutation.plant(&composed.text).unwrap_or_else(|| {
+                                panic!("{mutation:?} applies to `{}`", composed.module)
+                            });
+                            assert_ne!(planted, composed.text, "{mutation:?}");
+                        }
+                    }
+                }
+            }
+            if !support::lean_backed("SP-09") {
+                return;
+            }
+            for (name, report) in reports() {
+                for entry in &report.certified {
+                    for (_, composed) in &entry.composed {
+                        assert!(
+                            report.audit_output.contains(&composed.theorem),
+                            "{name}: `{}` is audited",
+                            composed.theorem
+                        );
+                    }
+                    let kinds: BTreeSet<preservation::CompositionMutation> = report
+                        .composed_plants
+                        .iter()
+                        .filter(|plant| plant.root == entry.root)
+                        .map(|plant| plant.mutation)
+                        .collect();
+                    assert_eq!(
+                        kinds,
+                        preservation::CompositionMutation::ALL.into_iter().collect(),
+                        "{name}: every composition defect is planted in {}",
+                        entry.root
+                    );
+                }
+                for plant in &report.composed_plants {
+                    assert!(
+                        !plant.accepted && plant.output.contains("error"),
+                        "{name}: {:?} in {} ({}) was accepted:\n{}",
+                        plant.mutation,
+                        plant.root,
+                        plant.target,
+                        plant.output
+                    );
                 }
             }
         }

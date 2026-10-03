@@ -453,6 +453,7 @@ pub fn workspace(
                 certificate.module
             )));
         }
+        environment.insert(certificate.module.clone());
         files.push(StagedFile {
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
@@ -614,6 +615,9 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
                 certificate.module
             ))
         })?;
+        // A later certificate may import an earlier one: certificate E
+        // imports the certificates A and B it composes.
+        imports.insert(certificate.module.clone());
         staged.push(StagedFile {
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
@@ -632,9 +636,9 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
 }
 
 /// Classify the audit module's output: a library declaration whose axioms
-/// differ from the registry is environment drift (`LLV7014`); a root
-/// theorem whose axioms are not exactly [`CERTIFICATE_AXIOMS`] is a rejected
-/// certificate (`LLV7013`).
+/// differ from the registry is environment drift (`LLV7014`); a theorem
+/// whose axioms are not exactly [`CERTIFICATE_AXIOMS`] is a rejected
+/// certificate A (`LLV7013`), B (`LLV7015`), or E (`LLV7016`).
 ///
 /// # Errors
 ///
@@ -643,6 +647,7 @@ pub fn classify_audit(
     output: &str,
     certificates: &[Certificate],
     renderings: &[Certificate],
+    composed: &[Certificate],
 ) -> Result<(), Diagnostic> {
     let environment = |reason: String| {
         if reason.starts_with("the library declaration") {
@@ -663,6 +668,11 @@ pub fn classify_audit(
         environment(reason.clone()).unwrap_or_else(|| {
             Diagnostic::new(code!("LLV7015"), format!("certificate B: {reason}"))
         })
+    })?;
+    audit(output, composed).map_err(|reason| {
+        environment(reason.clone()).unwrap_or_else(|| {
+            Diagnostic::new(code!("LLV7016"), format!("certificate E: {reason}"))
+        })
     })
 }
 
@@ -673,6 +683,9 @@ pub struct CertifiedRendering {
     pub target: String,
     /// The certificate, whose theorem is the simulation of every function.
     pub certificate: Certificate,
+    /// Certificate E: certificates A and B composed, whose theorem is that
+    /// the crate's root realizes the encoded source result.
+    pub composed: Certificate,
 }
 
 /// One certified root as `preservation.json` records it.
@@ -743,6 +756,7 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                         .iter()
                                         .map(|rendering| {
                                             let certificate = &rendering.certificate;
+                                            let composed = &rendering.composed;
                                             Json::object(vec![
                                                 ("target", Json::Str(rendering.target.clone())),
                                                 ("module", Json::Str(certificate.module.clone())),
@@ -759,6 +773,32 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                                         )
                                                         .to_hex(),
                                                     ),
+                                                ),
+                                                (
+                                                    "composed",
+                                                    Json::object(vec![
+                                                        (
+                                                            "module",
+                                                            Json::Str(composed.module.clone()),
+                                                        ),
+                                                        (
+                                                            "theorem",
+                                                            Json::Str(composed.theorem.clone()),
+                                                        ),
+                                                        (
+                                                            "byte_length",
+                                                            Json::from_usize(composed.text.len()),
+                                                        ),
+                                                        (
+                                                            "sha256",
+                                                            Json::Str(
+                                                                Sha256Digest::of(
+                                                                    composed.text.as_bytes(),
+                                                                )
+                                                                .to_hex(),
+                                                            ),
+                                                        ),
+                                                    ]),
                                                 ),
                                             ])
                                         })
