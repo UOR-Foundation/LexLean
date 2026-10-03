@@ -33,7 +33,12 @@ fn verify_language(language: &str) {
             "result":{"kind":"bytes"}, "axioms":[], "body":{"kind":"bytes", "hex":hex}})
         })
         .collect::<Vec<_>>();
-    let module = json!({"spec":"lexlean/semantic-module/1", "declarations":declarations});
+    let schema = if language == "1.2" {
+        "lexlean/semantic-module/2"
+    } else {
+        "lexlean/semantic-module/1"
+    };
+    let module = json!({"spec":schema, "declarations":declarations});
     project.write("src/Main.lex.tex", &format!(
         "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@{language}.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{module}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
     ));

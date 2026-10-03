@@ -552,11 +552,11 @@ public theorem symptomatic_check_sound (presentation : Presentation) : ((symptom
 
 @[expose, reducible] public def Safe (presentation : Presentation) (level : Level) : Prop := ((isBreathless (presentation) = true) -> (isEmergency (level) = true))
 
-@[expose] public def triageWeights.bytes : ByteArray := ByteArray.mk #[254, 255, 254, 255, 252, 255, 2, 0, 2, 0, 0, 0, 0, 0, 1, 0, 5, 0]
+@[expose] public def triageWeights.bytes : ByteArray := ByteArray.mk #[UInt8.ofNat (nat_lit 254), UInt8.ofNat (nat_lit 255), UInt8.ofNat (nat_lit 254), UInt8.ofNat (nat_lit 255), UInt8.ofNat (nat_lit 252), UInt8.ofNat (nat_lit 255), UInt8.ofNat (nat_lit 2), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 2), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 1), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 5), UInt8.ofNat (nat_lit 0)]
 @[expose] public def triageWeights : List (List (Int)) := (((-2 : Int) :: ((-2 : Int) :: ((-4 : Int) :: ([] : List (Int))))) :: (((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((1 : Int) :: ((5 : Int) :: ([] : List (Int))))) :: ([] : List (List (Int))))))
 public theorem triageWeights.decoded : (LexLeanModels.tensorMatches 2 true triageWeights.flatten triageWeights.bytes && (triageWeights.length == 3) && (triageWeights.map List.length == List.replicate 3 3)) = true := by decide
 
-@[expose] public def triageBias.bytes : ByteArray := ByteArray.mk #[1, 0, 0, 0, 255, 255]
+@[expose] public def triageBias.bytes : ByteArray := ByteArray.mk #[UInt8.ofNat (nat_lit 1), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 0), UInt8.ofNat (nat_lit 255), UInt8.ofNat (nat_lit 255)]
 @[expose] public def triageBias : List (Int) := ((1 : Int) :: ((0 : Int) :: ((-1 : Int) :: ([] : List (Int)))))
 public theorem triageBias.decoded : (LexLeanModels.tensorMatches 2 true triageBias triageBias.bytes && (triageBias.length == 3)) = true := by decide
 

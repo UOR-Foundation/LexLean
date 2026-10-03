@@ -58,6 +58,12 @@ Raw logs are retained in the integration workspace as
 `typed-byte-value-mutant.log`, `typed-byte-verified-gates.log`, and
 `typed-byte-full-corpus-diagnostic-retry.log`.
 
+The port onto `6b198ee6` retains its complete language-1.2 implementation and
+uses semantic-module/2 for the 1.2 byte observer. Complete SM-19 passes in
+103.33 seconds; all 290 model/specification rows, source golden generation
+(including the compiler project), and all-target Clippy pass. Verification
+record regeneration and full acceptance for this port remain outstanding.
+
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
 ### release inventory can fail
