@@ -31,6 +31,9 @@ pub struct Model {
     pub authorities: Authorities,
     /// `model/errors.toml`: the closed public diagnostic registry (R1, R5).
     pub errors: Errors,
+    /// The repository root the model was loaded from, against which a
+    /// vendored authority's path resolves.
+    pub root: PathBuf,
 }
 
 /// A failure to load or to cross-check the model.
@@ -64,6 +67,7 @@ impl Model {
             ids: read(dir, "ids.toml")?,
             authorities: read(dir, "authorities.toml")?,
             errors: read(dir, "errors.toml")?,
+            root: dir.parent().map_or_else(PathBuf::new, Path::to_path_buf),
         })
     }
 
@@ -161,6 +165,7 @@ impl Model {
                     a.id
                 )));
             }
+            self.check_vendored(a)?;
             for id in &a.realized_by {
                 if self.ids.get(id).is_none() {
                     return Err(bad(format!("{}: realized_by names unknown ID {id}", a.id)));
@@ -184,6 +189,55 @@ impl Model {
                     c.id
                 )));
             }
+        }
+        Ok(())
+    }
+}
+
+impl Model {
+    /// R6: a vendored authority is the bytes its checksum names, recomputed
+    /// here rather than trusted; a checksum with nothing vendored hashes
+    /// nothing, so it is refused.
+    fn check_vendored(&self, a: &AuthorityRow) -> Result<(), ModelError> {
+        use sha2::{Digest, Sha256};
+        let bad = |m: String| ModelError::Inconsistent(m);
+        let Some(path) = &a.vendored else {
+            return if a.checksum == "none" {
+                Ok(())
+            } else {
+                Err(bad(format!(
+                    "{}: checksum `{}` with no vendored copy to hash (R6)",
+                    a.id, a.checksum
+                )))
+            };
+        };
+        let Some(stated) = a.checksum.strip_prefix("sha256:") else {
+            return Err(bad(format!(
+                "{}: a vendored authority's checksum is `sha256:<hex>`, found `{}` (R6)",
+                a.id, a.checksum
+            )));
+        };
+        let full = self.root.join(path);
+        let bytes = std::fs::read(&full).map_err(|e| ModelError::Io(full.clone(), e))?;
+        let actual: String = Sha256::digest(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        if actual != stated {
+            return Err(bad(format!(
+                "{}: {path} hashes to {actual}, not its checksum {stated} (R6)",
+                a.id
+            )));
+        }
+        if a.acquired_sha256
+            .as_deref()
+            .is_some_and(|acquired| acquired != stated)
+        {
+            return Err(bad(format!(
+                "{}: the vendored copy is not the acquired bytes {} (R6)",
+                a.id,
+                a.acquired_sha256.as_deref().unwrap_or_default()
+            )));
         }
         Ok(())
     }

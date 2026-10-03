@@ -12,6 +12,7 @@ mod configuration_lock;
 mod declarations;
 mod examples;
 mod extraction;
+mod gnaf;
 mod grammar;
 mod latex_pdf;
 mod lean_backend;
@@ -55,6 +56,7 @@ pub fn run(id: &str) {
         "NE" => extraction::run(id),
         "TC" => calculus::run(id),
         "RB" => rust_backend::run(id),
+        "GN" => gnaf::run(id),
         "SP" => preservation::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }

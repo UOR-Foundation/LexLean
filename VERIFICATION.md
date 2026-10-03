@@ -9,13 +9,13 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | Recipe | Command | Rules it enforces |
 | --- | --- | --- |
 | `fmt-check` | `cargo fmt --all -- --check` | one canonical source formatting |
-| `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
+| `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 263 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 284 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
-| `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
+| `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
@@ -23,7 +23,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
-- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, the generated `TargetFixtures` module, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture set, the calculus's definition in `crates/conformance/src/calculus_source.rs`, and the renderer produce (§17.14), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03`. `just calculus-write` is the only rewrite path.
+- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, the generated `TargetFixtures` and `GnafFixtures` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` model, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the model's definition in `crates/conformance/src/gnaf_model.rs`, and the renderer produce (§17.14, §17.15), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
 - `just verify-write` (`cargo xtask verify-examples --write`) is the only path that rewrites `examples/*/expected/verify/`.
 - `just release` runs `vv` and then `cargo xtask release-check` (RP-12): every §30.3 artifact by content, the §30.4 completion criteria, and the crate-packaging round trip (`cargo package`, extract, offline build, `--version` equal to the in-repository binary). It is refused until 1.0.0.
 
@@ -1008,28 +1008,64 @@ is not definitionally equal to the right-hand side
 ### rust construct correspondence can fail
 
 Planted: the correspondence row of `call:runtime:nat_add` was deleted from
-`crates/lexlean/src/calculus/rust/validate.rs`. Command: `cargo test -p
-repo-conformance --test conformance -- conformance_rb_01`. Expected: every
-rendering that adds naturals emits a construct with no target-semantics
-correspondence.
+`crates/lexlean/src/calculus/rust/validate.rs`. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_01`. Expected:
+every rendering that adds naturals emits a construct with no
+target-semantics correspondence.
 
 ```text
-thread 'conformance_rb_01' (18572) panicked at crates/conformance/src/cases/rust_backend.rs:242:40:
+thread 'conformance_rb_01' (22507) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
 adt-evaluation (rust-std): the construct `call:runtime:nat_add` has no target-semantics correspondence
 ```
 
 Removed: the row was restored; `conformance_rb_01` passes.
 
+### rust correspondence is checked per construct instance
+
+Planted: lowering chose `nat_mul` for every `nat_add` term
+(`Prim::NatAdd => Item::NatMul` in `lower.rs`). Many fixtures use both
+primitives, so a check of the program's element set as a whole would admit
+it. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_01`. Expected: the call is refused because its own origin
+is `prim:nat_add`.
+
+```text
+thread 'conformance_rb_01' (11292) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+adt-evaluation (rust-std): the construct `call:runtime:nat_mul` does not realize `prim:nat_add`, the element it was lowered from
+```
+
+A second plant chose the `u16` checked addition for every `u8` one:
+
+```text
+thread 'conformance_rb_01' (12208) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+fixed-checked-narrow (rust-std): the construct `call:runtime:checked_add` works at width Some(U16), but `prim:checked_add` is at Some(U8)
+```
+
+Removed: `item` was restored; `conformance_rb_01` passes. `RB-01` also
+plants both mutations on a lowered crate directly.
+
+### rust closure correspondence admits an inline closure
+
+Planted: the row of `enum:closures` named only `type:fn`, so a function
+type realized by a closure the program never states a type for is
+unjustified. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_01`. Expected: the fixtures whose closure types
+are stated nowhere are refused.
+
+```text
+thread 'conformance_rb_01' (29092) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+closure-captures (rust-core): the construct `enum:closures` does not realize `expr:closure`, the element it was lowered from
+```
+
+Removed: the row was restored; `conformance_rb_01` passes, and
+`closure-inline` renders and runs.
+
 ### rust identifier collision can fail
 
 Planted: the package check admitted Rust keywords as exported names
-(`KEYWORDS.contains(&name) && name.is_empty()`). Command: `cargo test -p
-repo-conformance --test conformance -- conformance_rb_02`. Expected: the
-committed negative manifest exporting `match` is packaged.
+(`KEYWORDS.contains(&name) && name.is_empty()`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_02`. Expected: the committed negative
+manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_02' (2095) panicked at crates/conformance/src/cases/rust_backend.rs:101:51:
-the manifest is refused: Package { files: {"Cargo.toml": [91, 112, 97, 99, 107, 97, 103, 101, 93, ...
+thread 'conformance_rb_02' (29709) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+identifier-keyword: the negative manifest packages
 ```
 
 Removed: the check was restored; `conformance_rb_02` passes.
@@ -1037,13 +1073,12 @@ Removed: the check was restored; `conformance_rb_02` passes.
 ### rust ownership mismatch can fail
 
 Planted: the package check let an export copy a parameter of any type
-(`Passing::Copy => ...`). Command: `cargo test -p repo-conformance --test
-conformance -- conformance_rb_03`. Expected: the negative manifest copying
-a list parameter is packaged.
+(`Passing::Copy => ...`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_03`. Expected: the committed negative
+manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_03' (2716) panicked at crates/conformance/src/cases/rust_backend.rs:101:51:
-the manifest is refused: Package { files: {"Cargo.toml": [91, 112, 97, 99, 107, 97, 103, 101, 93, ...
+thread 'conformance_rb_03' (30347) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+ownership-copy-list: the negative manifest packages
 ```
 
 Removed: the check was restored; `conformance_rb_03` passes.
@@ -1051,13 +1086,38 @@ Removed: the check was restored; `conformance_rb_03` passes.
 ### rust boundary type check can fail
 
 Planted: the package check never found a function value at an export's
-boundary. Command: `cargo test -p repo-conformance --test conformance --
-conformance_rb_04`. Expected: the negative manifest exporting a function
-that takes a closure is packaged.
+boundary (`Ty::Fn { .. } => false`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_04`. Expected: the committed negative
+manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (3358) panicked at crates/conformance/src/cases/rust_backend.rs:101:51:
-the manifest is refused: Package { files: {"Cargo.toml": [91, 112, 97, 99, 107, 97, 103, 101, 93, ...
+thread 'conformance_rb_04' (31065) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+unsupported-function-boundary: the negative manifest packages
+```
+
+Removed: the check was restored; `conformance_rb_04` passes.
+
+### rust boundary check reaches into records
+
+Planted: the boundary check stopped at a named type
+(`false && seen.insert(*index)` in `holds_function`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_04`. Expected: the committed negative
+manifest that the check exists for is packaged.
+
+```text
+thread 'conformance_rb_04' (31880) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+unsupported-function-in-record: the negative manifest packages
+```
+
+Removed: the check was restored; `conformance_rb_04` passes.
+
+### rust uninhabited value refusal can fail
+
+Planted: lowering no longer refused a call whose result type no value
+inhabits (the `self.inhabited(&result)?` of `Term::Call` was deleted). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_04`. Expected: the committed negative
+manifest that the check exists for is packaged.
+
+```text
+thread 'conformance_rb_04' (32579) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+unsupported-uninhabited-value: the negative manifest packages
 ```
 
 Removed: the check was restored; `conformance_rb_04` passes.
@@ -1065,47 +1125,574 @@ Removed: the check was restored; `conformance_rb_04` passes.
 ### rust declared failure check can fail
 
 Planted: the package check admitted an export declaring no errors for a
-function that can overflow. Command: `cargo test -p repo-conformance --test
-conformance -- conformance_rb_05`. Expected: the negative manifest
-`arithmetic-undeclared-overflow` is packaged.
+function that can overflow (`(Errors::None, true) if false`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_05`. Expected: the committed negative
+manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_05' (3997) panicked at crates/conformance/src/cases/rust_backend.rs:101:51:
-the manifest is refused: Package { files: {"Cargo.toml": [91, 112, 97, 99, 107, 97, 103, 101, 93, ...
+thread 'conformance_rb_05' (759) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+arithmetic-undeclared-overflow: the negative manifest packages
 ```
 
 Removed: the check was restored; `conformance_rb_05` passes.
 
-### rust package lint gate can fail
+### rust version check can fail
 
-Planted: the committed `compiler/rust/rust-std/nat-arithmetic/Cargo.toml`
-set Clippy's default lints to `allow`. Command: `cargo test -p
-repo-conformance --test conformance -- conformance_rb_06`. Expected: the
-package with a planted clone of a `Copy` value passes Clippy. Setting the
-group to `warn` instead is not a weakening: the package's
-`[lints.rust] warnings = "deny"` makes every Clippy warning an error, and
-that plant is refused like the original.
+Planted: the version check read each part as a `u128`, so a part above
+`u64::MAX`, which Cargo refuses, passed. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_07`. Expected: the committed negative
+manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_06' (19149) panicked at crates/conformance/src/cases/rust_backend.rs:584:13:
+thread 'conformance_rb_07' (1325) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+version-overflow: the negative manifest packages
+```
+
+Removed: the check was restored; `conformance_rb_07` passes.
+
+### rust package lint gate can fail
+
+Planted: the generated `Cargo.toml` set Clippy's default lints to `allow`,
+and the packages were regenerated. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_06`. Expected: the package
+with a planted clone of a `Copy` value passes Clippy.
+
+```text
+thread 'conformance_rb_06' (10515) panicked at crates/conformance/src/cases/rust_backend.rs:1035:13:
 the planted lint is refused
 ```
 
-Removed: the manifest was restored; `conformance_rb_06` passes.
+Removed: the generator was restored and the packages regenerated;
+`conformance_rb_06` passes.
+
+### rust lint exceptions and lowering rules are load-bearing
+
+Each of the ten exceptions of `package::ALLOWED_LINTS` was removed in turn
+(its entry renamed to the pedantic `too_many_lines`), and each rendering rule
+of §17.16 **Lowering** was disabled in turn; after each plant the packages
+were regenerated and `conformance_rb_06` (with `conformance_rb_01`) ran.
+Expected: a committed package fails its gate, so no exception or rule is
+admitted without a fixture that needs it. Every plant was refused; the
+first lint or build error of each:
+
+| Exception removed, or rule disabled | First refusal |
+| --- | --- |
+| `type_complexity` | `very complex type used` |
+| `too_many_arguments` | `this function has too many arguments (8/7)` |
+| `large_enum_variant` | `large size difference between variants` |
+| `result_large_err` | `the Err-variant returned from this function is very large` |
+| `result_unit_err` | ``this returns a `Result<_, ()>` `` |
+| `single_match` | ``you seem to be trying to use `match` for an equality check`` |
+| `manual_unwrap_or` | ``this pattern reimplements `Option::unwrap_or` `` |
+| `manual_unwrap_or_default` | ``match can be simplified with `.unwrap_or_default()` `` |
+| `manual_map` | ``manual implementation of `Option::map` `` |
+| `manual_ok_err` | ``manual implementation of `ok` `` |
+| unit result written `-> ()` | `unneeded unit return type` |
+| unit block value written `()` | `unneeded unit expression` |
+| unit binder bound by name | ``unused variable: `v0` `` |
+| unit capture read through its reference | `passing a unit value to a function` |
+| computed unit operand passed directly | `passing a unit value to a function` |
+| computed unit returned as `Ok(e)` | `passing a unit value to a function` |
+| unit dispatch result wrapped as `Ok(f(..))` | `passing a unit value to a function` |
+| empty unit `else` written | ``this `else` branch is empty`` |
+| inner `if` of an `if` without `else` not bound | ``this `if` statement can be collapsed`` |
+| literal Boolean branches kept | `this if-then-else expression returns a bool literal` |
+| equal branches kept | ``this `if` has identical blocks`` |
+| literal condition not bound | ``this `if` has identical blocks`` |
+| rebuilding match kept | `this match expression is unnecessary` |
+| binding returned by its block kept | ``returning the result of a `let` binding from a block`` |
+| computed record matched in place | ``in a `match` scrutinee, avoid complex blocks`` |
+| zero test negated as `Not(m == 0)` | `RB-01`: `a negated zero test or predecessor` (before that refusal: no run package emitted a nonzero test, and an export and the denotation disagreed on `!m == 0`) |
+| uninhabited parameter's body rendered | `unreachable definition` |
+| uninhabited arm rendered | `unreachable definition` |
+
+The transcripts are of the form:
+
+```text
+thread 'conformance_rb_06' (18145) panicked at crates/conformance/src/cases/rust_backend.rs:905:13:
+a package fails its lint gate:
+error: very complex type used. Consider factoring parts into `type` definitions
+```
+
+Removed: every exception and rule was restored and the packages
+regenerated; `conformance_rb_06` passes.
+
+### rust runtime mutation is detected by the differential
+
+Planted: `parse_int` returned `Ok(None)` for a decimal outside `i64`
+(`Some(None) => Ok(None)` in the runtime). Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_06`. Expected: the
+primitive differential, which runs every primitive instance on its
+boundary and seeded inputs, finds the inputs whose denotation overflows.
+
+```text
+thread 'conformance_rb_06' (2037) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+primitives_std: the rendering and the denotation disagree on 3 of 51441 runs: ["run 38634: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38650: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38656: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}"]
+```
+
+A second plant computed `int_rem` as `a.checked_rem(b).unwrap_or(z)`, so
+`i64::MIN rem -1` returned the default:
+
+```text
+thread 'conformance_rb_06' (17475) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+primitives_core: the rendering and the denotation disagree on 1 of 39092 runs: ["run 8393: {\"kind\":\"int\",\"value\":\"-9223372036854775807\"} != {\"kind\":\"int\",\"value\":\"0\"}"]
+```
+
+Removed: the runtime was restored; `conformance_rb_06` passes.
+
+### rust lowering mutation is detected
+
+Planted: a closure's dispatch passed its captures in reverse order
+(`.rev()` in the printer of `Fn<n>::apply`), and, separately, a field
+projection bound the mirrored field (`if field == types.len() - 1 -
+selected`); the packages were regenerated each time. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_06`.
+Expected: a run package computes another value. At `20b4ed6`, whose
+fixtures captured and projected only naturals, both were caught as the
+export and the denotation disagreeing (`closure_captures_core` and
+`record_fields_core`). The fixtures now also capture a number with a string
+and project from records of mixed types, so the same mutations no longer
+type check and the build refuses them first:
+
+```text
+thread 'conformance_rb_06' (3563) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+a package does not build:
+error[E0308]: arguments to this function are incorrect
+```
+
+and for the projection:
+
+```text
+thread 'conformance_rb_06' (6453) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+a package does not build:
+error[E0614]: type `u64` cannot be dereferenced
+```
+
+Removed: the lowering was restored and the packages regenerated;
+`conformance_rb_06` passes.
 
 ### rust provenance binding can fail
 
-Planted: the provenance hashed only the core runtime for every profile.
-Command: `cargo test -p repo-conformance --test conformance --
-conformance_rb_07`. Expected: a `rust-std` package's provenance no longer
-equals the committed one.
+Planted: the provenance hashed only the core runtime for every profile,
+and the packages were regenerated. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_07`. Expected: a `rust-std`
+package's provenance no longer records the runtime LexLean's semantics
+records.
 
 ```text
-thread 'conformance_rb_07' (17867) panicked at crates/conformance/src/cases/rust_backend.rs:678:21:
-assertion `left == right` failed: /home/user/wt-24/compiler/rust/rust-std/adt-evaluation/provenance.json
+thread 'conformance_rb_07' (28593) panicked at crates/conformance/src/cases/rust_backend.rs:1179:17:
+assertion `left == right` failed: compiler/rust/rust-std/adt-evaluation: the runtime is the one LexLean's semantics records
 ```
 
 Removed: the hash was restored; `conformance_rb_07` passes.
+
+### rust cross-root determinism can fail
+
+Planted: the provenance's version carried the renderer's working
+directory (`format!("{}+{}", manifest.version, current_dir)`), and the
+packages were regenerated. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_07`. Expected: the two renderer
+processes, each run with its own working directory and environment, write
+different bytes.
+
+```text
+thread 'conformance_rb_07' (13568) panicked at crates/conformance/src/cases/rust_backend.rs:1129:17:
+assertion `left == right` failed: rust-core/boolean-shapes/provenance.json: the renderers of two roots disagree
+```
+
+Removed: the provenance was restored and the packages regenerated;
+`conformance_rb_07` passes.
+
+### rust source binding can fail
+
+Planted: the package generator wrote the zero identity as every package's
+`sources`, and the packages were regenerated. Command: `cargo test -p repo-conformance --test conformance -- conformance_rb_07`. Expected: no
+package binds the verified build that states its program.
+
+```text
+thread 'conformance_rb_07' (30490) panicked at crates/conformance/src/cases/rust_backend.rs:1186:46:
+compiler/rust/rust-std/adt-evaluation: sources ["0000000000000000000000000000000000000000000000000000000000000000"] are not the semantic ID cd690f0a5afba87d8ddeebfb51773d2d833d2d9b0f897cc9c5702224d8b1994d of the verified compiler build
+```
+
+A second plant made the binding check accept any single source
+(`sources.len() != 1`); the forged-identity check refused it:
+
+```text
+thread 'conformance_rb_07' (19913) panicked at crates/conformance/src/cases/rust_backend.rs:1199:69:
+forged: ()
+```
+
+Removed: the generator and the check were restored and the packages
+regenerated; `conformance_rb_07` passes.
+
+### rust runtime identity record can fail
+
+Planted: `nat_sub` wrapped (`a.wrapping_sub(b)`) without updating
+`language/semantics-1.2.toml`. Command: `cargo test -p lexlean --lib
+the_compiler_semantics_records_the_runtime`. Expected: the runtime no longer
+has the digest LexLean's compiler semantics records.
+
+```text
+thread 'calculus::rust::runtime::tests::the_compiler_semantics_records_the_runtime' (16500) panicked at crates/lexlean/src/calculus/rust/runtime.rs:603:13:
+assertion `left == right` failed: the runtime changed without its record `rust_runtime_core` in language/semantics-1.2.toml
+  left: Some("7f18f40838cbf5b74494efecbd3553c16cd6b0fb42445bdff4c8036b5f0e2a95")
+ right: Some("c87e438f590444f4c7689a09cca2110d37fea6c32564a767037c9d8647a0fe04")
+```
+
+Removed: the runtime was restored; the test passes.
+
+### rust renderer identity record can fail
+
+Planted: `negate` lost its zero-test arm in
+`crates/lexlean/src/calculus/rust/lower.rs`, without updating
+`rust_renderer` in `language/semantics-1.2.toml`. Command: `cargo test -p
+lexlean --lib the_compiler_semantics_records_the_renderer`. Expected: the
+renderer's sources no longer have the digest LexLean's compiler semantics
+records, so the change cannot keep LexLean's identity.
+
+```text
+thread 'calculus::rust::tests::the_compiler_semantics_records_the_renderer' (9715) panicked at crates/lexlean/src/calculus/rust/mod.rs:244:9:
+assertion `left == right` failed: the renderer changed without its record `rust_renderer` in language/semantics-1.2.toml
+```
+
+The same plant shows the negated zero test is refused before any package is
+built (command `cargo test -p repo-conformance --test conformance --
+conformance_rb_01`):
+
+```text
+thread 'conformance_rb_01' (10406) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+boolean-shapes (rust-core): a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean
+```
+
+Removed: `negate` was restored; both tests pass.
+
+### GNAF kernel oracle can fail
+
+Planted: the host's `lexlean::gnaf::expand` dispatched only from a plan to
+itself or a later one (`for large in small..count`), dropping
+`dispatch 3 1 0`, and `cargo xtask check-calculus --write` regenerated the
+GNAF fixtures from it. No answer of the two-plan requests changes, because
+the dropped system is never optimal; the oracle is Lean's kernel reducing the
+`Gnaf` model, whose expansion still has it. Command: `lexlean verify` in
+`compiler/`. Expected: every request's stated universe and every answered
+request's stated statuses are refused (the first two of fifty-four errors):
+
+```text
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.universeOf argminCompleteRequest
+is not definitionally equal to the right-hand side
+  [Gnaf.Selector.fixed 0, Gnaf.Selector.fixed 1, Gnaf.Selector.dispatch 3 0 0, Gnaf.Selector.dispatch 3 0 1,
+    Gnaf.Selector.dispatch 3 1 1]
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.statusesOf argminCompleteRequest
+is not definitionally equal to the right-hand side
+  [(0, Gnaf.Status.admitted 180 15), (1, Gnaf.Status.admitted 205 26), (2, Gnaf.Status.admitted 235 22),
+    (3, Gnaf.Status.admitted 167 46), (4, Gnaf.Status.admitted 260 33)]
+```
+
+Removed: `expand` was restored and the fixtures regenerated; `compiler/`
+verifies and `conformance_gn_02` passes.
+
+### GNAF completeness theorem can fail
+
+Planted: the model's `dispatchSmalls` paired each small plan only with the
+plans after it (`dispatchOver threshold small rest`), so the expansion lost
+every dispatch to an earlier plan or to itself, and
+`cargo xtask check-calculus --write` regenerated `Gnaf`. Command:
+`lexlean verify` in `compiler/`. Expected: the lemma `dispatchInSmalls`,
+on which `expandComplete` rests, no longer closes:
+
+```text
+error[LLV7002]: Lean rejected `Compiler.Gnaf` (error): unsolved goals
+case cons
+threshold small large level : Nat
+larges : List Nat
+head : Nat
+```
+
+Removed: `dispatchSmalls` was restored and `Gnaf` regenerated; `compiler/`
+verifies and `conformance_gn_03` passes.
+
+### GNAF ties can fail
+
+Planted, separately: (1) the model's `attaining` kept only the first row at
+the least cost; (2) the host's `argmin` kept only the first identity at the
+least cost (`.take(1)`); (3) the model's `frontierFrom` dropped a row whose
+cost a later row equals. Each was regenerated with
+`cargo xtask check-calculus --write`. Command: `lexlean verify` in
+`compiler/`. Expected: the kernel refuses each, through the authority's own
+tie in GNAF-VEC-17 for (1) and through the duplicated-plan fixtures
+(GNAF-REJ-21) for (2) and (3):
+
+```text
+error[LLV7002]: Lean rejected `Compiler.Gnaf` (error): Tactic `rfl` failed: The left-hand side
+  argmin Nat uniformRows
+is not definitionally equal to the right-hand side
+  some ([0, 1], 10)
+```
+
+```text
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.answer argminTieRequest
+is not definitionally equal to the right-hand side
+  Gnaf.Answer.argmin [4] 167
+```
+
+```text
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.answer frontierTieRequest
+is not definitionally equal to the right-hand side
+  Gnaf.Answer.frontier [0, 4, 5]
+```
+
+Removed: each definition was restored and the project regenerated;
+`compiler/` verifies and `conformance_gn_02` passes.
+
+### GNAF reachable size can fail
+
+Planted: the model's `status` sized a system by every function of its
+realization (`reachableSize` over `range (length functions)`), the shared
+plans it cannot run included, and `cargo xtask check-calculus --write`
+regenerated `Gnaf`. Command: `lexlean verify` in `compiler/`. Expected:
+every stated status list is refused, and the posed GNAF-VEC-02 frontier
+collapses (seventeen errors, three of them):
+
+```text
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.answer vec02ParetoEnvelopeRequest
+is not definitionally equal to the right-hand side
+  Gnaf.Answer.frontier [0, 1, 2]
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.certifies vec02ParetoEnvelopeRequest (Gnaf.Answer.frontier [2, 1, 0])
+is not definitionally equal to the right-hand side
+  true
+error[LLV7002]: Lean rejected `Compiler.GnafFixtures` (error): Tactic `rfl` failed: The left-hand side
+  Gnaf.minimaAttained vec02ParetoEnvelopeRequest
+is not definitionally equal to the right-hand side
+  false
+```
+
+Removed: `status` was restored and `Gnaf` regenerated; `compiler/`
+verifies and `conformance_gn_06` passes.
+
+### GNAF hidden-cost rejection can fail
+
+Planted: the host's `check_performed` accepted a `free` charge for an action
+systems perform. Command: `cargo test -p repo-conformance --test
+conformance -- conformance_gn_04`. Expected: a request that declares
+observation free is answered instead of refused.
+
+```text
+thread 'conformance_gn_04' panicked at crates/conformance/src/cases/gnaf.rs:1060:9:
+assertion `left == right` failed: reject-free-observation
+```
+
+Removed: the charge rule was restored; `conformance_gn_04` passes.
+
+### GNAF per-plan preparation can fail
+
+Planted: the host's `system_charge` charged every plan's preparation to
+every system (`(0..=plans.len())` in place of the reachable functions), the
+uniform shift the review found. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_gn_04`. Expected: the fixed recursion
+system, which cannot run the slicing plan, is charged its preprocessing.
+
+```text
+thread 'conformance_gn_04' panicked at crates/conformance/src/cases/gnaf.rs:1111:9:
+assertion `left == right` failed: Fixed { plan: 0 }
+```
+
+Removed: the reachable plans were restored; `conformance_gn_04` passes.
+
+### GNAF prepared-artifact binding can fail
+
+Planted: the host's `check_declared` admitted a `free` preparation on a
+prepared boundary whether or not an artifact it prepared is bound
+(`(!bound).then_some(..)` replaced by `None`). Command: `cargo test -p
+repo-conformance --test conformance -- conformance_gn_04`.
+
+```text
+thread 'conformance_gn_04' panicked at crates/conformance/src/cases/gnaf.rs:1060:9:
+assertion `left == right` failed: reject-unbound-prepared-state
+```
+
+Removed: the binding rule was restored; `conformance_gn_04` passes.
+
+### GNAF operand-size declaration can fail
+
+Planted: the host's `validate` skipped the operand-size rule
+(`if false && request.machine.operand_size == OperandSize::Unit`). Command:
+`cargo test -p repo-conformance --test conformance -- conformance_gn_04`.
+
+```text
+thread 'conformance_gn_04' panicked at crates/conformance/src/cases/gnaf.rs:1060:9:
+assertion `left == right` failed: reject-unit-cost-operands
+```
+
+Removed: the rule was restored; `conformance_gn_04` passes.
+
+### GNAF machine capacity can fail
+
+Planted, separately: (1) the host's `check_request_capacity` never refused
+(`.filter(|_| false)`); (2) the host's `check_capacity` admitted any declared
+charge (`if false && cost > HOST_CAPACITY.charge`). Command: `cargo test -p
+repo-conformance --test conformance -- conformance_gn_04` and
+`-- conformance_gn_01`. Expected: (1) a request using more fuel than its
+machine's capacity is answered; (2) a request charging 2^40 per invocation
+loads, so its cost could leave the host's integers.
+
+```text
+thread 'conformance_gn_04' panicked at crates/conformance/src/cases/gnaf.rs:1060:9:
+assertion `left == right` failed: reject-beyond-capacity
+```
+
+```text
+thread 'conformance_gn_01' panicked at crates/conformance/src/cases/gnaf.rs:90:28:
+an invalid request loads: expected `charge`
+```
+
+Removed: both checks were restored; `conformance_gn_01` and
+`conformance_gn_04` pass.
+
+### GNAF universe identity can fail
+
+Planted: the host's `load` skipped the comparison of the stated universe
+identity with the recomputed one (`if false && request.universe !=
+identity`). Command: `cargo test -p repo-conformance --test conformance --
+conformance_gn_01`. Expected: a request stating another universe's identity
+loads.
+
+```text
+thread 'conformance_gn_01' panicked at crates/conformance/src/cases/gnaf.rs:90:28:
+an invalid request loads: expected `universe identity`
+```
+
+Removed: the comparison was restored; `conformance_gn_01` passes.
+
+### GNAF reference definition can fail
+
+Planted: the host's `load` skipped running the reference on the domain
+(`.filter(|_| false)` before the search for an argument without a value).
+Command: `cargo test -p repo-conformance --test conformance --
+conformance_gn_01`. Expected: a request whose fuel leaves the reference
+exhausted loads, its expected values undefined.
+
+```text
+thread 'conformance_gn_01' panicked at crates/conformance/src/cases/gnaf.rs:90:28:
+an invalid request loads: expected `the reference returns no value (exhausted)`
+```
+
+Removed: the check was restored; `conformance_gn_01` passes.
+
+### GNAF claim alias can fail
+
+Planted: the host's `check_claim` accepted `restricted_universe_optimal`
+(`=> None`). Command: `cargo test -p repo-conformance --test conformance --
+conformance_gn_05`.
+
+```text
+thread 'conformance_gn_05' panicked at crates/conformance/src/cases/gnaf.rs:1197:9:
+assertion `left == right` failed: reject-restricted-universe-alias
+```
+
+Removed: the alias rule was restored; `conformance_gn_05` passes.
+
+### GNAF evaluation panic can fail
+
+Planted: a panic of the evaluation thread was reported as the platform's
+`LLV7010`. Command: `cargo test -p lexlean --lib gnaf`. Expected: the
+planted panic surfaces as a platform failure.
+
+```text
+thread 'gnaf::tests::a_panicking_evaluation_is_an_internal_failure' (28684) panicked at crates/lexlean/src/gnaf.rs:1769:9:
+assertion `left == right` failed
+  left: ["LLV7010"]
+ right: ["LLI9001"]
+```
+
+Removed: the panic is `LLI9001` again; the test passes.
+
+### GNAF authority vector statements can fail
+
+Planted: GNAF-VEC-02's `rD` was transcribed as `(3, 4)` instead of `(3, 3)`
+in `crates/conformance/src/gnaf_model.rs`, and
+`cargo xtask check-calculus --write` regenerated `Gnaf`. The frontier is
+still `{rA, rB, rC}`, so Lean accepts the theorem; the check is the
+statement's own numbers. Command: `cargo test -p repo-conformance --test
+conformance -- conformance_gn_07`.
+
+```text
+thread 'conformance_gn_07' panicked at crates/conformance/src/cases/gnaf.rs:1540:5:
+assertion `left == right` failed
+  left: [(0, [1, 3]), (1, [2, 2]), (2, [3, 1]), (3, [3, 4])]
+ right: [(0, [1, 3]), (1, [2, 2]), (2, [3, 1]), (3, [3, 3])]
+```
+
+Removed: the transcription was restored and `Gnaf` regenerated;
+`conformance_gn_07` passes.
+
+### GNAF dependency manifest can fail
+
+Planted: the manifest's generator listed `restricted_universe_optimal` among
+the strongest claims, and `cargo xtask check-calculus --write` regenerated
+`compiler/gnaf.manifest.json`. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_gn_08`. Expected: the manifest claims a
+class the model refuses.
+
+```text
+thread 'conformance_gn_08' panicked at crates/conformance/src/cases/gnaf.rs:1829:5:
+assertion `left == right` failed
+  left: [("global_optimal", "scalar"), ("argmin_complete", "scalar"), ("restricted_universe_optimal", "scalar"), ("pareto_optimal", "vector"), ("frontier_complete", "vector")]
+ right: [("global_optimal", "scalar"), ("argmin_complete", "scalar"), ("pareto_optimal", "vector"), ("frontier_complete", "vector")]
+```
+
+Removed: the generator was restored and the manifest regenerated;
+`conformance_gn_08` passes.
+
+### vendored authority checksum can fail
+
+Planted: the vendored `model/authorities/UOR-GNAF-v1-draft.2.md` was edited
+from `Normative Draft 0.2` to `Normative Draft 0.3`. Command:
+`cargo xtask validate-model`.
+
+```text
+gate failed: model is inconsistent: UOR-GNAF-1-DRAFT-2: model/authorities/UOR-GNAF-v1-draft.2.md hashes to 98d97c4b3ec55573fefb9986a1b821abad032fbd27e716cad26735f8ade999e1, not its checksum 5c342373b2ff809bfd607c413cafd0582d32bb097544c6597ff7d674fe99200a (R6)
+```
+
+Removed: the vendored bytes were restored; `validate-model` is clean.
+
+### check-calculus covers the GNAF fixtures
+
+Planted: the committed answer of `compiler/gnaf/argmin-over-systems.json`
+was edited from 167 to 166 steps. Command: `cargo xtask check-calculus`.
+
+```text
+gate failed: compiler/gnaf/argmin-over-systems.json differs from its generator; run `cargo xtask check-calculus --write`
+```
+
+Removed: the committed bytes were restored; the gate reports 262 generated
+files equal to their generator.
+
+### check-calculus covers the Gnaf model
+
+Planted: the theorem `expandComplete` of the committed
+`compiler/src/Gnaf.lex.tex` was renamed `expandComplett`. Command:
+`cargo xtask check-calculus`. Expected: the committed model no longer equals
+what `crates/conformance/src/gnaf_model.rs` renders.
+
+```text
+gate failed: compiler/src/Gnaf.lex.tex differs from its generator; run `cargo xtask check-calculus --write`
+```
+
+Removed: the committed module was restored; the gate reports 262 generated
+files equal to their generator.
+
+### check-calculus covers the GNAF schemas
+
+Planted: the committed `schemas/gnaf-request.schema.json` admitted a third
+operand-size treatment, `free`. Command: `cargo xtask check-calculus`.
+Expected: the schema no longer equals what its generator renders from the
+request types and `schemas/target-program.schema.json`.
+
+```text
+gate failed: schemas/gnaf-request.schema.json differs from its generator; run `cargo xtask check-calculus --write`
+```
+
+Removed: the committed schema was restored; the gate reports 262 generated
+files equal to their generator.
 
 ### language-1.2 imported runtime reduction can fail
 

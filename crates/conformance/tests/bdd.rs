@@ -144,12 +144,20 @@ fn the_meta_gate_is_falsifiable() {
     // statement altered, one tag line reordered, and one file given a
     // pending step: each drift is named.
     let planted = tempfile::tempdir().expect("tempdir");
+    // Recursive, because `model/` holds the vendored authorities the model
+    // check rehashes as well as its registers.
     let copy = |relative: &str| {
         let from = root.join(relative);
-        let to = planted.path().join(relative);
-        std::fs::create_dir_all(&to).expect("mkdir");
-        for entry in std::fs::read_dir(&from).expect("dir").flatten() {
-            std::fs::copy(entry.path(), to.join(entry.file_name())).expect("copy");
+        for entry in walkdir::WalkDir::new(&from).into_iter().flatten() {
+            let to = planted
+                .path()
+                .join(relative)
+                .join(entry.path().strip_prefix(&from).expect("under the root"));
+            if entry.file_type().is_dir() {
+                std::fs::create_dir_all(&to).expect("mkdir");
+            } else {
+                std::fs::copy(entry.path(), &to).expect("copy");
+            }
         }
     };
     copy("model");

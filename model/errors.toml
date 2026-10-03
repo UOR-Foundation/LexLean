@@ -39,8 +39,15 @@ statement = "PDF-provider protocol failure."
 code = "LLB6005"
 class = "language"
 exit = 1
-title = "Target realization program invalid or unrenderable"
-statement = "A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile."
+title = "Target realization program or Rust package invalid or unrenderable"
+statement = "A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile, or a Rust package manifest is malformed or misstates its crate name, version, sources, exports, or the interface of the program it packages."
+
+[[error]]
+code = "LLB6006"
+class = "language"
+exit = 1
+title = "GNAF request malformed"
+statement = "A GNAF request is not a closed `lexlean/gnaf-request/1` document, its reference program or a system its universe realizes is not a valid target program, its reference returns no value on a domain argument, its grammar repeats a threshold or misdeclares a plan's preparation, or its stated universe identity is not the one its components determine."
 
 [[error]]
 code = "LLC0001"
@@ -249,8 +256,8 @@ statement = "Path escape, symlink, special file, or filesystem identity conflict
 code = "LLS8002"
 class = "security-limit"
 exit = 4
-title = "Explicit project resource limit exceeded"
-statement = "Explicit project resource limit exceeded."
+title = "Explicit resource limit exceeded"
+statement = "An explicit project resource limit, or the declared capacity of an evaluator such as the GNAF host's (§17.15), is exceeded."
 
 [[error]]
 code = "LLS8003"

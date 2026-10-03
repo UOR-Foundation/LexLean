@@ -473,6 +473,15 @@ fn orderable(ty: &Ty) -> bool {
     }
 }
 
+/// The result type of `operation` applied to operands of `types`.
+///
+/// # Errors
+///
+/// Returns the reason the primitive does not apply to `types`.
+pub fn primitive_type(operation: &Prim, types: &[Ty]) -> Result<Ty, String> {
+    prim_type(operation, types)
+}
+
 /// The result type of a primitive at its operand types.
 #[allow(clippy::too_many_lines)]
 fn prim_type(operation: &Prim, types: &[Ty]) -> Result<Ty, String> {

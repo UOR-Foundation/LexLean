@@ -110,6 +110,10 @@ pub fn or(left: Json, right: Json) -> Json {
 pub fn not(value: Json) -> Json {
     json!({"kind": "not", "value": value})
 }
+/// Propositional equality, the statement of a theorem.
+pub fn eq(left: Json, right: Json) -> Json {
+    json!({"kind": "eq", "left": left, "right": right})
+}
 pub fn ite(condition: Json, then_value: Json, else_value: Json) -> Json {
     json!({"kind": "if", "condition": condition, "then_value": then_value, "else_value": else_value})
 }
@@ -213,6 +217,45 @@ pub fn encode_option(option: Json, wrap: impl FnOnce(Json) -> Json) -> Json {
     ]})
 }
 
+// --- polymorphism ----------------------------------------------------------
+
+/// A type parameter of the declaration being generated.
+pub fn parameter_t(name: &str) -> Json {
+    json!({"kind": "parameter", "name": name})
+}
+/// A function type.
+pub fn function_t(parameters: Vec<Json>, result: Json) -> Json {
+    json!({"kind": "function", "parameters": parameters, "result": result})
+}
+/// A call of a polymorphic definition at `type_arguments`.
+pub fn call_at(function: Json, type_arguments: Vec<Json>, arguments: Vec<Json>) -> Json {
+    json!({"kind": "call", "function": function, "arguments": arguments,
+           "type_arguments": type_arguments})
+}
+/// A definition generic in `type_parameters`.
+pub fn generic(type_parameters: &[&str], mut definition: Json) -> Json {
+    definition["type_parameters"] = json!(type_parameters);
+    definition
+}
+/// An application of a function-valued term.
+pub fn apply(function: Json, arguments: Vec<Json>) -> Json {
+    json!({"kind": "apply", "function": function, "arguments": arguments})
+}
+/// A definition as a value.
+pub fn function_ref(function: Json) -> Json {
+    json!({"kind": "function_ref", "function": function})
+}
+/// `∀ (name : ty), body`.
+pub fn forall(name: &str, ty: Json, body: Json) -> Json {
+    json!({"kind": "forall", "binder": parameter(name, ty), "body": body})
+}
+
+// --- proofs ----------------------------------------------------------------
+
+pub fn decide() -> Json {
+    json!({"kind": "decide"})
+}
+
 // --- declarations ----------------------------------------------------------
 
 pub fn parameter(name: &str, ty: Json) -> Json {
@@ -241,6 +284,11 @@ pub fn structure(name: &str, fields: Vec<(&str, Json)>) -> Json {
 pub fn definition(name: &str, parameters: Vec<Json>, result: Json, body: Json) -> Json {
     json!({"kind": "definition", "name": name, "parameters": parameters, "result": result,
            "body": body})
+}
+/// A closed theorem.
+pub fn theorem(name: &str, statement: Json, proof: Json) -> Json {
+    json!({"kind": "theorem", "name": name, "parameters": [], "statement": statement,
+           "proof": proof})
 }
 /// A definition by structural recursion on its parameter `argument`.
 pub fn recursive(argument: &str, mut definition: Json) -> Json {

@@ -48,8 +48,9 @@ fn main() -> ExitCode {
                  check-golden            §28.3: build outputs equal the committed oracles\n\
                  check-reproducibility   §28.4: two clean builds in distinct paths are byte-identical\n\
                  check-fixtures          §28.2: every fixture's CLI run equals its expected/ files\n\
-                 check-calculus          §17.14: the compiler project's modules, fixtures, and\n\
-                                         configuration equal their generator\n\
+                 check-calculus          §17.14-§17.16: the compiler project's modules, the target and\n\
+                                         GNAF fixtures, the Rust packages, and configuration equal\n\
+                                         their generator\n\
                  check-package           §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
@@ -71,15 +72,17 @@ fn main() -> ExitCode {
     }
 }
 
-/// §17.14: the committed `compiler` project (the calculus modules, the target
-/// fixtures and their `TargetFixtures` module, and the project configuration)
-/// is exactly what its generator renders.
+/// §17.14-§17.16: the committed `compiler` project (the calculus modules,
+/// the target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
+/// modules, the `Gnaf` model, the Rust packages and negative package
+/// manifests under `compiler/rust/`, and the project configuration) is
+/// exactly what its generator renders.
 fn check_calculus(root: &Path, write: bool) -> Result<(), Fail> {
     let count = repo_conformance::calculus::check(root, write)?;
     if write {
         println!("check-calculus: wrote {count} generated files");
     } else {
-        println!("check-calculus: {count} generated files equal their generator (§17.14)");
+        println!("check-calculus: {count} generated files equal their generator (§17.14-§17.16)");
     }
     Ok(())
 }

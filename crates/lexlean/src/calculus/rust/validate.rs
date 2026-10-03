@@ -7,7 +7,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::ast::{Block, Callee, Crate, Ctor, Expr, Ident, ItemDef, Lit, Pat, Type};
+use super::super::IntKind;
+use super::ast::{Block, Callee, Crate, Ctor, Expr, Ident, ItemDef, Lit, Origin, Pat, Type};
 use super::Profile;
 
 fn fail<T>(reason: impl Into<String>) -> Result<T, String> {
@@ -32,7 +33,7 @@ fn declared(krate: &Crate) -> Result<Declared, String> {
     };
     for item in &krate.items {
         match item {
-            ItemDef::Enum { name, variants } => {
+            ItemDef::Enum { name, variants, .. } => {
                 let arities = variants
                     .iter()
                     .map(|(number, fields)| (*number, fields.len()))
@@ -254,7 +255,7 @@ impl Checker<'_> {
         // branch or block whose tails are such values.
         let returns_result = matches!(
             expr,
-            Expr::Succeed(_)
+            Expr::Succeed(..)
                 | Expr::If { .. }
                 | Expr::Match { .. }
                 | Expr::Block(_)
@@ -274,7 +275,7 @@ impl Checker<'_> {
             ));
         }
         match expr {
-            Expr::Lit(literal) => match literal {
+            Expr::Lit(literal, _) => match literal {
                 Lit::Str(_) => self.heap("a string literal"),
                 Lit::Bytes(_) => self.heap("a byte string literal"),
                 Lit::Unit
@@ -284,24 +285,35 @@ impl Checker<'_> {
                 | Lit::Fixed(..)
                 | Lit::Ordering(_) => Ok(()),
             },
-            Expr::Move(ident) => self.consume(ident),
-            Expr::Not(inner) => self.expr(inner, false),
-            Expr::Clone(ident)
-            | Expr::Copy(ident)
-            | Expr::Deref(ident)
+            Expr::Move(ident, _) => self.consume(ident),
+            Expr::Not(inner, _) => {
+                if matches!(
+                    inner.as_ref(),
+                    Expr::IsZero(..) | Expr::NonZero(..) | Expr::Predecessor(_)
+                ) {
+                    return fail(
+                        "a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean",
+                    );
+                }
+                self.expr(inner, false)
+            }
+            Expr::Clone(ident, _)
+            | Expr::Copy(ident, _)
+            | Expr::Deref(ident, _)
             | Expr::Uncons(ident)
-            | Expr::IsZero(ident)
+            | Expr::IsZero(ident, _)
+            | Expr::NonZero(ident, _)
             | Expr::Predecessor(ident) => {
                 if matches!(expr, Expr::Uncons(_)) {
                     self.heap("a list match")?;
                 }
                 self.read(ident)
             }
-            Expr::Unbox(ident) | Expr::UnboxRef(ident) => {
+            Expr::Unbox(ident, _) => {
                 self.heap("a boxed read")?;
                 self.read(ident)
             }
-            Expr::Box(inner) => {
+            Expr::Box(inner, _) => {
                 self.heap("a box")?;
                 self.expr(inner, false)
             }
@@ -309,6 +321,7 @@ impl Checker<'_> {
                 callee,
                 args,
                 propagate,
+                ..
             } => {
                 for arg in args {
                     self.expr(arg, false)?;
@@ -339,6 +352,7 @@ impl Checker<'_> {
                 holder,
                 args,
                 propagate,
+                ..
             } => {
                 self.read(holder)?;
                 for arg in args {
@@ -349,7 +363,7 @@ impl Checker<'_> {
                 self.propagates |= *propagate;
                 Ok(())
             }
-            Expr::Construct { ctor, args } => {
+            Expr::Construct { ctor, args, .. } => {
                 for arg in args {
                     self.expr(arg, false)?;
                 }
@@ -398,7 +412,7 @@ impl Checker<'_> {
                     }
                 }
             }
-            Expr::Pair(left, right) => {
+            Expr::Pair(left, right, _) => {
                 self.expr(left, false)?;
                 self.expr(right, false)
             }
@@ -406,6 +420,7 @@ impl Checker<'_> {
                 condition,
                 then_branch,
                 else_branch,
+                ..
             } => {
                 self.expr(condition, false)?;
                 self.branches(
@@ -413,7 +428,9 @@ impl Checker<'_> {
                     tail,
                 )
             }
-            Expr::Match { scrutinee, arms } => {
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
                 self.expr(scrutinee, false)?;
                 self.branches(
                     arms.iter().map(|(pattern, body)| (Some(pattern), body)),
@@ -421,17 +438,20 @@ impl Checker<'_> {
                 )
             }
             Expr::Block(block) => self.block(block, tail),
-            Expr::Widen(inner) | Expr::Succeed(inner) => self.expr(inner, false),
+            Expr::Widen(inner, _) | Expr::Succeed(inner, _) => self.expr(inner, false),
         }
     }
 }
 
 /// The kind of an expression, for a diagnostic.
 fn constructs_of(expr: &Expr) -> String {
-    let mut out = BTreeSet::new();
-    expr_constructs(expr, &mut out);
-    out.into_iter()
-        .next()
+    let mut found = Found::default();
+    found.expr(expr);
+    found
+        .instances
+        .into_iter()
+        .map(|instance| instance.construct)
+        .min()
         .unwrap_or_else(|| "a read".to_owned())
 }
 
@@ -481,6 +501,7 @@ fn apply_types_expr(
             holder,
             args,
             propagate,
+            ..
         } => {
             let fn_type = types.get(holder).ok_or_else(|| {
                 format!(
@@ -502,13 +523,14 @@ fn apply_types_expr(
             args.iter()
                 .try_for_each(|arg| apply_types_expr(arg, declared, types, false))
         }
-        Expr::Box(inner) | Expr::Widen(inner) | Expr::Succeed(inner) | Expr::Not(inner) => {
-            apply_types_expr(inner, declared, types, false)
-        }
+        Expr::Box(inner, _)
+        | Expr::Widen(inner, _)
+        | Expr::Succeed(inner, _)
+        | Expr::Not(inner, _) => apply_types_expr(inner, declared, types, false),
         Expr::Call { args, .. } | Expr::Construct { args, .. } => args
             .iter()
             .try_for_each(|arg| apply_types_expr(arg, declared, types, false)),
-        Expr::Pair(left, right) => {
+        Expr::Pair(left, right, _) => {
             apply_types_expr(left, declared, types, false)?;
             apply_types_expr(right, declared, types, false)
         }
@@ -516,26 +538,29 @@ fn apply_types_expr(
             condition,
             then_branch,
             else_branch,
+            ..
         } => {
             apply_types_expr(condition, declared, types, false)?;
             apply_types(then_branch, declared, types, tail)?;
             apply_types(else_branch, declared, types, tail)
         }
-        Expr::Match { scrutinee, arms } => {
+        Expr::Match {
+            scrutinee, arms, ..
+        } => {
             apply_types_expr(scrutinee, declared, types, false)?;
             arms.iter()
                 .try_for_each(|(_, body)| apply_types(body, declared, types, tail))
         }
         Expr::Block(block) => apply_types(block, declared, types, tail),
-        Expr::Lit(_)
-        | Expr::Move(_)
-        | Expr::Copy(_)
-        | Expr::Deref(_)
-        | Expr::Clone(_)
-        | Expr::Unbox(_)
-        | Expr::UnboxRef(_)
+        Expr::Lit(..)
+        | Expr::Move(..)
+        | Expr::Copy(..)
+        | Expr::Deref(..)
+        | Expr::Clone(..)
+        | Expr::Unbox(..)
         | Expr::Uncons(_)
-        | Expr::IsZero(_)
+        | Expr::IsZero(..)
+        | Expr::NonZero(..)
         | Expr::Predecessor(_) => Ok(()),
     }
 }
@@ -573,6 +598,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 result,
                 fallible,
                 arms,
+                ..
             } => {
                 for ty in parameters.iter().chain([result]) {
                     checker.ty(ty)?;
@@ -602,6 +628,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 parameters,
                 result,
                 body,
+                ..
             } => {
                 checker.ty(result)?;
                 for (pattern, ty) in parameters {
@@ -632,212 +659,274 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
 
 // --- correspondence ----------------------------------------------------------
 
-/// Every construct a crate emits, by kind.
+/// One emitted construct: its kind, the origin lowering gave it, and its own
+/// width when it is a fixed-width runtime function or literal.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Instance {
+    pub construct: String,
+    pub origin: Origin,
+    pub width: Option<IntKind>,
+}
+
+/// Every construct a crate emits, instance by instance, and every type
+/// construct its items, bindings, and constructors name.
 #[must_use]
-pub fn constructs(krate: &Crate) -> BTreeSet<String> {
-    let mut out = BTreeSet::new();
+pub fn instances(krate: &Crate) -> (Vec<Instance>, BTreeSet<String>) {
+    let mut found = Found::default();
     for item in &krate.items {
         match item {
-            ItemDef::Enum { name, variants } => {
-                out.insert(match name {
-                    Type::Fn(_) => "enum:closures".to_owned(),
-                    _ => "enum:adt".to_owned(),
-                });
+            ItemDef::Enum { name, variants, at } => {
+                found.at(
+                    match name {
+                        Type::Fn(_) => "enum:closures",
+                        _ => "enum:adt",
+                    },
+                    at,
+                );
                 for ty in variants.iter().flat_map(|(_, fields)| fields) {
-                    type_constructs(ty, &mut out);
+                    found.ty(ty);
                 }
             }
             ItemDef::Apply {
-                parameters, result, ..
+                parameters,
+                result,
+                at,
+                ..
             } => {
-                out.insert("apply:dispatch".to_owned());
+                found.at("apply:dispatch", at);
                 for ty in parameters.iter().chain([result]) {
-                    type_constructs(ty, &mut out);
+                    found.ty(ty);
                 }
             }
             ItemDef::Function {
                 parameters,
                 result,
                 body,
+                at,
                 ..
             } => {
-                out.insert("function".to_owned());
+                found.at("function", at);
                 for (_, ty) in parameters {
-                    type_constructs(ty, &mut out);
+                    found.ty(ty);
                 }
-                type_constructs(result, &mut out);
-                block_constructs(body, &mut out);
+                found.ty(result);
+                found.block(body);
             }
         }
     }
-    out
+    (found.instances, found.types)
 }
 
-fn type_constructs(ty: &Type, out: &mut BTreeSet<String>) {
-    let kind = match ty {
-        Type::Unit => "unit",
-        Type::Bool => "bool",
-        Type::Nat => "nat",
-        Type::Int => "int",
-        Type::Fixed(_) => "fixed",
-        Type::Ordering => "ordering",
-        Type::Str => "string",
-        Type::Bytes => "bytes",
-        Type::Option(_) => "option",
-        Type::Result(..) => "result",
-        Type::List(_) => "list",
-        Type::Pair(..) => "pair",
-        Type::Adt(_) => "adt",
-        Type::Fn(_) => "fn",
-        Type::Rc(_) => "rc",
-        Type::Fallible(_) => "fallible",
-        Type::Ref(_) => "ref",
-    };
-    out.insert(format!("type:{kind}"));
-    match ty {
-        Type::Option(inner)
-        | Type::List(inner)
-        | Type::Rc(inner)
-        | Type::Fallible(inner)
-        | Type::Ref(inner) => type_constructs(inner, out),
-        Type::Result(left, right) | Type::Pair(left, right) => {
-            type_constructs(left, out);
-            type_constructs(right, out);
-        }
-        _ => {}
+/// Every construct kind a crate emits, its types included.
+#[must_use]
+pub fn constructs(krate: &Crate) -> BTreeSet<String> {
+    let (instances, mut types) = instances(krate);
+    types.extend(instances.into_iter().map(|instance| instance.construct));
+    types
+}
+
+#[derive(Default)]
+struct Found {
+    instances: Vec<Instance>,
+    types: BTreeSet<String>,
+}
+
+impl Found {
+    fn at(&mut self, construct: &str, origin: &Origin) {
+        self.wide(construct, origin, None);
     }
-}
 
-fn block_constructs(block: &Block, out: &mut BTreeSet<String>) {
-    for binding in &block.lets {
-        if let Some(ty) = &binding.ty {
-            type_constructs(ty, out);
-            out.insert("let".to_owned());
-        }
-        match binding.pat {
-            Pat::Tuple(_) => {
-                out.insert("destructure:pair".to_owned());
-            }
-            Pat::Unit => {
-                out.insert("match:unit".to_owned());
+    fn wide(&mut self, construct: &str, origin: &Origin, width: Option<IntKind>) {
+        self.instances.push(Instance {
+            construct: construct.to_owned(),
+            origin: origin.clone(),
+            width,
+        });
+    }
+
+    fn ty(&mut self, ty: &Type) {
+        let kind = match ty {
+            Type::Unit => "unit",
+            Type::Bool => "bool",
+            Type::Nat => "nat",
+            Type::Int => "int",
+            Type::Fixed(_) => "fixed",
+            Type::Ordering => "ordering",
+            Type::Str => "string",
+            Type::Bytes => "bytes",
+            Type::Option(_) => "option",
+            Type::Result(..) => "result",
+            Type::List(_) => "list",
+            Type::Pair(..) => "pair",
+            Type::Adt(_) => "adt",
+            Type::Fn(_) => "fn",
+            Type::Rc(_) => "rc",
+            Type::Fallible(_) => "fallible",
+            Type::Ref(_) => "ref",
+        };
+        self.types.insert(format!("type:{kind}"));
+        match ty {
+            Type::Option(inner)
+            | Type::List(inner)
+            | Type::Rc(inner)
+            | Type::Fallible(inner)
+            | Type::Ref(inner) => self.ty(inner),
+            Type::Result(left, right) | Type::Pair(left, right) => {
+                self.ty(left);
+                self.ty(right);
             }
             _ => {}
         }
-        expr_constructs(&binding.value, out);
     }
-    expr_constructs(&block.tail, out);
-}
 
-fn pat_constructs(pattern: &Pat, out: &mut BTreeSet<String>) {
-    let kind = match pattern {
-        Pat::None | Pat::Some(_) => "match:option",
-        Pat::Ok(_) | Pat::Err(_) => "match:result",
-        Pat::Ordering(_) => "match:ordering",
-        Pat::Adt { .. } => "match:adt",
-        Pat::Unit => "match:unit",
-        Pat::Wild | Pat::Bind(_) | Pat::Tuple(_) => return,
-    };
-    out.insert(kind.to_owned());
-}
+    fn block(&mut self, block: &Block) {
+        for binding in &block.lets {
+            if let Some(ty) = &binding.ty {
+                self.ty(ty);
+            }
+            let construct = match binding.pat {
+                Pat::Tuple(_) => "destructure:pair",
+                _ => "let",
+            };
+            self.at(construct, &binding.at);
+            self.expr(&binding.value);
+        }
+        self.expr(&block.tail);
+    }
 
-fn expr_constructs(expr: &Expr, out: &mut BTreeSet<String>) {
-    match expr {
-        Expr::Lit(literal) => {
-            let kind = match literal {
-                Lit::Unit => "unit",
-                Lit::Bool(_) => "bool",
-                Lit::Nat(_) => "nat",
-                Lit::Int(_) => "int",
-                Lit::Fixed(..) => "fixed",
-                Lit::Str(_) => "string",
-                Lit::Bytes(_) => "bytes",
-                Lit::Ordering(_) => "ordering",
-            };
-            out.insert(format!("lit:{kind}"));
-        }
-        Expr::Move(_) | Expr::Clone(_) | Expr::Copy(_) | Expr::Deref(_) => {
-            out.insert("read".to_owned());
-        }
-        Expr::Not(inner) => {
-            out.insert("if".to_owned());
-            expr_constructs(inner, out);
-        }
-        Expr::Unbox(_) | Expr::UnboxRef(_) | Expr::Box(_) => {
-            out.insert("box".to_owned());
-            if let Expr::Box(inner) = expr {
-                expr_constructs(inner, out);
+    fn pattern(&mut self, pattern: &Pat, origin: &Origin) {
+        let kind = match pattern {
+            Pat::None | Pat::Some(_) => "match:option",
+            Pat::Ok(_) | Pat::Err(_) => "match:result",
+            Pat::Ordering(_) => "match:ordering",
+            Pat::Adt { .. } => "match:adt",
+            Pat::Wild | Pat::Bind(_) | Pat::Tuple(_) | Pat::Unit => return,
+        };
+        self.at(kind, origin);
+    }
+
+    fn expr(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Lit(literal, origin) => {
+                let (kind, width) = match literal {
+                    Lit::Unit => ("unit", None),
+                    Lit::Bool(_) => ("bool", None),
+                    Lit::Nat(_) => ("nat", None),
+                    Lit::Int(_) => ("int", None),
+                    Lit::Fixed(kind, _) => ("fixed", Some(*kind)),
+                    Lit::Str(_) => ("string", None),
+                    Lit::Bytes(_) => ("bytes", None),
+                    Lit::Ordering(_) => ("ordering", None),
+                };
+                self.wide(&format!("lit:{kind}"), origin, width);
             }
-        }
-        Expr::Call { callee, args, .. } => {
-            out.insert(match callee {
-                Callee::Function(_) => "call:function".to_owned(),
-                Callee::Runtime(item) => {
-                    let path = item.path();
-                    let base = path.rsplit("::").next().unwrap_or(&path).to_owned();
-                    format!("call:runtime:{}", runtime_kind(&base))
+            Expr::Move(_, origin)
+            | Expr::Clone(_, origin)
+            | Expr::Copy(_, origin)
+            | Expr::Deref(_, origin) => self.at("read", origin),
+            Expr::Not(inner, origin) => {
+                self.at("if", origin);
+                self.expr(inner);
+            }
+            Expr::Unbox(_, origin) => self.at("box", origin),
+            Expr::Box(inner, origin) => {
+                self.at("box", origin);
+                self.expr(inner);
+            }
+            Expr::Call {
+                callee, args, at, ..
+            } => {
+                match callee {
+                    Callee::Function(_) => self.at("call:function", at),
+                    Callee::Runtime(item) => {
+                        let path = item.path();
+                        let base = path.rsplit("::").next().unwrap_or(&path).to_owned();
+                        self.wide(
+                            &format!("call:runtime:{}", runtime_kind(&base)),
+                            at,
+                            item.width(),
+                        );
+                    }
                 }
-            });
-            args.iter().for_each(|arg| expr_constructs(arg, out));
-        }
-        Expr::Apply { args, .. } => {
-            out.insert("apply".to_owned());
-            args.iter().for_each(|arg| expr_constructs(arg, out));
-        }
-        Expr::Construct { ctor, args } => {
-            let kind = match ctor {
-                Ctor::None(_) => "none",
-                Ctor::Some => "some",
-                Ctor::Ok(..) => "ok",
-                Ctor::Err(..) => "err",
-                Ctor::Adt { .. } => "adt",
-                Ctor::Closure { .. } => "closure",
-                Ctor::Cons => "cons",
-                Ctor::Nil(_) => "nil",
-            };
-            out.insert(format!("construct:{kind}"));
-            args.iter().for_each(|arg| expr_constructs(arg, out));
-        }
-        Expr::Pair(left, right) => {
-            out.insert("construct:pair".to_owned());
-            expr_constructs(left, out);
-            expr_constructs(right, out);
-        }
-        Expr::If {
-            condition,
-            then_branch,
-            else_branch,
-        } => {
-            out.insert(if matches!(condition.as_ref(), Expr::IsZero(_)) {
-                "match:nat".to_owned()
-            } else {
-                "if".to_owned()
-            });
-            expr_constructs(condition, out);
-            block_constructs(then_branch, out);
-            block_constructs(else_branch, out);
-        }
-        Expr::Match { scrutinee, arms } => {
-            if matches!(scrutinee.as_ref(), Expr::Uncons(_)) {
-                out.insert("match:list".to_owned());
-            } else {
-                for (pattern, _) in arms {
-                    pat_constructs(pattern, out);
+                args.iter().for_each(|arg| self.expr(arg));
+            }
+            Expr::Apply { args, at, .. } => {
+                self.at("apply", at);
+                args.iter().for_each(|arg| self.expr(arg));
+            }
+            Expr::Construct { ctor, args, at } => {
+                let kind = match ctor {
+                    Ctor::None(ty) | Ctor::Nil(ty) => {
+                        self.ty(ty);
+                        if matches!(ctor, Ctor::None(_)) {
+                            "none"
+                        } else {
+                            "nil"
+                        }
+                    }
+                    Ctor::Some => "some",
+                    Ctor::Ok(ok, error) | Ctor::Err(ok, error) => {
+                        self.ty(ok);
+                        self.ty(error);
+                        if matches!(ctor, Ctor::Ok(..)) {
+                            "ok"
+                        } else {
+                            "err"
+                        }
+                    }
+                    Ctor::Adt { .. } => "adt",
+                    Ctor::Closure { .. } => "closure",
+                    Ctor::Cons => "cons",
+                };
+                self.at(&format!("construct:{kind}"), at);
+                args.iter().for_each(|arg| self.expr(arg));
+            }
+            Expr::Pair(left, right, origin) => {
+                self.at("construct:pair", origin);
+                self.expr(left);
+                self.expr(right);
+            }
+            Expr::If {
+                condition,
+                then_branch,
+                else_branch,
+                at,
+            } => {
+                self.at("if", at);
+                self.expr(condition);
+                self.block(then_branch);
+                self.block(else_branch);
+            }
+            Expr::Match {
+                scrutinee,
+                arms,
+                at,
+            } => {
+                if arms.is_empty() {
+                    self.at("match:empty", at);
+                } else if matches!(scrutinee.as_ref(), Expr::Uncons(_)) {
+                    self.at("match:list", at);
+                } else {
+                    for (pattern, _) in arms {
+                        self.pattern(pattern, at);
+                    }
+                }
+                self.expr(scrutinee);
+                for (_, body) in arms {
+                    self.block(body);
                 }
             }
-            expr_constructs(scrutinee, out);
-            for (_, body) in arms {
-                block_constructs(body, out);
+            Expr::Block(block) => self.block(block),
+            Expr::IsZero(_, origin) | Expr::NonZero(_, origin) => self.at("match:nat", origin),
+            Expr::Uncons(_) | Expr::Predecessor(_) => {}
+            Expr::Widen(inner, origin) => {
+                self.at("widen", origin);
+                self.expr(inner);
             }
-        }
-        Expr::Block(block) => block_constructs(block, out),
-        Expr::Uncons(_) | Expr::IsZero(_) | Expr::Predecessor(_) => {}
-        Expr::Widen(inner) => {
-            out.insert("widen".to_owned());
-            expr_constructs(inner, out);
-        }
-        Expr::Succeed(inner) => {
-            out.insert("succeed".to_owned());
-            expr_constructs(inner, out);
+            Expr::Succeed(inner, origin) => {
+                self.at("succeed", origin);
+                self.expr(inner);
+            }
         }
     }
 }
@@ -865,16 +954,37 @@ fn runtime_kind(base: &str) -> String {
 }
 
 /// For every construct a rendering can emit, the calculus elements (or
-/// structural realizations, §17.14) it realizes. A construct is justified
-/// in a rendering exactly when the realized program uses one of them.
+/// structural realizations, §17.14) it may realize. An emitted construct is
+/// justified exactly when its row names the element it was lowered from and
+/// the realized program uses that element.
 pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
-    ("function", &["function"]),
+    ("function", &["function", "export"]),
     ("enum:adt", &["type:adt"]),
-    ("enum:closures", &["type:fn"]),
-    ("apply:dispatch", &["type:fn"]),
+    ("enum:closures", &["type:fn", "expr:closure"]),
+    ("apply:dispatch", &["type:fn", "expr:closure"]),
     (
         "let",
-        &["expr:let", "expr:match", "expr:prim", "expr:apply"],
+        &[
+            "expr:let",
+            "expr:match",
+            "expr:prim",
+            "expr:apply",
+            "expr:call",
+            "expr:closure",
+            "expr:cond",
+            "expr:field",
+            "shape:some",
+            "shape:ok",
+            "shape:error",
+            "shape:cons",
+            "shape:adt",
+            "shape:succ",
+            "shape:zero",
+            "shape:unit",
+            "shape:true",
+            "indirection",
+            "overflow",
+        ],
     ),
     (
         "read",
@@ -882,11 +992,25 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
             "expr:var",
             "expr:match",
             "expr:prim",
+            "expr:call",
             "expr:apply",
+            "expr:closure",
             "expr:first",
             "expr:second",
             "expr:field",
-            "function",
+            "expr:cond",
+            "shape:true",
+            "shape:zero",
+            "shape:some",
+            "shape:ok",
+            "shape:error",
+            "shape:cons",
+            "shape:adt",
+            "export",
+            "type:fn",
+            "type:adt",
+            "type:pair",
+            "type:result",
         ],
     ),
     ("box", &["indirection"]),
@@ -907,12 +1031,32 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("type:list", &["type:list"]),
     ("type:pair", &["type:pair"]),
     ("type:adt", &["type:adt"]),
-    ("type:fn", &["type:fn"]),
+    ("type:fn", &["type:fn", "expr:closure"]),
     ("type:rc", &["indirection"]),
     ("type:fallible", &["overflow"]),
     ("type:ref", &["export"]),
-    ("lit:unit", &["value:unit", "shape:unit"]),
-    ("lit:bool", &["value:bool", "shape:true", "shape:false"]),
+    (
+        "lit:unit",
+        &[
+            "value:unit",
+            "shape:unit",
+            "expr:var",
+            "expr:call",
+            "expr:apply",
+            "expr:closure",
+            "shape:some",
+            "shape:ok",
+            "shape:error",
+            "shape:cons",
+            "shape:adt",
+            "export",
+            "overflow",
+        ],
+    ),
+    (
+        "lit:bool",
+        &["value:bool", "shape:true", "shape:false", "expr:cond"],
+    ),
     ("lit:nat", &["value:nat", "shape:zero"]),
     ("lit:int", &["value:int"]),
     (
@@ -943,14 +1087,17 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("construct:cons", &["value:list", "shape:cons"]),
     ("construct:nil", &["value:list", "shape:nil"]),
     ("construct:pair", &["value:pair", "shape:pair"]),
-    ("if", &["expr:cond", "shape:true", "shape:false"]),
-    ("match:nat", &["shape:zero", "shape:succ"]),
-    ("match:list", &["shape:nil", "shape:cons"]),
-    ("match:option", &["shape:none", "shape:some", "expr:field"]),
-    ("match:result", &["shape:ok", "shape:error"]),
-    ("match:ordering", &["shape:lt", "shape:eq", "shape:gt"]),
+    ("if", &["expr:cond", "shape:true", "shape:zero"]),
+    ("match:nat", &["shape:zero"]),
+    ("match:list", &["shape:nil"]),
+    ("match:option", &["shape:none"]),
+    ("match:result", &["shape:ok"]),
+    ("match:ordering", &["shape:lt"]),
     ("match:adt", &["shape:adt", "expr:field"]),
-    ("match:unit", &["shape:unit"]),
+    (
+        "match:empty",
+        &["type:fn", "type:adt", "type:pair", "type:result"],
+    ),
     ("call:function", &["expr:call", "export"]),
     ("apply", &["expr:apply"]),
     ("widen", &["prim:convert"]),
@@ -1000,22 +1147,57 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("call:runtime:parse_decimal", &["prim:parse_decimal"]),
 ];
 
+fn row(construct: &str) -> Result<&'static [&'static str], String> {
+    CORRESPONDENCE
+        .iter()
+        .find(|(name, _)| *name == construct)
+        .map(|(_, realized)| *realized)
+        .ok_or_else(|| {
+            format!("the construct `{construct}` has no target-semantics correspondence")
+        })
+}
+
 /// Check that every construct `krate` emits is in [`CORRESPONDENCE`] and
-/// realizes an element of `elements`, the program's calculus elements and
-/// the structural realizations it uses.
+/// realizes the element it was lowered from, at that element's width, and
+/// that the program, whose calculus elements and structural realizations
+/// are `elements`, uses that element; and that every type the crate names
+/// realizes a type the program uses.
 ///
 /// # Errors
 ///
-/// Returns the first construct with no row, or whose row names no element
-/// the program uses.
+/// Returns the first construct with no row, whose row does not name its
+/// origin, whose width differs from its origin's, or whose origin the
+/// program does not use, or the first type no program element justifies.
 pub fn correspond(krate: &Crate, elements: &BTreeSet<String>) -> Result<(), String> {
-    for construct in constructs(krate) {
-        let (_, realized) = CORRESPONDENCE
-            .iter()
-            .find(|(name, _)| *name == construct)
-            .ok_or_else(|| {
-                format!("the construct `{construct}` has no target-semantics correspondence")
-            })?;
+    let (instances, types) = instances(krate);
+    for Instance {
+        construct,
+        origin,
+        width,
+    } in &instances
+    {
+        let realized = row(construct)?;
+        if !realized.contains(&origin.element.as_str()) {
+            return fail(format!(
+                "the construct `{construct}` does not realize `{}`, the element it was lowered from",
+                origin.element
+            ));
+        }
+        if !elements.contains(&origin.element) {
+            return fail(format!(
+                "the construct `{construct}` realizes `{}`, which the program does not use",
+                origin.element
+            ));
+        }
+        if width != &origin.width && (width.is_some() || construct.starts_with("call:runtime:")) {
+            return fail(format!(
+                "the construct `{construct}` works at width {width:?}, but `{}` is at {:?}",
+                origin.element, origin.width
+            ));
+        }
+    }
+    for construct in types {
+        let realized = row(&construct)?;
         if !realized.iter().any(|element| elements.contains(*element)) {
             return fail(format!(
                 "the construct `{construct}` realizes none of {realized:?}, which the program does not use"

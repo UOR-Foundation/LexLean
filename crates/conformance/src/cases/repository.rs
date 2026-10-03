@@ -407,7 +407,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 276, "§31 has 276 rows");
+            assert_eq!(table.len(), 284, "§31 has 284 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -828,19 +828,24 @@ pub(crate) fn run(id: &str) {
                         .expect("copy");
                 }
             }
-            std::fs::create_dir_all(stage.join("model").as_std_path()).expect("mkdir");
-            for entry in std::fs::read_dir(root.join("model").as_std_path())
-                .expect("model")
+            // Recursive, because `model/` holds the vendored authorities the
+            // model check rehashes as well as its registers.
+            let model = root.join("model");
+            for entry in walkdir::WalkDir::new(model.as_std_path())
+                .into_iter()
                 .flatten()
             {
-                std::fs::copy(
-                    entry.path(),
-                    stage
-                        .join("model")
-                        .join(entry.file_name().to_string_lossy().as_ref())
-                        .as_std_path(),
-                )
-                .expect("copy");
+                let target = stage.join("model").as_std_path().join(
+                    entry
+                        .path()
+                        .strip_prefix(model.as_std_path())
+                        .expect("under the model"),
+                );
+                if entry.file_type().is_dir() {
+                    std::fs::create_dir_all(&target).expect("mkdir");
+                } else {
+                    std::fs::copy(entry.path(), &target).expect("copy");
+                }
             }
             let refused = repo_model::release::check(stage.as_std_path(), &BTreeSet::new())
                 .expect_err("no release/ directory");

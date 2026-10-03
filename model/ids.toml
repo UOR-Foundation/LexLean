@@ -1590,7 +1590,7 @@ statement = "Every fixture with an observable outcome renders to a safe Rust lib
 id = "RB-01"
 level = "build"
 suite = "rust-backend"
-statement = "Every Rust rendering is built as a closed AST whose every construct corresponds to an element of the target program it realizes, every correspondence row is exercised, and a construct the program does not justify is refused."
+statement = "Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused."
 
 [[id]]
 id = "RB-02"
@@ -1608,7 +1608,7 @@ statement = "An export that copies a parameter whose type is not Copy fails with
 id = "RB-04"
 level = "build"
 suite = "rust-backend"
-statement = "A package whose boundary holds a function value, or whose rust-core program needs the heap, fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused."
+statement = "A package whose boundary holds a function value at any depth, whose program computes a value of a type no value inhabits, or whose rust-core program needs the heap fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused."
 
 [[id]]
 id = "RB-05"
@@ -1620,13 +1620,61 @@ statement = "A function that can overflow returns R<T> and every call to it prop
 id = "RB-06"
 level = "build"
 suite = "rust-backend"
-statement = "Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with three documented exceptions, and its exported function, called from a separate crate, prints exactly the denotation's observable outcome; a planted lint and a planted semantic mutation are detected."
+statement = "Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected."
 
 [[id]]
 id = "RB-07"
 level = "build"
 suite = "rust-backend"
-statement = "Packages are deterministic and content-addressed: two renderings written under two roots are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, and the provenance binds the SHA-256 of each file, the program identity, the runtime, the sources, and the language-1.2 compiler-semantics ID."
+statement = "Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program."
+
+[[id]]
+id = "GN-01"
+level = "build"
+suite = "gnaf"
+statement = "Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002."
+
+[[id]]
+id = "GN-02"
+level = "build"
+suite = "gnaf"
+statement = "The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean."
+
+[[id]]
+id = "GN-03"
+level = "build"
+suite = "gnaf"
+statement = "Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected."
+
+[[id]]
+id = "GN-04"
+level = "build"
+suite = "gnaf"
+statement = "Every action a system performs is charged by steps, every admitted preparation action by a positive constant for each plan that needs it or by a prepared artifact bound in the common initial state, operands are charged by weight, and a request fits the capacity its machine binds; hidden zero-cost, free, undeclared, duplicated, unaccounted, unbound, stray, unit-cost, over-capacity, and unrealizable actions are rejected, and a plan's preparation enters exactly the cost of the systems that can run it."
+
+[[id]]
+id = "GN-05"
+level = "build"
+suite = "gnaf"
+statement = "Scalar claims require the total step order and Pareto claims the componentwise steps-and-size order, a scalar claim over the partial order, a vector claim over the total order, the restricted-universe alias, an undecided claim class, and a scope beyond the grammar universe are rejected, equal-cost systems are all kept, a frontier answer has incomparable members, and GNAF-VEC-02 posed over the calculus has a frontier of exactly three of four systems for which no omission is certified and whose componentwise minima no system attains."
+
+[[id]]
+id = "GN-06"
+level = "build"
+suite = "gnaf"
+statement = "Complete-system cost includes selection and counts only the code a system can run, the system argmin differs from the best internal plan and from the per-input plan envelope that no system attains, an inadmissible system is excluded, and an unresolved system makes the answer incomplete rather than being removed."
+
+[[id]]
+id = "GN-07"
+level = "build"
+suite = "gnaf"
+statement = "The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true."
+
+[[id]]
+id = "GN-08"
+level = "build"
+suite = "gnaf"
+statement = "The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator."
 
 [[id]]
 id = "SP-01"

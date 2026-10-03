@@ -8,23 +8,117 @@
 
 use std::collections::BTreeMap;
 
-use lexlean::calculus::rust::package::{Errors, Export, Manifest, Passing, MANIFEST_SPEC};
+use lexlean::calculus::rust::package::{
+    holds_function, Errors, Export, Manifest, Passing, MANIFEST_SPEC,
+};
 use lexlean::calculus::rust::{self, Profile};
-use lexlean::calculus::{Program, Ty};
+use lexlean::calculus::{Expr, Function, Program, Ty, Value, PROGRAM_SPEC};
 
 use crate::calculus::cases;
+use crate::support::repo_root;
 
-fn holds_function(ty: &Ty) -> bool {
-    match ty {
-        Ty::Fn { .. } => true,
-        Ty::Option { value } | Ty::List { element: value } => holds_function(value),
-        Ty::Result {
-            ok: left,
-            error: right,
-        }
-        | Ty::Pair { left, right } => holds_function(left) || holds_function(right),
-        _ => false,
+/// The semantic ID (§21.4) of the published build of the `compiler` project,
+/// whose `TargetFixtures` module states every fixture's program: the one
+/// source every committed package binds.
+///
+/// # Panics
+///
+/// Panics if the committed build manifest is missing or malformed.
+#[must_use]
+pub fn compiler_semantic_id() -> String {
+    let path = repo_root().join("compiler/expected/build/manifest.json");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(path.as_std_path()).expect("the compiler build"))
+            .expect("the compiler build manifest is JSON");
+    manifest["semantic_id"]
+        .as_str()
+        .expect("the compiler build has a semantic ID")
+        .to_owned()
+}
+
+/// The declarations the semantic module of a committed `.lex.tex` source
+/// states.
+fn declarations(source: &str) -> Result<Vec<serde_json::Value>, String> {
+    let start = source
+        .find("\\semanticdata{")
+        .ok_or("the module states no semantic data")?
+        + "\\semanticdata{".len();
+    let end = source
+        .rfind("\\end{semanticmodule}")
+        .and_then(|end| source[..end].rfind('}'))
+        .ok_or("the semantic data is not closed")?;
+    let data: serde_json::Value = serde_json::from_str(&source[start..end])
+        .map_err(|error| format!("the semantic data is not JSON: {error}"))?;
+    data["declarations"]
+        .as_array()
+        .cloned()
+        .ok_or_else(|| "the semantic data has no declarations".to_owned())
+}
+
+/// Check that a committed package binds the LexLean build that states its
+/// program (§17.16): its sources are exactly the semantic ID of the
+/// published `compiler` build, which the committed verification records
+/// name; that build's `TargetFixtures` source map binds the committed
+/// module source; and that source states the package's program as the
+/// declaration `<fixture>Program`.
+///
+/// # Errors
+///
+/// Returns the first link of the binding that does not hold.
+pub fn bound_to_source(committed: &Committed) -> Result<(), String> {
+    let root = repo_root();
+    let semantic = compiler_semantic_id();
+    if committed.manifest.sources != [semantic.clone()] {
+        return Err(format!(
+            "sources {:?} are not the semantic ID {semantic} of the verified compiler build",
+            committed.manifest.sources
+        ));
     }
+    let audit = root.join("compiler/expected/verify/audit");
+    let reserved = format!("LexLeanAudit.A{}.", &semantic[..32]);
+    let verified = std::fs::read_dir(audit.as_std_path())
+        .map_err(|error| format!("{audit}: {error}"))?
+        .flatten()
+        .any(|entry| entry.file_name().to_string_lossy().starts_with(&reserved));
+    if !verified {
+        return Err(format!(
+            "no verification of the build {semantic} is committed"
+        ));
+    }
+    let map: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(
+            root.join("compiler/expected/build/maps/LexLeanTarget/TargetFixtures.map.json")
+                .as_std_path(),
+        )
+        .map_err(|error| format!("the TargetFixtures source map: {error}"))?,
+    )
+    .map_err(|error| format!("the TargetFixtures source map: {error}"))?;
+    let source = std::fs::read(
+        root.join("compiler/src/TargetFixtures.lex.tex")
+            .as_std_path(),
+    )
+    .map_err(|error| format!("the TargetFixtures source: {error}"))?;
+    let digest = lexlean::artifact::content_id::Sha256Digest::of(&source).to_hex();
+    if map["semantic_id"] != semantic.as_str()
+        || map["sources"][0]["path"] != "src/TargetFixtures.lex.tex"
+        || map["sources"][0]["sha256"] != digest.as_str()
+    {
+        return Err(format!(
+            "the build {semantic} does not bind the committed TargetFixtures source {digest}"
+        ));
+    }
+    let name = format!("{}Program", crate::calculus::identifier(&committed.fixture));
+    let text = String::from_utf8(source).map_err(|error| error.to_string())?;
+    let stated = declarations(&text)?
+        .into_iter()
+        .find(|declaration| declaration["name"] == name.as_str())
+        .ok_or_else(|| format!("the build states no declaration `{name}`"))?;
+    if stated["body"] != lexlean::calculus::term::program(&committed.manifest.program) {
+        return Err(format!(
+            "the declaration `{name}` of the build states another program"
+        ));
+    }
+    Ok(())
 }
 
 /// The crate name of a fixture's package in `profile`.
@@ -64,7 +158,7 @@ pub fn manifest(name: &str, program: &Program, entry: u64, profile: Profile) -> 
                 Errors::None
             },
         }],
-        sources: Vec::new(),
+        sources: vec![compiler_semantic_id()],
     }
 }
 
@@ -97,7 +191,7 @@ pub fn packages() -> Vec<Committed> {
             .types
             .iter()
             .chain([&function.result])
-            .any(holds_function)
+            .any(|ty| holds_function(&fixture.program, ty))
         {
             continue;
         }
@@ -275,6 +369,99 @@ pub fn negatives() -> BTreeMap<String, (Vec<u8>, String)> {
             "`1.01.0` is not a version of three canonical decimals",
         ),
         (
+            "version-overflow",
+            {
+                let mut out = base();
+                out.version = "99999999999999999999.0.0".to_owned();
+                out
+            },
+            "`99999999999999999999.0.0` is not a version of three canonical decimals each at most 18446744073709551615",
+        ),
+        (
+            "unsupported-function-in-record",
+            {
+                // The export takes a record whose only field is a function
+                // value, so a function crosses the boundary inside a named
+                // type.
+                let fn_type = Ty::Fn {
+                    parameters: vec![Ty::Nat],
+                    result: Box::new(Ty::Nat),
+                };
+                let record = Program {
+                    spec: PROGRAM_SPEC.to_owned(),
+                    adts: vec![lexlean::calculus::Adt {
+                        constructors: vec![vec![fn_type]],
+                    }],
+                    functions: vec![Function {
+                        parameters: vec![0],
+                        types: vec![Ty::Adt { index: 0 }],
+                        result: Ty::Nat,
+                        body: Expr::Value {
+                            ty: Ty::Nat,
+                            value: Value::Nat {
+                                value: "1".to_owned(),
+                            },
+                        },
+                    }],
+                };
+                let mut out = base();
+                out.program = record;
+                out.exports[0].errors = Errors::None;
+                out
+            },
+            "unsupported type: the boundary of export `run` holds a function value, and a package boundary is first-order",
+        ),
+        (
+            "unsupported-uninhabited-value",
+            {
+                // Function 1 returns a function value only by calling itself,
+                // so no value of its type exists and function 0's call of it
+                // would be unreachable code.
+                let fn_type = Ty::Fn {
+                    parameters: vec![Ty::Nat],
+                    result: Box::new(Ty::Nat),
+                };
+                let unending = Program {
+                    spec: PROGRAM_SPEC.to_owned(),
+                    adts: Vec::new(),
+                    functions: vec![
+                        Function {
+                            parameters: Vec::new(),
+                            types: Vec::new(),
+                            result: Ty::Nat,
+                            body: Expr::Apply {
+                                target: Box::new(Expr::Call {
+                                    function: 1,
+                                    operands: Vec::new(),
+                                }),
+                                operands: vec![Expr::Value {
+                                    ty: Ty::Nat,
+                                    value: Value::Nat {
+                                        value: "3".to_owned(),
+                                    },
+                                }],
+                            },
+                        },
+                        Function {
+                            parameters: Vec::new(),
+                            types: Vec::new(),
+                            result: fn_type,
+                            body: Expr::Call {
+                                function: 1,
+                                operands: Vec::new(),
+                            },
+                        },
+                    ],
+                };
+                let mut out = base();
+                out.program = unending;
+                out.exports[0].parameters = Vec::new();
+                out.exports[0].errors = Errors::None;
+                out
+            },
+            "unsupported type: the program computes a value of",
+        ),
+        (
             "sources-unordered",
             {
                 let mut out = base();
@@ -288,12 +475,16 @@ pub fn negatives() -> BTreeMap<String, (Vec<u8>, String)> {
     for (name, manifest, error) in cases.drain(..) {
         out.insert(
             name.to_owned(),
-            (manifest.to_file_bytes(), error.to_owned()),
+            (
+                manifest.to_file_bytes().expect("canonical manifest"),
+                error.to_owned(),
+            ),
         );
     }
     // A member the closed form does not have.
     let mut extra: serde_json::Value =
-        serde_json::from_slice(&base().to_file_bytes()).expect("manifest JSON");
+        serde_json::from_slice(&base().to_file_bytes().expect("canonical manifest"))
+            .expect("manifest JSON");
     extra["unchecked"] = serde_json::json!(true);
     out.insert(
         "malformed-unknown-member".to_owned(),
@@ -323,7 +514,10 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
             .unwrap_or_else(|reason| panic!("{directory}: {reason}"));
         out.insert(
             format!("{directory}/package.json"),
-            committed.manifest.to_file_bytes(),
+            committed
+                .manifest
+                .to_file_bytes()
+                .expect("canonical manifest"),
         );
         for (path, bytes) in package.files {
             out.insert(format!("{directory}/{path}"), bytes);

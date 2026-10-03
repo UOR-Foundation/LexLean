@@ -39,9 +39,9 @@ features:
 bdd:
     cargo test -p repo-conformance
 
-# §17.14: the target fixtures and their Lean module equal their generator.
-# `just test` enforces the same comparison through `conformance_tc_03`; this
-# recipe is the direct report.
+# §17.14, §17.15: the target and GNAF fixtures and their Lean modules equal
+# their generator. `just test` enforces the same comparison through
+# `conformance_tc_03` and `conformance_gn_01`; this recipe is the direct report.
 calculus:
     cargo xtask check-calculus
 

@@ -16,7 +16,7 @@
 //! construct requires heap allocation exactly when its realization does
 //! (`allocates`).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
@@ -202,7 +202,7 @@ pub const TABLE: &[(&str, &[&str])] = &[
 ];
 
 /// The serialized `kind` tag of a closed calculus value.
-fn kind<T: Serialize>(value: &T) -> String {
+pub(crate) fn kind<T: Serialize>(value: &T) -> String {
     serde_json::to_value(value)
         .ok()
         .and_then(|json| {
@@ -1075,7 +1075,14 @@ pub fn program_allocates(program: &Program) -> bool {
     {
         return true;
     }
-    fn in_place(ty: &Ty, out: &mut BTreeSet<u64>) {
+    // An owner of in-place storage: an ADT, or a function type, whose
+    // closures store their captures in place.
+    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+    enum Owner {
+        Adt(u64),
+        Fn(Ty),
+    }
+    fn in_place(ty: &Ty, out: &mut BTreeSet<Owner>) {
         match ty {
             Ty::Option { value } => in_place(value, out),
             Ty::Result { ok, error } => {
@@ -1087,28 +1094,104 @@ pub fn program_allocates(program: &Program) -> bool {
                 in_place(right, out);
             }
             Ty::Adt { index } => {
-                out.insert(*index);
+                out.insert(Owner::Adt(*index));
+            }
+            Ty::Fn { .. } => {
+                out.insert(Owner::Fn(ty.clone()));
             }
             _ => {}
         }
     }
-    (0..program.adts.len() as u64).any(|start| {
-        let mut seen = BTreeSet::new();
-        let mut pending = vec![start];
-        while let Some(adt) = pending.pop() {
-            let mut reached = BTreeSet::new();
-            if let Some(declared) = usize::try_from(adt)
+    fn closures(expr: &Expr, out: &mut Vec<(u64, usize)>) {
+        fn each(exprs: &[Expr], out: &mut Vec<(u64, usize)>) {
+            exprs.iter().for_each(|expr| closures(expr, out));
+        }
+        match expr {
+            Expr::Value { .. } | Expr::Var { .. } => {}
+            Expr::Let { bound, body, .. } => {
+                closures(bound, out);
+                closures(body, out);
+            }
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                closures(condition, out);
+                closures(then_branch, out);
+                closures(else_branch, out);
+            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
+                closures(scrutinee, out);
+                arms.iter().for_each(|arm| closures(&arm.body, out));
+            }
+            Expr::Build { operands, .. }
+            | Expr::Call { operands, .. }
+            | Expr::Prim { operands, .. } => each(operands, out),
+            Expr::Closure { function, captures } => {
+                out.push((*function, captures.len()));
+                each(captures, out);
+            }
+            Expr::Apply { target, operands } => {
+                closures(target, out);
+                each(operands, out);
+            }
+            Expr::First { value } | Expr::Second { value } | Expr::Field { value, .. } => {
+                closures(value, out);
+            }
+        }
+    }
+    // What each function type's closures capture, by the function type a
+    // closure of `function` capturing `count` values has.
+    let mut captured: BTreeMap<Ty, Vec<Ty>> = BTreeMap::new();
+    let mut sites = Vec::new();
+    for function in &program.functions {
+        closures(&function.body, &mut sites);
+    }
+    for (function, count) in sites {
+        let Some(declared) = usize::try_from(function)
+            .ok()
+            .and_then(|function| program.functions.get(function))
+        else {
+            continue;
+        };
+        let fn_type = Ty::Fn {
+            parameters: declared.types.iter().skip(count).cloned().collect(),
+            result: Box::new(declared.result.clone()),
+        };
+        captured
+            .entry(fn_type)
+            .or_default()
+            .extend(declared.types.iter().take(count).cloned());
+    }
+    let stored = |owner: &Owner| -> Vec<Ty> {
+        match owner {
+            Owner::Adt(adt) => usize::try_from(*adt)
                 .ok()
                 .and_then(|adt| program.adts.get(adt))
-            {
-                for ty in declared.constructors.iter().flatten() {
-                    in_place(ty, &mut reached);
-                }
+                .map(|declared| declared.constructors.iter().flatten().cloned().collect())
+                .unwrap_or_default(),
+            Owner::Fn(ty) => captured.get(ty).cloned().unwrap_or_default(),
+        }
+    };
+    let owners: Vec<Owner> = (0..program.adts.len() as u64)
+        .map(Owner::Adt)
+        .chain(captured.keys().cloned().map(Owner::Fn))
+        .collect();
+    owners.iter().any(|start| {
+        let mut seen = BTreeSet::new();
+        let mut pending = vec![start.clone()];
+        while let Some(owner) = pending.pop() {
+            let mut reached = BTreeSet::new();
+            for ty in stored(&owner) {
+                in_place(&ty, &mut reached);
             }
-            if reached.contains(&start) {
+            if reached.contains(start) {
                 return true;
             }
-            pending.extend(reached.into_iter().filter(|next| seen.insert(*next)));
+            pending.extend(reached.into_iter().filter(|next| seen.insert(next.clone())));
         }
         false
     })

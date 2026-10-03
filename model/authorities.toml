@@ -3,9 +3,10 @@
 #
 # A `some-true` claim is reproduced from an authority and is not established
 # here. Each row names the authority well enough for a third party to find it.
-# Nothing from these authorities is vendored into this repository, so each row
-# records `checksum = "none"` with the identifier a third party verifies
-# instead. `realized_by` lists the conformance IDs that are *evidence* this
+# A row that vendors nothing records `checksum = "none"` with the identifier a
+# third party verifies instead. A row that vendors a copy of its source names
+# it in `vendored` and records `checksum = "sha256:<hex>"`, which
+# `cargo xtask validate-model` recomputes from the copy. `realized_by` lists the conformance IDs that are *evidence* this
 # repository realizes the cited fact; evidence is not proof, and the meta-gate
 # fails the build if any document blurs the two registers.
 
@@ -117,6 +118,28 @@ acquired_sha256 = "6dec8667fbf57ba480a18a8b0c353b2ee157346b2630b211ccbefeedf2054
 signature = "not-published-or-not-relied-upon"
 media_type = "application/gzip"
 license = "Apache-2.0"
+redistribution = "redistributable"
+retrieval_date = "2026-10-02"
+supersession_policy = "explicit-lock-update-only"
+
+[[authority]]
+id = "UOR-GNAF-1-DRAFT-2"
+name = "UOR Global Non-Adjacent Form (UOR-GNAF) v1, Normative Draft 0.2"
+citation = "https://github.com/afflom/wasm-gemm-gnaf/blob/917306fd2b5a397ab02c5d38918fb8620fcc5ae0/authority/UOR-GNAF-v1-draft.2.md; the issuer publishes no upstream copy, so the citation is the downstream repository that vendors the draft and pins its SHA-256 in its authority manifest"
+checksum = "sha256:5c342373b2ff809bfd607c413cafd0582d32bb097544c6597ff7d674fe99200a"
+vendored = "model/authorities/UOR-GNAF-v1-draft.2.md"
+statement = "UOR-GNAF requires an optimality claim to fix its machine contract, accounting model, complete-system universe with completeness evidence independent of discovery and of any optimizer, objective order, and claim class before optimization; it requires dispatch, preparation, and every other in-boundary action to be accounted, unknown costs to leave candidates in the universe, and an internal plan or a pointwise envelope not to be reported as a complete system's optimum; it requires an instantiation to publish a dependency manifest; and it states the normative fixtures of its section 16."
+realized_by = ["GN-02", "GN-03", "GN-04", "GN-05", "GN-06", "GN-07", "GN-08"]
+issuer = "UOR Foundation"
+canonical_identifier = "uor-gnaf/1-draft.2"
+edition = "Normative Draft 0.2 (2026-08-11)"
+source_role = "normative"
+immutable_url = "https://raw.githubusercontent.com/afflom/wasm-gemm-gnaf/917306fd2b5a397ab02c5d38918fb8620fcc5ae0/authority/UOR-GNAF-v1-draft.2.md"
+revision = "917306fd2b5a397ab02c5d38918fb8620fcc5ae0"
+acquired_sha256 = "5c342373b2ff809bfd607c413cafd0582d32bb097544c6597ff7d674fe99200a"
+signature = "not-published-or-not-relied-upon"
+media_type = "text/markdown"
+license = "Apache-2.0 OR MIT"
 redistribution = "redistributable"
 retrieval_date = "2026-10-02"
 supersession_policy = "explicit-lock-update-only"

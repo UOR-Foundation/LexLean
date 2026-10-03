@@ -166,24 +166,6 @@ impl Key for Str {
         }
     }
 }
-impl<T: Key> Key for List<T> {
-    fn key(&self, other: &Self) -> Ordering {
-        let mut left = self.0.as_ref();
-        let mut right = other.0.as_ref();
-        loop {
-            tick(1);
-            match (left, right) {
-                (None, None) => return Ordering::Equal,
-                (None, Some(_)) => return Ordering::Less,
-                (Some(_), None) => return Ordering::Greater,
-                (Some(a), Some(b)) => match a.head.key(&b.head) {
-                    Ordering::Equal => { left = a.tail.0.as_ref(); right = b.tail.0.as_ref(); }
-                    decided => return decided,
-                },
-            }
-        }
-    }
-}
 
 pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
 pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
@@ -399,6 +381,28 @@ impl Item {
         }
     }
 
+    /// The width a fixed-width function works at.
+    #[must_use]
+    pub const fn width(self) -> Option<IntKind> {
+        match self {
+            Self::CheckedAdd(kind)
+            | Self::CheckedSub(kind)
+            | Self::CheckedMul(kind)
+            | Self::CheckedQuot(kind)
+            | Self::CheckedNeg(kind)
+            | Self::BitAnd(kind)
+            | Self::BitOr(kind)
+            | Self::BitXor(kind)
+            | Self::BitNot(kind)
+            | Self::ShiftLeft(kind)
+            | Self::ShiftRight(kind)
+            | Self::Convert(kind)
+            | Self::FormatFixed(kind)
+            | Self::ParseFixed(kind) => Some(kind),
+            _ => None,
+        }
+    }
+
     /// Whether the function can fail with `Overflow`, so its result is
     /// `R<T>` and a call propagates with `?`.
     #[must_use]
@@ -575,6 +579,32 @@ mod tests {
                     "{path}: {declaration}"
                 );
             }
+        }
+    }
+
+    /// LexLean's compiler semantics records the SHA-256 of each profile's
+    /// runtime, so a change to the runtime is a change to LexLean's
+    /// identity: a runtime edited without its record fails here.
+    #[test]
+    fn the_compiler_semantics_records_the_runtime() {
+        let (_, semantics) = crate::embedded::FILES
+            .iter()
+            .find(|(path, _)| *path == "language/semantics-1.2.toml")
+            .expect("the language-1.2 semantics");
+        let table: toml::Value = std::str::from_utf8(semantics)
+            .expect("UTF-8")
+            .parse()
+            .expect("TOML");
+        for (key, text) in [
+            ("rust_runtime_core", CORE.to_owned()),
+            ("rust_runtime_std", format!("{CORE}{STD}")),
+        ] {
+            let digest = crate::artifact::content_id::Sha256Digest::of(text.as_bytes()).to_hex();
+            assert_eq!(
+                table.get(key).and_then(toml::Value::as_str),
+                Some(digest.as_str()),
+                "the runtime changed without its record `{key}` in language/semantics-1.2.toml"
+            );
         }
     }
 

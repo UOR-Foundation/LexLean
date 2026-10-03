@@ -6,8 +6,10 @@
 //! index, or is an exported name the package manifest validated; every
 //! called function is a program function or a runtime [`Item`]; every type
 //! is a calculus type or one of the representation types of §17.16. So no
-//! rendering can inject code outside the safe subset, a raw expression, or a name it did not
-//! declare.
+//! rendering can inject code outside the safe subset, a raw expression, or
+//! a name it did not declare. Every expression, binding, and item carries
+//! the [`Origin`] it realizes, which [`validate::correspond`] checks against
+//! the construct it is, instance by instance.
 
 use std::fmt::Write as _;
 
@@ -60,6 +62,37 @@ impl Ident {
 /// The one-letter prefixes of generated identifiers, which an exported name
 /// may not imitate.
 pub const GENERATED_PREFIXES: [char; 9] = ['v', 'm', 'a', 'c', 'r', 'h', 'k', 'p', 'f'];
+
+/// The calculus element (§17.14) a construct realizes, as lowering derives
+/// it from the term, shape, literal, or structural realization the
+/// construct renders, and the width of a fixed-width element: the
+/// operand width of a fixed-width primitive, the target of a conversion or
+/// a parse, or the kind of a fixed-width literal.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Origin {
+    pub element: String,
+    pub width: Option<IntKind>,
+}
+
+impl Origin {
+    /// The origin of an element without a width.
+    #[must_use]
+    pub fn of(element: &str) -> Self {
+        Self {
+            element: element.to_owned(),
+            width: None,
+        }
+    }
+
+    /// The origin of an element at `width`.
+    #[must_use]
+    pub fn at_width(element: &str, width: Option<IntKind>) -> Self {
+        Self {
+            element: element.to_owned(),
+            width,
+        }
+    }
+}
 
 /// A type of generated code.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -212,63 +245,100 @@ pub enum Callee {
     Runtime(Item),
 }
 
-/// An expression.
+/// An expression. Every construct carries the [`Origin`] it realizes; the
+/// reads that are parts of a list match or a successor arm carry none of
+/// their own.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
-    Lit(Lit),
+    Lit(Lit, Origin),
     /// A binding read by moving it.
-    Move(Ident),
+    Move(Ident, Origin),
     /// A binding read by cloning it.
-    Clone(Ident),
+    Clone(Ident, Origin),
     /// A binding of a `Copy` type, read by copying it.
-    Copy(Ident),
+    Copy(Ident, Origin),
     /// A borrowed binding of a `Copy` type, read through the reference.
-    Deref(Ident),
+    Deref(Ident, Origin),
     /// The negation of a Boolean: `!e`.
-    Not(Box<Expr>),
+    Not(Box<Expr>, Origin),
     /// The value inside a bound box, cloned: `(*r).clone()`.
-    Unbox(Ident),
-    /// The value inside a box held by reference, cloned: `(**k).clone()`.
-    UnboxRef(Ident),
+    Unbox(Ident, Origin),
     /// A value put in a box.
-    Box(Box<Expr>),
+    Box(Box<Expr>, Origin),
     /// A call; `propagate` adds `?` to a fallible call.
     Call {
         callee: Callee,
         args: Vec<Expr>,
         propagate: bool,
+        at: Origin,
     },
     /// An application of a closure bound to `holder`.
     Apply {
         holder: Ident,
         args: Vec<Expr>,
         propagate: bool,
+        at: Origin,
     },
     Construct {
         ctor: Ctor,
         args: Vec<Expr>,
+        at: Origin,
     },
-    Pair(Box<Expr>, Box<Expr>),
+    Pair(Box<Expr>, Box<Expr>, Origin),
     If {
         condition: Box<Expr>,
         then_branch: Box<Block>,
         else_branch: Box<Block>,
+        at: Origin,
     },
+    /// A match; one without arms is on a value of a type no value
+    /// inhabits.
     Match {
         scrutinee: Box<Expr>,
         arms: Vec<(Pat, Block)>,
+        at: Origin,
     },
     Block(Box<Block>),
     /// `m.uncons()`.
     Uncons(Ident),
     /// `m == 0`.
-    IsZero(Ident),
+    IsZero(Ident, Origin),
+    /// `m != 0`.
+    NonZero(Ident, Origin),
     /// `m - 1`, read where `m` is not zero.
     Predecessor(Ident),
     /// `i128::from(e)`, the operand of a conversion.
-    Widen(Box<Expr>),
+    Widen(Box<Expr>, Origin),
     /// `Ok(e)`: an infallible value where a fallible one is expected.
-    Succeed(Box<Expr>),
+    Succeed(Box<Expr>, Origin),
+}
+
+impl Expr {
+    /// The origin of the construct, if the expression is one.
+    #[must_use]
+    pub fn origin(&self) -> Option<&Origin> {
+        match self {
+            Self::Lit(_, at)
+            | Self::Move(_, at)
+            | Self::Clone(_, at)
+            | Self::Copy(_, at)
+            | Self::Deref(_, at)
+            | Self::Not(_, at)
+            | Self::Unbox(_, at)
+            | Self::Box(_, at)
+            | Self::Call { at, .. }
+            | Self::Apply { at, .. }
+            | Self::Construct { at, .. }
+            | Self::Pair(_, _, at)
+            | Self::If { at, .. }
+            | Self::Match { at, .. }
+            | Self::Widen(_, at)
+            | Self::Succeed(_, at)
+            | Self::IsZero(_, at)
+            | Self::NonZero(_, at) => Some(at),
+            Self::Block(_) | Self::Uncons(_) | Self::Predecessor(_) => None,
+        }
+    }
 }
 
 /// A `let` binding.
@@ -277,6 +347,7 @@ pub struct Let {
     pub pat: Pat,
     pub ty: Option<Type>,
     pub value: Expr,
+    pub at: Origin,
 }
 
 /// A block: bindings, then a tail expression.
@@ -303,6 +374,8 @@ pub enum CaptureRead {
     Copy,
     Clone,
     Unbox,
+    /// A unit capture: matched by `_` and passed as `()`.
+    Unit,
 }
 
 /// One arm of a closure's dispatch: the closure of `function`, its
@@ -324,6 +397,7 @@ pub enum ItemDef {
     Enum {
         name: Type,
         variants: Vec<(u64, Vec<Type>)>,
+        at: Origin,
     },
     /// The `apply` method of function type `fn_type`.
     Apply {
@@ -332,6 +406,7 @@ pub enum ItemDef {
         result: Type,
         fallible: bool,
         arms: Vec<Dispatch>,
+        at: Origin,
     },
     /// A function.
     Function {
@@ -339,6 +414,7 @@ pub enum ItemDef {
         parameters: Vec<(Pat, Type)>,
         result: Type,
         body: Block,
+        at: Origin,
     },
 }
 
@@ -350,6 +426,26 @@ pub struct Crate {
 }
 
 // --- printing ----------------------------------------------------------------
+
+/// A string literal written by LexLean's own escaper: printable ASCII other
+/// than `"` and `\` as itself, those two escaped, and every other code point
+/// as `\u{..}`, so the bytes never depend on the Unicode tables of the
+/// toolchain that built LexLean.
+fn quoted(text: &str) -> String {
+    let mut out = String::from("\"");
+    for character in text.chars() {
+        match character {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            ' '..='~' => out.push(character),
+            other => {
+                let _ = write!(out, "\\u{{{:x}}}", u32::from(other));
+            }
+        }
+    }
+    out.push('"');
+    out
+}
 
 fn lit(literal: &Lit) -> String {
     let signed = |value: String, kind: &str, minimum: &str| {
@@ -372,7 +468,7 @@ fn lit(literal: &Lit) -> String {
                 format!("{value}{}", kind.name())
             }
         }
-        Lit::Str(text) => format!("Str::lit({text:?})"),
+        Lit::Str(text) => format!("Str::lit({})", quoted(text)),
         Lit::Bytes(octets) => {
             let bytes: Vec<String> = octets.iter().map(|byte| format!("0x{byte:02x}")).collect();
             format!("Bytes::lit(&[{}])", bytes.join(", "))
@@ -417,6 +513,16 @@ fn pat(pattern: &Pat) -> String {
     }
 }
 
+/// The ` -> T` of a signature: nothing for unit, which Rust spells by
+/// omission.
+fn returns(result: &str) -> String {
+    if result == "()" {
+        String::new()
+    } else {
+        format!(" -> {result}")
+    }
+}
+
 struct Printer {
     out: String,
 }
@@ -432,21 +538,28 @@ impl Printer {
 
     /// An expression in place: compound expressions open blocks that are
     /// printed on their own lines.
+    #[allow(clippy::too_many_lines)]
     fn expr(&mut self, expr: &Expr, depth: usize) -> String {
         match expr {
-            Expr::Lit(literal) => lit(literal),
-            Expr::Move(ident) => ident.text(),
-            Expr::Clone(ident) => format!("{}.clone()", ident.text()),
-            Expr::Copy(ident) => ident.text(),
-            Expr::Deref(ident) => format!("*{}", ident.text()),
-            Expr::Not(inner) => format!("!{}", self.expr(inner, depth)),
-            Expr::Unbox(ident) => format!("(*{}).clone()", ident.text()),
-            Expr::UnboxRef(ident) => format!("(**{}).clone()", ident.text()),
-            Expr::Box(inner) => format!("std::rc::Rc::new({})", self.expr(inner, depth)),
+            Expr::Lit(literal, _) => lit(literal),
+            Expr::Move(ident, _) | Expr::Copy(ident, _) => ident.text(),
+            Expr::Clone(ident, _) => format!("{}.clone()", ident.text()),
+            Expr::Deref(ident, _) => format!("*{}", ident.text()),
+            // A comparison or subtraction under `!` is parenthesized, so the
+            // negation never binds to its left operand alone.
+            Expr::Not(inner, _) => match inner.as_ref() {
+                Expr::IsZero(..) | Expr::NonZero(..) | Expr::Predecessor(_) => {
+                    format!("!({})", self.expr(inner, depth))
+                }
+                _ => format!("!{}", self.expr(inner, depth)),
+            },
+            Expr::Unbox(ident, _) => format!("(*{}).clone()", ident.text()),
+            Expr::Box(inner, _) => format!("std::rc::Rc::new({})", self.expr(inner, depth)),
             Expr::Call {
                 callee,
                 args,
                 propagate,
+                ..
             } => {
                 let name = match callee {
                     Callee::Function(n) => format!("f{n}"),
@@ -463,6 +576,7 @@ impl Printer {
                 holder,
                 args,
                 propagate,
+                ..
             } => {
                 let args: Vec<String> = args.iter().map(|arg| self.expr(arg, depth)).collect();
                 format!(
@@ -472,7 +586,7 @@ impl Printer {
                     if *propagate { "?" } else { "" }
                 )
             }
-            Expr::Construct { ctor, args } => {
+            Expr::Construct { ctor, args, .. } => {
                 let args: Vec<String> = args.iter().map(|arg| self.expr(arg, depth)).collect();
                 let joined = args.join(", ");
                 match ctor {
@@ -502,21 +616,32 @@ impl Printer {
                     Ctor::Nil(ty) => format!("List::<{}>::nil()", ty.text()),
                 }
             }
-            Expr::Pair(left, right) => {
+            Expr::Pair(left, right, _) => {
                 format!("({}, {})", self.expr(left, depth), self.expr(right, depth))
             }
             Expr::If {
                 condition,
                 then_branch,
                 else_branch,
+                ..
             } => {
                 let condition = self.expr(condition, depth);
                 let then_text = self.block_inline(then_branch, depth);
                 let else_text = self.block_inline(else_branch, depth);
-                format!("if {condition} {then_text} else {else_text}")
+                // An empty unit `else` is left implicit, as Rust spells it.
+                if else_text == "{}" {
+                    format!("if {condition} {then_text}")
+                } else {
+                    format!("if {condition} {then_text} else {else_text}")
+                }
             }
-            Expr::Match { scrutinee, arms } => {
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
                 let scrutinee = self.expr(scrutinee, depth);
+                if arms.is_empty() {
+                    return format!("match {scrutinee} {{}}");
+                }
                 let mut out = format!("match {scrutinee} {{\n");
                 for (pattern, body) in arms {
                     let body = self.block_inline(body, depth + 1);
@@ -532,16 +657,22 @@ impl Printer {
             }
             Expr::Block(block) => self.block_inline(block, depth),
             Expr::Uncons(ident) => format!("{}.uncons()", ident.text()),
-            Expr::IsZero(ident) => format!("{} == 0", ident.text()),
+            Expr::IsZero(ident, _) => format!("{} == 0", ident.text()),
+            Expr::NonZero(ident, _) => format!("{} != 0", ident.text()),
             Expr::Predecessor(ident) => format!("{} - 1", ident.text()),
-            Expr::Widen(inner) => format!("i128::from({})", self.expr(inner, depth)),
-            Expr::Succeed(inner) => format!("Ok({})", self.expr(inner, depth)),
+            Expr::Widen(inner, _) => format!("i128::from({})", self.expr(inner, depth)),
+            Expr::Succeed(inner, _) => format!("Ok({})", self.expr(inner, depth)),
         }
     }
 
     /// A block as an expression: `{` on this line, its bindings and tail
-    /// one level deeper, `}` at this depth.
+    /// one level deeper, `}` at this depth. A unit tail is left implicit,
+    /// as Rust spells it, so an empty unit block is `{}`.
     fn block_inline(&mut self, block: &Block, depth: usize) -> String {
+        let unit_tail = matches!(block.tail, Expr::Lit(Lit::Unit, _));
+        if unit_tail && block.lets.is_empty() {
+            return "{}".to_owned();
+        }
         let mut out = String::from("{\n");
         let inner = "    ".repeat(depth + 1);
         for binding in &block.lets {
@@ -560,15 +691,17 @@ impl Printer {
                 }
             }
         }
-        let tail = self.expr(&block.tail, depth + 1);
-        let _ = writeln!(out, "{inner}{tail}");
+        if !unit_tail {
+            let tail = self.expr(&block.tail, depth + 1);
+            let _ = writeln!(out, "{inner}{tail}");
+        }
         let _ = write!(out, "{}}}", "    ".repeat(depth));
         out
     }
 
     fn item(&mut self, item: &ItemDef) {
         match item {
-            ItemDef::Enum { name, variants } => {
+            ItemDef::Enum { name, variants, .. } => {
                 self.line(0, "#[derive(Clone)]");
                 self.line(0, &format!("pub enum {} {{", name.text()));
                 for line in enum_lines(name, variants) {
@@ -582,6 +715,7 @@ impl Printer {
                 result,
                 fallible,
                 arms,
+                ..
             } => {
                 let unread = if arms.is_empty() { "_" } else { "" };
                 let params: Vec<String> = parameters
@@ -597,17 +731,28 @@ impl Printer {
                 self.line(0, &format!("impl Fn{fn_type} {{"));
                 self.line(
                     1,
-                    &format!("pub fn apply(&self, {}) -> {result} {{", params.join(", ")),
+                    &format!(
+                        "pub fn apply(&self, {}){} {{",
+                        params.join(", "),
+                        returns(&result)
+                    ),
                 );
                 if arms.is_empty() {
                     // A function type no closure inhabits is an empty enum,
-                    // matched without arms: nothing unreachable is rendered.
+                    // matched without arms.
                     self.line(2, "match *self {}");
                 } else {
                     self.line(2, "match self {");
                     for arm in arms {
-                        let names: Vec<String> =
-                            (0..arm.captures.len()).map(|at| format!("k{at}")).collect();
+                        let names: Vec<String> = arm
+                            .captures
+                            .iter()
+                            .enumerate()
+                            .map(|(at, read)| match read {
+                                CaptureRead::Unit => "_".to_owned(),
+                                _ => format!("k{at}"),
+                            })
+                            .collect();
                         let mut passed: Vec<String> = arm
                             .captures
                             .iter()
@@ -616,14 +761,17 @@ impl Printer {
                                 CaptureRead::Copy => format!("*k{at}"),
                                 CaptureRead::Clone => format!("k{at}.clone()"),
                                 CaptureRead::Unbox => format!("(**k{at}).clone()"),
+                                CaptureRead::Unit => "()".to_owned(),
                             })
                             .collect();
                         passed.extend((0..parameters.len()).map(|at| format!("p{at}")));
                         let call = format!("f{}({})", arm.function, passed.join(", "));
-                        let call = if *fallible && !arm.function_fallible {
-                            format!("Ok({call})")
-                        } else {
-                            call
+                        // A unit is passed to `Ok` as the literal `()`, as
+                        // Rust's lint gate requires.
+                        let call = match (*fallible && !arm.function_fallible, result.as_str()) {
+                            (true, "R<()>") => format!("{{ let () = {call}; Ok(()) }}"),
+                            (true, _) => format!("Ok({call})"),
+                            (false, _) => call,
                         };
                         let pattern = if names.is_empty() {
                             format!("Fn{fn_type}::F{}", arm.function)
@@ -642,6 +790,7 @@ impl Printer {
                 parameters,
                 result,
                 body,
+                ..
             } => {
                 let params: Vec<String> = parameters
                     .iter()
@@ -651,10 +800,10 @@ impl Printer {
                 self.line(
                     0,
                     &format!(
-                        "pub fn {}({}) -> {} {body}",
+                        "pub fn {}({}){} {body}",
                         name.text(),
                         params.join(", "),
-                        result.text()
+                        returns(&result.text())
                     ),
                 );
             }
@@ -705,8 +854,28 @@ pub fn print(krate: &Crate) -> String {
     printer.out
 }
 
-/// The canonical text of one expression, as an argument of a harness.
+/// The canonical text of one expression.
 #[must_use]
 pub fn print_expr(expr: &Expr) -> String {
     Printer { out: String::new() }.expr(expr, 0)
+}
+
+/// The canonical text of a block at depth 0.
+#[must_use]
+pub fn print_block(block: &Block) -> String {
+    Printer { out: String::new() }.block_inline(block, 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quoted;
+
+    #[test]
+    fn strings_are_escaped_by_lexlean_alone() {
+        assert_eq!(quoted("a\"b\\c ~"), "\"a\\\"b\\\\c ~\"");
+        assert_eq!(
+            quoted("\n\t\u{0}\u{7f}\u{e9}\u{301}\u{200b}\u{feff}\u{1f600}"),
+            "\"\\u{a}\\u{9}\\u{0}\\u{7f}\\u{e9}\\u{301}\\u{200b}\\u{feff}\\u{1f600}\""
+        );
+    }
 }

@@ -47,3 +47,9 @@ id = "AUTH-PRINT-AXIOMS-4-32-1"
 level = "some-true"
 statement = "Lean 4.32.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures."
 authority = "PRINT-AXIOMS-4-32-1"
+
+[[claim]]
+id = "AUTH-UOR-GNAF-1-DRAFT-2"
+level = "some-true"
+statement = "UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only."
+authority = "UOR-GNAF-1-DRAFT-2"

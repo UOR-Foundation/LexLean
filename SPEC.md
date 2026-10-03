@@ -302,6 +302,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 ├── compiler/
 │   ├── expected/
 │   ├── fixtures/
+│   ├── gnaf/
+│   ├── gnaf.manifest.json
 │   ├── lake-manifest.json
 │   ├── lakefile.toml
 │   ├── lean-toolchain
@@ -350,6 +352,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   │       │   └── resolve.rs
 │   │       ├── error.rs
 │   │       ├── fmt.rs
+│   │       ├── gnaf.rs
 │   │       ├── grammar/
 │   │       │   ├── chart.rs
 │   │       │   ├── math.rs
@@ -429,6 +432,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │       ├── nat-1.1/
 │       └── nat-1.2/
 ├── model/
+│   ├── authorities/
 │   ├── authorities.toml
 │   ├── errors.toml
 │   ├── ids.toml
@@ -443,6 +447,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── coverage.schema.json
 │   ├── diagnostic.schema.json
 │   ├── entry.schema.json
+│   ├── gnaf-fixture.schema.json
+│   ├── gnaf-request.schema.json
 │   ├── lexicon.schema.json
 │   ├── lexicon-v2.schema.json
 │   ├── lock.schema.json
@@ -3164,9 +3170,10 @@ the printed value or `overflow`; steps, fuel, and the work count are not
 observable. The claim covers exactly programs of this calculus rendered this
 way: no other Rust construct (unsafe code, foreign functions, threads,
 asynchronous code, floating point, interior mutability, input and output
-beyond the harness) is within it. Every fixture's rendering in each profile
-that admits it is committed under `compiler/rust/<target>/` and compared with
-the renderer by `cargo xtask check-calculus`. Every fixture with an
+beyond the harness) is within it. Every fixture whose entry takes and
+returns first-order data is committed as a package in each profile that
+admits it, under its lint gate (§17.16), and compared with the renderer by
+`cargo xtask check-calculus`. Every fixture with an
 observable outcome is rendered, compiled by the pinned `rustc` 1.97.1
 (`RUSTC-1-97-1`, an authority this repository cites) with warnings denied,
 linked with a harness, and run; its output must equal the denotation's, its
@@ -3174,6 +3181,197 @@ work count must not exceed the steps, and planted value and work
 discrepancies must be detected. This is `build` evidence for the renderings,
 not a proof of them; preservation of meaning from LexLean to the calculus is
 §17.17, and from the calculus to Rust is a separate obligation.
+
+### 17.15 GNAF requests over the calculus
+
+A claim that a realization is optimal is meaningful only against a candidate
+universe, a machine, and an order fixed before any optimizer runs. LexLean
+fixes them by the request components of UOR-GNAF (`uor-gnaf/1-draft.2`,
+authority `UOR-GNAF-1-DRAFT-2`, §27.4): the module `Gnaf` of `compiler/` is
+the normative model, a LexLean definition Lean elaborates, replays, and
+axiom-audits. It defines the request, its fail-closed validation, the
+universe and the theorem that it is complete, and the answer the request's
+universe has under the calculus denotation of §17.14. It imports only
+`TargetSyntax` and `TargetSemantics`, and nothing in it calls, cites, or is
+computed from an optimizer.
+
+**Request.** A request (`lexlean/gnaf-request/1`,
+`schemas/gnaf-request.schema.json`) names:
+
+1. the problem: a reference program and a non-empty domain of arguments
+   (UOR-GNAF §8.1), so that an empty domain never makes a claim vacuously
+   true;
+2. the machine contract X and accounting model M (§8.2, §9.1): fuel; the
+   machine's hard capacity, the largest fuel, domain, universe, and declared
+   charge it admits; the operand-size treatment, `weighted` (every primitive
+   charged its operands' and result's weight, as §17.14 charges it) or
+   `unit`; and for each admitted kind of action its charge. The kinds are
+   observation, preprocessing, advice, retained state, dispatch, fallback,
+   communication, randomness, scheduling, and execution, and a charge is
+   `steps`, a constant per invocation, `free`, or `undeclared`. The
+   comparison boundary (§10.8) is `complete`, `prepared_state`, or
+   `prepared_plan`, and the prepared artifacts bound in the common initial
+   state of every competitor each name the preparation action that produced
+   it and the SHA-256 of its bytes;
+3. the universe U_sys (§8.3): a carrier, its completeness evidence, and its
+   `SystemUniverseId`. The only admitted carrier is a grammar of complete
+   systems: an argument type, a result type, plans shared by every system,
+   each with the preparation actions it needs before an invocation, and
+   strictly increasing dispatch thresholds. Its members are exactly the fixed
+   systems, one per plan, then for every threshold every dispatch from a
+   small plan to a large plan, both ranging over every plan, in that order.
+   A system is the complete selector-plus-executor (§8.5): it realizes as one
+   program whose entry function (index 0) is its selector and whose plans
+   sit at indices 1 onward. The only admitted completeness evidence is
+   `grammar_equality`, which cites the kernel theorem `Gnaf.expandComplete`.
+   The `SystemUniverseId` is the framed SHA-256 `lexlean-gnaf-universe-v1`
+   of the problem, the machine, and the carrier in canonical JSON, computed
+   from the request before any evaluation; a stated identity is only an
+   equality check against it;
+4. the objective and order (§9.2, §9.3): `scalar` is total cost over the
+   domain, totally ordered, lower is better; `vector` is the pair of total
+   cost and size, ordered componentwise with no weighting;
+5. the claim class (§12.4), every class of the authority, with
+   `profile_defined_comparison` carrying its profile, class, and result shape
+   and `instance_optimal` its two constants, and the scope the claim ranges
+   over: the grammar universe, all calculus programs, or all Rust programs.
+
+**Validation.** `Gnaf.validate` returns the first violated rule, in this
+order, and `Gnaf.answer` of a refused request is `rejected` with it:
+
+1. an empty domain;
+2. a carrier that is not a grammar: one system's internal plans taken as
+   the universe (`internal_plan_universe`), an optimizer's output, the
+   candidates a search discovered, or a cache;
+3. completeness evidence that is missing, cites the universe's own
+   identity, or cites an optimizer;
+4. a request beyond the capacity its machine binds: more fuel, domain
+   arguments, or systems than the capacity admits, or a declared charge
+   above it (`beyond_capacity`);
+5. the `unit` operand-size treatment, under which a primitive whose work
+   grows with its operands is an unbounded action at unit cost
+   (`unit_cost_operands`, §8.2);
+6. an action kind accounted twice (`duplicate_action`);
+7. an action some system performs (observation, dispatch, fallback,
+   execution) that is unaccounted, or charged other than by `steps`: the
+   calculus counts that work as steps, so a zero, constant, free, or
+   undeclared charge hides or replaces it (`hidden_cost`);
+8. an admitted preparation action (preprocessing, advice, retained state)
+   charged by `steps` (the calculus has no preparation phase whose steps it
+   counts), by zero, or `undeclared` (`hidden_cost`), or `free` other than
+   on a prepared boundary whose common initial state binds an artifact it
+   prepared (`unbound_preparation`, §10.8); and an admitted communication,
+   randomness, or scheduling action, which the sequential deterministic
+   calculus machine does not have, so no system of the grammar realizes it
+   (`unrealizable_action`);
+9. a prepared artifact of an action that is not admitted `free`, which
+   would exclude work that is charged (`stray_prepared_artifact`);
+10. a plan needing a preparation action the machine does not account
+    (`unaccounted_action`);
+11. `restricted_universe_optimal`, which §12.4 makes a legacy alias that a
+    conforming answer never emits as a base class (`claim_alias`); a scalar
+    claim (`global_optimal`, `argmin_complete`) over the vector order, a
+    vector claim (`pareto_optimal`, `frontier_complete`) over the scalar
+    order, or any other claim class, which this model does not decide
+    (`unsupported_claim`);
+12. a scope beyond the grammar universe. No coverage bridge from the grammar
+    to all calculus programs or to all Rust programs is proved, so such a
+    claim is refused (`uncovered_scope`) rather than inferred from the
+    grammar's answer.
+
+**Completeness.** `Gnaf.wellFormed` states the grammar's membership
+semantics without the expansion: a fixed system runs a plan below the plan
+count, and a dispatch runs two such plans at a declared threshold.
+`Gnaf.expandComplete` proves, for every grammar and every selector, that the
+selector is a member of `Gnaf.expand` exactly when it is well formed; Lean's
+kernel checks the proof by induction over the expansion's construction. The
+expansion and the membership semantics depend on nothing but the grammar.
+
+**Answer.** For a valid request, every system is evaluated on every domain
+argument with the request's fuel. The first argument on which the system
+does not return the reference's value decides: overflow, a stuck
+evaluation, or a different value makes the system inadmissible, and an
+exhausted evaluation leaves it unresolved. A system that agrees everywhere
+is admitted with its cost, its total steps plus, on every invocation, the
+declared constant of each preparation each plan it can run needs, and its
+size, one per expression node and match arm of every function reachable
+from its entry. A plan's preparation is therefore charged exactly to the
+systems that can run it, and code a system cannot run is not its size. An
+unresolved system is never removed and never given an infinite cost
+(§8.4): any unresolved system makes the answer `incomplete`. Otherwise the
+answer is `infeasible` when nothing is admitted; for `scalar`, `argmin`, every
+admitted system attaining the minimum cost and that minimum; for `vector`,
+`frontier`, every admitted system no other strictly dominates. Both are
+computed by the model's one generic order, `Gnaf.argmin` and
+`Gnaf.frontier`, over rows of an identity and a cost; equal costs never
+dominate each other, so every equal-cost system is kept (GNAF-REJ-21).
+Because a dispatching system pays for its observation and selection, the
+best internal plan and the per-input envelope of the plans are not complete
+systems' costs, and the model never answers with them. `Gnaf.certifies`
+accepts a claimed argmin or frontier exactly when it is the request's own,
+as an identity set, and `Gnaf.minimaAttained` says whether some admitted
+system attains the componentwise minima of the admitted costs.
+
+**Host side.** `lexlean::gnaf` transcribes the model step for step: `load`
+reads a request and checks what the model presupposes, reporting `LLB6006`
+for a malformed request; a reference program, plan, or realized system that
+is not valid under §17.14; a domain argument outside the reference entry's
+parameter type or on which the reference returns no value under the
+request's fuel; grammar argument and result types other than the entry's;
+repeated thresholds; a plan preparing by an action that is not preparation,
+or naming one twice; and a stated universe identity other than the one the
+request's components determine. `answer` evaluates it; and request, status,
+and answer terms are emitted so the kernel confirms each committed request.
+The host evaluator's capacity is part of the machine it offers: a machine
+asking for, or a request using, more than fuel 4096, 1024 domain
+arguments, 65,536 systems, or charges of 2^32 is `LLS8002`. Within that
+capacity every declared charge fits the host's integers, so a step total
+the host cannot represent is `LLS8002` as well, never a cost the model would
+not report. Evaluation runs on a stack sized for the request's fuel, and a
+panic of the evaluation thread is `LLI9001`.
+
+**Fixtures.** The requests under `compiler/gnaf/` (`lexlean/gnaf-fixture/1`,
+`schemas/gnaf-fixture.schema.json`) each name a request and its expected
+answer. They include a Pareto frontier of incomparable systems; ties from a
+duplicated plan, in an argmin and in a frontier; GNAF-VEC-02 posed over the
+calculus, four systems of which exactly three form the frontier; a
+dispatching system that is the argmin although the best single plan is not
+and although the per-input envelope of the plans is lower than any system
+attains; an inadmissible plan excluded; an unknown cost making the answer
+incomplete; a plan's preparation moving the argmin; prepared artifacts
+bound in the common initial state; and a refused request for every rule
+above. The generated module `GnafFixtures` (compared with its generator by
+`cargo xtask check-calculus`) states for each request that `Gnaf.universeOf`
+reduces to the host's expansion and `Gnaf.answer` to the expected answer,
+for each answered request that `Gnaf.statusesOf` reduces to the host's
+statuses, and for the posed GNAF-VEC-02 that no frontier with a member
+omitted is certified while the frontier in another order is, and that no
+system attains the componentwise minima; each is decided by Lean's kernel.
+A wrong answer, an answer computed from a universe with a system omitted, a
+tie with a member dropped, and a universe with a system omitted are
+rejected by Lean. The GNAF schemas are generated with the fixtures, and
+their calculus definitions are `schemas/target-program.schema.json`'s own.
+
+**Authority vectors, dependency manifest, and honesty.** The authority's
+normative fixtures GNAF-VEC-01 (the compositions of its operations, with
+their path identities, and the S0 certificate invalid for S1), GNAF-VEC-02,
+GNAF-VEC-04, GNAF-VEC-17 (the pointwise envelope, the uniform worst case,
+and the fair randomized expectation), GNAF-REJ-14, and GNAF-REJ-29 (§16) are
+theorems of `Gnaf` over the same `argmin`, `frontier`, and certification the
+answers are computed by, decided by the kernel. `compiler/gnaf.manifest.json`
+is the dependency manifest §20 requires: the draft's revision and SHA-256,
+every kind, operation, machine, cost, proof, interchange, and address profile
+with its role, every restriction of the admitted universe, and the claim
+classes the model actually answers. The authority's requirements are
+`some-true` here: reproduced from the cited document, a copy of which is
+vendored at `model/authorities/UOR-GNAF-v1-draft.2.md` and whose SHA-256
+`cargo xtask validate-model` recomputes. The model and its fixtures are
+`build` evidence that LexLean realizes them, not a proof of the authority.
+UOR-NAF is informative to UOR-GNAF (§20) and is neither cited as evidence
+nor relied upon. A request's answer is a statement about the grammar
+universe under the calculus's step accounting; it is not a claim about
+machine time, about calculus programs outside the grammar, or about Rust
+programs.
 
 ### 17.16 Rust backend
 
@@ -3184,26 +3382,68 @@ backend; `lexlean::calculus::package` is its entry point for packages.
 
 **AST.** The AST (`rust::ast`) has no node for arbitrary text. Every
 identifier is generated from a closed kind and an index (`v<n>` for a local
-of the program, `m<n>` for a match scrutinee, `a<n>` for a primitive operand,
-`c<n>` for an applied closure, `r<n>` and `h<n>` for a value taken out of a
-box or a pair, `k<n>` and `p<n>` for a closure's captures and parameters,
-`f<n>` for a program function) or is an exported name the package manifest
-declares. Every called function is a program function or a runtime item of
-the closed table `rust::runtime::Item`; every type is a calculus type or one
-of the representation types `Rc<T>` (a field or capture whose type holds its
-owner), `R<T>` (a fallible result), and `&T` (a borrowed export parameter).
+of the program, `m<n>` for a match scrutinee or a bound condition, `a<n>` for
+an operand, `c<n>` for an applied closure, `r<n>` and `h<n>` for a value
+taken out of a box or a pair, `k<n>` and `p<n>` for a closure's captures and
+parameters, `f<n>` for a program function) or is an exported name the package
+manifest declares. Every called function is a program function or a runtime
+item of the closed table `rust::runtime::Item`; every type is a calculus type
+or one of the representation types `Rc<T>` (a field or capture whose type
+holds its owner), `R<T>` (a fallible result), and `&T` (a borrowed export
+parameter). Every construct carries its *origin*: the calculus element
+(§17.14) of the term, shape, or literal it was lowered from, or the
+structural realization it is, and the width of a fixed-width element. The
+constructs are every item, every binding, and every expression other than a
+block, a list's `uncons`, and a predecessor, which are parts of the
+construct around them; a pattern is checked through the match that carries
+it.
 The printer lays out every item, block, and arm in one fixed way, so the
-rendering's bytes are canonical without a formatter.
+rendering's bytes are canonical without a formatter. A string literal is
+written by LexLean's own escaper: printable ASCII other than `"` and `\` as
+itself, those two escaped, and every other scalar as `\u{..}`; a byte string
+is an array of `0x..` bytes. No byte of a rendering depends on the Unicode
+tables of the toolchain that built LexLean.
+
+**Lowering.** Each calculus construct has one rendering, and the shapes Rust
+writes differently are fixed:
+
+- a unit carries nothing: a unit binder is `_`, a unit read is the literal
+  `()`, a unit result type and a unit block value are left implicit, an
+  operand that computes a unit is bound (`let () = e;`) in operand order
+  before the call that receives `()`, and a fallible function or dispatch
+  returning a computed unit binds it before `Ok(())`;
+- a conditional or match whose branches are the Boolean literals is its
+  condition or that condition's negation (a zero test negated is the
+  nonzero test); a conditional whose branches are the same code up to the
+  names they bind is its condition, evaluated and discarded, then that code;
+  and a match each of whose arms rebuilds exactly what it matched is its
+  scrutinee;
+- a conditional on a Boolean literal and an `if` without `else` holding only
+  another bind their (inner) condition first; an empty unit `else` is left
+  implicit; a block that binds a value and returns that binding is the
+  value; a field of a computed record binds the record first;
+- a type no value inhabits (a function type no closure of a live function
+  inhabits, or a named type, pair, or result built only from such types):
+  a function with a parameter of such a type is never called and its body is
+  the empty match on that parameter; a match arm whose shape holds such a
+  value is never taken and is omitted, as Rust's exhaustiveness admits; and
+  any other computation of such a value is refused, as `LLB6005`
+  (*unsupported type*), because Rust would make the code after it
+  unreachable.
+
+Each of these renders the same denotation with no more work than the plain
+rendering.
 
 **Failure typing.** A function can overflow exactly when its body reaches a
 primitive or successor that can (`nat_add`, `nat_mul`, `int_add`, `int_sub`,
 `int_mul`, `int_neg`, `int_quot`, `parse_decimal` at `int`, `succ`), a call to
 a function that can, or an application of a function type one of whose
-closures can: the least fixed point of these rules. A function that can
-overflow returns `R<T>` and every call to it ends in `?`, except in tail
-position, where its result is returned as it is; any other function returns
-its value and no call to it propagates. The length of a sequence cannot
-exceed `2^64 - 1` on any machine that holds it, so `length` cannot overflow.
+closures can: the least fixed point of these rules, computed by a worklist
+over the reverse call and application edges. A function that can overflow
+returns `R<T>` and every call to it ends in `?`, except in tail position,
+where its result is returned as it is; any other function returns its value
+and no call to it propagates. The length of a sequence cannot exceed
+`2^64 - 1` on any machine that holds it, so `length` cannot overflow.
 
 **Checks.** Before printing, `rust::validate` refuses, as `LLB6005`:
 
@@ -3218,20 +3458,41 @@ exceed `2^64 - 1` on any machine that holds it, so `length` cannot overflow.
    position, an infallible call that propagates, a fallible function's tail
    that is not a fallible value, and a function that propagates a failure
    its result type does not carry;
-5. *correspondence*: a construct with no row in `validate::CORRESPONDENCE`,
-   or whose row names no calculus element (§17.14) or structural
-   realization (`function`, `overflow`, `indirection`, `export`) the program
-   uses.
+5. *correspondence*, instance by instance: an emitted construct with no row
+   in `validate::CORRESPONDENCE`, whose row does not name the element of its
+   own origin, whose width (a fixed-width runtime function's or literal's)
+   differs from its origin's, or whose origin the program does not use; and
+   a type the crate names whose row names no element the program uses. The
+   origin is derived from the term being lowered, independently of the
+   construct chosen for it, so a call of `nat_mul` lowered from a `nat_add`
+   term, or a `u16` addition lowered from a `u8` one, is refused even in a
+   program that uses both. Types are checked against the program's elements
+   as a whole. That the parts of a construct are composed faithfully (which
+   arm is which, which function a call names, the order of captures and
+   fields) is not a check of the AST: it is established by the conformance
+   differential below, against which planted lowering mutations are
+   recorded. A negated zero test or predecessor is refused as well: a zero
+   test is negated as its complement, and the printer parenthesizes any
+   comparison under `!`.
 
 **Packages.** A package manifest (`lexlean/rust-package/1`,
 `schemas/rust-package.schema.json`) names a crate and its version (three
-canonical decimals), a profile, a target program, the exported functions, and
-the identities of the LexLean semantic objects the program realizes (`sources`:
-lowercase SHA-256 hex, strictly ascending). Each export names a program
-function, its Rust name, how it takes each parameter (`own`; `borrow`, by
-shared reference; or `copy`, only for a `Copy` type: a scalar, or an option,
-result, or pair of `Copy` types), and whether it can fail (`none` or
-`overflow`). A package is refused, as `LLB6005`, when:
+canonical decimals, each at most `2^64 - 1`, as Cargo reads them; the schema
+pattern and the renderer agree), a profile, a target program, the exported
+functions, and its `sources`: the semantic IDs (§21.4) of the LexLean builds
+whose linked IR states the program, as lowercase SHA-256 hex, strictly
+ascending, and empty for a program no LexLean build states. The renderer
+checks their form and records them; that they name the build stating the
+program is established by the conformance suite against the verified build
+(below). That the program faithfully realizes the semantic objects of that
+build (realization-to-source preservation) is the obligation of the
+production pipeline that derives target programs from LexLean roots, not of
+this backend: `sources` binds a package to the build that states its program,
+and the backend never derives a program from a build. Each export names a
+program function, its Rust name, how it takes each parameter (`own`;
+`borrow`, by shared reference; or `copy`, only for a `Copy` type: a scalar,
+or an option, result, or pair of `Copy` types), and whether it can fail
+(`none` or `overflow`). A package is refused, as `LLB6005`, when:
 
 - an exported name is not a lowercase snake-case identifier of at most 64
   characters, is a Rust keyword, has the shape of a generated name, or is
@@ -3239,40 +3500,94 @@ result, or pair of `Copy` types), and whether it can fail (`none` or
   sysroot crate or `harness` (*identifier collision*);
 - an export copies a parameter whose type is not `Copy` (*ownership
   mismatch*);
-- an export's boundary holds a function value, which no Rust caller can
-  construct (*unsupported type*);
+- an export's boundary holds a function value, directly or inside the fields
+  of a named type at any depth: the boundary is first-order (§17.13)
+  (*unsupported type*);
 - an export's declared errors differ from its function's (*arithmetic
   mismatch*);
 - the profile is `rust-core` and the program needs heap allocation (*hidden
   allocation*); or
-- the manifest is malformed, its program invalid, or an export's arity wrong.
+- the manifest is malformed, its version not canonical, its sources not
+  canonical, its program invalid or without a faithful rendering, or an
+  export's arity wrong.
 
 A package is three files. `src/lib.rs` is the rendering with one public
 wrapper per export. `Cargo.toml` declares the crate, edition 2021, no
 dependencies, and its lint gate: `unsafe_code` forbidden, rustc warnings
-denied, and every Clippy lint of the default set denied except
-`type_complexity`, whose advice to alias a type would introduce a name with
-no calculus counterpart, and `manual_unwrap_or` and
-`manual_unwrap_or_default`, whose advice would replace the program's own
-match by an idiom. `provenance.json`
-(`lexlean/rust-provenance/1`, `schemas/rust-provenance.schema.json`) binds the
-crate's name and version, the profile, the program's identity, the language-1.2
-compiler-semantics ID (§21.2), the SHA-256 of the runtime the profile carries,
-the sources, the exports, and the SHA-256 of `Cargo.toml` and `src/lib.rs`.
-`language/semantics-1.2.toml` versions the backend (`rust_backend`), so a
-change to any rendering changes LexLean's identity.
+denied, and every Clippy lint of the default set denied except the ten of
+`package::ALLOWED_LINTS`, each because its advice would make the rendering
+depart from the calculus:
+
+| Lint | Clippy group | Its advice, and why the rendering does not follow it |
+| --- | --- | --- |
+| `type_complexity` | complexity | a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart |
+| `too_many_arguments` | complexity | a struct of parameters: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart |
+| `large_enum_variant` | perf | a boxed variant: boxing changes the representation and allocates, which `rust-core` cannot and the calculus does not |
+| `result_large_err` | perf | a boxed error: likewise |
+| `result_unit_err` | style | an error type in place of unit: a function returns exactly its calculus result type |
+| `single_match` | style | `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape |
+| `manual_map` | style | `Option::map` and a Rust closure: a calculus closure is defunctionalized, never a Rust closure |
+| `manual_unwrap_or`, `manual_ok_err` | complexity | a library combinator in place of the program's own match: the combinator is outside the closed runtime |
+| `manual_unwrap_or_default` | suspicious | likewise; its advice is a rewrite that preserves the match's meaning, so allowing it masks no defect |
+
+No allowed lint is in Clippy's `correctness` group.
+
+Every committed package passes this gate, and the fixtures exercise every
+shape of **Lowering** and every exception above: removing any one rule or
+exception makes a committed package fail the gate. `provenance.json` (`lexlean/rust-provenance/1`,
+`schemas/rust-provenance.schema.json`) binds the crate's name and version, the
+profile, the program's identity, the language-1.2 compiler-semantics ID
+(§21.2), the SHA-256 of the runtime the profile carries, the sources, the
+exports, and the SHA-256 of `Cargo.toml` and `src/lib.rs`.
+`language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
+(`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
+sources (`rust_renderer`: one §21.1 frame per file of
+`rust::RENDERER_FILES`, the six files of `calculus/rust/`, labeled by its
+name, under the domain `lexlean-rust-renderer-v1`). Unit tests of the runtime
+and the renderer and the conformance suite check both records, so neither
+the runtime nor any rendering can change without changing LexLean's
+compiler-semantics ID, and two different renderings never claim one
+compiler identity. `rust_backend` is a version label for humans that no gate
+checks.
+
+**Harnesses.** The harnesses that call a package's exports and print their
+outcomes are test text, not renderings: they live in the conformance crate
+(`repo_conformance::rust_harness`), outside the shipped crate, and reach the
+renderer only through `rust::Literals`, which builds each argument literal
+through the closed AST. They write only library and function names that are
+plain Rust identifiers.
 
 **Evidence.** Every fixture whose entry takes and returns first-order data is
 committed as a package under `compiler/rust/<target>/<fixture>/` in each
 profile that admits it, exporting its entry as `run`, with two more that pass
-parameters by reference and by copy; the negative manifests and their stated
+parameters by reference and by copy; every committed package's `sources` is
+the semantic ID of the `compiler` project's build, whose `TargetFixtures`
+module states each fixture's program. The fixtures include a dispatch of
+several closures of mixed failure, captures read by copy, clone, box, and as
+a unit, a recursive closure, a closure applied where it is built, a function
+type no closure inhabits, a boxed field read, a string that needs escaping,
+and each shape of **Lowering**. The negative manifests and their stated
 errors are committed under `compiler/rust/negative/`. `cargo xtask
 check-calculus` compares all of them with the generator. The conformance
-suite builds every package offline in one workspace under its lint gate,
-calls each export from a separate crate, and compares the printed outcome
-with the denotation's; renders every package twice under two roots and
-compares the bytes; and validates every manifest and provenance against its
-schema.
+suite builds every committed package offline in one workspace under its lint
+gate; calls each export whose fixture has an observable outcome from a
+separate crate and compares the printed outcome with the denotation's; runs
+a differential of every primitive instance each profile admits on its
+boundary values and seeded inputs; checks that the packages it runs emit
+every correspondence row and every node of the AST; renders every
+package in two separate processes with different working directories and
+environments and compares the bytes with each other and with the committed
+packages; validates every manifest and provenance against its schema; and
+checks every package's `sources` against the published, verified build: the
+semantic ID of `compiler/expected/build/manifest.json`, named by the
+committed verification records, whose `TargetFixtures` source map binds the
+committed module source, which states the package's program as the
+declaration `<fixture>Program`. The binding is to the whole build, the
+smallest object LexLean gives a semantic ID; the declaration is found by the
+fixture's name, which provenance does not record. That the build verifies is
+established by `cargo xtask verify-examples` and `cargo xtask check-golden`,
+which reverify and compare those committed records; the suite checks only
+that a record of the build is committed under its name.
 
 ### 17.17 Semantic preservation
 
@@ -3870,7 +4185,8 @@ tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `language/preservation-1.2/`, `language/core-1.2/`,
 `language/std/{bool,int,nat}-1.2/`, `schemas/attestation-v2.schema.json`,
 `schemas/build-manifest-v2.schema.json`,
-`schemas/compiler-input.schema.json`,
+`schemas/compiler-input.schema.json`, `schemas/gnaf-fixture.schema.json`,
+`schemas/gnaf-request.schema.json`,
 `schemas/lexicon-v2.schema.json`, `schemas/lock-1.1.schema.json`,
 `schemas/lock-v2.schema.json`, `schemas/preservation.schema.json`,
 `schemas/production-eligibility.schema.json`,
@@ -4843,7 +5159,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLB6002` | LaTeX lowering or renderer-token coverage failure. |
 | `LLB6003` | Artifact hash, schema, or atomic publication failure. |
 | `LLB6004` | PDF-provider protocol failure. |
-| `LLB6005` | Target realization program invalid or unrenderable (§17.14). |
+| `LLB6005` | Target realization program or Rust package invalid or unrenderable (§17.14, §17.16). |
+| `LLB6006` | GNAF request malformed (§17.15). |
 | `LLV7001` | Lean/Lake/leanchecker version or executable mismatch. |
 | `LLV7002` | Generated Lean elaboration or compilation failure. |
 | `LLV7003` | `leanchecker` replay failure. |
@@ -4856,7 +5173,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7013` | Certificate A rejected (§17.17). |
 | `LLV7014` | Preservation environment drift (§17.17). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
-| `LLS8002` | Explicit project resource limit exceeded. |
+| `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
 | `LLS8004` | Child environment, executable, hash, or shell-policy violation. |
 | `LLI9001` | Internal invariant failure. |
@@ -4916,6 +5233,15 @@ The initial repository has no `open` implementation claim. An open research or p
 | `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |
 
 Corresponding ledger claims are `some-true`. LexLean tests realize compatibility with those authorities but do not re-register Lean's guarantees as LexLean proofs.
+
+The production profile adds `UOR-GNAF-1-DRAFT-2`, the UOR-GNAF normative draft
+`uor-gnaf/1-draft.2` that §17.15 models, identified by its source revision and
+the SHA-256 of the document; a copy is vendored at
+`model/authorities/UOR-GNAF-v1-draft.2.md`, and an authority row that vendors
+its source names the copy in `vendored` with `checksum = "sha256:<hex>"`,
+which `cargo xtask validate-model` recomputes from the copy's bytes. Its ledger
+claim is `some-true`, and the GN conformance IDs are `build` evidence that
+LexLean realizes it.
 
 ### 27.5 Generated documents
 
@@ -5181,7 +5507,7 @@ Tests MUST establish that LexLean rejects, at minimum:
 
 ### 28.6 Example verification
 
-Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14) passes the same gates as an example.
+Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) passes the same gates as an example.
 
 ---
 
@@ -5701,13 +6027,21 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TC-05` | `calculus` | Every realization library template has a fixture whose outcome the kernel proves equal to the value LexLean's own collection primitive computes, committed instances equal their templates, and a mutated template is rejected by Lean. | §17.12, §17.14 |
 | `TC-06` | `calculus` | Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits. | §17.13, §17.14 |
 | `TC-07` | `calculus` | Every fixture with an observable outcome renders to a safe Rust library crate in rust-std, and in rust-core exactly when it needs no heap, that the pinned rustc compiles with warnings denied, that prints exactly the denotation's value or overflow, and whose counted work never exceeds the denotation's steps; planted value and work discrepancies are detected. | §17.14 |
-| `RB-01` | `rust-backend` | Every Rust rendering is built as a closed AST whose every construct corresponds to an element of the target program it realizes, every correspondence row is exercised, and a construct the program does not justify is refused. | §17.16 |
+| `RB-01` | `rust-backend` | Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused. | §17.16 |
 | `RB-02` | `rust-backend` | An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused. | §17.16, §26.3 |
 | `RB-03` | `rust-backend` | An export that copies a parameter whose type is not Copy fails with LLB6005, and a crate that moves a value twice or reads it after moving it is refused. | §17.16, §26.3 |
-| `RB-04` | `rust-backend` | A package whose boundary holds a function value, or whose rust-core program needs the heap, fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused. | §17.13, §17.16 |
+| `RB-04` | `rust-backend` | A package whose boundary holds a function value at any depth, whose program computes a value of a type no value inhabits, or whose rust-core program needs the heap fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused. | §17.13, §17.16 |
 | `RB-05` | `rust-backend` | A function that can overflow returns R<T> and every call to it propagates, any other returns its value, an export whose declared errors differ from its function's fails with LLB6005, and a crate that drops, invents, or misreturns a failure is refused. | §17.16 |
-| `RB-06` | `rust-backend` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with three documented exceptions, and its exported function, called from a separate crate, prints exactly the denotation's observable outcome; a planted lint and a planted semantic mutation are detected. | §17.16 |
-| `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: two renderings written under two roots are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, and the provenance binds the SHA-256 of each file, the program identity, the runtime, the sources, and the language-1.2 compiler-semantics ID. | §17.16, §21.7 |
+| `RB-06` | `rust-backend` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected. | §17.16 |
+| `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
+| `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
+| `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
+| `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
+| `GN-04` | `gnaf` | Every action a system performs is charged by steps, every admitted preparation action by a positive constant for each plan that needs it or by a prepared artifact bound in the common initial state, operands are charged by weight, and a request fits the capacity its machine binds; hidden zero-cost, free, undeclared, duplicated, unaccounted, unbound, stray, unit-cost, over-capacity, and unrealizable actions are rejected, and a plan's preparation enters exactly the cost of the systems that can run it. | §17.15 |
+| `GN-05` | `gnaf` | Scalar claims require the total step order and Pareto claims the componentwise steps-and-size order, a scalar claim over the partial order, a vector claim over the total order, the restricted-universe alias, an undecided claim class, and a scope beyond the grammar universe are rejected, equal-cost systems are all kept, a frontier answer has incomparable members, and GNAF-VEC-02 posed over the calculus has a frontier of exactly three of four systems for which no omission is certified and whose componentwise minima no system attains. | §17.15 |
+| `GN-06` | `gnaf` | Complete-system cost includes selection and counts only the code a system can run, the system argmin differs from the best internal plan and from the per-input plan envelope that no system attains, an inadmissible system is excluded, and an unresolved system makes the answer incomplete rather than being removed. | §17.15 |
+| `GN-07` | `gnaf` | The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true. | §17.15, §27.4 |
+| `GN-08` | `gnaf` | The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator. | §17.15, §27.4 |
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
 | `SP-02` | `preservation` | Every production root of examples/production and examples/production-coverage has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production and examples/production-coverage, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
@@ -5715,7 +6049,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
 | `SP-06` | `preservation` | The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 
-**Total required capability IDs:** 276.
+**Total required capability IDs:** 284.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

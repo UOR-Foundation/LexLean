@@ -452,8 +452,10 @@ fn core_cases() -> Vec<Case> {
                     p(Prim::IntRem, vec![int(7), int(-2), int(0)]),
                     p(Prim::IntQuot, vec![int(5), int(0), int(-9)]),
                     p(Prim::IntRem, vec![int(5), int(0), int(4)]),
-                    p(Prim::IntQuot, vec![int(min), int(1), int(0)]),
-                    p(Prim::IntRem, vec![int(min), int(-1), int(0)]),
+                    // The defaults differ from the answers, so a realization
+                    // that returns the default for a nonzero divisor is seen.
+                    p(Prim::IntQuot, vec![int(min), int(1), int(5)]),
+                    p(Prim::IntRem, vec![int(min), int(-1), int(7)]),
                     p(Prim::IntAdd, vec![int(i64::MAX), int(min)]),
                 ],
             ),
@@ -1307,6 +1309,21 @@ fn core_cases() -> Vec<Case> {
         Vec::new(),
         100,
     ));
+    // A canonical decimal beyond every machine integer a realization may
+    // parse through is still an overflow.
+    out.push(case(
+        "decimal-overflow-wide",
+        constant(
+            opt_t(Ty::Int),
+            p(
+                Prim::ParseDecimal { target: Ty::Int },
+                vec![string(&format!("1{}", "0".repeat(40)))],
+            ),
+        ),
+        0,
+        Vec::new(),
+        100,
+    ));
 
     // Conversions, gathered in a record so every target width is a field.
     let converted = vec![
@@ -1490,6 +1507,36 @@ fn core_cases() -> Vec<Case> {
         Vec::new(),
         400,
     ));
+    // A record of three fields read in an order no permutation of the
+    // indices preserves.
+    out.push(case(
+        "record-fields",
+        program(
+            vec![vec![vec![nat_t(), nat_t(), nat_t()]]],
+            vec![function(
+                vec![Ty::Adt { index: 0 }],
+                pair_t(nat_t(), pair_t(nat_t(), nat_t())),
+                build(
+                    Shape::Pair,
+                    pair_t(nat_t(), pair_t(nat_t(), nat_t())),
+                    vec![
+                        p(Prim::NatSub, vec![field(v(0), 0), field(v(0), 2)]),
+                        build(
+                            Shape::Pair,
+                            pair_t(nat_t(), nat_t()),
+                            vec![field(v(0), 1), field(v(0), 2)],
+                        ),
+                    ],
+                ),
+            )],
+        ),
+        0,
+        vec![Value::Adt {
+            constructor: 0,
+            fields: vec![natv(20), natv(5), natv(3)],
+        }],
+        100,
+    ));
 
     // Higher-order: a closure capturing an offset, applied by a map over a
     // list, and a closure returned as a value.
@@ -1557,6 +1604,34 @@ fn core_cases() -> Vec<Case> {
         ),
         0,
         vec![natv(6)],
+        100,
+    ));
+    // A closure of two captures, applied twice through a function value,
+    // computing `x * k0 - k1`: exchanging the captures changes the result.
+    out.push(case(
+        "closure-captures",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t(), nat_t(), nat_t()],
+                    nat_t(),
+                    call(1, vec![closure(2, vec![v(0), v(1)]), v(2)]),
+                ),
+                function(
+                    vec![fn_t(vec![nat_t()], nat_t()), nat_t()],
+                    nat_t(),
+                    apply(v(0), vec![apply(v(0), vec![v(1)])]),
+                ),
+                function(
+                    vec![nat_t(), nat_t(), nat_t()],
+                    nat_t(),
+                    p(Prim::NatSub, vec![p(Prim::NatMul, vec![v(2), v(0)]), v(1)]),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(10), natv(3), natv(2)],
         100,
     ));
 
@@ -1787,6 +1862,877 @@ fn core_cases() -> Vec<Case> {
         ),
         0,
         Vec::new(),
+        200,
+    ));
+    out.extend(renderer_cases());
+    out
+}
+
+/// A right-nested pair of `items`, and its type.
+fn tuple_of(mut items: Vec<(Expr, Ty)>) -> (Expr, Ty) {
+    let (mut value, mut ty) = items.pop().expect("an item");
+    while let Some((left, left_ty)) = items.pop() {
+        let both = pair_t(left_ty, ty);
+        value = build(Shape::Pair, both.clone(), vec![left, value]);
+        ty = both;
+    }
+    (value, ty)
+}
+
+/// Fixtures for the shapes of the Rust renderings (§17.16): every kind of
+/// closure dispatch, an uninhabited function type, a boxed field read, a
+/// string that needs escaping, and each program shape whose rendering Rust's
+/// lint gate constrains.
+#[allow(clippy::too_many_lines)]
+fn renderer_cases() -> Vec<Case> {
+    let mut out = Vec::new();
+    let unit = || build(Shape::Unit, Ty::Unit, Vec::new());
+    let some = |ty: Ty, value: Expr| build(Shape::Some, opt_t(ty), vec![value]);
+    let none = |ty: Ty| build(Shape::None, opt_t(ty), Vec::new());
+    let nat_fn = || fn_t(vec![nat_t()], nat_t());
+
+    // A function type inhabited by two closures: one capturing a copied
+    // number and a cloned string, whose function can overflow, and one
+    // capturing a unit, whose function cannot.
+    out.push(case(
+        "closure-dispatch",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t(), Ty::String],
+                    pair_t(nat_t(), nat_t()),
+                    build(
+                        Shape::Pair,
+                        pair_t(nat_t(), nat_t()),
+                        vec![
+                            call(3, vec![closure(1, vec![v(0), v(1)]), nat(10)]),
+                            call(3, vec![closure(2, vec![unit()]), v(0)]),
+                        ],
+                    ),
+                ),
+                function(
+                    vec![nat_t(), Ty::String, nat_t()],
+                    nat_t(),
+                    p(
+                        Prim::NatAdd,
+                        vec![
+                            p(Prim::NatAdd, vec![v(0), p(Prim::Length, vec![v(1)])]),
+                            v(2),
+                        ],
+                    ),
+                ),
+                function(
+                    vec![Ty::Unit, nat_t()],
+                    nat_t(),
+                    p(Prim::NatSub, vec![v(1), nat(1)]),
+                ),
+                function(vec![nat_fn(), nat_t()], nat_t(), apply(v(0), vec![v(1)])),
+            ],
+        ),
+        0,
+        vec![natv(7), strv("abc")],
+        200,
+    ));
+    // A closure applied where it is built, so its function type is stated
+    // nowhere.
+    out.push(case(
+        "closure-inline",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t(), nat_t()],
+                    nat_t(),
+                    apply(closure(1, vec![v(0), v(1)]), vec![nat(100)]),
+                ),
+                function(
+                    vec![nat_t(), nat_t(), nat_t()],
+                    nat_t(),
+                    p(Prim::NatSub, vec![p(Prim::NatMul, vec![v(2), v(0)]), v(1)]),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(3), natv(10)],
+        100,
+    ));
+    // A closure capturing a value of its own function type, so the capture
+    // is boxed.
+    out.push(case(
+        "closure-recursive",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t()],
+                    nat_t(),
+                    let_in(
+                        1,
+                        nat_fn(),
+                        closure(2, Vec::new()),
+                        let_in(2, nat_fn(), closure(1, vec![v(1)]), apply(v(2), vec![v(0)])),
+                    ),
+                ),
+                function(
+                    vec![nat_fn(), nat_t()],
+                    nat_t(),
+                    apply(v(0), vec![p(Prim::NatMul, vec![v(1), nat(2)])]),
+                ),
+                function(vec![nat_t()], nat_t(), p(Prim::NatSub, vec![v(0), nat(1)])),
+            ],
+        ),
+        0,
+        vec![natv(5)],
+        100,
+    ));
+    // A function type no closure inhabits: the function taking one is never
+    // called, and the arm binding one is never taken.
+    out.push(case(
+        "closure-uninhabited",
+        program(
+            Vec::new(),
+            vec![
+                function(vec![nat_t()], nat_t(), call(2, vec![none(nat_fn()), v(0)])),
+                function(vec![nat_fn(), nat_t()], nat_t(), apply(v(0), vec![v(1)])),
+                function(
+                    vec![opt_t(nat_fn()), nat_t()],
+                    nat_t(),
+                    matching(
+                        nat_t(),
+                        v(0),
+                        vec![
+                            arm(Shape::None, Vec::new(), v(1)),
+                            arm(Shape::Some, vec![2], apply(v(2), vec![v(1)])),
+                        ],
+                    ),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(4)],
+        100,
+    ));
+    // The field of a record that holds its own type, read through its box.
+    let node = Ty::Adt { index: 0 };
+    out.push(case(
+        "boxed-field",
+        program(
+            vec![vec![vec![nat_t(), opt_t(node.clone())]]],
+            vec![function(
+                vec![node.clone()],
+                nat_t(),
+                matching(
+                    nat_t(),
+                    field(v(0), 1),
+                    vec![
+                        arm(Shape::None, Vec::new(), nat(0)),
+                        arm(Shape::Some, vec![1], field(v(1), 0)),
+                    ],
+                ),
+            )],
+        ),
+        0,
+        vec![Value::Adt {
+            constructor: 0,
+            fields: vec![
+                natv(1),
+                Value::Some {
+                    value: Box::new(Value::Adt {
+                        constructor: 0,
+                        fields: vec![natv(2), Value::None],
+                    }),
+                },
+            ],
+        }],
+        100,
+    ));
+    // A string literal of characters Rust writes escaped.
+    // Every scalar a LexLean source admits once its semantic data escapes
+    // the controls: no DEL, and in NFC, so the combining mark follows a
+    // letter it does not compose with.
+    let escaped = "quote\" backslash\\ newline\n tab\t nul\u{0} \u{e9} x\u{301} \u{2603} \u{1f600}";
+    out.push(case(
+        "string-escapes",
+        program(
+            Vec::new(),
+            vec![function(
+                vec![nat_t()],
+                pair_t(Ty::String, nat_t()),
+                build(
+                    Shape::Pair,
+                    pair_t(Ty::String, nat_t()),
+                    vec![
+                        string(escaped),
+                        p(
+                            Prim::NatAdd,
+                            vec![p(Prim::Length, vec![string(escaped)]), v(0)],
+                        ),
+                    ],
+                ),
+            )],
+        ),
+        0,
+        vec![natv(1)],
+        100,
+    ));
+    // Units: computed, passed, bound, matched, returned by a function that
+    // can overflow, and chosen by a conditional without an alternative.
+    out.push(case(
+        "unit-values",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![Ty::Unit, nat_t()],
+                    pair_t(Ty::Unit, opt_t(Ty::Unit)),
+                    let_in(
+                        2,
+                        Ty::Unit,
+                        call(1, vec![v(0)]),
+                        let_in(
+                            3,
+                            Ty::Unit,
+                            call(4, vec![v(1)]),
+                            let_in(
+                                4,
+                                Ty::Unit,
+                                call(
+                                    5,
+                                    vec![
+                                        p(Prim::NatLt, vec![v(1), nat(9)]),
+                                        p(Prim::NatLt, vec![v(1), nat(2)]),
+                                    ],
+                                ),
+                                build(
+                                    Shape::Pair,
+                                    pair_t(Ty::Unit, opt_t(Ty::Unit)),
+                                    vec![call(1, vec![v(2)]), some(Ty::Unit, call(2, vec![v(1)]))],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                function(
+                    vec![Ty::Unit],
+                    Ty::Unit,
+                    matching(Ty::Unit, v(0), vec![arm(Shape::Unit, Vec::new(), v(0))]),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    matching(
+                        Ty::Unit,
+                        v(0),
+                        vec![
+                            arm(Shape::Zero, Vec::new(), unit()),
+                            arm(Shape::Succ, vec![1], call(3, vec![v(1)])),
+                        ],
+                    ),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    let_in(1, nat_t(), p(Prim::NatAdd, vec![v(0), nat(1)]), unit()),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    cond(
+                        p(Prim::NatLt, vec![v(0), nat(3)]),
+                        call(3, vec![v(0)]),
+                        unit(),
+                    ),
+                ),
+                function(
+                    vec![Ty::Bool, Ty::Bool],
+                    Ty::Unit,
+                    cond(v(0), cond(v(1), call(1, vec![unit()]), unit()), unit()),
+                ),
+            ],
+        ),
+        0,
+        vec![Value::Unit, natv(5)],
+        200,
+    ));
+    // Conditionals and Boolean matches whose rendering Rust's lint gate
+    // constrains: literal arms, a negated conditional, equal branches, a
+    // chain repeating a branch, and a zero test as a value.
+    let (shapes, shapes_t) = tuple_of(vec![
+        (
+            matching(
+                Ty::Bool,
+                v(0),
+                vec![
+                    arm(Shape::True, Vec::new(), boolean(false)),
+                    arm(Shape::False, Vec::new(), boolean(true)),
+                ],
+            ),
+            Ty::Bool,
+        ),
+        (
+            matching(
+                Ty::Bool,
+                v(1),
+                vec![
+                    arm(Shape::True, Vec::new(), boolean(true)),
+                    arm(Shape::False, Vec::new(), boolean(false)),
+                ],
+            ),
+            Ty::Bool,
+        ),
+        (
+            matching(
+                Ty::Bool,
+                v(2),
+                vec![
+                    arm(Shape::Zero, Vec::new(), boolean(false)),
+                    arm(Shape::Succ, vec![3], boolean(true)),
+                ],
+            ),
+            Ty::Bool,
+        ),
+        (
+            matching(
+                Ty::Bool,
+                v(2),
+                vec![
+                    arm(Shape::Zero, Vec::new(), boolean(true)),
+                    arm(Shape::Succ, vec![4], boolean(false)),
+                ],
+            ),
+            Ty::Bool,
+        ),
+        (
+            cond(
+                cond(v(0), v(1), boolean(false)),
+                boolean(false),
+                boolean(true),
+            ),
+            Ty::Bool,
+        ),
+        (
+            cond(p(Prim::NatLt, vec![v(2), nat(3)]), nat(4), nat(4)),
+            nat_t(),
+        ),
+        (cond(v(0), nat(1), cond(v(1), nat(1), nat(2))), nat_t()),
+        (
+            matching(
+                nat_t(),
+                v(2),
+                vec![
+                    arm(Shape::Zero, Vec::new(), nat(7)),
+                    arm(Shape::Succ, vec![5], nat(7)),
+                ],
+            ),
+            nat_t(),
+        ),
+        (
+            matching(
+                nat_t(),
+                v(1),
+                vec![
+                    arm(Shape::True, Vec::new(), nat(8)),
+                    arm(Shape::False, Vec::new(), nat(8)),
+                ],
+            ),
+            nat_t(),
+        ),
+    ]);
+    out.push(case(
+        "boolean-shapes",
+        program(
+            Vec::new(),
+            vec![function(
+                vec![Ty::Bool, Ty::Bool, nat_t()],
+                shapes_t,
+                shapes,
+            )],
+        ),
+        0,
+        vec![
+            Value::Bool { value: true },
+            Value::Bool { value: false },
+            natv(2),
+        ],
+        200,
+    ));
+    // Matches whose arms rebuild what they matched, are all one value, or
+    // map one variant: each renders as Rust's lint gate admits.
+    let tagged = Ty::Adt { index: 0 };
+    let maybe = opt_t(nat_t());
+    let outcome = res_t(nat_t(), Ty::Bool);
+    let (matched, matched_t) = tuple_of(vec![
+        (
+            matching(
+                maybe.clone(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), none(nat_t())),
+                    arm(Shape::Some, vec![5], some(nat_t(), v(5))),
+                ],
+            ),
+            maybe.clone(),
+        ),
+        (
+            matching(
+                outcome.clone(),
+                v(1),
+                vec![
+                    arm(
+                        Shape::Ok,
+                        vec![6],
+                        build(Shape::Ok, outcome.clone(), vec![v(6)]),
+                    ),
+                    arm(
+                        Shape::Error,
+                        vec![7],
+                        build(Shape::Error, outcome.clone(), vec![v(7)]),
+                    ),
+                ],
+            ),
+            outcome.clone(),
+        ),
+        (
+            matching(
+                tagged.clone(),
+                v(2),
+                vec![
+                    arm(
+                        Shape::Adt { constructor: 0 },
+                        vec![8],
+                        build(Shape::Adt { constructor: 0 }, tagged.clone(), vec![v(8)]),
+                    ),
+                    arm(
+                        Shape::Adt { constructor: 1 },
+                        vec![9],
+                        build(Shape::Adt { constructor: 1 }, tagged.clone(), vec![v(9)]),
+                    ),
+                ],
+            ),
+            tagged.clone(),
+        ),
+        (
+            matching(
+                Ty::Ordering,
+                p(Prim::Compare, vec![v(3), v(4)]),
+                vec![
+                    arm(
+                        Shape::Lt,
+                        Vec::new(),
+                        build(Shape::Lt, Ty::Ordering, Vec::new()),
+                    ),
+                    arm(
+                        Shape::Eq,
+                        Vec::new(),
+                        build(Shape::Eq, Ty::Ordering, Vec::new()),
+                    ),
+                    arm(
+                        Shape::Gt,
+                        Vec::new(),
+                        build(Shape::Gt, Ty::Ordering, Vec::new()),
+                    ),
+                ],
+            ),
+            Ty::Ordering,
+        ),
+        (
+            matching(
+                maybe.clone(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), none(nat_t())),
+                    arm(
+                        Shape::Some,
+                        vec![10],
+                        some(nat_t(), p(Prim::NatSub, vec![v(10), nat(1)])),
+                    ),
+                ],
+            ),
+            maybe.clone(),
+        ),
+        (
+            matching(
+                maybe.clone(),
+                v(1),
+                vec![
+                    arm(Shape::Ok, vec![11], some(nat_t(), v(11))),
+                    arm(Shape::Error, vec![12], none(nat_t())),
+                ],
+            ),
+            maybe.clone(),
+        ),
+        (
+            matching(
+                nat_t(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), nat(5)),
+                    arm(Shape::Some, vec![13], nat(5)),
+                ],
+            ),
+            nat_t(),
+        ),
+        (call(1, vec![v(0)]), Ty::Unit),
+    ]);
+    out.push(case(
+        "match-shapes",
+        program(
+            vec![vec![vec![nat_t()], vec![Ty::Bool]]],
+            vec![
+                function(
+                    vec![maybe.clone(), outcome, tagged, nat_t(), nat_t()],
+                    matched_t,
+                    matched,
+                ),
+                function(
+                    vec![maybe],
+                    Ty::Unit,
+                    matching(
+                        Ty::Unit,
+                        v(0),
+                        vec![
+                            arm(Shape::None, Vec::new(), unit()),
+                            arm(Shape::Some, vec![1], call(2, vec![v(1)])),
+                        ],
+                    ),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    let_in(1, Ty::Bool, p(Prim::NatEq, vec![v(0), nat(1)]), unit()),
+                ),
+            ],
+        ),
+        0,
+        vec![
+            Value::Some {
+                value: Box::new(natv(3)),
+            },
+            Value::Ok {
+                value: Box::new(natv(4)),
+            },
+            Value::Adt {
+                constructor: 1,
+                fields: vec![Value::Bool { value: true }],
+            },
+            natv(2),
+            natv(5),
+        ],
+        200,
+    ));
+    // Units through a function type whose closures differ in failure, as
+    // an argument computed by a call that cannot fail, and as the value of
+    // a function that can.
+    let unit_fn = || fn_t(vec![nat_t()], Ty::Unit);
+    out.push(case(
+        "unit-closures",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t()],
+                    pair_t(
+                        opt_t(Ty::Unit),
+                        pair_t(Ty::Unit, pair_t(Ty::Unit, Ty::Unit)),
+                    ),
+                    build(
+                        Shape::Pair,
+                        pair_t(
+                            opt_t(Ty::Unit),
+                            pair_t(Ty::Unit, pair_t(Ty::Unit, Ty::Unit)),
+                        ),
+                        vec![
+                            some(Ty::Unit, call(2, vec![v(0)])),
+                            build(
+                                Shape::Pair,
+                                pair_t(Ty::Unit, pair_t(Ty::Unit, Ty::Unit)),
+                                vec![
+                                    call(3, vec![closure(1, Vec::new()), v(0)]),
+                                    build(
+                                        Shape::Pair,
+                                        pair_t(Ty::Unit, Ty::Unit),
+                                        vec![
+                                            call(3, vec![closure(2, Vec::new()), v(0)]),
+                                            call(4, vec![v(0)]),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    let_in(1, nat_t(), p(Prim::NatAdd, vec![v(0), nat(1)]), unit()),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    let_in(1, Ty::Bool, p(Prim::NatEq, vec![v(0), nat(1)]), unit()),
+                ),
+                function(vec![unit_fn(), nat_t()], Ty::Unit, apply(v(0), vec![v(1)])),
+                function(
+                    vec![nat_t()],
+                    Ty::Unit,
+                    let_in(
+                        1,
+                        nat_t(),
+                        p(Prim::NatAdd, vec![v(0), nat(2)]),
+                        call(2, vec![v(0)]),
+                    ),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(5)],
+        200,
+    ));
+    // Each shape whose rendering Rust's lint gate constrains as the value of
+    // a function: a match rebuilding its scrutinee, mapping one variant,
+    // defaulting one, returning its binding, a chain through a literal
+    // condition, a field of a computed record, and a unit match with an
+    // empty arm.
+    let swapped = Ty::Adt { index: 0 };
+    let maybe_nat = opt_t(nat_t());
+    let checked = res_t(nat_t(), Ty::Bool);
+    let shaped: Vec<(Ty, Ty, Expr)> = vec![
+        (
+            maybe_nat.clone(),
+            maybe_nat.clone(),
+            matching(
+                maybe_nat.clone(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), none(nat_t())),
+                    arm(Shape::Some, vec![1], some(nat_t(), v(1))),
+                ],
+            ),
+        ),
+        (
+            maybe_nat.clone(),
+            maybe_nat.clone(),
+            matching(
+                maybe_nat.clone(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), none(nat_t())),
+                    arm(
+                        Shape::Some,
+                        vec![1],
+                        some(nat_t(), p(Prim::NatSub, vec![v(1), nat(1)])),
+                    ),
+                ],
+            ),
+        ),
+        (
+            checked.clone(),
+            maybe_nat.clone(),
+            matching(
+                maybe_nat.clone(),
+                v(0),
+                vec![
+                    arm(Shape::Ok, vec![1], some(nat_t(), v(1))),
+                    arm(Shape::Error, vec![2], none(nat_t())),
+                ],
+            ),
+        ),
+        (
+            maybe_nat.clone(),
+            nat_t(),
+            matching(
+                nat_t(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), nat(0)),
+                    arm(Shape::Some, vec![1], v(1)),
+                ],
+            ),
+        ),
+        (
+            maybe_nat.clone(),
+            nat_t(),
+            matching(
+                nat_t(),
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), nat(7)),
+                    arm(Shape::Some, vec![1], v(1)),
+                ],
+            ),
+        ),
+        (
+            nat_t(),
+            nat_t(),
+            matching(
+                nat_t(),
+                v(0),
+                vec![
+                    arm(Shape::Zero, Vec::new(), nat(0)),
+                    arm(Shape::Succ, vec![1], v(1)),
+                ],
+            ),
+        ),
+        (
+            Ty::Bool,
+            nat_t(),
+            cond(v(0), nat(200), cond(boolean(false), nat(1), nat(200))),
+        ),
+        (
+            swapped.clone(),
+            nat_t(),
+            field(
+                matching(
+                    swapped.clone(),
+                    v(0),
+                    vec![arm(
+                        Shape::Adt { constructor: 0 },
+                        vec![1, 2],
+                        build(
+                            Shape::Adt { constructor: 0 },
+                            swapped.clone(),
+                            vec![v(2), v(1)],
+                        ),
+                    )],
+                ),
+                0,
+            ),
+        ),
+        (
+            maybe_nat.clone(),
+            Ty::Unit,
+            matching(
+                Ty::Unit,
+                v(0),
+                vec![
+                    arm(Shape::None, Vec::new(), call(10, vec![nat(1)])),
+                    arm(Shape::Some, vec![1], unit()),
+                ],
+            ),
+        ),
+    ];
+    let shaped_arguments = [
+        Value::Some {
+            value: Box::new(natv(3)),
+        },
+        Value::Some {
+            value: Box::new(natv(4)),
+        },
+        Value::Ok {
+            value: Box::new(natv(5)),
+        },
+        Value::None,
+        Value::Some {
+            value: Box::new(natv(6)),
+        },
+        natv(9),
+        Value::Bool { value: false },
+        Value::Adt {
+            constructor: 0,
+            fields: vec![natv(1), natv(2)],
+        },
+        Value::Some {
+            value: Box::new(natv(1)),
+        },
+    ];
+    let (results, results_t) = tuple_of(
+        shaped
+            .iter()
+            .zip(&shaped_arguments)
+            .enumerate()
+            .map(|(at, ((parameter, result, _), argument))| {
+                (
+                    call(
+                        at as u64 + 1,
+                        vec![lit(parameter.clone(), argument.clone())],
+                    ),
+                    result.clone(),
+                )
+            })
+            .collect(),
+    );
+    let mut functions = vec![function(Vec::new(), results_t, results)];
+    functions.extend(
+        shaped
+            .into_iter()
+            .map(|(parameter, result, body)| function(vec![parameter], result, body)),
+    );
+    functions.push(function(
+        vec![nat_t()],
+        Ty::Unit,
+        let_in(1, Ty::Bool, p(Prim::NatEq, vec![v(0), nat(1)]), unit()),
+    ));
+    out.push(case(
+        "function-shapes",
+        program(vec![vec![vec![nat_t(), nat_t()]]], functions),
+        0,
+        Vec::new(),
+        400,
+    ));
+    // A function of eight parameters, an enum one of whose variants is
+    // large, and results whose error is that enum or a unit.
+    let large = Ty::Adt { index: 0 };
+    let eight: Vec<Ty> = vec![nat_t(); 8];
+    out.push(case(
+        "wide-shapes",
+        program(
+            vec![vec![Vec::new(), vec![nat_t(); 40]]],
+            vec![
+                function(
+                    vec![nat_t()],
+                    pair_t(
+                        nat_t(),
+                        pair_t(res_t(nat_t(), large.clone()), res_t(nat_t(), Ty::Unit)),
+                    ),
+                    build(
+                        Shape::Pair,
+                        pair_t(
+                            nat_t(),
+                            pair_t(res_t(nat_t(), large.clone()), res_t(nat_t(), Ty::Unit)),
+                        ),
+                        vec![
+                            call(
+                                1,
+                                (0..8)
+                                    .map(|at| if at == 0 { v(0) } else { nat(at) })
+                                    .collect(),
+                            ),
+                            build(
+                                Shape::Pair,
+                                pair_t(res_t(nat_t(), large.clone()), res_t(nat_t(), Ty::Unit)),
+                                vec![call(2, vec![v(0)]), call(3, vec![v(0)])],
+                            ),
+                        ],
+                    ),
+                ),
+                function(eight, nat_t(), p(Prim::NatSub, vec![v(7), v(0)])),
+                function(
+                    vec![nat_t()],
+                    res_t(nat_t(), large.clone()),
+                    cond(
+                        p(Prim::NatLt, vec![v(0), nat(5)]),
+                        build(Shape::Ok, res_t(nat_t(), large.clone()), vec![v(0)]),
+                        build(
+                            Shape::Error,
+                            res_t(nat_t(), large.clone()),
+                            vec![build(Shape::Adt { constructor: 0 }, large, Vec::new())],
+                        ),
+                    ),
+                ),
+                function(
+                    vec![nat_t()],
+                    res_t(nat_t(), Ty::Unit),
+                    cond(
+                        p(Prim::NatLt, vec![v(0), nat(1)]),
+                        build(Shape::Ok, res_t(nat_t(), Ty::Unit), vec![v(0)]),
+                        build(Shape::Error, res_t(nat_t(), Ty::Unit), vec![unit()]),
+                    ),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(3)],
         200,
     ));
     out
@@ -2570,9 +3516,11 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
 }
 
 /// The directories whose every file, at any depth, is generated.
-const GENERATED_DIRECTORIES: [&str; 2] = ["compiler/fixtures", "compiler/rust"];
+const GENERATED_DIRECTORIES: [&str; 3] = ["compiler/fixtures", "compiler/gnaf", "compiler/rust"];
 
-/// Compare (or, with `write`, rewrite) the generated files.
+/// Compare (or, with `write`, rewrite) the generated files of the calculus
+/// (§17.14), of the GNAF model and requests over it (§17.15), and of the
+/// fixtures' Rust packages and the negative package manifests (§17.16).
 ///
 /// # Errors
 ///
@@ -2586,7 +3534,8 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
     } else {
         shipped_modules(root, false)?
     };
-    let files = files();
+    let mut files = files();
+    files.extend(crate::gnaf::files());
     for directory in GENERATED_DIRECTORIES {
         for entry in walkdir::WalkDir::new(root.join(directory))
             .into_iter()
@@ -2604,7 +3553,7 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
                     std::fs::remove_file(entry.path())
                         .map_err(|error| format!("{relative}: {error}"))?;
                 } else {
-                    return Err(format!("{relative} is not a generated calculus file"));
+                    return Err(format!("{relative} is not a generated file"));
                 }
             }
         }

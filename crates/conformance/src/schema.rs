@@ -1,7 +1,8 @@
 //! A JSON Schema validator for the draft 2020-12 subset the committed
 //! `schemas/*.schema.json` use (SPEC.md §30.4 "all schemas are committed and
 //! exercised"): `type`, `properties`, `required`, `additionalProperties`,
-//! `items`, `minItems`, `enum`, `const`, `pattern`, `minimum`, `maximum`,
+//! `items`, `minItems`, `enum`, `const`, `pattern` (anchored, with classes,
+//! groups, alternation, and quantifiers), `minimum`, `maximum`,
 //! `minLength`, `uniqueItems`, `oneOf`, and `$ref` into the same document's `$defs`.
 //! Any other keyword in a schema is a validation failure, so a schema cannot
 //! silently rely on a constraint this validator does not check.
@@ -328,7 +329,8 @@ fn check(
 enum Atom {
     Char(char),
     Class(Vec<(char, char)>),
-    Group(Vec<Node>),
+    /// A group of alternatives, each a sequence.
+    Group(Vec<Vec<Node>>),
 }
 
 #[derive(Debug, Clone)]
@@ -345,11 +347,34 @@ fn parse_regex(pattern: &str) -> Result<Vec<Node>, String> {
     }
     let mut position = 1usize;
     let end = chars.len() - 1;
-    let nodes = parse_sequence(&chars, &mut position, end)?;
+    let alternatives = parse_alternatives(&chars, &mut position, end)?;
     if position != end {
         return Err("unbalanced group".to_owned());
     }
-    Ok(nodes)
+    // ECMA-262 reads `^a|b$` as `(^a)|(b$)`, not as an anchored choice, so
+    // an alternation outside a group is refused rather than misread.
+    if alternatives.len() > 1 {
+        return Err("an alternation outside a group is unsupported".to_owned());
+    }
+    Ok(vec![Node {
+        atom: Atom::Group(alternatives),
+        min: 1,
+        max: Some(1),
+    }])
+}
+
+/// Sequences separated by `|`, up to a `)` or the end.
+fn parse_alternatives(
+    chars: &[char],
+    position: &mut usize,
+    end: usize,
+) -> Result<Vec<Vec<Node>>, String> {
+    let mut alternatives = vec![parse_sequence(chars, position, end)?];
+    while *position < end && chars[*position] == '|' {
+        *position += 1;
+        alternatives.push(parse_sequence(chars, position, end)?);
+    }
+    Ok(alternatives)
 }
 
 fn parse_quantifier(
@@ -403,10 +428,10 @@ fn parse_sequence(chars: &[char], position: &mut usize, end: usize) -> Result<Ve
     while *position < end {
         let c = chars[*position];
         let atom = match c {
-            ')' => break,
+            ')' | '|' => break,
             '(' => {
                 *position += 1;
-                let inner = parse_sequence(chars, position, end)?;
+                let inner = parse_alternatives(chars, position, end)?;
                 if chars.get(*position) != Some(&')') || *position >= end {
                     return Err("unclosed group".to_owned());
                 }
@@ -439,7 +464,7 @@ fn parse_sequence(chars: &[char], position: &mut usize, end: usize) -> Result<Ve
                 *position += 2;
                 Atom::Char(escaped)
             }
-            '|' | '.' | '*' | '+' | '?' | '{' => {
+            '.' | '*' | '+' | '?' | '{' => {
                 return Err(format!("unsupported metacharacter `{c}` at this position"));
             }
             other => {
@@ -488,10 +513,14 @@ fn match_nodes(nodes: &[Node], input: &[char], start: usize, depth: usize) -> Ve
         let mut next = Vec::new();
         for position in &frontier {
             match &first.atom {
-                Atom::Group(inner) => {
-                    for end in match_nodes(inner, input, *position, depth + 1) {
-                        if end > *position && !next.contains(&end) {
-                            next.push(end);
+                Atom::Group(alternatives) => {
+                    for inner in alternatives {
+                        for end in match_nodes(inner, input, *position, depth + 1) {
+                            // A group repeated more than once must consume
+                            // input, so a repetition cannot loop on nothing.
+                            if (end > *position || first.max == Some(1)) && !next.contains(&end) {
+                                next.push(end);
+                            }
                         }
                     }
                 }
@@ -559,6 +588,11 @@ mod tests {
             ("^[a-z][a-z0-9-]{0,62}$", "", false),
             ("^a?b$", "b", true),
             ("^a?b$", "aab", false),
+            ("^(0|[1-9][0-9]*)$", "0", true),
+            ("^(0|[1-9][0-9]*)$", "107", true),
+            ("^(0|[1-9][0-9]*)$", "01", false),
+            ("^(0|[1-9][0-9]*)$", "", false),
+            ("^(ab|a)(c|bc)$", "abc", true),
         ];
         for (pattern, text, expected) in cases {
             assert_eq!(
@@ -570,6 +604,10 @@ mod tests {
         assert!(
             regex_matches("a+", "aa").is_err(),
             "unanchored patterns are refused"
+        );
+        assert!(
+            regex_matches("^a|b$", "b").is_err(),
+            "an alternation outside a group is refused"
         );
     }
 

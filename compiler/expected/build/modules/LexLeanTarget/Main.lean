@@ -1,5 +1,7 @@
 module
 public import Init
+public import LexLeanTarget.Gnaf
+public import LexLeanTarget.GnafFixtures
 public import LexLeanTarget.TargetFixtures
 public import LexLeanTarget.TargetOracle
 public import LexLeanTarget.TargetSemantics

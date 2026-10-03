@@ -498,6 +498,7 @@ dependencies = [
  "camino",
  "lexlean",
  "repo-model",
+ "serde",
  "serde_json",
  "sha2",
  "tempfile",
@@ -510,6 +511,7 @@ name = "repo-model"
 version = "0.3.0"
 dependencies = [
  "serde",
+ "sha2",
  "toml",
 ]
 

@@ -2764,9 +2764,18 @@ pub fn main_module() -> String {
             ],
         ),
     );
+    // `Main` is the project's root, so the GNAF model and its fixtures
+    // (§17.15) are elaborated, replayed, and audited only if it imports them.
     module_tex(
         "Main",
-        &[SYNTAX, SEMANTICS, ORACLE, FIXTURES],
+        &[
+            SYNTAX,
+            SEMANTICS,
+            ORACLE,
+            FIXTURES,
+            lexlean::gnaf::MODEL,
+            crate::gnaf::FIXTURES_MODULE,
+        ],
         vec![empty_program],
     )
 }

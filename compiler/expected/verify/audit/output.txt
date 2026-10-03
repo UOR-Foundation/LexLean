@@ -1,3 +1,348 @@
+'LexLeanTarget.Gnaf.Action' does not depend on any axioms
+'LexLeanTarget.Gnaf.ActionKind' does not depend on any axioms
+'LexLeanTarget.Gnaf.Answer' does not depend on any axioms
+'LexLeanTarget.Gnaf.Boundary' does not depend on any axioms
+'LexLeanTarget.Gnaf.Capacity' does not depend on any axioms
+'LexLeanTarget.Gnaf.Carrier' does not depend on any axioms
+'LexLeanTarget.Gnaf.Charge' does not depend on any axioms
+'LexLeanTarget.Gnaf.ClaimClass' does not depend on any axioms
+'LexLeanTarget.Gnaf.Completeness' does not depend on any axioms
+'LexLeanTarget.Gnaf.Grammar' does not depend on any axioms
+'LexLeanTarget.Gnaf.Machine' does not depend on any axioms
+'LexLeanTarget.Gnaf.Objective' does not depend on any axioms
+'LexLeanTarget.Gnaf.OperandSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.Plan' does not depend on any axioms
+'LexLeanTarget.Gnaf.Prepared' does not depend on any axioms
+'LexLeanTarget.Gnaf.Rejection' does not depend on any axioms
+'LexLeanTarget.Gnaf.Request' does not depend on any axioms
+'LexLeanTarget.Gnaf.Scope' does not depend on any axioms
+'LexLeanTarget.Gnaf.Selector' does not depend on any axioms
+'LexLeanTarget.Gnaf.Status' does not depend on any axioms
+'LexLeanTarget.Gnaf.addNew' does not depend on any axioms
+'LexLeanTarget.Gnaf.admittedRows' does not depend on any axioms
+'LexLeanTarget.Gnaf.allIn' does not depend on any axioms
+'LexLeanTarget.Gnaf.andFalse' does not depend on any axioms
+'LexLeanTarget.Gnaf.andOverOr' does not depend on any axioms
+'LexLeanTarget.Gnaf.answer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.anyBy' does not depend on any axioms
+'LexLeanTarget.Gnaf.anyUnresolved' does not depend on any axioms
+'LexLeanTarget.Gnaf.appendAll' does not depend on any axioms
+'LexLeanTarget.Gnaf.argmin' does not depend on any axioms
+'LexLeanTarget.Gnaf.armCallees' does not depend on any axioms
+'LexLeanTarget.Gnaf.armSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.armsCallees' does not depend on any axioms
+'LexLeanTarget.Gnaf.armsSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.arrivals' does not depend on any axioms
+'LexLeanTarget.Gnaf.attaining' does not depend on any axioms
+'LexLeanTarget.Gnaf.attains' does not depend on any axioms
+'LexLeanTarget.Gnaf.beqNext' does not depend on any axioms
+'LexLeanTarget.Gnaf.bltNext' does not depend on any axioms
+'LexLeanTarget.Gnaf.bltSucc' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.calleesOf' does not depend on any axioms
+'LexLeanTarget.Gnaf.certifies' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.certifiesArgmin' does not depend on any axioms
+'LexLeanTarget.Gnaf.certifiesFrontier' does not depend on any axioms
+'LexLeanTarget.Gnaf.chargeBeyond' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkAllDeclared' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkClaim' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkDeclared' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkDistinct' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkKindsAccounted' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkPerformed' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkPlanPreparation' does not depend on any axioms
+'LexLeanTarget.Gnaf.checkPrepared' does not depend on any axioms
+'LexLeanTarget.Gnaf.closeOver' does not depend on any axioms
+'LexLeanTarget.Gnaf.componentwiseMinimum' does not depend on any axioms
+'LexLeanTarget.Gnaf.compositions' does not depend on any axioms
+'LexLeanTarget.Gnaf.countKind' does not depend on any axioms
+'LexLeanTarget.Gnaf.dispatchInFixed' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.dispatchInOver' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.dispatchInSmalls' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.dispatchInThresholds' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.dispatchOver' does not depend on any axioms
+'LexLeanTarget.Gnaf.dispatchSmalls' does not depend on any axioms
+'LexLeanTarget.Gnaf.dispatchThresholds' does not depend on any axioms
+'LexLeanTarget.Gnaf.dominatedIn' does not depend on any axioms
+'LexLeanTarget.Gnaf.dominates' does not depend on any axioms
+'LexLeanTarget.Gnaf.entryBody' does not depend on any axioms
+'LexLeanTarget.Gnaf.environmentRows' does not depend on any axioms
+'LexLeanTarget.Gnaf.evaluate' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.expand' does not depend on any axioms
+'LexLeanTarget.Gnaf.expandComplete' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.exprCallees' does not depend on any axioms
+'LexLeanTarget.Gnaf.exprSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.exprsCallees' does not depend on any axioms
+'LexLeanTarget.Gnaf.exprsSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.extendAll' does not depend on any axioms
+'LexLeanTarget.Gnaf.extendWalk' does not depend on any axioms
+'LexLeanTarget.Gnaf.fairExpectation' does not depend on any axioms
+'LexLeanTarget.Gnaf.falseAnd' does not depend on any axioms
+'LexLeanTarget.Gnaf.falseOr' does not depend on any axioms
+'LexLeanTarget.Gnaf.findAction' does not depend on any axioms
+'LexLeanTarget.Gnaf.fixedInDispatch' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.fixedInFixed' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.fixedInOver' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.fixedInSmalls' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.fixedOver' does not depend on any axioms
+'LexLeanTarget.Gnaf.frontier' does not depend on any axioms
+'LexLeanTarget.Gnaf.frontierFrom' does not depend on any axioms
+'LexLeanTarget.Gnaf.functionAt' does not depend on any axioms
+'LexLeanTarget.Gnaf.hiddenBitCost' does not depend on any axioms
+'LexLeanTarget.Gnaf.kindIndex' does not depend on any axioms
+'LexLeanTarget.Gnaf.minimaAttained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.minimumFrom' does not depend on any axioms
+'LexLeanTarget.Gnaf.natIn' does not depend on any axioms
+'LexLeanTarget.Gnaf.natInAppend' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.natInRange' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.natSame' does not depend on any axioms
+'LexLeanTarget.Gnaf.normalize' does not depend on any axioms
+'LexLeanTarget.Gnaf.orAssociative' does not depend on any axioms
+'LexLeanTarget.Gnaf.orFalse' does not depend on any axioms
+'LexLeanTarget.Gnaf.orUnderAnd' does not depend on any axioms
+'LexLeanTarget.Gnaf.performed' does not depend on any axioms
+'LexLeanTarget.Gnaf.planAt' does not depend on any axioms
+'LexLeanTarget.Gnaf.planCharge' does not depend on any axioms
+'LexLeanTarget.Gnaf.planFunctions' does not depend on any axioms
+'LexLeanTarget.Gnaf.pointwiseMinimum' does not depend on any axioms
+'LexLeanTarget.Gnaf.preparation' does not depend on any axioms
+'LexLeanTarget.Gnaf.preparedFor' does not depend on any axioms
+'LexLeanTarget.Gnaf.range' does not depend on any axioms
+'LexLeanTarget.Gnaf.reachable' does not depend on any axioms
+'LexLeanTarget.Gnaf.reachableCharge' does not depend on any axioms
+'LexLeanTarget.Gnaf.reachableSize' does not depend on any axioms
+'LexLeanTarget.Gnaf.realize' does not depend on any axioms
+'LexLeanTarget.Gnaf.rej14ComponentwiseMinima' does not depend on any axioms
+'LexLeanTarget.Gnaf.rej14MinimaUnattained' does not depend on any axioms
+'LexLeanTarget.Gnaf.rej29FrontierOmission' does not depend on any axioms
+'LexLeanTarget.Gnaf.rewriteOnce' does not depend on any axioms
+'LexLeanTarget.Gnaf.sameIdsBy' does not depend on any axioms
+'LexLeanTarget.Gnaf.sameKind' does not depend on any axioms
+'LexLeanTarget.Gnaf.scalarMinimum' does not depend on any axioms
+'LexLeanTarget.Gnaf.scalarRows' does not depend on any axioms
+'LexLeanTarget.Gnaf.selectorEq' does not depend on any axioms
+'LexLeanTarget.Gnaf.selectorIn' does not depend on any axioms
+'LexLeanTarget.Gnaf.selectorInAppend' depends on axioms: [propext]
+'LexLeanTarget.Gnaf.status' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.statusOn' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.statuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.statusesOf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.Gnaf.uniformRows' does not depend on any axioms
+'LexLeanTarget.Gnaf.unitCharge' does not depend on any axioms
+'LexLeanTarget.Gnaf.universeOf' does not depend on any axioms
+'LexLeanTarget.Gnaf.validate' does not depend on any axioms
+'LexLeanTarget.Gnaf.valueEq' does not depend on any axioms
+'LexLeanTarget.Gnaf.valuesEq' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec01CertificateHolds' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec01CertificateInvalidated' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec01Extension' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec01Optimum' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec02Frontier' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec04GlobalMinimumIsC' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec04NormalFormIsB' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec04NormalFormRefused' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17EnvelopeAtOne' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17EnvelopeAtZero' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17FairExpectationAtOne' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17FairExpectationAtZero' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17PointwiseValueRefused' does not depend on any axioms
+'LexLeanTarget.Gnaf.vec17UniformWorstCase' does not depend on any axioms
+'LexLeanTarget.Gnaf.vectorEq' does not depend on any axioms
+'LexLeanTarget.Gnaf.weaklyBelow' does not depend on any axioms
+'LexLeanTarget.Gnaf.wellFormed' does not depend on any axioms
+'LexLeanTarget.Gnaf.worstCase' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminCompleteAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminCompleteRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminCompleteStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminCompleteUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminOverSystemsAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminOverSystemsRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminOverSystemsStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminOverSystemsUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminTieAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminTieRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.argminTieStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.argminTieUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierIncomparableAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierIncomparableRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierIncomparableStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierIncomparableUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierParetoOptimalAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierParetoOptimalRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierParetoOptimalStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierParetoOptimalUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierTieAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierTieRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.frontierTieStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.frontierTieUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.inadmissiblePlanExcludedAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.inadmissiblePlanExcludedRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.inadmissiblePlanExcludedStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.inadmissiblePlanExcludedUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.infeasibleUniverseAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.infeasibleUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.infeasibleUniverseStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.infeasibleUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.internalBestOnLongListsAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.internalBestOnLongListsRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.internalBestOnLongListsStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.internalBestOnLongListsUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.internalBestOnShortListsAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.internalBestOnShortListsRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.internalBestOnShortListsStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.internalBestOnShortListsUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationChargedAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationChargedRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationChargedStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationChargedUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationCommonPlanAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationCommonPlanRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationCommonPlanStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationCommonPlanUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationCommonStateAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationCommonStateRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.preparationCommonStateStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.preparationCommonStateUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectBeyondCapacityAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectBeyondCapacityRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectBeyondCapacityUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCachedUniverseAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectCachedUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCachedUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCalculusProgramScopeAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectCalculusProgramScopeRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCalculusProgramScopeUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCommunicationAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectCommunicationRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectCommunicationUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectConstantCostFallbackAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectConstantCostFallbackRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectConstantCostFallbackUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectDiscoveredUniverseAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectDiscoveredUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectDiscoveredUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectDuplicateActionAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectDuplicateActionRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectDuplicateActionUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectEmptyDomainAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectEmptyDomainRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectEmptyDomainUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectFreeObservationAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectFreeObservationRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectFreeObservationUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectFreePreprocessingCompleteBoundaryAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectFreePreprocessingCompleteBoundaryRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectFreePreprocessingCompleteBoundaryUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectInstanceOptimalClaimAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectInstanceOptimalClaimRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectInstanceOptimalClaimUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectInternalPlanUniverseAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectInternalPlanUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectInternalPlanUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectMissingCompletenessAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectMissingCompletenessRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectMissingCompletenessUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectOptimizerCompletenessAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectOptimizerCompletenessRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectOptimizerCompletenessUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectOptimizerDefinedUniverseAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectOptimizerDefinedUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectOptimizerDefinedUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectProfileDefinedComparisonClaimAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectProfileDefinedComparisonClaimRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectProfileDefinedComparisonClaimUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRandomnessAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectRandomnessRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRandomnessUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRestrictedUniverseAliasAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectRestrictedUniverseAliasRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRestrictedUniverseAliasUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRustProgramScopeAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectRustProgramScopeRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectRustProgramScopeUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectScalarClaimPartialOrderAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectScalarClaimPartialOrderRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectScalarClaimPartialOrderUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectSchedulingAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectSchedulingRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectSchedulingUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectSelfReferentialCompletenessAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectSelfReferentialCompletenessRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectSelfReferentialCompletenessUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectStepChargedAdviceAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectStepChargedAdviceRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectStepChargedAdviceUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectStrayPreparedArtifactAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectStrayPreparedArtifactRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectStrayPreparedArtifactUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnaccountedDispatchAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUnaccountedDispatchRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnaccountedDispatchUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnaccountedPlanPreparationAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUnaccountedPlanPreparationRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnaccountedPlanPreparationUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnboundPreparedStateAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUnboundPreparedStateRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnboundPreparedStateUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUndeclaredExecutionAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUndeclaredExecutionRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUndeclaredExecutionUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUndeclaredRetainedStateAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUndeclaredRetainedStateRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUndeclaredRetainedStateUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnitCostOperandsAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUnitCostOperandsRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnitCostOperandsUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnsupportedClaimAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectUnsupportedClaimRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectUnsupportedClaimUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectVectorClaimTotalOrderAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectVectorClaimTotalOrderRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectVectorClaimTotalOrderUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectZeroCostDispatchAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectZeroCostDispatchRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectZeroCostDispatchUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectZeroCostPreprocessingAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectZeroCostPreprocessingRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectZeroCostPreprocessingUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.unknownCostIncompleteAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.unknownCostIncompleteRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.unknownCostIncompleteStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.unknownCostIncompleteUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeCertified' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeMinimaUnattained' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeOmits0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeOmits1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeOmits2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeUniverse' does not depend on any axioms
 'LexLeanTarget.Main.emptyProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.adtEvaluationOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.adtEvaluationProgram' does not depend on any axioms
@@ -5,9 +350,15 @@
 'LexLeanTarget.TargetFixtures.bindingAndShapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.bindingAndShapesProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.bindingAndShapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.booleanShapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.booleanShapesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.booleanShapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.booleansOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.booleansProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.booleansRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.boxedFieldOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.boxedFieldProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.boxedFieldRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.byteCompareProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.byteCompareRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.byteOrderProgram' does not depend on any axioms
@@ -18,6 +369,21 @@
 'LexLeanTarget.TargetFixtures.bytesAndTextOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.bytesAndTextProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.bytesAndTextRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureCapturesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureCapturesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.closureCapturesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureDispatchOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureDispatchProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.closureDispatchRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureInlineOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureInlineProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.closureInlineRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureRecursiveOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureRecursiveProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.closureRecursiveRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureUninhabitedOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.closureUninhabitedProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.closureUninhabitedRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.closureValueOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.closureValueProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.closureValueRun' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -29,6 +395,8 @@
 'LexLeanTarget.TargetFixtures.convertRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.decimalOverflowProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.decimalOverflowRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.decimalOverflowWideProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.decimalOverflowWideRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.decimalProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.decimalRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.equalityOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -89,6 +457,9 @@
 'LexLeanTarget.TargetFixtures.fixedWidthU8Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.fixedWidthU8Program' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.fixedWidthU8Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.functionShapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.functionShapesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.functionShapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.graphReachableAbsentAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.graphReachableAbsentOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.graphReachableAbsentProgram' does not depend on any axioms
@@ -201,6 +572,9 @@
 'LexLeanTarget.TargetFixtures.mapValuesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.mapValuesProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.mapValuesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.matchShapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.matchShapesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.matchShapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.natArithmeticOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.natArithmeticProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.natArithmeticRun' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -222,6 +596,9 @@
 'LexLeanTarget.TargetFixtures.pairAndListMatchOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.pairAndListMatchProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.pairAndListMatchRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.recordFieldsOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.recordFieldsProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.recordFieldsRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.setContainsAbsentAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.setContainsAbsentOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.setContainsAbsentProgram' does not depend on any axioms
@@ -280,12 +657,24 @@
 'LexLeanTarget.TargetFixtures.setUnionRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.splitAndJoinProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.splitAndJoinRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.stringEscapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.stringEscapesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.stringEscapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.sumToExhaustedOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.sumToExhaustedProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.sumToExhaustedRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.sumToOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.sumToProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.sumToRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.unitClosuresOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.unitClosuresProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.unitClosuresRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.unitValuesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.unitValuesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.unitValuesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.wideShapesOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.wideShapesProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.wideShapesRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetOracle.encodeAdjacency' does not depend on any axioms
 'LexLeanTarget.TargetOracle.encodeBools' does not depend on any axioms
 'LexLeanTarget.TargetOracle.encodeI8s' does not depend on any axioms

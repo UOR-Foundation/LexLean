@@ -13,10 +13,14 @@ pub mod calculus_source;
 pub mod cases;
 pub mod differential;
 pub mod fixtures;
+pub mod gnaf;
+pub mod gnaf_model;
 mod lx;
 pub mod meta;
 pub mod preservation;
 pub mod runner;
+pub mod rust_differential;
+pub mod rust_harness;
 pub mod rust_packages;
 pub mod schema;
 

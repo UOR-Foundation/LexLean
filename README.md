@@ -106,7 +106,7 @@ mandatory. These are generated backend settings, not caller-provided options.
 
 ## Examples that verify under the pinned toolchain
 
-The [compiler/](compiler/) project defines the production realization calculus (SPEC.md §17.14) in LexLean and passes the same gates as an example; its hand-constructed target programs live under [compiler/fixtures/](compiler/fixtures/), and their Rust packages (§17.16) under [compiler/rust/](compiler/rust/).
+The [compiler/](compiler/) project defines the production realization calculus (SPEC.md §17.14) in LexLean and passes the same gates as an example; its hand-constructed target programs live under [compiler/fixtures/](compiler/fixtures/). Its `Gnaf` module states GNAF requests over that calculus (SPEC.md §17.15): the complete-system universe, machine contract, and objective order, all fixed before any optimizer, with a kernel-checked theorem that the universe is complete. The requests themselves live under [compiler/gnaf/](compiler/gnaf/), and [compiler/gnaf.manifest.json](compiler/gnaf.manifest.json) is the dependency manifest UOR-GNAF §20 requires. The target fixtures' Rust packages (§17.16) live under [compiler/rust/](compiler/rust/).
 
 Every directory under [examples/](examples/) is discovered by the example gate (`EX-08`) and must format, lock, check, build, and verify with real Lean 4.32.1 (`cargo xtask verify-examples`). Its platform-independent build outputs and its normalized verification records are committed under `expected/` and compared byte for byte by the golden gate (§28.3) and the example gate (§29.5); that those bytes are also independent of where the build ran is the separate claim of `AR-13` and `EX-06`.
 
@@ -135,7 +135,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 276 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 284 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 `just vv` is the Linux x86-64 gate. On the other four supported hosts (§8.3) the crate builds and every test runs. A case whose assertions need something the host does not have runs its platform-independent assertions and prints which ones it skipped: the pinned toolchain, a `#!/bin/sh` program for the external-provider cases, a filesystem that distinguishes two names differing only in case, or one that accepts a name that is not valid UTF-8. Each is detected at run time rather than assumed from the target triple, and on Linux x86-64 the toolchain gate is mandatory, so nothing there passes vacuously.
 
@@ -163,6 +163,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Named-root extraction through Lean's compiler front end: a pinned, probed authority interface; a closed, canonical, root-independent compiler input; fail-closed rejection; and an exact closure cross-check against production eligibility | `NE-01`..`NE-06` | `build` |
 | The production realization calculus: a closed target syntax with canonical identity, a kernel-checked denotation, a realization library agreeing with LexLean's own collection primitives, complete realization coverage of the production registry, and a differentially tested Rust profile | `TC-01`..`TC-07` | `build` |
 | The canonical Rust backend: a closed, checked Rust AST whose every construct corresponds to the calculus; hygienic identifiers, single ownership, exact failure typing, and no hidden allocation; deterministic packages with checked exports, a declared lint gate, and provenance | `RB-01`..`RB-07` | `build` |
+| GNAF requests over the calculus: an optimizer-independent complete-system universe, a machine contract that accounts every action, scalar and Pareto orders without weighting, fail-closed validation, and kernel-checked answers and authority vectors | `GN-01`..`GN-08` | `build` |
 | Semantic preservation from the source to the calculus: a validated lowering of every production root, a kernel-checked certificate per root relating the lowered program to the source denotation with exact width predicates, a differential evaluator, a hand-written proof library pinned by exact axioms, and certificate checking in verification | `SP-01`..`SP-06` | `build` |
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
 

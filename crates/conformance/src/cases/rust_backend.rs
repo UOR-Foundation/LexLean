@@ -3,14 +3,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-use lexlean::calculus::rust::ast::{Block, Callee, Crate, Expr, ItemDef, Let, Pat, Type};
-use lexlean::calculus::rust::package::{self, Manifest};
+use lexlean::calculus::rust::ast::{
+    Block, Callee, CaptureRead, Crate, Expr, ItemDef, Let, Lit, Origin, Pat, Type,
+};
+use lexlean::calculus::rust::package::{self, Manifest, Passing};
 use lexlean::calculus::rust::runtime::Item;
-use lexlean::calculus::rust::{self, validate, Caller, Profile};
+use lexlean::calculus::rust::{self, validate, Profile};
 use lexlean::calculus::{self as target, realization, Outcome};
 use serde_json::Value as Json;
 
 use crate::calculus::cases;
+use crate::rust_differential;
+use crate::rust_harness::{self, Caller, Calls};
 use crate::rust_packages::{self, Committed};
 use crate::support::{self, repo_root};
 
@@ -35,21 +39,23 @@ fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> boo
             return true;
         }
         match expr_ {
-            Expr::Box(inner) | Expr::Widen(inner) | Expr::Succeed(inner) | Expr::Not(inner) => {
-                expr(inner, edit)
-            }
+            Expr::Box(inner, _)
+            | Expr::Widen(inner, _)
+            | Expr::Succeed(inner, _)
+            | Expr::Not(inner, _) => expr(inner, edit),
             Expr::Call { args, .. } | Expr::Apply { args, .. } | Expr::Construct { args, .. } => {
                 args.iter_mut().any(|arg| expr(arg, edit))
             }
-            Expr::Pair(left, right) => expr(left, edit) || expr(right, edit),
+            Expr::Pair(left, right, _) => expr(left, edit) || expr(right, edit),
             Expr::If {
                 condition,
                 then_branch,
                 else_branch,
+                ..
             } => expr(condition, edit) || block(then_branch, edit) || block(else_branch, edit),
-            Expr::Match { scrutinee, arms } => {
-                expr(scrutinee, edit) || arms.iter_mut().any(|(_, body)| block(body, edit))
-            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => expr(scrutinee, edit) || arms.iter_mut().any(|(_, body)| block(body, edit)),
             Expr::Block(inner) => block(inner, edit),
             _ => false,
         }
@@ -98,7 +104,9 @@ fn negatives(prefix: &str) -> usize {
         let stated = std::fs::read_to_string(dir.join(format!("{name}.error")).as_std_path())
             .expect("stated error");
         assert_eq!(stated.trim_end(), error, "{name}");
-        let failure = target::package(&committed).expect_err("the manifest is refused");
+        let Err(failure) = target::package(&committed) else {
+            panic!("{name}: the negative manifest packages");
+        };
         support::expect_code(&failure, "LLB6005");
         assert!(
             failure
@@ -192,7 +200,7 @@ fn harness_for(committed: &Committed) -> String {
         .into_iter()
         .find(|case| case.fixture.name == committed.fixture)
         .expect("fixture");
-    rust::render_caller(
+    rust_harness::render_caller(
         &case.fixture.program,
         committed.profile,
         entry,
@@ -223,6 +231,271 @@ fn committed_files(committed: &Committed) -> BTreeMap<String, Vec<u8>> {
         .collect()
 }
 
+/// Whether RB-06 runs a package of a fixture with this outcome: its value
+/// is observable, or it overflows.
+fn runs(outcome: &Outcome) -> bool {
+    match outcome {
+        Outcome::Value { value, .. } => {
+            !realization::value_elements(value).contains("value:closure")
+        }
+        Outcome::Overflow { .. } => true,
+        Outcome::Stuck | Outcome::Exhausted => false,
+    }
+}
+
+/// Every node kind of the closed AST, capture read, and dispatch shape a
+/// package must emit for its run to cover the renderer.
+const AST_SHAPES: &[&str] = &[
+    "expr:lit",
+    "expr:move",
+    "expr:clone",
+    "expr:copy",
+    "expr:deref",
+    "expr:not",
+    "expr:unbox",
+    "expr:box",
+    "expr:call",
+    "expr:apply",
+    "expr:construct",
+    "expr:pair",
+    "expr:if",
+    "expr:match",
+    "expr:match-empty",
+    "expr:block",
+    "expr:uncons",
+    "expr:is-zero",
+    "expr:non-zero",
+    "expr:predecessor",
+    "expr:widen",
+    "expr:succeed",
+    "lit:string-escaped",
+    "capture:copy",
+    "capture:clone",
+    "capture:unbox",
+    "capture:unit",
+    "dispatch:several",
+    "dispatch:mixed-failure",
+    "dispatch:empty",
+];
+
+fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
+    fn block(body: &Block, out: &mut BTreeSet<&'static str>) {
+        for binding in &body.lets {
+            expr(&binding.value, out);
+        }
+        expr(&body.tail, out);
+    }
+    fn expr(node: &Expr, out: &mut BTreeSet<&'static str>) {
+        if let Expr::Lit(Lit::Str(text), _) = node {
+            if text
+                .chars()
+                .any(|character| !(' '..='~').contains(&character) || "\\\"".contains(character))
+            {
+                out.insert("lit:string-escaped");
+            }
+        }
+        out.insert(match node {
+            Expr::Lit(..) => "expr:lit",
+            Expr::Move(..) => "expr:move",
+            Expr::Clone(..) => "expr:clone",
+            Expr::Copy(..) => "expr:copy",
+            Expr::Deref(..) => "expr:deref",
+            Expr::Not(..) => "expr:not",
+            Expr::Unbox(..) => "expr:unbox",
+            Expr::Box(..) => "expr:box",
+            Expr::Call { .. } => "expr:call",
+            Expr::Apply { .. } => "expr:apply",
+            Expr::Construct { .. } => "expr:construct",
+            Expr::Pair(..) => "expr:pair",
+            Expr::If { .. } => "expr:if",
+            Expr::Match { arms, .. } if arms.is_empty() => "expr:match-empty",
+            Expr::Match { .. } => "expr:match",
+            Expr::Block(_) => "expr:block",
+            Expr::Uncons(_) => "expr:uncons",
+            Expr::IsZero(..) => "expr:is-zero",
+            Expr::NonZero(..) => "expr:non-zero",
+            Expr::Predecessor(_) => "expr:predecessor",
+            Expr::Widen(..) => "expr:widen",
+            Expr::Succeed(..) => "expr:succeed",
+        });
+        match node {
+            Expr::Not(inner, _)
+            | Expr::Box(inner, _)
+            | Expr::Widen(inner, _)
+            | Expr::Succeed(inner, _) => expr(inner, out),
+            Expr::Call { args, .. } | Expr::Apply { args, .. } | Expr::Construct { args, .. } => {
+                args.iter().for_each(|arg| expr(arg, out));
+            }
+            Expr::Pair(left, right, _) => {
+                expr(left, out);
+                expr(right, out);
+            }
+            Expr::If {
+                condition,
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                expr(condition, out);
+                block(then_branch, out);
+                block(else_branch, out);
+            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
+                expr(scrutinee, out);
+                arms.iter().for_each(|(_, body)| block(body, out));
+            }
+            Expr::Block(body) => block(body, out),
+            _ => {}
+        }
+    }
+    for item in &krate.items {
+        match item {
+            ItemDef::Apply { arms, fallible, .. } => {
+                if arms.is_empty() {
+                    out.insert("dispatch:empty");
+                }
+                if arms.len() > 1 {
+                    out.insert("dispatch:several");
+                }
+                if *fallible && arms.iter().any(|arm| !arm.function_fallible) {
+                    out.insert("dispatch:mixed-failure");
+                }
+                for read in arms.iter().flat_map(|arm| &arm.captures) {
+                    out.insert(match read {
+                        CaptureRead::Copy => "capture:copy",
+                        CaptureRead::Clone => "capture:clone",
+                        CaptureRead::Unbox => "capture:unbox",
+                        CaptureRead::Unit => "capture:unit",
+                    });
+                }
+            }
+            ItemDef::Function { body, .. } => block(body, out),
+            ItemDef::Enum { .. } => {}
+        }
+    }
+}
+
+/// The environment variable that makes RB-07 a renderer writing every
+/// package under the root it names.
+const RENDER_INTO: &str = "LEXLEAN_RB07_RENDER_INTO";
+
+/// Render every committed package's manifest into `root`, by its committed
+/// relative path.
+fn render_into(root: &Path) {
+    for committed in rust_packages::packages() {
+        let relative = format!("{}/{}", committed.profile.target(), committed.directory);
+        let manifest = std::fs::read(
+            repo_root()
+                .join(format!("compiler/rust/{relative}/package.json"))
+                .as_std_path(),
+        )
+        .expect("manifest");
+        let package = target::package(&manifest).expect("packages");
+        for (path, bytes) in package.files {
+            let file = root.join(&relative).join(path);
+            std::fs::create_dir_all(file.parent().expect("parent")).expect("directory");
+            std::fs::write(file, bytes).expect("file");
+        }
+    }
+}
+
+/// Run this test again, in a separate process with its own working
+/// directory and environment, as a renderer writing into a fresh root.
+fn cross_root(tag: &str) -> tempfile::TempDir {
+    let root = tempfile::Builder::new()
+        .prefix(&format!("lexlean-rust-root-{tag}-"))
+        .tempdir()
+        .expect("tempdir");
+    let work = root.path().join("work");
+    let out = root.path().join("out");
+    std::fs::create_dir_all(&work).expect("work directory");
+    let ran = std::process::Command::new(std::env::current_exe().expect("this test"))
+        .args([
+            "--exact",
+            "conformance_rb_07",
+            "--test-threads=1",
+            "--quiet",
+        ])
+        .current_dir(&work)
+        .env(RENDER_INTO, &out)
+        .env("TMPDIR", &work)
+        .env("HOME", &work)
+        .env("LC_ALL", if tag == "a" { "C" } else { "C.UTF-8" })
+        .env("TZ", if tag == "a" { "UTC" } else { "Asia/Kolkata" })
+        .output()
+        .expect("the renderer runs");
+    assert!(
+        ran.status.success(),
+        "the renderer under root {tag} failed: {}{}",
+        String::from_utf8_lossy(&ran.stdout),
+        String::from_utf8_lossy(&ran.stderr)
+    );
+    let moved = tempfile::Builder::new()
+        .prefix(&format!("lexlean-rust-rendered-{tag}-"))
+        .tempdir()
+        .expect("tempdir");
+    for (path, bytes) in tree(&out) {
+        let file = moved.path().join(path);
+        std::fs::create_dir_all(file.parent().expect("parent")).expect("directory");
+        std::fs::write(file, bytes).expect("file");
+    }
+    moved
+}
+
+/// Every file under `root`, by its `/`-separated relative path.
+fn tree(root: &Path) -> BTreeMap<String, Vec<u8>> {
+    walkdir::WalkDir::new(root)
+        .into_iter()
+        .flatten()
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| {
+            let relative = entry
+                .path()
+                .strip_prefix(root)
+                .expect("under the root")
+                .to_string_lossy()
+                .replace('\\', "/");
+            (relative, std::fs::read(entry.path()).expect("file"))
+        })
+        .collect()
+}
+
+/// LexLean's language-1.2 compiler semantics (`language/semantics-1.2.toml`).
+fn semantics_table() -> toml::Value {
+    std::fs::read_to_string(
+        repo_root()
+            .join("language/semantics-1.2.toml")
+            .as_std_path(),
+    )
+    .expect("semantics")
+    .parse()
+    .expect("TOML")
+}
+
+/// The SHA-256 of each profile's runtime that LexLean's compiler semantics
+/// records (`language/semantics-1.2.toml`).
+fn runtime_digests() -> BTreeMap<Profile, String> {
+    let table = semantics_table();
+    Profile::ALL
+        .into_iter()
+        .map(|profile| {
+            let key = format!(
+                "rust_runtime_{}",
+                profile.target().trim_start_matches("rust-")
+            );
+            (
+                profile,
+                table[key.as_str()]
+                    .as_str()
+                    .expect("a runtime digest")
+                    .to_owned(),
+            )
+        })
+        .collect()
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
     match id {
@@ -234,10 +507,9 @@ pub fn run(id: &str) {
             for case in cases() {
                 for profile in Profile::ALL {
                     match rust::lower(&case.fixture.program, profile) {
-                        Ok(krate) => {
-                            emitted.extend(validate::constructs(&krate));
-                            lowered_count += 1;
-                        }
+                        // Every rendering is checked; coverage is counted
+                        // below, from the packages RB-06 runs.
+                        Ok(_) => lowered_count += 1,
                         // Only rust-core refuses, and only for the heap.
                         Err(reason) => assert!(
                             profile == Profile::Core && reason.contains("requires heap allocation"),
@@ -248,10 +520,27 @@ pub fn run(id: &str) {
                     }
                 }
             }
+            // Every correspondence row, every node of the closed AST, every
+            // capture read, and a dispatch of several closures of mixed
+            // failure are emitted by a package that RB-06 runs.
+            let mut shapes = BTreeSet::new();
             for committed in rust_packages::packages() {
                 let (krate, _, _) = package::lower(&committed.manifest).expect("package lowers");
-                emitted.extend(validate::constructs(&krate));
+                let (outcome, _, _) = expected_outcome(&committed.fixture);
+                if runs(&outcome) {
+                    emitted.extend(validate::constructs(&krate));
+                    ast_shapes(&krate, &mut shapes);
+                }
             }
+            let missing: Vec<&str> = AST_SHAPES
+                .iter()
+                .copied()
+                .filter(|shape| !shapes.contains(*shape))
+                .collect();
+            assert!(
+                missing.is_empty(),
+                "AST shapes no run package emits: {missing:?}"
+            );
             assert!(lowered_count > 100, "{lowered_count} renderings");
             let table: BTreeSet<String> = validate::CORRESPONDENCE
                 .iter()
@@ -260,36 +549,106 @@ pub fn run(id: &str) {
             let unexercised: Vec<&String> = table.difference(&emitted).collect();
             assert!(
                 unexercised.is_empty(),
-                "correspondence rows no rendering exercises: {unexercised:?}"
+                "correspondence rows no run package exercises: {unexercised:?}"
             );
-            // A construct the program does not justify is refused.
-            let case = cases()
-                .into_iter()
-                .find(|case| case.fixture.name == "sum-to")
-                .expect("sum-to");
-            let krate = rust::lower(&case.fixture.program, Profile::Std).expect("lowers");
-            let mut elements = realization::program_elements(&case.fixture.program);
-            elements.insert("function".to_owned());
-            elements.insert("overflow".to_owned());
+            // A construct whose element the program does not use is refused.
+            let program = |name: &str| {
+                cases()
+                    .into_iter()
+                    .find(|case| case.fixture.name == name)
+                    .unwrap_or_else(|| panic!("fixture {name}"))
+                    .fixture
+                    .program
+            };
+            let sum = program("sum-to");
+            let krate = rust::lower(&sum, Profile::Std).expect("lowers");
+            let mut elements = rust::realized(&sum, Profile::Std).expect("valid");
             validate::correspond(&krate, &elements).expect("the full element set justifies it");
             elements.remove("prim:nat_add");
             let error = validate::correspond(&krate, &elements).expect_err("unjustified");
             assert!(
-                error.contains("the construct `call:runtime:nat_add` realizes none of"),
+                error.contains(
+                    "the construct `call:runtime:nat_add` realizes `prim:nat_add`, which the program does not use"
+                ),
                 "{error}"
             );
-            // A construct whose element the program lacks is refused even
-            // when every other construct is justified.
-            elements.insert("prim:nat_add".to_owned());
+            // Correspondence is checked instance by instance: a call of
+            // `nat_mul` lowered from a `nat_add` term is refused even though
+            // the program uses both primitives.
+            let arithmetic = program("nat-arithmetic");
+            let elements = rust::realized(&arithmetic, Profile::Std).expect("valid");
+            assert!(elements.contains("prim:nat_add") && elements.contains("prim:nat_mul"));
+            let mut krate = rust::lower(&arithmetic, Profile::Std).expect("lowers");
+            let planted = edit_first(&mut krate, &mut |expr| {
+                if let Expr::Call {
+                    callee: Callee::Runtime(item @ Item::NatAdd),
+                    ..
+                } = expr
+                {
+                    *item = Item::NatMul;
+                    return true;
+                }
+                false
+            });
+            assert!(planted, "the plant site exists");
+            let error = validate::correspond(&krate, &elements).expect_err("swapped");
+            assert!(
+                error.contains(
+                    "the construct `call:runtime:nat_mul` does not realize `prim:nat_add`, the element it was lowered from"
+                ),
+                "{error}"
+            );
+            // And at its width: a `u16` addition lowered from a `u8` one is
+            // refused.
+            let fixed = program("fixed-width-u8");
+            let elements = rust::realized(&fixed, Profile::Core).expect("valid");
+            let mut krate = rust::lower(&fixed, Profile::Core).expect("lowers");
+            let planted = edit_first(&mut krate, &mut |expr| {
+                if let Expr::Call {
+                    callee: Callee::Runtime(item @ Item::CheckedAdd(_)),
+                    ..
+                } = expr
+                {
+                    *item = Item::CheckedAdd(lexlean::calculus::IntKind::U16);
+                    return true;
+                }
+                false
+            });
+            assert!(planted, "the plant site exists");
+            let error = validate::correspond(&krate, &elements).expect_err("widened");
+            assert!(
+                error.contains("the construct `call:runtime:checked_add` works at width Some(U16), but `prim:checked_add` is at Some(U8)"),
+                "{error}"
+            );
+            // A type whose element the program lacks is refused even when
+            // every other construct is justified.
+            let krate = rust::lower(&sum, Profile::Std).expect("lowers");
+            let elements = rust::realized(&sum, Profile::Std).expect("valid");
             let mut extended = krate.clone();
             extended.items.push(ItemDef::Function {
                 name: lexlean::calculus::rust::ast::Ident::Function(99),
                 parameters: Vec::new(),
                 result: Type::Ref(Box::new(Type::Nat)),
-                body: Block::of(Expr::Lit(lexlean::calculus::rust::ast::Lit::Nat(0))),
+                body: Block::of(Expr::Lit(Lit::Nat(0), Origin::of("value:nat"))),
+                at: Origin::of("function"),
             });
             let error = validate::correspond(&extended, &elements).expect_err("no export");
             assert!(error.contains("`type:ref`"), "{error}");
+            // A negated zero test is refused: it is written as its
+            // complement, and `!m == 0` would negate `m` alone.
+            let mut krate = rust::lower(&program("boolean-shapes"), Profile::Core).expect("lowers");
+            let planted = edit_first(&mut krate, &mut |expr| {
+                if let Expr::NonZero(ident, origin) = expr {
+                    *expr = Expr::Not(
+                        Box::new(Expr::IsZero(ident.clone(), origin.clone())),
+                        origin.clone(),
+                    );
+                    return true;
+                }
+                false
+            });
+            assert!(planted, "the plant site exists");
+            refused(&krate, "a negated zero test or predecessor");
         }
         // §17.16: identifiers are hygienic and an exported name never
         // collides.
@@ -337,7 +696,8 @@ pub fn run(id: &str) {
                             block.lets.push(Let {
                                 pat: Pat::Wild,
                                 ty: None,
-                                value: Expr::Move(holder),
+                                value: Expr::Move(holder, Origin::of("expr:match")),
+                                at: Origin::of("expr:match"),
                             });
                             return true;
                         }
@@ -351,12 +711,13 @@ pub fn run(id: &str) {
         // §17.16: no unsupported type crosses a package boundary and
         // rust-core never allocates.
         "RB-04" => {
-            assert!(negatives("unsupported-") >= 1);
+            assert!(negatives("unsupported-") >= 3);
             assert!(negatives("hidden-allocation-") >= 2);
             let mut krate = lowered("sum-to", Profile::Core);
             krate.items.push(ItemDef::Enum {
                 name: Type::Adt(0),
                 variants: vec![(0, vec![Type::Str])],
+                at: Origin::of("type:adt"),
             });
             refused(&krate, "hidden allocation: rust-core renders the heap type");
             let mut krate = lowered("nat-overflow-add", Profile::Core);
@@ -450,24 +811,76 @@ pub fn run(id: &str) {
                 .expect("tempdir");
             let mut built = Vec::new();
             let mut expected = BTreeMap::new();
+            // Every committed package is built and linted; each one whose
+            // fixture has an observable outcome is also run.
             for committed in rust_packages::packages() {
                 let (outcome, _, _) = expected_outcome(&committed.fixture);
-                let Some(observed) = rust::observable(&outcome) else {
-                    continue;
-                };
-                if !matches!(&outcome, Outcome::Value { value, .. } if !realization::value_elements(value).contains("value:closure"))
-                    && !matches!(outcome, Outcome::Overflow { .. })
-                {
-                    continue;
-                }
                 built.push(Built {
                     name: committed.manifest.name.clone(),
                     files: committed_files(&committed),
                     harness: harness_for(&committed),
                 });
-                expected.insert(committed.manifest.name.clone(), observed);
+                if runs(&outcome) {
+                    let observed = rust::observable(&outcome).expect("observable");
+                    expected.insert(committed.manifest.name.clone(), observed);
+                }
             }
-            assert!(built.len() > 100, "{} packages run", built.len());
+            assert_eq!(
+                built.len(),
+                rust_packages::packages().len(),
+                "every committed package is built"
+            );
+            assert!(expected.len() > 100, "{} packages run", expected.len());
+            // The primitive differential: every primitive instance each
+            // profile admits, on its boundary values and seeded inputs.
+            let mut differentials = BTreeMap::new();
+            for profile in Profile::ALL {
+                let differential = rust_differential::differential(profile);
+                let manifest = rust_differential::manifest(&differential, profile);
+                let package =
+                    target::package(&manifest.to_file_bytes().expect("canonical manifest"))
+                        .unwrap_or_else(|failure| panic!("{}: {failure:?}", manifest.name));
+                let owned: Vec<Vec<Passing>> = differential
+                    .program
+                    .functions
+                    .iter()
+                    .map(|function| vec![Passing::Own; function.types.len()])
+                    .collect();
+                let calls: Vec<Calls<'_>> = differential
+                    .arguments
+                    .iter()
+                    .enumerate()
+                    .map(|(function, arguments)| Calls {
+                        entry: function as u64,
+                        function: &differential.names[function],
+                        passing: &owned[function],
+                        arguments,
+                    })
+                    .collect();
+                let harness = rust_harness::render_calls(
+                    &differential.program,
+                    profile,
+                    &manifest.name,
+                    &calls,
+                )
+                .expect("differential harness");
+                let runs: usize = differential.arguments.iter().map(Vec::len).sum();
+                assert!(
+                    differential.names.len() > 60 && runs > 5_000,
+                    "{}: {} functions, {runs} runs",
+                    manifest.name,
+                    differential.names.len()
+                );
+                differentials.insert(
+                    manifest.name.clone(),
+                    rust_differential::expected(&differential),
+                );
+                built.push(Built {
+                    name: manifest.name.clone(),
+                    files: package.files,
+                    harness,
+                });
+            }
             workspace(dir.path(), &built);
             let build = cargo_in(
                 dir.path(),
@@ -514,6 +927,44 @@ pub fn run(id: &str) {
                 assert_eq!(
                     &printed, observed,
                     "{name}: the export and the denotation disagree"
+                );
+            }
+            for (name, outcomes) in &differentials {
+                let binary = dir
+                    .path()
+                    .join("target/debug")
+                    .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
+                let ran = std::process::Command::new(&binary)
+                    .output()
+                    .expect("the differential runs");
+                assert!(
+                    ran.status.success(),
+                    "{name}: {}",
+                    String::from_utf8_lossy(&ran.stderr)
+                );
+                let stdout = String::from_utf8(ran.stdout).expect("utf8");
+                let printed: Vec<Json> = stdout
+                    .lines()
+                    .filter(|line| !line.starts_with("work "))
+                    .map(|line| {
+                        serde_json::from_str(line)
+                            .unwrap_or_else(|error| panic!("{name}: {error}: {line}"))
+                    })
+                    .collect();
+                assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
+                let disagreements: Vec<String> = printed
+                    .iter()
+                    .zip(outcomes)
+                    .enumerate()
+                    .filter(|(_, (printed, expected))| printed != expected)
+                    .map(|(run, (printed, expected))| format!("run {run}: {printed} != {expected}"))
+                    .collect();
+                assert!(
+                    disagreements.is_empty(),
+                    "{name}: the rendering and the denotation disagree on {} of {} runs: {:?}",
+                    disagreements.len(),
+                    outcomes.len(),
+                    &disagreements[..disagreements.len().min(8)]
                 );
             }
             // The lint gate and the differential are real: a clone of a
@@ -626,106 +1077,153 @@ pub fn run(id: &str) {
         // §17.16: packages are deterministic, schema-valid, and bound to
         // their program, runtime, and LexLean's compiler semantics.
         "RB-07" => {
+            if let Ok(root) = std::env::var(RENDER_INTO) {
+                // A child of the cross-root check: render every package and
+                // write it under `root`, then stop.
+                render_into(Path::new(&root));
+                return;
+            }
             let manifest_schema = schema("rust-package.schema.json");
             let provenance_schema = schema("rust-provenance.schema.json");
             let program_schema = schema("target-program.schema.json");
             let semantics = lexlean::compiler_semantics_id_for(lexlean::LANGUAGE_1_2).to_hex();
-            let roots = [
-                tempfile::Builder::new()
-                    .prefix("lexlean-rust-a-")
-                    .tempdir()
-                    .expect("tempdir"),
-                tempfile::Builder::new()
-                    .prefix("lexlean-rust-b-")
-                    .tempdir()
-                    .expect("tempdir"),
-            ];
+            let runtimes = runtime_digests();
+            // The renderer's sources are the ones LexLean's semantics records.
+            let renderer: Vec<(&str, Vec<u8>)> = rust::RENDERER_FILES
+                .into_iter()
+                .map(|name| {
+                    (
+                        name,
+                        std::fs::read(
+                            repo_root()
+                                .join("crates/lexlean/src/calculus/rust")
+                                .join(name)
+                                .as_std_path(),
+                        )
+                        .expect("renderer source"),
+                    )
+                })
+                .collect();
+            let framed: Vec<(&str, &[u8])> = renderer
+                .iter()
+                .map(|(name, bytes)| (*name, bytes.as_slice()))
+                .collect();
+            assert_eq!(
+                Some(rust::renderer_digest(&framed).to_hex().as_str()),
+                semantics_table()["rust_renderer"].as_str(),
+                "the renderer changed without its record `rust_renderer` in language/semantics-1.2.toml"
+            );
+            // Two renderers, each a separate process with its own working
+            // directory, temporary directory, home, locale, and time zone,
+            // render every package; their bytes are compared with each other
+            // and with the committed packages.
+            let roots = [cross_root("a"), cross_root("b")];
+            let rendered: Vec<BTreeMap<String, Vec<u8>>> =
+                roots.iter().map(|root| tree(root.path())).collect();
+            assert_eq!(
+                rendered[0].len(),
+                rendered[1].len(),
+                "both renderers write every package"
+            );
+            for (path, bytes) in &rendered[0] {
+                assert_eq!(
+                    Some(bytes),
+                    rendered[1].get(path),
+                    "{path}: the renderers of two roots disagree"
+                );
+            }
             let mut count = 0;
             for committed in rust_packages::packages() {
-                let directory = repo_root().join(format!(
-                    "compiler/rust/{}/{}",
-                    committed.profile.target(),
-                    committed.directory
-                ));
+                let relative = format!("{}/{}", committed.profile.target(), committed.directory);
+                // Messages name the repository-relative path, never the host's.
+                let shown = format!("compiler/rust/{relative}");
+                let directory = repo_root().join(&shown);
                 let manifest_bytes =
                     std::fs::read(directory.join("package.json").as_std_path()).expect("manifest");
                 let manifest_json: Json = serde_json::from_slice(&manifest_bytes).expect("JSON");
                 let violations = crate::schema::validate(&manifest_schema, &manifest_json);
-                assert!(violations.is_empty(), "{directory}: {violations:?}");
+                assert!(violations.is_empty(), "{shown}: {violations:?}");
                 let violations =
                     crate::schema::validate(&program_schema, &manifest_json["program"]);
-                assert!(violations.is_empty(), "{directory}: {violations:?}");
+                assert!(violations.is_empty(), "{shown}: {violations:?}");
                 let manifest = Manifest::parse(&manifest_bytes).expect("manifest parses");
-                // Two renderings, written under two roots, are byte-identical
-                // to each other and to the committed package.
                 let first = target::package(&manifest_bytes).expect("packages");
-                let second = target::package(&manifest_bytes).expect("packages");
-                assert_eq!(first, second, "{directory}");
-                for root in &roots {
-                    for (path, bytes) in &first.files {
-                        let file = root
-                            .path()
-                            .join(committed.directory.clone())
-                            .join(committed.profile.target())
-                            .join(path);
-                        std::fs::create_dir_all(file.parent().expect("parent")).expect("directory");
-                        std::fs::write(&file, bytes).expect("file");
-                    }
-                }
                 for (path, bytes) in &first.files {
                     let committed_bytes =
                         std::fs::read(directory.join(path).as_std_path()).expect("committed file");
-                    assert_eq!(&committed_bytes, bytes, "{directory}/{path}");
-                    let read = |root: &tempfile::TempDir| {
-                        std::fs::read(
-                            root.path()
-                                .join(committed.directory.clone())
-                                .join(committed.profile.target())
-                                .join(path),
-                        )
-                        .expect("written file")
-                    };
-                    assert_eq!(read(&roots[0]), read(&roots[1]), "{directory}/{path}");
+                    assert_eq!(&committed_bytes, bytes, "{shown}/{path}");
+                    assert_eq!(
+                        rendered[0].get(&format!("{relative}/{path}")),
+                        Some(bytes),
+                        "{shown}/{path}: the separate renderer disagrees"
+                    );
                 }
                 let provenance: Json =
                     serde_json::from_slice(&first.files["provenance.json"]).expect("provenance");
                 let violations = crate::schema::validate(&provenance_schema, &provenance);
-                assert!(violations.is_empty(), "{directory}: {violations:?}");
+                assert!(violations.is_empty(), "{shown}: {violations:?}");
                 for path in ["Cargo.toml", "src/lib.rs"] {
                     assert_eq!(
                         provenance["files"][path],
                         lexlean::artifact::content_id::Sha256Digest::of(&first.files[path])
                             .to_hex(),
-                        "{directory}/{path}"
+                        "{shown}/{path}"
                     );
                 }
                 assert_eq!(
                     provenance["program"],
                     manifest.program.id().expect("valid").to_hex(),
-                    "{directory}"
+                    "{shown}"
                 );
                 assert_eq!(provenance["compiler_semantics"], semantics.as_str());
-                let runtime = match committed.profile {
-                    Profile::Core => rust::runtime::CORE.to_owned(),
-                    Profile::Std => format!("{}{}", rust::runtime::CORE, rust::runtime::STD),
-                };
                 assert_eq!(
                     provenance["runtime"],
-                    lexlean::artifact::content_id::Sha256Digest::of(runtime.as_bytes()).to_hex()
+                    runtimes[&committed.profile].as_str(),
+                    "{shown}: the runtime is the one LexLean's semantics records"
                 );
+                assert_eq!(provenance["sources"], manifest_json["sources"]);
+                rust_packages::bound_to_source(&committed)
+                    .unwrap_or_else(|reason| panic!("{shown}: {reason}"));
                 count += 1;
             }
             assert!(count > 100, "{count} packages");
+            assert_eq!(
+                rendered[0].len(),
+                3 * count,
+                "the separate renderer writes exactly the committed packages"
+            );
+            // A forged or zero source is refused by the binding check.
+            let mut forged = rust_packages::packages().remove(0);
+            for source in ["0".repeat(64), "f".repeat(64)] {
+                forged.manifest.sources = vec![source.clone()];
+                let error = rust_packages::bound_to_source(&forged).expect_err("forged");
+                assert!(
+                    error.contains("is not") || error.contains("are not"),
+                    "{error}"
+                );
+                assert!(error.contains(&source), "{error}");
+            }
+            // The malformed, misversioned, and misordered manifests fail,
+            // and the schema refuses the versions the renderer refuses.
+            for prefix in ["version-", "sources-", "export-", "malformed-"] {
+                assert!(negatives(prefix) >= 1);
+            }
+            for (name, (bytes, _)) in rust_packages::negatives() {
+                if name.starts_with("version-") {
+                    let json: Json = serde_json::from_slice(&bytes).expect("JSON");
+                    let violations = crate::schema::validate(&manifest_schema, &json);
+                    assert!(
+                        violations
+                            .iter()
+                            .any(|violation| violation.to_string().starts_with("/version")),
+                        "{name}: the schema admits the version: {violations:?}"
+                    );
+                }
+            }
             // A provenance or package file that drifts from its generator is
             // refused by the generated-file gate.
             crate::calculus::check(repo_root().as_std_path(), false)
                 .expect("the committed packages equal their generator");
-            let mut sourced: Manifest = rust_packages::packages()[0].manifest.clone();
-            sourced.sources = vec!["0".repeat(64), "f".repeat(64)];
-            let package = package::package(&sourced).expect("sources are admitted");
-            let provenance: Json =
-                serde_json::from_slice(&package.files["provenance.json"]).expect("provenance");
-            assert_eq!(provenance["sources"], serde_json::json!(sourced.sources));
         }
         other => panic!("no Rust backend case is wired for {other}"),
     }

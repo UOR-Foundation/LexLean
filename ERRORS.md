@@ -34,9 +34,15 @@ PDF-provider protocol failure.
 
 Class: `environment`. Exit code: 3.
 
-## `LLB6005` --- Target realization program invalid or unrenderable
+## `LLB6005` --- Target realization program or Rust package invalid or unrenderable
 
-A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile.
+A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile, or a Rust package manifest is malformed or misstates its crate name, version, sources, exports, or the interface of the program it packages.
+
+Class: `language`. Exit code: 1.
+
+## `LLB6006` --- GNAF request malformed
+
+A GNAF request is not a closed `lexlean/gnaf-request/1` document, its reference program or a system its universe realizes is not a valid target program, its reference returns no value on a domain argument, its grammar repeats a threshold or misdeclares a plan's preparation, or its stated universe identity is not the one its components determine.
 
 Class: `language`. Exit code: 1.
 
@@ -214,9 +220,9 @@ Path escape, symlink, special file, or filesystem identity conflict.
 
 Class: `security-limit`. Exit code: 4.
 
-## `LLS8002` --- Explicit project resource limit exceeded
+## `LLS8002` --- Explicit resource limit exceeded
 
-Explicit project resource limit exceeded.
+An explicit project resource limit, or the declared capacity of an evaluator such as the GNAF host's (§17.15), is exceeded.
 
 Class: `security-limit`. Exit code: 4.
 

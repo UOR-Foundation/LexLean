@@ -149,24 +149,6 @@ impl Key for Str {
         }
     }
 }
-impl<T: Key> Key for List<T> {
-    fn key(&self, other: &Self) -> Ordering {
-        let mut left = self.0.as_ref();
-        let mut right = other.0.as_ref();
-        loop {
-            tick(1);
-            match (left, right) {
-                (None, None) => return Ordering::Equal,
-                (None, Some(_)) => return Ordering::Less,
-                (Some(_), None) => return Ordering::Greater,
-                (Some(a), Some(b)) => match a.head.key(&b.head) {
-                    Ordering::Equal => { left = a.tail.0.as_ref(); right = b.tail.0.as_ref(); }
-                    decided => return decided,
-                },
-            }
-        }
-    }
-}
 
 pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
 pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
@@ -277,8 +259,8 @@ pub fn f0() -> List<bool> {
         let a4 = false;
         equal(a3, a4)
     }, List::cons({
-        let a5 = Str::lit("é");
-        let a6 = Str::lit("é");
+        let a5 = Str::lit("\u{e9}");
+        let a6 = Str::lit("\u{e9}");
         equal(a5, a6)
     }, List::cons({
         let a9 = {

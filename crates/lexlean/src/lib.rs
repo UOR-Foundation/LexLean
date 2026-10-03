@@ -35,6 +35,8 @@ pub mod elaborate;
 #[doc(hidden)]
 pub mod fmt;
 #[doc(hidden)]
+pub mod gnaf;
+#[doc(hidden)]
 pub mod grammar;
 #[doc(hidden)]
 pub mod ir;
@@ -164,6 +166,8 @@ fn is_v1_2_file(path: &str) -> bool {
         || path.starts_with("language/lcnf-1.2/")
         || path.starts_with("language/preservation-1.2/")
         || path == "schemas/compiler-input.schema.json"
+        || path == "schemas/gnaf-fixture.schema.json"
+        || path == "schemas/gnaf-request.schema.json"
         || path == "schemas/target-fixture.schema.json"
         || path == "schemas/target-program.schema.json"
         || path == "schemas/rust-package.schema.json"

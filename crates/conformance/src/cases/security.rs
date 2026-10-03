@@ -479,7 +479,11 @@ pub(crate) fn run(id: &str) {
                 let toolchain_bin = camino::Utf8PathBuf::from("/nonexistent/toolchain/bin");
                 let limits = support::limits_of(&P::example());
                 let normalizer = lexlean::verify::child::Normalizer::new(cwd, cwd, cwd, cwd);
-                let record = support::with_env(
+                // ELAN_HOME is read under the same lock as the child runs:
+                // another test may set it for its own duration, and a read
+                // after the lock is released would judge this child by that
+                // test's environment.
+                let (record, elan_home) = support::with_env(
                     &[
                         ("LEXLEAN_TEST_SECRET", Some("hunter2-marker")),
                         ("HTTPS_PROXY", Some("http://proxy.invalid")),
@@ -491,7 +495,7 @@ pub(crate) fn run(id: &str) {
                         ("TERM", Some("xterm-256color")),
                     ],
                     || {
-                        lexlean::verify::child::run(
+                        let record = lexlean::verify::child::run(
                             &lexlean::verify::child::ChildSpec {
                                 tool: "stub",
                                 module: Some("Probe".to_owned()),
@@ -507,7 +511,8 @@ pub(crate) fn run(id: &str) {
                             &limits,
                             &normalizer,
                         )
-                        .expect("the stub runs")
+                        .expect("the stub runs");
+                        (record, std::env::var_os("ELAN_HOME").is_some())
                     },
                 );
                 let observed: std::collections::BTreeMap<String, String> = record
@@ -527,7 +532,7 @@ pub(crate) fn run(id: &str) {
                     "PATH",
                     "PWD",
                 ];
-                if std::env::var_os("ELAN_HOME").is_some() {
+                if elan_home {
                     expected_keys.push("ELAN_HOME");
                 }
                 expected_keys.sort_unstable();

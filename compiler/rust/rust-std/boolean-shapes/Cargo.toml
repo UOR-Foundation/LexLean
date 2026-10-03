@@ -1,0 +1,25 @@
+[package]
+name = "boolean_shapes_std"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+warnings = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+type_complexity = "allow"
+too_many_arguments = "allow"
+large_enum_variant = "allow"
+result_large_err = "allow"
+result_unit_err = "allow"
+single_match = "allow"
+manual_unwrap_or = "allow"
+manual_unwrap_or_default = "allow"
+manual_map = "allow"
+manual_ok_err = "allow"

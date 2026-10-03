@@ -149,24 +149,6 @@ impl Key for Str {
         }
     }
 }
-impl<T: Key> Key for List<T> {
-    fn key(&self, other: &Self) -> Ordering {
-        let mut left = self.0.as_ref();
-        let mut right = other.0.as_ref();
-        loop {
-            tick(1);
-            match (left, right) {
-                (None, None) => return Ordering::Equal,
-                (None, Some(_)) => return Ordering::Less,
-                (Some(_), None) => return Ordering::Greater,
-                (Some(a), Some(b)) => match a.head.key(&b.head) {
-                    Ordering::Equal => { left = a.tail.0.as_ref(); right = b.tail.0.as_ref(); }
-                    decided => return decided,
-                },
-            }
-        }
-    }
-}
 
 pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
 pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
@@ -279,7 +261,7 @@ pub enum Adt1 {
 }
 
 pub fn f0() -> Adt0 {
-    Adt0::C0((), true, 18446744073709551615u64, i64::MIN, 255u8, 65535u16, 4294967295u32, 18446744073709551615u64, i8::MIN, i16::MIN, i32::MIN, i64::MIN, Str::lit("snow ☃"), Bytes::lit(&[0x00, 0xff, 0x7f]), Ordering::Equal, None::<u64>, Some(false), Ok::<u64, Str>(1u64), Err::<u64, Str>(Str::lit("no")), List::cons(1u64, List::cons(2u64, List::<u64>::nil())), (3u64, Str::lit("three")), Adt1::C1(5u64))
+    Adt0::C0((), true, 18446744073709551615u64, i64::MIN, 255u8, 65535u16, 4294967295u32, 18446744073709551615u64, i8::MIN, i16::MIN, i32::MIN, i64::MIN, Str::lit("snow \u{2603}"), Bytes::lit(&[0x00, 0xff, 0x7f]), Ordering::Equal, None::<u64>, Some(false), Ok::<u64, Str>(1u64), Err::<u64, Str>(Str::lit("no")), List::cons(1u64, List::cons(2u64, List::<u64>::nil())), (3u64, Str::lit("three")), Adt1::C1(5u64))
 }
 
 pub fn run() -> Adt0 {

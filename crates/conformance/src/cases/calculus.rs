@@ -1310,7 +1310,7 @@ pub fn run(id: &str) {
                             continue;
                         }
                     };
-                    let harness = rust::render_harness(
+                    let harness = crate::rust_harness::render_harness(
                         &fixture.program,
                         profile,
                         fixture.entry,

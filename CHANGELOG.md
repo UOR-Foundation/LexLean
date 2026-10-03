@@ -283,7 +283,8 @@ versions, and the entries below say what each tag does and does not claim.
     renders exactly the programs that need no heap. `rust-std` shares strings,
     byte strings, and persistent list cells behind `Rc`, so `cons` and its
     match are constant work and a use clones a handle. Both are library
-    crates without lint exceptions, committed under `compiler/rust/`. A work
+    crates, committed as packages under `compiler/rust/` with the lint gate
+    of §17.16. A work
     counter in the runtime never exceeds the denotation's steps on any
     fixture, and a quadratic append is detected.
   - Every runtime row's `allocation` in `language/production-1.2.toml` now
@@ -310,19 +311,106 @@ versions, and the entries below say what each tag does and does not claim.
   - `rust-core` names no heap type, runtime function, or construct;
   - failure is typed exactly: a function that can overflow returns `R<T>`
     and every call to it propagates, and any other returns its value;
-  - every construct corresponds to an element of the program it realizes.
+  - every construct carries the calculus element it was lowered from, and
+    is refused unless its correspondence row names that element, at that
+    element's width, and the program uses it.
+
+  Strings are escaped by LexLean itself, independently of the toolchain's
+  Unicode tables. A type no value inhabits is rendered as an empty match
+  where it is a parameter and omitted where it is an arm, and any other
+  computation of one is refused. Units, literal and equal branches, matches
+  that rebuild their scrutinee, and the other shapes Rust's lint gate
+  constrains are rendered as it admits (§17.16, Lowering).
 
   Packages (`lexlean::calculus::package`, manifests `lexlean/rust-package/1`,
   provenance `lexlean/rust-provenance/1`) add exported functions with
   checked names, passing modes (`own`, `borrow`, `copy`), and declared
-  failure modes. Each package also carries a Cargo manifest whose lint table
-  is the package's gate, and provenance binding every file's SHA-256, the
+  failure modes; a boundary holding a function value at any depth, or a
+  version part that is not a canonical `u64`, is refused. Each package also
+  carries a Cargo manifest whose lint table is the package's gate (ten
+  documented exceptions), and provenance binding every file's SHA-256, the
   program identity, the runtime, the sources, and the language-1.2
-  compiler-semantics ID. `language/semantics-1.2.toml` gains `rust_backend`.
-  Every fixture is committed as a package in each profile that admits it,
-  along with negative manifests for identifier collisions, ownership
-  mismatch, unsupported boundary types, hidden allocation, and arithmetic
-  mismatch (`RB-01`..`RB-07`).
+  compiler-semantics ID. `language/semantics-1.2.toml` gains `rust_backend`
+  and the SHA-256 of each profile's runtime. Every fixture whose entry takes
+  and returns first-order data is committed as a package in each profile
+  that admits it, bound by its `sources` to the semantic ID of the verified
+  `compiler` build that states its program, along with negative manifests
+  for identifier collisions, ownership mismatch, unsupported boundary and
+  uninhabited types, hidden allocation, arithmetic mismatch, and
+  noncanonical versions and sources (`RB-01`..`RB-07`). The harnesses that
+  run packages live in the conformance crate. `language/semantics-1.2.toml`
+  also records the digest of the renderer's sources (`rust_renderer`), so
+  no rendering can change without changing LexLean's identity.
+  - A harness runs its calls on a thread with a fixed 64 MiB stack, one Rust
+    function per called export: the primitive differential's single `main`
+    overflowed the 1 MiB main-thread stack of the Windows runner.
+- GNAF requests over the calculus (§17.15), after UOR-GNAF
+  `uor-gnaf/1-draft.2`, cited by revision and SHA-256 as the authority
+  `UOR-GNAF-1-DRAFT-2`. The module `Gnaf` of `compiler/` fixes, before any
+  optimizer runs:
+  - the problem, a reference program and a non-empty domain;
+  - the machine contract, with the closed action kinds (observation,
+    preprocessing, advice, retained state, dispatch, fallback, communication,
+    randomness, scheduling, execution) and their charges;
+  - the comparison boundary;
+  - the universe, a grammar of complete systems (fixed plans and dispatching
+    selectors over shared plans) with definitional completeness evidence;
+  - the scalar or componentwise (steps, size) order;
+  - the claim class and its scope.
+
+  Optimizer-defined, discovered, cached, and internal-plan universes are
+  rejected, as are hidden costs, unrealizable actions, and claims over the
+  wrong order or beyond the grammar. An unknown cost leaves the answer
+  incomplete. Every committed request's answer is a kernel-checked theorem,
+  and the authority's GNAF-VEC-01/02/04/17 and GNAF-REJ-14/29 vectors are
+  theorems of the model. The host side `lexlean::gnaf` loads requests
+  (`lexlean/gnaf-request/1`, new `LLB6006`), bounds fuel and universe size
+  (`LLS8002`), and transcribes the answer (`GN-01`..`GN-08`). The `Gnaf`
+  module is generated from its definition in `repo-conformance`, and
+  `cargo xtask check-calculus` compares it byte for byte.
+
+  Changes after review:
+  - One generic order, `Gnaf.argmin` and `Gnaf.frontier` over rows of an
+    identity and a cost, computes every answer and every authority vector.
+    Equal costs dominate neither way, and new fixtures with a duplicated
+    plan (`argmin-tie`, `frontier-tie`) keep every equal-cost system;
+    dropping one is refused by the kernel (GNAF-REJ-21).
+  - `Gnaf.expandComplete` is a kernel-checked theorem that, for every grammar
+    and selector, membership in the expansion is exactly well-formedness, and
+    `GnafFixtures` pins every request's universe and every answered request's
+    system statuses as well as its answer. A grammar now dispatches between
+    every ordered pair of plans, a plan and itself included.
+  - A system's size counts only the functions reachable from its entry, so
+    shared plans it cannot run no longer flatten the frontier, and
+    GNAF-VEC-02 is posed as a request (`vec02-pareto-envelope`) whose
+    frontier is three of its four systems; `Gnaf.certifies` refuses that
+    frontier with a member omitted (GNAF-REJ-29) and `Gnaf.minimaAttained`
+    shows no system attains its componentwise minima (GNAF-REJ-14).
+  - Preparation is declared per plan and charged to exactly the systems that
+    can run the plan, which can change the optimum; a `free` preparation is
+    admitted only through a prepared artifact bound in the machine by action
+    and SHA-256 (`unbound_preparation`, `stray_prepared_artifact`).
+  - The machine binds its capacity and its operand-size treatment; a request
+    beyond its capacity or charging operands by unit is refused. The host
+    refuses a request beyond its own capacity with `LLS8002` instead of
+    reporting a cost the model would not, and an evaluation panic is
+    `LLI9001`, not a platform failure.
+  - Every request states its `SystemUniverseId`, the framed SHA-256 of its
+    problem, machine, and carrier, which `load` recomputes; `load` also
+    refuses a domain argument on which the reference returns no value,
+    repeated thresholds, and misdeclared plan preparation (`LLB6006`).
+  - `restricted_universe_optimal` is refused as the §12.4 alias it is, and
+    `profile_defined_comparison` carries its profile, class, and shape.
+  - The authority vectors are stated over the order the answers use, with
+    path identities and certificate invalidation for GNAF-VEC-01, the
+    randomized expectation for GNAF-VEC-17, and the rejections of
+    GNAF-VEC-04, GNAF-REJ-14, and GNAF-REJ-29; `GN-07` decodes each
+    statement against the authority's numbers.
+  - The authority is vendored at `model/authorities/UOR-GNAF-v1-draft.2.md`,
+    and `validate-model` recomputes the SHA-256 of any vendored authority.
+  - `compiler/gnaf.manifest.json` is the UOR-GNAF §20 dependency manifest
+    (`GN-08`), and the GNAF schemas are generated with their calculus
+    definitions taken from `schemas/target-program.schema.json`.
 - The language-1.2 portable runtime exposes every definition, so a
   definition imported from another module reduces in the kernel through the
   primitives it applies. The 1.2 `lean_backend` version is bumped, and the

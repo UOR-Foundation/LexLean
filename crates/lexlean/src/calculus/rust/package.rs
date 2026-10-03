@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use super::super::{Program, Ty};
-use super::ast::{self, Block, Callee, Expr, Ident, ItemDef, Pat, Type};
+use super::ast::{self, Block, Callee, Expr, Ident, ItemDef, Lit, Origin, Pat, Type};
 use super::lower::{index, Lowering};
 use super::runtime::{self, Item};
 use super::{elements, validate, Profile};
@@ -76,8 +76,11 @@ pub struct Manifest {
     pub program: Program,
     /// The exported functions.
     pub exports: Vec<Export>,
-    /// The identities of the LexLean semantic objects the program realizes,
-    /// as lowercase SHA-256 hex, strictly ascending.
+    /// The semantic IDs (§21.4) of the LexLean builds whose linked IR states
+    /// the program, as lowercase SHA-256 hex, strictly ascending; empty for
+    /// a program no LexLean build states. The renderer checks their form
+    /// and records them; that they name the build stating the program is
+    /// checked against the verified build (§17.16).
     pub sources: Vec<String>,
 }
 
@@ -205,26 +208,42 @@ fn collision(name: &str) -> Option<String> {
     None
 }
 
-/// Whether a type holds a function value anywhere.
-fn holds_function(ty: &Ty) -> bool {
-    match ty {
-        Ty::Fn { .. } => true,
-        Ty::Option { value } | Ty::List { element: value } => holds_function(value),
-        Ty::Result {
-            ok: left,
-            error: right,
+/// Whether a value of `ty` can hold a function value anywhere: directly, or
+/// inside the fields of a named type, at any depth.
+#[must_use]
+pub fn holds_function(program: &Program, ty: &Ty) -> bool {
+    fn walk(program: &Program, ty: &Ty, seen: &mut BTreeSet<u64>) -> bool {
+        match ty {
+            Ty::Fn { .. } => true,
+            Ty::Option { value } | Ty::List { element: value } => walk(program, value, seen),
+            Ty::Result {
+                ok: left,
+                error: right,
+            }
+            | Ty::Pair { left, right } => walk(program, left, seen) || walk(program, right, seen),
+            Ty::Adt { index } => {
+                seen.insert(*index)
+                    && usize::try_from(*index)
+                        .ok()
+                        .and_then(|adt| program.adts.get(adt))
+                        .is_some_and(|adt| {
+                            adt.constructors
+                                .iter()
+                                .flatten()
+                                .any(|field| walk(program, field, seen))
+                        })
+            }
+            Ty::Unit
+            | Ty::Bool
+            | Ty::Nat
+            | Ty::Int
+            | Ty::Fixed { .. }
+            | Ty::String
+            | Ty::Bytes
+            | Ty::Ordering => false,
         }
-        | Ty::Pair { left, right } => holds_function(left) || holds_function(right),
-        Ty::Unit
-        | Ty::Bool
-        | Ty::Nat
-        | Ty::Int
-        | Ty::Fixed { .. }
-        | Ty::String
-        | Ty::Bytes
-        | Ty::Ordering
-        | Ty::Adt { .. } => false,
     }
+    walk(program, ty, &mut BTreeSet::new())
 }
 
 impl Manifest {
@@ -242,16 +261,18 @@ impl Manifest {
 
     /// The canonical file bytes.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics only if `serde_json` produces text the canonical JSON parser
-    /// rejects, which would be an internal invariant failure.
-    #[must_use]
-    pub fn to_file_bytes(&self) -> Vec<u8> {
-        let text = serde_json::to_string(self).expect("manifest serializes");
-        crate::artifact::canonical_json::Json::parse(text.as_bytes())
-            .expect("manifest is JSON")
-            .to_file_bytes()
+    /// Returns the reason the manifest has no canonical JSON form: an
+    /// integer outside the range canonical JSON admits.
+    pub fn to_file_bytes(&self) -> Result<Vec<u8>, String> {
+        let text = serde_json::to_string(self)
+            .map_err(|error| format!("package manifest does not serialize: {error}"))?;
+        Ok(
+            crate::artifact::canonical_json::Json::parse(text.as_bytes())
+                .map_err(|error| format!("package manifest is not canonical JSON: {error}"))?
+                .to_file_bytes(),
+        )
     }
 }
 
@@ -292,10 +313,10 @@ fn exports(manifest: &Manifest, lowering: &mut Lowering<'_>) -> Result<Vec<ItemD
             .types
             .iter()
             .chain([&function.result])
-            .any(holds_function)
+            .any(|ty| holds_function(program, ty))
         {
             return fail(format!(
-                "unsupported type: the boundary of export `{name}` holds a function value, which no Rust caller can construct"
+                "unsupported type: the boundary of export `{name}` holds a function value, and a package boundary is first-order (§17.13)"
             ));
         }
         let fallible = lowering
@@ -318,26 +339,37 @@ fn exports(manifest: &Manifest, lowering: &mut Lowering<'_>) -> Result<Vec<ItemD
             }
             _ => {}
         }
+        let at = Origin::of("export");
         let mut parameters = Vec::new();
         let mut args = Vec::new();
         for (position, (passing, ty)) in export.parameters.iter().zip(&function.types).enumerate() {
             let lowered = lowering.ty(ty)?;
             let param = Ident::Param(position as u64);
             let (ty, arg) = match passing {
-                Passing::Own => (lowered, Expr::Move(param.clone())),
-                Passing::Borrow if lowered.copy() => {
-                    (Type::Ref(Box::new(lowered)), Expr::Deref(param.clone()))
-                }
-                Passing::Borrow => (Type::Ref(Box::new(lowered)), Expr::Clone(param.clone())),
-                Passing::Copy if lowered.copy() => (lowered, Expr::Copy(param.clone())),
+                Passing::Own => (lowered, Expr::Move(param.clone(), at.clone())),
+                Passing::Borrow if lowered.copy() => (
+                    Type::Ref(Box::new(lowered)),
+                    Expr::Deref(param.clone(), at.clone()),
+                ),
+                Passing::Borrow => (
+                    Type::Ref(Box::new(lowered)),
+                    Expr::Clone(param.clone(), at.clone()),
+                ),
+                Passing::Copy if lowered.copy() => (lowered, Expr::Copy(param.clone(), at.clone())),
                 Passing::Copy => {
                     return fail(format!(
                         "ownership mismatch: export `{name}` copies parameter {position}, whose type {ty:?} is not Copy"
                     ))
                 }
             };
-            parameters.push((Pat::Bind(param), ty));
-            args.push(arg);
+            // A unit carries nothing, so it is passed as the literal `()`.
+            if ty == Type::Unit || ty == Type::Ref(Box::new(Type::Unit)) {
+                parameters.push((Pat::Wild, ty));
+                args.push(Expr::Lit(Lit::Unit, at.clone()));
+            } else {
+                parameters.push((Pat::Bind(param), ty));
+                args.push(arg);
+            }
         }
         let result = lowering.ty(&function.result)?;
         out.push(ItemDef::Function {
@@ -352,7 +384,9 @@ fn exports(manifest: &Manifest, lowering: &mut Lowering<'_>) -> Result<Vec<ItemD
                 callee: Callee::Function(export.function),
                 args,
                 propagate: false,
+                at: at.clone(),
             }),
+            at,
         });
     }
     Ok(out)
@@ -362,18 +396,65 @@ fn sha256(bytes: &[u8]) -> String {
     Sha256Digest::of(bytes).to_hex()
 }
 
+/// The Clippy lints of the default set a package allows, each with the
+/// reason its advice would make the rendering depart from the calculus
+/// (SPEC.md §17.16): every other lint of the default set is denied.
+pub const ALLOWED_LINTS: &[(&str, &str)] = &[
+    (
+        "type_complexity",
+        "asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart",
+    ),
+    (
+        "too_many_arguments",
+        "asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart",
+    ),
+    (
+        "large_enum_variant",
+        "asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not",
+    ),
+    (
+        "result_large_err",
+        "asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not",
+    ),
+    (
+        "result_unit_err",
+        "asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart",
+    ),
+    (
+        "single_match",
+        "asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit",
+    ),
+    (
+        "manual_unwrap_or",
+        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
+    ),
+    (
+        "manual_unwrap_or_default",
+        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
+    ),
+    (
+        "manual_map",
+        "asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure",
+    ),
+    (
+        "manual_ok_err",
+        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
+    ),
+];
+
 /// The Cargo manifest of a package. Its lint table is the package's lint
 /// gate: rustc's warnings and every Clippy lint of the default set are
-/// denied, except those whose advice would make the rendering depart from
-/// the calculus. `type_complexity` asks for type aliases, but a generated
-/// type is exactly its calculus type and an alias would be a name with no
-/// calculus counterpart; `manual_unwrap_or` and `manual_unwrap_or_default`
-/// ask for an idiom in place of the program's own match.
+/// denied, except [`ALLOWED_LINTS`].
 fn cargo_toml(manifest: &Manifest) -> String {
-    format!(
-        "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[lints.rust]\nunsafe_code = \"forbid\"\nwarnings = \"deny\"\n\n[lints.clippy]\nall = {{ level = \"deny\", priority = -1 }}\ntype_complexity = \"allow\"\nmanual_unwrap_or = \"allow\"\nmanual_unwrap_or_default = \"allow\"\n",
+    let mut out = format!(
+        "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[lints.rust]\nunsafe_code = \"forbid\"\nwarnings = \"deny\"\n\n[lints.clippy]\nall = {{ level = \"deny\", priority = -1 }}\n",
         manifest.name, manifest.version
-    )
+    );
+    for (lint, _) in ALLOWED_LINTS {
+        out.push_str(lint);
+        out.push_str(" = \"allow\"\n");
+    }
+    out
 }
 
 /// A package's checked crate, its canonical program, and its profile.
@@ -397,17 +478,20 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
             manifest.name
         ));
     }
+    // Cargo reads each part as a `u64`; a part is its canonical decimal.
     let version_parts: Vec<&str> = manifest.version.split('.').collect();
     if version_parts.len() != 3
         || version_parts.iter().any(|part| {
-            part.is_empty()
-                || !part.chars().all(|character| character.is_ascii_digit())
-                || (part.len() > 1 && part.starts_with('0'))
+            !part.chars().all(|character| character.is_ascii_digit())
+                || part
+                    .parse::<u64>()
+                    .map_or(true, |number| number.to_string() != *part)
         })
     {
         return fail(format!(
-            "`{}` is not a version of three canonical decimals",
-            manifest.version
+            "`{}` is not a version of three canonical decimals each at most {}",
+            manifest.version,
+            u64::MAX
         ));
     }
     let profile = Profile::named(&manifest.profile)

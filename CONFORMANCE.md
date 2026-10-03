@@ -146,6 +146,19 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `NE-05` | `build` | A dependency dropped from Lean's extracted facts or from the production-eligibility closure fails extraction with LLV7011 before any compiler input is published. |
 | `NE-06` | `build` | A proof-only dependency presented as a runtime closure member fails extraction with LLV7011 before any compiler input is published. |
 
+## gnaf
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `GN-01` | `build` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. |
+| `GN-02` | `build` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. |
+| `GN-03` | `build` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. |
+| `GN-04` | `build` | Every action a system performs is charged by steps, every admitted preparation action by a positive constant for each plan that needs it or by a prepared artifact bound in the common initial state, operands are charged by weight, and a request fits the capacity its machine binds; hidden zero-cost, free, undeclared, duplicated, unaccounted, unbound, stray, unit-cost, over-capacity, and unrealizable actions are rejected, and a plan's preparation enters exactly the cost of the systems that can run it. |
+| `GN-05` | `build` | Scalar claims require the total step order and Pareto claims the componentwise steps-and-size order, a scalar claim over the partial order, a vector claim over the total order, the restricted-universe alias, an undecided claim class, and a scope beyond the grammar universe are rejected, equal-cost systems are all kept, a frontier answer has incomparable members, and GNAF-VEC-02 posed over the calculus has a frontier of exactly three of four systems for which no omission is certified and whose componentwise minima no system attains. |
+| `GN-06` | `build` | Complete-system cost includes selection and counts only the code a system can run, the system argmin differs from the best internal plan and from the per-input plan envelope that no system attains, an inadmissible system is excluded, and an unresolved system makes the answer incomplete rather than being removed. |
+| `GN-07` | `build` | The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true. |
+| `GN-08` | `build` | The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator. |
+
 ## grammar
 
 | ID | Level | Statement |
@@ -311,13 +324,13 @@ the error registry does not sanction (R5, `ERRORS.md`).
 
 | ID | Level | Statement |
 | --- | --- | --- |
-| `RB-01` | `build` | Every Rust rendering is built as a closed AST whose every construct corresponds to an element of the target program it realizes, every correspondence row is exercised, and a construct the program does not justify is refused. |
+| `RB-01` | `build` | Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused. |
 | `RB-02` | `build` | An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused. |
 | `RB-03` | `build` | An export that copies a parameter whose type is not Copy fails with LLB6005, and a crate that moves a value twice or reads it after moving it is refused. |
-| `RB-04` | `build` | A package whose boundary holds a function value, or whose rust-core program needs the heap, fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused. |
+| `RB-04` | `build` | A package whose boundary holds a function value at any depth, whose program computes a value of a type no value inhabits, or whose rust-core program needs the heap fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused. |
 | `RB-05` | `build` | A function that can overflow returns R<T> and every call to it propagates, any other returns its value, an export whose declared errors differ from its function's fails with LLB6005, and a crate that drops, invents, or misreturns a failure is refused. |
-| `RB-06` | `build` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with three documented exceptions, and its exported function, called from a separate crate, prints exactly the denotation's observable outcome; a planted lint and a planted semantic mutation are detected. |
-| `RB-07` | `build` | Packages are deterministic and content-addressed: two renderings written under two roots are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, and the provenance binds the SHA-256 of each file, the program identity, the runtime, the sources, and the language-1.2 compiler-semantics ID. |
+| `RB-06` | `build` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected. |
+| `RB-07` | `build` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. |
 
 ## security
 
@@ -406,6 +419,7 @@ Never re-derived, vendored, or gated on.
 | `LEANCHECKER-4-32-1` | https://github.com/leanprover/lean4/tree/v4.32.1 | `VR-08` |
 | `PRINT-AXIOMS-4-32-1` | https://github.com/leanprover/lean4/tree/v4.32.1 (the #print axioms command); observed output fixtures under tests/golden/axiom-parser/ | `VR-09`, `VR-10` |
 | `LEAN-LCNF-4-32-1` | https://github.com/leanprover/lean4/tree/f054605aea4b840552cca2e725580bffd1e1b704/src/Lean/Compiler/LCNF | `NE-01`, `NE-02`, `NE-04` |
+| `UOR-GNAF-1-DRAFT-2` | https://github.com/afflom/wasm-gemm-gnaf/blob/917306fd2b5a397ab02c5d38918fb8620fcc5ae0/authority/UOR-GNAF-v1-draft.2.md; the issuer publishes no upstream copy, so the citation is the downstream repository that vendors the draft and pins its SHA-256 in its authority manifest | `GN-02`, `GN-03`, `GN-04`, `GN-05`, `GN-06`, `GN-07`, `GN-08` |
 | `RUSTC-1-97-1` | https://github.com/rust-lang/rust/releases/tag/1.97.1 | `TC-07` |
 
 ## Claims that are not conformance IDs
@@ -418,3 +432,4 @@ Never re-derived, vendored, or gated on.
 | `AUTH-LEAN-LCNF-4-32-1` | `some-true` | Lean 4.32.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names. |
 | `AUTH-RUSTC-1-97-1` | `some-true` | rustc 1.97.1 compiles a safe Rust 2021 crate with the semantics The Rust Reference states for that release: the checked integer methods return None exactly on overflow, the wrapping shifts mask their amount, integer division truncates toward zero, and a #![no_std] crate that declares no extern crate links neither alloc nor std. |
 | `AUTH-PRINT-AXIOMS-4-32-1` | `some-true` | Lean 4.32.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures. |
+| `AUTH-UOR-GNAF-1-DRAFT-2` | `some-true` | UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only. |
