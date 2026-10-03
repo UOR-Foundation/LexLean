@@ -70,6 +70,9 @@ pub(crate) enum Constructor {
     Ok,
     /// `Result.error`.
     Error,
+    /// A `ContractViolation` constructor, as the pair of Booleans it lowers
+    /// to (§17.12 rule 9).
+    Violation(bool, bool),
     /// The constructor at `index` of a document inductive.
     Document {
         /// The closed document type the constructor builds.
@@ -104,11 +107,14 @@ fn internal(reason: impl Into<String>) -> String {
 impl<'a> Source<'a> {
     /// The declaration `name` of `module`.
     pub(crate) fn declaration(&self, module: &str, name: &str) -> Option<&'a SemanticDeclaration> {
+        // Every backend reads a module's elaborated declarations: each model
+        // declaration as the ordinary definitions it means, and every
+        // checked application as its elaboration (§17.12).
         self.modules.get(module).and_then(|linked| {
             linked
                 .semantic
-                .declarations
-                .iter()
+                .lowered_declarations()
+                .into_iter()
                 .find(|declaration| declaration.name() == name)
         })
     }
@@ -242,6 +248,54 @@ impl<'a> Source<'a> {
                     statement: _,
                     proof: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Artifact {
+                    name: _,
+                    role: _,
+                    sha256: _,
+                    length: _,
+                    schema: _,
+                    r#type: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Contract {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    precondition: _,
+                    postcondition: _,
+                    invariant: _,
+                    validators: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Realization {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    descriptor: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Evidence {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    claims: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Model {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    evidence: _,
+                    entry: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
@@ -281,7 +335,8 @@ impl<'a> Source<'a> {
                 result: _,
             }
             | SemanticType::Map { key: _, value: _ }
-            | SemanticType::Set { element: _ } => {
+            | SemanticType::Set { element: _ }
+            | SemanticType::ContractViolation => {
                 return Err(internal("a document shape of a non-document type"));
             }
         };
@@ -380,6 +435,54 @@ impl<'a> Source<'a> {
                     statement: _,
                     proof: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Artifact {
+                    name: _,
+                    role: _,
+                    sha256: _,
+                    length: _,
+                    schema: _,
+                    r#type: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Contract {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    precondition: _,
+                    postcondition: _,
+                    invariant: _,
+                    validators: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Realization {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    descriptor: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Evidence {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    claims: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Model {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    evidence: _,
+                    entry: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
@@ -421,6 +524,7 @@ impl<'a> Source<'a> {
                 let argument = |index: usize| Box::new(type_arguments[index].clone());
                 let ty = match builtin {
                     BuiltinOwner::Bool => SemanticType::Bool,
+                    BuiltinOwner::ContractViolation => SemanticType::ContractViolation,
                     BuiltinOwner::Nat => SemanticType::Nat,
                     BuiltinOwner::List => SemanticType::List {
                         element: argument(0),
@@ -442,8 +546,21 @@ impl<'a> Source<'a> {
                     (BuiltinOwner::Option, "some") => Constructor::OptionSome,
                     (BuiltinOwner::Result, "ok") => Constructor::Ok,
                     (BuiltinOwner::Result, "error") => Constructor::Error,
+                    (BuiltinOwner::ContractViolation, "precondition") => {
+                        Constructor::Violation(false, false)
+                    }
+                    (BuiltinOwner::ContractViolation, "input_invariant") => {
+                        Constructor::Violation(false, true)
+                    }
+                    (BuiltinOwner::ContractViolation, "postcondition") => {
+                        Constructor::Violation(true, false)
+                    }
+                    (BuiltinOwner::ContractViolation, "output_invariant") => {
+                        Constructor::Violation(true, true)
+                    }
                     (
                         BuiltinOwner::Bool
+                        | BuiltinOwner::ContractViolation
                         | BuiltinOwner::Nat
                         | BuiltinOwner::List
                         | BuiltinOwner::Option
@@ -502,7 +619,7 @@ impl<'a> Source<'a> {
                 member: _,
                 arguments,
             } => arguments.clone(),
-            SemanticType::Nat | SemanticType::Bool => Vec::new(),
+            SemanticType::Nat | SemanticType::Bool | SemanticType::ContractViolation => Vec::new(),
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
@@ -555,7 +672,8 @@ impl<'a> Source<'a> {
             Constructor::Bool(_)
             | Constructor::Zero
             | Constructor::Nil
-            | Constructor::OptionNone => Ok(Vec::new()),
+            | Constructor::OptionNone
+            | Constructor::Violation(_, _) => Ok(Vec::new()),
             Constructor::Succ => Ok(vec![SemanticType::Nat]),
             Constructor::Cons => match ty {
                 SemanticType::List { element } => Ok(vec![element.as_ref().clone(), ty.clone()]),
@@ -589,7 +707,8 @@ impl<'a> Source<'a> {
                     result: _,
                 }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::Set { element: _ } => Err(mismatch()),
+                | SemanticType::Set { element: _ }
+                | SemanticType::ContractViolation => Err(mismatch()),
             },
             Constructor::OptionSome | Constructor::Ok | Constructor::Error => {
                 let field = match (constructor, ty) {
@@ -606,6 +725,7 @@ impl<'a> Source<'a> {
                         | Constructor::OptionSome
                         | Constructor::Ok
                         | Constructor::Error
+                        | Constructor::Violation(_, _)
                         | Constructor::Document { ty: _, index: _ },
                         SemanticType::Type
                         | SemanticType::Parameter { name: _ }
@@ -638,7 +758,8 @@ impl<'a> Source<'a> {
                             result: _,
                         }
                         | SemanticType::Map { key: _, value: _ }
-                        | SemanticType::Set { element: _ },
+                        | SemanticType::Set { element: _ }
+                        | SemanticType::ContractViolation,
                     ) => return Err(mismatch()),
                 };
                 Ok(vec![field.as_ref().clone()])

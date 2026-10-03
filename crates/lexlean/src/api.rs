@@ -275,11 +275,13 @@ pub fn render_build(
             );
         }
         if let Some(semantic) = &checked_module.document.semantic {
+            // §17.12 (models): a model declaration is audited as every Lean
+            // declaration it generates, never by its own name.
             declaration_names.extend(
                 semantic
-                    .declarations
-                    .iter()
-                    .map(|declaration| format!("{lean_module}.{}", declaration.name())),
+                    .generated_names()
+                    .into_iter()
+                    .map(|name| format!("{lean_module}.{name}")),
             );
         }
         // Output coverage closure is checked mechanically before anything
@@ -363,6 +365,14 @@ pub fn render_build(
         &project.config.lockfile,
         &checked.canonical_lock,
     ));
+    for (path, byte_length, sha256) in &checked.artifacts {
+        inputs.push(FileRow {
+            kind: "model-artifact".to_owned(),
+            path: path.clone(),
+            byte_length: *byte_length,
+            sha256: *sha256,
+        });
+    }
     for (name, checked_module) in &checked.modules {
         let _ = name;
         inputs.push(file_row(
@@ -1149,6 +1159,11 @@ impl Engine {
             if let crate::config::LexiconSource::Path { path, .. } = source {
                 copy_dir(path)?;
             }
+        }
+        // Model artifacts are linking inputs (§10.1, §17.12): the scratch
+        // copy re-checks only if it holds them.
+        for source in &config.artifact_sources {
+            copy_file(&source.path)?;
         }
         copy_dir(&format!("{}/cache", config.build_root))?;
         if let Some(pdf) = &config.pdf {

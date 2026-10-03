@@ -10,14 +10,14 @@ Feature: preservation
     And a report whose closure omits a member fails with LLI9001, and a default arm planted in a preservation source is refused
 
   @SP-02 @build
-  Scenario: Every production root of examples/production and examples/production-coverage has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected.
+  Scenario: Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected.
     Given every production root of examples/production and of examples/production-coverage
     When each certificate is compiled with the pinned Lean beside the library and the generated modules, replayed, and its axioms audited
     Then every certificate is accepted and its root theorem depends on exactly the three classical axioms
     And a certificate generated against each planted program mutation is rejected
 
   @SP-03 @build
-  Scenario: On seeded inputs to every production root of examples/production and examples/production-coverage, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected.
+  Scenario: On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected.
     Given seeded inputs to every production root of examples/production and of examples/production-coverage
     When the interpreter runs the lowered program and Lean evaluates the certificate's observation on the same inputs
     Then every interpreter outcome equals the observation Lean prints
@@ -38,7 +38,7 @@ Feature: preservation
     And the planted certificate fails with LLV7013 and the drifted library with LLV7014, each with nothing published
 
   @SP-06 @build
-  Scenario: The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported.
+  Scenario: The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported.
     Given the eligibility reports of every certified root and the runtime rows of the production registry
     When the constructs the roots realize are collected, with a type parameter counted where a generic definition is instantiated
     Then every runtime row is exercised by some certified root

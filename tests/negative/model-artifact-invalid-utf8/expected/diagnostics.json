@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLR3008","help":[],"labels":[],"message":"phase link: artifact `vocabulary`: the bytes are not UTF-8: invalid utf-8 sequence of 1 bytes from index 4","notes":[],"primary":{"byte_end":3425,"byte_start":127,"column_end":3313,"column_start":15,"line_end":5,"line_start":5,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

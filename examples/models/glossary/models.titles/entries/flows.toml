@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "flows"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "flows"
+channel = "text"
+surface = "flows"
+canonical_source = true
+features = ["lower-case", "plural"]

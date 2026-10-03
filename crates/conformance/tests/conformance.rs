@@ -1434,3 +1434,63 @@ fn conformance_sp_07() {
 fn conformance_sp_08() {
     repo_conformance::cases::run("SP-08");
 }
+
+#[test]
+fn conformance_md_01() {
+    repo_conformance::cases::run("MD-01");
+}
+
+#[test]
+fn conformance_md_02() {
+    repo_conformance::cases::run("MD-02");
+}
+
+#[test]
+fn conformance_md_03() {
+    repo_conformance::cases::run("MD-03");
+}
+
+#[test]
+fn conformance_md_04() {
+    repo_conformance::cases::run("MD-04");
+}
+
+#[test]
+fn conformance_md_05() {
+    repo_conformance::cases::run("MD-05");
+}
+
+#[test]
+fn conformance_md_06() {
+    repo_conformance::cases::run("MD-06");
+}
+
+#[test]
+fn conformance_md_07() {
+    repo_conformance::cases::run("MD-07");
+}
+
+#[test]
+fn conformance_md_08() {
+    repo_conformance::cases::run("MD-08");
+}
+
+#[test]
+fn conformance_md_09() {
+    repo_conformance::cases::run("MD-09");
+}
+
+#[test]
+fn conformance_md_10() {
+    repo_conformance::cases::run("MD-10");
+}
+
+#[test]
+fn conformance_md_11() {
+    repo_conformance::cases::run("MD-11");
+}
+
+#[test]
+fn conformance_md_12() {
+    repo_conformance::cases::run("MD-12");
+}

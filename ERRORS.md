@@ -214,6 +214,18 @@ Unsafe canonical form or raw renderer output.
 
 Class: `language`. Exit code: 1.
 
+## `LLR3007` --- Model artifact unavailable or its digest or length mismatched
+
+Model artifact unavailable or its digest or length mismatched.
+
+Class: `language`. Exit code: 1.
+
+## `LLR3008` --- Model artifact bytes violate the declared schema, type, or role
+
+Model artifact bytes violate the declared schema, type, or role.
+
+Class: `language`. Exit code: 1.
+
 ## `LLS8001` --- Path escape, symlink, special file, or filesystem identity conflict
 
 Path escape, symlink, special file, or filesystem identity conflict.
@@ -265,6 +277,30 @@ Class: `language`. Exit code: 1.
 ## `LLT4005` --- Production root not eligible for a declared target
 
 Production root not eligible for a declared target.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4006` --- Model contract, realization, or artifact interface mismatch
+
+Model contract, realization, or artifact interface mismatch.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4007` --- Invalid model composition or entry obligation
+
+Invalid model composition or entry obligation.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4008` --- Unvalidated model runtime boundary
+
+Unvalidated model runtime boundary.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4009` --- Model evidence not established
+
+Model evidence not established.
 
 Class: `language`. Exit code: 1.
 

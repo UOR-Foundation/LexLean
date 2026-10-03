@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Glyph}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{g0}: \texttt{()}.\par
+\noindent Constructor \texttt{g1}: \texttt{()}.\par
+\noindent Constructor \texttt{g2}: \texttt{()}.\par
+\noindent Constructor \texttt{g3}: \texttt{()}.\par
+\noindent Constructor \texttt{g4}: \texttt{()}.\par
+\noindent Constructor \texttt{g5}: \texttt{()}.\par
+\noindent Constructor \texttt{g6}: \texttt{()}.\par
+\noindent Constructor \texttt{g7}: \texttt{()}.\par
+\noindent Constructor \texttt{g8}: \texttt{()}.\par
+\noindent Constructor \texttt{g9}: \texttt{()}.\par
+\subsection*{\texttt{encode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Glyph)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(match glyph with | Glyph.g0 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) | Glyph.g1 => ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) | Glyph.g2 => ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g3 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g4 => ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g5 => ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g6 => ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g7 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) | Glyph.g8 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) | Glyph.g9 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digitOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Glyph)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match glyph with | Glyph.g0 => 0 | Glyph.g1 => 1 | Glyph.g2 => 2 | Glyph.g3 => 3 | Glyph.g4 => 4 | Glyph.g5 => 5 | Glyph.g6 => 6 | Glyph.g7 => 7 | Glyph.g8 => 8 | Glyph.g9 => 9)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{segmentCount}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Glyph)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match glyph with | Glyph.g0 => 6 | Glyph.g1 => 2 | Glyph.g2 => 5 | Glyph.g3 => 5 | Glyph.g4 => 4 | Glyph.g5 => 5 | Glyph.g6 => 6 | Glyph.g7 => 3 | Glyph.g8 => 7 | Glyph.g9 => 6)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isEight}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Glyph)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match glyph with | Glyph.g0 => false | Glyph.g1 => false | Glyph.g2 => false | Glyph.g3 => false | Glyph.g4 => false | Glyph.g5 => false | Glyph.g6 => false | Glyph.g7 => false | Glyph.g8 => true | Glyph.g9 => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{encode\_width}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Glyph)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (encode (glyph)) : Nat) = 7)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

@@ -62,8 +62,8 @@ pub use api::{
 };
 pub use artifact::content_id::Sha256Digest;
 pub use artifact::snapshot::{
-    SemanticSnapshot, SnapshotAxiomPolicy, SnapshotDeclaration, SnapshotModule, SnapshotOrigin,
-    SnapshotRange, SnapshotSource,
+    SemanticSnapshot, SnapshotAxiomPolicy, SnapshotDeclaration, SnapshotElaboration,
+    SnapshotModule, SnapshotOrigin, SnapshotRange, SnapshotSource,
 };
 // These owned values are the closed language-1.1 and language-1.2 portion of
 // the stable snapshot contract. Re-exporting them under snapshot-specific names lets a

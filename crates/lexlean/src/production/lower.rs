@@ -371,6 +371,45 @@ fn cond(condition: Expr, then_branch: Expr, else_branch: Expr) -> Expr {
     }
 }
 
+/// Whether a closed type is `ContractViolation`.
+const fn is_violation(ty: &SemanticType) -> bool {
+    match ty {
+        SemanticType::ContractViolation => true,
+        SemanticType::Type
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { value: _ }
+        | SemanticType::Result { ok: _, error: _ }
+        | SemanticType::List { element: _ }
+        | SemanticType::Named {
+            member: _,
+            arguments: _,
+        }
+        | SemanticType::Product { left: _, right: _ }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Map { key: _, value: _ }
+        | SemanticType::Set { element: _ } => false,
+    }
+}
+
 /// The fixed width a source integer type realizes, if it is one.
 pub(crate) const fn fixed_kind(ty: &SemanticType) -> Option<IntKind> {
     match ty {
@@ -405,7 +444,8 @@ pub(crate) const fn fixed_kind(ty: &SemanticType) -> Option<IntKind> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => None,
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => None,
     }
 }
 
@@ -495,7 +535,8 @@ pub(crate) fn template_of(
                 parameters: _,
                 result: _,
             }
-            | SemanticType::Set { element: _ } => Err(format!("{operation:?} of a non-map")),
+            | SemanticType::Set { element: _ }
+            | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-map")),
         }
     };
     let element = |ty: &SemanticType| -> Result<SemanticType, String> {
@@ -532,9 +573,8 @@ pub(crate) fn template_of(
                 parameters: _,
                 result: _,
             }
-            | SemanticType::Map { key: _, value: _ } => {
-                Err(format!("{operation:?} of a non-collection"))
-            }
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-collection")),
         }
     };
     let argument = |index: usize| -> Result<&SemanticType, String> {
@@ -633,7 +673,8 @@ pub(crate) fn template_of(
         | SemanticPrimitive::SplitExact
         | SemanticPrimitive::Join
         | SemanticPrimitive::ParseDecimal
-        | SemanticPrimitive::FormatDecimal => return Ok(None),
+        | SemanticPrimitive::FormatDecimal
+        | SemanticPrimitive::LessThan => return Ok(None),
     }))
 }
 
@@ -789,6 +830,12 @@ impl Lowerer<'_> {
             } => Ty::Adt {
                 index: self.adt(ty)?,
             },
+            // A violation is the pair of Booleans it lowers to (§17.12
+            // rule 9).
+            SemanticType::ContractViolation => Ty::Pair {
+                left: Box::new(Ty::Bool),
+                right: Box::new(Ty::Bool),
+            },
             SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime realization",
@@ -886,6 +933,54 @@ impl Lowerer<'_> {
                             statement: _,
                             proof: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Artifact {
+                            name: _,
+                            role: _,
+                            sha256: _,
+                            length: _,
+                            schema: _,
+                            r#type: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Contract {
+                            name: _,
+                            type_parameters: _,
+                            input: _,
+                            output: _,
+                            state: _,
+                            precondition: _,
+                            postcondition: _,
+                            invariant: _,
+                            validators: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Realization {
+                            name: _,
+                            type_parameters: _,
+                            input: _,
+                            output: _,
+                            state: _,
+                            descriptor: _,
+                            executable: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Evidence {
+                            name: _,
+                            type_parameters: _,
+                            contract: _,
+                            realization: _,
+                            claims: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Model {
+                            name: _,
+                            type_parameters: _,
+                            contract: _,
+                            realization: _,
+                            evidence: _,
+                            entry: _,
+                            axioms: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not a definition")),
@@ -967,6 +1062,54 @@ impl Lowerer<'_> {
                             parameters: _,
                             statement: _,
                             proof: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Artifact {
+                            name: _,
+                            role: _,
+                            sha256: _,
+                            length: _,
+                            schema: _,
+                            r#type: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Contract {
+                            name: _,
+                            type_parameters: _,
+                            input: _,
+                            output: _,
+                            state: _,
+                            precondition: _,
+                            postcondition: _,
+                            invariant: _,
+                            validators: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Realization {
+                            name: _,
+                            type_parameters: _,
+                            input: _,
+                            output: _,
+                            state: _,
+                            descriptor: _,
+                            executable: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Evidence {
+                            name: _,
+                            type_parameters: _,
+                            contract: _,
+                            realization: _,
+                            claims: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Model {
+                            name: _,
+                            type_parameters: _,
+                            contract: _,
+                            realization: _,
+                            evidence: _,
+                            entry: _,
                             axioms: _,
                         },
                     )
@@ -1060,6 +1203,124 @@ impl Lowerer<'_> {
         Ok(build(Shape::Adt { constructor: 0 }, target, operands))
     }
 
+    /// A constructor applied to its operands at its target type: a
+    /// violation is the pair of Booleans it lowers to.
+    fn constructed(constructor: &Constructor, target: Ty, operands: Vec<Expr>) -> Expr {
+        match constructor {
+            Constructor::Violation(first, second) => {
+                build(Shape::Pair, target, vec![boolean(*first), boolean(*second)])
+            }
+            Constructor::Bool(_)
+            | Constructor::Zero
+            | Constructor::Succ
+            | Constructor::Nil
+            | Constructor::Cons
+            | Constructor::OptionNone
+            | Constructor::OptionSome
+            | Constructor::Ok
+            | Constructor::Error
+            | Constructor::Document { ty: _, index: _ } => {
+                build(Self::shape(constructor), target, operands)
+            }
+        }
+    }
+
+    /// A match over a violation: its pair, then each Boolean in turn, each
+    /// leaf the branch of the constructor that pair of Booleans is. The
+    /// branches are lowered in leaf order, so locals stay in first-binding
+    /// order whatever order the source lists them in.
+    fn violation_match(
+        &mut self,
+        lowered: Expr,
+        branches: &[SemanticBranch],
+        result: &Ty,
+        scope: &mut Scope,
+        site: &Site,
+        owner: u64,
+    ) -> Result<Expr, String> {
+        let mut leaves: Vec<((bool, bool), &SemanticTerm)> = Vec::new();
+        for branch in branches {
+            let (constructor, _) =
+                self.source
+                    .branch(branch, &SemanticType::ContractViolation, site)?;
+            let key = match constructor {
+                Constructor::Violation(first, second) => (first, second),
+                Constructor::Bool(_)
+                | Constructor::Zero
+                | Constructor::Succ
+                | Constructor::Nil
+                | Constructor::Cons
+                | Constructor::OptionNone
+                | Constructor::OptionSome
+                | Constructor::Ok
+                | Constructor::Error
+                | Constructor::Document { ty: _, index: _ } => {
+                    return Err("a violation match over another constructor".to_owned());
+                }
+            };
+            if !branch.binders.is_empty() {
+                return Err("a violation constructor binds nothing".to_owned());
+            }
+            leaves.push((key, &branch.body));
+        }
+        let depth = scope.locals.len();
+        let first = scope.bind(Local {
+            name: "__violation_first".to_owned(),
+            ty: SemanticType::Bool,
+        });
+        let second = scope.bind(Local {
+            name: "__violation_second".to_owned(),
+            ty: SemanticType::Bool,
+        });
+        let mut halves = Vec::new();
+        for first_value in [false, true] {
+            let mut arms = Vec::new();
+            for second_value in [false, true] {
+                let body = leaves
+                    .iter()
+                    .find(|(key, _)| *key == (first_value, second_value))
+                    .map(|(_, body)| *body)
+                    .ok_or("a violation match misses a constructor")?;
+                arms.push(Arm {
+                    shape: if second_value {
+                        Shape::True
+                    } else {
+                        Shape::False
+                    },
+                    binders: Vec::new(),
+                    body: self.term(body, scope, site, owner)?,
+                });
+            }
+            halves.push(Arm {
+                shape: if first_value {
+                    Shape::True
+                } else {
+                    Shape::False
+                },
+                binders: Vec::new(),
+                body: Expr::Match {
+                    ty: result.clone(),
+                    scrutinee: Box::new(Expr::Var { name: second }),
+                    arms,
+                },
+            });
+        }
+        scope.locals.truncate(depth);
+        Ok(Expr::Match {
+            ty: result.clone(),
+            scrutinee: Box::new(lowered),
+            arms: vec![Arm {
+                shape: Shape::Pair,
+                binders: vec![first, second],
+                body: Expr::Match {
+                    ty: result.clone(),
+                    scrutinee: Box::new(Expr::Var { name: first }),
+                    arms: halves,
+                },
+            }],
+        })
+    }
+
     /// The shape of a constructor at its closed type.
     fn shape(constructor: &Constructor) -> Shape {
         match constructor {
@@ -1073,6 +1334,7 @@ impl Lowerer<'_> {
             Constructor::OptionSome => Shape::Some,
             Constructor::Ok => Shape::Ok,
             Constructor::Error => Shape::Error,
+            Constructor::Violation(_, _) => Shape::Pair,
             Constructor::Document { ty: _, index } => Shape::Adt {
                 constructor: *index as u64,
             },
@@ -1159,7 +1421,7 @@ impl Lowerer<'_> {
                 let (constructor, ty) = self.source.constructor(constructor, &closed, site)?;
                 let target = self.ty(&ty)?;
                 let operands = self.terms(arguments, scope, site, owner)?;
-                build(Self::shape(&constructor), target, operands)
+                Self::constructed(&constructor, target, operands)
             }
             SemanticTerm::InstanceValue {
                 class: _,
@@ -1221,6 +1483,9 @@ impl Lowerer<'_> {
                 let result = self.source.infer(term, &scope.sources(), site)?;
                 let result = self.ty(&result)?;
                 let lowered = self.term(scrutinee, scope, site, owner)?;
+                if is_violation(&scrutinee_ty) {
+                    return self.violation_match(lowered, branches, &result, scope, site, owner);
+                }
                 let mut arms = Vec::new();
                 for branch in branches {
                     let SemanticBranch {
@@ -1437,6 +1702,19 @@ impl Lowerer<'_> {
                 let items = self.terms(elements, scope, site, owner)?;
                 Self::list(&list, items)
             }
+            // Every backend reads elaborated declarations, in which a checked
+            // application is the ordinary term it means (§17.12).
+            SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            } => {
+                return Err(
+                    "a checked model application is lowered only through its elaboration"
+                        .to_owned(),
+                );
+            }
             // The Lean rendering lists each node with its targets in edge
             // order; the realization builds exactly that list.
             SemanticTerm::GraphLiteral { node, nodes, edges } => {
@@ -1557,9 +1835,8 @@ impl Lowerer<'_> {
                     result: _,
                 }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::Set { element: _ } => {
-                    Err(format!("{operation:?} of a non-integer"))
-                }
+                | SemanticType::Set { element: _ }
+                | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-integer")),
             }
         };
         let option_value = || -> Result<SemanticType, String> {
@@ -1595,7 +1872,8 @@ impl Lowerer<'_> {
                     result: _,
                 }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::Set { element: _ } => {
+                | SemanticType::Set { element: _ }
+                | SemanticType::ContractViolation => {
                     Err(format!("{operation:?} does not return an option"))
                 }
             }
@@ -1636,6 +1914,25 @@ impl Lowerer<'_> {
                 target: self.ty(&option_value()?)?,
             },
             SemanticPrimitive::FormatDecimal => Prim::FormatDecimal,
+            // A key comparison is the realization's `compare` and a match on
+            // the order it returns (§17.14 `primitive.less_than`).
+            SemanticPrimitive::LessThan => {
+                let order = prim(Prim::Compare, self.terms(arguments, scope, site, owner)?);
+                let arm = |shape: Shape, value: bool| Arm {
+                    shape,
+                    binders: Vec::new(),
+                    body: boolean(value),
+                };
+                return Ok(Expr::Match {
+                    ty: Ty::Bool,
+                    scrutinee: Box::new(order),
+                    arms: vec![
+                        arm(Shape::Lt, true),
+                        arm(Shape::Eq, false),
+                        arm(Shape::Gt, false),
+                    ],
+                });
+            }
             // The entry and element lists are the realized representation
             // itself (§17.14 `representation`).
             SemanticPrimitive::MapEntries | SemanticPrimitive::SetElements => {
@@ -1705,7 +2002,8 @@ fn product(ty: SemanticType) -> Result<(SemanticType, SemanticType), String> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => Err("a projection of a non-product".to_owned()),
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => Err("a projection of a non-product".to_owned()),
     }
 }
 
@@ -1907,7 +2205,8 @@ impl Source<'_> {
                 }
                 | SemanticType::Product { left: _, right: _ }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::Set { element: _ } => {
+                | SemanticType::Set { element: _ }
+                | SemanticType::ContractViolation => {
                     return Err("an application of a non-function".to_owned());
                 }
             },
@@ -1943,6 +2242,19 @@ impl Source<'_> {
             } => SemanticType::Set {
                 element: Box::new(self.close(element, site)),
             },
+            // Every backend reads elaborated declarations, in which a checked
+            // application is the ordinary term it means (§17.12).
+            SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            } => {
+                return Err(
+                    "a checked model application is lowered only through its elaboration"
+                        .to_owned(),
+                );
+            }
             SemanticTerm::GraphLiteral {
                 node,
                 nodes: _,

@@ -1,0 +1,190 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{hiddenWeights}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int8 integer tensor, little-endian, row-major, shape (12, 7)}.\par
+\noindent Value type: \texttt{List (List (Int))}.\par
+\noindent Content: \texttt{84 bytes, SHA-256 670b5066543781ad41947e253f1e5dd45157070e78116a588dc2b6bcea2e7bd8}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{hiddenWeights.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{hiddenWeights : List (List (Int)), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{hiddenWeights.decoded}.\par
+\subsection*{\texttt{hiddenBias}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int32 integer tensor, little-endian, row-major, shape (12)}.\par
+\noindent Value type: \texttt{List (Int)}.\par
+\noindent Content: \texttt{48 bytes, SHA-256 102bf7ceb176bc23dd4abb56dada713135d79093a79c20c7c79471f751f9a778}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{hiddenBias.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{hiddenBias : List (Int), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{hiddenBias.decoded}.\par
+\subsection*{\texttt{outputWeights}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int8 integer tensor, little-endian, row-major, shape (10, 12)}.\par
+\noindent Value type: \texttt{List (List (Int))}.\par
+\noindent Content: \texttt{120 bytes, SHA-256 6a536cff5b44d31e45ff9b128794e29c3fe9c09bad111f0dbe9df3fc29941de7}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{outputWeights.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{outputWeights : List (List (Int)), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{outputWeights.decoded}.\par
+\subsection*{\texttt{outputBias}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int32 integer tensor, little-endian, row-major, shape (10)}.\par
+\noindent Value type: \texttt{List (Int)}.\par
+\noindent Content: \texttt{40 bytes, SHA-256 ba0505206b75f60de72e117e01155033a68c40972a7f6687a2b05ca0004c5ab4}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{outputBias.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{outputBias : List (Int), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{outputBias.decoded}.\par
+\subsection*{\texttt{digitNames}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{vocabulary}.\par
+\noindent Schema: \texttt{UTF-8 lines, each LF-terminated}.\par
+\noindent Value type: \texttt{List (String)}.\par
+\noindent Content: \texttt{50 bytes, SHA-256 476e03af7ff499e63fe93fffa0567a69128761f538ec7dd1f3e2c197a0c90981}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Elaborates to: \texttt{digitNames.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{digitNames : List (String), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{digitNames.decoded}.\par
+\subsection*{\texttt{banner}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{binary}.\par
+\noindent Schema: \texttt{bytes}.\par
+\noindent Value type: \texttt{ByteArray}.\par
+\noindent Content: \texttt{5 bytes, SHA-256 3369421cb6a657bcbdbec197a0c3b2a8e208dd7746853513f9d77331d0fa1397}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{banner.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{banner : ByteArray, their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{banner.decoded}.\par
+\subsection*{\texttt{Recognizes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (digit : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(digit = Models.Glyphs.digitOf (glyph))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{recognizesCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (digit : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (digit) (Models.Glyphs.digitOf (glyph)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{recognizes\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (digit : Nat)}.\par
+\noindent Statement: \texttt{((recognizesCheck (glyph) (digit) = true) -> Recognizes (glyph) (digit))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{recognizes\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (digit : Nat)}.\par
+\noindent Statement: \texttt{(Recognizes (glyph) (digit) -> (recognizesCheck (glyph) (digit) = true))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{DigitContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output digit : Nat}.\par
+\noindent Postcondition: \texttt{Recognizes}.\par
+\noindent Runtime validator: \texttt{recognizesCheck validates the postcondition, sound by recognizes\_check\_sound, complete by recognizes\_check\_complete}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (glyph : Models.Glyphs.Glyph) (digit : Nat), ((recognizesCheck (glyph) (digit) = true) -> Recognizes (glyph) (digit)); stated exactly by recognizes\_check\_sound}.\par
+\noindent Obligation (validator postcondition complete): \texttt{forall (glyph : Models.Glyphs.Glyph) (digit : Nat), (Recognizes (glyph) (digit) -> (recognizesCheck (glyph) (digit) = true)); stated exactly by recognizes\_check\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DigitContract.postcondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DigitContract.postcondition\_complete}.\par
+\subsection*{\texttt{digit\_net\_width}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (Models.Glyphs.encode (glyph)) : Nat) = 7)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{DigitNet}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output Nat}.\par
+\noindent Neural architecture: \texttt{exact integer feed-forward over mathematical integers}.\par
+\noindent Encoder: \texttt{Models.Glyphs.encode (glyph) of width 7, by digit\_net\_width}.\par
+\noindent Layer 1: \texttt{dense 7 to 12, weights hiddenWeights, bias hiddenBias}.\par
+\noindent Layer 2: \texttt{rectified linear}.\par
+\noindent Layer 3: \texttt{truncating division by 2\^{}2, clamped to [0, 127]}.\par
+\noindent Layer 4: \texttt{dense 12 to 10, weights outputWeights, bias outputBias}.\par
+\noindent Decoder: \texttt{first maximal of 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (realization DigitNet width): \texttt{forall (glyph : Models.Glyphs.Glyph), ((LexLeanRuntime.length (Models.Glyphs.encode (glyph)) : Nat) = 7); stated exactly by digit\_net\_width}.\par
+\noindent Elaborates to: \texttt{DigitNet.encoded (glyph : Models.Glyphs.Glyph) : List (Int) := Models.Glyphs.encode (glyph)}.\par
+\noindent Elaborates to: \texttt{DigitNet.layer1 (\_\_values : List (Int)) : List (Int) := ((LexLeanCollections.listFold ((fun (\_\_acc : (Prod (List (Int)) (List (Int)))) (\_\_row : List (Int)) => (match (\_\_acc).2 with | List.nil => \_\_acc | List.cons \_\_bias \_\_biases => ((LexLeanRuntime.append ((\_\_acc).1) (((LexLeanRuntime.subtract (\_\_bias) ((LexLeanRuntime.negate (((LexLeanCollections.listFold ((fun (\_\_sum : (Prod (Int) (List (Int)))) (\_\_weight : Int) => (match (\_\_sum).2 with | List.nil => \_\_sum | List.cons \_\_value \_\_rest => ((LexLeanRuntime.subtract ((\_\_sum).1) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply (\_\_weight) (\_\_value) : Int)) : Int)) : Int), \_\_rest)))) (((0 : Int), \_\_values)) (\_\_row) : (Prod (Int) (List (Int))))).1) : Int)) : Int) :: ([] : List (Int)))) : List (Int)), \_\_biases)))) ((([] : List (Int)), hiddenBias)) (hiddenWeights) : (Prod (List (Int)) (List (Int))))).1}.\par
+\noindent Elaborates to: \texttt{DigitNet.layer2 (\_\_values : List (Int)) : List (Int) := (LexLeanCollections.listFold ((fun (\_\_out : List (Int)) (\_\_value : Int) => (LexLeanRuntime.append (\_\_out) (((if (LexLeanCollections.lessThan (\_\_value) ((0 : Int)) : Bool) then (0 : Int) else \_\_value) :: ([] : List (Int)))) : List (Int)))) (([] : List (Int))) (\_\_values) : List (Int))}.\par
+\noindent Elaborates to: \texttt{DigitNet.layer3 (\_\_values : List (Int)) : List (Int) := (LexLeanCollections.listFold ((fun (\_\_out : List (Int)) (\_\_value : Int) => (LexLeanRuntime.append (\_\_out) (((let \_\_quotient : Int := (LexLeanRuntime.quotient (\_\_value) ((4 : Int)) ((0 : Int)) : Int); (if (LexLeanCollections.lessThan (\_\_quotient) ((0 : Int)) : Bool) then (0 : Int) else (if (LexLeanCollections.lessThan ((127 : Int)) (\_\_quotient) : Bool) then (127 : Int) else \_\_quotient))) :: ([] : List (Int)))) : List (Int)))) (([] : List (Int))) (\_\_values) : List (Int))}.\par
+\noindent Elaborates to: \texttt{DigitNet.layer4 (\_\_values : List (Int)) : List (Int) := ((LexLeanCollections.listFold ((fun (\_\_acc : (Prod (List (Int)) (List (Int)))) (\_\_row : List (Int)) => (match (\_\_acc).2 with | List.nil => \_\_acc | List.cons \_\_bias \_\_biases => ((LexLeanRuntime.append ((\_\_acc).1) (((LexLeanRuntime.subtract (\_\_bias) ((LexLeanRuntime.negate (((LexLeanCollections.listFold ((fun (\_\_sum : (Prod (Int) (List (Int)))) (\_\_weight : Int) => (match (\_\_sum).2 with | List.nil => \_\_sum | List.cons \_\_value \_\_rest => ((LexLeanRuntime.subtract ((\_\_sum).1) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply (\_\_weight) (\_\_value) : Int)) : Int)) : Int), \_\_rest)))) (((0 : Int), \_\_values)) (\_\_row) : (Prod (Int) (List (Int))))).1) : Int)) : Int) :: ([] : List (Int)))) : List (Int)), \_\_biases)))) ((([] : List (Int)), outputBias)) (outputWeights) : (Prod (List (Int)) (List (Int))))).1}.\par
+\noindent Elaborates to: \texttt{DigitNet.logits (glyph : Models.Glyphs.Glyph) : List (Int) := DigitNet.layer4 (DigitNet.layer3 (DigitNet.layer2 (DigitNet.layer1 (DigitNet.encoded (glyph)))))}.\par
+\noindent Elaborates to: \texttt{DigitNet (glyph : Models.Glyphs.Glyph) : Nat := (match ((LexLeanCollections.listFold ((fun (\_\_best : (Prod (Option ((Prod (Nat) (Int)))) (List (Nat)))) (\_\_score : Int) => (match (\_\_best).2 with | List.nil => \_\_best | List.cons \_\_label \_\_labels => ((match (\_\_best).1 with | Option.none => Option.some ((\_\_label, \_\_score)) | Option.some \_\_leader => (if (LexLeanCollections.lessThan ((\_\_leader).2) (\_\_score) : Bool) then Option.some ((\_\_label, \_\_score)) else Option.some (\_\_leader))), \_\_labels)))) ((Option.none, (0 :: (1 :: (2 :: (3 :: (4 :: (5 :: (6 :: (7 :: (8 :: (9 :: ([] : List (Nat)))))))))))))) (DigitNet.logits (glyph)) : (Prod (Option ((Prod (Nat) (Int)))) (List (Nat))))).1 with | Option.none => 0 | Option.some \_\_winner => (\_\_winner).1)}.\par
+\subsection*{\texttt{digit\_net\_exact}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{(DigitNet (glyph) = Models.Glyphs.digitOf (glyph))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{digit\_net\_correct}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{Recognizes (glyph) (DigitNet (glyph))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{labeledGlyphs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{List ((Prod (Models.Glyphs.Glyph) (Nat)))}.\par
+\noindent Definition: \texttt{((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 1) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 7) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 8) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ([] : List ((Prod (Models.Glyphs.Glyph) (Nat))))))))))))))))))))))))))))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sameDigit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expected : Nat) (observed : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (expected) (observed))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{same\_digit\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(expected : Nat) (observed : Nat)}.\par
+\noindent Statement: \texttt{((sameDigit (expected) (observed) = true) -> (expected = observed))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{labeled\_agreement}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.length (labeledGlyphs) : Nat) = 40) /\textbackslash{} ((LexLeanCollections.listFold ((fun (count : Nat) (<U+00AB>example<U+00BB> : (Prod (Models.Glyphs.Glyph) (Nat))) => (if sameDigit (DigitNet ((<U+00AB>example<U+00BB>).1)) ((<U+00AB>example<U+00BB>).2) then (count + 1) else count))) (0) (labeledGlyphs) : Nat) = 37))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{DigitEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization DigitNet against contract DigitContract}.\par
+\noindent Claim: \texttt{agrees with the expected output on exactly 37 of the 40 examples of labeledGlyphs under sameDigit, sound for equality by same\_digit\_sound, discharged by labeled\_agreement}.\par
+\noindent Claim: \texttt{equals Models.Glyphs.digitOf under the contract's premises, discharged by digit\_net\_exact}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by digit\_net\_correct}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence DigitEvidence claim dataset\_agreement): \texttt{(((LexLeanRuntime.length (labeledGlyphs) : Nat) = 40) /\textbackslash{} ((LexLeanCollections.listFold ((fun (\_\_count : Nat) (\_\_example : (Prod (Models.Glyphs.Glyph) (Nat))) => (if sameDigit (DigitNet ((\_\_example).1)) ((\_\_example).2) then (\_\_count + 1) else \_\_count))) (0) (labeledGlyphs) : Nat) = 37)); stated exactly by labeled\_agreement}.\par
+\noindent Obligation (evidence DigitEvidence claim dataset\_agreement comparison): \texttt{forall (\_\_expected : Nat) (\_\_observed : Nat), ((sameDigit (\_\_expected) (\_\_observed) = true) -> (\_\_expected = \_\_observed)); stated exactly by same\_digit\_sound}.\par
+\noindent Obligation (evidence DigitEvidence claim equivalent\_to): \texttt{forall (glyph : Models.Glyphs.Glyph), (DigitNet (glyph) = Models.Glyphs.digitOf (glyph)); stated exactly by digit\_net\_exact}.\par
+\noindent Obligation (evidence DigitEvidence claim satisfies\_contract): \texttt{forall (glyph : Models.Glyphs.Glyph), Recognizes (glyph) (DigitNet (glyph)); stated exactly by digit\_net\_correct}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DigitEvidence.labeled\_agreement}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DigitEvidence.digit\_net\_exact}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DigitEvidence.digit\_net\_correct}.\par
+\subsection*{\texttt{DigitModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract DigitContract to realization DigitNet}.\par
+\noindent Evidence: \texttt{DigitEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{DigitModel (\_\_input : Models.Glyphs.Glyph) : Nat := DigitNet (\_\_input)}.\par
+\subsection*{\texttt{RawDigitModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract DigitContract to realization DigitNet}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{RawDigitModel (\_\_input : Models.Glyphs.Glyph) : Nat := DigitNet (\_\_input)}.\par
+\subsection*{\texttt{digitName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digit : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (String)}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.index (digitNames) (digit) : Option (String))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

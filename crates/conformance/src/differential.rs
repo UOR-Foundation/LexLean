@@ -212,6 +212,15 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
             left: Box::new(sample(modules, rng, left, depth + 1)),
             right: Box::new(sample(modules, rng, right, depth + 1)),
         },
+        // A violation is the pair of Booleans it lowers to (§17.12 rule 9).
+        SemanticType::ContractViolation => Value::Pair {
+            left: Box::new(Value::Bool {
+                value: rng.below(2) == 0,
+            }),
+            right: Box::new(Value::Bool {
+                value: rng.below(2) == 0,
+            }),
+        },
         SemanticType::Named {
             member: _,
             arguments: _,

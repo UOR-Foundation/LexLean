@@ -161,7 +161,8 @@ pub fn source_type(
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => Vec::new(),
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => Vec::new(),
     };
     Ok((lean, constructors))
 }
@@ -506,6 +507,7 @@ fn lean_type_text(source: &Source<'_>, ty: &SemanticType, generic: bool) -> Resu
         SemanticType::String => "String".to_owned(),
         SemanticType::Bytes => "ByteArray".to_owned(),
         SemanticType::Ordering => "Ordering".to_owned(),
+        SemanticType::ContractViolation => "(Prod Bool Bool)".to_owned(),
         SemanticType::Option { value } => {
             format!("(Option {})", lean_type_text(source, value, generic)?)
         }
@@ -959,7 +961,8 @@ fn function_type(ty: &SemanticType) -> Option<(&[SemanticType], &SemanticType)> 
         }
         | SemanticType::Product { left: _, right: _ }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => None,
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => None,
     }
 }
 
@@ -1059,7 +1062,34 @@ impl Gen<'_> {
     }
 
     /// A member reference read at `site`, fully qualified.
+    /// The local irreducibility under which a relation of `body` is
+    /// elaborated: every definition the body calls is related by its own
+    /// theorem, so unfolding one is never needed, and an elaborator that
+    /// unfolds one to compare two matches on its value would evaluate it,
+    /// which for a definition over large constant data costs minutes.
+    fn sealed(&self, body: &SemanticTerm, site: &Site, own: &str) -> Result<String, String> {
+        let mut names = BTreeSet::new();
+        for member in called_members(body) {
+            let name = self.member(&member, site)?;
+            if name != own {
+                names.insert(name);
+            }
+        }
+        if names.is_empty() {
+            return Ok(String::new());
+        }
+        Ok(format!(
+            "attribute [local irreducible] {} in\n",
+            names.into_iter().collect::<Vec<_>>().join(" ")
+        ))
+    }
+
     fn member(&self, member: &MemberRef, site: &Site) -> Result<String, String> {
+        // A violation is the pair of Booleans it lowers to (§17.12 rule 9).
+        match crate::backend::semantic::violation_pattern(member) {
+            Some(pair) => return Ok(pair.to_owned()),
+            None => {}
+        }
         if member.module.is_none() {
             if member.name == "Result.error" {
                 return Ok("Except.error".to_owned());
@@ -1118,6 +1148,12 @@ impl Gen<'_> {
             SemanticType::Bytes => value_ctor("bytes"),
             SemanticType::Unit => lib("encUnit"),
             SemanticType::Ordering => lib("encOrdering"),
+            SemanticType::ContractViolation => format!(
+                "({} {} {})",
+                lib("encPair"),
+                value_ctor("bool"),
+                value_ctor("bool")
+            ),
             SemanticType::Option { value } => {
                 format!("({} {})", lib("encOption"), self.enc(value)?)
             }
@@ -1294,7 +1330,8 @@ impl Gen<'_> {
                     | SemanticPrimitive::IterateUntil
                     | SemanticPrimitive::GraphSuccessors
                     | SemanticPrimitive::GraphReachable
-                    | SemanticPrimitive::GraphTopological => None,
+                    | SemanticPrimitive::GraphTopological
+                    | SemanticPrimitive::LessThan => None,
                 };
                 let int64 = SemanticType::Option {
                     value: Box::new(SemanticType::Int64),
@@ -1528,6 +1565,19 @@ impl Gen<'_> {
                     .join(", "),
                 self.ty(&self.source.close(element, site))?
             ),
+            // Certificates read elaborated declarations, in which a checked
+            // application is the ordinary term it means (§17.12).
+            SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            } => {
+                return Err(
+                    "a checked model application is certified only through its elaboration"
+                        .to_owned(),
+                );
+            }
             SemanticTerm::GraphLiteral { node, nodes, edges } => {
                 let node = self.ty(&self.source.close(node, site))?;
                 let mut items = Vec::new();
@@ -1628,7 +1678,48 @@ const fn primitive_name(operation: SemanticPrimitive) -> (&'static str, &'static
         SemanticPrimitive::GraphSuccessors => ("LexLeanCollections", "graphSuccessors"),
         SemanticPrimitive::GraphReachable => ("LexLeanCollections", "graphReachable"),
         SemanticPrimitive::GraphTopological => ("LexLeanCollections", "graphTopological"),
+        SemanticPrimitive::LessThan => ("LexLeanCollections", "lessThan"),
     }
+}
+
+/// The source definitions a term calls, as `{module, name}` references.
+/// Read from the term's serialized form, which names every call the same
+/// way, so no construct is missed or met by default.
+fn called_members(term: &SemanticTerm) -> Vec<MemberRef> {
+    fn walk(value: &serde_json::Value, out: &mut Vec<MemberRef>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                let call = map.get("kind").and_then(serde_json::Value::as_str) == Some("call");
+                match (call, map.get("function")) {
+                    (true, Some(function)) => {
+                        match serde_json::from_value::<MemberRef>(function.clone()) {
+                            Ok(member) => out.push(member),
+                            Err(_) => {}
+                        }
+                    }
+                    (true, None) | (false, Some(_) | None) => {}
+                }
+                for inner in map.values() {
+                    walk(inner, out);
+                }
+            }
+            serde_json::Value::Array(items) => {
+                for inner in items {
+                    walk(inner, out);
+                }
+            }
+            serde_json::Value::Null
+            | serde_json::Value::Bool(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::String(_) => {}
+        }
+    }
+    let mut out = Vec::new();
+    match serde_json::to_value(term) {
+        Ok(value) => walk(&value, &mut out),
+        Err(_) => {}
+    }
+    out
 }
 
 /// The fixed-width suffix of a library lemma.
@@ -1672,7 +1763,8 @@ fn integer_suffix(ty: &SemanticType) -> Result<&'static str, String> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => width_suffix(ty),
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => width_suffix(ty),
     }
 }
 
@@ -1714,7 +1806,8 @@ fn element_of(ty: &SemanticType) -> Result<SemanticType, String> {
         | SemanticType::Function {
             parameters: _,
             result: _,
-        } => Err("an element of a non-collection".to_owned()),
+        }
+        | SemanticType::ContractViolation => Err("an element of a non-collection".to_owned()),
     }
 }
 
@@ -1752,7 +1845,8 @@ fn option_value(ty: &SemanticType) -> Result<SemanticType, String> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => Err("a non-option primitive result".to_owned()),
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => Err("a non-option primitive result".to_owned()),
     }
 }
 
@@ -1796,7 +1890,8 @@ fn numeric(ty: &SemanticType) -> Result<Numeric, String> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => {
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => {
             Err("an arithmetic primitive at a non-integer".to_owned())
         }
     }
@@ -1842,7 +1937,8 @@ fn sequence(ty: &SemanticType) -> Result<Sequence, String> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => {
+        | SemanticType::Set { element: _ }
+        | SemanticType::ContractViolation => {
             Err("a sequence primitive at a non-sequence".to_owned())
         }
     }
@@ -1863,7 +1959,8 @@ fn equal_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         | SemanticType::UInt8
         | SemanticType::UInt16
         | SemanticType::UInt32
-        | SemanticType::UInt64 => width_suffix(ty),
+        | SemanticType::UInt64
+        | SemanticType::ContractViolation => width_suffix(ty),
         SemanticType::Type
         | SemanticType::Parameter { name: _ }
         | SemanticType::Prop
@@ -2104,7 +2201,8 @@ impl Gen<'_> {
             | SemanticPrimitive::IterateUntil
             | SemanticPrimitive::GraphSuccessors
             | SemanticPrimitive::GraphReachable
-            | SemanticPrimitive::GraphTopological => {
+            | SemanticPrimitive::GraphTopological
+            | SemanticPrimitive::LessThan => {
                 return Err(format!("{operation:?} is not a direct primitive"));
             }
         })
@@ -2377,6 +2475,12 @@ impl Gen<'_> {
                 node: _,
                 nodes: _,
                 edges: _,
+            }
+            | SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
             } => Err(format!(
                 "a function value `{}` is neither a parameter, a lambda, nor a function reference",
                 super::eligibility::term_key(argument)
@@ -2413,6 +2517,7 @@ impl Gen<'_> {
             Constructor::OptionSome => (lib("construct_some"), "true".to_owned()),
             Constructor::Ok => (lib("construct_ok"), "true".to_owned()),
             Constructor::Error => (lib("construct_error"), "true".to_owned()),
+            Constructor::Violation(_, _) => (lib("construct_pair"), "true".to_owned()),
             Constructor::Document { ty: _, index: _ } => (lib("construct_adt"), "true".to_owned()),
         }
     }
@@ -2501,7 +2606,33 @@ impl Gen<'_> {
                     .map(|argument| self.source.close(argument, &site))
                     .collect();
                 let (constructor, _) = self.source.constructor(constructor, &closed, &site)?;
-                let proofs = self.proofs(arguments, ctx)?;
+                let proofs = match constructor {
+                    // A violation builds the pair of its two Booleans.
+                    Constructor::Violation(first, second) => {
+                        let boolean = |value: bool| {
+                            built(
+                                operands(Vec::new()),
+                                &lib(if value {
+                                    "construct_true"
+                                } else {
+                                    "construct_false"
+                                }),
+                                "true",
+                            )
+                        };
+                        vec![boolean(first), boolean(second)]
+                    }
+                    Constructor::Bool(_)
+                    | Constructor::Zero
+                    | Constructor::Succ
+                    | Constructor::Nil
+                    | Constructor::Cons
+                    | Constructor::OptionNone
+                    | Constructor::OptionSome
+                    | Constructor::Ok
+                    | Constructor::Error
+                    | Constructor::Document { ty: _, index: _ } => self.proofs(arguments, ctx)?,
+                };
                 let whole = self.src(term, ctx)?;
                 let (lemma, fits) = self.construct_lemma(&constructor, &whole);
                 built(operands(proofs), &lemma, &fits)
@@ -2717,6 +2848,19 @@ impl Gen<'_> {
                 let items = self.proofs(elements, ctx)?;
                 Self::cons_chain(items)
             }
+            // Certificates read elaborated declarations, in which a checked
+            // application is the ordinary term it means (§17.12).
+            SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            } => {
+                return Err(
+                    "a checked model application is certified only through its elaboration"
+                        .to_owned(),
+                );
+            }
             SemanticTerm::GraphLiteral {
                 node: _,
                 nodes,
@@ -2820,6 +2964,26 @@ impl Gen<'_> {
                     return Err(format!("{operation:?} takes one operand"));
                 }
                 return self.prove(&arguments[0], ctx);
+            }
+            // A key comparison is `compare` and a match on its order; the
+            // source's `lessThan` unfolds to the key order by its clauses.
+            SemanticPrimitive::LessThan => {
+                let key = types.first().ok_or("a key comparison has no operand")?;
+                let coll = format!("{}.LexLeanCollections", self.lean_module(&site.module)?);
+                let less = format!("{coll}.lessThan");
+                let list = operands(self.proofs(arguments, ctx)?);
+                return Ok(Proof {
+                    proof: format!(
+                        "({} {} {less} {} {} {} {})",
+                        lib("conv_lessThan"),
+                        self.key_spec(key, &coll)?,
+                        clause(2, &less),
+                        clause(2, &less),
+                        clause(2, &less),
+                        list.proof
+                    ),
+                    fits: list.fits,
+                });
             }
             SemanticPrimitive::Subtract
             | SemanticPrimitive::Multiply
@@ -2972,10 +3136,43 @@ impl Gen<'_> {
             let pattern = self.pattern(branch, &site)?;
             fits_alternatives.push(body.fits);
             value_alternatives.push(self.src(&branch.body, &inner)?);
-            let mut arm = format!("({} rfl rfl {})", lib("convA_hit"), body.proof);
-            for _ in 0..position {
-                arm = format!("({} rfl {arm})", lib("convA_miss"));
-            }
+            let (constructor, _) = self.source.branch(branch, &scrutinee_ty, &site)?;
+            let arm = match constructor {
+                // A violation's realization matches its pair, then each
+                // Boolean, false first (`lower::violation_match`).
+                Constructor::Violation(first, second) => {
+                    let pick = |value: bool, proof: String| {
+                        let hit = format!("({} rfl rfl {proof})", lib("convA_hit"));
+                        if value {
+                            format!("({} rfl {hit})", lib("convA_miss"))
+                        } else {
+                            hit
+                        }
+                    };
+                    let on = |proof: String| {
+                        format!("({} {} {proof})", lib("conv_match"), Self::conv_var().proof)
+                    };
+                    let inner = on(pick(second, body.proof));
+                    let outer = on(pick(first, inner));
+                    format!("({} rfl rfl {outer})", lib("convA_hit"))
+                }
+                Constructor::Bool(_)
+                | Constructor::Zero
+                | Constructor::Succ
+                | Constructor::Nil
+                | Constructor::Cons
+                | Constructor::OptionNone
+                | Constructor::OptionSome
+                | Constructor::Ok
+                | Constructor::Error
+                | Constructor::Document { ty: _, index: _ } => {
+                    let mut arm = format!("({} rfl rfl {})", lib("convA_hit"), body.proof);
+                    for _ in 0..position {
+                        arm = format!("({} rfl {arm})", lib("convA_miss"));
+                    }
+                    arm
+                }
+            };
             match &hypothesis {
                 Some(name) => proof_arms.push_str(&format!(" | {pattern}, {name} => {arm}")),
                 None => proof_arms.push_str(&format!(" | {pattern} => {arm}")),
@@ -3185,6 +3382,12 @@ impl Gen<'_> {
                 node: _,
                 nodes: _,
                 edges: _,
+            }
+            | SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
             } => {
                 return Err(format!(
                     "the applied `{}` is neither a parameter, a lambda, nor a function reference",
@@ -3426,7 +3629,7 @@ impl<'a> Gen<'a> {
             .source
             .modules
             .get(module)
-            .map(|linked| linked.semantic.declarations.as_slice())
+            .map(|linked| linked.semantic.lowered_declarations())
             .unwrap_or_default()
         {
             match declaration {
@@ -3492,6 +3695,54 @@ impl<'a> Gen<'a> {
                     parameters: _,
                     statement: _,
                     proof: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Artifact {
+                    name: _,
+                    role: _,
+                    sha256: _,
+                    length: _,
+                    schema: _,
+                    r#type: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Contract {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    precondition: _,
+                    postcondition: _,
+                    invariant: _,
+                    validators: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Realization {
+                    name: _,
+                    type_parameters: _,
+                    input: _,
+                    output: _,
+                    state: _,
+                    descriptor: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Evidence {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    claims: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Model {
+                    name: _,
+                    type_parameters: _,
+                    contract: _,
+                    realization: _,
+                    evidence: _,
+                    entry: _,
                     axioms: _,
                 } => {}
             }
@@ -3582,6 +3833,54 @@ impl<'a> Gen<'a> {
                                 parameters: _,
                                 statement: _,
                                 proof: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Artifact {
+                                name: _,
+                                role: _,
+                                sha256: _,
+                                length: _,
+                                schema: _,
+                                r#type: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Contract {
+                                name: _,
+                                type_parameters: _,
+                                input: _,
+                                output: _,
+                                state: _,
+                                precondition: _,
+                                postcondition: _,
+                                invariant: _,
+                                validators: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Realization {
+                                name: _,
+                                type_parameters: _,
+                                input: _,
+                                output: _,
+                                state: _,
+                                descriptor: _,
+                                executable: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Evidence {
+                                name: _,
+                                type_parameters: _,
+                                contract: _,
+                                realization: _,
+                                claims: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Model {
+                                name: _,
+                                type_parameters: _,
+                                contract: _,
+                                realization: _,
+                                evidence: _,
+                                entry: _,
                                 axioms: _,
                             },
                         )
@@ -3715,6 +4014,54 @@ impl<'a> Gen<'a> {
                                 parameters: _,
                                 statement: _,
                                 proof: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Artifact {
+                                name: _,
+                                role: _,
+                                sha256: _,
+                                length: _,
+                                schema: _,
+                                r#type: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Contract {
+                                name: _,
+                                type_parameters: _,
+                                input: _,
+                                output: _,
+                                state: _,
+                                precondition: _,
+                                postcondition: _,
+                                invariant: _,
+                                validators: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Realization {
+                                name: _,
+                                type_parameters: _,
+                                input: _,
+                                output: _,
+                                state: _,
+                                descriptor: _,
+                                executable: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Evidence {
+                                name: _,
+                                type_parameters: _,
+                                contract: _,
+                                realization: _,
+                                claims: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Model {
+                                name: _,
+                                type_parameters: _,
+                                contract: _,
+                                realization: _,
+                                evidence: _,
+                                entry: _,
                                 axioms: _,
                             },
                         )
@@ -4096,6 +4443,16 @@ impl<'a> Gen<'a> {
                 element: _,
                 elements,
             } => self.discover_all(elements, ctx, dependencies, counters),
+            // Certificates read elaborated declarations, in which a checked
+            // application is the ordinary term it means (§17.12).
+            SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            } => Err(
+                "a checked model application is certified only through its elaboration".to_owned(),
+            ),
             SemanticTerm::GraphLiteral {
                 node: _,
                 nodes,
@@ -4182,7 +4539,8 @@ fn named_types(ty: &SemanticType, out: &mut Vec<SemanticType>) {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => {}
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => {}
     }
 }
 
@@ -4191,7 +4549,8 @@ fn nested_enc(nested: &Nested) -> String {
     match &nested.ty {
         SemanticType::List { element: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::Map { key: _, value: _ } => {
+        | SemanticType::Map { key: _, value: _ }
+        | SemanticType::ContractViolation => {
             format!("({} __L_{})", lib("ListEnc.enc"), nested.index)
         }
         SemanticType::Option { value: _ } => {
@@ -4352,7 +4711,8 @@ impl<'a> Gen<'a> {
             | SemanticType::UInt64
             | SemanticType::String
             | SemanticType::Bytes
-            | SemanticType::Ordering => {
+            | SemanticType::Ordering
+            | SemanticType::ContractViolation => {
                 return Err(format!(
                     "`{}` cannot hold a document type in a field",
                     self.source.type_text(ty)
@@ -4377,7 +4737,8 @@ impl<'a> Gen<'a> {
             Some(nested) => Ok(match &nested.ty {
                 SemanticType::List { element: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::Map { key: _, value: _ } => {
+                | SemanticType::Map { key: _, value: _ }
+                | SemanticType::ContractViolation => {
                     format!("({} (__items_{} {arg}))", value_ctor("list"), nested.index)
                 }
                 SemanticType::Option { value: _ }
@@ -4447,7 +4808,8 @@ impl<'a> Gen<'a> {
         Ok(match &nested.ty {
             SemanticType::List { element: _ }
             | SemanticType::Set { element: _ }
-            | SemanticType::Map { key: _, value: _ } => {
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::ContractViolation => {
                 let element = element_of(&nested.ty)?;
                 (
                     format!(
@@ -4701,6 +5063,54 @@ impl<'a> Gen<'a> {
                         statement: _,
                         proof: _,
                         axioms: _,
+                    }
+                    | SemanticDeclaration::Artifact {
+                        name: _,
+                        role: _,
+                        sha256: _,
+                        length: _,
+                        schema: _,
+                        r#type: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Contract {
+                        name: _,
+                        type_parameters: _,
+                        input: _,
+                        output: _,
+                        state: _,
+                        precondition: _,
+                        postcondition: _,
+                        invariant: _,
+                        validators: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Realization {
+                        name: _,
+                        type_parameters: _,
+                        input: _,
+                        output: _,
+                        state: _,
+                        descriptor: _,
+                        executable: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Evidence {
+                        name: _,
+                        type_parameters: _,
+                        contract: _,
+                        realization: _,
+                        claims: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Model {
+                        name: _,
+                        type_parameters: _,
+                        contract: _,
+                        realization: _,
+                        evidence: _,
+                        entry: _,
+                        axioms: _,
                     },
                 )
                 | None => return Err(format!("`{module}.{name}` has no termination evidence")),
@@ -4897,6 +5307,14 @@ impl<'a> Gen<'a> {
                                     "`{module}.{name}` recurses without recursion evidence"
                                 ));
                             }
+                            let own = self.member(
+                                &MemberRef {
+                                    module: Some(module.clone()),
+                                    name: name.clone(),
+                                },
+                                &site,
+                            )?;
+                            let sealed = self.sealed(body, &site, &own)?;
                             let ctx =
                                 Ctx::new(site, type_parameters, scope, Hypotheses::new(), *index);
                             let body = self.prove(body, &ctx)?;
@@ -4907,7 +5325,7 @@ impl<'a> Gen<'a> {
                                     body.fits
                                 ),
                                 format!(
-                                    "theorem __rel_{index} {} : {statement} :=\n  {} rfl rfl {}\n\n",
+                                    "{sealed}theorem __rel_{index} {} : {statement} :=\n  {} rfl rfl {}\n\n",
                                     signature.rel_binders.join(" "),
                                     lib("funRel_intro"),
                                     body.proof
@@ -5014,6 +5432,12 @@ impl<'a> Gen<'a> {
                                     node: _,
                                     nodes: _,
                                     edges: _,
+                                }
+                                | SemanticTerm::CheckedApply {
+                                    model: _,
+                                    type_arguments: _,
+                                    arguments: _,
+                                    checks: _,
                                 } => {
                                     return Err(format!(
                                         "structural `{module}.{name}` is not a top-level match"
@@ -5119,6 +5543,12 @@ impl<'a> Gen<'a> {
                                     node: _,
                                     nodes: _,
                                     edges: _,
+                                }
+                                | SemanticTerm::CheckedApply {
+                                    model: _,
+                                    type_arguments: _,
+                                    arguments: _,
+                                    checks: _,
                                 } => false,
                             };
                             if !scrutinee_is_argument {
@@ -5308,6 +5738,54 @@ impl<'a> Gen<'a> {
                                         statement: _,
                                         proof: _,
                                         axioms: _,
+                                    }
+                                    | SemanticDeclaration::Artifact {
+                                        name: _,
+                                        role: _,
+                                        sha256: _,
+                                        length: _,
+                                        schema: _,
+                                        r#type: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Contract {
+                                        name: _,
+                                        type_parameters: _,
+                                        input: _,
+                                        output: _,
+                                        state: _,
+                                        precondition: _,
+                                        postcondition: _,
+                                        invariant: _,
+                                        validators: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Realization {
+                                        name: _,
+                                        type_parameters: _,
+                                        input: _,
+                                        output: _,
+                                        state: _,
+                                        descriptor: _,
+                                        executable: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Evidence {
+                                        name: _,
+                                        type_parameters: _,
+                                        contract: _,
+                                        realization: _,
+                                        claims: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Model {
+                                        name: _,
+                                        type_parameters: _,
+                                        contract: _,
+                                        realization: _,
+                                        evidence: _,
+                                        entry: _,
+                                        axioms: _,
                                     },
                                 )
                                 | None => {
@@ -5414,6 +5892,7 @@ impl<'a> Gen<'a> {
                     let denotation = self.src(body, &ctx)?;
                     let signature = self.signature(*index, &ctx.locals, &result, &denotation)?;
                     let statement = self.statement(*index, &signature);
+                    let sealed = self.sealed(body, &ctx.site, "")?;
                     let proof = self.prove(body, &ctx)?;
                     (
                         format!(
@@ -5422,7 +5901,7 @@ impl<'a> Gen<'a> {
                             proof.fits
                         ),
                         format!(
-                            "theorem __rel_{index} {} : {statement} :=\n  {} rfl rfl {}\n\n",
+                            "{sealed}theorem __rel_{index} {} : {statement} :=\n  {} rfl rfl {}\n\n",
                             signature.rel_binders.join(" "),
                             lib("funRel_intro"),
                             proof.proof
@@ -5496,6 +5975,10 @@ impl Gen<'_> {
         Ok(match ty {
             SemanticType::Nat => Ty::Nat,
             SemanticType::Bool => Ty::Bool,
+            SemanticType::ContractViolation => Ty::Pair {
+                left: Box::new(Ty::Bool),
+                right: Box::new(Ty::Bool),
+            },
             SemanticType::Unit => Ty::Unit,
             SemanticType::Int => Ty::Int,
             SemanticType::Int8
@@ -5624,7 +6107,8 @@ impl Gen<'_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Parameter { name: _ } => {
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::ContractViolation => {
                 return Err(format!("`{}` has no key order", self.source.type_text(ty)));
             }
         })
@@ -6284,7 +6768,8 @@ fn mentions_parameter(ty: &SemanticType, name: &str) -> bool {
             | SemanticType::UInt64
             | SemanticType::String
             | SemanticType::Bytes
-            | SemanticType::Ordering => {}
+            | SemanticType::Ordering
+            | SemanticType::ContractViolation => {}
         }
     }
     found

@@ -653,7 +653,7 @@ pub(crate) fn run(id: &str) {
             project.check_ok();
             let main = support::lean_text(&support::rendered(&project), "Main");
             assert!(main.contains(
-                "  intros\n  try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  omega\n"
+                "  intros\n  try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  all_goals omega\n"
             ), "{main}");
             let _ = support::verify_ok_backed("PF-19", &project);
             // The form names only definitions to unfold: no tactic name or
@@ -683,7 +683,7 @@ pub(crate) fn run(id: &str) {
             let main_text = project.read("src/Main.lex.tex");
             assert!(main_text
                 .contains(r#"{"definitions":[{"name":"weight"}],"kind":"linear_arithmetic"}"#));
-            assert!(main.contains("  intros\n  subst_vars\n  try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  omega\n"), "{main}");
+            assert!(main.contains("  intros\n  subst_vars\n  try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  all_goals omega\n"), "{main}");
             // Language 1.1 rejects the form.
             let eleven = P::semantic_example();
             let source = eleven.read("src/Main.lex.tex");

@@ -168,6 +168,17 @@ pub struct PdfProvider {
     pub resources: Vec<String>,
 }
 
+/// Language 1.2: one content-addressed model artifact (§10.1, §17.12): a
+/// confined regular project file whose bytes have exactly this SHA-256.
+/// Model declarations name artifacts by digest only, never by path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtifactSource {
+    /// The SHA-256 of the file's bytes.
+    pub sha256: Sha256Digest,
+    /// The project-relative file.
+    pub path: String,
+}
+
 /// The validated project configuration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectConfig {
@@ -189,6 +200,8 @@ pub struct ProjectConfig {
     pub lean_workspace: String,
     /// Configured lexicon sources, sorted by package.
     pub lexicon_sources: Vec<LexiconSource>,
+    /// Language 1.2: model artifact sources, sorted by digest.
+    pub artifact_sources: Vec<ArtifactSource>,
     /// The explicit resource policy.
     pub limits: Limits,
     /// The optional PDF provider.
@@ -210,6 +223,8 @@ struct RawProject {
     lean_toolchain: String,
     #[serde(rename = "lexicon_source")]
     lexicon_sources: Vec<RawLexiconSource>,
+    #[serde(default, rename = "artifact_source")]
+    artifact_sources: Option<Vec<RawArtifactSource>>,
     limits: Limits,
     pdf: Option<RawPdf>,
 }
@@ -223,6 +238,13 @@ struct RawLexiconSource {
     url: Option<String>,
     revision: Option<String>,
     subdirectory: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawArtifactSource {
+    sha256: String,
+    path: String,
 }
 
 #[derive(Deserialize)]
@@ -628,6 +650,67 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
         ));
     }
 
+    // Language 1.2 model artifacts: unique paths, strictly sorted by digest,
+    // never inside the build root (§10.1, §17.12).
+    let mut artifact_sources = Vec::new();
+    if let Some(raw_artifacts) = &raw.artifact_sources {
+        if raw.language != crate::LANGUAGE_1_2 {
+            diagnostics.push(config_error(
+                path,
+                format!(
+                    "artifact_source is a language-1.2 field; language {} has no model artifacts",
+                    raw.language
+                ),
+            ));
+        }
+        let mut paths = std::collections::BTreeSet::new();
+        for raw_artifact in raw_artifacts {
+            if !is_project_relative(&raw_artifact.path) {
+                diagnostics.push(config_error(
+                    path,
+                    format!(
+                        "artifact_source path `{}` is not project-relative",
+                        raw_artifact.path
+                    ),
+                ));
+            } else if is_project_relative(&raw.build_root)
+                && path_overlaps(&raw.build_root, &raw_artifact.path)
+            {
+                diagnostics.push(config_error(
+                    path,
+                    format!(
+                        "artifact_source path `{}` lies inside the build root",
+                        raw_artifact.path
+                    ),
+                ));
+            }
+            if !paths.insert(raw_artifact.path.clone()) {
+                diagnostics.push(config_error(
+                    path,
+                    format!("artifact_source path `{}` is repeated", raw_artifact.path),
+                ));
+            }
+            artifact_sources.push(ArtifactSource {
+                sha256: parse_hex64(
+                    path,
+                    "artifact_source.sha256",
+                    &raw_artifact.sha256,
+                    &mut diagnostics,
+                ),
+                path: raw_artifact.path.clone(),
+            });
+        }
+        if !raw_artifacts
+            .windows(2)
+            .all(|pair| pair[0].sha256 < pair[1].sha256)
+        {
+            diagnostics.push(config_error(
+                path,
+                "artifact_source tables must be strictly sorted by sha256",
+            ));
+        }
+    }
+
     // The optional PDF provider (§10.3, §19.7).
     let pdf = match &raw.pdf {
         None => None,
@@ -755,6 +838,7 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
             lockfile: raw.lockfile,
             lean_workspace: raw.lean_workspace,
             lexicon_sources: sources,
+            artifact_sources,
             limits: raw.limits,
             pdf,
         })
@@ -858,6 +942,16 @@ impl ProjectConfig {
                     out.push_str(&format!("subdirectory = {}\n", toml_string(subdirectory)));
                 }
             }
+        }
+        // Written only when present, so a project without model artifacts
+        // keeps its canonical bytes and configuration digest.
+        for artifact in &self.artifact_sources {
+            out.push_str("\n[[artifact_source]]\n");
+            out.push_str(&format!(
+                "sha256 = {}\n",
+                toml_string(&artifact.sha256.to_hex())
+            ));
+            out.push_str(&format!("path = {}\n", toml_string(&artifact.path)));
         }
         out.push_str("\n[limits]\n");
         for (name, value) in self.limits.rows() {

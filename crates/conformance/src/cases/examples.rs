@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 111] = [
+            let prescribed: [(&str, &str); 144] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -290,6 +290,41 @@ pub(crate) fn run(id: &str) {
                 ("production-universe-boundary", "LLT4005"),
                 ("production-named-type-boundary", "LLT4005"),
                 ("production-unknown-target", "LLT4001"),
+                // §17.12: models fail closed (artifacts, interfaces, composition,
+                // boundaries, evidence) before any backend, or at verification.
+                ("model-under-1.1", "LLT4001"),
+                ("model-opaque-member", "LLT4001"),
+                ("model-float-descriptor", "LLT4001"),
+                ("model-unregistered-claim", "LLT4001"),
+                ("model-artifact-source-under-1.1", "LLC0101"),
+                ("model-artifact-missing", "LLR3007"),
+                ("model-artifact-digest-mismatch", "LLR3007"),
+                ("model-artifact-unconfigured", "LLR3007"),
+                ("model-artifact-length-mismatch", "LLR3007"),
+                ("model-artifact-symlink", "LLS8001"),
+                ("model-artifact-over-limit", "LLS8002"),
+                ("model-artifact-schema-violation", "LLR3008"),
+                ("model-artifact-invalid-utf8", "LLR3008"),
+                ("model-artifact-role-violation", "LLR3008"),
+                ("model-artifact-rank-overflow", "LLR3008"),
+                ("model-artifact-decode-budget", "LLS8002"),
+                ("model-artifact-shape-mismatch", "LLT4006"),
+                ("model-encoder-width-forged", "LLT4006"),
+                ("model-contract-realization-mismatch", "LLT4006"),
+                ("model-predicate-signature", "LLT4006"),
+                ("model-validator-unsound-statement", "LLT4006"),
+                ("model-composition-missing-junction", "LLT4007"),
+                ("model-composition-forged-junction", "LLT4007"),
+                ("model-composition-type-mismatch", "LLT4007"),
+                ("model-missing-entry", "LLT4007"),
+                ("model-unvalidated-boundary", "LLT4008"),
+                ("model-unvalidated-postcondition", "LLT4008"),
+                ("model-check-without-validator", "LLT4008"),
+                ("model-realization-bypass", "LLT4008"),
+                ("model-forged-evidence", "LLT4009"),
+                ("model-vacuous-claim", "LLT4009"),
+                ("model-foreign-evidence", "LLT4009"),
+                ("model-false-evidence", "LLV7002"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())

@@ -1,0 +1,64 @@
+spec = "lexlean/project/1"
+name = "models"
+language = "1.2"
+module_prefix = "Models"
+source_roots = ["src"]
+entrypoints = ["src/Main.lex.tex"]
+build_root = ".lexlean"
+lockfile = "lexlean.lock"
+lean_workspace = "."
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[lexicon_source]]
+package = "lexlean.std.nat"
+kind = "builtin"
+
+[[lexicon_source]]
+package = "models.titles"
+kind = "path"
+path = "glossary/models.titles"
+
+[[artifact_source]]
+sha256 = "102bf7ceb176bc23dd4abb56dada713135d79093a79c20c7c79471f751f9a778"
+path = "artifacts/hidden-bias.bin"
+
+[[artifact_source]]
+sha256 = "3369421cb6a657bcbdbec197a0c3b2a8e208dd7746853513f9d77331d0fa1397"
+path = "artifacts/banner.bin"
+
+[[artifact_source]]
+sha256 = "34b5d0d734084832dea276360f994018f4e6eb7921334265e58217b360a2a79d"
+path = "artifacts/triage-bias.bin"
+
+[[artifact_source]]
+sha256 = "476e03af7ff499e63fe93fffa0567a69128761f538ec7dd1f3e2c197a0c90981"
+path = "artifacts/digit-names.txt"
+
+[[artifact_source]]
+sha256 = "670b5066543781ad41947e253f1e5dd45157070e78116a588dc2b6bcea2e7bd8"
+path = "artifacts/hidden-weights.bin"
+
+[[artifact_source]]
+sha256 = "6a536cff5b44d31e45ff9b128794e29c3fe9c09bad111f0dbe9df3fc29941de7"
+path = "artifacts/output-weights.bin"
+
+[[artifact_source]]
+sha256 = "7a1039fea753fdbab50d96e9b180fb5f987c6ba688d847da0e209608c5c0f58e"
+path = "artifacts/triage-weights.bin"
+
+[[artifact_source]]
+sha256 = "ba0505206b75f60de72e117e01155033a68c40972a7f6687a2b05ca0004c5ab4"
+path = "artifacts/output-bias.bin"
+
+[limits]
+max_file_bytes = 4194304
+max_total_source_bytes = 67108864
+max_primitive_atoms = 2000000
+max_token_lattice_edges = 4000000
+max_parse_states = 4000000
+max_ir_nodes = 2000000
+max_scope_depth = 1024
+max_import_depth = 128
+max_diagnostics = 256
+max_child_output_bytes = 16777216
+child_timeout_ms = 300000

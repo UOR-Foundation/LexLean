@@ -226,6 +226,14 @@ overflow = []
 recursion = false
 
 [[construct]]
+key = "type.contract_violation"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "A refusal is a pair of Booleans, plain data with exactly four values."
+
+[[construct]]
 key = "term.var"
 disposition = "runtime"
 allocation = false
@@ -516,6 +524,14 @@ disposition = "runtime"
 allocation = true
 overflow = []
 recursion = false
+
+[[construct]]
+key = "term.checked_apply"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through its elaboration: lets, Boolean validator calls, conditionals, and Result constructors."
 
 [[construct]]
 key = "constructor.nat_succ"
@@ -897,6 +913,14 @@ overflow = []
 recursion = false
 
 [[construct]]
+key = "primitive.less_than"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "A key comparison."
+
+[[construct]]
 key = "declaration.structure"
 disposition = "runtime"
 allocation = false
@@ -954,3 +978,43 @@ allocation = false
 overflow = []
 recursion = false
 note = "Proof-only: recorded as an erased dependency, never realized."
+
+[[construct]]
+key = "declaration.artifact"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "A constant of its decoded value; the embedded bytes are never realized."
+
+[[construct]]
+key = "declaration.contract"
+disposition = "erased"
+allocation = false
+overflow = []
+recursion = false
+note = "Specification only: its predicates are propositions; its validators are ordinary definitions."
+
+[[construct]]
+key = "declaration.realization"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through the ordinary definitions it elaborates to."
+
+[[construct]]
+key = "declaration.evidence"
+disposition = "erased"
+allocation = false
+overflow = []
+recursion = false
+note = "Proof-only: its claims are theorems, never realized."
+
+[[construct]]
+key = "declaration.model"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "A definition applying its realization."

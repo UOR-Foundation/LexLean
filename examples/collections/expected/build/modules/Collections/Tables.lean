@@ -425,6 +425,11 @@ public instance {α β : Type} [Key α] [Key β] : Key (Prod α β) where
   | Nat.succ fuel, state => match step state with
     | none => (state, true)
     | some next => iterateUntil step fuel next
+
+@[expose] public def lessThan {κ : Type} [Key κ] (left right : κ) : Bool :=
+  match Key.compare left right with
+  | .lt => true
+  | _ => false
 end LexLeanCollections
 
 @[expose] public def declare (table : List (Prod (String) (Nat))) (name : String) (slot : Nat) : List (Prod (String) (Nat)) := (LexLeanCollections.mapInsert (table) (name) (slot) : List (Prod (String) (Nat)))

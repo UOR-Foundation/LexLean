@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Presentation}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{p0}: \texttt{()}.\par
+\noindent Constructor \texttt{p1}: \texttt{()}.\par
+\noindent Constructor \texttt{p2}: \texttt{()}.\par
+\noindent Constructor \texttt{p3}: \texttt{()}.\par
+\noindent Constructor \texttt{p4}: \texttt{()}.\par
+\noindent Constructor \texttt{p5}: \texttt{()}.\par
+\noindent Constructor \texttt{p6}: \texttt{()}.\par
+\noindent Constructor \texttt{p7}: \texttt{()}.\par
+\subsection*{\texttt{Level}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{routine}: \texttt{()}.\par
+\noindent Constructor \texttt{urgent}: \texttt{()}.\par
+\noindent Constructor \texttt{emergency}: \texttt{()}.\par
+\subsection*{\texttt{features}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(match presentation with | Presentation.p0 => ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))) | Presentation.p1 => ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))) | Presentation.p2 => ((0 : Int) :: ((1 : Int) :: ((0 : Int) :: ([] : List (Int))))) | Presentation.p3 => ((1 : Int) :: ((1 : Int) :: ((0 : Int) :: ([] : List (Int))))) | Presentation.p4 => ((0 : Int) :: ((0 : Int) :: ((1 : Int) :: ([] : List (Int))))) | Presentation.p5 => ((1 : Int) :: ((0 : Int) :: ((1 : Int) :: ([] : List (Int))))) | Presentation.p6 => ((0 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))) | Presentation.p7 => ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasSymptom}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match presentation with | Presentation.p0 => false | Presentation.p1 => true | Presentation.p2 => true | Presentation.p3 => true | Presentation.p4 => true | Presentation.p5 => true | Presentation.p6 => true | Presentation.p7 => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isBreathless}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match presentation with | Presentation.p0 => false | Presentation.p1 => false | Presentation.p2 => false | Presentation.p3 => false | Presentation.p4 => true | Presentation.p5 => true | Presentation.p6 => true | Presentation.p7 => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isEmergency}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Level)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match level with | Level.routine => false | Level.urgent => false | Level.emergency => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isRoutine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Level)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match level with | Level.routine => true | Level.urgent => false | Level.emergency => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Symptomatic}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(hasSymptom (presentation) = true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{symptomaticCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{hasSymptom (presentation)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{symptomatic\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Statement: \texttt{((symptomaticCheck (presentation) = true) -> Symptomatic (presentation))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Safe}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Presentation) (level : Level)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((isBreathless (presentation) = true) -> (isEmergency (level) = true))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{triageWeights}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int16 integer tensor, little-endian, row-major, shape (3, 3)}.\par
+\noindent Value type: \texttt{List (List (Int))}.\par
+\noindent Content: \texttt{18 bytes, SHA-256 7a1039fea753fdbab50d96e9b180fb5f987c6ba688d847da0e209608c5c0f58e}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{triageWeights.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{triageWeights : List (List (Int)), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{triageWeights.decoded}.\par
+\subsection*{\texttt{triageBias}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int16 integer tensor, little-endian, row-major, shape (3)}.\par
+\noindent Value type: \texttt{List (Int)}.\par
+\noindent Content: \texttt{6 bytes, SHA-256 34b5d0d734084832dea276360f994018f4e6eb7921334265e58217b360a2a79d}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{triageBias.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{triageBias : List (Int), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{triageBias.decoded}.\par
+\subsection*{\texttt{TriageContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input presentation : Presentation, output level : Level}.\par
+\noindent Precondition: \texttt{Symptomatic}.\par
+\noindent Postcondition: \texttt{Safe}.\par
+\noindent Runtime validator: \texttt{symptomaticCheck validates the precondition, sound by symptomatic\_check\_sound}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (presentation : Presentation), ((symptomaticCheck (presentation) = true) -> Symptomatic (presentation)); stated exactly by symptomatic\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TriageContract.precondition\_sound}.\par
+\subsection*{\texttt{triage\_width}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (features (presentation)) : Nat) = 3)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{TriageScore}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input presentation : Presentation, output Level}.\par
+\noindent Statistical scheme: \texttt{linear scoring over mathematical integers, first maximal label}.\par
+\noindent Features: \texttt{features (presentation) of width 3, by triage\_width}.\par
+\noindent Parameters: \texttt{weights triageWeights, bias triageBias}.\par
+\noindent Labels: \texttt{Level.routine, Level.urgent, Level.emergency}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (realization TriageScore width): \texttt{forall (presentation : Presentation), ((LexLeanRuntime.length (features (presentation)) : Nat) = 3); stated exactly by triage\_width}.\par
+\noindent Elaborates to: \texttt{TriageScore.features (presentation : Presentation) : List (Int) := features (presentation)}.\par
+\noindent Elaborates to: \texttt{TriageScore.scores (presentation : Presentation) : List (Int) := (let \_\_values : List (Int) := TriageScore.features (presentation); ((LexLeanCollections.listFold ((fun (\_\_acc : (Prod (List (Int)) (List (Int)))) (\_\_row : List (Int)) => (match (\_\_acc).2 with | List.nil => \_\_acc | List.cons \_\_bias \_\_biases => ((LexLeanRuntime.append ((\_\_acc).1) (((LexLeanRuntime.subtract (\_\_bias) ((LexLeanRuntime.negate (((LexLeanCollections.listFold ((fun (\_\_sum : (Prod (Int) (List (Int)))) (\_\_weight : Int) => (match (\_\_sum).2 with | List.nil => \_\_sum | List.cons \_\_value \_\_rest => ((LexLeanRuntime.subtract ((\_\_sum).1) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply (\_\_weight) (\_\_value) : Int)) : Int)) : Int), \_\_rest)))) (((0 : Int), \_\_values)) (\_\_row) : (Prod (Int) (List (Int))))).1) : Int)) : Int) :: ([] : List (Int)))) : List (Int)), \_\_biases)))) ((([] : List (Int)), triageBias)) (triageWeights) : (Prod (List (Int)) (List (Int))))).1)}.\par
+\noindent Elaborates to: \texttt{TriageScore (presentation : Presentation) : Level := (match ((LexLeanCollections.listFold ((fun (\_\_best : (Prod (Option ((Prod (Level) (Int)))) (List (Level)))) (\_\_score : Int) => (match (\_\_best).2 with | List.nil => \_\_best | List.cons \_\_label \_\_labels => ((match (\_\_best).1 with | Option.none => Option.some ((\_\_label, \_\_score)) | Option.some \_\_leader => (if (LexLeanCollections.lessThan ((\_\_leader).2) (\_\_score) : Bool) then Option.some ((\_\_label, \_\_score)) else Option.some (\_\_leader))), \_\_labels)))) ((Option.none, (Level.routine :: (Level.urgent :: (Level.emergency :: ([] : List (Level))))))) (TriageScore.scores (presentation)) : (Prod (Option ((Prod (Level) (Int)))) (List (Level))))).1 with | Option.none => Level.routine | Option.some \_\_winner => (\_\_winner).1)}.\par
+\subsection*{\texttt{triage\_safe}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Presentation)}.\par
+\noindent Statement: \texttt{(Symptomatic (presentation) -> Safe (presentation) (TriageScore (presentation)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{TriageEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization TriageScore against contract TriageContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by triage\_safe}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence TriageEvidence claim satisfies\_contract): \texttt{forall (presentation : Presentation), (Symptomatic (presentation) -> Safe (presentation) (TriageScore (presentation))); stated exactly by triage\_safe}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TriageEvidence.triage\_safe}.\par
+\subsection*{\texttt{TriageModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract TriageContract to realization TriageScore}.\par
+\noindent Evidence: \texttt{TriageEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{TriageModel (\_\_input : Presentation) : Level := TriageScore (\_\_input)}.\par
+\end{document}

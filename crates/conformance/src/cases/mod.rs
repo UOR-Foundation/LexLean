@@ -18,6 +18,7 @@ mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod models;
 mod preservation;
 mod production;
 mod proofs;
@@ -58,6 +59,7 @@ pub fn run(id: &str) {
         "RB" => rust_backend::run(id),
         "GN" => gnaf::run(id),
         "SP" => preservation::run(id),
+        "MD" => models::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

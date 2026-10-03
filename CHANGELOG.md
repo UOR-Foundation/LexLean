@@ -470,7 +470,57 @@ versions, and the entries below say what each tag does and does not claim.
   schemas.
 - `SnapshotSemanticModule::parse` takes the project language, which routes
   the `semanticdata` discriminator; a downstream caller must pass it.
-
+- Language-1.2 models (§17.12, issue #29): `artifact`, `contract`,
+  `realization`, `evidence`, and `model` declarations, the `checked_apply`
+  term, the `contract_violation` type, and the `less_than` primitive, all in
+  the closed `lexlean/semantic-module/2` schema. Every model declaration
+  elaborates in linking to ordinary definitions and theorems, which the Lean
+  backend, production eligibility, extraction, and the axiom audit consume;
+  the document and the snapshot (new `elaboration` member) show the source
+  and its elaboration.
+  - Artifacts are content-addressed project files configured as
+    `[[artifact_source]]` (language 1.2 only), read confined and counted
+    toward `max_total_source_bytes`, decoded under the closed `bytes`,
+    `int_tensor`, and `utf8_lines` schemas, recorded as `model-artifact`
+    build-manifest inputs, and embedded in Lean with a kernel-checked
+    decoding theorem.
+  - Realizations are deterministic, rule, statistical (linear scoring),
+    integer feed-forward neural (dense, ReLU, truncating requantization,
+    first-maximum or function decoder), or composite (sequence, fan-out,
+    product, branch, scan with unconditional, proved, or checked
+    junctions; every form but a scan may compose stateful stages, threading
+    the product of their states, proved junctions join stateful stages, and
+    a stage whose evidence leaves its postcondition or output invariant open
+    is checked right after it runs); widths, shapes, roles, labels, and descriptor slot
+    types are checked in linking. A tensor declares at most 16 dimensions,
+    checked with its declared type before any byte is decoded, and every
+    artifact declaration is charged before it decodes: its length once more
+    toward `max_total_source_bytes` and the exact node count of its decoded
+    value toward `max_ir_nodes`, running across the link, so naming one
+    digest many times cannot amplify memory.
+  - Evidence claims (`satisfies_contract`, `preserves_invariant`,
+    `initial_invariant`, `equivalent_to`, `dataset_agreement`) are generated
+    statements discharged by statement-exact theorems and restated in Lean
+    against the fixed `LexLeanModels` semantics; executable code must apply
+    a model through `checked_apply` with every check its evidence does not
+    discharge.
+  - New diagnostics `LLR3007`, `LLR3008`, `LLT4006`, `LLT4007`, `LLT4008`,
+    and `LLT4009`; new conformance IDs `MD-01` to `MD-12`; new example
+    `examples/models` (nine modules and a title glossary), which produces and
+    verifies with real Lean, including extraction, every claim form of the
+    fixed model semantics and every runtime check and refusal; 33 new
+    negative fixtures. The canonical document never prints an artifact's
+    bytes or decoded value.
+  - The language-1.2 `semantic_ir`, `lean_backend`, and `latex_backend`
+    versions are bumped. Language-1.2 proposition-valued definitions lower
+    `@[expose, reducible]`, `linear_arithmetic` closes with `all_goals
+    omega`, and the extraction adapter reads LCNF types through metadata
+    annotations. `fmt` stages a project's artifacts with its sources.
+  - The public snapshot DTO grows: `SnapshotDeclaration::elaboration`
+    (`SnapshotElaboration`, with the alpha identity of each elaborated
+    definition), the model declaration variants, `CheckedApply`,
+    `ContractViolation`, and `LessThan`. Downstream exhaustive matches must
+    add them.
 ## 0.3.0
 
 - Support exhaustive Boolean matches and keep imported list construction

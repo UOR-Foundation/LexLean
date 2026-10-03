@@ -674,6 +674,7 @@ fn init_project(
         lexicon_sources: vec![LexiconSource::Builtin {
             package: "lexlean.std.nat".to_owned(),
         }],
+        artifact_sources: Vec::new(),
         limits: INIT_LIMITS,
         pdf: None,
     };

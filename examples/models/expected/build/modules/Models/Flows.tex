@@ -1,0 +1,415 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{flow\_capped\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat)}.\par
+\noindent Statement: \texttt{((Models.Ledger.cappedCheck (s) = true) -> Models.Ledger.Capped (s))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{FlowContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output r : Except (ContractViolation) (Nat), state s : Nat stepping to t}.\par
+\noindent Invariant: \texttt{Models.Ledger.Capped}.\par
+\noindent Runtime validator: \texttt{Models.Ledger.cappedCheck validates the invariant, sound by flow\_capped\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : Nat), ((Models.Ledger.cappedCheck (s) = true) -> Models.Ledger.Capped (s)); stated exactly by flow\_capped\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{FlowContract.invariant\_sound}.\par
+\subsection*{\texttt{ClampGuess}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) (Nat), state s : Nat from 0}.\par
+\noindent Composite: \texttt{sequence Models.Ledger.ClampModel, Models.Ledger.GuessModel; junctions checked at run time}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ClampGuess.initial : Nat := 0}.\par
+\noindent Elaborates to: \texttt{ClampGuess (s : Nat) (x : Nat) : (Prod (Nat) (Except (ContractViolation) (Nat))) := (let \_\_step1 : (Prod (Nat) (Nat)) := Models.Ledger.ClampModel (s) (x); (let \_\_stage1 : Nat := (\_\_step1).2; (let \_\_state1 : Nat := (\_\_step1).1; (if Models.Ledger.withinCheck (\_\_stage1) then (let \_\_stage2 : Nat := Models.Ledger.GuessModel (\_\_stage1); (if Models.Ledger.belowCheck (\_\_stage1) (\_\_stage2) then (\_\_state1, Except.ok (\_\_stage2)) else (s, Except.error (ContractViolation.postcondition)))) else (s, Except.error (ContractViolation.precondition))))))}.\par
+\subsection*{\texttt{flow\_entry}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Models.Ledger.Capped (s) -> Models.Ledger.Capped (s))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{FlowModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract FlowContract to realization ClampGuess}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{flow\_entry}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model FlowModel entry 1): \texttt{forall (s : Nat) (x : Nat), (Models.Ledger.Capped (s) -> Models.Ledger.Capped (s)); stated exactly by flow\_entry}.\par
+\noindent Elaborates to: \texttt{FlowModel.initial : Nat := ClampGuess.initial}.\par
+\noindent Elaborates to: \texttt{FlowModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Except (ContractViolation) (Nat))) := ClampGuess (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{pair\_within\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{((Models.Ledger.withinCheck (x) = true) -> Models.Ledger.Within (x))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{PairGuessContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output r : Except (ContractViolation) ((Prod (Nat) (Nat)))}.\par
+\noindent Precondition: \texttt{Models.Ledger.Within}.\par
+\noindent Runtime validator: \texttt{Models.Ledger.withinCheck validates the precondition, sound by pair\_within\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (x : Nat), ((Models.Ledger.withinCheck (x) = true) -> Models.Ledger.Within (x)); stated exactly by pair\_within\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PairGuessContract.precondition\_sound}.\par
+\subsection*{\texttt{GuessTwice}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) ((Prod (Nat) (Nat)))}.\par
+\noindent Composite: \texttt{fan-out of Models.Ledger.GuessModel and Models.Ledger.GuessExactModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GuessTwice (x : Nat) : Except (ContractViolation) ((Prod (Nat) (Nat))) := (let \_\_left : Nat := Models.Ledger.GuessModel (x); (if Models.Ledger.belowCheck (x) (\_\_left) then (let \_\_right : Nat := Models.Ledger.GuessExactModel (x); (if Models.Ledger.belowCheck (x) (\_\_right) then Except.ok ((\_\_left, \_\_right)) else Except.error (ContractViolation.postcondition))) else Except.error (ContractViolation.postcondition)))}.\par
+\subsection*{\texttt{pair\_entry\_left}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{(Models.Ledger.Within (x) -> Models.Ledger.Within (x))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pair\_entry\_right}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{(Models.Ledger.Within (x) -> Models.Ledger.Within (x))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PairGuessModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PairGuessContract to realization GuessTwice}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{pair\_entry\_left, pair\_entry\_right}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model PairGuessModel entry 1): \texttt{forall (x : Nat), (Models.Ledger.Within (x) -> Models.Ledger.Within (x)); stated exactly by pair\_entry\_left}.\par
+\noindent Obligation (model PairGuessModel entry 2): \texttt{forall (x : Nat), (Models.Ledger.Within (x) -> Models.Ledger.Within (x)); stated exactly by pair\_entry\_right}.\par
+\noindent Elaborates to: \texttt{PairGuessModel (\_\_input : Nat) : Except (ContractViolation) ((Prod (Nat) (Nat))) := GuessTwice (\_\_input)}.\par
+\subsection*{\texttt{GuessOvershoot}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) ((Prod (Nat) (Nat)))}.\par
+\noindent Composite: \texttt{fan-out of Models.Ledger.GuessModel and Models.Ledger.OvershootModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GuessOvershoot (x : Nat) : Except (ContractViolation) ((Prod (Nat) (Nat))) := (let \_\_left : Nat := Models.Ledger.GuessModel (x); (if Models.Ledger.belowCheck (x) (\_\_left) then (let \_\_right : Nat := Models.Ledger.OvershootModel (x); (if Models.Ledger.belowCheck (x) (\_\_right) then Except.ok ((\_\_left, \_\_right)) else Except.error (ContractViolation.postcondition))) else Except.error (ContractViolation.postcondition)))}.\par
+\subsection*{\texttt{OvershootPairModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PairGuessContract to realization GuessOvershoot}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{pair\_entry\_left, pair\_entry\_right}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model OvershootPairModel entry 1): \texttt{forall (x : Nat), (Models.Ledger.Within (x) -> Models.Ledger.Within (x)); stated exactly by pair\_entry\_left}.\par
+\noindent Obligation (model OvershootPairModel entry 2): \texttt{forall (x : Nat), (Models.Ledger.Within (x) -> Models.Ledger.Within (x)); stated exactly by pair\_entry\_right}.\par
+\noindent Elaborates to: \texttt{OvershootPairModel (\_\_input : Nat) : Except (ContractViolation) ((Prod (Nat) (Nat))) := GuessOvershoot (\_\_input)}.\par
+\subsection*{\texttt{Few}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.length (xs) : Nat) <= 100)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fewCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble ((LexLeanRuntime.length (xs) : Nat)) (100))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{few\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{((fewCheck (xs) = true) -> Few (xs))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{SpillStreamContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input xs : List (Nat), output r : Except (ContractViolation) (List (Nat))}.\par
+\noindent Precondition: \texttt{Few}.\par
+\noindent Runtime validator: \texttt{fewCheck validates the precondition, sound by few\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (xs : List (Nat)), ((fewCheck (xs) = true) -> Few (xs)); stated exactly by few\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SpillStreamContract.precondition\_sound}.\par
+\subsection*{\texttt{SpillStream}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input xs : List (Nat), output Except (ContractViolation) (List (Nat))}.\par
+\noindent Composite: \texttt{scan of Models.Ledger.SpillModel; junction checked at run time}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SpillStream (xs : List (Nat)) : Except (ContractViolation) (List (Nat)) := (let \_\_scanned : Except (ContractViolation) ((Prod (Nat) (List (Nat)))) := (LexLeanCollections.listFold ((fun (\_\_acc : Except (ContractViolation) ((Prod (Nat) (List (Nat))))) (\_\_item : Nat) => (match \_\_acc with | Except.error \_ => \_\_acc | Except.ok \_\_state => (if Models.Ledger.cappedCheck ((\_\_state).1) then (if Models.Ledger.smallCheck ((\_\_state).1) (\_\_item) then (let \_\_step : (Prod (Nat) (Nat)) := Models.Ledger.SpillModel ((\_\_state).1) (\_\_item); (if Models.Ledger.cappedCheck ((\_\_step).1) then Except.ok (((\_\_step).1, (LexLeanRuntime.append ((\_\_state).2) (((\_\_step).2 :: ([] : List (Nat)))) : List (Nat)))) else Except.error (ContractViolation.output\_invariant))) else Except.error (ContractViolation.precondition)) else Except.error (ContractViolation.input\_invariant))))) (Except.ok ((Models.Ledger.SpillModel.initial, ([] : List (Nat))))) (xs) : Except (ContractViolation) ((Prod (Nat) (List (Nat))))); (match \_\_scanned with | Except.error \_\_violation => Except.error (\_\_violation) | Except.ok \_\_state => Except.ok ((\_\_state).2)))}.\par
+\subsection*{\texttt{SpillStreamModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract SpillStreamContract to realization SpillStream}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SpillStreamModel (\_\_input : List (Nat)) : Except (ContractViolation) (List (Nat)) := SpillStream (\_\_input)}.\par
+\subsection*{\texttt{TwinCapped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{Models.Ledger.Capped ((s).1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twinCappedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{Models.Ledger.cappedCheck ((s).1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twin\_capped\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{((twinCappedCheck (s) = true) -> TwinCapped (s))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{TwinSmall}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(x <= 10)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twinSmallCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (x) (10))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twin\_small\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{((twinSmallCheck (s) (x) = true) -> TwinSmall (s) (x))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{TwinContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : (Prod (Nat) (Nat)), state s : (Prod (Nat) (Nat)) stepping to t}.\par
+\noindent Precondition: \texttt{TwinSmall}.\par
+\noindent Invariant: \texttt{TwinCapped}.\par
+\noindent Runtime validator: \texttt{twinCappedCheck validates the invariant, sound by twin\_capped\_check\_sound}.\par
+\noindent Runtime validator: \texttt{twinSmallCheck validates the precondition, sound by twin\_small\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : (Prod (Nat) (Nat))), ((twinCappedCheck (s) = true) -> TwinCapped (s)); stated exactly by twin\_capped\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), ((twinSmallCheck (s) (x) = true) -> TwinSmall (s) (x)); stated exactly by twin\_small\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TwinContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TwinContract.precondition\_sound}.\par
+\subsection*{\texttt{ClampTally}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output (Prod (Nat) (Nat)), state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{fan-out of Models.Ledger.ClampModel and Models.Ledger.TallyModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ClampTally.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{ClampTally (s : (Prod (Nat) (Nat))) (x : Nat) : (Prod ((Prod (Nat) (Nat))) ((Prod (Nat) (Nat)))) := (let \_\_left\_step : (Prod (Nat) (Nat)) := Models.Ledger.ClampModel ((s).1) (x); (let \_\_left : Nat := (\_\_left\_step).2; (let \_\_left\_state : Nat := (\_\_left\_step).1; (let \_\_right\_step : (Prod (Nat) (Nat)) := Models.Ledger.TallyModel ((s).2) (x); (let \_\_right : Nat := (\_\_right\_step).2; (let \_\_right\_state : Nat := (\_\_right\_step).1; ((\_\_left\_state, \_\_right\_state), (\_\_left, \_\_right))))))))}.\par
+\subsection*{\texttt{twin\_entry\_left}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twin\_entry\_right}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).2) (x)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{TwinModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract TwinContract to realization ClampTally}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{twin\_entry\_left, twin\_entry\_right}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model TwinModel entry 1): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1))); stated exactly by twin\_entry\_left}.\par
+\noindent Obligation (model TwinModel entry 2): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).2) (x))); stated exactly by twin\_entry\_right}.\par
+\noindent Elaborates to: \texttt{TwinModel.initial : (Prod (Nat) (Nat)) := ClampTally.initial}.\par
+\noindent Elaborates to: \texttt{TwinModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : Nat) : (Prod ((Prod (Nat) (Nat))) ((Prod (Nat) (Nat)))) := ClampTally (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{BothCapped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(Models.Ledger.Capped ((s).1) /\textbackslash{} Models.Ledger.Capped ((s).2))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bothCappedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (((LexLeanRuntime.subtract ((s).1) (100) : Nat) + (LexLeanRuntime.subtract ((s).2) (100) : Nat))) (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{both\_capped\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{((bothCappedCheck (s) = true) -> BothCapped (s))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{PairClampContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : (Prod (Nat) (Nat)), output y : (Prod (Nat) (Nat)), state s : (Prod (Nat) (Nat)) stepping to t}.\par
+\noindent Invariant: \texttt{BothCapped}.\par
+\noindent Runtime validator: \texttt{bothCappedCheck validates the invariant, sound by both\_capped\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : (Prod (Nat) (Nat))), ((bothCappedCheck (s) = true) -> BothCapped (s)); stated exactly by both\_capped\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PairClampContract.invariant\_sound}.\par
+\subsection*{\texttt{ClampBoth}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : (Prod (Nat) (Nat)), output (Prod (Nat) (Nat)), state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{product of Models.Ledger.ClampModel and Models.Ledger.ClampModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ClampBoth.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{ClampBoth (s : (Prod (Nat) (Nat))) (x : (Prod (Nat) (Nat))) : (Prod ((Prod (Nat) (Nat))) ((Prod (Nat) (Nat)))) := (let \_\_left\_step : (Prod (Nat) (Nat)) := Models.Ledger.ClampModel ((s).1) ((x).1); (let \_\_left : Nat := (\_\_left\_step).2; (let \_\_left\_state : Nat := (\_\_left\_step).1; (let \_\_right\_step : (Prod (Nat) (Nat)) := Models.Ledger.ClampModel ((s).2) ((x).2); (let \_\_right : Nat := (\_\_right\_step).2; (let \_\_right\_state : Nat := (\_\_right\_step).1; ((\_\_left\_state, \_\_right\_state), (\_\_left, \_\_right))))))))}.\par
+\subsection*{\texttt{both\_entry\_left}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{(BothCapped (s) -> Models.Ledger.Capped ((s).1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{both\_entry\_right}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{(BothCapped (s) -> Models.Ledger.Capped ((s).2))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{PairClampModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PairClampContract to realization ClampBoth}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{both\_entry\_left, both\_entry\_right}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model PairClampModel entry 1): \texttt{forall (s : (Prod (Nat) (Nat))) (x : (Prod (Nat) (Nat))), (BothCapped (s) -> Models.Ledger.Capped ((s).1)); stated exactly by both\_entry\_left}.\par
+\noindent Obligation (model PairClampModel entry 2): \texttt{forall (s : (Prod (Nat) (Nat))) (x : (Prod (Nat) (Nat))), (BothCapped (s) -> Models.Ledger.Capped ((s).2)); stated exactly by both\_entry\_right}.\par
+\noindent Elaborates to: \texttt{PairClampModel.initial : (Prod (Nat) (Nat)) := ClampBoth.initial}.\par
+\noindent Elaborates to: \texttt{PairClampModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : (Prod (Nat) (Nat))) : (Prod ((Prod (Nat) (Nat))) ((Prod (Nat) (Nat)))) := ClampBoth (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{BranchContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat, state s : (Prod (Nat) (Nat)) stepping to t}.\par
+\noindent Precondition: \texttt{TwinSmall}.\par
+\noindent Invariant: \texttt{TwinCapped}.\par
+\noindent Runtime validator: \texttt{twinCappedCheck validates the invariant, sound by twin\_capped\_check\_sound}.\par
+\noindent Runtime validator: \texttt{twinSmallCheck validates the precondition, sound by twin\_small\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : (Prod (Nat) (Nat))), ((twinCappedCheck (s) = true) -> TwinCapped (s)); stated exactly by twin\_capped\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), ((twinSmallCheck (s) (x) = true) -> TwinSmall (s) (x)); stated exactly by twin\_small\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{BranchContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{BranchContract.precondition\_sound}.\par
+\subsection*{\texttt{ClampOrTally}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat, state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{if (Nat.ble (x) (5)) then Models.Ledger.ClampModel else Models.Ledger.TallyModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ClampOrTally.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{ClampOrTally (s : (Prod (Nat) (Nat))) (x : Nat) : (Prod ((Prod (Nat) (Nat))) (Nat)) := (if (Nat.ble (x) (5)) then (let \_\_then\_step : (Prod (Nat) (Nat)) := Models.Ledger.ClampModel ((s).1) (x); (let \_\_then : Nat := (\_\_then\_step).2; (let \_\_then\_state : Nat := (\_\_then\_step).1; ((\_\_then\_state, (s).2), \_\_then)))) else (let \_\_else\_step : (Prod (Nat) (Nat)) := Models.Ledger.TallyModel ((s).2) (x); (let \_\_else : Nat := (\_\_else\_step).2; (let \_\_else\_state : Nat := (\_\_else\_step).1; (((s).1, \_\_else\_state), \_\_else)))))}.\par
+\subsection*{\texttt{branch\_entry\_then}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = true) -> Models.Ledger.Capped ((s).1))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{branch\_entry\_else}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = false) -> Models.Ledger.Small ((s).2) (x))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{BranchModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract BranchContract to realization ClampOrTally}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{branch\_entry\_then, branch\_entry\_else}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model BranchModel entry 1): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = true) -> Models.Ledger.Capped ((s).1)))); stated exactly by branch\_entry\_then}.\par
+\noindent Obligation (model BranchModel entry 2): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = false) -> Models.Ledger.Small ((s).2) (x)))); stated exactly by branch\_entry\_else}.\par
+\noindent Elaborates to: \texttt{BranchModel.initial : (Prod (Nat) (Nat)) := ClampOrTally.initial}.\par
+\noindent Elaborates to: \texttt{BranchModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : Nat) : (Prod ((Prod (Nat) (Nat))) (Nat)) := ClampOrTally (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{ChainContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Except (ContractViolation) (Nat), state s : (Prod (Nat) (Nat)) stepping to t}.\par
+\noindent Precondition: \texttt{TwinSmall}.\par
+\noindent Invariant: \texttt{TwinCapped}.\par
+\noindent Runtime validator: \texttt{twinCappedCheck validates the invariant, sound by twin\_capped\_check\_sound}.\par
+\noindent Runtime validator: \texttt{twinSmallCheck validates the precondition, sound by twin\_small\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : (Prod (Nat) (Nat))), ((twinCappedCheck (s) = true) -> TwinCapped (s)); stated exactly by twin\_capped\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), ((twinSmallCheck (s) (x) = true) -> TwinSmall (s) (x)); stated exactly by twin\_small\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ChainContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ChainContract.precondition\_sound}.\par
+\subsection*{\texttt{spill\_tally}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(Models.Ledger.Capped ((s).1) -> (Models.Ledger.Small ((s).1) (x) -> Models.Ledger.Small ((s).2) ((Models.Ledger.SpillModel ((s).1) (x)).2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{SpillTally}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) (Nat), state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{sequence Models.Ledger.SpillModel, Models.Ledger.TallyModel; junctions proved by spill\_tally}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (composite SpillTally junction 1): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (Models.Ledger.Capped ((s).1) -> (Models.Ledger.Small ((s).1) (x) -> Models.Ledger.Small ((s).2) ((Models.Ledger.SpillModel ((s).1) (x)).2))); stated exactly by spill\_tally}.\par
+\noindent Elaborates to: \texttt{SpillTally.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{SpillTally (s : (Prod (Nat) (Nat))) (x : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := (let \_\_step1 : (Prod (Nat) (Nat)) := Models.Ledger.SpillModel ((s).1) (x); (let \_\_stage1 : Nat := (\_\_step1).2; (let \_\_state1 : Nat := (\_\_step1).1; (if Models.Ledger.cappedCheck (\_\_state1) then (let \_\_step2 : (Prod (Nat) (Nat)) := Models.Ledger.TallyModel ((s).2) (\_\_stage1); (let \_\_stage2 : Nat := (\_\_step2).2; (let \_\_state2 : Nat := (\_\_step2).1; ((\_\_state1, \_\_state2), Except.ok (\_\_stage2))))) else (s, Except.error (ContractViolation.output\_invariant))))))}.\par
+\subsection*{\texttt{chain\_entry\_invariant}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chain\_entry\_precondition}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (x : Nat)}.\par
+\noindent Statement: \texttt{(TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).1) (x)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ChainModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract ChainContract to realization SpillTally}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Entry: \texttt{chain\_entry\_invariant, chain\_entry\_precondition}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (model ChainModel entry 1): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1))); stated exactly by chain\_entry\_invariant}.\par
+\noindent Obligation (model ChainModel entry 2): \texttt{forall (s : (Prod (Nat) (Nat))) (x : Nat), (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).1) (x))); stated exactly by chain\_entry\_precondition}.\par
+\noindent Elaborates to: \texttt{ChainModel.initial : (Prod (Nat) (Nat)) := SpillTally.initial}.\par
+\noindent Elaborates to: \texttt{ChainModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := SpillTally (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{RawChainContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Except (ContractViolation) (Nat), state s : (Prod (Nat) (Nat)) stepping to t}.\par
+\noindent Invariant: \texttt{TwinCapped}.\par
+\noindent Runtime validator: \texttt{twinCappedCheck validates the invariant, sound by twin\_capped\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : (Prod (Nat) (Nat))), ((twinCappedCheck (s) = true) -> TwinCapped (s)); stated exactly by twin\_capped\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{RawChainContract.invariant\_sound}.\par
+\subsection*{\texttt{TallySpillRaw}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) (Nat), state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{sequence Models.Ledger.FreeModel, Models.Ledger.SpillRawModel; junctions checked at run time}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{TallySpillRaw.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{TallySpillRaw (s : (Prod (Nat) (Nat))) (x : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := (let \_\_step1 : (Prod (Nat) (Nat)) := Models.Ledger.FreeModel ((s).1) (x); (let \_\_stage1 : Nat := (\_\_step1).2; (let \_\_state1 : Nat := (\_\_step1).1; (if Models.Ledger.cappedCheck ((s).2) then (if Models.Ledger.smallCheck ((s).2) (\_\_stage1) then (let \_\_step2 : (Prod (Nat) (Nat)) := Models.Ledger.SpillRawModel ((s).2) (\_\_stage1); (let \_\_stage2 : Nat := (\_\_step2).2; (let \_\_state2 : Nat := (\_\_step2).1; (if Models.Ledger.cappedCheck (\_\_state2) then (if Models.Ledger.growsCheck ((s).2) (\_\_stage1) (\_\_state2) (\_\_stage2) then ((\_\_state1, \_\_state2), Except.ok (\_\_stage2)) else (s, Except.error (ContractViolation.postcondition))) else (s, Except.error (ContractViolation.output\_invariant)))))) else (s, Except.error (ContractViolation.precondition))) else (s, Except.error (ContractViolation.input\_invariant))))))}.\par
+\subsection*{\texttt{RawChainModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract RawChainContract to realization TallySpillRaw}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{RawChainModel.initial : (Prod (Nat) (Nat)) := TallySpillRaw.initial}.\par
+\noindent Elaborates to: \texttt{RawChainModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := TallySpillRaw (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{Drain}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat, state s : Nat from 0}.\par
+\noindent Deterministic denotation: \texttt{((LexLeanRuntime.subtract (s) (x) : Nat), x)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Drain.initial : Nat := 0}.\par
+\noindent Elaborates to: \texttt{Drain (s : Nat) (x : Nat) : (Prod (Nat) (Nat)) := ((LexLeanRuntime.subtract (s) (x) : Nat), x)}.\par
+\subsection*{\texttt{DrainModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract Models.Ledger.FreeContract to realization Drain}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{DrainModel.initial : Nat := Drain.initial}.\par
+\noindent Elaborates to: \texttt{DrainModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Drain (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{TallyDrain}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Except (ContractViolation) (Nat), state s : (Prod (Nat) (Nat)) from (0, 0)}.\par
+\noindent Composite: \texttt{sequence Models.Ledger.FreeModel, DrainModel; junctions unconditional}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{TallyDrain.initial : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{TallyDrain (s : (Prod (Nat) (Nat))) (x : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := (let \_\_step1 : (Prod (Nat) (Nat)) := Models.Ledger.FreeModel ((s).1) (x); (let \_\_stage1 : Nat := (\_\_step1).2; (let \_\_state1 : Nat := (\_\_step1).1; (let \_\_step2 : (Prod (Nat) (Nat)) := DrainModel ((s).2) (\_\_stage1); (let \_\_stage2 : Nat := (\_\_step2).2; (let \_\_state2 : Nat := (\_\_step2).1; (if Models.Ledger.growsCheck ((s).2) (\_\_stage1) (\_\_state2) (\_\_stage2) then ((\_\_state1, \_\_state2), Except.ok (\_\_stage2)) else (s, Except.error (ContractViolation.postcondition)))))))))}.\par
+\subsection*{\texttt{DrainChainModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract RawChainContract to realization TallyDrain}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{DrainChainModel.initial : (Prod (Nat) (Nat)) := TallyDrain.initial}.\par
+\noindent Elaborates to: \texttt{DrainChainModel (\_\_state : (Prod (Nat) (Nat))) (\_\_input : Nat) : (Prod ((Prod (Nat) (Nat))) (Except (ContractViolation) (Nat))) := TallyDrain (\_\_state) (\_\_input)}.\par
+\end{document}

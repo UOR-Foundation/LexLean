@@ -64,7 +64,29 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
                 })
         }
         SnapshotSemanticDeclaration::Theorem { statement, proof, .. } => term(statement) + prove(proof),
+        SnapshotSemanticDeclaration::Artifact { r#type, length, .. } => ty(r#type) + *length as usize,
+        SnapshotSemanticDeclaration::Contract { input, output, validators, .. } => {
+            ty(&input.r#type) + ty(&output.r#type) + validators.len()
+        }
+        SnapshotSemanticDeclaration::Realization { input, output, .. } => ty(&input.r#type) + ty(output),
+        SnapshotSemanticDeclaration::Evidence { claims, .. } => claims.len(),
+        SnapshotSemanticDeclaration::Model { evidence, entry, .. } => evidence.len() + entry.len(),
     }
+}
+
+pub fn elaborated(snapshot: &lexlean::SemanticSnapshot) -> usize {
+    snapshot
+        .modules()
+        .iter()
+        .flat_map(|module| module.declarations())
+        .filter_map(|declaration| declaration.elaboration())
+        .map(|elaboration| {
+            elaboration.declarations().len()
+                + elaboration.obligations().len()
+                + elaboration.cross_checks().len()
+                + elaboration.required_checks().len()
+        })
+        .sum()
 }
 
 fn ty(value: &SnapshotType) -> usize {
@@ -74,7 +96,8 @@ fn ty(value: &SnapshotType) -> usize {
         | SnapshotType::Int8 | SnapshotType::Int16 | SnapshotType::Int32
         | SnapshotType::Int64 | SnapshotType::UInt8 | SnapshotType::UInt16
         | SnapshotType::UInt32 | SnapshotType::UInt64 | SnapshotType::String
-        | SnapshotType::Bytes | SnapshotType::Ordering => 1,
+        | SnapshotType::Bytes | SnapshotType::Ordering
+        | SnapshotType::ContractViolation => 1,
         SnapshotType::Parameter { name } => name.len(),
         SnapshotType::Option { value } => ty(value),
         SnapshotType::Result { ok, error } => ty(ok) + ty(error),
@@ -130,6 +153,11 @@ fn term(value: &SnapshotTerm) -> usize {
         SnapshotTerm::GraphLiteral { node, nodes, edges } => {
             ty(node) + nodes.iter().map(term).sum::<usize>()
                 + edges.iter().map(|v| term(&v.source) + term(&v.target)).sum::<usize>()
+        }
+        SnapshotTerm::CheckedApply { type_arguments, arguments, checks, .. } => {
+            type_arguments.iter().map(ty).sum::<usize>()
+                + arguments.iter().map(term).sum::<usize>()
+                + checks.len()
         }
     }
 }

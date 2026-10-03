@@ -427,6 +427,11 @@ public instance {α β : Type} [Key α] [Key β] : Key (Prod α β) where
   | Nat.succ fuel, state => match step state with
     | none => (state, true)
     | some next => iterateUntil step fuel next
+
+@[expose] public def lessThan {κ : Type} [Key κ] (left right : κ) : Bool :=
+  match Key.compare left right with
+  | .lt => true
+  | _ => false
 end LexLeanCollections
 
 @[expose] public def ancestors (parents : List ((Prod (Nat) (Nat)))) : (Prod (List ((Prod (Nat) (Nat)))) (Bool)) := (LexLeanCollections.iterateUntil ((fun (state : List ((Prod (Nat) (Nat)))) => (let derived : List ((Prod (Nat) (Nat))) := (LexLeanCollections.setFold ((fun (outer : List ((Prod (Nat) (Nat)))) (left : (Prod (Nat) (Nat))) => (LexLeanCollections.setFold ((fun (inner : List ((Prod (Nat) (Nat)))) (right : (Prod (Nat) (Nat))) => (if (Nat.beq ((left).2) ((right).1)) then (LexLeanCollections.setInsert (inner) (((left).1, (right).2)) : List ((Prod (Nat) (Nat)))) else inner))) (outer) (state) : List ((Prod (Nat) (Nat)))))) (state) (state) : List ((Prod (Nat) (Nat)))); (if (Nat.beq ((LexLeanCollections.setSize (derived) : Nat)) ((LexLeanCollections.setSize (state) : Nat))) then Option.none else Option.some (derived))))) (8) (parents) : (Prod (List ((Prod (Nat) (Nat)))) (Bool)))

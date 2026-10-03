@@ -1,0 +1,108 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Window}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{used}: \texttt{Nat}.\par
+\noindent Field \texttt{items}: \texttt{Nat}.\par
+\subsection*{\texttt{Affordable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(cost <= 16)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{affordableCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (cost) (16))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{affordable\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat)}.\par
+\noindent Statement: \texttt{((affordableCheck (window) (cost) = true) -> Affordable (window) (cost))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Bounded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(window : Window)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((window).used <= 64)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{boundedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(window : Window)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble ((window).used) (64))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bounded\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(window : Window)}.\par
+\noindent Statement: \texttt{((boundedCheck (window) = true) -> Bounded (window))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Conserves}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat) (updated : Window) (overflow : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((updated).used + overflow) = ((window).used + cost))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{SessionContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input cost : Nat, output overflow : Nat, state window : Window stepping to updated}.\par
+\noindent Precondition: \texttt{Affordable}.\par
+\noindent Postcondition: \texttt{Conserves}.\par
+\noindent Invariant: \texttt{Bounded}.\par
+\noindent Runtime validator: \texttt{boundedCheck validates the invariant, sound by bounded\_check\_sound}.\par
+\noindent Runtime validator: \texttt{affordableCheck validates the precondition, sound by affordable\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (window : Window), ((boundedCheck (window) = true) -> Bounded (window)); stated exactly by bounded\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (window : Window) (cost : Nat), ((affordableCheck (window) (cost) = true) -> Affordable (window) (cost)); stated exactly by affordable\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SessionContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SessionContract.precondition\_sound}.\par
+\subsection*{\texttt{SessionStep}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input cost : Nat, output Nat, state window : Window from (\{ used := 0, items := 0 \} : Window)}.\par
+\noindent Deterministic denotation: \texttt{(let total : Nat := ((window).used + cost); ((\{ used := (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (64) : Nat)) : Nat), items := ((window).items + 1) \} : Window), (LexLeanRuntime.subtract (total) (64) : Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SessionStep.initial : Window := (\{ used := 0, items := 0 \} : Window)}.\par
+\noindent Elaborates to: \texttt{SessionStep (window : Window) (cost : Nat) : (Prod (Window) (Nat)) := (let total : Nat := ((window).used + cost); ((\{ used := (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (64) : Nat)) : Nat), items := ((window).items + 1) \} : Window), (LexLeanRuntime.subtract (total) (64) : Nat)))}.\par
+\subsection*{\texttt{session\_initial}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{Bounded (SessionStep.initial)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{session\_preserves}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat)}.\par
+\noindent Statement: \texttt{(Bounded (window) -> (Affordable (window) (cost) -> Bounded ((SessionStep (window) (cost)).1)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{session\_conserves}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(window : Window) (cost : Nat)}.\par
+\noindent Statement: \texttt{(Bounded (window) -> (Affordable (window) (cost) -> Conserves (window) (cost) ((SessionStep (window) (cost)).1) ((SessionStep (window) (cost)).2)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{SessionEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization SessionStep against contract SessionContract}.\par
+\noindent Claim: \texttt{the initial state satisfies the invariant, discharged by session\_initial}.\par
+\noindent Claim: \texttt{every step preserves the invariant, discharged by session\_preserves}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by session\_conserves}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (evidence SessionEvidence claim initial\_invariant): \texttt{Bounded (SessionStep.initial); stated exactly by session\_initial}.\par
+\noindent Obligation (evidence SessionEvidence claim preserves\_invariant): \texttt{forall (window : Window) (cost : Nat), (Bounded (window) -> (Affordable (window) (cost) -> Bounded ((SessionStep (window) (cost)).1))); stated exactly by session\_preserves}.\par
+\noindent Obligation (evidence SessionEvidence claim satisfies\_contract): \texttt{forall (window : Window) (cost : Nat), (Bounded (window) -> (Affordable (window) (cost) -> Conserves (window) (cost) ((SessionStep (window) (cost)).1) ((SessionStep (window) (cost)).2))); stated exactly by session\_conserves}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SessionEvidence.session\_initial}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SessionEvidence.session\_preserves}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SessionEvidence.session\_conserves}.\par
+\subsection*{\texttt{SessionModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract SessionContract to realization SessionStep}.\par
+\noindent Evidence: \texttt{SessionEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SessionModel.initial : Window := SessionStep.initial}.\par
+\noindent Elaborates to: \texttt{SessionModel (\_\_state : Window) (\_\_input : Nat) : (Prod (Window) (Nat)) := SessionStep (\_\_state) (\_\_input)}.\par
+\end{document}

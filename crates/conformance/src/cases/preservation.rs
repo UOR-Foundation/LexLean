@@ -11,15 +11,17 @@ use crate::preservation::{self, Mutation, Report};
 use crate::support::{self, repo_root, P};
 
 /// The projects whose every production root is certified: the example that
-/// declares production roots and the coverage example, whose roots exercise
-/// every runtime row of the production registry.
-fn certified_projects() -> [(&'static str, P); 2] {
+/// declares production roots, the coverage example, and the models example,
+/// whose roots together exercise every runtime row of the production
+/// registry.
+fn certified_projects() -> [(&'static str, P); 3] {
     [
         ("production", P::copy_example("production")),
         (
             "production-coverage",
             P::copy_example("production-coverage"),
         ),
+        ("models", P::copy_example("models")),
     ]
 }
 

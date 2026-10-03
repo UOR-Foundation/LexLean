@@ -1,0 +1,300 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Responds}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation) (action : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(1 <= action)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{symptomatic\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation)}.\par
+\noindent Statement: \texttt{((Models.Triage.symptomaticCheck (presentation) = true) -> Models.Triage.Symptomatic (presentation))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PipelineContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input presentation : Models.Triage.Presentation, output action : Nat}.\par
+\noindent Precondition: \texttt{Models.Triage.Symptomatic}.\par
+\noindent Postcondition: \texttt{Responds}.\par
+\noindent Runtime validator: \texttt{Models.Triage.symptomaticCheck validates the precondition, sound by symptomatic\_sound}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (presentation : Models.Triage.Presentation), ((Models.Triage.symptomaticCheck (presentation) = true) -> Models.Triage.Symptomatic (presentation)); stated exactly by symptomatic\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PipelineContract.precondition\_sound}.\par
+\subsection*{\texttt{triage\_actionable}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation)}.\par
+\noindent Statement: \texttt{(Models.Triage.Symptomatic (presentation) -> Models.Policy.Actionable (Models.Triage.TriageModel (presentation)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{TriagePipeline}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input presentation : Models.Triage.Presentation, output Nat}.\par
+\noindent Composite: \texttt{sequence Models.Triage.TriageModel, Models.Policy.PolicyModel; junctions proved by triage\_actionable}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (composite TriagePipeline junction 1): \texttt{forall (presentation : Models.Triage.Presentation), (Models.Triage.Symptomatic (presentation) -> Models.Policy.Actionable (Models.Triage.TriageModel (presentation))); stated exactly by triage\_actionable}.\par
+\noindent Elaborates to: \texttt{TriagePipeline (presentation : Models.Triage.Presentation) : Nat := (let \_\_stage1 : Models.Triage.Level := Models.Triage.TriageModel (presentation); (let \_\_stage2 : Nat := Models.Policy.PolicyModel (\_\_stage1); \_\_stage2))}.\par
+\subsection*{\texttt{pipeline\_entry}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation)}.\par
+\noindent Statement: \texttt{(Models.Triage.Symptomatic (presentation) -> Models.Triage.Symptomatic (presentation))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pipeline\_responds}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation)}.\par
+\noindent Statement: \texttt{(Models.Triage.Symptomatic (presentation) -> Responds (presentation) (TriagePipeline (presentation)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{PipelineEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization TriagePipeline against contract PipelineContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by pipeline\_responds}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence PipelineEvidence claim satisfies\_contract): \texttt{forall (presentation : Models.Triage.Presentation), (Models.Triage.Symptomatic (presentation) -> Responds (presentation) (TriagePipeline (presentation))); stated exactly by pipeline\_responds}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PipelineEvidence.pipeline\_responds}.\par
+\subsection*{\texttt{PipelineModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PipelineContract to realization TriagePipeline}.\par
+\noindent Evidence: \texttt{PipelineEvidence}.\par
+\noindent Entry: \texttt{pipeline\_entry}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (model PipelineModel entry 1): \texttt{forall (presentation : Models.Triage.Presentation), (Models.Triage.Symptomatic (presentation) -> Models.Triage.Symptomatic (presentation)); stated exactly by pipeline\_entry}.\par
+\noindent Elaborates to: \texttt{PipelineModel (\_\_input : Models.Triage.Presentation) : Nat := TriagePipeline (\_\_input)}.\par
+\subsection*{\texttt{resultCode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(outcome : Except (ContractViolation) (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match outcome with | Except.error \_ => 0 | Except.ok action => action)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Answered}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation) (outcome : Except (ContractViolation) (Nat))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(resultCode (outcome) <= 2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{CheckedContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input presentation : Models.Triage.Presentation, output outcome : Except (ContractViolation) (Nat)}.\par
+\noindent Precondition: \texttt{Models.Triage.Symptomatic}.\par
+\noindent Postcondition: \texttt{Answered}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{CheckedPipeline}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input presentation : Models.Triage.Presentation, output Except (ContractViolation) (Nat)}.\par
+\noindent Composite: \texttt{sequence Models.Triage.TriageModel, Models.Policy.PolicyModel; junctions checked at run time}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{CheckedPipeline (presentation : Models.Triage.Presentation) : Except (ContractViolation) (Nat) := (let \_\_stage1 : Models.Triage.Level := Models.Triage.TriageModel (presentation); (if Models.Policy.actionableCheck (\_\_stage1) then (let \_\_stage2 : Nat := Models.Policy.PolicyModel (\_\_stage1); Except.ok (\_\_stage2)) else Except.error (ContractViolation.precondition)))}.\par
+\subsection*{\texttt{checked\_answers}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(presentation : Models.Triage.Presentation)}.\par
+\noindent Statement: \texttt{(Models.Triage.Symptomatic (presentation) -> Answered (presentation) (CheckedPipeline (presentation)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{CheckedEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization CheckedPipeline against contract CheckedContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by checked\_answers}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence CheckedEvidence claim satisfies\_contract): \texttt{forall (presentation : Models.Triage.Presentation), (Models.Triage.Symptomatic (presentation) -> Answered (presentation) (CheckedPipeline (presentation))); stated exactly by checked\_answers}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{CheckedEvidence.checked\_answers}.\par
+\subsection*{\texttt{CheckedModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract CheckedContract to realization CheckedPipeline}.\par
+\noindent Evidence: \texttt{CheckedEvidence}.\par
+\noindent Entry: \texttt{pipeline\_entry}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (model CheckedModel entry 1): \texttt{forall (presentation : Models.Triage.Presentation), (Models.Triage.Symptomatic (presentation) -> Models.Triage.Symptomatic (presentation)); stated exactly by pipeline\_entry}.\par
+\noindent Elaborates to: \texttt{CheckedModel (\_\_input : Models.Triage.Presentation) : Except (ContractViolation) (Nat) := CheckedPipeline (\_\_input)}.\par
+\subsection*{\texttt{Lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (segments : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(segments <= 7)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{SegmentContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output segments : Nat}.\par
+\noindent Postcondition: \texttt{Lit}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{SegmentCounter}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output Nat}.\par
+\noindent Deterministic denotation: \texttt{Models.Glyphs.segmentCount (glyph)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SegmentCounter (glyph : Models.Glyphs.Glyph) : Nat := Models.Glyphs.segmentCount (glyph)}.\par
+\subsection*{\texttt{segments\_lit}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{Lit (glyph) (SegmentCounter (glyph))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{SegmentEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization SegmentCounter against contract SegmentContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by segments\_lit}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (evidence SegmentEvidence claim satisfies\_contract): \texttt{forall (glyph : Models.Glyphs.Glyph), Lit (glyph) (SegmentCounter (glyph)); stated exactly by segments\_lit}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SegmentEvidence.segments\_lit}.\par
+\subsection*{\texttt{SegmentModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract SegmentContract to realization SegmentCounter}.\par
+\noindent Evidence: \texttt{SegmentEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SegmentModel (\_\_input : Models.Glyphs.Glyph) : Nat := SegmentCounter (\_\_input)}.\par
+\subsection*{\texttt{Reported}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (report : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(Models.Recognizer.Recognizes (glyph) ((report).1) /\textbackslash{} ((report).2 <= 7))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ReportContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output report : (Prod (Nat) (Nat))}.\par
+\noindent Postcondition: \texttt{Reported}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{GlyphReport}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output (Prod (Nat) (Nat))}.\par
+\noindent Composite: \texttt{fan-out of Models.Recognizer.DigitModel and SegmentModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{GlyphReport (glyph : Models.Glyphs.Glyph) : (Prod (Nat) (Nat)) := (Models.Recognizer.DigitModel (glyph), SegmentModel (glyph))}.\par
+\subsection*{\texttt{report\_correct}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{Reported (glyph) (GlyphReport (glyph))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{ReportEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization GlyphReport against contract ReportContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by report\_correct}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence ReportEvidence claim satisfies\_contract): \texttt{forall (glyph : Models.Glyphs.Glyph), Reported (glyph) (GlyphReport (glyph)); stated exactly by report\_correct}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ReportEvidence.report\_correct}.\par
+\subsection*{\texttt{ReportModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract ReportContract to realization GlyphReport}.\par
+\noindent Evidence: \texttt{ReportEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{ReportModel (\_\_input : Models.Glyphs.Glyph) : (Prod (Nat) (Nat)) := GlyphReport (\_\_input)}.\par
+\subsection*{\texttt{PairLit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph))) (counts : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(Lit ((glyphs).1) ((counts).1) /\textbackslash{} Lit ((glyphs).2) ((counts).2))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PairContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph)), output counts : (Prod (Nat) (Nat))}.\par
+\noindent Postcondition: \texttt{PairLit}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{GlyphPair}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph)), output (Prod (Nat) (Nat))}.\par
+\noindent Composite: \texttt{product of SegmentModel and SegmentModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GlyphPair (glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph))) : (Prod (Nat) (Nat)) := (SegmentModel ((glyphs).1), SegmentModel ((glyphs).2))}.\par
+\subsection*{\texttt{pair\_correct}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph)))}.\par
+\noindent Statement: \texttt{PairLit (glyphs) (GlyphPair (glyphs))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PairEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization GlyphPair against contract PairContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by pair\_correct}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (evidence PairEvidence claim satisfies\_contract): \texttt{forall (glyphs : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph))), PairLit (glyphs) (GlyphPair (glyphs)); stated exactly by pair\_correct}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PairEvidence.pair\_correct}.\par
+\subsection*{\texttt{PairModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PairContract to realization GlyphPair}.\par
+\noindent Evidence: \texttt{PairEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{PairModel (\_\_input : (Prod (Models.Glyphs.Glyph) (Models.Glyphs.Glyph))) : (Prod (Nat) (Nat)) := GlyphPair (\_\_input)}.\par
+\subsection*{\texttt{Bounded9}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph) (value : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(value <= 9)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{RouteContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output value : Nat}.\par
+\noindent Postcondition: \texttt{Bounded9}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{GlyphRoute}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input glyph : Models.Glyphs.Glyph, output Nat}.\par
+\noindent Composite: \texttt{if Models.Glyphs.isEight (glyph) then SegmentModel else Models.Recognizer.DigitModel}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{GlyphRoute (glyph : Models.Glyphs.Glyph) : Nat := (if Models.Glyphs.isEight (glyph) then SegmentModel (glyph) else Models.Recognizer.DigitModel (glyph))}.\par
+\subsection*{\texttt{route\_bounded}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(glyph : Models.Glyphs.Glyph)}.\par
+\noindent Statement: \texttt{Bounded9 (glyph) (GlyphRoute (glyph))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{RouteEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization GlyphRoute against contract RouteContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by route\_bounded}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence RouteEvidence claim satisfies\_contract): \texttt{forall (glyph : Models.Glyphs.Glyph), Bounded9 (glyph) (GlyphRoute (glyph)); stated exactly by route\_bounded}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{RouteEvidence.route\_bounded}.\par
+\subsection*{\texttt{RouteModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract RouteContract to realization GlyphRoute}.\par
+\noindent Evidence: \texttt{RouteEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{RouteModel (\_\_input : Models.Glyphs.Glyph) : Nat := GlyphRoute (\_\_input)}.\par
+\subsection*{\texttt{ShortStream}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(costs : List (Nat))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.length (costs) : Nat) <= 1000)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shortStreamCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(costs : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.blt ((LexLeanRuntime.length (costs) : Nat)) (1001))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{short\_stream\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(costs : List (Nat))}.\par
+\noindent Statement: \texttt{((shortStreamCheck (costs) = true) -> ShortStream (costs))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{StreamContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input costs : List (Nat), output overflows : Except (ContractViolation) (List (Nat))}.\par
+\noindent Precondition: \texttt{ShortStream}.\par
+\noindent Runtime validator: \texttt{shortStreamCheck validates the precondition, sound by short\_stream\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (costs : List (Nat)), ((shortStreamCheck (costs) = true) -> ShortStream (costs)); stated exactly by short\_stream\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{StreamContract.precondition\_sound}.\par
+\subsection*{\texttt{SessionStream}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input costs : List (Nat), output Except (ContractViolation) (List (Nat))}.\par
+\noindent Composite: \texttt{scan of Models.Session.SessionModel; junction checked at run time}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SessionStream (costs : List (Nat)) : Except (ContractViolation) (List (Nat)) := (let \_\_scanned : Except (ContractViolation) ((Prod (Models.Session.Window) (List (Nat)))) := (LexLeanCollections.listFold ((fun (\_\_acc : Except (ContractViolation) ((Prod (Models.Session.Window) (List (Nat))))) (\_\_item : Nat) => (match \_\_acc with | Except.error \_ => \_\_acc | Except.ok \_\_state => (if Models.Session.boundedCheck ((\_\_state).1) then (if Models.Session.affordableCheck ((\_\_state).1) (\_\_item) then (let \_\_step : (Prod (Models.Session.Window) (Nat)) := Models.Session.SessionModel ((\_\_state).1) (\_\_item); Except.ok (((\_\_step).1, (LexLeanRuntime.append ((\_\_state).2) (((\_\_step).2 :: ([] : List (Nat)))) : List (Nat))))) else Except.error (ContractViolation.precondition)) else Except.error (ContractViolation.input\_invariant))))) (Except.ok ((Models.Session.SessionModel.initial, ([] : List (Nat))))) (costs) : Except (ContractViolation) ((Prod (Models.Session.Window) (List (Nat))))); (match \_\_scanned with | Except.error \_\_violation => Except.error (\_\_violation) | Except.ok \_\_state => Except.ok ((\_\_state).2)))}.\par
+\subsection*{\texttt{StreamModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract StreamContract to realization SessionStream}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{StreamModel (\_\_input : List (Nat)) : Except (ContractViolation) (List (Nat)) := SessionStream (\_\_input)}.\par
+\end{document}

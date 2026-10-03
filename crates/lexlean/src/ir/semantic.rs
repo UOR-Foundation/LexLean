@@ -9,6 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+pub mod model;
+
 /// A qualified document member.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -102,6 +104,8 @@ pub enum SemanticPrimitive {
     GraphSuccessors,
     GraphReachable,
     GraphTopological,
+    /// Language 1.2: the strict order of an ordered key type, as a Boolean.
+    LessThan,
 }
 
 impl SemanticPrimitive {
@@ -134,6 +138,7 @@ impl SemanticPrimitive {
                 | Self::GraphSuccessors
                 | Self::GraphReachable
                 | Self::GraphTopological
+                | Self::LessThan
         )
     }
 
@@ -279,6 +284,9 @@ pub enum SemanticType {
     /// Language 1.2: a finite set over an ordered element type, iterated in
     /// ascending order.
     Set { element: Box<Self> },
+    /// Language 1.2 (models): the refusal of a checked model application,
+    /// naming the contract predicate that failed.
+    ContractViolation,
 }
 
 /// One explicit declaration parameter.
@@ -515,6 +523,15 @@ pub enum SemanticTerm {
         nodes: Vec<Self>,
         edges: Vec<SemanticEdge>,
     },
+    /// Language 1.2 (models): a model applied through the listed runtime
+    /// checks of its contract, returning the result or the first refusal.
+    CheckedApply {
+        model: MemberRef,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_arguments: Vec<SemanticType>,
+        arguments: Vec<Self>,
+        checks: Vec<ModelCheck>,
+    },
 }
 
 /// One literal map entry.
@@ -654,6 +671,295 @@ pub struct SemanticProduction {
     pub effects: Vec<String>,
 }
 
+/// Language 1.2 (§17.12, models): the closed role an artifact plays. The
+/// bytes may be opaque; their role never is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArtifactRole {
+    /// Learned or fitted parameters: an integer tensor.
+    Parameters,
+    /// A vocabulary: UTF-8 lines.
+    Vocabulary,
+    /// Examples or measurements: any closed schema.
+    Dataset,
+    /// A lookup table: an integer tensor.
+    Table,
+    /// Uninterpreted bytes.
+    Binary,
+}
+
+/// Language 1.2 (models): the element encoding of an integer tensor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TensorElement {
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    #[serde(rename = "uint8")]
+    UInt8,
+    #[serde(rename = "uint16")]
+    UInt16,
+    #[serde(rename = "uint32")]
+    UInt32,
+    #[serde(rename = "uint64")]
+    UInt64,
+}
+
+/// Language 1.2 (models): how an artifact's bytes decode to its value.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum ArtifactSchema {
+    /// The bytes themselves, as `bytes`.
+    Bytes,
+    /// Little-endian, row-major integers of one encoding, as nested lists
+    /// of mathematical integers, one list level per dimension.
+    IntTensor {
+        element: TensorElement,
+        shape: Vec<u64>,
+    },
+    /// Valid UTF-8 without carriage returns, every line LF-terminated, as
+    /// the list of lines without their terminators.
+    Utf8Lines,
+}
+
+/// Language 1.2 (models): one interface binder of a contract or a
+/// realization.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelBinder {
+    pub name: String,
+    pub r#type: SemanticType,
+}
+
+/// Language 1.2 (models): a contract's state interface: the state before
+/// a step, the state after it, and their type.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContractState {
+    pub name: String,
+    pub next: String,
+    pub r#type: SemanticType,
+}
+
+/// Language 1.2 (models): the predicates a contract may name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContractPredicate {
+    Invariant,
+    Postcondition,
+    Precondition,
+}
+
+/// Language 1.2 (models): a runtime validator of one contract predicate,
+/// linked to it by statement-exact soundness and optional completeness
+/// theorems.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContractValidator {
+    pub predicate: ContractPredicate,
+    pub validator: MemberRef,
+    pub sound: MemberRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub complete: Option<MemberRef>,
+}
+
+/// Language 1.2 (models): a contract, realization, model, evidence, or
+/// function instantiated at explicit type arguments.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelUse {
+    pub member: MemberRef,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub type_arguments: Vec<SemanticType>,
+}
+
+/// Language 1.2 (models): the state a stateful realization threads.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RealizationState {
+    pub name: String,
+    pub r#type: SemanticType,
+    pub initial: SemanticTerm,
+}
+
+/// Language 1.2 (models): one guarded rule, tried in declared order.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RealizationRule {
+    pub name: String,
+    pub guard: SemanticTerm,
+    pub action: SemanticTerm,
+}
+
+/// Language 1.2 (models): the closed statistical scoring schemes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StatisticalScheme {
+    /// Integer linear scores over an integer feature vector, the first
+    /// maximal label winning.
+    LinearScoring,
+}
+
+/// Language 1.2 (models): the closed neural architectures.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NeuralArchitecture {
+    /// Exact integer feed-forward layers over mathematical integers.
+    IntegerFeedforward,
+}
+
+/// Language 1.2 (models): one exact integer layer.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum NeuralLayer {
+    /// `W v + b` over mathematical integers, `W` of shape `[outputs,
+    /// inputs]` and `b` of shape `[outputs]`.
+    Dense {
+        inputs: u64,
+        outputs: u64,
+        weights: MemberRef,
+        bias: MemberRef,
+    },
+    /// Negative values become zero.
+    Relu,
+    /// Truncating division by `2^shift`, then clamping to the closed range.
+    Requantize {
+        shift: u64,
+        minimum: String,
+        maximum: String,
+    },
+}
+
+/// Language 1.2 (models): how a network's final values become its output.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum NeuralDecoder {
+    /// The label paired with the first maximal value.
+    Argmax { labels: Vec<SemanticTerm> },
+    /// An ordinary term over the final values, bound to `binder`.
+    Function { binder: String, body: SemanticTerm },
+}
+
+/// Language 1.2 (models): how one composite stage is guarded at run time.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum CompositeJunction {
+    /// The stage has nothing left to establish.
+    Unconditional,
+    /// A prior theorem states exactly the generated junction obligation.
+    Proved { evidence: MemberRef },
+    /// The stage's validators run first; a refusal is returned.
+    Checked,
+}
+
+/// Language 1.2 (models): the closed composition forms.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum CompositeForm {
+    /// Each stage consumes the previous stage's output; one junction per
+    /// stage after the first.
+    Sequence {
+        stages: Vec<ModelUse>,
+        junctions: Vec<CompositeJunction>,
+    },
+    /// Both stages consume the input; the output is their pair.
+    Fanout { left: ModelUse, right: ModelUse },
+    /// Each stage consumes its own component of a pair input.
+    Product { left: ModelUse, right: ModelUse },
+    /// A Boolean guard over the input selects one stage.
+    Branch {
+        guard: SemanticTerm,
+        then: ModelUse,
+        r#else: ModelUse,
+    },
+    /// A stateful stage folded over a list from its initial state.
+    Scan {
+        stage: ModelUse,
+        junction: CompositeJunction,
+    },
+}
+
+/// Language 1.2 (models): the closed realization descriptors. Each
+/// elaborates in linking to exactly one ordinary denotation.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum RealizationDescriptor {
+    /// An ordinary term over the interface binders.
+    Deterministic { body: SemanticTerm },
+    /// The action of the first rule whose guard holds, else the default.
+    Rule {
+        rules: Vec<RealizationRule>,
+        default: SemanticTerm,
+    },
+    /// Integer linear scores of an integer feature vector.
+    Statistical {
+        scheme: StatisticalScheme,
+        features: SemanticTerm,
+        width: u64,
+        width_evidence: MemberRef,
+        weights: MemberRef,
+        bias: MemberRef,
+        labels: Vec<SemanticTerm>,
+    },
+    /// Exact integer layers over an integer encoding of the input.
+    Neural {
+        architecture: NeuralArchitecture,
+        encoder: SemanticTerm,
+        width: u64,
+        width_evidence: MemberRef,
+        layers: Vec<NeuralLayer>,
+        decoder: NeuralDecoder,
+    },
+    /// A typed composition of prior models.
+    Composite { form: CompositeForm },
+}
+
+/// Language 1.2 (models): one closed evidence claim, discharged by a prior
+/// theorem stating exactly the generated obligation.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum EvidenceClaim {
+    /// Agreement on a dataset under a comparison sound for equality.
+    DatasetAgreement {
+        dataset: MemberRef,
+        comparison: MemberRef,
+        comparison_sound: MemberRef,
+        examples: u64,
+        agreements: u64,
+        theorem: MemberRef,
+    },
+    /// Equality with a reference function under the contract's premises.
+    EquivalentTo {
+        reference: ModelUse,
+        theorem: MemberRef,
+    },
+    /// The initial state satisfies the invariant.
+    InitialInvariant { theorem: MemberRef },
+    /// A step preserves the invariant.
+    PreservesInvariant { theorem: MemberRef },
+    /// The realization meets the postcondition under the premises.
+    SatisfiesContract { theorem: MemberRef },
+}
+
+/// Language 1.2 (models): the runtime checks of a checked application, in
+/// strictly sorted order of their names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelCheck {
+    InputInvariant,
+    OutputInvariant,
+    Postcondition,
+    Precondition,
+}
+
 /// A closed declaration.
 // Declarations are parsed once and held in a module's ordered list, never
 // moved in bulk, so the size of the definition variant costs nothing.
@@ -733,6 +1039,83 @@ pub enum SemanticDeclaration {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         axioms: Vec<String>,
     },
+    /// Language 1.2 (models): a content-addressed external artifact with a
+    /// declared role, closed schema, and value type.
+    Artifact {
+        name: String,
+        role: ArtifactRole,
+        sha256: String,
+        length: u64,
+        schema: ArtifactSchema,
+        r#type: SemanticType,
+        /// Exact, sorted axiom set of its generated declarations.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (models): a specification: typed interfaces, prior
+    /// predicates, and linked runtime validators.
+    Contract {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        input: ModelBinder,
+        output: ModelBinder,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        state: Option<ContractState>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        precondition: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        postcondition: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        invariant: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        validators: Vec<ContractValidator>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (models): an implementation whose closed descriptor
+    /// elaborates to one ordinary denotation.
+    Realization {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        input: ModelBinder,
+        output: SemanticType,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        state: Option<RealizationState>,
+        descriptor: RealizationDescriptor,
+        #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+        executable: bool,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (models): claims about one realization against one
+    /// contract, each discharged by a statement-exact prior theorem.
+    Evidence {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        contract: ModelUse,
+        realization: ModelUse,
+        claims: Vec<EvidenceClaim>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (models): a contract bound to a realization of the
+    /// identical interface, with its evidence and entry obligations.
+    Model {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        contract: ModelUse,
+        realization: ModelUse,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        evidence: Vec<ModelUse>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        entry: Vec<MemberRef>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
 }
 
 impl SemanticDeclaration {
@@ -744,7 +1127,12 @@ impl SemanticDeclaration {
             | Self::Instance { name, .. }
             | Self::Inductive { name, .. }
             | Self::Definition { name, .. }
-            | Self::Theorem { name, .. } => name,
+            | Self::Theorem { name, .. }
+            | Self::Artifact { name, .. }
+            | Self::Contract { name, .. }
+            | Self::Realization { name, .. }
+            | Self::Evidence { name, .. }
+            | Self::Model { name, .. } => name,
         }
     }
 
@@ -757,13 +1145,24 @@ impl SemanticDeclaration {
             Self::Inductive { .. } => "inductive",
             Self::Definition { .. } => "definition",
             Self::Theorem { .. } => "theorem",
+            Self::Artifact { .. } => "artifact",
+            Self::Contract { .. } => "contract",
+            Self::Realization { .. } => "realization",
+            Self::Evidence { .. } => "evidence",
+            Self::Model { .. } => "model",
         }
     }
 
     #[must_use]
     pub fn axioms(&self) -> &[String] {
         match self {
-            Self::Definition { axioms, .. } | Self::Theorem { axioms, .. } => axioms,
+            Self::Definition { axioms, .. }
+            | Self::Theorem { axioms, .. }
+            | Self::Artifact { axioms, .. }
+            | Self::Contract { axioms, .. }
+            | Self::Realization { axioms, .. }
+            | Self::Evidence { axioms, .. }
+            | Self::Model { axioms, .. } => axioms,
             _ => &[],
         }
     }
@@ -1110,6 +1509,17 @@ impl AlphaRenamer {
                     })
                     .collect(),
             },
+            SemanticTerm::CheckedApply {
+                model,
+                type_arguments,
+                arguments,
+                checks,
+            } => SemanticTerm::CheckedApply {
+                model: model.clone(),
+                type_arguments: self.types(type_arguments),
+                arguments: self.terms(arguments),
+                checks: checks.clone(),
+            },
         };
         self.scopes.truncate(mark);
         out
@@ -1214,6 +1624,35 @@ impl SemanticDeclaration {
 pub struct SemanticModule {
     pub spec: String,
     pub declarations: Vec<SemanticDeclaration>,
+    /// Language 1.2 (models): what linking elaborated each declaration to.
+    /// Never serialized: it is a function of the declarations, the linked
+    /// imports, and the compiler semantics (§17.12, §21.4).
+    #[serde(skip)]
+    pub(crate) elaboration: model::Elaboration,
+}
+
+/// A linking failure with its registered diagnostic code (§26.3).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SemanticFailure {
+    /// The registered code.
+    pub code: crate::diagnostic::DiagnosticCode,
+    /// The reason, naming the construct.
+    pub reason: String,
+}
+
+impl From<String> for SemanticFailure {
+    fn from(reason: String) -> Self {
+        Self {
+            code: crate::code!("LLT4001"),
+            reason,
+        }
+    }
+}
+
+impl std::fmt::Display for SemanticFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.reason)
+    }
 }
 
 fn type_node_count(ty: &SemanticType) -> u64 {
@@ -1389,6 +1828,16 @@ fn term_node_count(term: &SemanticTerm) -> u64 {
             value,
             body,
         } => type_node_count(&binder.r#type) + term_node_count(value) + term_node_count(body),
+        SemanticTerm::CheckedApply {
+            type_arguments,
+            arguments,
+            checks,
+            ..
+        } => {
+            type_arguments.iter().map(type_node_count).sum::<u64>()
+                + terms(arguments)
+                + checks.len() as u64
+        }
     }
 }
 
@@ -1434,7 +1883,12 @@ fn data_shape_node_count(declaration: &SemanticDeclaration) -> u64 {
         } => count(type_parameters.len()),
         SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Definition { .. }
-        | SemanticDeclaration::Theorem { .. } => 0,
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => 0,
     }
 }
 
@@ -1503,6 +1957,11 @@ fn declaration_node_count(declaration: &SemanticDeclaration) -> u64 {
             proof,
             ..
         } => parameters(values) + term_node_count(statement) + proof_node_count(proof),
+        SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => model::source_node_count(declaration),
     }
 }
 
@@ -1583,6 +2042,7 @@ fn language_1_2_construct(term: &SemanticTerm) -> Option<&'static str> {
         SemanticTerm::Call { type_arguments, .. } if !type_arguments.is_empty() => {
             Some("call type arguments")
         }
+        SemanticTerm::CheckedApply { .. } => Some("checked_apply"),
         SemanticTerm::Var { .. }
         | SemanticTerm::Nat { .. }
         | SemanticTerm::Integer { .. }
@@ -1632,7 +2092,8 @@ pub(crate) fn visit_terms(term: &SemanticTerm, visit: &mut impl FnMut(&SemanticT
         | SemanticTerm::InstanceValue { .. } => {}
         SemanticTerm::Primitive { arguments, .. }
         | SemanticTerm::Constructor { arguments, .. }
-        | SemanticTerm::Call { arguments, .. } => {
+        | SemanticTerm::Call { arguments, .. }
+        | SemanticTerm::CheckedApply { arguments, .. } => {
             for argument in arguments {
                 visit_terms(argument, visit);
             }
@@ -1776,7 +2237,8 @@ fn visit_terms_mut(term: &mut SemanticTerm, visit: &mut impl FnMut(&mut Semantic
         | SemanticTerm::InstanceValue { .. } => {}
         SemanticTerm::Primitive { arguments, .. }
         | SemanticTerm::Constructor { arguments, .. }
-        | SemanticTerm::Call { arguments, .. } => {
+        | SemanticTerm::Call { arguments, .. }
+        | SemanticTerm::CheckedApply { arguments, .. } => {
             for argument in arguments {
                 visit_terms_mut(argument, visit);
             }
@@ -1928,6 +2390,7 @@ impl std::fmt::Display for SemanticType {
             Self::String => "String",
             Self::Bytes => "Bytes",
             Self::Ordering => "Ordering",
+            Self::ContractViolation => "ContractViolation",
             Self::Parameter { name } => return f.write_str(name),
             Self::Option { value } => return write!(f, "Option ({value})"),
             Self::Result { ok, error } => return write!(f, "Result ({ok}) ({error})"),
@@ -1964,6 +2427,7 @@ fn language_1_2_type(ty: &SemanticType) -> Option<&'static str> {
         SemanticType::Function { .. } => Some("function type"),
         SemanticType::Map { .. } => Some("map type"),
         SemanticType::Set { .. } => Some("set type"),
+        SemanticType::ContractViolation => Some("contract_violation type"),
         SemanticType::Option { value: inner } | SemanticType::List { element: inner } => {
             language_1_2_type(inner)
         }
@@ -2006,7 +2470,8 @@ fn term_types(term: &SemanticTerm, visit: &mut impl FnMut(&SemanticType)) {
             visit(&binder.r#type);
         }
         SemanticTerm::Call { type_arguments, .. }
-        | SemanticTerm::FunctionRef { type_arguments, .. } => {
+        | SemanticTerm::FunctionRef { type_arguments, .. }
+        | SemanticTerm::CheckedApply { type_arguments, .. } => {
             type_arguments.iter().for_each(&mut *visit);
         }
         SemanticTerm::Lambda { parameters, .. } => {
@@ -2097,6 +2562,11 @@ fn declaration_types(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
         SemanticDeclaration::Theorem {
             parameters: values, ..
         } => parameters(values, visit),
+        SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => model::declaration_types(declaration, visit),
     }
 }
 
@@ -2241,8 +2711,21 @@ fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut impl FnMut
             parameters,
             ..
         } => (type_parameters, parameters),
-        SemanticDeclaration::Instance { .. } => (&[], &[]),
+        SemanticDeclaration::Instance { .. } | SemanticDeclaration::Artifact { .. } => (&[], &[]),
+        SemanticDeclaration::Contract {
+            type_parameters, ..
+        }
+        | SemanticDeclaration::Realization {
+            type_parameters, ..
+        }
+        | SemanticDeclaration::Evidence {
+            type_parameters, ..
+        }
+        | SemanticDeclaration::Model {
+            type_parameters, ..
+        } => (type_parameters, &[]),
     };
+    model::declaration_binders(declaration, visit);
     type_parameters.iter().for_each(|name| visit(name));
     parameters
         .iter()
@@ -2331,6 +2814,11 @@ fn declaration_terms(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
             visit_terms(statement, visit);
             proof_terms(proof, visit);
         }
+        SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => model::declaration_terms(declaration, visit),
     }
 }
 
@@ -2363,6 +2851,11 @@ fn declaration_terms_mut(
             visit_terms_mut(statement, visit);
             proof_terms_mut(proof, visit);
         }
+        SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => model::declaration_terms_mut(declaration, visit),
     }
 }
 
@@ -2405,7 +2898,8 @@ fn type_mentions_parameter(ty: &SemanticType, name: &str) -> bool {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => false,
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => false,
     }
 }
 
@@ -2446,9 +2940,76 @@ pub(crate) fn mentions_type_parameter(declaration: &SemanticDeclaration, name: &
 }
 
 impl SemanticModule {
+    /// The ordinary declarations this module means, in order: each model
+    /// declaration as its elaboration, and each other declaration with every
+    /// checked model application elaborated (§17.12). Every backend reads
+    /// these.
+    #[must_use]
+    pub fn lowered_declarations(&self) -> Vec<&SemanticDeclaration> {
+        if self.elaboration.lowered.len() == self.declarations.len() {
+            self.elaboration.lowered.iter().flatten().collect()
+        } else {
+            self.declarations.iter().collect()
+        }
+    }
+
+    /// Every Lean declaration the module generates for its semantic
+    /// declarations, in order: each ordinary declaration by its own name, and
+    /// each model declaration as the declarations and cross-checks it
+    /// elaborates to (§17.12).
+    #[must_use]
+    pub fn generated_names(&self) -> Vec<String> {
+        let mut names = Vec::new();
+        for (index, declaration) in self.declarations.iter().enumerate() {
+            match self.elaborated(index) {
+                Some(lowered) if model::declaration_construct(declaration).is_some() => {
+                    names.extend(lowered.iter().map(|derived| derived.name().to_owned()));
+                    names.extend(
+                        self.elaboration
+                            .checks(index)
+                            .iter()
+                            .map(|check| check.name.clone()),
+                    );
+                }
+                _ => names.push(declaration.name().to_owned()),
+            }
+        }
+        names
+    }
+
+    /// The ordinary declarations source declaration `index` means, or
+    /// `None` for a module linking never elaborated.
+    #[must_use]
+    pub fn elaborated(&self, index: usize) -> Option<&[SemanticDeclaration]> {
+        (self.elaboration.lowered.len() == self.declarations.len())
+            .then(|| self.elaboration.lowered(index))
+    }
+
+    /// Does the ordinary source declaration `name` apply a model through a
+    /// checked application, so that what is realized is its elaborated copy
+    /// (§17.12, §17.13)?
+    #[must_use]
+    pub fn applies_checked(&self, name: &str) -> bool {
+        self.declarations
+            .iter()
+            .enumerate()
+            .any(|(index, declaration)| {
+                declaration.name() == name
+                    && model::declaration_construct(declaration).is_none()
+                    && self
+                        .elaborated(index)
+                        .is_some_and(|lowered| lowered != std::slice::from_ref(declaration))
+            })
+    }
+
     /// Exact recursive semantic-node count charged to `max_ir_nodes`.
     pub(crate) fn node_count(&self) -> u64 {
-        let base: u64 = self.declarations.iter().map(declaration_node_count).sum();
+        let base: u64 = self
+            .declarations
+            .iter()
+            .map(declaration_node_count)
+            .sum::<u64>()
+            + self.elaboration.node_count(&self.declarations);
         if semantic_module_spec(crate::LANGUAGE_1_2) == Some(self.spec.as_str()) {
             base + self
                 .declarations
@@ -2491,6 +3052,12 @@ struct Environment<'a> {
     well_founded_group: BTreeMap<String, (Vec<SemanticParameter>, SemanticTerm)>,
     /// Language 1.2: local theorems by name, for termination evidence.
     theorems: BTreeMap<String, (Vec<String>, Vec<SemanticParameter>, SemanticTerm)>,
+    /// Language 1.2 (models): every visible artifact, contract,
+    /// realization, evidence, and model, by environment key.
+    models: model::Models,
+    /// Language 1.2 (models): the declaration being checked was elaborated
+    /// from a model declaration, so generated binders are admitted.
+    derived: bool,
 }
 
 #[derive(Clone, Default)]
@@ -2600,7 +3167,8 @@ fn qualify_type(ty: &SemanticType, module: &str) -> SemanticType {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => ty.clone(),
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => ty.clone(),
     }
 }
 
@@ -2634,6 +3202,16 @@ fn legal_name(name: &str) -> bool {
     })
 }
 
+/// A local binder: a source name, or, only in a declaration linking
+/// elaborated from a model (§17.12), a generated name `__<name>`. No source
+/// name begins with an underscore, so a generated binder captures nothing.
+fn check_binder(name: &str, what: &str, env: &Environment<'_>) -> Result<(), String> {
+    match name.strip_prefix("__") {
+        Some(rest) if env.derived && legal_name(rest) && !rest.contains('.') => Ok(()),
+        _ => check_name(name, what),
+    }
+}
+
 fn check_name(name: &str, what: &str) -> Result<(), String> {
     if legal_name(name) {
         Ok(())
@@ -2646,7 +3224,15 @@ fn check_name(name: &str, what: &str) -> Result<(), String> {
 /// `List.cons`, `Option.some`, `Result.ok`, `Prod.mk`). A local reference to
 /// such a constructor has no module, so in language 1.2 no declaration may
 /// take one of these names and make the reference ambiguous.
-const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 6] = ["Bool", "List", "Nat", "Option", "Prod", "Result"];
+pub(crate) const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 7] = [
+    "Bool",
+    "ContractViolation",
+    "List",
+    "Nat",
+    "Option",
+    "Prod",
+    "Result",
+];
 
 fn check_declaration_name(name: &str, env: &Environment<'_>) -> Result<(), String> {
     check_name(name, "declaration")?;
@@ -2690,7 +3276,8 @@ fn check_type(ty: &SemanticType, env: &Environment<'_>) -> Result<(), String> {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => Ok(()),
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => Ok(()),
         SemanticType::List { element } | SemanticType::Option { value: element } => {
             check_type(element, env)
         }
@@ -2808,7 +3395,8 @@ fn check_type_parameters(ty: &SemanticType, allowed: &BTreeSet<String>) -> Resul
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => Ok(()),
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => Ok(()),
     }
 }
 
@@ -2899,7 +3487,8 @@ fn mentions_universe(ty: &SemanticType) -> bool {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => false,
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => false,
     }
 }
 
@@ -2960,7 +3549,7 @@ fn check_parameters(
 ) -> Result<BTreeSet<String>, String> {
     let mut names = BTreeSet::new();
     for parameter in parameters {
-        check_name(&parameter.name, "parameter")?;
+        check_binder(&parameter.name, "parameter", env)?;
         check_type(&parameter.r#type, env)?;
         check_type_parameters(&parameter.r#type, type_parameters)?;
         if !names.insert(parameter.name.clone()) {
@@ -3008,6 +3597,7 @@ fn constructor_arity(member: &MemberRef, env: &Environment<'_>) -> Option<usize>
                 return Some(usize::from(member.name != "Option.none"));
             }
             "Option.some" => return Some(1),
+            name if env.language_1_2 && model::VIOLATIONS.contains(&name) => return Some(0),
             _ => {}
         }
     }
@@ -3075,7 +3665,8 @@ fn mentions_group(ty: &SemanticType, group: &BTreeSet<String>) -> bool {
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => false,
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => false,
     }
 }
 
@@ -3165,7 +3756,8 @@ fn classify_occurrence(
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => Ok(Occurrence::Absent),
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => Ok(Occurrence::Absent),
     }
 }
 
@@ -3212,7 +3804,8 @@ fn constructible(
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => true,
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => true,
     }
 }
 
@@ -3500,7 +4093,8 @@ fn immediate_subterms(term: &SemanticTerm) -> Vec<&SemanticTerm> {
         | SemanticTerm::FunctionRef { .. } => Vec::new(),
         SemanticTerm::Primitive { arguments, .. }
         | SemanticTerm::Constructor { arguments, .. }
-        | SemanticTerm::Call { arguments, .. } => arguments.iter().collect(),
+        | SemanticTerm::Call { arguments, .. }
+        | SemanticTerm::CheckedApply { arguments, .. } => arguments.iter().collect(),
         SemanticTerm::Record { fields, .. } => fields.iter().map(|field| &field.value).collect(),
         SemanticTerm::Cons { head, tail } => vec![head, tail],
         SemanticTerm::Eq { left, right }
@@ -3614,7 +4208,8 @@ fn holds_function(
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => false,
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => false,
     }
 }
 
@@ -5290,7 +5885,7 @@ fn check_term(
                 }
                 let mut branch_locals = locals.clone();
                 for binder in &branch.binders {
-                    check_name(binder, "pattern binder")?;
+                    check_binder(binder, "pattern binder", env)?;
                     if !branch_locals.insert(binder.clone()) {
                         return Err(format!("duplicate or shadowed pattern binder `{binder}`"));
                     }
@@ -5349,6 +5944,10 @@ fn check_term(
             let option = BTreeSet::from(["Option.none".to_owned(), "Option.some".to_owned()]);
             let result = BTreeSet::from(["Result.error".to_owned(), "Result.ok".to_owned()]);
             let product = BTreeSet::from(["Prod.mk".to_owned()]);
+            let violation: BTreeSet<String> = model::VIOLATIONS
+                .iter()
+                .map(|name| (*name).to_owned())
+                .collect();
             let declared = env.types.values().find_map(|info| {
                 let set: BTreeSet<String> = info.constructors.keys().cloned().collect();
                 (set == constructors).then_some(set)
@@ -5359,6 +5958,7 @@ fn check_term(
                 && constructors != option
                 && constructors != result
                 && !(env.language_1_2 && constructors == product)
+                && !(env.language_1_2 && constructors == violation)
                 && declared.is_none()
             {
                 return Err(format!(
@@ -5368,7 +5968,7 @@ fn check_term(
             Ok(())
         }
         SemanticTerm::Forall { binder, body } => {
-            check_name(&binder.name, "binder")?;
+            check_binder(&binder.name, "binder", env)?;
             check_type(&binder.r#type, env)?;
             let mut nested = locals.clone();
             if !nested.insert(binder.name.clone()) {
@@ -5381,7 +5981,7 @@ fn check_term(
             value,
             body,
         } => {
-            check_name(&binder.name, "let binder")?;
+            check_binder(&binder.name, "let binder", env)?;
             check_type(&binder.r#type, env)?;
             // The bound value is checked in the enclosing scope: a let is
             // never recursive, so its own binder is not visible there.
@@ -5429,7 +6029,7 @@ fn check_term(
             // are visible in its body: capture is explicit, never ambient.
             let mut inner: BTreeSet<String> = captures.iter().cloned().collect();
             for parameter in parameters {
-                check_name(&parameter.name, "lambda parameter")?;
+                check_binder(&parameter.name, "lambda parameter", env)?;
                 check_type(&parameter.r#type, env)?;
                 if locals.contains(&parameter.name) || !inner.insert(parameter.name.clone()) {
                     return Err(format!("shadowed lambda parameter `{}`", parameter.name));
@@ -5588,6 +6188,12 @@ fn check_term(
             }
             Ok(())
         }
+        // Linking elaborates every checked application before ordinary
+        // checking (§17.12, models), so one reaching here is a compiler
+        // defect, refused rather than admitted unchecked.
+        SemanticTerm::CheckedApply { .. } => {
+            Err("internal: a checked model application reached ordinary checking".to_owned())
+        }
     }
 }
 
@@ -5651,7 +6257,8 @@ fn substitute_type(
         | SemanticType::UInt64
         | SemanticType::String
         | SemanticType::Bytes
-        | SemanticType::Ordering => ty.clone(),
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => ty.clone(),
     }
 }
 
@@ -6125,6 +6732,13 @@ fn infer_primitive(
                 })
             }
         }
+        P::LessThan => {
+            check_ordered_key(&first).map_err(|_| {
+                format!("primitive LessThan requires an ordered key type, not {first}")
+            })?;
+            require_observed(arguments, &[first.clone(), first.clone()], operation)?;
+            exact_result(SemanticType::Bool)
+        }
     }
 }
 
@@ -6205,6 +6819,16 @@ fn constructor_signature(
             Vec::new()
         };
         return Ok(Some((list, fields)));
+    }
+    if constructor.module.is_none() && model::VIOLATIONS.contains(&constructor.name.as_str()) {
+        if !type_arguments.is_empty() {
+            return Err(format!(
+                "constructor `{}` takes no type arguments",
+                constructor.name
+            ));
+        }
+        require_language_1_2(env, "contract_violation constructor")?;
+        return Ok(Some((SemanticType::ContractViolation, Vec::new())));
     }
     if constructor.module.is_none()
         && (constructor.name == "Nat.zero" || constructor.name == "Nat.succ")
@@ -6289,6 +6913,18 @@ fn branch_binder_types(
             "Result.ok" => vec![ok.as_ref().clone()],
             _ => return Err("Result match uses a non-Result constructor".to_owned()),
         },
+        SemanticType::ContractViolation => {
+            if branch.constructor.module.is_none()
+                && model::VIOLATIONS.contains(&branch.constructor.name.as_str())
+            {
+                Vec::new()
+            } else {
+                return Err(
+                    "contract-violation match uses a constructor other than a ContractViolation one"
+                        .to_owned(),
+                );
+            }
+        }
         SemanticType::Product { left, right } => match branch.constructor.name.as_str() {
             "Prod.mk" if branch.constructor.module.is_none() => {
                 vec![left.as_ref().clone(), right.as_ref().clone()]
@@ -6691,6 +7327,9 @@ fn infer_term(
             Some(other) => Err(format!("pair projection of non-product type {other}")),
             None => Ok(None),
         },
+        SemanticTerm::CheckedApply { .. } => {
+            Err("internal: a checked model application reached ordinary typing".to_owned())
+        }
     }
 }
 
@@ -7088,13 +7727,14 @@ impl SemanticModule {
         module_prefix: &str,
         imports: &[String],
         imported_modules: &BTreeMap<String, &Self>,
-    ) -> Result<Self, String> {
+        artifacts: &model::ArtifactStore,
+    ) -> Result<Self, SemanticFailure> {
         let module: Self = serde_json::from_str(text)
             .map_err(|error| format!("invalid semantic-module JSON: {error}"))?;
         let canonical =
             crate::artifact::canonical_json::Json::parse(text.as_bytes())?.to_canonical_string();
         if canonical != text {
-            return Err("semantic-module JSON is not canonical".to_owned());
+            return Err("semantic-module JSON is not canonical".to_owned().into());
         }
         // Serde ignores members of a tagged unit variant (`{"kind":"nat",
         // "x":1}`), so the closed schema is enforced here: every source
@@ -7107,14 +7747,23 @@ impl SemanticModule {
         if let Some(path) = ignored_member(&source, &typed, "$") {
             return Err(format!(
                 "semantic-module JSON member `{path}` is outside the closed schema"
-            ));
+            )
+            .into());
         }
-        module.validate(language, module_prefix, imports, imported_modules)?;
+        let elaboration = module.validate(
+            language,
+            module_prefix,
+            imports,
+            imported_modules,
+            artifacts,
+        )?;
         let mut module = module;
+        module.elaboration = elaboration;
         if language == crate::LANGUAGE_1_2 {
             for declaration in &mut module.declarations {
                 declaration_terms_mut(declaration, &mut normalize_collection);
             }
+            module.elaboration.normalize(&mut normalize_collection);
         }
         Ok(module)
     }
@@ -7133,6 +7782,10 @@ impl SemanticModule {
             } = declaration
             {
                 found = Some("mutual inductive group");
+                break;
+            }
+            if let Some(kind) = model::declaration_construct(declaration) {
+                found = Some(kind);
                 break;
             }
             declaration_types(declaration, &mut |ty| {
@@ -7162,7 +7815,8 @@ impl SemanticModule {
         module_prefix: &str,
         imports: &[String],
         imported_modules: &BTreeMap<String, &Self>,
-    ) -> Result<(), String> {
+        artifacts: &model::ArtifactStore,
+    ) -> Result<model::Elaboration, SemanticFailure> {
         // §17.12: the discriminator is routed by the project language, never
         // inferred from the module, so one module cannot mean two things.
         let expected = semantic_module_spec(language)
@@ -7171,17 +7825,20 @@ impl SemanticModule {
             return Err(format!(
                 "unsupported semantic-module schema `{}`; language {language} requires `{expected}`",
                 self.spec
-            ));
+            ).into());
         }
         if language == crate::LANGUAGE_1_1 {
             if let Some(construct) = self.first_language_1_2_construct() {
                 return Err(format!(
                     "`{construct}` is a language-1.2 construct; language 1.1 rejects it"
-                ));
+                )
+                .into());
             }
         }
         if self.declarations.is_empty() {
-            return Err("a semantic module contains at least one declaration".to_owned());
+            return Err("a semantic module contains at least one declaration"
+                .to_owned()
+                .into());
         }
         if language == crate::LANGUAGE_1_2 {
             check_binder_hygiene(self, module_prefix)?;
@@ -7205,7 +7862,10 @@ impl SemanticModule {
             // recursion over a local group.
             let mut imported_groups: BTreeMap<Option<&str>, Vec<InductiveRow<'_>>> =
                 BTreeMap::new();
-            for declaration in &module.declarations {
+            // An imported module is visible through its elaboration: every
+            // model declaration as the ordinary declarations it means.
+            let lowered = module.lowered_declarations();
+            for declaration in lowered.iter().copied() {
                 if let SemanticDeclaration::Inductive {
                     name,
                     type_parameters,
@@ -7243,7 +7903,7 @@ impl SemanticModule {
                     );
                 }
             }
-            for declaration in &module.declarations {
+            for declaration in lowered.iter().copied() {
                 let key = format!("{import}::{}", declaration.name());
                 match declaration {
                     SemanticDeclaration::Structure {
@@ -7361,7 +8021,8 @@ impl SemanticModule {
                         if env.instances.insert(key.clone(), instance).is_some() {
                             return Err(format!(
                                 "ambiguous imported instances for requirement `{key}`"
-                            ));
+                            )
+                            .into());
                         }
                     }
                     SemanticDeclaration::Theorem {
@@ -7379,8 +8040,16 @@ impl SemanticModule {
                                 .collect(),
                         );
                     }
+                    SemanticDeclaration::Artifact { .. }
+                    | SemanticDeclaration::Contract { .. }
+                    | SemanticDeclaration::Realization { .. }
+                    | SemanticDeclaration::Evidence { .. }
+                    | SemanticDeclaration::Model { .. } => {
+                        return Err(format!("internal: imported `{key}` was not elaborated").into());
+                    }
                 }
             }
+            model::register_import(import, &module.elaboration, &mut env.models);
         }
         for (key, (flags, nested, members)) in imported_flags {
             if let Some(info) = env.types.get_mut(&key) {
@@ -7411,7 +8080,7 @@ impl SemanticModule {
                 }
                 if let Some(label) = label {
                     if closed_groups.contains(label) {
-                        return Err(format!("mutual group `{label}` is not contiguous"));
+                        return Err(format!("mutual group `{label}` is not contiguous").into());
                     }
                 }
                 open_group = label;
@@ -7442,11 +8111,13 @@ impl SemanticModule {
         if let Some(label) = inductive_labels.intersection(&definition_labels).next() {
             return Err(format!(
                 "mutual label `{label}` names both an inductive group and a definition group"
-            ));
+            )
+            .into());
         }
         let mut generated_names = BTreeSet::new();
         let mut registered_groups = BTreeSet::new();
-        for declaration in &self.declarations {
+        let mut elaboration = model::Builder::new(self.declarations.len());
+        for (index, declaration) in self.declarations.iter().enumerate() {
             let name = declaration.name();
             if let SemanticDeclaration::Inductive {
                 mutual: Some(label),
@@ -7464,7 +8135,7 @@ impl SemanticModule {
             }
             check_declaration_name(name, &env)?;
             if !generated_names.insert(name.to_owned()) {
-                return Err(format!("duplicate generated name `{name}`"));
+                return Err(format!("duplicate generated name `{name}`").into());
             }
             match declaration {
                 SemanticDeclaration::Structure {
@@ -7482,7 +8153,8 @@ impl SemanticModule {
                     if !parameters.is_empty() {
                         return Err(format!(
                             "`{name}` value parameters are not part of a finite data declaration"
-                        ));
+                        )
+                        .into());
                     }
                     let type_parameter_names = type_parameters.clone();
                     check_type_parameter_spelling(
@@ -7493,7 +8165,7 @@ impl SemanticModule {
                     let type_parameters = type_parameter_set(type_parameters)?;
                     let _ = check_parameters(parameters, &env, &type_parameters)?;
                     if fields.is_empty() {
-                        return Err(format!("`{name}` has no fields"));
+                        return Err(format!("`{name}` has no fields").into());
                     }
                     if env.language_1_2 {
                         let own = BTreeSet::from([name.to_owned()]);
@@ -7503,7 +8175,7 @@ impl SemanticModule {
                         {
                             return Err(format!(
                                 "structure or class `{name}` refers to itself; recursive data is declared as an inductive"
-                            ));
+                            ).into());
                         }
                     }
                     let mut field_names = Vec::new();
@@ -7512,17 +8184,17 @@ impl SemanticModule {
                         check_type(&field.r#type, &env)?;
                         check_type_parameters(&field.r#type, &type_parameters)?;
                         if field_names.contains(&field.name) {
-                            return Err(format!("duplicate field `{}.{}`", name, field.name));
+                            return Err(format!("duplicate field `{}.{}`", name, field.name).into());
                         }
                         field_names.push(field.name.clone());
                         let generated = format!("{name}.{}", field.name);
                         if !generated_names.insert(generated.clone()) {
-                            return Err(format!("duplicate generated name `{generated}`"));
+                            return Err(format!("duplicate generated name `{generated}`").into());
                         }
                     }
                     let constructor = format!("{name}.mk");
                     if !generated_names.insert(constructor.clone()) {
-                        return Err(format!("duplicate generated name `{constructor}`"));
+                        return Err(format!("duplicate generated name `{constructor}`").into());
                     }
                     env.types.insert(
                         name.to_owned(),
@@ -7573,7 +8245,7 @@ impl SemanticModule {
                     for row in rows.iter().skip(1) {
                         check_declaration_name(row.name, &env)?;
                         if !generated_names.insert(row.name.to_owned()) {
-                            return Err(format!("duplicate generated name `{}`", row.name));
+                            return Err(format!("duplicate generated name `{}`", row.name).into());
                         }
                     }
                     register_inductive_group(
@@ -7592,7 +8264,7 @@ impl SemanticModule {
                     if !parameters.is_empty() {
                         return Err(format!(
                             "inductive `{name}` value parameters are not part of a finite data declaration"
-                        ));
+                        ).into());
                     }
                     let type_parameter_names = type_parameters.clone();
                     check_type_parameter_spelling(
@@ -7603,7 +8275,7 @@ impl SemanticModule {
                     let type_parameters = type_parameter_set(type_parameters)?;
                     let _ = check_parameters(parameters, &env, &type_parameters)?;
                     if constructors.is_empty() {
-                        return Err(format!("inductive `{name}` has no constructors"));
+                        return Err(format!("inductive `{name}` has no constructors").into());
                     }
                     let mut rows = BTreeMap::new();
                     let mut constructor_types = BTreeMap::new();
@@ -7611,7 +8283,7 @@ impl SemanticModule {
                         check_name(&constructor.name, "constructor")?;
                         let full = format!("{name}.{}", constructor.name);
                         if !generated_names.insert(full.clone()) {
-                            return Err(format!("duplicate generated name `{full}`"));
+                            return Err(format!("duplicate generated name `{full}`").into());
                         }
                         for field in &constructor.fields {
                             check_type(field, &env)?;
@@ -7620,7 +8292,8 @@ impl SemanticModule {
                             {
                                 return Err(format!(
                                     "recursive inductive payload in `{full}` is not permitted"
-                                ));
+                                )
+                                .into());
                             }
                         }
                         rows.insert(full.clone(), constructor.fields.len());
@@ -7640,16 +8313,28 @@ impl SemanticModule {
                         },
                     );
                 }
-                SemanticDeclaration::Instance {
-                    class,
-                    arguments,
-                    priority,
-                    fields,
-                    ..
-                } => {
+                SemanticDeclaration::Instance { .. } => {
+                    let lowered = model::lower_ordinary(declaration, &env)?;
+                    // Only elaborated checked applications bind generated
+                    // names; the source binders were checked as source.
+                    env.derived = true;
+                    let SemanticDeclaration::Instance {
+                        class,
+                        arguments,
+                        priority,
+                        fields,
+                        ..
+                    } = &lowered
+                    else {
+                        return Err(
+                            format!("internal: instance `{name}` lowered to another kind").into(),
+                        );
+                    };
                     check_member(class, &env)?;
                     if *priority != 1000 {
-                        return Err(format!("instance `{name}` priority must be exactly 1000"));
+                        return Err(
+                            format!("instance `{name}` priority must be exactly 1000").into()
+                        );
                     }
                     for argument in arguments {
                         check_type(argument, &env)?;
@@ -7661,11 +8346,13 @@ impl SemanticModule {
                             format!("instance `{name}` targets a missing or non-class type")
                         })?;
                     if info.parameters != arguments.len() {
-                        return Err(format!("instance `{name}` has the wrong class arity"));
+                        return Err(format!("instance `{name}` has the wrong class arity").into());
                     }
                     let key = format!("{}:{arguments:?}", member_key(class));
                     if env.instances.contains_key(&key) {
-                        return Err(format!("ambiguous duplicate instance for `{}`", class.name));
+                        return Err(
+                            format!("ambiguous duplicate instance for `{}`", class.name).into()
+                        );
                     }
                     check_assignments(
                         fields,
@@ -7690,6 +8377,8 @@ impl SemanticModule {
                             name: name.to_owned(),
                         },
                     );
+                    env.derived = false;
+                    elaboration.lower(index, vec![lowered.clone()]);
                 }
                 SemanticDeclaration::Definition {
                     mutual: Some(label),
@@ -7706,76 +8395,134 @@ impl SemanticModule {
                     for row in rows.iter().skip(1) {
                         check_declaration_name(row.name(), &env)?;
                         if !generated_names.insert(row.name().to_owned()) {
-                            return Err(format!("duplicate generated name `{}`", row.name()));
+                            return Err(format!("duplicate generated name `{}`", row.name()).into());
                         }
                     }
-                    check_definition_group(&rows, label, &mut env)?;
-                }
-                SemanticDeclaration::Definition { .. } => check_definition(declaration, &mut env)?,
-                SemanticDeclaration::Theorem {
-                    type_parameters,
-                    parameters,
-                    statement,
-                    proof,
-                    axioms,
-                    ..
-                } => {
-                    if axioms.windows(2).any(|pair| pair[0] >= pair[1])
-                        || axioms.iter().any(|axiom| !legal_name(axiom))
-                    {
-                        return Err(format!(
-                            "theorem `{name}` axiom policy is not sorted, unique, and qualified"
-                        ));
-                    }
-                    if !type_parameters.is_empty() {
-                        require_language_1_2(&env, "theorem type parameters")?;
-                    }
-                    let scope = type_parameter_set(type_parameters)?;
-                    let mut binders: BTreeSet<String> = parameters
+                    let lowered = rows
                         .iter()
-                        .map(|parameter| parameter.name.clone())
-                        .collect();
-                    bound_names(statement, &mut binders);
-                    proof_terms(proof, &mut |term| bound_names(term, &mut binders));
-                    check_type_parameter_spelling(type_parameters, &binders, &env)?;
-                    let locals = check_parameters(parameters, &env, &scope)?;
-                    check_term_type_parameters(statement, &scope)?;
-                    let mut proof_terms_ok = Ok(());
-                    proof_terms(proof, &mut |term| {
-                        if proof_terms_ok.is_ok() {
-                            proof_terms_ok = check_term_type_parameters(term, &scope);
-                        }
-                    });
-                    proof_terms_ok?;
-                    check_term(statement, &locals, &env, None, &BTreeSet::new())?;
-                    require_type(
-                        infer_term(statement, &typed_locals(parameters), &env)?,
-                        &SemanticType::Prop,
-                        &format!("theorem `{name}` statement"),
-                    )?;
-                    check_proof(proof, &typed_locals(parameters), &env)?;
-                    env.theorems.insert(
-                        name.to_owned(),
-                        (
-                            type_parameters.clone(),
-                            parameters.clone(),
-                            statement.clone(),
-                        ),
+                        .map(|row| model::lower_ordinary(row, &env))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    env.derived = true;
+                    let checked = check_definition_group(
+                        &lowered.iter().collect::<Vec<_>>(),
+                        label,
+                        &mut env,
                     );
-                    env.proof_type_parameters
-                        .insert(name.to_owned(), type_parameters.clone());
-                    env.proof_rules.insert(
-                        name.to_owned(),
-                        parameters
+                    env.derived = false;
+                    checked?;
+                    for (position, row) in self.declarations.iter().enumerate() {
+                        if let Some(at) = rows
                             .iter()
-                            .map(|parameter| parameter.r#type.clone())
-                            .collect(),
-                    );
+                            .position(|candidate| std::ptr::eq(*candidate, row))
+                        {
+                            elaboration.lower(position, vec![lowered[at].clone()]);
+                        }
+                    }
+                }
+                SemanticDeclaration::Definition { .. } => {
+                    let lowered = model::lower_ordinary(declaration, &env)?;
+                    env.derived = true;
+                    let checked = check_definition(&lowered, &mut env);
+                    env.derived = false;
+                    checked?;
+                    elaboration.lower(index, vec![lowered]);
+                }
+                SemanticDeclaration::Theorem { .. } => {
+                    let lowered = model::lower_ordinary(declaration, &env)?;
+                    env.derived = true;
+                    let checked = check_theorem(&lowered, &mut env);
+                    env.derived = false;
+                    checked?;
+                    elaboration.lower(index, vec![lowered]);
+                }
+                SemanticDeclaration::Artifact { .. }
+                | SemanticDeclaration::Contract { .. }
+                | SemanticDeclaration::Realization { .. }
+                | SemanticDeclaration::Evidence { .. }
+                | SemanticDeclaration::Model { .. } => {
+                    let lowering = model::check_declaration(
+                        declaration,
+                        &mut env,
+                        artifacts,
+                        &mut generated_names,
+                    )?;
+                    elaboration.record(index, lowering);
                 }
             }
         }
-        Ok(())
+        elaboration.finish(&self.declarations, env.models.locals())
     }
+}
+
+/// Check one theorem: signature, statement, and proof; then register it as a
+/// prior theorem of the module.
+fn check_theorem(
+    declaration: &SemanticDeclaration,
+    env: &mut Environment<'_>,
+) -> Result<(), String> {
+    let SemanticDeclaration::Theorem {
+        name,
+        type_parameters,
+        parameters,
+        statement,
+        proof,
+        axioms,
+    } = declaration
+    else {
+        return Ok(());
+    };
+    if axioms.windows(2).any(|pair| pair[0] >= pair[1])
+        || axioms.iter().any(|axiom| !legal_name(axiom))
+    {
+        return Err(format!(
+            "theorem `{name}` axiom policy is not sorted, unique, and qualified"
+        ));
+    }
+    if !type_parameters.is_empty() {
+        require_language_1_2(env, "theorem type parameters")?;
+    }
+    let scope = type_parameter_set(type_parameters)?;
+    let mut binders: BTreeSet<String> = parameters
+        .iter()
+        .map(|parameter| parameter.name.clone())
+        .collect();
+    bound_names(statement, &mut binders);
+    proof_terms(proof, &mut |term| bound_names(term, &mut binders));
+    check_type_parameter_spelling(type_parameters, &binders, env)?;
+    let locals = check_parameters(parameters, env, &scope)?;
+    check_term_type_parameters(statement, &scope)?;
+    let mut proof_terms_ok = Ok(());
+    proof_terms(proof, &mut |term| {
+        if proof_terms_ok.is_ok() {
+            proof_terms_ok = check_term_type_parameters(term, &scope);
+        }
+    });
+    proof_terms_ok?;
+    check_term(statement, &locals, env, None, &BTreeSet::new())?;
+    require_type(
+        infer_term(statement, &typed_locals(parameters), env)?,
+        &SemanticType::Prop,
+        &format!("theorem `{name}` statement"),
+    )?;
+    check_proof(proof, &typed_locals(parameters), env)?;
+    env.theorems.insert(
+        name.to_owned(),
+        (
+            type_parameters.clone(),
+            parameters.clone(),
+            statement.clone(),
+        ),
+    );
+    env.proof_type_parameters
+        .insert(name.to_owned(), type_parameters.clone());
+    env.proof_rules.insert(
+        name.to_owned(),
+        parameters
+            .iter()
+            .map(|parameter| parameter.r#type.clone())
+            .collect(),
+    );
+    Ok(())
 }
 
 #[cfg(test)]
@@ -7902,25 +8649,44 @@ mod tests {
 
     #[test]
     fn semantic_bool_match_is_typed_and_exhaustive() {
-        SemanticModule::parse(BOOL_MATCH, "1.1", "Test", &[], &BTreeMap::new())
-            .expect("both Boolean constructors form a typed exhaustive match");
+        SemanticModule::parse(
+            BOOL_MATCH,
+            "1.1",
+            "Test",
+            &[],
+            &BTreeMap::new(),
+            &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
+        )
+        .expect("both Boolean constructors form a typed exhaustive match");
 
         let nonexhaustive = BOOL_MATCH.replace(
             r#",{"binders":[],"body":{"kind":"nat","value":"1"},"constructor":{"name":"Bool.true"}}"#,
             "",
         );
-        assert!(
-            SemanticModule::parse(&nonexhaustive, "1.1", "Test", &[], &BTreeMap::new())
-                .expect_err("one Boolean branch is not exhaustive")
-                .to_string()
-                .contains("nonexhaustive or mixed match branches")
-        );
+        assert!(SemanticModule::parse(
+            &nonexhaustive,
+            "1.1",
+            "Test",
+            &[],
+            &BTreeMap::new(),
+            &super::model::ArtifactStore::new(u64::MAX, u64::MAX)
+        )
+        .expect_err("one Boolean branch is not exhaustive")
+        .to_string()
+        .contains("nonexhaustive or mixed match branches"));
     }
 
     #[test]
     fn semantic_theorem_policy_defaults_to_exact_empty() {
-        let module = SemanticModule::parse(EMPTY_POLICY, "1.1", "Test", &[], &BTreeMap::new())
-            .expect("omitted policy is exact empty");
+        let module = SemanticModule::parse(
+            EMPTY_POLICY,
+            "1.1",
+            "Test",
+            &[],
+            &BTreeMap::new(),
+            &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
+        )
+        .expect("omitted policy is exact empty");
         let declaration = module.declarations.first().expect("one theorem");
         assert_eq!(declaration.axiom_policy_kind(), "none");
         assert!(declaration.axioms().is_empty());
@@ -7929,8 +8695,15 @@ mod tests {
     #[test]
     fn semantic_theorem_policy_round_trips_a_nonempty_exact_set() {
         let source = theorem_with_axioms(r#"["Classical.choice","propext"]"#);
-        let module = SemanticModule::parse(&source, "1.1", "Test", &[], &BTreeMap::new())
-            .expect("sorted exact policy is valid");
+        let module = SemanticModule::parse(
+            &source,
+            "1.1",
+            "Test",
+            &[],
+            &BTreeMap::new(),
+            &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
+        )
+        .expect("sorted exact policy is valid");
         let declaration = module.declarations.first().expect("one theorem");
         assert_eq!(declaration.axiom_policy_kind(), "exact");
         assert_eq!(declaration.axioms(), ["Classical.choice", "propext"]);
@@ -7954,10 +8727,11 @@ mod tests {
                 "Test",
                 &[],
                 &BTreeMap::new(),
+                &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
             )
             .expect_err("invalid exact policy must fail");
             assert!(
-                error.contains("not sorted, unique, and qualified"),
+                error.reason.contains("not sorted, unique, and qualified"),
                 "{error}"
             );
         }

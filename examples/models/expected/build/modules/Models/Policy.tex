@@ -1,0 +1,86 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{isUrgent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match level with | Models.Triage.Level.routine => false | Models.Triage.Level.urgent => true | Models.Triage.Level.emergency => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Actionable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(Models.Triage.isRoutine (level) = false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{actionableCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(!Models.Triage.isRoutine (level))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{actionable\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Statement: \texttt{((actionableCheck (level) = true) -> Actionable (level))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{actionable\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Statement: \texttt{(Actionable (level) -> (actionableCheck (level) = true))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Escalates}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level) (action : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(1 <= action)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PolicyContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input level : Models.Triage.Level, output action : Nat}.\par
+\noindent Precondition: \texttt{Actionable}.\par
+\noindent Postcondition: \texttt{Escalates}.\par
+\noindent Runtime validator: \texttt{actionableCheck validates the precondition, sound by actionable\_check\_sound, complete by actionable\_check\_complete}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (level : Models.Triage.Level), ((actionableCheck (level) = true) -> Actionable (level)); stated exactly by actionable\_check\_sound}.\par
+\noindent Obligation (validator precondition complete): \texttt{forall (level : Models.Triage.Level), (Actionable (level) -> (actionableCheck (level) = true)); stated exactly by actionable\_check\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PolicyContract.precondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PolicyContract.precondition\_complete}.\par
+\subsection*{\texttt{PolicyRules}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input level : Models.Triage.Level, output Nat}.\par
+\noindent Rule 1 (dispatch): \texttt{if Models.Triage.isEmergency (level) then 2}.\par
+\noindent Rule 2 (page): \texttt{if isUrgent (level) then 1}.\par
+\noindent Otherwise: \texttt{0}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{PolicyRules.selected (level : Models.Triage.Level) : Nat := (if Models.Triage.isEmergency (level) then 0 else (if isUrgent (level) then 1 else 2))}.\par
+\noindent Elaborates to: \texttt{PolicyRules (level : Models.Triage.Level) : Nat := (if Models.Triage.isEmergency (level) then 2 else (if isUrgent (level) then 1 else 0))}.\par
+\subsection*{\texttt{policy\_escalates}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(level : Models.Triage.Level)}.\par
+\noindent Statement: \texttt{(Actionable (level) -> Escalates (level) (PolicyRules (level)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{emergency\_dispatches}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(PolicyRules.selected (Models.Triage.Level.emergency) = 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{PolicyEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization PolicyRules against contract PolicyContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by policy\_escalates}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (evidence PolicyEvidence claim satisfies\_contract): \texttt{forall (level : Models.Triage.Level), (Actionable (level) -> Escalates (level) (PolicyRules (level))); stated exactly by policy\_escalates}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{PolicyEvidence.policy\_escalates}.\par
+\subsection*{\texttt{PolicyModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract PolicyContract to realization PolicyRules}.\par
+\noindent Evidence: \texttt{PolicyEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{PolicyModel (\_\_input : Models.Triage.Level) : Nat := PolicyRules (\_\_input)}.\par
+\end{document}

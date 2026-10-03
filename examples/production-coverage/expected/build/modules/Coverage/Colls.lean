@@ -425,6 +425,11 @@ public instance {α β : Type} [Key α] [Key β] : Key (Prod α β) where
   | Nat.succ fuel, state => match step state with
     | none => (state, true)
     | some next => iterateUntil step fuel next
+
+@[expose] public def lessThan {κ : Type} [Key κ] (left right : κ) : Bool :=
+  match Key.compare left right with
+  | .lt => true
+  | _ => false
 end LexLeanCollections
 
 @[expose] public def mapOps (m : List (Prod (String) (Nat))) (k : String) (v : Nat) : (Prod (List (Prod (String) (Nat))) ((Prod (List (Prod (String) (Nat))) ((Prod (Option (Nat)) ((Prod (Bool) ((Prod (List (String)) ((Prod (List (Nat)) ((Prod (Nat) (List ((Prod (String) (Nat))))))))))))))))) := ((LexLeanCollections.mapInsert (m) (k) (v) : List (Prod (String) (Nat))), ((LexLeanCollections.mapRemove (m) (k) : List (Prod (String) (Nat))), ((LexLeanCollections.mapLookup (m) (k) : Option (Nat)), ((LexLeanCollections.mapContains (m) (k) : Bool), ((LexLeanCollections.mapKeys (m) : List (String)), ((LexLeanCollections.mapValues (m) : List (Nat)), ((LexLeanCollections.mapSize (m) : Nat), (LexLeanCollections.mapEntries (m) : List ((Prod (String) (Nat)))))))))))

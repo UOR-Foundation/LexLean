@@ -246,6 +246,20 @@ title = "Unsafe canonical form or raw renderer output"
 statement = "Unsafe canonical form or raw renderer output."
 
 [[error]]
+code = "LLR3007"
+class = "language"
+exit = 1
+title = "Model artifact unavailable or its digest or length mismatched"
+statement = "Model artifact unavailable or its digest or length mismatched."
+
+[[error]]
+code = "LLR3008"
+class = "language"
+exit = 1
+title = "Model artifact bytes violate the declared schema, type, or role"
+statement = "Model artifact bytes violate the declared schema, type, or role."
+
+[[error]]
 code = "LLS8001"
 class = "security-limit"
 exit = 4
@@ -307,6 +321,34 @@ class = "language"
 exit = 1
 title = "Production root not eligible for a declared target"
 statement = "Production root not eligible for a declared target."
+
+[[error]]
+code = "LLT4006"
+class = "language"
+exit = 1
+title = "Model contract, realization, or artifact interface mismatch"
+statement = "Model contract, realization, or artifact interface mismatch."
+
+[[error]]
+code = "LLT4007"
+class = "language"
+exit = 1
+title = "Invalid model composition or entry obligation"
+statement = "Invalid model composition or entry obligation."
+
+[[error]]
+code = "LLT4008"
+class = "language"
+exit = 1
+title = "Unvalidated model runtime boundary"
+statement = "Unvalidated model runtime boundary."
+
+[[error]]
+code = "LLT4009"
+class = "language"
+exit = 1
+title = "Model evidence not established"
+statement = "Model evidence not established."
 
 [[error]]
 code = "LLV7001"

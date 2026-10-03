@@ -305,13 +305,13 @@ public inductive Shape where
 public theorem countdown_decreases (number : Nat) (_steps : Nat) : (((Nat.blt (number) (2)) = false) -> ((LexLeanRuntime.subtract (number) (2) : Nat) < number)) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def countdown (number : Nat) (steps : Nat) : Nat := (match (generalizing := false) __decrease0 : (Nat.blt (number) (2)) with | true => steps | false => countdown ((LexLeanRuntime.subtract (number) (2) : Nat)) ((steps + 1)))
 termination_by number
 decreasing_by all_goals first | (have __evidence := countdown_decreases (number) (steps) (__decrease0); subst_vars; exact __evidence)
 
-@[expose] public def positive (value : Nat) : Prop := (0 < value)
+@[expose, reducible] public def positive (value : Nat) : Prop := (0 < value)
 
 public theorem area_square : (area (Shape.rectangle (3) (3)) = 9) := by
   decide

@@ -1686,13 +1686,13 @@ statement = "Every production root of the committed examples lowers to a valid r
 id = "SP-02"
 level = "build"
 suite = "preservation"
-statement = "Every production root of examples/production and examples/production-coverage has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected."
+statement = "Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected."
 
 [[id]]
 id = "SP-03"
 level = "build"
 suite = "preservation"
-statement = "On seeded inputs to every production root of examples/production and examples/production-coverage, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected."
+statement = "On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected."
 
 [[id]]
 id = "SP-04"
@@ -1710,7 +1710,7 @@ statement = "Verification checks certificate A for every production root after n
 id = "SP-06"
 level = "build"
 suite = "preservation"
-statement = "The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported."
+statement = "The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported."
 
 [[id]]
 id = "SP-07"
@@ -1723,3 +1723,75 @@ id = "SP-08"
 level = "build"
 suite = "preservation"
 statement = "Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused."
+
+[[id]]
+id = "MD-01"
+level = "build"
+suite = "models"
+statement = "Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration."
+
+[[id]]
+id = "MD-02"
+level = "build"
+suite = "models"
+statement = "A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding."
+
+[[id]]
+id = "MD-03"
+level = "build"
+suite = "models"
+statement = "A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006."
+
+[[id]]
+id = "MD-04"
+level = "build"
+suite = "models"
+statement = "Deterministic, rule, statistical, and neural realizations each elaborate to one ordinary language-1.2 denotation over their declared interface, with exact integer kernels over the less_than primitive, and their layer widths, artifact shapes and roles, labels, and statement-exact width evidence are checked in linking; a descriptor outside the closed set, such as a floating-point element, is rejected, and a width, shape, or role mismatch fails with LLT4006."
+
+[[id]]
+id = "MD-05"
+level = "build"
+suite = "models"
+statement = "A model binds one contract instantiation to a realization of the identical interface, with entry evidence for every effective precondition; an interface mismatch fails with LLT4006 before either backend runs, and a realization whose behavior violates a statement-exact contract claim is refused by Lean's kernel at verification."
+
+[[id]]
+id = "MD-06"
+level = "build"
+suite = "models"
+statement = "Every evidence claim is a kind of the closed claim set whose statement LexLean generates from the contract and realization, is discharged by a prior theorem stating it exactly, and is restated against the fixed Lean model semantics; an unregistered, vacuous, inexact, or foreign claim fails with LLT4009, the canonical document says only that a claim is discharged, and only the verified attestation records the generated declarations as verified."
+
+[[id]]
+id = "MD-07"
+level = "build"
+suite = "models"
+statement = "Every model application in executable code validates each contract predicate its evidence does not discharge, through sound validators, in the fixed order input invariant, precondition, output invariant, postcondition, returning the contract violation on refusal; an application missing a required check, naming a check without a sound validator, or applying a realization directly fails with LLT4008."
+
+[[id]]
+id = "MD-08"
+level = "build"
+suite = "models"
+statement = "Sequence, fan-out, product, branch, and scan composites of stateless and stateful models are ordinary typed compositions whose stage interfaces and threaded states match exactly, whose every stage precondition and state invariant is discharged at the model's entry, by a statement-exact junction theorem, or by a run-time check, and whose every check a stage's evidence leaves open after it runs is made at run time; any other composition fails with LLT4007."
+
+[[id]]
+id = "MD-09"
+level = "build"
+suite = "models"
+statement = "The exact integer kernels of dense, rectified-linear, requantization, and first-maximum layers and the less_than primitive agree with an independent integer model on seeded random weights and inputs under Lean."
+
+[[id]]
+id = "MD-10"
+level = "build"
+suite = "models"
+statement = "Model declarations are part of the semantic identity, so changing an artifact byte with its declared digest, a descriptor, a claim, or a check changes the semantic ID, and language-1.2 snapshots carry, schema-valid, every elaborated declaration, generated obligation, cross-check, and required check."
+
+[[id]]
+id = "MD-11"
+level = "build"
+suite = "models"
+statement = "Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean."
+
+[[id]]
+id = "MD-12"
+level = "build"
+suite = "models"
+statement = "The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification."

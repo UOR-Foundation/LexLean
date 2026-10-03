@@ -1,0 +1,453 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Capped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(s <= 100)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cappedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (s) (100))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{capped\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat)}.\par
+\noindent Statement: \texttt{((cappedCheck (s) = true) -> Capped (s))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{capped\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> (cappedCheck (s) = true))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Small}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(x <= 10)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{smallCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (x) (10))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{small\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{((smallCheck (s) (x) = true) -> Small (s) (x))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Grows}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat) (t : Nat) (y : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(s <= t)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{growsCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat) (t : Nat) (y : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (s) (t))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{grows\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat) (t : Nat) (y : Nat)}.\par
+\noindent Statement: \texttt{((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{grows\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat) (t : Nat) (y : Nat)}.\par
+\noindent Statement: \texttt{(Grows (s) (x) (t) (y) -> (growsCheck (s) (x) (t) (y) = true))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{LedgerContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat, state s : Nat stepping to t}.\par
+\noindent Precondition: \texttt{Small}.\par
+\noindent Postcondition: \texttt{Grows}.\par
+\noindent Invariant: \texttt{Capped}.\par
+\noindent Runtime validator: \texttt{cappedCheck validates the invariant, sound by capped\_check\_sound, complete by capped\_check\_complete}.\par
+\noindent Runtime validator: \texttt{growsCheck validates the postcondition, sound by grows\_check\_sound, complete by grows\_check\_complete}.\par
+\noindent Runtime validator: \texttt{smallCheck validates the precondition, sound by small\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : Nat), ((cappedCheck (s) = true) -> Capped (s)); stated exactly by capped\_check\_sound}.\par
+\noindent Obligation (validator invariant complete): \texttt{forall (s : Nat), (Capped (s) -> (cappedCheck (s) = true)); stated exactly by capped\_check\_complete}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (s : Nat) (x : Nat) (t : Nat) (y : Nat), ((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y)); stated exactly by grows\_check\_sound}.\par
+\noindent Obligation (validator postcondition complete): \texttt{forall (s : Nat) (x : Nat) (t : Nat) (y : Nat), (Grows (s) (x) (t) (y) -> (growsCheck (s) (x) (t) (y) = true)); stated exactly by grows\_check\_complete}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (s : Nat) (x : Nat), ((smallCheck (s) (x) = true) -> Small (s) (x)); stated exactly by small\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{LedgerContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{LedgerContract.invariant\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{LedgerContract.postcondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{LedgerContract.postcondition\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{LedgerContract.precondition\_sound}.\par
+\subsection*{\texttt{Spill}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat, state s : Nat from 0}.\par
+\noindent Deterministic denotation: \texttt{((s + x), x)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Spill.initial : Nat := 0}.\par
+\noindent Elaborates to: \texttt{Spill (s : Nat) (x : Nat) : (Prod (Nat) (Nat)) := ((s + x), x)}.\par
+\subsection*{\texttt{spillRef}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{((s + x), x)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{spill\_grows}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> (Small (s) (x) -> Grows (s) (x) ((Spill (s) (x)).1) ((Spill (s) (x)).2)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{spill\_reference}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> (Small (s) (x) -> (Spill (s) (x) = spillRef (s) (x))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{SpillEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Spill against contract LedgerContract}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by spill\_grows}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (evidence SpillEvidence claim satisfies\_contract): \texttt{forall (s : Nat) (x : Nat), (Capped (s) -> (Small (s) (x) -> Grows (s) (x) ((Spill (s) (x)).1) ((Spill (s) (x)).2))); stated exactly by spill\_grows}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SpillEvidence.spill\_grows}.\par
+\subsection*{\texttt{SpillModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract LedgerContract to realization Spill}.\par
+\noindent Evidence: \texttt{SpillEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SpillModel.initial : Nat := Spill.initial}.\par
+\noindent Elaborates to: \texttt{SpillModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Spill (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{SpillReference}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Spill against contract LedgerContract}.\par
+\noindent Claim: \texttt{equals spillRef under the contract's premises, discharged by spill\_reference}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence SpillReference claim equivalent\_to): \texttt{forall (s : Nat) (x : Nat), (Capped (s) -> (Small (s) (x) -> (Spill (s) (x) = spillRef (s) (x)))); stated exactly by spill\_reference}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{SpillReference.spill\_reference}.\par
+\subsection*{\texttt{SpillRawModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract LedgerContract to realization Spill}.\par
+\noindent Evidence: \texttt{SpillReference}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant, output\_invariant, postcondition, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{SpillRawModel.initial : Nat := Spill.initial}.\par
+\noindent Elaborates to: \texttt{SpillRawModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Spill (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{TallyContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat, state s : Nat stepping to t}.\par
+\noindent Precondition: \texttt{Small}.\par
+\noindent Postcondition: \texttt{Grows}.\par
+\noindent Runtime validator: \texttt{growsCheck validates the postcondition, sound by grows\_check\_sound}.\par
+\noindent Runtime validator: \texttt{smallCheck validates the precondition, sound by small\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (s : Nat) (x : Nat) (t : Nat) (y : Nat), ((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y)); stated exactly by grows\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (s : Nat) (x : Nat), ((smallCheck (s) (x) = true) -> Small (s) (x)); stated exactly by small\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TallyContract.postcondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TallyContract.precondition\_sound}.\par
+\subsection*{\texttt{Tally}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat, state s : Nat from 0}.\par
+\noindent Deterministic denotation: \texttt{((s + x), s)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Tally.initial : Nat := 0}.\par
+\noindent Elaborates to: \texttt{Tally (s : Nat) (x : Nat) : (Prod (Nat) (Nat)) := ((s + x), s)}.\par
+\subsection*{\texttt{tallyRef}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{((s + x), s)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tally\_grows}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Small (s) (x) -> Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tally\_reference}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Small (s) (x) -> (Tally (s) (x) = tallyRef (s) (x)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{TallyEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Tally against contract TallyContract}.\par
+\noindent Claim: \texttt{equals tallyRef under the contract's premises, discharged by tally\_reference}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by tally\_grows}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (evidence TallyEvidence claim equivalent\_to): \texttt{forall (s : Nat) (x : Nat), (Small (s) (x) -> (Tally (s) (x) = tallyRef (s) (x))); stated exactly by tally\_reference}.\par
+\noindent Obligation (evidence TallyEvidence claim satisfies\_contract): \texttt{forall (s : Nat) (x : Nat), (Small (s) (x) -> Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2)); stated exactly by tally\_grows}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TallyEvidence.tally\_reference}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{TallyEvidence.tally\_grows}.\par
+\subsection*{\texttt{TallyModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract TallyContract to realization Tally}.\par
+\noindent Evidence: \texttt{TallyEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{TallyModel.initial : Nat := Tally.initial}.\par
+\noindent Elaborates to: \texttt{TallyModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Tally (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{CapContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat, state s : Nat stepping to t}.\par
+\noindent Postcondition: \texttt{Grows}.\par
+\noindent Invariant: \texttt{Capped}.\par
+\noindent Runtime validator: \texttt{cappedCheck validates the invariant, sound by capped\_check\_sound, complete by capped\_check\_complete}.\par
+\noindent Runtime validator: \texttt{growsCheck validates the postcondition, sound by grows\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator invariant sound): \texttt{forall (s : Nat), ((cappedCheck (s) = true) -> Capped (s)); stated exactly by capped\_check\_sound}.\par
+\noindent Obligation (validator invariant complete): \texttt{forall (s : Nat), (Capped (s) -> (cappedCheck (s) = true)); stated exactly by capped\_check\_complete}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (s : Nat) (x : Nat) (t : Nat) (y : Nat), ((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y)); stated exactly by grows\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{CapContract.invariant\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{CapContract.invariant\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{CapContract.postcondition\_sound}.\par
+\subsection*{\texttt{Clamp}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat, state s : Nat from 0}.\par
+\noindent Deterministic denotation: \texttt{(let total : Nat := (s + x); ((LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat), (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Clamp.initial : Nat := 0}.\par
+\noindent Elaborates to: \texttt{Clamp (s : Nat) (x : Nat) : (Prod (Nat) (Nat)) := (let total : Nat := (s + x); ((LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat), (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat)))}.\par
+\subsection*{\texttt{clampRef}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(let total : Nat := (s + x); ((LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat), (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{clamp\_initial}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{Capped (Clamp.initial)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{clamp\_preserves}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> Capped ((Clamp (s) (x)).1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{clamp\_grows}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> Grows (s) (x) ((Clamp (s) (x)).1) ((Clamp (s) (x)).2))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{clamp\_reference}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Capped (s) -> (Clamp (s) (x) = clampRef (s) (x)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{ClampEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Clamp against contract CapContract}.\par
+\noindent Claim: \texttt{equals clampRef under the contract's premises, discharged by clamp\_reference}.\par
+\noindent Claim: \texttt{the initial state satisfies the invariant, discharged by clamp\_initial}.\par
+\noindent Claim: \texttt{every step preserves the invariant, discharged by clamp\_preserves}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by clamp\_grows}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (evidence ClampEvidence claim equivalent\_to): \texttt{forall (s : Nat) (x : Nat), (Capped (s) -> (Clamp (s) (x) = clampRef (s) (x))); stated exactly by clamp\_reference}.\par
+\noindent Obligation (evidence ClampEvidence claim initial\_invariant): \texttt{Capped (Clamp.initial); stated exactly by clamp\_initial}.\par
+\noindent Obligation (evidence ClampEvidence claim preserves\_invariant): \texttt{forall (s : Nat) (x : Nat), (Capped (s) -> Capped ((Clamp (s) (x)).1)); stated exactly by clamp\_preserves}.\par
+\noindent Obligation (evidence ClampEvidence claim satisfies\_contract): \texttt{forall (s : Nat) (x : Nat), (Capped (s) -> Grows (s) (x) ((Clamp (s) (x)).1) ((Clamp (s) (x)).2)); stated exactly by clamp\_grows}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ClampEvidence.clamp\_reference}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ClampEvidence.clamp\_initial}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ClampEvidence.clamp\_preserves}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ClampEvidence.clamp\_grows}.\par
+\subsection*{\texttt{ClampModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract CapContract to realization Clamp}.\par
+\noindent Evidence: \texttt{ClampEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{input\_invariant}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ClampModel.initial : Nat := Clamp.initial}.\par
+\noindent Elaborates to: \texttt{ClampModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Clamp (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{FreeContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat, state s : Nat stepping to t}.\par
+\noindent Postcondition: \texttt{Grows}.\par
+\noindent Runtime validator: \texttt{growsCheck validates the postcondition, sound by grows\_check\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (s : Nat) (x : Nat) (t : Nat) (y : Nat), ((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y)); stated exactly by grows\_check\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{FreeContract.postcondition\_sound}.\par
+\subsection*{\texttt{tally\_free\_grows}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tally\_free\_reference}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{(Tally (s) (x) = tallyRef (s) (x))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{FreeEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Tally against contract FreeContract}.\par
+\noindent Claim: \texttt{equals tallyRef under the contract's premises, discharged by tally\_free\_reference}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by tally\_free\_grows}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (evidence FreeEvidence claim equivalent\_to): \texttt{forall (s : Nat) (x : Nat), (Tally (s) (x) = tallyRef (s) (x)); stated exactly by tally\_free\_reference}.\par
+\noindent Obligation (evidence FreeEvidence claim satisfies\_contract): \texttt{forall (s : Nat) (x : Nat), Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2); stated exactly by tally\_free\_grows}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{FreeEvidence.tally\_free\_reference}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{FreeEvidence.tally\_free\_grows}.\par
+\subsection*{\texttt{FreeModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract FreeContract to realization Tally}.\par
+\noindent Evidence: \texttt{FreeEvidence}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{FreeModel.initial : Nat := Tally.initial}.\par
+\noindent Elaborates to: \texttt{FreeModel (\_\_state : Nat) (\_\_input : Nat) : (Prod (Nat) (Nat)) := Tally (\_\_state) (\_\_input)}.\par
+\subsection*{\texttt{Within}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(x <= 10)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{withinCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (x) (10))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{within\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{((withinCheck (x) = true) -> Within (x))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{within\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{(Within (x) -> (withinCheck (x) = true))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Below}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat) (y : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(y <= x)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{belowCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat) (y : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (y) (x))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{below\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat) (y : Nat)}.\par
+\noindent Statement: \texttt{((belowCheck (x) (y) = true) -> Below (x) (y))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{GuessContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input x : Nat, output y : Nat}.\par
+\noindent Precondition: \texttt{Within}.\par
+\noindent Postcondition: \texttt{Below}.\par
+\noindent Runtime validator: \texttt{belowCheck validates the postcondition, sound by below\_check\_sound}.\par
+\noindent Runtime validator: \texttt{withinCheck validates the precondition, sound by within\_check\_sound, complete by within\_check\_complete}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (x : Nat) (y : Nat), ((belowCheck (x) (y) = true) -> Below (x) (y)); stated exactly by below\_check\_sound}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (x : Nat), ((withinCheck (x) = true) -> Within (x)); stated exactly by within\_check\_sound}.\par
+\noindent Obligation (validator precondition complete): \texttt{forall (x : Nat), (Within (x) -> (withinCheck (x) = true)); stated exactly by within\_check\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GuessContract.postcondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GuessContract.precondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GuessContract.precondition\_complete}.\par
+\subsection*{\texttt{Guess}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat}.\par
+\noindent Deterministic denotation: \texttt{(LexLeanRuntime.subtract (x) (1) : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Guess (x : Nat) : Nat := (LexLeanRuntime.subtract (x) (1) : Nat)}.\par
+\subsection*{\texttt{guessRef}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract (x) (1) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{guess\_reference}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Nat)}.\par
+\noindent Statement: \texttt{(Within (x) -> (Guess (x) = guessRef (x)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{guessSamples}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{((0, 0) :: ((1, 0) :: ((2, 1) :: ((5, 4) :: ((9, 9) :: ([] : List ((Prod (Nat) (Nat)))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sameNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expected : Nat) (observed : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (expected) (observed))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{same\_nat\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(expected : Nat) (observed : Nat)}.\par
+\noindent Statement: \texttt{((sameNat (expected) (observed) = true) -> (expected = observed))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{guess\_agreement}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.length (guessSamples) : Nat) = 5) /\textbackslash{} ((LexLeanCollections.listFold ((fun (count : Nat) (<U+00AB>example<U+00BB> : (Prod (Nat) (Nat))) => (if sameNat (Guess ((<U+00AB>example<U+00BB>).1)) ((<U+00AB>example<U+00BB>).2) then (count + 1) else count))) (0) (guessSamples) : Nat) = 4))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{GuessSample}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Guess against contract GuessContract}.\par
+\noindent Claim: \texttt{agrees with the expected output on exactly 4 of the 5 examples of guessSamples under sameNat, sound for equality by same\_nat\_sound, discharged by guess\_agreement}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (evidence GuessSample claim dataset\_agreement): \texttt{(((LexLeanRuntime.length (guessSamples) : Nat) = 5) /\textbackslash{} ((LexLeanCollections.listFold ((fun (\_\_count : Nat) (\_\_example : (Prod (Nat) (Nat))) => (if sameNat (Guess ((\_\_example).1)) ((\_\_example).2) then (\_\_count + 1) else \_\_count))) (0) (guessSamples) : Nat) = 4)); stated exactly by guess\_agreement}.\par
+\noindent Obligation (evidence GuessSample claim dataset\_agreement comparison): \texttt{forall (\_\_expected : Nat) (\_\_observed : Nat), ((sameNat (\_\_expected) (\_\_observed) = true) -> (\_\_expected = \_\_observed)); stated exactly by same\_nat\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GuessSample.guess\_agreement}.\par
+\subsection*{\texttt{GuessModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract GuessContract to realization Guess}.\par
+\noindent Evidence: \texttt{GuessSample}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GuessModel (\_\_input : Nat) : Nat := Guess (\_\_input)}.\par
+\subsection*{\texttt{GuessEquivalence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent About: \texttt{realization Guess against contract GuessContract}.\par
+\noindent Claim: \texttt{equals guessRef under the contract's premises, discharged by guess\_reference}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence GuessEquivalence claim equivalent\_to): \texttt{forall (x : Nat), (Within (x) -> (Guess (x) = guessRef (x))); stated exactly by guess\_reference}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GuessEquivalence.guess\_reference}.\par
+\subsection*{\texttt{GuessExactModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract GuessContract to realization Guess}.\par
+\noindent Evidence: \texttt{GuessEquivalence}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GuessExactModel (\_\_input : Nat) : Nat := Guess (\_\_input)}.\par
+\subsection*{\texttt{Overshoot}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input x : Nat, output Nat}.\par
+\noindent Deterministic denotation: \texttt{(x + 1)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Overshoot (x : Nat) : Nat := (x + 1)}.\par
+\subsection*{\texttt{OvershootModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract GuessContract to realization Overshoot}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition, precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{OvershootModel (\_\_input : Nat) : Nat := Overshoot (\_\_input)}.\par
+\subsection*{\texttt{violationCode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(violation : ContractViolation)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match violation with | ContractViolation.precondition => 1 | ContractViolation.input\_invariant => 2 | ContractViolation.postcondition => 3 | ContractViolation.output\_invariant => 4)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

@@ -333,7 +333,7 @@ end
 public theorem countdown_decreases (number : Nat) (_steps : Nat) : (((Nat.blt (number) (2)) = false) -> ((LexLeanRuntime.subtract (number) (2) : Nat) < number)) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def countdown (number : Nat) (steps : Nat) : Nat := (match (generalizing := false) __decrease0 : (Nat.blt (number) (2)) with | true => steps | false => countdown ((LexLeanRuntime.subtract (number) (2) : Nat)) ((steps + 1)))
 termination_by number
@@ -342,7 +342,7 @@ decreasing_by all_goals first | (have __evidence := countdown_decreases (number)
 public theorem reduce_decreases (value : Nat) (bound : Nat) : (((Nat.beq (bound) (0)) = false) -> (((Nat.blt (value) (bound)) = false) -> ((LexLeanRuntime.subtract (value) (bound) : Nat) < value))) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def reduce (value : Nat) (bound : Nat) : Nat := (match (generalizing := false) __decrease0 : (Nat.beq (bound) (0)) with | true => value | false => (match (generalizing := false) __decrease1 : (Nat.blt (value) (bound)) with | true => value | false => reduce ((LexLeanRuntime.subtract (value) (bound) : Nat)) (bound)))
 termination_by value
@@ -351,7 +351,7 @@ decreasing_by all_goals first | (have __evidence := reduce_decreases (value) (bo
 public theorem search_decreases (target : Nat) (low : Nat) (high : Nat) : (((Nat.blt (low) (high)) = true) -> (((Nat.ble (target) ((low + low))) = false) -> ((LexLeanRuntime.subtract (high) ((low + 1)) : Nat) < (LexLeanRuntime.subtract (high) (low) : Nat)))) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def search (target : Nat) (low : Nat) (high : Nat) : Nat := (match (generalizing := false) __decrease0 : (Nat.blt (low) (high)) with | true => (match (generalizing := false) __decrease1 : (Nat.ble (target) ((low + low))) with | true => low | false => search (target) ((low + 1)) (high)) | false => high)
 termination_by (LexLeanRuntime.subtract (high) (low) : Nat)
@@ -365,13 +365,13 @@ public theorem reassociate_literal (term : Coverage.Syntax.Term) (left : Coverag
   intros
   subst_vars
   try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 public theorem reassociate_plus (term : Coverage.Syntax.Term) (left : Coverage.Syntax.Term) (right : Coverage.Syntax.Term) (inner : Coverage.Syntax.Term) (rest : Coverage.Syntax.Term) : ((term = Coverage.Syntax.Term.plus (left) (right)) -> ((left = Coverage.Syntax.Term.plus (inner) (rest)) -> (weight (Coverage.Syntax.Term.plus (inner) (Coverage.Syntax.Term.plus (rest) (right))) < weight (term)))) := by
   intros
   subst_vars
   try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def reassociate (term : Coverage.Syntax.Term) : Coverage.Syntax.Term := (match (generalizing := false) __decrease0 : term with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.literal (value) | Coverage.Syntax.Term.plus left right => (match (generalizing := false) __decrease1 : left with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.plus (Coverage.Syntax.Term.literal (value)) (reassociate (right)) | Coverage.Syntax.Term.plus inner rest => reassociate (Coverage.Syntax.Term.plus (inner) (Coverage.Syntax.Term.plus (rest) (right)))))
 termination_by weight (term)
@@ -381,7 +381,7 @@ public theorem prune_plus (term : Coverage.Syntax.Term) (left : Coverage.Syntax.
   intros
   subst_vars
   try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 @[expose, semireducible] public def prune (term : Coverage.Syntax.Term) : Coverage.Syntax.Term := (match (generalizing := false) __decrease0 : term with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.literal (value) | Coverage.Syntax.Term.plus left right => (match (generalizing := false) __decrease1 : left with | Coverage.Syntax.Term.literal _ => prune (right) | Coverage.Syntax.Term.plus inner _ => prune (Coverage.Syntax.Term.plus (inner) (right))))
 termination_by weight (term)
@@ -408,12 +408,12 @@ end
 public theorem ping_to_pong (number : Nat) : (((Nat.beq (number) (0)) = false) -> ((number + number) < ((number + number) + 1))) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 public theorem pong_to_ping (number : Nat) : (((Nat.beq (number) (0)) = false) -> ((((LexLeanRuntime.subtract (number) (1) : Nat) + (LexLeanRuntime.subtract (number) (1) : Nat)) + 1) < (number + number))) := by
   intros
   try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
-  omega
+  all_goals omega
 
 mutual
 @[expose, semireducible] public def ping (number : Nat) : Nat := (match (generalizing := false) __decrease0 : (Nat.beq (number) (0)) with | true => 0 | false => (pong (number) + 1))

@@ -103,7 +103,7 @@ fn schema_kinds(definition: &str, property: &str) -> BTreeSet<String> {
 
 /// One minimal well-formed value of every type kind and every term kind, as
 /// semantic-module JSON. The analysis must map each to its own registry key.
-const TYPE_SAMPLES: [&str; 26] = [
+const TYPE_SAMPLES: [&str; 27] = [
     r#"{"kind":"type"}"#,
     r#"{"kind":"parameter","name":"T"}"#,
     r#"{"kind":"nat"}"#,
@@ -130,9 +130,10 @@ const TYPE_SAMPLES: [&str; 26] = [
     r#"{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}"#,
     r#"{"kind":"map","key":{"kind":"nat"},"value":{"kind":"nat"}}"#,
     r#"{"kind":"set","element":{"kind":"nat"}}"#,
+    r#"{"kind":"contract_violation"}"#,
 ];
 
-const TERM_SAMPLES: [&str; 41] = [
+const TERM_SAMPLES: [&str; 42] = [
     r#"{"kind":"var","name":"x"}"#,
     r#"{"kind":"nat","value":"0"}"#,
     r#"{"kind":"integer","representation":"int","value":"0"}"#,
@@ -174,13 +175,14 @@ const TERM_SAMPLES: [&str; 41] = [
     r#"{"kind":"map_literal","key":{"kind":"nat"},"value":{"kind":"nat"},"entries":[]}"#,
     r#"{"kind":"set_literal","element":{"kind":"nat"},"elements":[]}"#,
     r#"{"kind":"graph_literal","node":{"kind":"nat"},"nodes":[],"edges":[]}"#,
+    r#"{"kind":"checked_apply","model":{"name":"M"},"type_arguments":[],"arguments":[],"checks":[]}"#,
 ];
 
 /// Every registry row as it was reviewed: construct key, disposition,
 /// allocation, overflowing representations, and recursion. A changed column
 /// is a change to LexLean's production contract, so it must change here too.
 #[rustfmt::skip]
-const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 129] = [
+const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 137] = [
     ("type.type", "formal-only", false, &[], false),
     ("type.parameter", "runtime", false, &[], false),
     ("type.nat", "runtime", false, &[], false),
@@ -207,6 +209,7 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 129] = [
     ("type.function", "runtime", false, &[], false),
     ("type.map", "runtime", true, &[], false),
     ("type.set", "runtime", true, &[], false),
+    ("type.contract_violation", "runtime", false, &[], false),
     ("term.var", "runtime", false, &[], false),
     ("term.nat", "runtime", false, &[], false),
     ("term.integer", "runtime", false, &[], false),
@@ -248,6 +251,7 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 129] = [
     ("term.map_literal", "runtime", true, &[], false),
     ("term.set_literal", "runtime", true, &[], false),
     ("term.graph_literal", "runtime", true, &[], false),
+    ("term.checked_apply", "runtime", false, &[], false),
     ("constructor.nat_succ", "runtime", false, &["nat"], false),
     ("primitive.subtract", "runtime", false, &["int"], false),
     ("primitive.multiply", "runtime", false, &["int", "nat"], false),
@@ -302,6 +306,7 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 129] = [
     ("primitive.graph_successors", "runtime", false, &[], false),
     ("primitive.graph_reachable", "runtime", true, &[], false),
     ("primitive.graph_topological", "runtime", true, &[], false),
+    ("primitive.less_than", "runtime", false, &[], false),
     ("declaration.structure", "runtime", false, &[], false),
     ("declaration.class", "runtime", false, &[], false),
     ("declaration.instance", "runtime", false, &[], false),
@@ -310,6 +315,11 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 129] = [
     ("declaration.definition", "runtime", false, &[], false),
     ("declaration.definition.recursive", "runtime", false, &[], true),
     ("declaration.theorem", "erased", false, &[], false),
+    ("declaration.artifact", "runtime", false, &[], false),
+    ("declaration.contract", "erased", false, &[], false),
+    ("declaration.realization", "runtime", false, &[], false),
+    ("declaration.evidence", "erased", false, &[], false),
+    ("declaration.model", "runtime", false, &[], false),
 ];
 
 /// Run the case for one PD conformance ID.

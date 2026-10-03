@@ -168,4 +168,40 @@ theorem keySpec_pair {α β : Type} {ea : α → Value} {eb : β → Value}
   · rw [he a b h]; exact B.spec a.2 b.2
   · rw [hg a b h]; rfl⟩
 
+/-- A key comparison as the realization writes it: `compare`, then a match
+on the order it returns (`primitive.less_than`). -/
+def lessThanE (a b : Expr) : Expr :=
+  .match .bool (.prim .compare [a, b])
+    [.arm .lt [] (.build .true .bool []), .arm .eq [] (.build .false .bool []),
+      .arm .gt [] (.build .false .bool [])]
+
+/-- A key comparison relates to the source's `lessThan`, given the clauses
+by which it unfolds to the key order. -/
+theorem conv_lessThan {κ : Type} {enc : κ → Value} {cmp : κ → κ → Ordering} (K : KeySpec enc cmp)
+    (lt : κ → κ → Bool)
+    (hlt : ∀ x y, cmp x y = .lt → lt x y = true)
+    (heq : ∀ x y, cmp x y = .eq → lt x y = false)
+    (hgt : ∀ x y, cmp x y = .gt → lt x y = false)
+    {p env ea eb f} {a b : κ} (hl : ConvL p env [ea, eb] (RelL f [enc a, enc b])) :
+    Conv p env (lessThanE ea eb) (Rel f (.bool (lt a b))) := by
+  have hs := conv_prim hl (prim_compare_key K a b)
+  simp only [Bool.and_true] at hs
+  show Conv p env (.match .bool (.prim .compare [ea, eb])
+    [.arm .lt [] (.build .true .bool []), .arm .eq [] (.build .false .bool []),
+      .arm .gt [] (.build .false .bool [])]) _
+  cases h : cmp a b
+  · rw [hlt a b h]
+    rw [h] at hs
+    rw [show f = (f && (true && true)) by simp]
+    exact conv_match hs (convA_hit rfl rfl (conv_build convL_nil construct_true))
+  · rw [heq a b h]
+    rw [h] at hs
+    rw [show f = (f && (true && true)) by simp]
+    exact conv_match hs (convA_miss rfl (convA_hit rfl rfl (conv_build convL_nil construct_false)))
+  · rw [hgt a b h]
+    rw [h] at hs
+    rw [show f = (f && (true && true)) by simp]
+    exact conv_match hs
+      (convA_miss rfl (convA_miss rfl (convA_hit rfl rfl (conv_build convL_nil construct_false))))
+
 end LexLeanPreservation

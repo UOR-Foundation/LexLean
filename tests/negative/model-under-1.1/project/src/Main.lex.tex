@@ -1,0 +1,7 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.1.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+\semanticdata{{"declarations":[{"body":{"kind":"le","left":{"kind":"nat","value":"1"},"right":{"kind":"var","name":"x"}},"kind":"definition","name":"Positive","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"nat","value":"1"},"right":{"kind":"var","name":"x"}},"executable":true,"kind":"definition","name":"positiveCheck","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"input":{"name":"x","type":{"kind":"nat"}},"kind":"contract","name":"DoubleContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Doubles"},"precondition":{"name":"Positive"},"validators":[{"predicate":"precondition","sound":{"name":"positive_check_sound"},"validator":{"name":"positiveCheck"}}]}],"spec":"lexlean/semantic-module/1"}}
+\end{semanticmodule}
+\end{lexlean}
