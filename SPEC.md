@@ -3316,8 +3316,9 @@ and the axiom audit read only the elaboration.
     a reasoning declaration emits the fixed, formal-only `LexLeanReasoning`
     runtime in its namespace: the definitions `Star`, `All`, `Preserves`,
     `Sound`, `Complete`, `Reaches`, `Found`, and `SearchOk`, and lemmas
-    proved by induction, `cases`, and rewriting with each other, none of
-    which depends on any axiom, as pinned Lean's `#print axioms` reports. Every logic,
+    proved by induction, `cases`, and core facts about natural numbers,
+    none of which depends on any axiom, as pinned Lean's `#print axioms`
+    reports. Every logic,
     rule, verifier, and reasoner generates theorems whose statements are
     fixed shapes over its elaboration and whose proofs are one of the closed
     templates of the snapshot schema, with names substituted, applying only
