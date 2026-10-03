@@ -351,3 +351,9 @@ Class: `language`. Exit code: 1.
 The shipped preservation library or calculus modules fail their token audit, do not compile silently under the pinned Lean, or a library declaration depends on axioms other than those its registry row states.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7015` --- Certificate B rejected
+
+A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
+
+Class: `language`. Exit code: 1.

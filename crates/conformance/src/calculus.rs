@@ -2735,6 +2735,33 @@ fn renderer_cases() -> Vec<Case> {
         vec![natv(3)],
         200,
     ));
+    // A conditional whose branches are the Boolean literals, on a condition
+    // that can overflow, in the tail of a function that can: the rendering
+    // is the condition itself, its failure returned as the function's.
+    out.push(case(
+        "fallible-condition-value",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t()],
+                    Ty::Bool,
+                    cond(call(1, vec![v(0)]), boolean(true), boolean(false)),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Bool,
+                    p(
+                        Prim::NatLt,
+                        vec![p(Prim::NatAdd, vec![v(0), nat(1)]), nat(5)],
+                    ),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(3)],
+        200,
+    ));
     out
 }
 

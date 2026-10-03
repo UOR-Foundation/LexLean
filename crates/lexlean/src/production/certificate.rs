@@ -568,7 +568,9 @@ fn kind_ctor(kind: IntKind) -> &'static str {
     kind.name()
 }
 
-fn render_ty(ty: &Ty) -> String {
+/// A calculus type as a `TargetSyntax.Ty` term.
+#[must_use]
+pub fn render_ty(ty: &Ty) -> String {
     match ty {
         Ty::Unit => ".unit".to_owned(),
         Ty::Bool => ".bool".to_owned(),

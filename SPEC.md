@@ -3649,7 +3649,8 @@ program enters the proof only as the literal the kernel evaluates.
 
 **Library.** `language/preservation-1.2/library/LexLeanPreservation/` holds
 the hand-written proof library (`Core`, `Values`, `Primitives`, `Fixed`,
-`Keys`, `Templates`); `language/preservation-1.2/library.toml`
+`Keys`, `Templates`, and certificate B's `RustBase`, `RustCorr`,
+`RustLemmas`, `RustMatches`, `RustSound`); `language/preservation-1.2/library.toml`
 (`lexlean/preservation-library/1`) lists its modules in dependency order and
 every declaration with its exact axioms. `language/preservation-1.2/modules/`
 ships the calculus modules `LexLeanTarget.TargetSyntax` and
@@ -3673,19 +3674,23 @@ modules. Each is replayed by `leanchecker`, which shares Lean's kernel
 every root theorem's must be exactly `Classical.choice`, `Quot.sound`, and
 `propext`.
 
-**Verification.** `lexlean verify` checks certificate A after named-root
-extraction (§22.1 stage 12): it stages the shipped environment, compiles each
-module and certificate silently with the pinned Lean, replays each
-certificate through `leanchecker`, and audits the axioms. A shipped module
-that fails its token audit or does not compile silently, or a library
+**Verification.** `lexlean verify` checks certificates A and B after
+named-root extraction (§22.1 stage 12): it renders each root's program in
+each of its targets, derives certificate B, stages the shipped environment,
+compiles each module and certificate silently with the pinned Lean, replays
+each certificate through `leanchecker`, and audits the axioms. A shipped
+module that fails its token audit or does not compile silently, or a library
 declaration whose axioms differ from its registry row, is `LLV7014`; a
-certificate that does not compile silently, fails its replay, or whose root
-theorem's axioms are not exactly the three above is `LLV7013`. It publishes
-each certificate under `preserve/`, the audit output, process records, and
+certificate A that does not compile silently, fails its replay, or whose
+root theorem's axioms are not exactly the three above is `LLV7013`; a
+rendering the aligner derives no correspondence for, or a certificate B that
+fails any of the same checks, is `LLV7015`. It publishes each certificate
+under `preserve/`, the audit output, process records, and
 `preserve/preservation.json` (`lexlean/preservation/1`,
 `schemas/preservation.schema.json`): the registry's SHA-256, the root
 theorem axioms, and per root its targets, certificate module, theorem, and
-the certificate's byte length and SHA-256, which the attestation binds.
+the certificate's byte length and SHA-256, and per target its certificate
+B's module, theorem, byte length, and SHA-256, which the attestation binds.
 
 **Rust machine.** The meaning of a rendered crate (§17.16) is declared by two
 generated LexLean modules of the `compiler` project, verified and shipped
@@ -3715,6 +3720,52 @@ the differential, its outcome equals the calculus interpreter's on the
 lowered program. That rustc agrees with this declaration is `build`
 evidence, measured by the conformance suite, never assumed by a proof.
 
+**Certificate B.** Each certified root's crate in each of its targets is
+related to the root's lowered program by a second kernel-checked theorem,
+the module `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd` beside
+certificate A, which proves
+
+```lean
+theorem root : ∀ n f, FunSem program krate flags n f
+```
+
+where `program` and `krate` are the lowered program and the crate as
+literals (§17.14, `RustSyntax`) and `flags` records, per function type,
+whether its `apply` method is fallible. `FunSem p c A n f` states: for every
+function `f` of `p` and every argument list well typed for it, if the
+calculus evaluates its body at fuel `n` to an observation other than
+`stuck`, then a value it returns is well typed, and the machine, invoked on
+the Rust function `f<f>` with the same values, ends in an outcome that
+realizes the observation: the value itself, or `Ok` of it when the Rust
+function returns `R<T>`; for an overflow, `Err(Overflow)` from a fallible
+function, or the machine's abort. Well typed (`WT`) carries only what the
+rendering relies on: the constructor and fields of an ADT value, and for a
+closure the dispatch arm its function and capture count select. Chained
+with certificate A, whose observation is the calculus run of the same
+program, it states that the crate computes the source root.
+
+The proof is not written per root. The library declares an inductive
+correspondence `Corr` between program constructs and the Rust the renderer
+writes for them, each constructor one lowering shape with decidable side
+conditions (a rendering's folds, patterns, loads of boxed fields, rebuilt
+match arms, uninhabited parameter types), and proves once, by induction on
+fuel and on derivations, that every derivation is sound for every fuel
+(`sound`) and therefore that a crate each of whose functions has a
+derivation is simulated (`simulate`). A certificate is the aligner's
+derivation (`production::rust_cert`) of each function, whose side
+conditions the kernel decides by `rfl`, and its theorem is `simulate`
+applied to them. A function with a parameter of a type no value inhabits
+needs no derivation: no call reaches its body. The rule set is closed:
+the aligner declares its rules as a list that `cargo xtask validate-model`
+(audit-production) requires to equal the constructors of `Corr`, each a case
+of `sound`'s induction and each emitted by the aligner, and the aligner's
+block judgment names every construct of the calculus with no wildcard or
+binding arm. A rendering that no rule derives is refused, not certified by
+default. The correspondence and its side conditions are vocabulary of the
+hand-written library rather than generated, because they are the statement
+the library's proofs are about; the machine they relate is the generated
+`RustSemantics`.
+
 **Evidence.** The conformance suite certifies every production root of
 `examples/production` and `examples/production-coverage`, and verification
 checks both examples' certificates as part of their published sets. Together
@@ -3726,7 +3777,16 @@ higher-order functions with captures, structural, mutual, and well-founded
 recursion, every collection template, and every key order. It regenerates
 certificates against programs with planted mutations (branches swapped, an
 addition that subtracts, a wrong constructor, a wrong callee, a wrong
-literal) and requires Lean to reject each. It runs a differential: on seeded
+literal) and requires Lean to reject each. It certifies every renderer
+fixture (§17.14) in every profile that renders it through certificate B, and
+plants defects in rendered crates (branches swapped, an addition that
+subtracts, a checked operation bounded as another operation, a sibling
+constructor, a byte buffer one byte longer, a wrong callee, a wrong
+literal): the aligner finds no derivation or Lean rejects the one it writes,
+and Lean rejects the unmutated derivation restated over the mutated crate.
+A checked operation at another width is a Rust type error about which the
+machine states nothing; the renderer's correspondence check (§17.16)
+refuses it. It runs a differential: on seeded
 inputs to every root, the calculus interpreter's outcome must equal the
 certificate's `denote` evaluated by Lean. The theorems are proofs about the
 roots they name; the generator and the suite are `build` evidence for any
@@ -4390,13 +4450,13 @@ A failed command removes its staging tree and leaves no verified artifact.
 9. process-sized axiom-audit module-family generation and execution;
 10. exact axiom-output parsing;
 11. per-declaration policy enforcement;
-12. named-root extraction, then certificate A for every production root, when the project has a production root (§22.10, §17.17);
+12. named-root extraction, then certificate A for every production root and certificate B for its rendering in each of its targets, when the project has a production root (§22.10, §17.17);
 13. optional configured PDF rendering;
 14. process-output normalization;
 15. verification-attestation construction;
 16. atomic publication.
 
-No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificate A only when no module declares a production root.
+No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificates A and B only when no module declares a production root.
 
 ### 22.2 Lake-resolved execution
 
@@ -5200,6 +5260,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7012` | Lean compiler-front-end authority drift (§22.10). |
 | `LLV7013` | Certificate A rejected (§17.17). |
 | `LLV7014` | Preservation environment drift (§17.17). |
+| `LLV7015` | Certificate B rejected (§17.17). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -6077,8 +6138,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
 | `SP-06` | `preservation` | The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
+| `SP-08` | `preservation` | Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused. | §17.16, §17.17 |
 
-**Total required capability IDs:** 285.
+**Total required capability IDs:** 286.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

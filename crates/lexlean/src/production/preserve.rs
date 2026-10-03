@@ -639,17 +639,40 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
 /// # Errors
 ///
 /// Returns the first disagreement.
-pub fn classify_audit(output: &str, certificates: &[Certificate]) -> Result<(), Diagnostic> {
-    audit(output, certificates).map_err(|reason| {
+pub fn classify_audit(
+    output: &str,
+    certificates: &[Certificate],
+    renderings: &[Certificate],
+) -> Result<(), Diagnostic> {
+    let environment = |reason: String| {
         if reason.starts_with("the library declaration") {
-            Diagnostic::new(
+            Some(Diagnostic::new(
                 code!("LLV7014"),
                 format!("preservation environment: {reason}"),
-            )
+            ))
         } else {
-            Diagnostic::new(code!("LLV7013"), format!("certificate A: {reason}"))
+            None
         }
+    };
+    audit(output, certificates).map_err(|reason| {
+        environment(reason.clone()).unwrap_or_else(|| {
+            Diagnostic::new(code!("LLV7013"), format!("certificate A: {reason}"))
+        })
+    })?;
+    audit(output, renderings).map_err(|reason| {
+        environment(reason.clone()).unwrap_or_else(|| {
+            Diagnostic::new(code!("LLV7015"), format!("certificate B: {reason}"))
+        })
     })
+}
+
+/// Certificate B of one rendering of a root.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CertifiedRendering {
+    /// The target the crate realizes.
+    pub target: String,
+    /// The certificate, whose theorem is the simulation of every function.
+    pub certificate: Certificate,
 }
 
 /// One certified root as `preservation.json` records it.
@@ -658,6 +681,8 @@ pub struct CertifiedRoot {
     pub root: String,
     pub targets: Vec<String>,
     pub certificate: Certificate,
+    /// Certificate B of the root's crate in each of its targets.
+    pub renderings: Vec<CertifiedRendering>,
 }
 
 /// The tag of `preservation.json`.
@@ -709,6 +734,35 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                 "sha256",
                                 Json::Str(
                                     Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
+                                ),
+                            ),
+                            (
+                                "renderings",
+                                Json::Arr(
+                                    root.renderings
+                                        .iter()
+                                        .map(|rendering| {
+                                            let certificate = &rendering.certificate;
+                                            Json::object(vec![
+                                                ("target", Json::Str(rendering.target.clone())),
+                                                ("module", Json::Str(certificate.module.clone())),
+                                                ("theorem", Json::Str(certificate.theorem.clone())),
+                                                (
+                                                    "byte_length",
+                                                    Json::from_usize(certificate.text.len()),
+                                                ),
+                                                (
+                                                    "sha256",
+                                                    Json::Str(
+                                                        Sha256Digest::of(
+                                                            certificate.text.as_bytes(),
+                                                        )
+                                                        .to_hex(),
+                                                    ),
+                                                ),
+                                            ])
+                                        })
+                                        .collect(),
                                 ),
                             ),
                         ])

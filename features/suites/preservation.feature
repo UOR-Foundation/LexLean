@@ -49,3 +49,9 @@ Feature: preservation
     Given the generated RustSyntax and RustSemantics modules, the runtime item table, and the crate of every certified root
     When the compiler project is verified, the shipped copies are compared with its golden, the item classes with the renderer, and each crate term is elaborated
     Then the modules verify with exact axioms, the copies and classes agree, and every crate term elaborates
+
+  @SP-08 @build
+  Scenario: Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused.
+    Given every production root's crate in each target and every renderer fixture's crate in each profile
+    When the aligner derives each crate's correspondence and the pinned Lean checks, replays, and audits it
+    Then every rule the aligner emits is a constructor of the correspondence and a case of its soundness theorem, every rule is used and every calculus construct named, every derivation checks, every simulation theorem has exactly the three axioms, and every mutated crate is refused

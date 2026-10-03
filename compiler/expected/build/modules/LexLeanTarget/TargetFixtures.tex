@@ -277,6 +277,20 @@
 \noindent Kind: \texttt{theorem}.\par
 \noindent Statement: \texttt{(equalityRun = LexLeanTarget.TargetSemantics.Outcome.value (LexLeanTarget.TargetSyntax.Value.list ((LexLeanTarget.TargetSyntax.Value.bool (true) :: (LexLeanTarget.TargetSyntax.Value.bool (false) :: (LexLeanTarget.TargetSyntax.Value.bool (true) :: (LexLeanTarget.TargetSyntax.Value.bool (true) :: (LexLeanTarget.TargetSyntax.Value.bool (false) :: (LexLeanTarget.TargetSyntax.Value.bool (true) :: (LexLeanTarget.TargetSyntax.Value.bool (false) :: ([] : List (LexLeanTarget.TargetSyntax.Value))))))))))) (57))}.\par
 \noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{fallibleConditionValueProgram}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{LexLeanTarget.TargetSyntax.Program}.\par
+\noindent Definition: \texttt{(\{ adts := ([] : List (LexLeanTarget.TargetSyntax.Adt)), functions := ((\{ parameters := (0 :: ([] : List (Nat))), types := (LexLeanTarget.TargetSyntax.Ty.nat :: ([] : List (LexLeanTarget.TargetSyntax.Ty))), result := LexLeanTarget.TargetSyntax.Ty.bool, body := LexLeanTarget.TargetSyntax.Expr.cond (LexLeanTarget.TargetSyntax.Expr.call (1) ((LexLeanTarget.TargetSyntax.Expr.var (0) :: ([] : List (LexLeanTarget.TargetSyntax.Expr))))) (LexLeanTarget.TargetSyntax.Expr.build (LexLeanTarget.TargetSyntax.Shape.true) (LexLeanTarget.TargetSyntax.Ty.bool) (([] : List (LexLeanTarget.TargetSyntax.Expr)))) (LexLeanTarget.TargetSyntax.Expr.build (LexLeanTarget.TargetSyntax.Shape.false) (LexLeanTarget.TargetSyntax.Ty.bool) (([] : List (LexLeanTarget.TargetSyntax.Expr)))) \} : LexLeanTarget.TargetSyntax.Function) :: ((\{ parameters := (0 :: ([] : List (Nat))), types := (LexLeanTarget.TargetSyntax.Ty.nat :: ([] : List (LexLeanTarget.TargetSyntax.Ty))), result := LexLeanTarget.TargetSyntax.Ty.bool, body := LexLeanTarget.TargetSyntax.Expr.prim (LexLeanTarget.TargetSyntax.Prim.natLt) ((LexLeanTarget.TargetSyntax.Expr.prim (LexLeanTarget.TargetSyntax.Prim.natAdd) ((LexLeanTarget.TargetSyntax.Expr.var (0) :: (LexLeanTarget.TargetSyntax.Expr.value (LexLeanTarget.TargetSyntax.Ty.nat) (LexLeanTarget.TargetSyntax.Value.nat (1)) :: ([] : List (LexLeanTarget.TargetSyntax.Expr))))) :: (LexLeanTarget.TargetSyntax.Expr.value (LexLeanTarget.TargetSyntax.Ty.nat) (LexLeanTarget.TargetSyntax.Value.nat (5)) :: ([] : List (LexLeanTarget.TargetSyntax.Expr))))) \} : LexLeanTarget.TargetSyntax.Function) :: ([] : List (LexLeanTarget.TargetSyntax.Function)))) \} : LexLeanTarget.TargetSyntax.Program)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fallibleConditionValueRun}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{LexLeanTarget.TargetSemantics.Outcome}.\par
+\noindent Definition: \texttt{LexLeanTarget.TargetSemantics.run (200) (fallibleConditionValueProgram) (0) ((LexLeanTarget.TargetSyntax.Value.nat (3) :: ([] : List (LexLeanTarget.TargetSyntax.Value))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{fallibleConditionValueOutcome}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(fallibleConditionValueRun = LexLeanTarget.TargetSemantics.Outcome.value (LexLeanTarget.TargetSyntax.Value.bool (true)) (15))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \subsection*{\texttt{fixedBitsSignedProgram}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Type: \texttt{LexLeanTarget.TargetSyntax.Program}.\par

@@ -1499,7 +1499,8 @@ pub fn run(
     if !production_reports.is_empty() {
         use crate::production::certificate::certificate;
         use crate::production::lower::{linked_modules, lower_root, roots};
-        use crate::production::preserve::{self, CertifiedRoot};
+        use crate::production::preserve::{self, CertifiedRendering, CertifiedRoot};
+        use crate::production::rust_cert;
         // Lean's first error, from its severity on: the location before it
         // names the staging directory, which is not part of any diagnostic.
         let first_error = |output: &str| {
@@ -1532,6 +1533,39 @@ pub fn run(
                 &module,
             )
             .map_err(fail)?;
+            // Certificate B: the root's crate in each of its targets
+            // simulates the lowered program.
+            let mut renderings = Vec::new();
+            for row in &root.report.targets {
+                let profile =
+                    crate::calculus::rust::Profile::named(&row.target).ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust profile", row.target)))
+                    })?;
+                let rendered =
+                    crate::calculus::rust::lower(&lowered.program, profile).map_err(|reason| {
+                        fail(internal(format!(
+                            "{} has no rendering in {}: {reason}",
+                            root.report.root, row.target
+                        )))
+                    })?;
+                let module_b = rust_cert::module_for(&module, &row.target).ok_or_else(|| {
+                    fail(internal(format!("`{}` is not a Rust target", row.target)))
+                })?;
+                let certificate_b = rust_cert::certificate_b(&lowered.program, &rendered, &module_b)
+                    .map_err(|reason| {
+                        fail(Diagnostic::new(
+                            code!("LLV7015"),
+                            format!(
+                                "certificate B: `{module_b}`: no derivation relates {} to its {} rendering: {reason}",
+                                root.report.root, row.target
+                            ),
+                        ))
+                    })?;
+                renderings.push(CertifiedRendering {
+                    target: row.target.clone(),
+                    certificate: certificate_b.into_certificate(),
+                });
+            }
             certified.push(CertifiedRoot {
                 root: root.report.root.clone(),
                 targets: root
@@ -1541,18 +1575,50 @@ pub fn run(
                     .map(|row| row.target.clone())
                     .collect(),
                 certificate: generated,
+                renderings,
             });
         }
         let certificates: Vec<crate::production::certificate::Certificate> = certified
             .iter()
             .map(|root| root.certificate.clone())
             .collect();
+        let rendered_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.certificate.clone())
+            })
+            .collect();
+        let staged_certificates: Vec<crate::production::certificate::Certificate> = certificates
+            .iter()
+            .chain(&rendered_certificates)
+            .cloned()
+            .collect();
+        let is_b = |module: &str| {
+            rendered_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
+        let reject = |module: &str, output: &str| {
+            if is_b(module) {
+                Diagnostic::new(
+                    code!("LLV7015"),
+                    format!(
+                        "certificate B: `{module}` was rejected: {}",
+                        first_error(output)
+                    ),
+                )
+            } else {
+                rejected(module, output)
+            }
+        };
         let generated_modules: Vec<String> = build
             .modules
             .iter()
             .map(|module| module.lean_module.clone())
             .collect();
-        let stage = preserve::stage(&generated_modules, &certificates).map_err(fail)?;
+        let stage = preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
         let preserve_src = staging_utf8.join("preserve-src");
         let preserve_oleans = staging_utf8.join("preserve-oleans");
         let preserve_path =
@@ -1637,7 +1703,7 @@ pub fn run(
                 || !record.stderr.trim().is_empty()
             {
                 let combined = format!("{}{}", record.stdout, record.stderr);
-                return Err(fail(rejected(&file.module, &combined)));
+                return Err(fail(reject(&file.module, &combined)));
             }
             write_staged(
                 staging.path(),
@@ -1656,7 +1722,7 @@ pub fn run(
             .map_err(fail)?;
             if replay.exit_code != 0 {
                 let combined = format!("{}{}", replay.stdout, replay.stderr);
-                return Err(fail(rejected(&file.module, &combined)));
+                return Err(fail(reject(&file.module, &combined)));
             }
             write_staged(
                 staging.path(),
@@ -1670,7 +1736,8 @@ pub fn run(
         if audit_record.exit_code != 0 {
             return Err(fail(rejected(&stage.audit.module, &audit_output)));
         }
-        preserve::classify_audit(&audit_output, &certificates).map_err(fail)?;
+        preserve::classify_audit(&audit_output, &certificates, &rendered_certificates)
+            .map_err(fail)?;
         write_staged(
             staging.path(),
             &format!("process/preserve/{}.json", stage.audit.module),

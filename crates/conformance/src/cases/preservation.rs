@@ -367,6 +367,7 @@ pub fn run(id: &str) {
             );
             for (fixture, code) in [
                 ("certificate-rejected", "LLV7013"),
+                ("certificate-b-rejected", "LLV7015"),
                 ("preservation-drift", "LLV7014"),
             ] {
                 let case =
@@ -460,6 +461,175 @@ pub fn run(id: &str) {
                     report.machine > 0,
                     "{name}: the machine evaluated the cases"
                 );
+            }
+        }
+        // §17.17: certificate B.
+        "SP-08" => {
+            use repo_model::correspondence as corr;
+            let read = |path: &str| {
+                std::fs::read_to_string(repo_root().join(path).as_std_path()).expect("a source")
+            };
+            let aligner = read(corr::ALIGNER_SOURCE);
+            let correspondence = read(corr::CORRESPONDENCE_SOURCE);
+            let soundness = read(corr::SOUNDNESS_SOURCE);
+            let calculus = read(corr::CALCULUS_SOURCE);
+            corr::audit(&aligner, &correspondence, &soundness, &calculus)
+                .expect("the rule set is closed");
+            let rules: BTreeSet<String> = lexlean::production::rust_cert::RULES
+                .iter()
+                .map(|rule| (*rule).to_owned())
+                .collect();
+            assert_eq!(
+                corr::constructors(&correspondence).expect("the constructors"),
+                lexlean::production::rust_cert::RULES,
+                "the aligner's rules are the correspondence's constructors, in order"
+            );
+            // Each break of the closure, planted in the repository's own
+            // sources, is reported for what it is.
+            for (rust, corr_text, sound, expected) in [
+                (
+                    aligner.replacen("    \"condId\",\n", "", 1),
+                    correspondence.clone(),
+                    soundness.clone(),
+                    "`condId` is not among the aligner's rules",
+                ),
+                (
+                    aligner.clone(),
+                    correspondence.clone(),
+                    soundness.replacen("| matchUnit", "| matchUnitX", 1),
+                    "`matchUnit` is not a case of the soundness theorem",
+                ),
+                (
+                    aligner.replacen(
+                        "            Term::Apply { .. } => self.apply(g, fl, false, term, lets, tail),\n",
+                        "            _ => self.apply(g, fl, false, term, lets, tail),\n",
+                        1,
+                    ),
+                    correspondence.clone(),
+                    soundness.clone(),
+                    "wildcard arm",
+                ),
+            ] {
+                assert!(
+                    rust != aligner || corr_text != correspondence || sound != soundness,
+                    "{expected}: the plant applies"
+                );
+                let report = corr::audit(&rust, &corr_text, &sound, &calculus)
+                    .expect_err("a broken closure is reported");
+                assert!(report.contains(expected), "{expected}: {report}");
+            }
+            // Every renderer fixture certifies in every profile that renders
+            // it, from the declared rules only.
+            let renderings = preservation::fixture_renderings();
+            let mut used: BTreeSet<String> = BTreeSet::new();
+            for rendering in &renderings {
+                used.extend(preservation::rules_used(&rendering.certificate.text));
+            }
+            assert!(
+                used.is_subset(&rules),
+                "{:?}",
+                used.difference(&rules).collect::<Vec<_>>()
+            );
+            // With the certified roots' renderings, every rule is used: no
+            // rule of the closed set is dead weight the corpus never meets.
+            for (_, project) in certified_projects() {
+                for entry in preservation::certificates(&project) {
+                    for (_, certificate) in &entry.renderings {
+                        used.extend(preservation::rules_used(&certificate.text));
+                    }
+                }
+            }
+            assert_eq!(
+                used,
+                rules,
+                "rules no rendering uses: {:?}",
+                rules.difference(&used).collect::<Vec<_>>()
+            );
+            // A crate mutated after rendering is refused: the aligner finds
+            // no derivation, or Lean rejects the one it writes; and the
+            // unmutated derivation never proves the mutated crate.
+            let planted = preservation::plant_renderings(&renderings);
+            let kinds: BTreeSet<preservation::RustMutation> =
+                planted.iter().map(|(plant, _)| plant.mutation).collect();
+            assert_eq!(
+                kinds,
+                preservation::RustMutation::ALL.into_iter().collect(),
+                "every crate mutation applies to some rendering"
+            );
+            // A width change is a Rust type error the machine says nothing
+            // about; the renderer's correspondence check refuses it.
+            let widened = renderings
+                .iter()
+                .find_map(|rendering| {
+                    preservation::mutate_crate(&rendering.krate, preservation::RustMutation::Width)
+                        .map(|mutated| (rendering, mutated))
+                })
+                .expect("a rendering has a checked operation");
+            let elements = lexlean::calculus::rust::realized(
+                &widened.0.program,
+                lexlean::calculus::rust::Profile::named(&widened.0.target).expect("a profile"),
+            )
+            .expect("the program is realized");
+            lexlean::calculus::rust::validate::correspond(&widened.0.krate, &elements)
+                .expect("the rendering corresponds");
+            let refusal = lexlean::calculus::rust::validate::correspond(&widened.1, &elements)
+                .expect_err("a construct at another width is refused");
+            assert!(refusal.contains("works at width"), "{refusal}");
+            eprintln!(
+                "SP-08: {} renderer-fixture renderings certified",
+                renderings.len()
+            );
+            if !support::lean_backed("SP-08") {
+                return;
+            }
+            for (name, report) in reports() {
+                for entry in &report.certified {
+                    let targets: Vec<&String> =
+                        entry.renderings.iter().map(|(target, _)| target).collect();
+                    assert_eq!(
+                        targets,
+                        entry.targets.iter().collect::<Vec<_>>(),
+                        "{name}: {} has certificate B in each target",
+                        entry.root
+                    );
+                    for (_, certificate) in &entry.renderings {
+                        assert!(
+                            report.audit_output.contains(&certificate.theorem),
+                            "{name}: `{}` is audited",
+                            certificate.theorem
+                        );
+                    }
+                }
+            }
+            let checked = preservation::check_renderings(&renderings, planted);
+            for rendering in &renderings {
+                assert!(
+                    checked
+                        .audit_output
+                        .contains(&rendering.certificate.theorem),
+                    "`{}` is audited",
+                    rendering.certificate.theorem
+                );
+            }
+            for plant in &checked.planted {
+                let what = format!(
+                    "{:?} in {} ({})",
+                    plant.mutation, plant.fixture, plant.target
+                );
+                assert!(
+                    plant.stale.contains("error"),
+                    "{what}: the unmutated derivation proves the mutated crate"
+                );
+                match (&plant.unaligned, &plant.realigned) {
+                    (Some(reason), None) => assert!(!reason.is_empty(), "{what}"),
+                    (None, Some(rejection)) => assert!(
+                        rejection.contains("error"),
+                        "{what}: Lean accepted the mutated crate's derivation"
+                    ),
+                    (unaligned, realigned) => {
+                        panic!("{what}: {unaligned:?} / {realigned:?}")
+                    }
+                }
             }
         }
         // §17.13, §17.17: the certified examples exercise the registry.

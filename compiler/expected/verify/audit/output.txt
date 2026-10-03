@@ -451,6 +451,9 @@
 'LexLeanTarget.TargetFixtures.equalityOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.equalityProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.equalityRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.fallibleConditionValueOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.TargetFixtures.fallibleConditionValueProgram' does not depend on any axioms
+'LexLeanTarget.TargetFixtures.fallibleConditionValueRun' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.fixedBitsSignedOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.fixedBitsSignedProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.fixedBitsSignedRun' depends on axioms: [propext, Classical.choice, Quot.sound]

@@ -12,7 +12,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 285 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 286 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
@@ -802,6 +802,29 @@ Removed: the function was deleted; `audit-production` reports that the three
 preservation sources match no construct by default. `conformance_sp_01` plants
 an `if let`, a `matches!`, and a wildcard arm in each source and requires
 the audit to refuse every one.
+
+### audit-production closes certificate B's rule set
+
+Planted: in `crates/lexlean/src/production/rust_cert.rs`, the block
+judgment's arm `Term::Apply { .. } => self.apply(g, fl, false, term, lets,
+tail),` rewritten as `_ => self.apply(g, fl, false, term, lets, tail),`.
+Command: `cargo xtask validate-model`. Expected: the aligner meets a
+calculus construct by default (§17.17, SP-08).
+
+```text
+gate failed: §17.17 (SP-08): crates/lexlean/src/production/rust_cert.rs: the block judgment does not name the construct `Term::Apply`
+crates/lexlean/src/production/rust_cert.rs: the block judgment has a wildcard arm, which would meet a construct by default
+```
+
+Removed: the arm was restored; `audit-production` reports that certificate
+B's 49 rules are exactly the correspondence's constructors, each a case of
+its soundness theorem, with every calculus construct named.
+`conformance_sp_08` plants, in the repository's own sources, a rule dropped
+from the aligner's `RULES`, a case renamed in `sound`, and this wildcard arm,
+and requires each to be reported; the unit tests of
+`repo_model::correspondence` plant a duplicate rule, an extra constructor, a
+stray soundness case, a rule never written, a binding arm, and a calculus
+construct the aligner does not name.
 
 ### CL-11 covers every registered code's class
 
@@ -2281,11 +2304,36 @@ renderer's failure and heap classes, and every certified root's crate, in
 every target it is eligible for, prints to a `RustSyntax` term that the
 pinned Lean elaborates and evaluates on the differential's seeded inputs,
 each outcome equal to the calculus interpreter's on the lowered program.
+`conformance_sp_08` checks certificate B: the closed-rule-set audit
+(`repo_model::correspondence`, also run by `cargo xtask validate-model`)
+holds on the repository's aligner, correspondence, soundness theorem, and
+calculus, the aligner's `RULES` equal `Corr`'s constructors in order, and a
+rule dropped from `RULES`, a case renamed in `sound`, and a wildcard arm in
+the block judgment are each reported; every renderer fixture in every profile
+that renders it (138 renderings) has a certificate B whose
+derivations use only declared rules, and with the certified roots'
+renderings every one of the 49 rules is used; every certified root carries a
+certificate B in each of its targets, audited in the certification run; the
+fixtures' certificates compile, replay through `leanchecker`, and their
+`root` theorems depend on exactly the three axioms. Seven crate mutations
+(an `if`'s branches swapped, `nat_add` as `nat_sub`, a checked addition
+as a checked subtraction, a sibling enum variant, a byte literal one byte
+longer, a neighbouring callee, a natural literal plus one), each planted in
+the first rendering that admits it, are refused twice: the aligner derives
+nothing for the mutated crate or Lean rejects the derivation it writes, and
+Lean rejects the unmutated derivation restated over the mutated crate. A
+checked operation moved to another width is not refused by certificate B:
+the first run of this case planted that mutation and Lean accepted the
+realigned derivation, because the machine states nothing about an operand
+of another width than its item's. Such a crate is a Rust type error, and the
+case now requires the renderer's correspondence check to refuse it.
 `conformance_sp_05` verifies
 `examples/production` and requires every certificate, the audit output, and a
 schema-valid `preservation.json` bound by the attestation in the published
 set; the negative fixtures `certificate-rejected` (a lake overlay turns the
 certificates' natural additions into subtractions) and `preservation-drift`
 (it appends a false theorem to the shipped library) must fail with `LLV7013`
-and `LLV7014` with nothing published.
+and `LLV7014` with nothing published, and `certificate-b-rejected` (the
+overlay turns every `nat_add` call of each certificate B's crate into
+`nat_sub`, leaving certificate A intact) with `LLV7015`.
 

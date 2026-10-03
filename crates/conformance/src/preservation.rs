@@ -1,16 +1,19 @@
-//! Certificate A end to end (SPEC.md §17.17): lower every production root of
-//! a project, generate its certificate, stage the shipped preservation
-//! environment beside the project's generated modules, compile every module
-//! with the pinned Lean, replay every certificate through `leanchecker`, and
-//! audit the exact axioms of the library and of every root theorem.
+//! Certificates A and B end to end (SPEC.md §17.17): lower every production
+//! root of a project, generate its certificate A and, for each target, the
+//! certificate B of its crate, stage the shipped preservation environment
+//! beside the project's generated modules, compile every module with the
+//! pinned Lean, replay every certificate through `leanchecker`, and audit the
+//! exact axioms of the library and of every root theorem.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use lexlean::calculus::rust::{lower, Profile};
 use lexlean::calculus::{Expr, Program, Ty, Value};
 use lexlean::production::certificate::{certificate, Certificate};
 use lexlean::production::lower::{linked_modules, lower_root, roots};
 use lexlean::production::preserve::{audit, workspace, Workspace};
+use lexlean::production::rust_cert::{certificate_b, module_for};
 
 use crate::support::{self, mangled_toolchain_name, real_elan_home, P};
 
@@ -26,6 +29,8 @@ pub struct Certified {
     pub certificate: Certificate,
     /// The lowered program the certificate is about.
     pub program: lexlean::calculus::Program,
+    /// Certificate B of the program's crate in each target.
+    pub renderings: Vec<(String, Certificate)>,
 }
 
 /// The certificates of every production root of `project`, in root order.
@@ -63,6 +68,29 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                     root.report.root
                 )
             });
+            let renderings = root
+                .report
+                .targets
+                .iter()
+                .map(|row| {
+                    let profile = Profile::named(&row.target).expect("a Rust profile");
+                    let krate = lower(&lowered.program, profile).unwrap_or_else(|reason| {
+                        panic!(
+                            "{} has no {} rendering: {reason}",
+                            root.report.root, row.target
+                        )
+                    });
+                    let module_b = module_for(&module, &row.target).expect("a Rust target");
+                    let certificate_b = certificate_b(&lowered.program, &krate, &module_b)
+                        .unwrap_or_else(|reason| {
+                            panic!(
+                                "{} on {}: certificate B: {reason}",
+                                root.report.root, row.target
+                            )
+                        });
+                    (row.target.clone(), certificate_b.into_certificate())
+                })
+                .collect();
             Certified {
                 root: root.report.root.clone(),
                 targets: root
@@ -73,6 +101,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                     .collect(),
                 certificate,
                 program: lowered.program,
+                renderings,
             }
         })
         .collect()
@@ -90,6 +119,11 @@ pub fn staged(project: &P, certified: &[Certified]) -> Workspace {
     let certificates: Vec<Certificate> = certified
         .iter()
         .map(|entry| entry.certificate.clone())
+        .chain(
+            certified
+                .iter()
+                .flat_map(|entry| entry.renderings.iter().map(|(_, b)| b.clone())),
+        )
         .collect();
     workspace(&user, &certificates).expect("the workspace stages")
 }
@@ -134,8 +168,48 @@ fn lean(root: &Path, arguments: &[String]) -> std::process::Output {
         .expect("lean runs")
 }
 
-/// Write `workspace` below `root`, compile every module in order, replay
-/// every certificate, and compile the audit module.
+fn joined(output: &std::process::Output) -> String {
+    format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    )
+}
+
+/// Run `job` over `items` on a few threads, returning the results in
+/// `items` order. Certificates import the environment and nothing of one
+/// another, so they compile and replay independently; the pool is small
+/// because each Lean process holds the whole environment in memory.
+fn parallel<T: Sync, R: Send>(items: &[T], job: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .clamp(1, 3);
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let results: std::sync::Mutex<Vec<Option<R>>> =
+        std::sync::Mutex::new(items.iter().map(|_| None).collect());
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| loop {
+                let index = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                let Some(item) = items.get(index) else {
+                    break;
+                };
+                let result = job(item);
+                results.lock().expect("the results")[index] = Some(result);
+            });
+        }
+    });
+    results
+        .into_inner()
+        .expect("the results")
+        .into_iter()
+        .map(|result| result.expect("every job ran"))
+        .collect()
+}
+
+/// Write `workspace` below `root`, compile the environment in order and
+/// every certificate after it, replay every certificate, and compile the
+/// audit module.
 #[must_use]
 pub fn check(workspace: &Workspace, root: &Path) -> Checked {
     for file in workspace.files.iter().chain([&workspace.audit]) {
@@ -143,7 +217,7 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
         std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
         std::fs::write(&path, &file.text).expect("write");
     }
-    for file in &workspace.files {
+    let compile = |file: &lexlean::production::preserve::StagedFile| {
         let source = root.join("src").join(&file.path);
         let olean = root
             .join("build")
@@ -158,46 +232,47 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
                 source.display().to_string(),
             ],
         );
-        if !output.status.success() {
+        (!output.status.success()).then(|| (file.module.clone(), joined(&output)))
+    };
+    let (certificates, environment): (Vec<_>, Vec<_>) = workspace
+        .files
+        .iter()
+        .partition(|file| workspace.certificates.contains(&file.module));
+    for file in environment {
+        if let Some(failure) = compile(file) {
             return Checked {
-                failure: Some((
-                    file.module.clone(),
-                    format!(
-                        "{}{}",
-                        String::from_utf8_lossy(&output.stdout),
-                        String::from_utf8_lossy(&output.stderr)
-                    ),
-                )),
+                failure: Some(failure),
                 audit_output: String::new(),
             };
         }
     }
-    for module in &workspace.certificates {
+    if let Some(failure) = parallel(&certificates, |file| compile(file))
+        .into_iter()
+        .flatten()
+        .next()
+    {
+        return Checked {
+            failure: Some(failure),
+            audit_output: String::new(),
+        };
+    }
+    let replayed = parallel(&workspace.certificates, |module| {
         let output = pinned("leanchecker", root)
             .arg(module)
             .output()
             .expect("leanchecker runs");
-        if !output.status.success() {
-            return Checked {
-                failure: Some((
-                    module.clone(),
-                    format!(
-                        "leanchecker: {}{}",
-                        String::from_utf8_lossy(&output.stdout),
-                        String::from_utf8_lossy(&output.stderr)
-                    ),
-                )),
-                audit_output: String::new(),
-            };
-        }
+        (!output.status.success())
+            .then(|| (module.clone(), format!("leanchecker: {}", joined(&output))))
+    });
+    if let Some(failure) = replayed.into_iter().flatten().next() {
+        return Checked {
+            failure: Some(failure),
+            audit_output: String::new(),
+        };
     }
     let audit_source = root.join("src").join(&workspace.audit.path);
     let output = lean(root, &[audit_source.display().to_string()]);
-    let text = format!(
-        "{}{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
+    let text = joined(&output);
     if !output.status.success() {
         return Checked {
             failure: Some((workspace.audit.module.clone(), text)),
@@ -254,6 +329,11 @@ pub fn certify(project: &P, name: &str) -> Report {
     let certificates: Vec<Certificate> = certified
         .iter()
         .map(|entry| entry.certificate.clone())
+        .chain(
+            certified
+                .iter()
+                .flat_map(|entry| entry.renderings.iter().map(|(_, b)| b.clone())),
+        )
         .collect();
     audit(&checked.audit_output, &certificates)
         .unwrap_or_else(|reason| panic!("{name}: axiom audit: {reason}"));
@@ -560,4 +640,483 @@ pub fn plant(project: &P) -> Vec<Planted> {
         }
     }
     out
+}
+
+/// A defect planted in a rendered crate after rendering, while the program
+/// it realizes is unchanged: what certificate B exists to catch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RustMutation {
+    /// The first `if`'s branches are swapped.
+    Branches,
+    /// The first natural addition subtracts.
+    Arithmetic,
+    /// The first checked fixed-width operation checks another operation's
+    /// bound: an addition or a multiplication a subtraction's, a
+    /// subtraction an addition's, so it overflows where the program does
+    /// not.
+    Overflow,
+    /// The first checked fixed-width operation works at another width. The
+    /// machine states nothing about an operand of another width than its
+    /// item's, which is a Rust type error: the renderer's correspondence
+    /// check refuses this one, not certificate B.
+    Width,
+    /// The first construction of an enum variant builds a sibling variant.
+    Constructor,
+    /// The first byte-buffer literal gains a byte.
+    Buffer,
+    /// The first call of a crate function calls a neighbouring one.
+    Recursion,
+    /// The first natural literal is one larger.
+    Literal,
+}
+
+impl RustMutation {
+    /// Every mutation certificate B refuses.
+    pub const ALL: [Self; 7] = [
+        Self::Branches,
+        Self::Arithmetic,
+        Self::Overflow,
+        Self::Constructor,
+        Self::Buffer,
+        Self::Recursion,
+        Self::Literal,
+    ];
+}
+
+/// The width a checked operation is mutated to: the next wider kind, or
+/// the next narrower for the widest.
+fn other_width(kind: lexlean::calculus::IntKind) -> lexlean::calculus::IntKind {
+    use lexlean::calculus::IntKind;
+    match kind {
+        IntKind::U8 => IntKind::U16,
+        IntKind::U16 => IntKind::U32,
+        IntKind::U32 => IntKind::U64,
+        IntKind::U64 => IntKind::U32,
+        IntKind::I8 => IntKind::I16,
+        IntKind::I16 => IntKind::I32,
+        IntKind::I32 => IntKind::I64,
+        IntKind::I64 => IntKind::I32,
+    }
+}
+
+fn mutate_rust(
+    expr: &mut lexlean::calculus::rust::ast::Expr,
+    mutation: RustMutation,
+    variants: &dyn Fn(u64) -> u64,
+    functions: u64,
+) -> bool {
+    use lexlean::calculus::rust::ast::{Callee, Ctor, Expr as R, Lit};
+    use lexlean::calculus::rust::runtime::Item;
+    let here = match (mutation, &mut *expr) {
+        (
+            RustMutation::Branches,
+            R::If {
+                then_branch,
+                else_branch,
+                ..
+            },
+        ) => {
+            std::mem::swap(then_branch, else_branch);
+            true
+        }
+        (
+            RustMutation::Arithmetic,
+            R::Call {
+                callee: callee @ Callee::Runtime(Item::NatAdd),
+                ..
+            },
+        ) => {
+            *callee = Callee::Runtime(Item::NatSub);
+            true
+        }
+        (
+            RustMutation::Overflow,
+            R::Call {
+                callee: Callee::Runtime(item),
+                ..
+            },
+        ) => match *item {
+            Item::CheckedAdd(kind) | Item::CheckedMul(kind) => {
+                *item = Item::CheckedSub(kind);
+                true
+            }
+            Item::CheckedSub(kind) => {
+                *item = Item::CheckedAdd(kind);
+                true
+            }
+            _ => false,
+        },
+        (
+            RustMutation::Width,
+            R::Call {
+                callee: Callee::Runtime(item),
+                ..
+            },
+        ) => match *item {
+            Item::CheckedAdd(kind) => {
+                *item = Item::CheckedAdd(other_width(kind));
+                true
+            }
+            Item::CheckedSub(kind) => {
+                *item = Item::CheckedSub(other_width(kind));
+                true
+            }
+            Item::CheckedMul(kind) => {
+                *item = Item::CheckedMul(other_width(kind));
+                true
+            }
+            _ => false,
+        },
+        (
+            RustMutation::Constructor,
+            R::Construct {
+                ctor: Ctor::Adt { adt, constructor },
+                ..
+            },
+        ) => {
+            let count = variants(*adt);
+            if count > 1 {
+                *constructor = (*constructor + 1) % count;
+                true
+            } else {
+                false
+            }
+        }
+        (RustMutation::Buffer, R::Lit(Lit::Bytes(bytes), _)) => {
+            bytes.push(0);
+            true
+        }
+        (
+            RustMutation::Recursion,
+            R::Call {
+                callee: Callee::Function(function),
+                ..
+            },
+        ) if functions > 1 => {
+            *function = (*function + 1) % functions;
+            true
+        }
+        (RustMutation::Literal, R::Lit(Lit::Nat(value), _)) => {
+            *value += 1;
+            true
+        }
+        _ => false,
+    };
+    here || rust_children(expr)
+        .into_iter()
+        .any(|child| mutate_rust(child, mutation, variants, functions))
+}
+
+/// The expressions directly below `expr`, in rendering order.
+fn rust_children(
+    expr: &mut lexlean::calculus::rust::ast::Expr,
+) -> Vec<&mut lexlean::calculus::rust::ast::Expr> {
+    use lexlean::calculus::rust::ast::{Block, Expr as R};
+    fn block(block: &mut Block) -> Vec<&mut R> {
+        let mut out: Vec<&mut R> = block
+            .lets
+            .iter_mut()
+            .map(|binding| &mut binding.value)
+            .collect();
+        out.push(&mut block.tail);
+        out
+    }
+    match expr {
+        R::Box(inner, _) | R::Widen(inner, _) | R::Succeed(inner, _) | R::Not(inner, _) => {
+            vec![inner.as_mut()]
+        }
+        R::Call { args, .. } | R::Apply { args, .. } | R::Construct { args, .. } => {
+            args.iter_mut().collect()
+        }
+        R::Pair(left, right, _) => vec![left.as_mut(), right.as_mut()],
+        R::If {
+            condition,
+            then_branch,
+            else_branch,
+            ..
+        } => {
+            let mut out = vec![condition.as_mut()];
+            out.extend(block(then_branch));
+            out.extend(block(else_branch));
+            out
+        }
+        R::Match {
+            scrutinee, arms, ..
+        } => {
+            let mut out = vec![scrutinee.as_mut()];
+            for (_, body) in arms {
+                out.extend(block(body));
+            }
+            out
+        }
+        R::Block(inner) => block(inner),
+        R::Lit(..)
+        | R::Move(..)
+        | R::Clone(..)
+        | R::Copy(..)
+        | R::Deref(..)
+        | R::Unbox(..)
+        | R::Uncons(..)
+        | R::IsZero(..)
+        | R::NonZero(..)
+        | R::Predecessor(..) => Vec::new(),
+    }
+}
+
+/// `krate` with `mutation` planted at its first applicable site, if any.
+#[must_use]
+pub fn mutate_crate(
+    krate: &lexlean::calculus::rust::ast::Crate,
+    mutation: RustMutation,
+) -> Option<lexlean::calculus::rust::ast::Crate> {
+    use lexlean::calculus::rust::ast::{ItemDef, Type};
+    let variants = |adt: u64| {
+        krate
+            .items
+            .iter()
+            .find_map(|item| match item {
+                ItemDef::Enum { name, variants, .. } if *name == Type::Adt(adt) => {
+                    Some(variants.len() as u64)
+                }
+                _ => None,
+            })
+            .unwrap_or(0)
+    };
+    let functions = krate
+        .items
+        .iter()
+        .filter(|item| matches!(item, ItemDef::Function { .. }))
+        .count() as u64;
+    let mut mutated = krate.clone();
+    for item in &mut mutated.items {
+        if let ItemDef::Function { body, .. } = item {
+            let planted = body
+                .lets
+                .iter_mut()
+                .map(|binding| &mut binding.value)
+                .chain([&mut body.tail])
+                .any(|expr| mutate_rust(expr, mutation, &variants, functions));
+            if planted {
+                return Some(mutated);
+            }
+        }
+    }
+    None
+}
+
+/// One renderer fixture rendered in one profile, with its certificate B.
+#[derive(Debug, Clone)]
+pub struct Rendering {
+    /// The fixture's name.
+    pub fixture: String,
+    /// The profile's target.
+    pub target: String,
+    /// The fixture's program.
+    pub program: Program,
+    /// Its crate in the profile.
+    pub krate: lexlean::calculus::rust::ast::Crate,
+    /// Certificate B relating the two.
+    pub certificate: Certificate,
+}
+
+/// Every renderer fixture in every profile that renders it, each with the
+/// certificate B the aligner derives.
+///
+/// # Panics
+///
+/// Panics when a profile refuses a fixture for any reason but `rust-core`'s
+/// refusal of the heap, or when the aligner derives no certificate.
+#[must_use]
+pub fn fixture_renderings() -> Vec<Rendering> {
+    let mut out = Vec::new();
+    for (index, case) in crate::calculus::cases().into_iter().enumerate() {
+        for profile in Profile::ALL {
+            let krate = match lower(&case.fixture.program, profile) {
+                Ok(krate) => krate,
+                Err(reason) => {
+                    assert!(
+                        profile == Profile::Core && reason.contains("requires heap allocation"),
+                        "{} ({}): {reason}",
+                        case.fixture.name,
+                        profile.target()
+                    );
+                    continue;
+                }
+            };
+            let module = module_for(
+                &format!("LexLeanPreserve.Fixture.F{index}"),
+                profile.target(),
+            )
+            .expect("a Rust target");
+            let certificate =
+                certificate_b(&case.fixture.program, &krate, &module).unwrap_or_else(|reason| {
+                    panic!(
+                        "{} ({}): certificate B: {reason}",
+                        case.fixture.name,
+                        profile.target()
+                    )
+                });
+            out.push(Rendering {
+                fixture: case.fixture.name.clone(),
+                target: profile.target().to_owned(),
+                program: case.fixture.program.clone(),
+                krate,
+                certificate: certificate.into_certificate(),
+            });
+        }
+    }
+    out
+}
+
+/// The rules of the correspondence a certificate's derivations use.
+#[must_use]
+pub fn rules_used(text: &str) -> std::collections::BTreeSet<String> {
+    text.split("(Corr.")
+        .skip(1)
+        .map(|rest| {
+            rest.chars()
+                .take_while(char::is_ascii_alphanumeric)
+                .collect()
+        })
+        .collect()
+}
+
+/// One crate mutation and what became of it.
+#[derive(Debug, Clone)]
+pub struct RustPlanted {
+    /// The fixture whose crate was mutated.
+    pub fixture: String,
+    /// The profile it was rendered in.
+    pub target: String,
+    /// The mutation.
+    pub mutation: RustMutation,
+    /// The aligner's reason when it derives nothing for the mutated crate.
+    pub unaligned: Option<String>,
+    /// Lean's output on the derivation the aligner wrote for the mutated
+    /// crate, when it wrote one; empty when Lean accepted it.
+    pub realigned: Option<String>,
+    /// Lean's output on the unmutated derivation restated over the mutated
+    /// crate; empty when Lean accepted it.
+    pub stale: String,
+}
+
+/// Plant every mutation in the first rendering that admits it: ask the
+/// aligner for the mutated crate's certificate, and restate the
+/// unmutated certificate over the mutated crate.
+#[must_use]
+pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(String, String)>)> {
+    let mut out = Vec::new();
+    for mutation in RustMutation::ALL {
+        for rendering in renderings {
+            let Some(mutated) = mutate_crate(&rendering.krate, mutation) else {
+                continue;
+            };
+            let base = format!("LexLeanPreserve.Planted.{mutation:?}");
+            let stale_module = format!("{base}.Stale");
+            let stale_text = rendering
+                .certificate
+                .text
+                .replace(
+                    &lexlean::production::rust_term::crate_term(&rendering.krate),
+                    &lexlean::production::rust_term::crate_term(&mutated),
+                )
+                .replace(&rendering.certificate.module, &stale_module);
+            let mut modules = vec![(stale_module, stale_text)];
+            let realigned_module = format!("{base}.Realigned");
+            let unaligned = match certificate_b(&rendering.program, &mutated, &realigned_module) {
+                Ok(certificate) => {
+                    modules.push((realigned_module, certificate.text));
+                    None
+                }
+                Err(reason) => Some(reason),
+            };
+            out.push((
+                RustPlanted {
+                    fixture: rendering.fixture.clone(),
+                    target: rendering.target.clone(),
+                    mutation,
+                    unaligned,
+                    realigned: None,
+                    stale: String::new(),
+                },
+                modules,
+            ));
+            break;
+        }
+    }
+    out
+}
+
+/// What checking the renderings' certificates established.
+#[derive(Debug, Clone)]
+pub struct RenderingsChecked {
+    /// The audit module's output.
+    pub audit_output: String,
+    /// Every planted mutation, with Lean's verdicts filled in.
+    pub planted: Vec<RustPlanted>,
+}
+
+/// Stage every rendering's certificate in the preservation environment,
+/// compile, replay, and audit them, then compile every planted module
+/// against the same environment.
+///
+/// # Panics
+///
+/// Panics naming the first certificate that fails to compile or replay,
+/// or the first axiom disagreement.
+#[must_use]
+pub fn check_renderings(
+    renderings: &[Rendering],
+    planted: Vec<(RustPlanted, Vec<(String, String)>)>,
+) -> RenderingsChecked {
+    let certificates: Vec<Certificate> = renderings
+        .iter()
+        .map(|rendering| rendering.certificate.clone())
+        .collect();
+    let staged = workspace(&[], &certificates).expect("the workspace stages");
+    let scratch = tempfile::Builder::new()
+        .prefix("lexlean-renderings-")
+        .tempdir()
+        .expect("tempdir");
+    let checked = check(&staged, scratch.path());
+    if let Some((module, output)) = checked.failure {
+        panic!("renderings: `{module}` was rejected:\n{output}");
+    }
+    audit(&checked.audit_output, &certificates)
+        .unwrap_or_else(|reason| panic!("renderings: axiom audit: {reason}"));
+    let jobs: Vec<(usize, String, String)> = planted
+        .iter()
+        .enumerate()
+        .flat_map(|(index, (_, modules))| {
+            modules
+                .iter()
+                .map(move |(module, text)| (index, module.clone(), text.clone()))
+        })
+        .collect();
+    let verdicts = parallel(&jobs, |(_, module, text)| {
+        let path = scratch
+            .path()
+            .join("src")
+            .join(lexlean::production::preserve::module_path(module));
+        std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
+        std::fs::write(&path, text).expect("write");
+        let output = lean(scratch.path(), &[path.display().to_string()]);
+        if output.status.success() {
+            String::new()
+        } else {
+            joined(&output)
+        }
+    });
+    let mut planted: Vec<RustPlanted> = planted.into_iter().map(|(plant, _)| plant).collect();
+    for ((index, module, _), verdict) in jobs.iter().zip(verdicts) {
+        if module.ends_with(".Stale") {
+            planted[*index].stale = verdict;
+        } else {
+            planted[*index].realigned = Some(verdict);
+        }
+    }
+    RenderingsChecked {
+        audit_output: checked.audit_output,
+        planted,
+    }
 }

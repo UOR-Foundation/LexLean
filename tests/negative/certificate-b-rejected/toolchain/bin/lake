@@ -1,0 +1,16 @@
+#!/bin/sh
+# Passes every invocation to the pinned lake except `lake env lean` on a
+# certificate B, whose crate literal first has every call of the runtime's
+# natural addition turned into its subtraction: the rendering no longer
+# realizes the program, no derivation relates them, and verification
+# refuses the certificate while certificate A still holds (SPEC.md 17.17).
+real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
+if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
+  for source; do :; done
+  case "$source" in
+    */preserve-src/LexLeanPreserve/C*/R*/Rust*.lean)
+      sed -i 's/(\.runtime \.natAdd)/(.runtime .natSub)/g' "$source"
+      ;;
+  esac
+fi
+exec "$real" "$@"

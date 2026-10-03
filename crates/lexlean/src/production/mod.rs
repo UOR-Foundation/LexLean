@@ -12,6 +12,7 @@ pub mod eligibility;
 pub mod lcnf;
 pub mod lower;
 pub mod preserve;
+pub mod rust_cert;
 pub mod rust_term;
 pub(crate) mod source;
 

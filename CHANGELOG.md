@@ -45,6 +45,19 @@ versions, and the entries below say what each tag does and does not claim.
   unrealizable sequence length), shipped beside the calculus modules. Every
   certified root's crate prints to a Lean term (`production::rust_term`) that
   the machine evaluates in agreement with the calculus interpreter.
+- Certificate B (SPEC.md §17.17, `SP-08`): each certified root's crate in
+  each of its targets is related to its lowered program by a kernel-checked
+  simulation theorem, `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd`.
+  The library proves once that every derivation of its closed
+  correspondence `Corr` is sound for the machine (`sound`, `simulate`); the
+  aligner (`production::rust_cert`) writes each function's derivation, whose
+  side conditions the kernel decides. `audit-production` holds the aligner's
+  rules, `Corr`'s constructors, and the soundness theorem's cases to one
+  another and requires the aligner to name every calculus construct with no
+  default arm. `lexlean verify` derives, checks, replays, and audits
+  certificate B beside certificate A, records it under `renderings` in
+  `preservation.json`, and refuses a rendering it cannot certify with
+  `LLV7015` (negative fixture `certificate-b-rejected`).
 - Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
   refused every root that reached an `Init` function whose module does not
   expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,

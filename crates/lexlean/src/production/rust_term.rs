@@ -39,7 +39,9 @@ fn order(value: OrderingValue) -> &'static str {
     }
 }
 
-fn ident(name: &Ident) -> String {
+/// An identifier as a `RustSyntax.Ident` term.
+#[must_use]
+pub fn ident(name: &Ident) -> String {
     let generated = |kind: &str, index: u64| format!("(.generated .{kind} {index})");
     match name {
         Ident::Local(n) => generated("binding", *n),
@@ -111,7 +113,9 @@ fn ctor(built: &Ctor) -> String {
     }
 }
 
-fn pat(pattern: &Pat) -> String {
+/// A pattern as a `RustSyntax.Pat` term.
+#[must_use]
+pub fn pat(pattern: &Pat) -> String {
     match pattern {
         Pat::Wild => ".wild".to_owned(),
         Pat::Bind(name) => format!("(.bind {})", ident(name)),
@@ -267,7 +271,9 @@ pub fn expr(written: &Expr) -> String {
     }
 }
 
-fn binding(written: &Let) -> String {
+/// One let as a `RustSyntax.Let` term.
+#[must_use]
+pub fn binding(written: &Let) -> String {
     let annotated = match &written.ty {
         Some(declared) => format!("(some {})", ty(declared)),
         None => "none".to_owned(),
