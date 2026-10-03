@@ -1,0 +1,649 @@
+//! Lean lowering of the theorems reasoning declarations generate (§17.12,
+//! *Reasoning machines* rule 9): each statement over the fixed
+//! `LexLeanReasoning` propositions, and each proof as one fixed template
+//! with the declaration's names substituted. No template inspects the
+//! goal; Lean's kernel checks every one.
+
+use super::{identifier, latex_line, latex_policy, latex_use, tex_escape, term_uses, Render};
+use crate::ir::semantic::reasoning::{FireArm, Formula, GeneratedTheorem, Proof, ProofTerm};
+use crate::ir::semantic::{
+    MemberRef, ModelUse, ReasoningClaim, ReasoningStrategy, SearchOrder, SemanticDeclaration,
+    SemanticModule, SemanticTerm, SemanticType,
+};
+
+/// Whether a generated statement mentions the local `name`.
+fn formula_uses(formula: &Formula, name: &str) -> bool {
+    match formula {
+        Formula::Term { term } => term_uses(term, name),
+        Formula::Helper { arguments, .. } => {
+            arguments.iter().any(|argument| term_uses(argument, name))
+        }
+        Formula::Implies {
+            premise,
+            conclusion,
+        } => formula_uses(premise, name) || formula_uses(conclusion, name),
+        Formula::True => false,
+    }
+}
+
+impl Render<'_> {
+    /// One generated theorem: `public theorem name params : statement :=
+    /// proof`.
+    pub(super) fn generated_theorem(&self, theorem: &GeneratedTheorem) -> String {
+        format!(
+            "public theorem {}{}{} : {} :=\n{}",
+            identifier(&theorem.name),
+            self.type_parameters(&theorem.type_parameters),
+            self.parameters(&theorem.parameters),
+            self.formula(&theorem.statement),
+            self.generated_proof(&theorem.proof)
+        )
+    }
+
+    pub(super) fn formula(&self, formula: &Formula) -> String {
+        match formula {
+            Formula::Term { term } => self.term(term),
+            Formula::Helper { helper, arguments } => {
+                let mut out = format!("(LexLeanReasoning.{}", helper.lean());
+                for argument in arguments {
+                    out.push_str(&format!(" ({})", self.term(argument)));
+                }
+                out.push(')');
+                out
+            }
+            Formula::Implies {
+                premise,
+                conclusion,
+            } => format!(
+                "({} -> {})",
+                self.formula(premise),
+                self.formula(conclusion)
+            ),
+            Formula::True => "True".to_owned(),
+        }
+    }
+
+    fn type_argument_list(&self, arguments: &[SemanticType]) -> String {
+        arguments
+            .iter()
+            .map(|argument| format!(" ({})", self.ty(argument)))
+            .collect()
+    }
+
+    fn proof_term(&self, proof: &ProofTerm) -> String {
+        let applied = |head: String, arguments: &[ProofTerm]| {
+            if arguments.is_empty() {
+                head
+            } else {
+                let mut out = format!("({head}");
+                for argument in arguments {
+                    out.push(' ');
+                    out.push_str(&self.proof_term(argument));
+                }
+                out.push(')');
+                out
+            }
+        };
+        match proof {
+            ProofTerm::Lemma { lemma, arguments } => {
+                applied(format!("LexLeanReasoning.{}", lemma.lean()), arguments)
+            }
+            ProofTerm::Theorem {
+                theorem,
+                type_arguments,
+                arguments,
+            } => {
+                let head = format!(
+                    "{}{}",
+                    self.member(theorem),
+                    self.type_argument_list(type_arguments)
+                );
+                if type_arguments.is_empty() {
+                    applied(head, arguments)
+                } else {
+                    applied(format!("({head})"), arguments)
+                }
+            }
+            ProofTerm::Term { term } => format!("({})", self.term(term)),
+            ProofTerm::Predicate { binder, body } => format!(
+                "(fun ({} : {}) => {})",
+                if formula_uses(body, &binder.name) {
+                    identifier(&binder.name)
+                } else {
+                    "_".to_owned()
+                },
+                self.ty(&binder.r#type),
+                self.formula(body)
+            ),
+            ProofTerm::Assume { binders, body } => format!(
+                "(fun {} => {})",
+                binders.join(" "),
+                self.proof_term(body)
+            ),
+            ProofTerm::Hypothesis { name } => name.clone(),
+            ProofTerm::Both { left, right } => format!(
+                "(And.intro {} {})",
+                self.proof_term(left),
+                self.proof_term(right)
+            ),
+            ProofTerm::Infer => "_".to_owned(),
+            ProofTerm::Refl => "rfl".to_owned(),
+            ProofTerm::Trivial => "True.intro".to_owned(),
+        }
+    }
+
+    fn arm(&self, arm: &FireArm, target: &[&str]) -> String {
+        let binder = if arm.binding { " __b" } else { "" };
+        let arguments = if arm.binding {
+            format!("__s __b {}", target.join(" "))
+        } else {
+            format!("__s {}", target.join(" "))
+        };
+        format!(
+            "  | {}{binder} =>\n    exact {}{} {arguments}\n",
+            identifier(&arm.constructor),
+            self.member(&arm.theorem),
+            self.type_argument_list(&arm.type_arguments)
+        )
+    }
+
+    /// The fixed proof text of one template.
+    #[allow(clippy::too_many_lines)]
+    fn generated_proof(&self, proof: &Proof) -> String {
+        let m = |member: &MemberRef| self.member(member);
+        match proof {
+            Proof::Term { term } => format!("  {}\n", self.proof_term(term)),
+            Proof::FireCases { arms } => {
+                let mut out = "by\n  cases __step with\n".to_owned();
+                for arm in arms {
+                    out.push_str(&self.arm(arm, &["__t"]));
+                }
+                out
+            }
+            Proof::ReplayFire { replay } => format!(
+                "by\n  intro llE\n  dsimp only [{}]\n  rw [llE]\n",
+                m(replay)
+            ),
+            Proof::ReplaySound { replay, fire_sound } => format!(
+                "by\n  intro llH llT llE\n  cases __acc with\n  | error _ => cases llE\n  | ok llS =>\n    dsimp only [{}] at llE\n    split at llE\n    · cases llE\n    · cases llE\n      exact LexLeanReasoning.Star.tail _ llS _ (llH llS rfl) ({} llS __step _ ‹_›)\n",
+                m(replay),
+                m(fire_sound)
+            ),
+            Proof::NextSound { next, fire_sound } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · exact {} __s _ __t llE\n",
+                m(next),
+                m(fire_sound)
+            ),
+            Proof::NextProgress {
+                next,
+                fire_progress,
+                invariant,
+            } => {
+                let last = if *invariant {
+                    format!("exact fun llJ => {} __s _ __t llJ llE", m(fire_progress))
+                } else {
+                    format!("exact {} __s _ __t llE", m(fire_progress))
+                };
+                format!(
+                    "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · {last}\n",
+                    m(next)
+                )
+            }
+            Proof::StepNone { step, next } => format!(
+                "by\n  intro llE\n  dsimp only [{step}] at llE\n  split at llE\n  · rename_i llH\n    dsimp only [{next}]\n    rw [llH]\n  · rename_i llH\n    split at llE\n    · dsimp only [{next}]\n      rw [llH]\n      assumption\n    · cases llE\n",
+                step = m(step),
+                next = m(next)
+            ),
+            Proof::StepSome { step, next } => format!(
+                "by\n  intro llE\n  dsimp only [{step}] at llE\n  split at llE\n  · cases llE\n  · rename_i llH\n    split at llE\n    · cases llE\n    · cases llE\n      dsimp only [{next}]\n      rw [llH]\n      assumption\n",
+                step = m(step),
+                next = m(next)
+            ),
+            Proof::StepTrace {
+                step,
+                follow,
+                replay_fire,
+            } => format!(
+                "by\n  intro llE llH\n  dsimp only [{step}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · cases llE\n      dsimp only [{follow}]\n      rw [LexLeanReasoning.foldSnoc]\n      dsimp only [{follow}] at llH\n      rw [llH]\n      apply {replay_fire}\n      assumption\n",
+                step = m(step),
+                follow = m(follow),
+                replay_fire = m(replay_fire)
+            ),
+            Proof::StepCount { step } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · cases llE\n      rfl\n",
+                m(step)
+            ),
+            Proof::AcceptSound {
+                accept,
+                sound,
+                type_arguments,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · have llC := LexLeanReasoning.checked _ _ _ llE\n    exact llC.right ▸ {}{} _ _ llC.left\n",
+                m(accept),
+                m(sound),
+                self.type_argument_list(type_arguments)
+            ),
+            Proof::ConcludeSound {
+                conclude,
+                accept_sound,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    exact {} _ _ _ ‹_›\n  · split at llE\n    · cases llE\n    · cases llE\n",
+                m(conclude),
+                m(accept_sound)
+            ),
+            Proof::ConcludeAccept { conclude } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    assumption\n  · split at llE\n    · cases llE\n    · cases llE\n",
+                m(conclude)
+            ),
+            Proof::ExplainedForward {
+                reasoner,
+                answer,
+                run_trace,
+                conclude_accept,
+                conclude_sound,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{reasoner}] at llE\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [{run_trace} _]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
+                reasoner = m(reasoner),
+                answer = m(answer),
+                run_trace = m(run_trace),
+                conclude_accept = m(conclude_accept),
+                conclude_sound = m(conclude_sound)
+            ),
+            Proof::Extend {
+                follow,
+                replay_fire,
+            } => format!(
+                "by\n  intro llH llE\n  dsimp only [{follow}]\n  rw [LexLeanReasoning.foldSnoc]\n  dsimp only [{follow}] at llH\n  rw [llH]\n  exact {replay_fire} _ __step __t llE\n",
+                follow = m(follow),
+                replay_fire = m(replay_fire)
+            ),
+            Proof::SuccessorsFree { successors, extend } => format!(
+                "by\n  intro llH\n  dsimp only [{}]\n  split\n  · exact LexLeanReasoning.All.nil\n  · exact LexLeanReasoning.allSingle _ _ ({} _ __node _ _ llH ‹_›)\n",
+                m(successors),
+                m(extend)
+            ),
+            Proof::SuccessorsBound {
+                successors,
+                collect,
+                extend,
+                follow,
+                node,
+            } => format!(
+                "by\n  intro llH\n  dsimp only [{successors}]\n  exact LexLeanReasoning.foldInvariant _ (LexLeanReasoning.All (fun (llN : {node}) => {follow} _ llN.trace = Except.ok llN.state))\n    (fun llA llB llP => by\n      dsimp only [{collect}]\n      split\n      · exact llP\n      · exact LexLeanReasoning.allAppend _ _ _ llP (LexLeanReasoning.allSingle _ _ ({extend} _ __node _ _ llH ‹_›)))\n    _ _ LexLeanReasoning.All.nil\n",
+                successors = m(successors),
+                collect = m(collect),
+                extend = m(extend),
+                follow = m(follow),
+                node = self.ty(node)
+            ),
+            Proof::SearchStep {
+                search_step,
+                successors_ok,
+                fresh_ok,
+                order,
+            } => {
+                let successors =
+                    format!("({} _ llNode llNodeOk)", m(successors_ok));
+                let fresh = match fresh_ok {
+                    Some(fresh_ok) => format!("({} _ _ _ {successors})", m(fresh_ok)),
+                    None => successors,
+                };
+                let ordered = match order {
+                    SearchOrder::BreadthFirst => {
+                        format!("(LexLeanReasoning.allAppend _ _ _ llRestOk {fresh})")
+                    }
+                    SearchOrder::DepthFirst => {
+                        format!("(LexLeanReasoning.allAppend _ _ _ {fresh} llRestOk)")
+                    }
+                };
+                format!(
+                    "by\n  intro llE llH\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · rename_i llNode llRest llFr\n      have llAll := And.left llH\n      rw [llFr] at llAll\n      have llNodeOk := LexLeanReasoning.allHead _ llNode llRest llAll\n      have llRestOk := LexLeanReasoning.allTail _ llNode llRest llAll\n      split at llE\n      · rename_i llV llAcc\n        cases llE\n        exact And.intro llRestOk (And.intro llNodeOk llAcc)\n      · cases llE\n        exact And.intro (LexLeanReasoning.capAll _ _ _ {ordered}) True.intro\n",
+                    m(search_step)
+                )
+            }
+            Proof::SearchPeak { search_step } => format!(
+                "by\n  intro llE llH\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        exact llH\n      · cases llE\n        exact LexLeanReasoning.peakBound _ _ _ llH (LexLeanReasoning.capBound _ _)\n",
+                m(search_step)
+            ),
+            Proof::SearchCount { search_step } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        rfl\n      · cases llE\n        rfl\n",
+                m(search_step)
+            ),
+            Proof::ExplainedSearch {
+                reasoner,
+                answer,
+                search_ok,
+                accept_sound,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{reasoner}] at llE\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right ({search_ok} _)\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
+                reasoner = m(reasoner),
+                answer = m(answer),
+                search_ok = m(search_ok),
+                accept_sound = m(accept_sound)
+            ),
+            Proof::VerdictSearch { verdict, explained } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · rename_i llP llH\n    cases llE\n    exact And.right ({} _ llP.1 llP.2 llH)\n  · cases llE\n",
+                m(verdict),
+                m(explained)
+            ),
+        }
+    }
+}
+
+/// Language 1.2 (reasoning): what a reasoning declaration states, then
+/// exactly what linking elaborated it to, its generated obligations with
+/// the theorems that state them, and the theorems it generates. The
+/// document lists no trace value and never calls anything verified:
+/// verification is the attestation's (§22.9).
+#[allow(clippy::too_many_lines)]
+pub(super) fn latex_reasoning(
+    render: &Render<'_>,
+    module: &SemanticModule,
+    index: usize,
+    declaration: &SemanticDeclaration,
+    text: &mut String,
+) {
+    let uses = |references: &[ModelUse]| {
+        references
+            .iter()
+            .map(|reference| latex_use(render, reference))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    match declaration {
+        SemanticDeclaration::Logic {
+            state,
+            relation,
+            invariant,
+            ranking,
+            axioms,
+            ..
+        } => {
+            latex_line(
+                text,
+                "States",
+                &format!("{}, {} : {}", state.name, state.next, render.ty(&state.r#type)),
+            );
+            latex_line(text, "Relation", &render.member(relation));
+            if let Some(invariant) = invariant {
+                latex_line(
+                    text,
+                    "Invariant",
+                    &format!(
+                        "{}, preserved by the relation as {} states",
+                        render.member(&invariant.predicate),
+                        render.member(&invariant.preserves)
+                    ),
+                );
+            }
+            if let Some(ranking) = ranking {
+                latex_line(text, "Ranking", &render.member(ranking));
+            }
+            latex_line(text, "Axiom policy", &latex_policy(axioms));
+        }
+        SemanticDeclaration::InferenceRule {
+            logic,
+            binding,
+            guard,
+            conclusion,
+            soundness,
+            progress,
+            executable,
+            axioms,
+            ..
+        } => {
+            latex_line(text, "Logic", &latex_use(render, logic));
+            if let Some(binding) = binding {
+                latex_line(
+                    text,
+                    "Binding",
+                    &format!(
+                        "{} : {}, ranging over {} in order",
+                        binding.name,
+                        render.ty(&binding.r#type),
+                        render.term(&binding.candidates)
+                    ),
+                );
+            }
+            latex_line(text, "Guard", &render.term(guard));
+            latex_line(text, "Conclusion", &render.term(conclusion));
+            latex_line(text, "Soundness", &render.member(soundness));
+            if let Some(progress) = progress {
+                latex_line(text, "Progress", &render.member(progress));
+            }
+            latex_line(
+                text,
+                "Execution",
+                if *executable {
+                    "executable, applied only through its guard"
+                } else {
+                    "formal"
+                },
+            );
+            latex_line(text, "Axiom policy", &latex_policy(axioms));
+        }
+        SemanticDeclaration::Verifier {
+            subject,
+            candidate,
+            specification,
+            check,
+            sound,
+            complete,
+            axioms,
+            ..
+        } => {
+            latex_line(
+                text,
+                "Subject",
+                &format!("{} : {}", subject.name, render.ty(&subject.r#type)),
+            );
+            latex_line(
+                text,
+                "Candidate",
+                &format!("{} : {}", candidate.name, render.ty(&candidate.r#type)),
+            );
+            latex_line(text, "Specification", &render.member(specification));
+            latex_line(text, "Check", &render.member(check));
+            latex_line(text, "Soundness", &render.member(sound));
+            if let Some(complete) = complete {
+                latex_line(text, "Completeness", &render.member(complete));
+            }
+            latex_line(text, "Axiom policy", &latex_policy(axioms));
+        }
+        SemanticDeclaration::Reasoner {
+            logic,
+            observation,
+            observe,
+            rules,
+            strategy,
+            answer,
+            verifier,
+            claims,
+            executable,
+            axioms,
+            ..
+        } => {
+            latex_line(text, "Logic", &latex_use(render, logic));
+            latex_line(
+                text,
+                "Observation",
+                &format!(
+                    "{} : {}, observed as {}",
+                    observation.name,
+                    render.ty(&observation.r#type),
+                    render.term(observe)
+                ),
+            );
+            latex_line(text, "Rules in priority order", &uses(rules));
+            let bound = |term: &Option<SemanticTerm>| {
+                term.as_ref()
+                    .map_or_else(|| "none".to_owned(), |term| render.term(term))
+            };
+            let strategy_text = match strategy {
+                ReasoningStrategy::Forward { fuel } => {
+                    format!("forward, at most {} iterations", bound(fuel))
+                }
+                ReasoningStrategy::Search {
+                    order,
+                    fuel,
+                    frontier,
+                    deduplicate,
+                } => format!(
+                    "{} search, at most {} iterations and {} frontier nodes{}",
+                    match order {
+                        SearchOrder::BreadthFirst => "breadth-first",
+                        SearchOrder::DepthFirst => "depth-first",
+                    },
+                    bound(fuel),
+                    bound(frontier),
+                    if *deduplicate {
+                        ", each state expanded once"
+                    } else {
+                        ""
+                    }
+                ),
+            };
+            latex_line(text, "Strategy", &strategy_text);
+            latex_line(
+                text,
+                "Answer",
+                &format!(
+                    "{} |-> {} : Option ({})",
+                    answer.name,
+                    render.term(&answer.value),
+                    render.ty(&answer.r#type)
+                ),
+            );
+            latex_line(text, "Verifier", &latex_use(render, verifier));
+            for claim in claims {
+                let (kind, theorem) = match claim {
+                    ReasoningClaim::InitialInvariant { theorem } => ("initial invariant", theorem),
+                    ReasoningClaim::Terminates { theorem } => ("terminates", theorem),
+                };
+                latex_line(
+                    text,
+                    "Claim",
+                    &format!("{kind}, discharged by {}", render.member(theorem)),
+                );
+            }
+            latex_line(
+                text,
+                "Execution",
+                if *executable {
+                    "executable through its verifier"
+                } else {
+                    "formal"
+                },
+            );
+            latex_line(text, "Axiom policy", &latex_policy(axioms));
+        }
+        SemanticDeclaration::Structure { .. }
+        | SemanticDeclaration::Class { .. }
+        | SemanticDeclaration::Instance { .. }
+        | SemanticDeclaration::Inductive { .. }
+        | SemanticDeclaration::Definition { .. }
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Artifact { .. }
+        | SemanticDeclaration::Contract { .. }
+        | SemanticDeclaration::Realization { .. }
+        | SemanticDeclaration::Evidence { .. }
+        | SemanticDeclaration::Model { .. } => {}
+    }
+    for obligation in module.elaboration.obligations(index) {
+        let binders = if obligation.parameters.is_empty() {
+            String::new()
+        } else {
+            format!("forall{}, ", render.parameters(&obligation.parameters))
+        };
+        latex_line(
+            text,
+            &format!(
+                "Obligation ({})",
+                tex_escape(&obligation.role.replace('`', ""))
+            ),
+            &format!(
+                "{binders}{}; stated exactly by {}",
+                render.term(&obligation.statement),
+                render.member(&obligation.theorem)
+            ),
+        );
+    }
+    for derived in module.elaboration.lowered(index) {
+        let shown = match derived {
+            SemanticDeclaration::Definition {
+                name,
+                parameters,
+                result,
+                body,
+                ..
+            } => format!(
+                "{name}{} : {} := {}",
+                render.parameters(parameters),
+                render.ty(result),
+                render.term(body)
+            ),
+            SemanticDeclaration::Inductive {
+                name, constructors, ..
+            } => format!(
+                "inductive {name} with {}",
+                constructors
+                    .iter()
+                    .map(|constructor| {
+                        let fields = constructor
+                            .fields
+                            .iter()
+                            .map(|field| render.ty(field))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        format!("{}({fields})", constructor.name)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            SemanticDeclaration::Structure { name, fields, .. } => format!(
+                "structure {name} with {}",
+                fields
+                    .iter()
+                    .map(|field| format!("{} : {}", field.name, render.ty(&field.r#type)))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            other => other.name().to_owned(),
+        };
+        latex_line(text, "Elaborates to", &shown);
+    }
+    for theorem in module.elaboration.theorems(index) {
+        let binders = if theorem.parameters.is_empty() {
+            String::new()
+        } else {
+            format!("forall{}, ", render.parameters(&theorem.parameters))
+        };
+        latex_line(
+            text,
+            &format!("Generates theorem ({} template)", theorem.template().replace('_', " ")),
+            &format!("{} : {binders}{}", theorem.name, render.formula(&theorem.statement)),
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::formula_uses;
+    use crate::ir::semantic::reasoning::Formula;
+    use crate::ir::semantic::SemanticTerm;
+
+    /// A predicate binder lowers as `_` exactly when its body never names
+    /// it, so the linter that verification treats as an error stays quiet.
+    #[test]
+    fn formula_uses_sees_every_term() {
+        let x = SemanticTerm::Var {
+            name: "x".to_owned(),
+        };
+        let formula = Formula::Implies {
+            premise: Box::new(Formula::True),
+            conclusion: Box::new(Formula::Term { term: x }),
+        };
+        assert!(formula_uses(&formula, "x"));
+        assert!(!formula_uses(&formula, "y"));
+    }
+}

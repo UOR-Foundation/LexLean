@@ -17,6 +17,8 @@ use crate::ir::semantic::{
 use crate::link::CheckedModule;
 use crate::source::coverage::Origin;
 
+mod reasoning;
+
 struct Render<'a> {
     prefix: &'a str,
     /// §17.12: in a well-founded definition, each `if` (by node address)
@@ -263,8 +265,8 @@ fn term_uses(term: &SemanticTerm, local: &str) -> bool {
     }
 }
 
-/// The Lean pattern of a `ContractViolation` constructor: the pair of
-/// Booleans `(after run, invariant)` it is represented by (§17.12).
+/// The Lean pattern of a `ContractViolation` or `ReasoningFailure`
+/// constructor: the pair of Booleans it is represented by (§17.12).
 fn violation_pattern(constructor: &MemberRef) -> Option<&'static str> {
     if constructor.module.is_some() {
         return None;
@@ -274,6 +276,11 @@ fn violation_pattern(constructor: &MemberRef) -> Option<&'static str> {
         "ContractViolation.input_invariant" => Some("(false, true)"),
         "ContractViolation.postcondition" => Some("(true, false)"),
         "ContractViolation.output_invariant" => Some("(true, true)"),
+        // §17.12 (reasoning): `(answered, replay)`.
+        "ReasoningFailure.exhausted" => Some("(false, false)"),
+        "ReasoningFailure.unsolved" => Some("(false, true)"),
+        "ReasoningFailure.rejected" => Some("(true, false)"),
+        "ReasoningFailure.invalid_step" => Some("(true, true)"),
         _ => None,
     }
 }
@@ -404,6 +411,9 @@ impl Render<'_> {
             // values, so it crosses module boundaries unchanged.
             SemanticType::ContractViolation if self.document => "ContractViolation".to_owned(),
             SemanticType::ContractViolation => "(Prod Bool Bool)".to_owned(),
+            // §17.12 (reasoning): likewise for a reasoning failure.
+            SemanticType::ReasoningFailure if self.document => "ReasoningFailure".to_owned(),
+            SemanticType::ReasoningFailure => "(Prod Bool Bool)".to_owned(),
         }
     }
 
@@ -1067,11 +1077,11 @@ impl Render<'_> {
                 };
                 if definitions.is_empty() {
                     format!(
-                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
+                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, and_true, true_and, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
                     )
                 } else {
                     format!(
-                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
+                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Bool.and_eq_true, and_true, true_and, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
                         definitions
                             .iter()
                             .map(|member| self.member(member))
@@ -1547,6 +1557,222 @@ namespace LexLeanModels
     lines.foldr (fun line rest => line.toList.foldr (fun c tail => utf8Char c ++ tail) [10] ++ rest) [] ==
       bytes.data.toList.map UInt8.toNat
 end LexLeanModels
+"#;
+
+
+/// The fixed reasoning runtime (§17.12, reasoning): the propositions a
+/// generated statement names and the lemmas every generated proof applies,
+/// written once and independently of the elaborator. Every lemma is proved
+/// by structural recursion without `simp` or a core list lemma, so it is
+/// axiom-free; a generated proof applies only these and its declaration's
+/// own theorems. Nothing here runs: the runtime is formal-only.
+const REASONING_RUNTIME: &str = r#"
+namespace LexLeanReasoning
+
+public inductive Star {σ : Type} (r : σ -> σ -> Prop) : σ -> σ -> Prop where
+  | refl (a : σ) : Star r a a
+  | tail (a b c : σ) : Star r a b -> r b c -> Star r a c
+
+public inductive All {α : Type} (p : α -> Prop) : List α -> Prop where
+  | nil : All p []
+  | cons (a : α) (rest : List α) : p a -> All p rest -> All p (a :: rest)
+
+@[expose] public def Preserves {σ : Type} (r : σ -> σ -> Prop) (j : σ -> Prop) : Prop :=
+  forall (s t : σ), j s -> r s t -> j t
+@[expose] public def Sound {α β : Type} (v : α -> β -> Bool) (p : α -> β -> Prop) : Prop :=
+  forall (a : α) (b : β), v a b = true -> p a b
+@[expose] public def Complete {α β : Type} (v : α -> β -> Bool) (p : α -> β -> Prop) : Prop :=
+  forall (a : α) (b : β), p a b -> v a b = true
+@[expose] public def Reaches {σ ε : Type} (r : σ -> σ -> Prop) (a : σ) (acc : Except ε σ) : Prop :=
+  forall (s : σ), acc = Except.ok s -> Star r a s
+@[expose] public def Found {ν ρ : Type} (ok : ν -> Prop) (accept : ν -> Option ρ) : Option (Prod ρ ν) -> Prop
+  | none => True
+  | some hit => ok hit.2 /\ accept hit.2 = some hit.1
+@[expose] public def SearchOk {ν ρ : Type} (ok : ν -> Prop) (accept : ν -> Option ρ) (frontier : List ν) (found : Option (Prod ρ ν)) : Prop :=
+  All ok frontier /\ Found ok accept found
+
+public theorem starPreserves {σ : Type} (r : σ -> σ -> Prop) (j : σ -> Prop) (h : Preserves r j) :
+    forall (a b : σ), Star r a b -> j a -> j b := by
+  intro a b hs
+  induction hs with
+  | refl => exact fun ha => ha
+  | tail y z _ hyz ih => exact fun ha => h y z (ih ha) hyz
+
+public theorem reachesStart {σ ε : Type} (r : σ -> σ -> Prop) (a : σ) : Reaches (ε := ε) r a (Except.ok a) := by
+  intro s e
+  cases e
+  exact Star.refl a
+
+public theorem guarded {σ : Type} (r : σ -> σ -> Prop) (s : σ) (g : Bool) (c : σ) (h : g = true -> r s c) (t : σ) :
+    (if g then some c else none) = some t -> r s t := by
+  cases g with
+  | false => intro e; cases e
+  | true => intro e; cases e; exact h rfl
+
+public theorem guardedRank {σ : Type} (μ : σ -> Nat) (s : σ) (g : Bool) (c : σ) (h : g = true -> μ c < μ s) (t : σ) :
+    (if g then some c else none) = some t -> μ t < μ s := by
+  cases g with
+  | false => intro e; cases e
+  | true => intro e; cases e; exact h rfl
+
+public theorem checked {ρ : Type} (g : Bool) (a b : ρ) : (if g then some a else none) = some b -> g = true /\ a = b := by
+  cases g with
+  | false => intro e; cases e
+  | true => intro e; cases e; exact And.intro rfl rfl
+
+public theorem foldInvariant {σ α : Type} (f : σ -> α -> σ) (p : σ -> Prop) (h : forall (a : σ) (x : α), p a -> p (f a x)) :
+    forall (xs : List α) (a : σ), p a -> p (LexLeanCollections.listFold f a xs) := by
+  intro xs
+  induction xs with
+  | nil => exact fun _ ha => ha
+  | cons x rest ih => exact fun a ha => ih (f a x) (h a x ha)
+
+public theorem foldSnoc {σ α : Type} (f : σ -> α -> σ) (a : σ) (xs : List α) (y : α) :
+    LexLeanCollections.listFold f a (LexLeanRuntime.append xs (y :: [])) = f (LexLeanCollections.listFold f a xs) y := by
+  induction xs generalizing a with
+  | nil => rfl
+  | cons x rest ih => exact ih (f a x)
+
+public theorem allAppend {α : Type} (p : α -> Prop) : forall (xs ys : List α), All p xs -> All p ys -> All p (LexLeanRuntime.append xs ys) := by
+  intro xs
+  induction xs with
+  | nil => exact fun _ _ h => h
+  | cons x rest ih =>
+    intro ys hx hy
+    cases hx with
+    | cons _ _ hp hr => exact All.cons x (LexLeanRuntime.append rest ys) hp (ih ys hr hy)
+
+public theorem allSingle {α : Type} (p : α -> Prop) (a : α) (h : p a) : All p (a :: []) :=
+  All.cons a [] h All.nil
+
+public theorem allHead {α : Type} (p : α -> Prop) (a : α) (rest : List α) (h : All p (a :: rest)) : p a := by
+  cases h with
+  | cons _ _ hp _ => exact hp
+
+public theorem allTail {α : Type} (p : α -> Prop) (a : α) (rest : List α) (h : All p (a :: rest)) : All p rest := by
+  cases h with
+  | cons _ _ _ hr => exact hr
+
+public theorem allFold {σ α : Type} (f : σ -> α -> σ) (p : σ -> Prop) (q : α -> Prop) (h : forall (a : σ) (x : α), q x -> p a -> p (f a x)) :
+    forall (xs : List α) (a : σ), All q xs -> p a -> p (LexLeanCollections.listFold f a xs) := by
+  intro xs
+  induction xs with
+  | nil => exact fun _ _ ha => ha
+  | cons x rest ih =>
+    intro a hx ha
+    cases hx with
+    | cons _ _ hq hr => exact ih (f a x) hr (h a x hq ha)
+
+public theorem capAll {α : Type} (p : α -> Prop) (k : Nat) (xs : List α) (h : All p xs) :
+    All p (LexLeanCollections.listFold (fun (acc : List α) (n : α) => if Nat.blt (LexLeanRuntime.length acc) k then LexLeanRuntime.append acc (n :: []) else acc) [] xs) :=
+  allFold (fun (acc : List α) (n : α) => if Nat.blt (LexLeanRuntime.length acc) k then LexLeanRuntime.append acc (n :: []) else acc) (All p) p
+    (fun a x hq ha => by
+      show All p (if Nat.blt (LexLeanRuntime.length a) k then LexLeanRuntime.append a (x :: []) else a)
+      cases Nat.blt (LexLeanRuntime.length a) k with
+      | false => exact ha
+      | true => exact allAppend p a (x :: []) ha (allSingle p x hq)) xs [] h All.nil
+
+public theorem lengthSnoc {α : Type} (xs : List α) (y : α) : LexLeanRuntime.length (LexLeanRuntime.append xs (y :: [])) = LexLeanRuntime.length xs + 1 := by
+  induction xs with
+  | nil => rfl
+  | cons x rest ih => exact congrArg Nat.succ ih
+
+public theorem capBound {α : Type} (k : Nat) (xs : List α) :
+    LexLeanRuntime.length (LexLeanCollections.listFold (fun (acc : List α) (n : α) => if Nat.blt (LexLeanRuntime.length acc) k then LexLeanRuntime.append acc (n :: []) else acc) [] xs) <= k :=
+  foldInvariant (fun (acc : List α) (n : α) => if Nat.blt (LexLeanRuntime.length acc) k then LexLeanRuntime.append acc (n :: []) else acc) (fun (acc : List α) => LexLeanRuntime.length acc <= k)
+    (fun a x ha => by
+      show LexLeanRuntime.length (if Nat.blt (LexLeanRuntime.length a) k then LexLeanRuntime.append a (x :: []) else a) <= k
+      cases e : Nat.blt (LexLeanRuntime.length a) k with
+      | false => exact ha
+      | true =>
+        show LexLeanRuntime.length (LexLeanRuntime.append a (x :: [])) <= k
+        rw [lengthSnoc]
+        exact Nat.le_of_ble_eq_true e) xs [] (Nat.zero_le k)
+
+public theorem freshAll {ν κ : Type} [LexLeanCollections.Key κ] (key : ν -> κ) (p : ν -> Prop) (v : List κ) (ns : List ν) (h : All p ns) :
+    All p (LexLeanCollections.listFold (fun (acc : Prod (List ν) (List κ)) (n : ν) => if LexLeanCollections.setContains acc.2 (key n) then acc else (LexLeanRuntime.append acc.1 (n :: []), LexLeanCollections.setInsert acc.2 (key n))) (([] : List ν), v) ns).1 :=
+  allFold (fun (acc : Prod (List ν) (List κ)) (n : ν) => if LexLeanCollections.setContains acc.2 (key n) then acc else (LexLeanRuntime.append acc.1 (n :: []), LexLeanCollections.setInsert acc.2 (key n))) (fun (acc : Prod (List ν) (List κ)) => All p acc.1) p
+    (fun a x hq ha => by
+      show All p (if LexLeanCollections.setContains a.2 (key x) then a else (LexLeanRuntime.append a.1 (x :: []), LexLeanCollections.setInsert a.2 (key x))).1
+      cases LexLeanCollections.setContains a.2 (key x) with
+      | true => exact ha
+      | false => exact allAppend p a.1 (x :: []) ha (allSingle p x hq)) ns (([] : List ν), v) h All.nil
+
+public theorem searchStart {ν ρ : Type} (ok : ν -> Prop) (accept : ν -> Option ρ) (frontier : List ν) (h : All ok frontier) :
+    SearchOk ok accept frontier none :=
+  And.intro h True.intro
+
+public theorem peakBound (p len k : Nat) (hp : p <= k) (hl : len <= k) : (if Nat.blt p len then len else p) <= k := by
+  cases Nat.blt p len with
+  | false => exact hp
+  | true => exact hl
+
+public theorem iterateUntilInvariant {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (h : forall (a b : σ), step a = some b -> p a -> p b) :
+    forall (n : Nat) (a : σ), p a -> p (LexLeanCollections.iterateUntil step n a).1 := by
+  intro n
+  induction n with
+  | zero => exact fun _ ha => ha
+  | succ n ih =>
+    intro a ha
+    show p (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1
+    cases e : step a with
+    | none => exact ha
+    | some b => exact ih b (h a b e ha)
+
+public theorem iterateUntilSimulate {σ τ : Type} (f : σ -> Option σ) (g : τ -> Option τ) (π : σ -> τ)
+    (hnone : forall (a : σ), f a = none -> g (π a) = none)
+    (hsome : forall (a b : σ), f a = some b -> g (π a) = some (π b)) :
+    forall (n : Nat) (a : σ), π (LexLeanCollections.iterateUntil f n a).1 = (LexLeanCollections.iterateUntil g n (π a)).1 /\ (LexLeanCollections.iterateUntil f n a).2 = (LexLeanCollections.iterateUntil g n (π a)).2 := by
+  intro n
+  induction n with
+  | zero => exact fun _ => And.intro rfl rfl
+  | succ n ih =>
+    intro a
+    show π (match f a with | none => (a, true) | some next => LexLeanCollections.iterateUntil f n next).1 = (match g (π a) with | none => (π a, true) | some next => LexLeanCollections.iterateUntil g n next).1 /\ (match f a with | none => (a, true) | some next => LexLeanCollections.iterateUntil f n next).2 = (match g (π a) with | none => (π a, true) | some next => LexLeanCollections.iterateUntil g n next).2
+    cases e : f a with
+    | none => rw [hnone a e]; exact And.intro rfl rfl
+    | some b => rw [hsome a b e]; exact ih b
+
+public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b = c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := ih b
+        rw [h a b e] at hb
+        rw [Nat.add_right_comm] at hb
+        exact (Nat.add_assoc (c a) n 1) ▸ (Nat.add_right_comm (c a) 1 n) ▸ hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
+public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
+    (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
+    forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
+  intro n
+  induction n with
+  | zero => intro a _ hm; exact absurd hm (Nat.not_lt_zero (μ a))
+  | succ n ih =>
+    intro a ha hm
+    show (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).2 = true
+    cases e : step a with
+    | none => rfl
+    | some b =>
+      have hb := h a b e ha
+      exact ih b hb.left (Nat.lt_of_lt_of_le hb.right (Nat.le_of_lt_succ hm))
+
+public theorem iterateUntilBound {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (k : Nat) (h : forall (a b : σ), step a = some b -> c a <= k -> c b <= k) :
+    forall (n : Nat) (a : σ), c a <= k -> c (LexLeanCollections.iterateUntil step n a).1 <= k :=
+  iterateUntilInvariant step (fun (a : σ) => c a <= k) h
+end LexLeanReasoning
 "#;
 
 fn emit(checked: &CheckedModule, text: &str, kind: &str) -> Emitter {
@@ -2064,14 +2290,22 @@ pub fn render_lean(
     // the ordinary term it means. Lean is generated from exactly those.
     let lowered: Vec<&SemanticDeclaration> = module.lowered_declarations();
     let elaborated = serde_json::to_string(&lowered).expect("semantic declarations serialize")
-        + &serde_json::to_string(&module.elaboration.all_checks()).expect("cross-checks serialize");
+        + &serde_json::to_string(&module.elaboration.all_checks()).expect("cross-checks serialize")
+        + &serde_json::to_string(&module.elaboration.all_theorems())
+            .expect("generated theorems serialize");
     if elaborated.contains("\"kind\":\"checked_apply\"") {
         return Err(Diagnostic::new(
             code!("LLI9001"),
             "phase lean-backend: a checked model application was not elaborated",
         ));
     }
-    let runtime = elaborated.contains("\"kind\":\"primitive\"");
+    // §17.12 (reasoning): the reasoning runtime states its lemmas over the
+    // portable and collection runtimes, so a module with a reasoning
+    // declaration emits all three.
+    let reasoning = module.declarations.iter().any(|declaration| {
+        crate::ir::semantic::reasoning::declaration_construct(declaration).is_some()
+    });
+    let runtime = elaborated.contains("\"kind\":\"primitive\"") || reasoning;
     let document = &checked.document;
     let base_render = Render {
         prefix: module_prefix,
@@ -2113,10 +2347,12 @@ pub fn render_lean(
             text.push_str(portable_runtime());
         }
     }
-    if uses_collections(
-        &serde_json::to_value((&lowered, module.elaboration.all_checks()))
-            .expect("elaborated declarations serialize"),
-    ) {
+    if reasoning
+        || uses_collections(
+            &serde_json::to_value((&lowered, module.elaboration.all_checks()))
+                .expect("elaborated declarations serialize"),
+        )
+    {
         text.push_str(COLLECTIONS_RUNTIME);
     }
     if module
@@ -2125,6 +2361,9 @@ pub fn render_lean(
         .any(|declaration| crate::ir::semantic::model::declaration_construct(declaration).is_some())
     {
         text.push_str(MODELS_RUNTIME);
+    }
+    if reasoning {
+        text.push_str(REASONING_RUNTIME);
     }
     let group_of = |index: usize| match module.declarations.get(index) {
         Some(
@@ -2152,7 +2391,7 @@ pub fn render_lean(
             Some(elaborated) => elaborated.iter().collect(),
             None => vec![source],
         };
-        let render = if crate::ir::semantic::model::declaration_construct(source).is_some() {
+        let render = if crate::ir::semantic::model::elaborated_construct(source).is_some() {
             &model_render
         } else {
             &base_render
@@ -2373,16 +2612,23 @@ pub fn render_lean(
                 | SemanticDeclaration::Contract { .. }
                 | SemanticDeclaration::Realization { .. }
                 | SemanticDeclaration::Evidence { .. }
-                | SemanticDeclaration::Model { .. } => {
+                | SemanticDeclaration::Model { .. }
+                | SemanticDeclaration::Logic { .. }
+                | SemanticDeclaration::InferenceRule { .. }
+                | SemanticDeclaration::Verifier { .. }
+                | SemanticDeclaration::Reasoner { .. } => {
                     return Err(Diagnostic::new(
                         code!("LLI9001"),
                         format!(
-                            "phase lean-backend: model declaration `{}` was not elaborated",
+                            "phase lean-backend: model or reasoning declaration `{}` was not elaborated",
                             declaration.name()
                         ),
                     ));
                 }
             }
+        }
+        for theorem in module.elaboration.theorems(index) {
+            text.push_str(&render.generated_theorem(theorem));
         }
         for check in module.elaboration.checks(index) {
             text.push_str(&render.cross_check(check, &document.lean_module));
@@ -2957,6 +3203,10 @@ fn latex_model(
         | SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Inductive { .. }
         | SemanticDeclaration::Definition { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. }
         | SemanticDeclaration::Theorem { .. } => {}
     }
     for obligation in module.elaboration.obligations(index) {
@@ -3236,6 +3486,12 @@ pub fn render_latex(
             | SemanticDeclaration::Evidence { .. }
             | SemanticDeclaration::Model { .. } => {
                 latex_model(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::Logic { .. }
+            | SemanticDeclaration::InferenceRule { .. }
+            | SemanticDeclaration::Verifier { .. }
+            | SemanticDeclaration::Reasoner { .. } => {
+                reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
             }
         }
     }

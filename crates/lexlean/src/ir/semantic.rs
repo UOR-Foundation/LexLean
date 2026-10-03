@@ -10,6 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 pub mod model;
+pub mod reasoning;
 
 /// A qualified document member.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -287,6 +288,8 @@ pub enum SemanticType {
     /// Language 1.2 (models): the refusal of a checked model application,
     /// naming the contract predicate that failed.
     ContractViolation,
+    /// Language 1.2 (reasoning): why a reasoner returned no verified answer.
+    ReasoningFailure,
 }
 
 /// One explicit declaration parameter.
@@ -960,6 +963,85 @@ pub enum ModelCheck {
     Precondition,
 }
 
+/// Language 1.2 (reasoning): a logic's invariant and the theorem that its
+/// relation preserves it.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LogicInvariant {
+    pub predicate: MemberRef,
+    pub preserves: MemberRef,
+}
+
+/// Language 1.2 (reasoning): a rule's bound variable, ranging over the
+/// candidates its term lists for the current state, in list order.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuleBinding {
+    pub name: String,
+    pub r#type: SemanticType,
+    pub candidates: SemanticTerm,
+}
+
+/// Language 1.2 (reasoning): the candidate answer of a reasoner's state, an
+/// optional value of the answer type over the state binder.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReasoningAnswer {
+    pub name: String,
+    pub r#type: SemanticType,
+    pub value: SemanticTerm,
+}
+
+/// Language 1.2 (reasoning): the closed search orders.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchOrder {
+    /// Successors join the back of the frontier.
+    BreadthFirst,
+    /// Successors join the front of the frontier.
+    DepthFirst,
+}
+
+/// Language 1.2 (reasoning): the closed strategies. Every bound is a
+/// natural-number term over the observation; a missing bound is refused in
+/// linking (`LLT4011`), not by the schema, so that an unbounded strategy is
+/// named as such.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum ReasoningStrategy {
+    /// Fire the first applicable rule until none applies or the fuel is
+    /// spent.
+    Forward {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        fuel: Option<SemanticTerm>,
+    },
+    /// Expand a bounded frontier of states in the given order until a
+    /// verified answer is found, the frontier empties, or the fuel is spent.
+    Search {
+        order: SearchOrder,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        fuel: Option<SemanticTerm>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        frontier: Option<SemanticTerm>,
+        #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+        deduplicate: bool,
+    },
+}
+
+/// Language 1.2 (reasoning): the closed reasoner claims, each discharged by
+/// a statement-exact prior theorem.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum ReasoningClaim {
+    /// The observed state satisfies the logic's invariant.
+    InitialInvariant { theorem: MemberRef },
+    /// The ranking of the observed state is below the fuel, so a forward
+    /// reasoner whose every rule decreases the ranking saturates.
+    Terminates { theorem: MemberRef },
+}
+
 /// A closed declaration.
 // Declarations are parsed once and held in a module's ordered list, never
 // moved in bulk, so the size of the definition variant costs nothing.
@@ -1116,6 +1198,76 @@ pub enum SemanticDeclaration {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         axioms: Vec<String>,
     },
+    /// Language 1.2 (reasoning): a state type with a relation between
+    /// states, and optionally an invariant the relation preserves and a
+    /// natural-number ranking.
+    Logic {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        state: ContractState,
+        relation: MemberRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        invariant: Option<LogicInvariant>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ranking: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (reasoning): a guarded transition of a logic's state,
+    /// sound for its relation.
+    InferenceRule {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        logic: ModelUse,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        binding: Option<RuleBinding>,
+        guard: SemanticTerm,
+        conclusion: SemanticTerm,
+        soundness: MemberRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        progress: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+        executable: bool,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (reasoning): an executable check of a candidate answer
+    /// for a subject, sound (and optionally complete) for a specification.
+    Verifier {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        subject: ModelBinder,
+        candidate: ModelBinder,
+        specification: MemberRef,
+        check: MemberRef,
+        sound: MemberRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        complete: Option<MemberRef>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (reasoning): a bounded engine that observes an input,
+    /// applies rules of one logic under a closed strategy, and returns an
+    /// answer its verifier accepts, with the trace that derives it.
+    Reasoner {
+        name: String,
+        logic: ModelUse,
+        observation: ModelBinder,
+        observe: SemanticTerm,
+        rules: Vec<ModelUse>,
+        strategy: ReasoningStrategy,
+        answer: ReasoningAnswer,
+        verifier: ModelUse,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        claims: Vec<ReasoningClaim>,
+        #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+        executable: bool,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
 }
 
 impl SemanticDeclaration {
@@ -1132,7 +1284,11 @@ impl SemanticDeclaration {
             | Self::Contract { name, .. }
             | Self::Realization { name, .. }
             | Self::Evidence { name, .. }
-            | Self::Model { name, .. } => name,
+            | Self::Model { name, .. }
+            | Self::Logic { name, .. }
+            | Self::InferenceRule { name, .. }
+            | Self::Verifier { name, .. }
+            | Self::Reasoner { name, .. } => name,
         }
     }
 
@@ -1150,6 +1306,10 @@ impl SemanticDeclaration {
             Self::Realization { .. } => "realization",
             Self::Evidence { .. } => "evidence",
             Self::Model { .. } => "model",
+            Self::Logic { .. } => "logic",
+            Self::InferenceRule { .. } => "inference_rule",
+            Self::Verifier { .. } => "verifier",
+            Self::Reasoner { .. } => "reasoner",
         }
     }
 
@@ -1162,7 +1322,11 @@ impl SemanticDeclaration {
             | Self::Contract { axioms, .. }
             | Self::Realization { axioms, .. }
             | Self::Evidence { axioms, .. }
-            | Self::Model { axioms, .. } => axioms,
+            | Self::Model { axioms, .. }
+            | Self::Logic { axioms, .. }
+            | Self::InferenceRule { axioms, .. }
+            | Self::Verifier { axioms, .. }
+            | Self::Reasoner { axioms, .. } => axioms,
             _ => &[],
         }
     }
@@ -1888,7 +2052,11 @@ fn data_shape_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => 0,
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => 0,
     }
 }
 
@@ -1962,6 +2130,10 @@ fn declaration_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. } => model::source_node_count(declaration),
+        SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => reasoning::source_node_count(declaration),
     }
 }
 
@@ -2391,6 +2563,7 @@ impl std::fmt::Display for SemanticType {
             Self::Bytes => "Bytes",
             Self::Ordering => "Ordering",
             Self::ContractViolation => "ContractViolation",
+            Self::ReasoningFailure => "ReasoningFailure",
             Self::Parameter { name } => return f.write_str(name),
             Self::Option { value } => return write!(f, "Option ({value})"),
             Self::Result { ok, error } => return write!(f, "Result ({ok}) ({error})"),
@@ -2428,6 +2601,7 @@ fn language_1_2_type(ty: &SemanticType) -> Option<&'static str> {
         SemanticType::Map { .. } => Some("map type"),
         SemanticType::Set { .. } => Some("set type"),
         SemanticType::ContractViolation => Some("contract_violation type"),
+        SemanticType::ReasoningFailure => Some("reasoning_failure type"),
         SemanticType::Option { value: inner } | SemanticType::List { element: inner } => {
             language_1_2_type(inner)
         }
@@ -2567,6 +2741,10 @@ fn declaration_types(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. } => model::declaration_types(declaration, visit),
+        SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => reasoning::declaration_types(declaration, visit),
     }
 }
 
@@ -2625,7 +2803,7 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
 /// Lean names the backend emits unqualified: built-in types and their
 /// constructor owners, the propositional connectives its proofs name, and the
 /// runtime namespaces. A binder spelled like one would capture it.
-const BACKEND_BARE_NAMES: [&str; 31] = [
+const BACKEND_BARE_NAMES: [&str; 35] = [
     "And",
     "Bool",
     "ByteArray",
@@ -2637,6 +2815,8 @@ const BACKEND_BARE_NAMES: [&str; 31] = [
     "Int64",
     "Int8",
     "LexLeanCollections",
+    "LexLeanModels",
+    "LexLeanReasoning",
     "LexLeanRuntime",
     "List",
     "Nat",
@@ -2653,10 +2833,12 @@ const BACKEND_BARE_NAMES: [&str; 31] = [
     "UInt8",
     "Unit",
     "and_congr",
+    "and_true",
     "congr",
     "decide",
     "id",
     "rfl",
+    "true_and",
 ];
 
 fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
@@ -2723,9 +2905,20 @@ fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut impl FnMut
         }
         | SemanticDeclaration::Model {
             type_parameters, ..
+        }
+        | SemanticDeclaration::Logic {
+            type_parameters, ..
+        }
+        | SemanticDeclaration::InferenceRule {
+            type_parameters, ..
+        }
+        | SemanticDeclaration::Verifier {
+            type_parameters, ..
         } => (type_parameters, &[]),
+        SemanticDeclaration::Reasoner { .. } => (&[], &[]),
     };
     model::declaration_binders(declaration, visit);
+    reasoning::declaration_binders(declaration, visit);
     type_parameters.iter().for_each(|name| visit(name));
     parameters
         .iter()
@@ -2819,6 +3012,10 @@ fn declaration_terms(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. } => model::declaration_terms(declaration, visit),
+        SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => reasoning::declaration_terms(declaration, visit),
     }
 }
 
@@ -2856,6 +3053,12 @@ fn declaration_terms_mut(
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. } => model::declaration_terms_mut(declaration, visit),
+        SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => {
+            reasoning::declaration_terms_mut(declaration, visit);
+        }
     }
 }
 
@@ -2899,7 +3102,8 @@ fn type_mentions_parameter(ty: &SemanticType, name: &str) -> bool {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => false,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => false,
     }
 }
 
@@ -2962,8 +3166,14 @@ impl SemanticModule {
         let mut names = Vec::new();
         for (index, declaration) in self.declarations.iter().enumerate() {
             match self.elaborated(index) {
-                Some(lowered) if model::declaration_construct(declaration).is_some() => {
+                Some(lowered) if model::elaborated_construct(declaration).is_some() => {
                     names.extend(lowered.iter().map(|derived| derived.name().to_owned()));
+                    names.extend(
+                        self.elaboration
+                            .theorems(index)
+                            .iter()
+                            .map(|theorem| theorem.name.clone()),
+                    );
                     names.extend(
                         self.elaboration
                             .checks(index)
@@ -2995,7 +3205,7 @@ impl SemanticModule {
             .enumerate()
             .any(|(index, declaration)| {
                 declaration.name() == name
-                    && model::declaration_construct(declaration).is_none()
+                    && model::elaborated_construct(declaration).is_none()
                     && self
                         .elaborated(index)
                         .is_some_and(|lowered| lowered != std::slice::from_ref(declaration))
@@ -3055,6 +3265,9 @@ struct Environment<'a> {
     /// Language 1.2 (models): every visible artifact, contract,
     /// realization, evidence, and model, by environment key.
     models: model::Models,
+    /// Language 1.2 (reasoning): every visible logic, rule, and verifier,
+    /// and the generated functions executable code may not reach directly.
+    reasoning: reasoning::Reasoning,
     /// Language 1.2 (models): the declaration being checked was elaborated
     /// from a model declaration, so generated binders are admitted.
     derived: bool,
@@ -3168,7 +3381,8 @@ fn qualify_type(ty: &SemanticType, module: &str) -> SemanticType {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => ty.clone(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => ty.clone(),
     }
 }
 
@@ -3224,13 +3438,14 @@ fn check_name(name: &str, what: &str) -> Result<(), String> {
 /// `List.cons`, `Option.some`, `Result.ok`, `Prod.mk`). A local reference to
 /// such a constructor has no module, so in language 1.2 no declaration may
 /// take one of these names and make the reference ambiguous.
-pub(crate) const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 7] = [
+pub(crate) const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 8] = [
     "Bool",
     "ContractViolation",
     "List",
     "Nat",
     "Option",
     "Prod",
+    "ReasoningFailure",
     "Result",
 ];
 
@@ -3277,7 +3492,8 @@ fn check_type(ty: &SemanticType, env: &Environment<'_>) -> Result<(), String> {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => Ok(()),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Ok(()),
         SemanticType::List { element } | SemanticType::Option { value: element } => {
             check_type(element, env)
         }
@@ -3396,7 +3612,8 @@ fn check_type_parameters(ty: &SemanticType, allowed: &BTreeSet<String>) -> Resul
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => Ok(()),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Ok(()),
     }
 }
 
@@ -3488,7 +3705,8 @@ fn mentions_universe(ty: &SemanticType) -> bool {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => false,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => false,
     }
 }
 
@@ -3598,6 +3816,7 @@ fn constructor_arity(member: &MemberRef, env: &Environment<'_>) -> Option<usize>
             }
             "Option.some" => return Some(1),
             name if env.language_1_2 && model::VIOLATIONS.contains(&name) => return Some(0),
+            name if env.language_1_2 && reasoning::FAILURES.contains(&name) => return Some(0),
             _ => {}
         }
     }
@@ -3666,7 +3885,8 @@ fn mentions_group(ty: &SemanticType, group: &BTreeSet<String>) -> bool {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => false,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => false,
     }
 }
 
@@ -3757,7 +3977,8 @@ fn classify_occurrence(
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => Ok(Occurrence::Absent),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Ok(Occurrence::Absent),
     }
 }
 
@@ -3805,7 +4026,8 @@ fn constructible(
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => true,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => true,
     }
 }
 
@@ -4209,7 +4431,8 @@ fn holds_function(
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => false,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => false,
     }
 }
 
@@ -5948,6 +6171,10 @@ fn check_term(
                 .iter()
                 .map(|name| (*name).to_owned())
                 .collect();
+            let failure: BTreeSet<String> = reasoning::FAILURES
+                .iter()
+                .map(|name| (*name).to_owned())
+                .collect();
             let declared = env.types.values().find_map(|info| {
                 let set: BTreeSet<String> = info.constructors.keys().cloned().collect();
                 (set == constructors).then_some(set)
@@ -5959,6 +6186,7 @@ fn check_term(
                 && constructors != result
                 && !(env.language_1_2 && constructors == product)
                 && !(env.language_1_2 && constructors == violation)
+                && !(env.language_1_2 && constructors == failure)
                 && declared.is_none()
             {
                 return Err(format!(
@@ -6258,7 +6486,8 @@ fn substitute_type(
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => ty.clone(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => ty.clone(),
     }
 }
 
@@ -6830,6 +7059,16 @@ fn constructor_signature(
         require_language_1_2(env, "contract_violation constructor")?;
         return Ok(Some((SemanticType::ContractViolation, Vec::new())));
     }
+    if constructor.module.is_none() && reasoning::FAILURES.contains(&constructor.name.as_str()) {
+        if !type_arguments.is_empty() {
+            return Err(format!(
+                "constructor `{}` takes no type arguments",
+                constructor.name
+            ));
+        }
+        require_language_1_2(env, "reasoning_failure constructor")?;
+        return Ok(Some((SemanticType::ReasoningFailure, Vec::new())));
+    }
     if constructor.module.is_none()
         && (constructor.name == "Nat.zero" || constructor.name == "Nat.succ")
     {
@@ -6921,6 +7160,18 @@ fn branch_binder_types(
             } else {
                 return Err(
                     "contract-violation match uses a constructor other than a ContractViolation one"
+                        .to_owned(),
+                );
+            }
+        }
+        SemanticType::ReasoningFailure => {
+            if branch.constructor.module.is_none()
+                && reasoning::FAILURES.contains(&branch.constructor.name.as_str())
+            {
+                Vec::new()
+            } else {
+                return Err(
+                    "reasoning-failure match uses a constructor other than a ReasoningFailure one"
                         .to_owned(),
                 );
             }
@@ -7784,7 +8035,7 @@ impl SemanticModule {
                 found = Some("mutual inductive group");
                 break;
             }
-            if let Some(kind) = model::declaration_construct(declaration) {
+            if let Some(kind) = model::elaborated_construct(declaration) {
                 found = Some(kind);
                 break;
             }
@@ -8044,12 +8295,17 @@ impl SemanticModule {
                     | SemanticDeclaration::Contract { .. }
                     | SemanticDeclaration::Realization { .. }
                     | SemanticDeclaration::Evidence { .. }
-                    | SemanticDeclaration::Model { .. } => {
+                    | SemanticDeclaration::Model { .. }
+                    | SemanticDeclaration::Logic { .. }
+                    | SemanticDeclaration::InferenceRule { .. }
+                    | SemanticDeclaration::Verifier { .. }
+                    | SemanticDeclaration::Reasoner { .. } => {
                         return Err(format!("internal: imported `{key}` was not elaborated").into());
                     }
                 }
             }
             model::register_import(import, &module.elaboration, &mut env.models);
+            reasoning::register_import(import, &module.elaboration, &mut env);
         }
         for (key, (flags, nested, members)) in imported_flags {
             if let Some(info) = env.types.get_mut(&key) {
@@ -8138,80 +8394,8 @@ impl SemanticModule {
                 return Err(format!("duplicate generated name `{name}`").into());
             }
             match declaration {
-                SemanticDeclaration::Structure {
-                    type_parameters,
-                    parameters,
-                    fields,
-                    ..
-                }
-                | SemanticDeclaration::Class {
-                    type_parameters,
-                    parameters,
-                    fields,
-                    ..
-                } => {
-                    if !parameters.is_empty() {
-                        return Err(format!(
-                            "`{name}` value parameters are not part of a finite data declaration"
-                        )
-                        .into());
-                    }
-                    let type_parameter_names = type_parameters.clone();
-                    check_type_parameter_spelling(
-                        &type_parameter_names,
-                        &BTreeSet::from([name.to_owned()]),
-                        &env,
-                    )?;
-                    let type_parameters = type_parameter_set(type_parameters)?;
-                    let _ = check_parameters(parameters, &env, &type_parameters)?;
-                    if fields.is_empty() {
-                        return Err(format!("`{name}` has no fields").into());
-                    }
-                    if env.language_1_2 {
-                        let own = BTreeSet::from([name.to_owned()]);
-                        if fields
-                            .iter()
-                            .any(|field| mentions_group(&field.r#type, &own))
-                        {
-                            return Err(format!(
-                                "structure or class `{name}` refers to itself; recursive data is declared as an inductive"
-                            ).into());
-                        }
-                    }
-                    let mut field_names = Vec::new();
-                    for field in fields {
-                        check_name(&field.name, "field")?;
-                        check_type(&field.r#type, &env)?;
-                        check_type_parameters(&field.r#type, &type_parameters)?;
-                        if field_names.contains(&field.name) {
-                            return Err(format!("duplicate field `{}.{}`", name, field.name).into());
-                        }
-                        field_names.push(field.name.clone());
-                        let generated = format!("{name}.{}", field.name);
-                        if !generated_names.insert(generated.clone()) {
-                            return Err(format!("duplicate generated name `{generated}`").into());
-                        }
-                    }
-                    let constructor = format!("{name}.mk");
-                    if !generated_names.insert(constructor.clone()) {
-                        return Err(format!("duplicate generated name `{constructor}`").into());
-                    }
-                    env.types.insert(
-                        name.to_owned(),
-                        TypeInfo {
-                            parameters: type_parameters.len(),
-                            fields: field_names,
-                            constructors: BTreeMap::from([(format!("{name}.mk"), fields.len())]),
-                            type_parameters: type_parameter_names,
-                            field_types: fields.iter().map(|field| field.r#type.clone()).collect(),
-                            constructor_types: BTreeMap::from([(
-                                format!("{name}.mk"),
-                                fields.iter().map(|field| field.r#type.clone()).collect(),
-                            )]),
-                            class: matches!(declaration, SemanticDeclaration::Class { .. }),
-                            ..TypeInfo::default()
-                        },
-                    );
+                SemanticDeclaration::Structure { .. } | SemanticDeclaration::Class { .. } => {
+                    register_structure(declaration, &mut env, &mut generated_names)?;
                 }
                 SemanticDeclaration::Inductive { mutual, .. } if env.language_1_2 => {
                     if let Some(label) = mutual {
@@ -8448,10 +8632,111 @@ impl SemanticModule {
                     )?;
                     elaboration.record(index, lowering);
                 }
+                SemanticDeclaration::Logic { .. }
+                | SemanticDeclaration::InferenceRule { .. }
+                | SemanticDeclaration::Verifier { .. }
+                | SemanticDeclaration::Reasoner { .. } => {
+                    let lowering =
+                        reasoning::check_declaration(declaration, &mut env, &mut generated_names)?;
+                    elaboration.record(index, lowering);
+                }
             }
         }
-        elaboration.finish(&self.declarations, env.models.locals())
+        elaboration.finish(
+            &self.declarations,
+            env.models.locals(),
+            env.reasoning.locals(),
+        )
     }
+}
+
+/// Register one structure or class: its type parameters, fields, and
+/// constructor, each generated name unique (§17.12). A reasoner's generated
+/// records are registered by the same rule.
+fn register_structure(
+    declaration: &SemanticDeclaration,
+    env: &mut Environment<'_>,
+    generated_names: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    let (SemanticDeclaration::Structure {
+        name,
+        type_parameters,
+        parameters,
+        fields,
+    }
+    | SemanticDeclaration::Class {
+        name,
+        type_parameters,
+        parameters,
+        fields,
+    }) = declaration
+    else {
+        return Ok(());
+    };
+    let name = name.as_str();
+        if !parameters.is_empty() {
+            return Err(format!(
+                "`{name}` value parameters are not part of a finite data declaration"
+            )
+            .into());
+        }
+        let type_parameter_names = type_parameters.clone();
+        check_type_parameter_spelling(
+            &type_parameter_names,
+            &BTreeSet::from([name.to_owned()]),
+            &env,
+        )?;
+        let type_parameters = type_parameter_set(type_parameters)?;
+        let _ = check_parameters(parameters, &env, &type_parameters)?;
+        if fields.is_empty() {
+            return Err(format!("`{name}` has no fields").into());
+        }
+        if env.language_1_2 {
+            let own = BTreeSet::from([name.to_owned()]);
+            if fields
+                .iter()
+                .any(|field| mentions_group(&field.r#type, &own))
+            {
+                return Err(format!(
+                    "structure or class `{name}` refers to itself; recursive data is declared as an inductive"
+                ).into());
+            }
+        }
+        let mut field_names = Vec::new();
+        for field in fields {
+            check_name(&field.name, "field")?;
+            check_type(&field.r#type, &env)?;
+            check_type_parameters(&field.r#type, &type_parameters)?;
+            if field_names.contains(&field.name) {
+                return Err(format!("duplicate field `{}.{}`", name, field.name).into());
+            }
+            field_names.push(field.name.clone());
+            let generated = format!("{name}.{}", field.name);
+            if !generated_names.insert(generated.clone()) {
+                return Err(format!("duplicate generated name `{generated}`").into());
+            }
+        }
+        let constructor = format!("{name}.mk");
+        if !generated_names.insert(constructor.clone()) {
+            return Err(format!("duplicate generated name `{constructor}`").into());
+        }
+        env.types.insert(
+            name.to_owned(),
+            TypeInfo {
+                parameters: type_parameters.len(),
+                fields: field_names,
+                constructors: BTreeMap::from([(format!("{name}.mk"), fields.len())]),
+                type_parameters: type_parameter_names,
+                field_types: fields.iter().map(|field| field.r#type.clone()).collect(),
+                constructor_types: BTreeMap::from([(
+                    format!("{name}.mk"),
+                    fields.iter().map(|field| field.r#type.clone()).collect(),
+                )]),
+                class: matches!(declaration, SemanticDeclaration::Class { .. }),
+                ..TypeInfo::default()
+            },
+        );
+    Ok(())
 }
 
 /// Check one theorem: signature, statement, and proof; then register it as a

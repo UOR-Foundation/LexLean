@@ -1363,13 +1363,20 @@ pub fn run(
                 // §17.12 (models): every Lean declaration a model declaration
                 // generates stays within its exact axiom set, and together
                 // they observe exactly that set.
-                if crate::ir::semantic::model::declaration_construct(declaration).is_some() {
+                if crate::ir::semantic::model::elaborated_construct(declaration).is_some() {
                     let mut union: BTreeSet<String> = BTreeSet::new();
                     let generated: Vec<String> = semantic
                         .elaborated(index)
                         .unwrap_or_default()
                         .iter()
                         .map(|derived| derived.name().to_owned())
+                        .chain(
+                            semantic
+                                .elaboration
+                                .theorems(index)
+                                .iter()
+                                .map(|theorem| theorem.name.clone()),
+                        )
                         .chain(
                             semantic
                                 .elaboration

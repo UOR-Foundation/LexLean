@@ -263,7 +263,7 @@ impl SemanticSnapshot {
             if let Some(semantic) = &module.document.semantic {
                 for (index, declaration) in semantic.declarations.iter().enumerate() {
                     let elaboration = semantic.elaborated(index).and_then(|lowered| {
-                        let model = crate::ir::semantic::model::declaration_construct(declaration)
+                        let model = crate::ir::semantic::model::elaborated_construct(declaration)
                             .is_some();
                         (model || lowered != std::slice::from_ref(declaration)).then(|| {
                             SnapshotElaboration {

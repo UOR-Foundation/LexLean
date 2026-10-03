@@ -76,7 +76,11 @@ fn terms_of(declaration: &SemanticDeclaration) -> Vec<&SemanticTerm> {
         | SemanticDeclaration::Artifact { .. }
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => {}
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => {}
     }
     out
 }
@@ -226,7 +230,11 @@ fn types_of(declaration: &SemanticDeclaration) -> Vec<&SemanticType> {
         | SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Inductive { .. }
         | SemanticDeclaration::Definition { .. }
-        | SemanticDeclaration::Theorem { .. } => {}
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => {}
     }
     out
 }
@@ -284,7 +292,11 @@ pub(super) fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut
         | SemanticDeclaration::Theorem { .. }
         | SemanticDeclaration::Artifact { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => {}
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => {}
     }
 }
 
@@ -369,7 +381,11 @@ pub(super) fn source_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Inductive { .. }
         | SemanticDeclaration::Definition { .. }
-        | SemanticDeclaration::Theorem { .. } => 0,
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => 0,
     };
     types.saturating_add(terms).saturating_add(shape)
 }
@@ -464,6 +480,14 @@ impl ArtifactStore {
     }
 }
 
+/// The kind of a model or reasoning declaration: a declaration linking
+/// elaborates into ordinary declarations (§17.12).
+#[must_use]
+pub fn elaborated_construct(declaration: &SemanticDeclaration) -> Option<&'static str> {
+    declaration_construct(declaration)
+        .or_else(|| super::reasoning::declaration_construct(declaration))
+}
+
 /// The kind of a model declaration, for diagnostics and the closed list of
 /// language-1.2 constructs.
 #[must_use]
@@ -479,7 +503,11 @@ pub fn declaration_construct(declaration: &SemanticDeclaration) -> Option<&'stat
         | SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Inductive { .. }
         | SemanticDeclaration::Definition { .. }
-        | SemanticDeclaration::Theorem { .. } => None,
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => None,
     }
 }
 
@@ -561,6 +589,8 @@ pub(crate) struct Lowering {
     pub(crate) obligations: Vec<Obligation>,
     /// For a model, the runtime checks every executable application needs.
     pub(crate) required: Vec<ModelCheck>,
+    /// For a reasoning declaration, the theorems it generates (§17.12).
+    pub(crate) theorems: Vec<super::reasoning::GeneratedTheorem>,
 }
 
 /// A linked module's elaboration (§17.12): per declaration, what it means,
@@ -571,8 +601,11 @@ pub struct Elaboration {
     pub(crate) checks: Vec<Vec<CrossCheck>>,
     pub(crate) obligations: Vec<Vec<Obligation>>,
     pub(crate) required: Vec<Vec<ModelCheck>>,
+    pub(crate) theorems: Vec<Vec<super::reasoning::GeneratedTheorem>>,
     /// The model interfaces this module declares, keyed by local name.
     pub(crate) models: Models,
+    /// The reasoning interfaces this module declares, keyed by local name.
+    pub(crate) reasoning: super::reasoning::Reasoning,
 }
 
 /// The elaboration under construction, declaration by declaration.
@@ -610,9 +643,11 @@ impl Builder {
         self,
         declarations: &[SemanticDeclaration],
         models: Models,
+        reasoning: super::reasoning::Reasoning,
     ) -> Result<Elaboration, SemanticFailure> {
         let mut elaboration = Elaboration {
             models,
+            reasoning,
             ..Elaboration::default()
         };
         for (declaration, lowering) in declarations.iter().zip(self.pending) {
@@ -638,6 +673,7 @@ impl Builder {
             elaboration.checks.push(lowering.checks);
             elaboration.obligations.push(lowering.obligations);
             elaboration.required.push(lowering.required);
+            elaboration.theorems.push(lowering.theorems);
         }
         Ok(elaboration)
     }
@@ -689,9 +725,16 @@ impl Elaboration {
             .iter()
             .map(|checks| checks.len() as u64)
             .sum::<u64>();
+        let theorems: u64 = self
+            .theorems
+            .iter()
+            .flatten()
+            .map(super::reasoning::theorem_node_count)
+            .sum();
         declarations
             .saturating_add(obligations)
             .saturating_add(checks)
+            .saturating_add(theorems)
     }
 
     /// Every cross-check, in declaration order.
@@ -716,6 +759,18 @@ impl Elaboration {
     #[must_use]
     pub fn obligations(&self, index: usize) -> &[Obligation] {
         self.obligations.get(index).map_or(&[], Vec::as_slice)
+    }
+
+    /// The theorems source declaration `index` generates, in order.
+    #[must_use]
+    pub fn theorems(&self, index: usize) -> &[super::reasoning::GeneratedTheorem] {
+        self.theorems.get(index).map_or(&[], Vec::as_slice)
+    }
+
+    /// Every generated theorem, in declaration order.
+    #[must_use]
+    pub fn all_theorems(&self) -> Vec<&super::reasoning::GeneratedTheorem> {
+        self.theorems.iter().flatten().collect()
     }
 
     /// The runtime checks executable code must apply to the model declared
@@ -864,14 +919,14 @@ fn is_builtin_constructor(member: &MemberRef) -> bool {
             .is_some_and(|(owner, _)| BUILTIN_CONSTRUCTOR_OWNERS.contains(&owner))
 }
 
-fn anchor(member: &MemberRef, module: &str) -> MemberRef {
+pub(super) fn anchor(member: &MemberRef, module: &str) -> MemberRef {
     MemberRef {
         module: member.module.clone().or_else(|| Some(module.to_owned())),
         name: member.name.clone(),
     }
 }
 
-fn anchor_use(model_use: &ModelUse, module: &str) -> ModelUse {
+pub(super) fn anchor_use(model_use: &ModelUse, module: &str) -> ModelUse {
     ModelUse {
         member: anchor(&model_use.member, module),
         type_arguments: model_use
@@ -884,7 +939,7 @@ fn anchor_use(model_use: &ModelUse, module: &str) -> ModelUse {
 
 /// A term of `module` as an importer names it: every document reference
 /// gains its module, built-in constructors stay as they are.
-fn qualify_term(term: &SemanticTerm, module: &str) -> SemanticTerm {
+pub(super) fn qualify_term(term: &SemanticTerm, module: &str) -> SemanticTerm {
     fn types(types: &mut [SemanticType], module: &str) {
         for ty in types {
             *ty = qualify_type(ty, module);
@@ -990,7 +1045,7 @@ fn qualify_term(term: &SemanticTerm, module: &str) -> SemanticTerm {
     out
 }
 
-fn qualify_binder(binder: &ModelBinder, module: &str) -> ModelBinder {
+pub(super) fn qualify_binder(binder: &ModelBinder, module: &str) -> ModelBinder {
     ModelBinder {
         name: binder.name.clone(),
         r#type: qualify_type(&binder.r#type, module),
@@ -1088,7 +1143,7 @@ pub(super) fn register_import(module: &str, elaboration: &Elaboration, models: &
 // ---------------------------------------------------------------------------
 // Failures.
 
-fn fail(code: DiagnosticCode, reason: String) -> SemanticFailure {
+pub(super) fn fail(code: DiagnosticCode, reason: String) -> SemanticFailure {
     SemanticFailure { code, reason }
 }
 
@@ -1112,20 +1167,20 @@ fn unestablished(reason: String) -> SemanticFailure {
 // Term and type builders. Every generated binder begins with two
 // underscores, which no source name can, so none captures a source local.
 
-fn local(name: &str) -> MemberRef {
+pub(super) fn local(name: &str) -> MemberRef {
     MemberRef {
         module: None,
         name: name.to_owned(),
     }
 }
 
-fn var(name: &str) -> SemanticTerm {
+pub(super) fn var(name: &str) -> SemanticTerm {
     SemanticTerm::Var {
         name: name.to_owned(),
     }
 }
 
-fn call(
+pub(super) fn call(
     function: &MemberRef,
     type_arguments: &[SemanticType],
     arguments: Vec<SemanticTerm>,
@@ -1137,21 +1192,21 @@ fn call(
     }
 }
 
-fn function_ref(function: &MemberRef, type_arguments: &[SemanticType]) -> SemanticTerm {
+pub(super) fn function_ref(function: &MemberRef, type_arguments: &[SemanticType]) -> SemanticTerm {
     SemanticTerm::FunctionRef {
         function: function.clone(),
         type_arguments: type_arguments.to_vec(),
     }
 }
 
-fn eq(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
+pub(super) fn eq(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
     SemanticTerm::Eq {
         left: Box::new(left),
         right: Box::new(right),
     }
 }
 
-fn implies(premise: SemanticTerm, conclusion: SemanticTerm) -> SemanticTerm {
+pub(super) fn implies(premise: SemanticTerm, conclusion: SemanticTerm) -> SemanticTerm {
     SemanticTerm::Implies {
         premise: Box::new(premise),
         conclusion: Box::new(conclusion),
@@ -1159,37 +1214,37 @@ fn implies(premise: SemanticTerm, conclusion: SemanticTerm) -> SemanticTerm {
 }
 
 /// `premise -> conclusion`, or the conclusion alone without a premise.
-fn premised(premise: Option<SemanticTerm>, conclusion: SemanticTerm) -> SemanticTerm {
+pub(super) fn premised(premise: Option<SemanticTerm>, conclusion: SemanticTerm) -> SemanticTerm {
     match premise {
         Some(premise) => implies(premise, conclusion),
         None => conclusion,
     }
 }
 
-fn first(value: SemanticTerm) -> SemanticTerm {
+pub(super) fn first(value: SemanticTerm) -> SemanticTerm {
     SemanticTerm::First {
         value: Box::new(value),
     }
 }
 
-fn second(value: SemanticTerm) -> SemanticTerm {
+pub(super) fn second(value: SemanticTerm) -> SemanticTerm {
     SemanticTerm::Second {
         value: Box::new(value),
     }
 }
 
-fn pair(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
+pub(super) fn pair(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
     SemanticTerm::Pair {
         left: Box::new(left),
         right: Box::new(right),
     }
 }
 
-fn boolean(value: bool) -> SemanticTerm {
+pub(super) fn boolean(value: bool) -> SemanticTerm {
     SemanticTerm::Bool { value }
 }
 
-fn nat(value: u64) -> SemanticTerm {
+pub(super) fn nat(value: u64) -> SemanticTerm {
     SemanticTerm::Nat {
         value: value.to_string(),
     }
@@ -1202,7 +1257,7 @@ fn int(value: &str) -> SemanticTerm {
     }
 }
 
-fn constructor(
+pub(super) fn constructor(
     name: &str,
     type_arguments: Vec<SemanticType>,
     arguments: Vec<SemanticTerm>,
@@ -1214,7 +1269,7 @@ fn constructor(
     }
 }
 
-fn let_in(name: &str, ty: SemanticType, value: SemanticTerm, body: SemanticTerm) -> SemanticTerm {
+pub(super) fn let_in(name: &str, ty: SemanticType, value: SemanticTerm, body: SemanticTerm) -> SemanticTerm {
     SemanticTerm::Let {
         binder: SemanticParameter {
             name: name.to_owned(),
@@ -1225,7 +1280,7 @@ fn let_in(name: &str, ty: SemanticType, value: SemanticTerm, body: SemanticTerm)
     }
 }
 
-fn if_then(
+pub(super) fn if_then(
     condition: SemanticTerm,
     then_value: SemanticTerm,
     else_value: SemanticTerm,
@@ -1237,7 +1292,7 @@ fn if_then(
     }
 }
 
-fn primitive(
+pub(super) fn primitive(
     operation: SemanticPrimitive,
     arguments: Vec<SemanticTerm>,
     result: SemanticType,
@@ -1251,7 +1306,7 @@ fn primitive(
 
 /// A lambda capturing exactly the locals its body uses beyond its own
 /// parameters, sorted (§17.12).
-fn lambda(parameters: Vec<(&str, SemanticType)>, body: SemanticTerm) -> SemanticTerm {
+pub(super) fn lambda(parameters: Vec<(&str, SemanticType)>, body: SemanticTerm) -> SemanticTerm {
     let mut bound: BTreeSet<String> = parameters
         .iter()
         .map(|(name, _)| (*name).to_owned())
@@ -1271,7 +1326,7 @@ fn lambda(parameters: Vec<(&str, SemanticType)>, body: SemanticTerm) -> Semantic
     }
 }
 
-fn matching(
+pub(super) fn matching(
     scrutinee: SemanticTerm,
     branches: Vec<(&str, Vec<&str>, SemanticTerm)>,
 ) -> SemanticTerm {
@@ -1288,7 +1343,7 @@ fn matching(
     }
 }
 
-fn list_type(element: SemanticType) -> SemanticType {
+pub(super) fn list_type(element: SemanticType) -> SemanticType {
     SemanticType::List {
         element: Box::new(element),
     }
@@ -1298,14 +1353,14 @@ fn int_list() -> SemanticType {
     list_type(SemanticType::Int)
 }
 
-fn product(left: SemanticType, right: SemanticType) -> SemanticType {
+pub(super) fn product(left: SemanticType, right: SemanticType) -> SemanticType {
     SemanticType::Product {
         left: Box::new(left),
         right: Box::new(right),
     }
 }
 
-fn option_type(value: SemanticType) -> SemanticType {
+pub(super) fn option_type(value: SemanticType) -> SemanticType {
     SemanticType::Option {
         value: Box::new(value),
     }
@@ -1371,7 +1426,7 @@ pub const fn check_name_of(check: ModelCheck) -> &'static str {
 /// A list literal. A long list is a balanced tree of `append`s of short
 /// literals, so no generated term nests deeper than a fixed chunk plus the
 /// logarithm of its length.
-fn list_literal(element: &SemanticType, items: Vec<SemanticTerm>) -> SemanticTerm {
+pub(super) fn list_literal(element: &SemanticType, items: Vec<SemanticTerm>) -> SemanticTerm {
     const CHUNK: usize = 32;
     if items.len() <= CHUNK {
         let mut out = SemanticTerm::Nil {
@@ -1397,7 +1452,7 @@ fn list_literal(element: &SemanticType, items: Vec<SemanticTerm>) -> SemanticTer
 
 /// Substitute type parameters throughout a term. Only types have the tag
 /// `parameter`, so the rewrite cannot touch a term node.
-fn substitute_term_types(
+pub(super) fn substitute_term_types(
     term: &SemanticTerm,
     map: &BTreeMap<String, SemanticType>,
 ) -> SemanticTerm {
@@ -1438,7 +1493,7 @@ fn substitute_term_types(
     serde_json::from_value(value).expect("a substituted term deserializes")
 }
 
-fn substitution(
+pub(super) fn substitution(
     parameters: &[String],
     arguments: &[SemanticType],
 ) -> BTreeMap<String, SemanticType> {
@@ -1449,14 +1504,14 @@ fn substitution(
         .collect()
 }
 
-fn parameter_types(parameters: &[String]) -> Vec<SemanticType> {
+pub(super) fn parameter_types(parameters: &[String]) -> Vec<SemanticType> {
     parameters
         .iter()
         .map(|name| SemanticType::Parameter { name: name.clone() })
         .collect()
 }
 
-fn parameter(name: &str, ty: &SemanticType) -> SemanticParameter {
+pub(super) fn parameter(name: &str, ty: &SemanticType) -> SemanticParameter {
     SemanticParameter {
         name: name.to_owned(),
         r#type: ty.clone(),
@@ -1468,7 +1523,7 @@ fn parameter(name: &str, ty: &SemanticType) -> SemanticParameter {
 
 /// The canonical form of a statement over its parameters: every type
 /// parameter, parameter, and bound local renamed positionally.
-fn canonical(
+pub(super) fn canonical(
     type_parameters: &[String],
     parameters: &[SemanticParameter],
     statement: &SemanticTerm,
@@ -1496,7 +1551,7 @@ fn canonical(
 /// `theorem` is a prior theorem of this module whose type parameters,
 /// parameters, and statement are exactly the obligation's, up to the names
 /// of bound variables.
-fn require_statement(
+pub(super) fn require_statement(
     env: &Environment<'_>,
     theorem: &MemberRef,
     obligation: &Obligation,
@@ -1547,7 +1602,7 @@ fn require_statement(
     Ok(())
 }
 
-fn check_axioms(name: &str, axioms: &[String]) -> Result<(), SemanticFailure> {
+pub(super) fn check_axioms(name: &str, axioms: &[String]) -> Result<(), SemanticFailure> {
     if axioms.windows(2).any(|pair| pair[0] >= pair[1])
         || axioms.iter().any(|axiom| !legal_name(axiom))
     {
@@ -1558,7 +1613,7 @@ fn check_axioms(name: &str, axioms: &[String]) -> Result<(), SemanticFailure> {
 
 /// Check the type parameters of a model declaration and the types it
 /// writes over them.
-fn check_signature(
+pub(super) fn check_signature(
     name: &str,
     type_parameters: &[String],
     binders: &[&str],
@@ -1585,7 +1640,7 @@ fn check_signature(
 
 /// Check a use's member kind and type arguments, returning its
 /// substitution over the used declaration's type parameters.
-fn use_substitution(
+pub(super) fn use_substitution(
     model_use: &ModelUse,
     type_parameters: &[String],
     scope: &BTreeSet<String>,
@@ -1923,7 +1978,7 @@ const fn predicate_name(predicate: ContractPredicate) -> &'static str {
 
 /// The function at `member` with `type_parameters` instantiated at the
 /// contract's own parameters, as `(parameters, result, executable)`.
-fn signature_at(
+pub(super) fn signature_at(
     member: &MemberRef,
     type_parameters: &[String],
     env: &Environment<'_>,
@@ -2571,7 +2626,7 @@ fn less_than(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
     )
 }
 
-fn append_one(list: SemanticTerm, element: &SemanticType, value: SemanticTerm) -> SemanticTerm {
+pub(super) fn append_one(list: SemanticTerm, element: &SemanticType, value: SemanticTerm) -> SemanticTerm {
     primitive(
         SemanticPrimitive::Append,
         vec![list, list_literal(element, vec![value])],
@@ -2579,7 +2634,7 @@ fn append_one(list: SemanticTerm, element: &SemanticType, value: SemanticTerm) -
     )
 }
 
-fn fold(
+pub(super) fn fold(
     step: SemanticTerm,
     initial: SemanticTerm,
     values: SemanticTerm,
@@ -4832,7 +4887,7 @@ fn check_model(
 /// a model and only checks its contract can run, and in executable code
 /// every application validates each predicate its evidence does not
 /// discharge.
-fn check_boundary(
+pub(super) fn check_boundary(
     owner: &str,
     term: &SemanticTerm,
     executable: bool,
@@ -4855,7 +4910,14 @@ fn check_boundary(
                 if executable =>
             {
                 let key = member_key(function);
-                if env.models.realization_functions.contains(&key) {
+                if let Some(what) = env.reasoning.guarded(&key) {
+                    Err(fail(
+                        code!("LLT4012"),
+                        format!(
+                            "executable `{owner}` reaches {what} `{key}` directly; it runs only through its reasoner's guarded application and verifier"
+                        ),
+                    ))
+                } else if env.models.realization_functions.contains(&key) {
                     Err(boundary(format!(
                         "executable `{owner}` applies the realization function `{key}` directly; a realization runs only through its model"
                     )))
@@ -4955,7 +5017,7 @@ fn check_application(
 /// The ordinary term a checked application means: the fixed check order
 /// input invariant, precondition, run, output invariant, postcondition,
 /// returning the first refusal.
-fn expand(
+pub(super) fn expand(
     term: &SemanticTerm,
     counter: &mut usize,
     scope: &BTreeSet<String>,
@@ -5075,7 +5137,7 @@ fn expand(
     }
 }
 
-fn type_scope(declaration: &SemanticDeclaration) -> BTreeSet<String> {
+pub(super) fn type_scope(declaration: &SemanticDeclaration) -> BTreeSet<String> {
     let parameters: &[String] = match declaration {
         SemanticDeclaration::Definition {
             type_parameters, ..
@@ -5093,7 +5155,11 @@ fn type_scope(declaration: &SemanticDeclaration) -> BTreeSet<String> {
         | SemanticDeclaration::Artifact { .. }
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => &[],
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => &[],
     };
     parameters.iter().cloned().collect()
 }
@@ -5143,7 +5209,11 @@ fn lower_terms(
             | SemanticDeclaration::Artifact { .. }
             | SemanticDeclaration::Contract { .. }
             | SemanticDeclaration::Evidence { .. }
-            | SemanticDeclaration::Model { .. } => {}
+            | SemanticDeclaration::Model { .. }
+            | SemanticDeclaration::Logic { .. }
+            | SemanticDeclaration::InferenceRule { .. }
+            | SemanticDeclaration::Verifier { .. }
+            | SemanticDeclaration::Reasoner { .. } => {}
         }
         drop(terms);
         for term in &outer {
@@ -5188,7 +5258,11 @@ pub(super) fn lower_ordinary(
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => false,
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => false,
     };
     // The elaborated copy is checked admitting generated binders, so every
     // source binder is checked as source first: no source name begins with
@@ -5233,7 +5307,11 @@ pub(super) fn check_declaration(
         | SemanticDeclaration::Instance { .. }
         | SemanticDeclaration::Inductive { .. }
         | SemanticDeclaration::Definition { .. }
-        | SemanticDeclaration::Theorem { .. } => Lowering::default(),
+        | SemanticDeclaration::Theorem { .. }
+        | SemanticDeclaration::Logic { .. }
+        | SemanticDeclaration::InferenceRule { .. }
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Reasoner { .. } => Lowering::default(),
     };
     let name = declaration.name();
     for derived in &lowering.declarations {
