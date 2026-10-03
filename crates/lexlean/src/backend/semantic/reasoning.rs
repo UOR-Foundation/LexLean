@@ -253,7 +253,7 @@ impl Render<'_> {
                 conclude_accept,
                 conclude_sound,
             } => format!(
-                "by\n  intro llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
+                "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
                 reasoner = m(reasoner),
                 run = m(run),
                 answer = m(answer),
@@ -328,7 +328,7 @@ impl Render<'_> {
                 search_ok,
                 accept_sound,
             } => format!(
-                "by\n  intro llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
+                "by\n  intro llV llT llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
                 reasoner = m(reasoner),
                 run = m(run),
                 answer = m(answer),
@@ -340,7 +340,7 @@ impl Render<'_> {
                 verdict,
                 explained,
             } => format!(
-                "by\n  intro llE\n  dsimp only [{verdict}] at llE\n  generalize llHP : {reasoner} {x} = llR at llE\n  cases llR with\n  | error _ => cases llE\n  | ok llP =>\n    cases llE\n    exact And.right ({explained} _ llP.1 llP.2 llHP)\n",
+                "by\n  intro llV llE\n  dsimp only [{verdict}] at llE\n  generalize llHP : {reasoner} {x} = llR at llE\n  cases llR with\n  | error _ => cases llE\n  | ok llP =>\n    cases llE\n    exact And.right ({explained} _ llP.1 llP.2 llHP)\n",
                 reasoner = m(reasoner),
                 verdict = m(verdict),
                 explained = m(explained)

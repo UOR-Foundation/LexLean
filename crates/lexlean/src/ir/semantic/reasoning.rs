@@ -1090,6 +1090,13 @@ fn theorem(
     }
 }
 
+fn forall(name: &str, ty: &SemanticType, body: SemanticTerm) -> SemanticTerm {
+    SemanticTerm::Forall {
+        binder: parameter(name, ty),
+        body: Box::new(body),
+    }
+}
+
 fn term(statement: SemanticTerm) -> Formula {
     Formula::Term { term: statement }
 }
@@ -3439,18 +3446,22 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
     lowering.theorems.push(theorem(
         &engine.own_name("verdict_sound"),
         &[],
-        vec![parameter(x, &engine.input), parameter("__v", &r)],
-        term(implies(
-            eq(
-                engine.call_own("verdict", vec![var(x)]),
-                ok_of(&r, var("__v")),
+        vec![parameter(x, &engine.input)],
+        term(forall(
+            "__v",
+            &r,
+            implies(
+                eq(
+                    engine.call_own("verdict", vec![var(x)]),
+                    ok_of(&r, var("__v")),
+                ),
+                engine.spec(var("__v")),
             ),
-            engine.spec(var("__v")),
         )),
         unfolding(
             vec![engine.own("verdict")],
             assume(
-                &["llE"],
+                &["llV", "llE"],
                 cite(
                     &engine.own("conclude_sound"),
                     &[],
@@ -3458,7 +3469,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         given(var(x)),
                         given(saturated_state),
                         given(model::second(saturated)),
-                        given(var("__v")),
+                        hypothesis("llV"),
                         hypothesis("llE"),
                     ],
                 ),
@@ -3488,22 +3499,26 @@ fn explained_theorem(engine: &Engine<'_>, lowering: &mut Lowering, proof: Proof)
     lowering.theorems.push(theorem(
         &engine.own_name("explained"),
         &[],
-        vec![
-            parameter(x, &engine.input),
-            parameter("__v", &r),
-            parameter("__trace", &list_type(engine.step_type())),
-        ],
-        term(implies(
-            eq(
-                call(&engine.me(), &[], vec![var(x)]),
-                ok_of(&explained, pair(var("__v"), var("__trace"))),
-            ),
-            both(
-                eq(
-                    engine.call_own("answer", vec![var(x), var("__trace")]),
-                    some_of(&r, var("__v")),
+        vec![parameter(x, &engine.input)],
+        term(forall(
+            "__v",
+            &r,
+            forall(
+                "__trace",
+                &list_type(engine.step_type()),
+                implies(
+                    eq(
+                        call(&engine.me(), &[], vec![var(x)]),
+                        ok_of(&explained, pair(var("__v"), var("__trace"))),
+                    ),
+                    both(
+                        eq(
+                            engine.call_own("answer", vec![var(x), var("__trace")]),
+                            some_of(&r, var("__v")),
+                        ),
+                        engine.spec(var("__v")),
+                    ),
                 ),
-                engine.spec(var("__v")),
             ),
         )),
         proof,
@@ -4280,13 +4295,17 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
     lowering.theorems.push(theorem(
         &engine.own_name("verdict_sound"),
         &[],
-        vec![parameter(x, &engine.input), parameter("__v", &r)],
-        term(implies(
-            eq(
-                engine.call_own("verdict", vec![var(x)]),
-                ok_of(&r, var("__v")),
+        vec![parameter(x, &engine.input)],
+        term(forall(
+            "__v",
+            &r,
+            implies(
+                eq(
+                    engine.call_own("verdict", vec![var(x)]),
+                    ok_of(&r, var("__v")),
+                ),
+                engine.spec(var("__v")),
             ),
-            engine.spec(var("__v")),
         )),
         Proof::VerdictSearch {
             reasoner: engine.me(),
