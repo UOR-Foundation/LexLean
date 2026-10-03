@@ -1747,3 +1747,87 @@ id = "MD-12"
 level = "build"
 suite = "models"
 statement = "The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification."
+
+[[id]]
+id = "RS-01"
+level = "build"
+suite = "reasoning"
+statement = "Language 1.2 logic, inference_rule, verifier, and reasoner declarations and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member or strategy outside the closed schema, such as an opaque reasoner, a prompt, or a randomized or unbounded search, which fail with LLT4001."
+
+[[id]]
+id = "RS-02"
+level = "build"
+suite = "reasoning"
+statement = "A logic names a prior state relation and an optional invariant with a statement-exact preservation theorem and an optional ranking, each of exactly its state type, and an inference rule over a logic is a typed guard, conclusion, and optional binding with a candidate list whose soundness theorem states exactly that the guard implies the relation and whose progress theorem states exactly that the ranking decreases; a predicate of the wrong signature, an inexact theorem, or a rule over another logic than its reasoner's fails with LLT4010."
+
+[[id]]
+id = "RS-03"
+level = "build"
+suite = "reasoning"
+statement = "A verifier links an executable Boolean check over a subject and a candidate to a prior proposition-valued specification by statement-exact soundness and optional completeness theorems that Lean restates against the fixed reasoning semantics; an inexact statement or a verifier whose subject or candidate type differs from its reasoner's fails with LLT4010, and a false soundness theorem is refused by verification with LLV7002."
+
+[[id]]
+id = "RS-04"
+level = "build"
+suite = "reasoning"
+statement = "Every reasoner elaborates in linking to ordinary language-1.2 inductives, structures, definitions, and theorems over the existing match, if, list_fold, iterate_until, and set operations, with no reasoner primitive and no model-based semantic escape hatch, and the formal-only LexLeanReasoning runtime appears in no production closure."
+
+[[id]]
+id = "RS-05"
+level = "build"
+suite = "reasoning"
+statement = "A forward reasoner fires, at each of at most its fuel iterations, the first applicable rule in declared priority order and candidate order, re-checking the rule's guard at every application, and its verdict is the verifier-accepted answer of the final state or exactly one of the closed failures exhausted, unsolved, or rejected."
+
+[[id]]
+id = "RS-06"
+level = "build"
+suite = "reasoning"
+statement = "A search reasoner explores states breadth-first or depth-first under explicit natural-number fuel and frontier bounds, with optional deduplication over an ordered state type, and accepts only a state whose answer its verifier's check accepts; a missing or non-natural bound, a literal zero frontier, or deduplication over an unordered state fails with LLT4011, and a search cut short by a bound yields exhausted and never unsolved."
+
+[[id]]
+id = "RS-07"
+level = "build"
+suite = "reasoning"
+statement = "A terminates claim requires a ranking, a statement-exact progress theorem on every rule, an initial-invariant claim when progress assumes the invariant, and a statement-exact fuel-bound theorem, and generates a kernel-checked theorem that the forward reasoner saturates within its fuel; a claim without that evidence fails with LLT4011, and a false progress theorem for a rule that undoes another is refused by verification with LLV7002."
+
+[[id]]
+id = "RS-08"
+level = "build"
+suite = "reasoning"
+statement = "Each logic, rule, verifier, and reasoner generates fixed-template theorems over its elaboration, among them guarded-application soundness, trace replay, derivation, invariant preservation, iteration and frontier bounds, saturation, and answer soundness, whose proofs apply only the emitted, axiom-free LexLeanReasoning runtime and the declaration's own theorems; every runtime lemma and every template is used by the committed example and accepted by pinned Lean."
+
+[[id]]
+id = "RS-09"
+level = "build"
+suite = "reasoning"
+statement = "Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, otherwise failing with LLT4012, and a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does."
+
+[[id]]
+id = "RS-10"
+level = "build"
+suite = "reasoning"
+statement = "Reasoning declarations and their elaborations are part of the semantic ID and charged to max_ir_nodes; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified."
+
+[[id]]
+id = "RS-11"
+level = "build"
+suite = "reasoning"
+statement = "Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds, rule order, and ledger, and the example's rust-core and rust-std reasoning roots extract through Lean."
+
+[[id]]
+id = "RS-12"
+level = "build"
+suite = "reasoning"
+statement = "The compiler project's reasoning oracle declares exactly the clinical declarations of the reasoning example, and calculus transcriptions of its forward engine produce the oracle's verdicts on every fixture argument as the kernel decides, compile to committed rust-core and rust-std packages, and charge at least the iterations and firings of the reasoner's ledger in calculus steps."
+
+[[id]]
+id = "RS-13"
+level = "build"
+suite = "reasoning"
+statement = "GNAF requests over the forward-engine transcriptions charge rule search as execution in calculus steps and are answered over their declared plans, and a request whose search plan is charged nothing for its iterations or derives its universe from discovered candidates is refused."
+
+[[id]]
+id = "RS-14"
+level = "build"
+suite = "reasoning"
+statement = "The committed reasoning example verifies a multi-step clinical forward derivation with its invariant and termination, a deduplicating breadth-first planner, and a depth-first generate-and-verify screening over model-generated candidates, with every generated theorem kernel-checked, and planting a rule-threshold mutation in it is refused by verification."
