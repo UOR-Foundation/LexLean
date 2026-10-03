@@ -2399,6 +2399,13 @@ source/IR limits, kernel replay, and exact axiom policies remain unchanged.
 Exhausting a finite Lean budget still fails verification; the budgets do not
 assert that every resource-bounded source can be verified on every host.
 
+Semantic Lean backend revision 10 emits byte-array elements as explicit
+`UInt8.ofNat (nat_lit n)` applications, where `n` is the decoded byte in
+0..255. This avoids overloaded numeral elaboration without changing byte
+values, order, or empty arrays. Canonical LaTeX retains its decimal rendering.
+The revision changes the 1.1 and 1.2 compiler-semantics identities; existing
+locks require explicit regeneration. Language 1.0 artifacts remain unchanged.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -2871,7 +2878,7 @@ semantic IR, snapshot, proof forms, and fixed backends. A 1.1-only change
 updates that file and therefore the 1.1 compiler-semantics ID without changing
 the historical 1.0 ID.
 
-The current language-1.1 compiler-semantics ID is the §11.5 tree digest of:
+The current language-1.2 compiler-semantics ID is the §11.5 tree digest of:
 
 - every regular file under `language/`;
 - every regular file under `schemas/`;
@@ -2880,9 +2887,10 @@ The current language-1.1 compiler-semantics ID is the §11.5 tree digest of:
 
 The specification-link gate ensures these version declarations agree with this document. The digest excludes README prose, CI YAML, host binaries, timestamps, and generated build output.
 
-The released binary embeds both closed language IDs. Repository tests
-recompute the complete current input tree and the compatibility-filtered 1.0
-tree independently and compare both.
+The released binary embeds all three closed language IDs. The 1.2 identity
+uses the complete current input tree; the 1.1 identity excludes 1.2-specific
+inputs, and the 1.0 identity excludes both 1.1- and 1.2-specific inputs.
+Repository tests independently recompute the complete current input tree.
 
 ### 21.3 Source ID
 

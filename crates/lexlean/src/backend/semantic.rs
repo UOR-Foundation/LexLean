@@ -14,6 +14,7 @@ use crate::source::coverage::Origin;
 
 struct Render<'a> {
     prefix: &'a str,
+    explicit_byte_literals: bool,
 }
 
 // Semantic names are validated data, not Lean tokens. Quoting a reserved
@@ -459,7 +460,13 @@ impl Render<'_> {
                         let pair = core::str::from_utf8(pair).expect("validated byte literal");
                         u8::from_str_radix(pair, 16).expect("validated byte literal")
                     })
-                    .map(|value| value.to_string())
+                    .map(|value| {
+                        if self.explicit_byte_literals {
+                            format!("UInt8.ofNat (nat_lit {value})")
+                        } else {
+                            value.to_string()
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("ByteArray.mk #[{values}]")
@@ -1054,6 +1061,7 @@ pub fn render_lean(
 ) -> Result<Emitter, Diagnostic> {
     let render = Render {
         prefix: module_prefix,
+        explicit_byte_literals: true,
     };
     let document = &checked.document;
     let mut text = String::from("module\npublic import Init\n");
@@ -1252,6 +1260,7 @@ pub fn render_latex(
 ) -> Result<Emitter, Diagnostic> {
     let render = Render {
         prefix: module_prefix,
+        explicit_byte_literals: false,
     };
     let mut text = String::from(
         "\\documentclass[11pt]{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\section*{Semantic declarations}\n",
@@ -1304,6 +1313,44 @@ pub fn render_latex(
 
 #[cfg(test)]
 mod comment_tests {
+    #[test]
+    fn byte_literals_use_explicit_u8_construction() {
+        let render = super::Render {
+            prefix: "ByteFixture",
+            explicit_byte_literals: true,
+        };
+        for values in [
+            Vec::new(),
+            (0..=255).collect::<Vec<u8>>(),
+            vec![0, 255, 128, 0],
+        ] {
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let expected = values
+                .iter()
+                .map(|value| format!("UInt8.ofNat (nat_lit {value})"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                render.term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("ByteArray.mk #[{expected}]")
+            );
+            let document = super::Render {
+                prefix: "ByteFixture",
+                explicit_byte_literals: false,
+            };
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let decimal = values
+                .iter()
+                .map(u8::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                document.term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("ByteArray.mk #[{decimal}]")
+            );
+        }
+    }
+
     #[test]
     fn string_literals_use_the_pinned_lean_escape_grammar() {
         for code in (0..=0x1f).chain(0x7f..=0x9f) {
