@@ -826,6 +826,103 @@ and requires each to be reported; the unit tests of
 stray soundness case, a rule never written, a binding arm, and a calculus
 construct the aligner does not name.
 
+### certificate E can fail
+
+Planted: certificate E of the recursive-tree root (`examples/production-coverage`,
+`Coverage.Boundary.groveRoot`, `rust-std`) restated twice, once with the
+first `RealizesFn false` read as `RealizesFn true` (the other result shape),
+and once with the rendered function's identifier `fnIdent 18` read as
+`fnIdent 19` (another function). Command: `lean` on each restated module
+beside the environment (`conformance_sp_09` plants both in the first root of
+each project). Expected: no composition of certificates A and B proves the
+restatement.
+
+```text
+E_fall.lean:45:130: error: Type mismatch
+  hr
+has type
+  LexLeanPreservation.Rust.RealizesFn
+E_func.lean:45:25: error: Application type mismatch: The argument
+  hc
+has type
+  LexLeanPreservation.Rust.RCI RustStd.krate (LexLeanPreservation.Rust.fnIdent 18)
+```
+
+The negative fixture `certificate-e-rejected` (a lake overlay swaps the
+result shape of every certificate E) fails `lexlean verify` with `LLV7016`
+and nothing published. Removed: the restatements were deleted; every
+certificate E compiles, replays, and depends on exactly the three axioms.
+
+### boundary validators can fail
+
+Planted, in the lowered program of the recursive-tree root and with the
+certificate still derived from the source (`conformance_sp_10`): the entry
+calls the root without its first validator, and the last order-checking
+validator's `eq` arm answers true, admitting an equal key. Expected: Lean
+refuses each at the relation of the function it changed.
+
+```text
+Planted/Validation.lean:381:1236: error: Application type mismatch: The argument
+  __vrel_2 g
+Planted/Weakening.lean:352:333: error: Application type mismatch: The argument
+  rfl
+```
+
+The first lies in the declaration `entry` (function 18), the second in
+`__vrel_16`; `conformance_sp_10` requires the declaration to be the changed
+function's own. Planted, in a rendered crate (`conformance_sp_08`): the same
+entry's crate without its first validator's `if`; the aligner derives
+nothing (`function 18: no conditional form fits: a call is not rendered as a
+call; …`) and Lean rejects the unmutated derivation restated over the
+mutated crate. Planted, in the lowered program: a call of a validator from
+the root, and the entry removed while the validators remain. Expected: the
+lowering's boundary audit (`LLI9001`) refuses both.
+
+```text
+function 0 references function 2: a boundary validator runs only at the entry, because inside the program §17.12's invariants hold by construction and are proof-only
+0 entries for 16 boundary validators
+```
+
+Removed: every plant was removed; the entry and its 16 validators for the
+recursive-tree root certify in A, B, and E, and the differential's inputs
+that break an invariant are refused with `none` by the interpreter, by
+Lean's `denoteEntry`, by the declared machine, and by rustc.
+
+### the lowered-program mutations are targeted
+
+Planted (`conformance_sp_02`): a checked addition bounded as a subtraction
+(`Coverage.Prims.fixedSmall`) and the bounds of a slice exchanged
+(`Coverage.Prims.sequences`), beside the five earlier mutations. Expected:
+Lean rejects each inside `__rel_0`, the relation of the function changed, and
+`conformance_sp_02` requires the declaration of the first error to be exactly
+that relation.
+
+```text
+Planted/Overflow.lean:30:304: error: Application type mismatch: The argument
+  LexLeanPreservation.prim_checkedAdd_i8 a b
+Planted/Buffer.lean:30:3029: error: Application type mismatch: The argument
+  LexLeanPreservation.conv_value
+```
+
+Removed: the mutations were removed; all nine kinds (seven of the closure,
+two of the boundary) are planted in the coverage example in each run.
+
+### the rustc differential of the declared machine can fail
+
+Planted: `nat_lt` of the Rust runtime written as `a <= b` in
+`crates/lexlean/src/calculus/rust/runtime.rs`. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_11`. Expected: a root's
+package prints another outcome than the interpreter.
+
+```text
+thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:1716:5:
+root_3_core run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
+root_3_std run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
+```
+
+Removed: the runtime was restored; the 68 packages build and 504 runs agree,
+96 of them through a boundary entry.
+
 ### CL-11 covers every registered code's class
 
 Planted: `LLV7012` absent from the environment arm of
@@ -2737,6 +2834,14 @@ ninth calls a list, bytes, or text item's sibling for another sequence
 (`length_string` as `length_bytes`); the machine's sequence guard
 (`itemTakes`) and value typing of lists, bytes, and text make certificate B
 refuse it as well.
+`conformance_sp_09` certifies certificate E for every root in each target
+and restates the first root's two ways (the other result shape, another
+function); `conformance_sp_10` checks the boundary: every root with a map or
+set parameter has an entry, a validator is called only from the entry or from
+validators, every invalid input is refused with `none`, two mutations of the
+boundary and the planted calls above are refused; `conformance_sp_11` builds
+every certified root as a package under the pinned Rust toolchain and compares
+504 runs, 96 of them through an entry, with the interpreter's outcomes.
 `conformance_sp_05` verifies
 `examples/production` and requires every certificate, the audit output, and a
 schema-valid `preservation.json` bound by the attestation in the published
