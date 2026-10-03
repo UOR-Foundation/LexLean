@@ -487,9 +487,8 @@ pub fn audit_boundary(lowered: &Lowered) -> Result<(), String> {
         referenced(&function.body, &mut callees);
         for callee in callees {
             let admitted = match (caller, role(callee)) {
-                (Role::Validator | Role::Entry, Role::Validator) | (Role::Program, Role::Program) => {
-                    true
-                }
+                (Role::Validator | Role::Entry, Role::Validator)
+                | (Role::Program, Role::Program) => true,
                 (Role::Entry, Role::Program) => callee == 0,
                 (Role::Program, Role::Validator)
                 | (Role::Validator, Role::Program)
@@ -528,7 +527,6 @@ impl Role {
         }
     }
 }
-
 
 /// The linked modules of a checked project, as the analysis reads them.
 #[must_use]

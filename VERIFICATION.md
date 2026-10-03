@@ -12,7 +12,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 299 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 301 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
@@ -375,7 +375,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
 - recursion never marked (`if next == *name && false`), `conformance_ne_02`:
 
   ```text
-  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:428:13:
+  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:432:13:
   assertion `left == right` failed
   ```
 
@@ -383,7 +383,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
   `conformance_ne_02`:
 
   ```text
-  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:410:18:
+  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:414:18:
   the firstOr instance
   ```
 
@@ -401,7 +401,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
   record:
 
   ```text
-  thread 'conformance_ne_04' panicked at crates/conformance/src/cases/extraction.rs:834:34:
+  thread 'conformance_ne_04' panicked at crates/conformance/src/cases/extraction.rs:975:34:
   expected drift naming "the pinned extraction adapter no longer elaborates cleanly", got Rejected("the extraction record is malformed: expected value at line 1 column 1")
   ```
 
@@ -856,7 +856,7 @@ refuses what it admits.
 ```text
 (1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
 expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
-(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:382:13:
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:419:13:
 /home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
 (2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:666:18:
 a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
@@ -895,7 +895,7 @@ repo-conformance --test conformance -- conformance_tc_07`. Expected: the
 compiled rendering of `nat-arithmetic` prints a different value.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1351:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1355:17:
 assertion `left == right` failed: natArithmetic_rust_std: the Rust rendering and the denotation disagree
 ```
 
@@ -910,7 +910,7 @@ while its value stayed correct. Command: `cargo test -p repo-conformance
 `list-append-long` counts more work than the denotation charges steps.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1356:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1360:17:
 listAppendLong_rust_std: the rendering worked 1220 units for 87 steps
 ```
 
@@ -926,7 +926,7 @@ conformance -- conformance_tc_07`. Expected: `rust-core` renders a program
 whose realization requires allocation.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1271:29:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1275:29:
 binding-and-shapes: rust-core renders a program that needs the heap
 ```
 
@@ -940,7 +940,7 @@ Planted: the realization row of `primitive.map_size` was deleted from
 repo-conformance --test conformance -- conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1149:48:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1153:48:
 the realization table: "runtime construct `primitive.map_size` has no realization row"
 ```
 
@@ -954,7 +954,7 @@ Command: `cargo test -p repo-conformance --test conformance --
 conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1165:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1169:13:
 allocation disagreements: [
     "term.nil: registry true, realization false",
 ]
@@ -971,7 +971,7 @@ repo-conformance --test conformance -- conformance_tc_06`. Expected: the
 typed (primitive, width) pairs only those fixtures exercise are reported.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1219:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1223:13:
 (primitive, width) pairs no fixture exercises: [("bit_and", "u16"), ("bit_not", "u16"), ("bit_or", "u16"), ("bit_xor", "u16"), ("checked_mul", "u16"), ("checked_quot", "u16"), ("compare", "u16"), ("format_decimal", "u16"), ("parse_decimal", "u16"), ("shift_left", "u16"), ("shift_right", "u16")]
 ```
 
@@ -1036,7 +1036,7 @@ every rendering that adds naturals emits a construct with no
 target-semantics correspondence.
 
 ```text
-thread 'conformance_rb_01' (22507) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (22507) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 adt-evaluation (rust-std): the construct `call:runtime:nat_add` has no target-semantics correspondence
 ```
 
@@ -1051,14 +1051,14 @@ it. Command: `cargo test -p repo-conformance --test conformance -- conformance_r
 is `prim:nat_add`.
 
 ```text
-thread 'conformance_rb_01' (11292) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (11292) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 adt-evaluation (rust-std): the construct `call:runtime:nat_mul` does not realize `prim:nat_add`, the element it was lowered from
 ```
 
 A second plant chose the `u16` checked addition for every `u8` one:
 
 ```text
-thread 'conformance_rb_01' (12208) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (12208) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 fixed-checked-narrow (rust-std): the construct `call:runtime:checked_add` works at width Some(U16), but `prim:checked_add` is at Some(U8)
 ```
 
@@ -1073,7 +1073,7 @@ unjustified. Command: `cargo test -p repo-conformance --test conformance -- conf
 are stated nowhere are refused.
 
 ```text
-thread 'conformance_rb_01' (29092) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (29092) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 closure-captures (rust-core): the construct `enum:closures` does not realize `expr:closure`, the element it was lowered from
 ```
 
@@ -1087,7 +1087,7 @@ Planted: the package check admitted Rust keywords as exported names
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_02' (29709) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_02' (29709) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 identifier-keyword: the negative manifest packages
 ```
 
@@ -1100,7 +1100,7 @@ Planted: the package check let an export copy a parameter of any type
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_03' (30347) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_03' (30347) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 ownership-copy-list: the negative manifest packages
 ```
 
@@ -1113,7 +1113,7 @@ boundary (`Ty::Fn { .. } => false`). Command: `cargo test -p repo-conformance --
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (31065) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (31065) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-function-boundary: the negative manifest packages
 ```
 
@@ -1126,7 +1126,7 @@ Planted: the boundary check stopped at a named type
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (31880) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (31880) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-function-in-record: the negative manifest packages
 ```
 
@@ -1139,7 +1139,7 @@ inhabits (the `self.inhabited(&result)?` of `Term::Call` was deleted). Command: 
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (32579) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (32579) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-uninhabited-value: the negative manifest packages
 ```
 
@@ -1152,7 +1152,7 @@ function that can overflow (`(Errors::None, true) if false`). Command: `cargo te
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_05' (759) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_05' (759) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 arithmetic-undeclared-overflow: the negative manifest packages
 ```
 
@@ -1165,7 +1165,7 @@ Planted: the version check read each part as a `u128`, so a part above
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_07' (1325) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_07' (1325) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 version-overflow: the negative manifest packages
 ```
 
@@ -1178,7 +1178,7 @@ and the packages were regenerated. Command: `cargo test -p repo-conformance --te
 with a planted clone of a `Copy` value passes Clippy.
 
 ```text
-thread 'conformance_rb_06' (10515) panicked at crates/conformance/src/cases/rust_backend.rs:1035:13:
+thread 'conformance_rb_06' (10515) panicked at crates/conformance/src/cases/rust_backend.rs:975:13:
 the planted lint is refused
 ```
 
@@ -1229,7 +1229,7 @@ first lint or build error of each:
 The transcripts are of the form:
 
 ```text
-thread 'conformance_rb_06' (18145) panicked at crates/conformance/src/cases/rust_backend.rs:905:13:
+thread 'conformance_rb_06' (18145) panicked at crates/conformance/src/cases/rust_backend.rs:845:13:
 a package fails its lint gate:
 error: very complex type used. Consider factoring parts into `type` definitions
 ```
@@ -1245,7 +1245,7 @@ primitive differential, which runs every primitive instance on its
 boundary and seeded inputs, finds the inputs whose denotation overflows.
 
 ```text
-thread 'conformance_rb_06' (2037) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+thread 'conformance_rb_06' (2037) panicked at crates/conformance/src/cases/rust_backend.rs:902:17:
 primitives_std: the rendering and the denotation disagree on 3 of 51441 runs: ["run 38634: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38650: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38656: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}"]
 ```
 
@@ -1253,7 +1253,7 @@ A second plant computed `int_rem` as `a.checked_rem(b).unwrap_or(z)`, so
 `i64::MIN rem -1` returned the default:
 
 ```text
-thread 'conformance_rb_06' (17475) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+thread 'conformance_rb_06' (17475) panicked at crates/conformance/src/cases/rust_backend.rs:902:17:
 primitives_core: the rendering and the denotation disagree on 1 of 39092 runs: ["run 8393: {\"kind\":\"int\",\"value\":\"-9223372036854775807\"} != {\"kind\":\"int\",\"value\":\"0\"}"]
 ```
 
@@ -1273,7 +1273,7 @@ and project from records of mixed types, so the same mutations no longer
 type check and the build refuses them first:
 
 ```text
-thread 'conformance_rb_06' (3563) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+thread 'conformance_rb_06' (3563) panicked at crates/conformance/src/cases/rust_backend.rs:829:13:
 a package does not build:
 error[E0308]: arguments to this function are incorrect
 ```
@@ -1281,7 +1281,7 @@ error[E0308]: arguments to this function are incorrect
 and for the projection:
 
 ```text
-thread 'conformance_rb_06' (6453) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+thread 'conformance_rb_06' (6453) panicked at crates/conformance/src/cases/rust_backend.rs:829:13:
 a package does not build:
 error[E0614]: type `u64` cannot be dereferenced
 ```
@@ -1297,7 +1297,7 @@ package's provenance no longer records the runtime LexLean's semantics
 records.
 
 ```text
-thread 'conformance_rb_07' (28593) panicked at crates/conformance/src/cases/rust_backend.rs:1179:17:
+thread 'conformance_rb_07' (28593) panicked at crates/conformance/src/cases/rust_backend.rs:1119:17:
 assertion `left == right` failed: compiler/rust/rust-std/adt-evaluation: the runtime is the one LexLean's semantics records
 ```
 
@@ -1312,7 +1312,7 @@ processes, each run with its own working directory and environment, write
 different bytes.
 
 ```text
-thread 'conformance_rb_07' (13568) panicked at crates/conformance/src/cases/rust_backend.rs:1129:17:
+thread 'conformance_rb_07' (13568) panicked at crates/conformance/src/cases/rust_backend.rs:1069:17:
 assertion `left == right` failed: rust-core/boolean-shapes/provenance.json: the renderers of two roots disagree
 ```
 
@@ -1326,7 +1326,7 @@ Planted: the package generator wrote the zero identity as every package's
 package binds the verified build that states its program.
 
 ```text
-thread 'conformance_rb_07' (30490) panicked at crates/conformance/src/cases/rust_backend.rs:1186:46:
+thread 'conformance_rb_07' (30490) panicked at crates/conformance/src/cases/rust_backend.rs:1126:46:
 compiler/rust/rust-std/adt-evaluation: sources ["0000000000000000000000000000000000000000000000000000000000000000"] are not the semantic ID cd690f0a5afba87d8ddeebfb51773d2d833d2d9b0f897cc9c5702224d8b1994d of the verified compiler build
 ```
 
@@ -1334,7 +1334,7 @@ A second plant made the binding check accept any single source
 (`sources.len() != 1`); the forged-identity check refused it:
 
 ```text
-thread 'conformance_rb_07' (19913) panicked at crates/conformance/src/cases/rust_backend.rs:1199:69:
+thread 'conformance_rb_07' (19913) panicked at crates/conformance/src/cases/rust_backend.rs:1139:69:
 forged: ()
 ```
 
@@ -1376,7 +1376,7 @@ built (command `cargo test -p repo-conformance --test conformance --
 conformance_rb_01`):
 
 ```text
-thread 'conformance_rb_01' (10406) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (10406) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 boolean-shapes (rust-core): a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean
 ```
 

@@ -13,6 +13,7 @@ use lexlean::calculus::{self as target, realization, Outcome};
 use serde_json::Value as Json;
 
 use crate::calculus::cases;
+use crate::rust_build::{cargo_in, workspace, Built};
 use crate::rust_differential;
 use crate::rust_harness::{self, Caller, Calls};
 use crate::rust_packages::{self, Committed};
@@ -131,67 +132,6 @@ fn expected_outcome(fixture: &str) -> (Outcome, Vec<target::Value>, u64) {
         case.fixture.arguments,
         case.fixture.entry,
     )
-}
-
-fn cargo() -> String {
-    std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
-}
-
-/// A package to build: its crate name, its files, and the harness that
-/// calls its export.
-struct Built {
-    name: String,
-    files: BTreeMap<String, Vec<u8>>,
-    harness: String,
-}
-
-/// Write `packages` and one harness crate each into a workspace at `dir`.
-fn workspace(dir: &Path, packages: &[Built]) {
-    let mut members = Vec::new();
-    for Built {
-        name,
-        files,
-        harness,
-    } in packages
-    {
-        let package = dir.join("p").join(name);
-        for (path, bytes) in files {
-            let file = package.join(path);
-            std::fs::create_dir_all(file.parent().expect("parent")).expect("package directory");
-            std::fs::write(file, bytes).expect("package file");
-        }
-        let runner = dir.join("h").join(format!("run_{name}"));
-        std::fs::create_dir_all(runner.join("src")).expect("harness directory");
-        std::fs::write(
-            runner.join("Cargo.toml"),
-            format!(
-                "[package]\nname = \"run_{name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{name} = {{ path = \"../../p/{name}\" }}\n"
-            ),
-        )
-        .expect("harness manifest");
-        std::fs::write(runner.join("src/main.rs"), harness).expect("harness source");
-        members.push(format!("\"p/{name}\""));
-        members.push(format!("\"h/run_{name}\""));
-    }
-    std::fs::write(
-        dir.join("Cargo.toml"),
-        format!(
-            "[workspace]\nresolver = \"2\"\nmembers = [{}]\n",
-            members.join(", ")
-        ),
-    )
-    .expect("workspace manifest");
-}
-
-fn cargo_in(dir: &Path, arguments: &[&str]) -> std::process::Output {
-    std::process::Command::new(cargo())
-        .args(arguments)
-        .current_dir(dir)
-        .env("CARGO_TARGET_DIR", dir.join("target"))
-        .env_remove("RUSTFLAGS")
-        .env_remove("CARGO_ENCODED_RUSTFLAGS")
-        .output()
-        .expect("cargo runs")
 }
 
 fn harness_for(committed: &Committed) -> String {

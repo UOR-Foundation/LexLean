@@ -1865,7 +1865,7 @@ pub fn run(
             &rendered_certificates,
             &composed_certificates,
         )
-            .map_err(fail)?;
+        .map_err(fail)?;
         write_staged(
             staging.path(),
             &format!("process/preserve/{}.json", stage.audit.module),

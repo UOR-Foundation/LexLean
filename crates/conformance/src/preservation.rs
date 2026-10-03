@@ -29,6 +29,9 @@ pub struct Certified {
     pub certificate: Certificate,
     /// The lowered program the certificate is about.
     pub program: lexlean::calculus::Program,
+    /// The function a caller invokes: the root's entry when a parameter
+    /// carries an invariant, else the root, function 0.
+    pub entry: u64,
     /// Certificate B of the program's crate in each target.
     pub renderings: Vec<(String, Certificate)>,
     /// Certificate E, A and B composed, in each target.
@@ -142,6 +145,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                     .map(|row| row.target.clone())
                     .collect(),
                 certificate,
+                entry: lowered.entry(),
                 program: lowered.program,
                 renderings,
                 composed,
@@ -298,7 +302,10 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
         let (wave, rest): (Vec<_>, Vec<_>) = pending
             .into_iter()
             .partition(|file| imports(file).iter().all(|module| compiled.contains(module)));
-        assert!(!wave.is_empty(), "the certificates import one another in a cycle");
+        assert!(
+            !wave.is_empty(),
+            "the certificates import one another in a cycle"
+        );
         if let Some(failure) = parallel(&wave, |file| compile(file))
             .into_iter()
             .flatten()
@@ -382,14 +389,31 @@ impl CompositionMutation {
     /// `text` with this defect planted, or `None` when it does not apply.
     #[must_use]
     pub fn plant(self, text: &str) -> Option<String> {
-        let (from, to) = match self {
-            Self::Fallibility if text.contains("Rust.RealizesFn true ") => {
-                ("Rust.RealizesFn true ", "Rust.RealizesFn false ")
+        match self {
+            Self::Fallibility => {
+                let (from, to) = if text.contains("Rust.RealizesFn true ") {
+                    ("Rust.RealizesFn true ", "Rust.RealizesFn false ")
+                } else {
+                    ("Rust.RealizesFn false ", "Rust.RealizesFn true ")
+                };
+                text.contains(from).then(|| text.replacen(from, to, 1))
             }
-            Self::Fallibility => ("Rust.RealizesFn false ", "Rust.RealizesFn true "),
-            Self::Function => ("Rust.fnIdent 0)", "Rust.fnIdent 1)"),
-        };
-        text.contains(from).then(|| text.replacen(from, to, 1))
+            Self::Function => {
+                const MARK: &str = "Rust.fnIdent ";
+                let at = text.find(MARK)? + MARK.len();
+                let digits: String = text[at..]
+                    .chars()
+                    .take_while(char::is_ascii_digit)
+                    .collect();
+                let index: u64 = digits.parse().ok()?;
+                Some(format!(
+                    "{}{}{}",
+                    &text[..at],
+                    index + 1,
+                    &text[at + digits.len()..]
+                ))
+            }
+        }
     }
 }
 
@@ -549,6 +573,12 @@ pub enum Mutation {
     Recursion,
     /// The first natural literal is one larger.
     Literal,
+    /// The first checked fixed-width operation is bounded as another
+    /// operation: an addition or a multiplication as a subtraction, a
+    /// subtraction as an addition.
+    Overflow,
+    /// The first slice takes its bounds in the other order.
+    Buffer,
     /// The entry calls the root without its first validator's check
     /// (§17.17): an invariant is no longer checked at the boundary.
     Validation,
@@ -559,10 +589,12 @@ pub enum Mutation {
 
 impl Mutation {
     /// The mutations of the lowered closure.
-    pub const LOWERING: [Self; 5] = [
+    pub const LOWERING: [Self; 7] = [
         Self::Branches,
         Self::Arithmetic,
+        Self::Overflow,
         Self::Constructor,
+        Self::Buffer,
         Self::Recursion,
         Self::Literal,
     ];
@@ -575,9 +607,7 @@ impl Mutation {
 /// templates write it, `true` exactly when the order says `lt`.
 fn key_comparison(arms: &[lexlean::calculus::Arm]) -> bool {
     use lexlean::calculus::Shape;
-    let constant = |expr: &Expr, wanted: Shape| {
-        matches!(expr, Expr::Build { shape, operands, .. } if *shape == wanted && operands.is_empty())
-    };
+    let constant = |expr: &Expr, wanted: Shape| matches!(expr, Expr::Build { shape, operands, .. } if *shape == wanted && operands.is_empty());
     arms.len() == 3
         && arms[0].shape == Shape::Lt
         && constant(&arms[0].body, Shape::True)
@@ -596,7 +626,13 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
                 else_branch,
             },
         ) if matches!(**condition, Expr::Call { .. })
-            && matches!(**else_branch, Expr::Build { shape: Shape::None, .. }) =>
+            && matches!(
+                **else_branch,
+                Expr::Build {
+                    shape: Shape::None,
+                    ..
+                }
+            ) =>
         {
             let kept = (**then_branch).clone();
             *expr = kept;
@@ -609,8 +645,13 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
                 scrutinee,
                 arms,
             },
-        ) if matches!(**scrutinee, Expr::Prim { operation: Prim::Compare, .. })
-            && key_comparison(arms) =>
+        ) if matches!(
+            **scrutinee,
+            Expr::Prim {
+                operation: Prim::Compare,
+                ..
+            }
+        ) && key_comparison(arms) =>
         {
             if let Expr::Build { shape, .. } = &mut arms[1].body {
                 *shape = Shape::True;
@@ -620,6 +661,33 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
         _ => {}
     }
     let here = match (mutation, &mut *expr) {
+        (
+            Mutation::Overflow,
+            Expr::Prim {
+                operation,
+                operands: _,
+            },
+        ) => match operation {
+            Prim::CheckedAdd | Prim::CheckedMul => {
+                *operation = Prim::CheckedSub;
+                true
+            }
+            Prim::CheckedSub => {
+                *operation = Prim::CheckedAdd;
+                true
+            }
+            _ => false,
+        },
+        (
+            Mutation::Buffer,
+            Expr::Prim {
+                operation: Prim::Slice,
+                operands,
+            },
+        ) if operands.len() == 3 => {
+            operands.swap(1, 2);
+            true
+        }
         (
             Mutation::Branches,
             Expr::Cond {
@@ -746,14 +814,21 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
 /// site, if any: a boundary mutation in the entry or a validator, from the
 /// last back; any other in the closure, from the root on.
 #[must_use]
-pub fn mutate(lowered: &lexlean::production::lower::Lowered, mutation: Mutation) -> Option<Program> {
+pub fn mutate(
+    lowered: &lexlean::production::lower::Lowered,
+    mutation: Mutation,
+) -> Option<(Program, usize)> {
     use lexlean::production::lower::Origin;
     let program = &lowered.program;
     let mut mutated = program.clone();
     let boundary = Mutation::BOUNDARY.contains(&mutation);
     let count = mutated.functions.len();
     for position in 0..count {
-        let index = if boundary { count - 1 - position } else { position };
+        let index = if boundary {
+            count - 1 - position
+        } else {
+            position
+        };
         let at_boundary = matches!(
             lowered.layout.functions[index],
             Origin::Validator { .. } | Origin::Entry { .. }
@@ -762,7 +837,7 @@ pub fn mutate(lowered: &lexlean::production::lower::Lowered, mutation: Mutation)
             continue;
         }
         if mutate_expr(&mut mutated.functions[index].body, mutation, program) {
-            return Some(mutated);
+            return Some((mutated, index));
         }
     }
     None
@@ -775,9 +850,35 @@ pub struct Planted {
     pub root: String,
     /// The mutation.
     pub mutation: Mutation,
+    /// The function whose body was mutated.
+    pub function: usize,
+    /// How the lowering produced that function.
+    pub origin: lexlean::production::lower::Origin,
     /// Lean's output on the mutated certificate; empty when it was
     /// accepted, which is a failure of the certificate.
     pub rejection: String,
+    /// The certificate's declaration Lean's first error lies in, which is
+    /// what makes the failure targeted: the relation of the mutated
+    /// function, not an unrelated one.
+    pub declaration: Option<String>,
+}
+
+/// The top-level declaration of `text` that the first error of Lean's
+/// `output` lies in.
+#[must_use]
+pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    let line: usize = output.lines().find_map(|line| {
+        let (_, rest) = line.split_once(".lean:")?;
+        let (number, rest) = rest.split_once(':')?;
+        let (_, rest) = rest.split_once(": ")?;
+        rest.starts_with("error").then(|| number.parse().ok())?
+    })?;
+    text.lines()
+        .take(line)
+        .filter(|line| line.starts_with("theorem ") || line.starts_with("def "))
+        .last()
+        .and_then(|line| line.split_whitespace().nth(1))
+        .map(str::to_owned)
 }
 
 /// Plant each of `mutations` in the first root of `project` whose program
@@ -810,9 +911,10 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
         for root in &roots {
             let mut lowered = lower_root(&modules, &root.module, &root.name, root.report)
                 .expect("an eligible root lowers");
-            let Some(program) = mutate(&lowered, mutation) else {
+            let Some((program, function)) = mutate(&lowered, mutation) else {
                 continue;
             };
+            let origin = lowered.layout.functions[function].clone();
             lowered.program = program;
             let module = format!("LexLeanPreserve.Planted.{mutation:?}");
             let certificate = certificate(
@@ -831,18 +933,18 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
             std::fs::write(&path, &certificate.text).expect("write");
             let output = lean(scratch.path(), &[path.display().to_string()]);
+            let rejection = if output.status.success() {
+                String::new()
+            } else {
+                joined(&output)
+            };
             out.push(Planted {
                 root: root.report.root.clone(),
                 mutation,
-                rejection: if output.status.success() {
-                    String::new()
-                } else {
-                    format!(
-                        "{}{}",
-                        String::from_utf8_lossy(&output.stdout),
-                        String::from_utf8_lossy(&output.stderr)
-                    )
-                },
+                function,
+                origin,
+                declaration: failing_declaration(&certificate.text, &rejection),
+                rejection,
             });
             break;
         }
@@ -879,11 +981,14 @@ pub enum RustMutation {
     Recursion,
     /// The first natural literal is one larger.
     Literal,
+    /// The crate's entry calls the root without the check of its first
+    /// validator: the rendering no longer refuses an invalid input.
+    Validation,
 }
 
 impl RustMutation {
     /// Every mutation.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Branches,
         Self::Arithmetic,
         Self::Overflow,
@@ -893,6 +998,7 @@ impl RustMutation {
         Self::Buffer,
         Self::Recursion,
         Self::Literal,
+        Self::Validation,
     ];
 }
 
@@ -912,6 +1018,18 @@ fn other_width(kind: lexlean::calculus::IntKind) -> lexlean::calculus::IntKind {
     }
 }
 
+/// Whether a block ends in `None`: the refusal of an entry.
+fn refuses(block: &lexlean::calculus::rust::ast::Block) -> bool {
+    use lexlean::calculus::rust::ast::{Ctor, Expr as R};
+    matches!(
+        block.tail,
+        R::Construct {
+            ctor: Ctor::None(_),
+            ..
+        }
+    )
+}
+
 fn mutate_rust(
     expr: &mut lexlean::calculus::rust::ast::Expr,
     mutation: RustMutation,
@@ -921,6 +1039,22 @@ fn mutate_rust(
     use lexlean::calculus::rust::ast::{Callee, Ctor, Expr as R, Lit};
     use lexlean::calculus::rust::runtime::Item;
     let here = match (mutation, &mut *expr) {
+        (
+            RustMutation::Validation,
+            R::If {
+                then_branch,
+                else_branch,
+                ..
+            },
+        ) if refuses(then_branch) || refuses(else_branch) => {
+            let kept = if refuses(else_branch) {
+                then_branch.clone()
+            } else {
+                else_branch.clone()
+            };
+            *expr = R::Block(kept);
+            true
+        }
         (
             RustMutation::Branches,
             R::If {
@@ -1124,7 +1258,18 @@ pub fn mutate_crate(
         .filter(|item| matches!(item, ItemDef::Function { .. }))
         .count() as u64;
     let mut mutated = krate.clone();
-    for item in &mut mutated.items {
+    // A boundary mutation is in the entry, the crate's last function.
+    let skip = if mutation == RustMutation::Validation {
+        (functions as usize).saturating_sub(1)
+    } else {
+        0
+    };
+    for item in mutated
+        .items
+        .iter_mut()
+        .filter(|item| matches!(item, ItemDef::Function { .. }))
+        .skip(skip)
+    {
         if let ItemDef::Function { body, .. } = item {
             let planted = body
                 .lets
@@ -1153,6 +1298,9 @@ pub struct Rendering {
     pub krate: lexlean::calculus::rust::ast::Crate,
     /// Certificate B relating the two.
     pub certificate: Certificate,
+    /// Whether the program has a boundary entry (§17.17), its last
+    /// function.
+    pub entry: bool,
 }
 
 /// Every renderer fixture in every profile that renders it, each with the
@@ -1198,6 +1346,32 @@ pub fn fixture_renderings() -> Vec<Rendering> {
                 program: case.fixture.program.clone(),
                 krate,
                 certificate: certificate.into_certificate(),
+                entry: false,
+            });
+        }
+    }
+    out
+}
+
+/// The renderings of every root of `certified` that has a boundary entry,
+/// each with the certificate B the aligner derived for it.
+///
+/// # Panics
+///
+/// Panics when a profile refuses a rendering the certificate covers.
+#[must_use]
+pub fn entry_renderings(certified: &[Certified]) -> Vec<Rendering> {
+    let mut out = Vec::new();
+    for entry in certified.iter().filter(|entry| entry.entry != 0) {
+        for (target, certificate) in &entry.renderings {
+            let profile = Profile::named(target).expect("a profile");
+            out.push(Rendering {
+                fixture: entry.root.clone(),
+                target: target.clone(),
+                program: entry.program.clone(),
+                krate: lower(&entry.program, profile).expect("the program renders"),
+                certificate: certificate.clone(),
+                entry: true,
             });
         }
     }
@@ -1244,6 +1418,9 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
     let mut out = Vec::new();
     for mutation in RustMutation::ALL {
         for rendering in renderings {
+            if mutation == RustMutation::Validation && !rendering.entry {
+                continue;
+            }
             let Some(mutated) = mutate_crate(&rendering.krate, mutation) else {
                 continue;
             };
@@ -1354,5 +1531,192 @@ pub fn check_renderings(
     RenderingsChecked {
         audit_output: checked.audit_output,
         planted,
+    }
+}
+
+/// What the rustc differential established for one project.
+#[derive(Debug, Clone)]
+pub struct RustcRun {
+    /// The crates built and run: one per root and target.
+    pub crates: usize,
+    /// The runs whose printed outcome equalled the interpreter's.
+    pub runs: usize,
+    /// The runs through a boundary entry, valid and invalid inputs.
+    pub entered: usize,
+}
+
+/// Render every certified root of `project` in each of its targets as a
+/// package, build the packages with the pinned `rustc` under cargo, run
+/// each on the seeded inputs of the differential, through the root and
+/// through its entry, and compare every printed outcome with the
+/// interpreter's, which the declared machine reproduces (SP-07). That the
+/// compiler agrees with the declaration the certificates are about is
+/// build evidence, never a premise of a proof.
+///
+/// # Panics
+///
+/// Panics when a package does not build or lint, or on every run whose
+/// outcome differs.
+#[must_use]
+pub fn rustc_differential(project: &P, certified: &[Certified]) -> RustcRun {
+    use crate::rust_build::{cargo_in, workspace, Built};
+    use crate::rust_harness::{render_calls, Calls};
+    use lexlean::calculus::rust::package::{
+        package, Errors, Export, Manifest, Passing, MANIFEST_SPEC,
+    };
+    let cases = crate::differential::cases(project);
+    let dir = tempfile::Builder::new()
+        .prefix("lexlean-rustc-roots-")
+        .tempdir()
+        .expect("tempdir");
+    let mut built = Vec::new();
+    let mut expected: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        std::collections::BTreeMap::new();
+    let (mut runs, mut entered) = (0, 0);
+    for (position, entry) in certified.iter().enumerate() {
+        let fallible =
+            lexlean::calculus::rust::fallible_functions(&entry.program).expect("a valid program");
+        let functions: Vec<(u64, &str)> = std::iter::once((0, "root"))
+            .chain((entry.entry != 0).then_some((entry.entry, "entry")))
+            .collect();
+        for target in &entry.targets {
+            let profile = Profile::named(target).expect("a profile");
+            let name = format!(
+                "root_{position}_{}",
+                if profile == Profile::Core {
+                    "core"
+                } else {
+                    "std"
+                }
+            );
+            let manifest = Manifest {
+                spec: MANIFEST_SPEC.to_owned(),
+                name: name.clone(),
+                version: "1.0.0".to_owned(),
+                profile: target.clone(),
+                program: entry.program.clone(),
+                exports: functions
+                    .iter()
+                    .map(|(function, exported)| Export {
+                        function: *function,
+                        name: (*exported).to_owned(),
+                        parameters: vec![
+                            Passing::Own;
+                            entry.program.functions[*function as usize].types.len()
+                        ],
+                        errors: if fallible[*function as usize] {
+                            Errors::Overflow
+                        } else {
+                            Errors::None
+                        },
+                    })
+                    .collect(),
+                sources: Vec::new(),
+            };
+            let rendered = package(&manifest)
+                .unwrap_or_else(|reason| panic!("{} on {target}: {reason}", entry.root));
+            let owned: Vec<Vec<Passing>> = functions
+                .iter()
+                .map(|(function, _)| {
+                    vec![Passing::Own; entry.program.functions[*function as usize].types.len()]
+                })
+                .collect();
+            let arguments: Vec<Vec<Vec<Value>>> = functions
+                .iter()
+                .map(|(function, _)| {
+                    cases
+                        .get(&entry.root)
+                        .map(|cases| {
+                            cases
+                                .iter()
+                                .filter(|case| case.function == *function)
+                                .map(|case| case.values.clone())
+                                .collect()
+                        })
+                        .unwrap_or_default()
+                })
+                .collect();
+            let calls: Vec<Calls<'_>> = functions
+                .iter()
+                .enumerate()
+                .map(|(index, (function, exported))| Calls {
+                    entry: *function,
+                    function: exported,
+                    passing: &owned[index],
+                    arguments: &arguments[index],
+                })
+                .collect();
+            let harness = render_calls(&entry.program, profile, &name, &calls)
+                .unwrap_or_else(|reason| panic!("{} on {target}: {reason}", entry.root));
+            let mut outcomes = Vec::new();
+            for (function, _) in &functions {
+                for case in cases
+                    .get(&entry.root)
+                    .map_or(&[][..], Vec::as_slice)
+                    .iter()
+                    .filter(|case| case.function == *function)
+                {
+                    outcomes.push(
+                        lexlean::calculus::rust::observable(&case.outcome)
+                            .unwrap_or_else(|| panic!("{}: {:?}", entry.root, case.outcome)),
+                    );
+                    runs += 1;
+                    entered += usize::from(*function != 0);
+                }
+            }
+            expected.insert(name.clone(), outcomes);
+            built.push(Built {
+                name,
+                files: rendered.files,
+                harness,
+            });
+        }
+    }
+    workspace(dir.path(), &built);
+    let build = cargo_in(
+        dir.path(),
+        &["build", "--offline", "--workspace", "--quiet"],
+    );
+    assert!(
+        build.status.success(),
+        "a root's package does not build:\n{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let mut failures = Vec::new();
+    for (name, outcomes) in &expected {
+        let binary = dir
+            .path()
+            .join("target/debug")
+            .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
+        let ran = std::process::Command::new(&binary)
+            .output()
+            .expect("the harness runs");
+        assert!(
+            ran.status.success(),
+            "{name}: {}",
+            String::from_utf8_lossy(&ran.stderr)
+        );
+        let stdout = String::from_utf8(ran.stdout).expect("utf8");
+        let printed: Vec<serde_json::Value> = stdout
+            .lines()
+            .filter(|line| !line.starts_with("work "))
+            .map(|line| {
+                serde_json::from_str(line).unwrap_or_else(|e| panic!("{name}: {e}: {line}"))
+            })
+            .collect();
+        assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
+        for (run, (printed, expected)) in printed.iter().zip(outcomes).enumerate() {
+            if printed != expected {
+                failures.push(format!(
+                    "{name} run {run}: rustc {printed} != interpreter {expected}"
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    RustcRun {
+        crates: built.len(),
+        runs,
+        entered,
     }
 }

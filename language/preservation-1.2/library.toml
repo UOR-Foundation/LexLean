@@ -2104,6 +2104,91 @@ axioms = ["Quot.sound", "propext"]
 
 [[declaration]]
 module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.someObs"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvList"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvSet"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvMap"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvOption"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvPair"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.InvExcept"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.trueIff"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.condAnd_iff"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.invList_eqs"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validTrue_inv"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validList_inv"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascSet_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.ascMap_inv"
+axioms = ["Quot.sound", "propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validOption_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validPair_inv"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
+name = "LexLeanPreservation.validExcept_inv"
+axioms = []
+
+[[declaration]]
+module = "LexLeanPreservation.Validate"
 name = "LexLeanPreservation.Tpl.validTrueFn"
 axioms = []
 

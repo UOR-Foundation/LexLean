@@ -1,0 +1,30 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Grove}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{node}: \texttt{(Set (Nat), List (Grove), Map (String) (Int), Option (Grove), List ((Prod (Nat) (Grove))))}.\par
+\noindent Constructor \texttt{leaf}: \texttt{(Map (Nat) (Int))}.\par
+\noindent Constructor \texttt{settled}: \texttt{(Except (Nat) (Grove))}.\par
+\subsection*{\texttt{Ledger}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{entries}: \texttt{Map (String) (Int)}.\par
+\noindent Field \texttt{owner}: \texttt{String}.\par
+\subsection*{\texttt{groveTags}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(g : Grove)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match g with | Grove.node tags \_ \_ \_ \_ => (LexLeanCollections.setSize (tags) : Nat) | Grove.leaf weights => (LexLeanCollections.mapSize (weights) : Nat) | Grove.settled \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{groveRoot}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(g : Grove) (ledger : Ledger) (picks : Option (Set (Nat))) (spare : List (Map (Nat) (Bool)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Ledger) ((Prod (Option (Set (Nat))) (List (Map (Nat) (Bool))))))))}.\par
+\noindent Definition: \texttt{(groveTags (g), (ledger, (picks, spare)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

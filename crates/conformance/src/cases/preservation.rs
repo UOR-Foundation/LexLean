@@ -25,6 +25,49 @@ fn certified_projects() -> [(&'static str, P); 3] {
     ]
 }
 
+/// The failure of a planted mutation is targeted: Lean's first error lies
+/// in the relation of the function the mutation changed (or, for a
+/// function with no relation of its own, in a relation of the certificate),
+/// not in the library, the environment, or an unrelated function.
+fn assert_targeted(plant: &preservation::Planted) {
+    use lexlean::production::lower::Origin;
+    let declaration = plant.declaration.as_deref().unwrap_or_else(|| {
+        panic!(
+            "{} {:?}: no declaration:\n{}",
+            plant.root, plant.mutation, plant.rejection
+        )
+    });
+    let relation = |name: &str| {
+        name.starts_with("__rel_")
+            || name.starts_with("__vrel_")
+            || name.starts_with("__viff_")
+            || name == "entry"
+            || name == "root"
+    };
+    assert!(
+        relation(declaration),
+        "{} {:?}: the error lies in `{declaration}`, not a relation:\n{}",
+        plant.root,
+        plant.mutation,
+        plant.rejection
+    );
+    let expected = match &plant.origin {
+        Origin::Definition { .. } | Origin::Instance { .. } => {
+            Some(format!("__rel_{}", plant.function))
+        }
+        Origin::Validator { .. } => Some(format!("__vrel_{}", plant.function)),
+        Origin::Entry { .. } => Some("entry".to_owned()),
+        Origin::Lambda { .. } | Origin::Template { .. } => None,
+    };
+    if let Some(expected) = expected {
+        assert_eq!(
+            declaration, expected,
+            "{} {:?}: the error lies in the wrong declaration:\n{}",
+            plant.root, plant.mutation, plant.rejection
+        );
+    }
+}
+
 /// Certifying both projects takes minutes; the cases share one run.
 fn reports() -> &'static Vec<(&'static str, Report)> {
     static REPORTS: OnceLock<Vec<(&'static str, Report)>> = OnceLock::new();
@@ -216,6 +259,7 @@ pub fn run(id: &str) {
                     plant.root,
                     plant.mutation
                 );
+                assert_targeted(plant);
             }
         }
         // §17.17: the differential evaluator.
@@ -545,7 +589,14 @@ pub fn run(id: &str) {
             }
             // Every renderer fixture certifies in every profile that renders
             // it, from the declared rules only.
-            let renderings = preservation::fixture_renderings();
+            // The roots with a boundary entry (§17.17) are rendered too: a
+            // validator dropped from an entry's crate is a crate mutation.
+            let entries = preservation::entry_renderings(&preservation::certificates(
+                &P::copy_example("production-coverage"),
+            ));
+            assert!(!entries.is_empty(), "a coverage root has a boundary entry");
+            let mut renderings = preservation::fixture_renderings();
+            renderings.extend(entries);
             let mut used: BTreeSet<String> = BTreeSet::new();
             for rendering in &renderings {
                 used.extend(preservation::rules_used(&rendering.certificate.text));
@@ -657,6 +708,207 @@ pub fn run(id: &str) {
                 }
             }
         }
+        // §17.12, §17.17: the boundary validators and the entry.
+        "SP-10" => {
+            use lexlean::calculus::{Expr, Value};
+            use lexlean::production::lower::{audit_boundary, Origin, Validation};
+            let mut entries = BTreeSet::new();
+            let mut invalid = 0;
+            for (name, project) in certified_projects() {
+                let checked = support::checked_project(&project);
+                let modules = linked_modules(&checked);
+                let cases = crate::differential::cases(&project);
+                for root in roots(&checked).expect("the eligibility reports") {
+                    let lowered = lower_root(&modules, &root.module, &root.name, root.report)
+                        .unwrap_or_else(|d| panic!("{name}: {}: {d:?}", root.report.root));
+                    // The lowering audited it already; the audit is the
+                    // gate, so it is also run here on what it returned.
+                    audit_boundary(&lowered)
+                        .unwrap_or_else(|reason| panic!("{}: {reason}", root.report.root));
+                    let validators = lowered
+                        .layout
+                        .functions
+                        .iter()
+                        .filter(|origin| matches!(origin, Origin::Validator { .. }))
+                        .count();
+                    assert_eq!(
+                        lowered.entry() != 0,
+                        validators > 0,
+                        "{}: an entry exactly when a validator exists",
+                        root.report.root
+                    );
+                    if lowered.entry() == 0 {
+                        continue;
+                    }
+                    entries.insert(root.name.clone());
+                    // Every validated parameter is a boundary position: a
+                    // validator exists only for a type of the signature.
+                    for case in cases.get(&root.report.root).map_or(&[][..], Vec::as_slice) {
+                        if case.function == 0 {
+                            continue;
+                        }
+                        match (&case.outcome, case.invalid) {
+                            (lexlean::calculus::Outcome::Value { value, steps: _ }, true) => {
+                                assert_eq!(
+                                    *value,
+                                    Value::None,
+                                    "{}: an invalid input is refused with none",
+                                    root.report.root
+                                );
+                                invalid += 1;
+                            }
+                            (lexlean::calculus::Outcome::Value { value, steps: _ }, false) => {
+                                assert!(
+                                    matches!(value, Value::Some { .. }),
+                                    "{}: a valid input is accepted",
+                                    root.report.root
+                                );
+                            }
+                            (lexlean::calculus::Outcome::Overflow { steps: _ }, false) => {}
+                            (outcome, invalid) => {
+                                panic!("{}: {outcome:?} (invalid {invalid})", root.report.root)
+                            }
+                        }
+                    }
+                }
+            }
+            for root in ["mapOps", "setOps", "graphs", "groveRoot", "stringGraph"] {
+                assert!(entries.contains(root), "`{root}` has a boundary entry");
+            }
+            assert!(
+                !entries.contains("natOps"),
+                "a root without a map or set has none"
+            );
+            assert!(invalid >= 5, "{invalid} invalid inputs refused");
+            // The recursive tree's validators are one mutual group of
+            // structural recursions, as its encoders are, each decided by
+            // the library's proposition of its container.
+            let coverage = P::copy_example("production-coverage");
+            let certified = preservation::certificates(&coverage);
+            let grove = certified
+                .iter()
+                .find(|entry| entry.root.ends_with("groveRoot"))
+                .expect("the recursive-tree root is certified");
+            for needed in [
+                "mutual\ndef __valid_",
+                "theorem __viff_",
+                "theorem __vrel_",
+                "theorem __vinv_",
+                "LexLeanPreservation.invList_eqs",
+                "theorem entry_accepts",
+                "theorem entry_refuses",
+                "def accepts",
+            ] {
+                assert!(
+                    grove.certificate.text.contains(needed),
+                    "the recursive tree's certificate states `{needed}`"
+                );
+            }
+            // A validator called from inside the program is refused by the
+            // lowering's audit, as is an entry the validators do not match.
+            let checked = support::checked_project(&coverage);
+            let modules = linked_modules(&checked);
+            let report = roots(&checked)
+                .expect("the eligibility reports")
+                .into_iter()
+                .find(|root| root.name == "groveRoot")
+                .expect("the root");
+            let lowered = lower_root(&modules, &report.module, &report.name, report.report)
+                .expect("the root lowers");
+            let validator = lowered
+                .layout
+                .functions
+                .iter()
+                .position(|origin| matches!(origin, Origin::Validator { .. }))
+                .expect("a validator") as u64;
+            let mut inside = lowered.clone();
+            inside.program.functions[0].body = Expr::Call {
+                function: validator,
+                operands: Vec::new(),
+            };
+            let reason = audit_boundary(&inside).expect_err("a validator inside the program");
+            assert!(reason.contains("runs only at the entry"), "{reason}");
+            let mut headless = lowered.clone();
+            headless.program.functions.pop();
+            headless.layout.functions.pop();
+            let reason = audit_boundary(&headless).expect_err("validators with no entry");
+            assert!(reason.contains("0 entries"), "{reason}");
+            let mut reaching = lowered.clone();
+            let first = reaching
+                .layout
+                .functions
+                .iter()
+                .position(|origin| matches!(origin, Origin::Validator { .. }))
+                .expect("a validator");
+            reaching.program.functions[first].body = Expr::Call {
+                function: 1,
+                operands: Vec::new(),
+            };
+            let reason = audit_boundary(&reaching).expect_err("a validator reaching the program");
+            assert!(reason.contains("references function 1"), "{reason}");
+            assert!(
+                lowered.layout.functions.iter().any(|origin| matches!(
+                    origin,
+                    Origin::Validator {
+                        kind: Validation::Document { .. },
+                        ..
+                    }
+                )),
+                "a document type has a validator"
+            );
+            if !support::lean_backed("SP-10") {
+                return;
+            }
+            let planted = preservation::plant(&coverage, &Mutation::BOUNDARY);
+            let kinds: BTreeSet<Mutation> = planted.iter().map(|plant| plant.mutation).collect();
+            assert_eq!(
+                kinds,
+                Mutation::BOUNDARY.into_iter().collect(),
+                "every boundary mutation is planted in the coverage example"
+            );
+            for plant in &planted {
+                assert!(
+                    !plant.rejection.is_empty(),
+                    "{}: the certificate of a {:?} mutation was accepted",
+                    plant.root,
+                    plant.mutation
+                );
+                assert_targeted(plant);
+            }
+            for (name, report) in reports() {
+                for entry in &report.certified {
+                    if entry.entry == 0 {
+                        continue;
+                    }
+                    assert!(
+                        report.audit_output.contains(&entry.certificate.theorem),
+                        "{name}: `{}` is audited",
+                        entry.certificate.theorem
+                    );
+                }
+            }
+        }
+        // §17.16, §17.17: rustc agrees with the declared machine.
+        "SP-11" => {
+            let mut crates = 0;
+            let mut runs = 0;
+            let mut entered = 0;
+            for (name, project) in certified_projects() {
+                let certified = preservation::certificates(&project);
+                let run = preservation::rustc_differential(&project, &certified);
+                eprintln!(
+                    "SP-11: {name}: {} crates, {} runs, {} through an entry",
+                    run.crates, run.runs, run.entered
+                );
+                crates += run.crates;
+                runs += run.runs;
+                entered += run.entered;
+            }
+            assert!(
+                crates > 60 && runs > 400 && entered > 80,
+                "{crates} {runs} {entered}"
+            );
+        }
         // §17.17: certificate E.
         "SP-09" => {
             for (name, project) in certified_projects() {
@@ -675,7 +927,10 @@ pub fn run(id: &str) {
                         // E composes exactly this root's A and B.
                         for module in [&entry.certificate.module, &rendering.module] {
                             assert!(
-                                composed.text.lines().any(|line| line == format!("import {module}")),
+                                composed
+                                    .text
+                                    .lines()
+                                    .any(|line| line == format!("import {module}")),
                                 "{name}: `{}` imports `{module}`",
                                 composed.module
                             );

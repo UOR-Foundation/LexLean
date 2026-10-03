@@ -529,11 +529,9 @@ pub mod validators {
                 let body = binders.iter().zip(validators).rev().fold(
                     boolean(true),
                     |rest, (binder, validator)| match validator {
-                        Some(validator) => cond(
-                            call(*validator, vec![var(*binder)]),
-                            rest,
-                            boolean(false),
-                        ),
+                        Some(validator) => {
+                            cond(call(*validator, vec![var(*binder)]), rest, boolean(false))
+                        }
                         None => rest,
                     },
                 );

@@ -389,7 +389,10 @@ pub struct Case {
 /// the value is empty, so no order can be broken.
 fn invalidate(modules: &Modules<'_>, ty: &SemanticType, value: &Value) -> Option<Value> {
     match (ty, value) {
-        (SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ }, Value::List { items }) => {
+        (
+            SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ },
+            Value::List { items },
+        ) => {
             let first = items.first()?.clone();
             let mut items = items.clone();
             items.insert(0, first);
@@ -436,15 +439,19 @@ fn invalidate(modules: &Modules<'_>, ty: &SemanticType, value: &Value) -> Option
         ) => {
             let (_, constructors) = source_type(modules, ty).expect("a document type");
             let types = &constructors[*constructor as usize].fields;
-            types.iter().zip(fields).enumerate().find_map(|(position, (field, item))| {
-                let broken = invalidate(modules, field, item)?;
-                let mut fields = fields.clone();
-                fields[position] = broken;
-                Some(Value::Adt {
-                    constructor: *constructor,
-                    fields,
+            types
+                .iter()
+                .zip(fields)
+                .enumerate()
+                .find_map(|(position, (field, item))| {
+                    let broken = invalidate(modules, field, item)?;
+                    let mut fields = fields.clone();
+                    fields[position] = broken;
+                    Some(Value::Adt {
+                        constructor: *constructor,
+                        fields,
+                    })
                 })
-            })
         }
         _ => None,
     }

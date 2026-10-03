@@ -3992,8 +3992,10 @@ lists of entries or elements as the Lean rendering builds them. The lowered
 program is valid, already in first-binding order, byte-identical however
 often it is lowered, its closure is exactly the eligibility report's runtime
 closure, and its layout names the origin of every function and ADT. A
-disagreement is the internal error `LLI9001`. The lowering, the certificate
-generator, and their shared source reader obey §17.13's exhaustiveness
+disagreement is the internal error `LLI9001`. A root whose parameters can
+hold a map, set, or graph is lowered with a boundary (**Boundary** below)
+appended after the closure, so the root stays function 0. The lowering, the
+certificate generator, and their shared source reader obey §17.13's exhaustiveness
 audit: they name every construct and match none by default.
 
 **Statement.** The certificate of the root `r` with parameters `x₁ … xₙ` is
@@ -4034,6 +4036,63 @@ is elaborated with every definition its body calls locally irreducible
 theorem, and the elaborator never evaluates one over constant data, such as
 a model's decoded weights, while comparing two matches. The target
 program enters the proof only as the literal the kernel evaluates.
+
+**Boundary.** §17.12 states that a map is its strictly ascending entry list
+and a set its strictly ascending element list, an invariant the Lean type
+`List` does not carry: every operation preserves it and the proofs of the
+operations rely on it, but a caller of a rendered root can hand over any
+list. The lowering therefore appends, for a root with a parameter whose type
+can hold a map, set, or graph (a graph is a map from node to set), one
+*validator* per closed type that carries the invariant, and an *entry*:
+
+- a validator is a total function to `bool` of one value. A set's checks that
+  consecutive elements ascend (`less_than` on the key order), a map's that
+  consecutive keys ascend and each value is valid, a list's, option's,
+  product's, and result's that its components are valid, and a document's,
+  per constructor, that each field that carries the invariant is valid in
+  field order. A component without the invariant has the trivial validator.
+  The validators of a recursive group of document types call one another and
+  are defined by the same structural recursion as the group's encoders: one
+  validator for each type of the group and each container nested in it, in
+  one mutual block. (§17.12's positivity rule keeps a recursive occurrence out
+  of a map or set, so the containers of a group are lists, options, products,
+  and results; its maps and sets hold other types.)
+- the entry, the program's last function, takes the root's parameters,
+  calls each validator of a validated parameter in parameter order, and
+  returns `some` of the root's result when all return true and `none`
+  otherwise. A root with no such parameter has no entry and its callers
+  invoke function 0.
+- a validator is referenced only by the entry and by validators; no function
+  of the closure references one, and the entry references only validators
+  and the root. Inside the program the invariants hold by construction, as
+  the operations' proofs establish; a validator there would turn a
+  proof-only invariant into a runtime check, as would one for termination
+  evidence. `production::lower::audit_boundary` checks this of every lowered
+  program, and a violation is `LLI9001`.
+
+Certificate A states, for the root's module, each validator's definition
+`__valid_k`, the proposition `__inv_k` of §17.12 it decides (built from the
+library's `InvSet`, `InvMap`, `InvList`, `InvOption`, `InvPair`, and
+`InvExcept`), the theorem `__viff_k : __valid_k v = true ↔ __inv_k v`, and
+the relation `__vrel_k` of the program's function to `__valid_k`; a container
+outside a recursive group is related by the library's template theorem
+(`tpl_validSet`, `tpl_validMap`, `tpl_validList`, `tpl_validOption`,
+`tpl_validPair`, `tpl_validResult`) and one inside it by generated structural
+recursion with a corollary `__vinv_k` that the group's proposition is the
+library's. It then states the entry's observation `denoteEntry`, the
+conjunction `accepts` of its validated parameters' propositions, and
+
+```lean
+theorem entry (x₁ … xₙ) : RunConv P e [enc x₁, …, enc xₙ] (denoteEntry x₁ … xₙ)
+theorem entry_accepts (h : accepts x₁ … xₙ) :
+    denoteEntry x₁ … xₙ = someObs (denote x₁ … xₙ)
+theorem entry_refuses (h : ¬ accepts x₁ … xₙ) :
+    denoteEntry x₁ … xₙ = Obs.value Value.none
+```
+
+where `e` is the entry's index, so the entry's outcome is the root's
+observation as `some` exactly when §17.12's invariants hold and `none`
+exactly when they do not.
 
 **Library.** `language/preservation-1.2/library/LexLeanPreservation/` holds
 the hand-written proof library (`Core`, `Values`, `Primitives`, `Fixed`,
@@ -4181,7 +4240,20 @@ crate, `F` whether the root's Rust function returns `R<T>`, and `RCI c f
 args ro` that the machine, invoked on the Rust function `f` with `args`,
 ends in the outcome `ro`: for every source argument, the rendered root
 returns the encoded source result, `Err(Overflow)` exactly when the width
-predicate fails and the function is fallible, or the machine's abort. The
+predicate fails and the function is fallible, or the machine's abort. For a
+root with a boundary entry, the function invoked is the entry and the
+theorem is
+
+```lean
+theorem root (x₁ … xₙ) :
+    ∃ ro, RCI krate (fnIdent e) [enc x₁, …, enc xₙ] ro ∧
+      (accepts x₁ … xₙ → RealizesFn F (someObs (denote x₁ … xₙ)) ro) ∧
+      (¬ accepts x₁ … xₙ → RealizesFn F (Obs.value Value.none) ro)
+```
+
+so the rendered entry realizes the encoded source result as `some` for
+arguments that satisfy §17.12's invariants and refuses every other with
+`none`. The
 proof is the library's `compose` applied to the two theorems and to a
 generated proof that every encoded argument is well typed for the root's
 parameters, `WT (enc x) t`, written construct by construct over the
@@ -4191,30 +4263,47 @@ value. A certificate E that does not compile silently, fails its replay,
 or whose theorem's axioms are not exactly the three above is `LLV7016`.
 
 **Evidence.** The conformance suite certifies every production root of
-`examples/production` and `examples/production-coverage`, and verification
-checks both examples' certificates as part of their published sets. Together
-these roots exercise every runtime
-row of the production registry (§17.13), a type parameter through an instance
-of a generic definition: arithmetic at every width, text and bytes,
-documents, records, instances, generic and nested inductive types,
-higher-order functions with captures, structural, mutual, and well-founded
-recursion, every collection template, and every key order. It regenerates
-certificates against programs with planted mutations (branches swapped, an
-addition that subtracts, a wrong constructor, a wrong callee, a wrong
-literal) and requires Lean to reject each. It certifies every renderer
-fixture (§17.14) in every profile that renders it through certificate B, and
-plants defects in rendered crates (branches swapped, an addition that
-subtracts, a checked operation bounded as another operation, a sibling
-constructor, a byte buffer one byte longer, a wrong callee, a wrong
-literal, a checked operation at another width, a sequence item for another
-sequence): the aligner finds no
-derivation or Lean rejects the one it writes, and Lean rejects the
-unmutated derivation restated over the mutated crate. The width change is
-also refused by the renderer's correspondence check (§17.16). It runs a differential: on seeded
-inputs to every root, the calculus interpreter's outcome must equal the
-certificate's `denote` evaluated by Lean. The theorems are proofs about the
-roots they name; the generator and the suite are `build` evidence for any
-root not certified.
+`examples/production`, `examples/production-coverage`, and `examples/models`,
+and verification checks every example's certificates as part of its
+published set. Together these roots exercise every runtime row of the
+production registry (§17.13), a type parameter through an instance of a
+generic definition: arithmetic at every width, text and bytes, documents,
+records, instances, generic and nested inductive types, higher-order
+functions with captures, structural, mutual, and well-founded recursion,
+every collection template, every key order, the model constructs, and a
+recursive tree (`Grove`) whose nodes carry a set, a list of children, a map,
+an option of a child, and a list of pairs of a number and a child, whose
+leaves carry a map and whose third constructor holds a result of a child or a
+number, and whose boundary validators are one mutual group.
+
+Mutations. It plants defects after lowering, while the proof is still
+derived from the source, in the lowered program: branches swapped, an
+addition that subtracts, a checked operation bounded as another, a wrong
+constructor, a slice's bounds exchanged, a wrong callee, a wrong literal, an
+entry that omits its first validator, and a validator that admits an equal
+key; and Lean must reject each at the relation of the function it changed
+(`__rel_k` for a definition or instance `k`, `__vrel_k` for a validator,
+`entry` for the entry). It plants defects after rendering, in each crate,
+while the program is unchanged, as above and as an entry that omits its first
+validator: the aligner finds no derivation or Lean rejects the one it writes,
+and Lean rejects the unmutated derivation restated over the mutated crate;
+the width change is also refused by the renderer's correspondence check
+(§17.16). A defect in either leaves certificate E unbuildable, since it
+imports both; it also plants, in certificate E's own statement, the other
+result shape and another function, and Lean rejects both. Planting a
+validator's call inside the program, a validator that reaches the program,
+and validators with no entry are each refused by the boundary audit.
+
+Differentials. On seeded inputs to every root, and to its entry on valid
+inputs and on inputs that break an invariant, the calculus interpreter's
+outcome must equal the certificate's `denote` or `denoteEntry` evaluated by
+Lean and the declared machine's outcome on the root's crate. Every
+certified root is also rendered in each target as a package, built under the
+pinned Rust toolchain, and run on the same inputs through its root and its
+entry; each printed outcome must equal the interpreter's. That rustc agrees
+with the machine the certificates are about is `build` evidence, never a
+premise of a proof. The theorems are proofs about the roots they name; the
+generator and the suite are `build` evidence for any root not certified.
 
 ## 18. Lean backend
 
@@ -6614,7 +6703,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
 | `SP-08` | `preservation` | Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused. | §17.16, §17.17 |
-| `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, invoked on the encoded source arguments, realizes certificate A's observation of the source; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition. | §17.17 |
+| `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, or its boundary entry when it has one, invoked on the encoded source arguments, realizes certificate A's observation of the source, as `some` when the arguments satisfy the invariants §17.12 states of them and as `none` otherwise; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition. | §17.17 |
+| `SP-10` | `preservation` | A production root whose parameters can hold a map, set, or graph, directly or inside options, results, products, lists, document types, and recursive groups of them, is lowered with a generated entry function that calls the root only when the generated validators of each such parameter accept it and returns none otherwise; certificate A proves each validator decides exactly the proposition §17.12 states of its type and the entry's two outcomes; a validator is called only by the entry and by validators, so no proof-only invariant becomes a runtime check, and a validator called from inside the program is refused by the lowering; and a validator dropped from the entry, one weakened to admit an equal key, and a rendering whose entry drops a validator are each refused by Lean at the relation they change. | §17.12, §17.17 |
+| `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -6628,7 +6719,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `MD-11` | `models` | Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean. | §17.13, §17.14, §22.10 |
 | `MD-12` | `models` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. | §17.12, §28.6 |
 
-**Total required capability IDs:** 299.
+**Total required capability IDs:** 301.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

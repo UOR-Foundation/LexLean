@@ -1,3 +1,7 @@
+'Coverage.Boundary.Grove' does not depend on any axioms
+'Coverage.Boundary.Ledger' does not depend on any axioms
+'Coverage.Boundary.groveRoot' does not depend on any axioms
+'Coverage.Boundary.groveTags' does not depend on any axioms
 'Coverage.Colls.folds' does not depend on any axioms
 'Coverage.Colls.graphs' depends on axioms: [propext]
 'Coverage.Colls.iterations' does not depend on any axioms

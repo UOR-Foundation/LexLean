@@ -20,6 +20,7 @@ pub mod machine;
 pub mod meta;
 pub mod preservation;
 pub mod runner;
+pub mod rust_build;
 pub mod rust_differential;
 pub mod rust_harness;
 pub mod rust_packages;

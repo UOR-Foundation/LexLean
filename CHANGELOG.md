@@ -58,6 +58,39 @@ versions, and the entries below say what each tag does and does not claim.
   certificate B beside certificate A, records it under `renderings` in
   `preservation.json`, and refuses a rendering it cannot certify with
   `LLV7015` (negative fixture `certificate-b-rejected`).
+- Machine items are indexed by width and sequence kind (SPEC.md §17.17,
+  `SP-08`): `fixed_u8::checked_add` on two `u16` values, or `length_bytes` on
+  text, is stuck as in Rust rather than the calculus primitive's value, and
+  value typing carries a fixed-width value's width and a sequence's kind, so
+  certificate B refuses a rendering that changes either. This closed a gap the
+  first width mutation exposed.
+- Certificate E (SPEC.md §17.17, `SP-09`): certificates A and B compose into
+  `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or `.RustStd`, whose theorem
+  states that the rendered root, invoked on the encoded arguments, realizes
+  the encoded source result. The proof is the library's `compose` over a
+  generated proof that every encoded argument is well typed. `lexlean verify`
+  checks and records it beside A and B and refuses a rejected composition with
+  the new `LLV7016` (negative fixture `certificate-e-rejected`).
+- Boundary validators (SPEC.md §17.12, §17.17, `SP-10`): a root whose
+  parameters can hold a map, set, or graph, including inside options,
+  results, products, lists, document types, and recursive groups of them, is
+  lowered with generated validators and an entry that returns `none` for
+  arguments that break the strictly-ascending invariant §17.12 states and
+  the root's result as `some` otherwise. Certificate A proves each validator
+  decides exactly the library's proposition of its type (the recursive
+  group's by the same structural recursion as its encoders) and the entry's
+  two outcomes; certificate E states the rendered entry's. A validator is
+  called only by the entry and by validators, which a boundary audit in the
+  lowering enforces, so no proof-only invariant becomes a runtime check.
+  `examples/production-coverage` gains a recursive tree root (`Boundary`) with
+  such a boundary.
+- The conformance suite plants defects (SPEC.md §17.17) of nine kinds in
+  lowered programs, each refused by Lean at the relation of the function it
+  changed, and of ten kinds in rendered crates, including an entry that omits
+  its first validator; and it builds every certified root as a Rust
+  package under the pinned toolchain and compares its printed outcomes,
+  through the root and through the entry, with the interpreter's
+  (`SP-11`), as build evidence that rustc agrees with the declared machine.
 - Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
   refused every root that reached an `Init` function whose module does not
   expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,

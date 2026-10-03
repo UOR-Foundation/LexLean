@@ -442,17 +442,16 @@ fn qualify(text: &str, module_a: &str) -> String {
             .min();
         match found {
             Some((at, prefix)) => {
-                let boundary = rest[..at]
-                    .chars()
-                    .next_back()
-                    .is_none_or(|before| !(before.is_alphanumeric() || before == '_' || before == '.'));
+                let boundary = rest[..at].chars().next_back().is_none_or(|before| {
+                    !(before.is_alphanumeric() || before == '_' || before == '.')
+                });
                 out.push_str(&rest[..at]);
                 if boundary {
                     out.push_str(module_a);
                     out.push('.');
                 }
                 out.push_str(prefix);
-                rest = &rest[at + prefix.len()..];
+                rest = rest.split_at(at + prefix.len()).1;
             }
             None => {
                 out.push_str(rest);
@@ -7345,10 +7344,17 @@ impl Gen<'_> {
         let mut names = Vec::new();
         let mut arguments = Vec::new();
         let mut proofs = Vec::new();
-        for SemanticParameter { name: local, r#type } in &parameters {
+        for SemanticParameter {
+            name: local,
+            r#type,
+        } in &parameters
+        {
             let local = identifier(local);
             binders.push(format!("({local} : {})", self.ty(r#type)?));
-            arguments.push(format!("({} {local})", qualify(&self.enc(r#type)?, module_a)));
+            arguments.push(format!(
+                "({} {local})",
+                qualify(&self.enc(r#type)?, module_a)
+            ));
             proofs.push(format!("({} {local})", self.wtf(r#type, module_a)?));
             names.push(local);
         }
@@ -7403,7 +7409,10 @@ struct Stated {
 /// The components of a map, product, or result type.
 fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
     match ty {
-        SemanticType::Map { key: left, value: right }
+        SemanticType::Map {
+            key: left,
+            value: right,
+        }
         | SemanticType::Product { left, right }
         | SemanticType::Result {
             ok: left,
@@ -7524,7 +7533,9 @@ impl Gen<'_> {
             || components(graph)
                 .iter()
                 .any(|component| component.len() > 1 && component.contains(&index))
-            || graph.get(&index).is_some_and(|edges| edges.contains(&index))
+            || graph
+                .get(&index)
+                .is_some_and(|edges| edges.contains(&index))
     }
 
     /// Whether a validator is stated by the recursion of a recursive group
@@ -7622,7 +7633,8 @@ impl Gen<'_> {
         let lean = self.ty(ty)?;
         let enc = self.enc(ty)?;
         let coll = format!("{}.LexLeanCollections", self.lean_module(module)?);
-        let statements = |valid: &str, inv: &str, viff: &str, vrel: &str| Stated {
+        let statements = |valid: &str, inv: &str, viff: &str, vrel: &str| {
+            Stated {
             items: [
                 format!("def __valid_{k} : {lean} -> Bool{valid}\n\n"),
                 format!("def __inv_{k} : {lean} -> Prop{inv}\n\n"),
@@ -7634,6 +7646,7 @@ impl Gen<'_> {
                 ),
             ],
             corollary: String::new(),
+        }
         };
         let unfold = format!("by rw [__valid_{k}.eq_def, __inv_{k}.eq_def]; exact");
         let unfold_valid = format!("by rw [__valid_{k}.eq_def]; exact");
@@ -7648,7 +7661,9 @@ impl Gen<'_> {
         let var = format!("({p}.conv_var rfl)");
         let falsity = format!("(fun _ => {p}.conv_build {p}.convL_nil {p}.construct_false)");
         match (kind, recursive) {
-            (Validation::Document { fields }, _) => self.document_stated(k, ty, fields, recursive),
+            (Validation::Document { fields }, true | false) => {
+                self.document_stated(k, ty, fields, recursive)
+            }
             (Validation::Trivial, false) => Ok(statements(
                 " :=\n  fun _ => true",
                 " :=\n  fun _ => True",
@@ -7884,8 +7899,9 @@ impl Gen<'_> {
                 if types.len() != checks.len() {
                     return Err(format!("`{lean}.{constructor}`: a check per field"));
                 }
-                let binders: Vec<String> =
-                    (0..types.len()).map(|field| format!("__x{field}")).collect();
+                let binders: Vec<String> = (0..types.len())
+                    .map(|field| format!("__x{field}"))
+                    .collect();
                 let pattern = if shape.kind == "inductive" {
                     format!(
                         "{owner}.{}{}",
@@ -7898,8 +7914,11 @@ impl Gen<'_> {
                 } else {
                     format!("⟨{}⟩", binders.join(", "))
                 };
-                let terms: Vec<(String, Option<u64>)> =
-                    binders.iter().cloned().zip(checks.iter().copied()).collect();
+                let terms: Vec<(String, Option<u64>)> = binders
+                    .iter()
+                    .cloned()
+                    .zip(checks.iter().copied())
+                    .collect();
                 let [valid, inv, viff, vrel] = chain(&terms);
                 let misses = format!("{p}.convA_miss rfl (").repeat(position);
                 let closing = ")".repeat(position);
@@ -7970,11 +7989,9 @@ impl Gen<'_> {
         let mut fits = signature.fits_applied.clone();
         let mut outcome = format!("({value}.some {})", signature.value);
         let mut accepts = "True".to_owned();
-        let arguments = names
-            .iter()
-            .fold(format!("{p}.convL_nil"), |rest, _| {
-                format!("({p}.convL_cons {var} {rest})")
-            });
+        let arguments = names.iter().fold(format!("{p}.convL_nil"), |rest, _| {
+            format!("({p}.convL_cons {var} {rest})")
+        });
         let mut proof = format!(
             "{p}.conv_build ({p}.convL_cons ({p}.conv_call {arguments} (__rel_0 {applied})) {p}.convL_nil) {p}.construct_some"
         );
@@ -8005,7 +8022,7 @@ impl Gen<'_> {
             path = format!("{path}.2");
             witnesses.push(format!("(__viff_{c} {name}).mp __c{position}"));
             let indent = "  ".repeat(position + 1);
-            let lead = if position == 0 { "  " } else { "" };
+            let lead = "  ".repeat(usize::from(position == 0));
             refusal.push_str(&format!(
                 "{lead}cases __c{position} : __valid_{c} {name}\n{indent}· simp\n{indent}· "
             ));
