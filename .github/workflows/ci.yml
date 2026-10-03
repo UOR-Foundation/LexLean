@@ -15,11 +15,17 @@
 # whose contents may change after review, which R6 does not allow for the
 # code in the crate and should not allow for the code that gates it.
 name: ci
+run-name: ${{ inputs.write_example_evidence && 'Review-only example writer' || 'LexLean CI' }} · ${{ github.sha }}
 
 on:
   push: { branches: [main] }
   pull_request:
   workflow_dispatch:
+    inputs:
+      write_example_evidence:
+        description: Generate review-only example verification records, not acceptance
+        type: boolean
+        default: false
 
 # Read-only: nothing in this workflow writes to the repository or publishes a
 # package. The acceptance log is retained as CI evidence; `release.yml` asks
@@ -28,7 +34,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ inputs.write_example_evidence && 'example-writer' || 'ci' }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -39,8 +45,51 @@ env:
   CARGO_INCREMENTAL: "0"
 
 jobs:
+  write-example-evidence:
+    name: Generate review-only example verification records
+    if: github.event_name == 'workflow_dispatch' && inputs.write_example_evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for native Atlas
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+      - name: Execute the unchanged complete verification writer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          cargo xtask verify-examples --write 2>&1 | tee ci-evidence/example-writer.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: review-only-example-verification
+          path: |
+            examples/*/expected/verify/
+            compiler/expected/verify/
+            ci-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
   vv:
-    name: just vv
+    name: ${{ inputs.write_example_evidence && 'Maintenance does not run acceptance' || 'just vv' }}
+    if: github.event_name != 'workflow_dispatch' || !inputs.write_example_evidence
     runs-on: ubuntu-24.04
     # Native Atlas elaboration, per-module kernel replay, and per-module axiom
     # audit are intentionally the long pole. GitHub-hosted jobs permit six
@@ -111,7 +160,8 @@ jobs:
   # reports which ones it skipped; on Linux x86-64 the same gate makes the
   # toolchain mandatory, so nothing passes vacuously where it matters.
   host-matrix:
-    name: build and non-Lean tests (${{ matrix.target }})
+    name: ${{ inputs.write_example_evidence && 'Maintenance does not qualify host' || 'build and non-Lean tests' }} (${{ matrix.target }})
+    if: github.event_name != 'workflow_dispatch' || !inputs.write_example_evidence
     strategy:
       fail-fast: false
       matrix:
