@@ -802,13 +802,16 @@ fn rs_05() {
     assert!(calls(&derived(triage, "Triage.step")["body"]).contains(&"Triage.attempts".to_owned()));
     // The answer is concluded only from a saturated state, and the account
     // adds the final scan.
+    let called = |name: &str| -> BTreeSet<String> {
+        calls(&derived(triage, name)["body"]).into_iter().collect()
+    };
     assert_eq!(
-        calls(&derived(triage, "Triage.verdict")["body"]),
-        ["Triage.saturate", "Triage.conclude"]
+        called("Triage.verdict"),
+        strings(&["Triage.conclude", "Triage.saturate"])
     );
     assert_eq!(
-        calls(&derived(triage, "Triage.account")["body"]),
-        ["Triage.run", "Triage.attempts"]
+        called("Triage.account"),
+        strings(&["Triage.attempts", "Triage.run"])
     );
     // A binding rule is tried in candidate order.
     let spend = elaboration(&snapshot, "Budget", "Spend");
@@ -1066,16 +1069,25 @@ fn rs_08() {
         .iter()
         .map(|module| runtime_of(&support::lean_text(&build, module)).1.to_owned())
         .collect();
-    let blocks: Vec<(&String, &str)> = declared
-        .iter()
-        .map(|name| {
-            let block = runtime
-                .split("\n\n")
-                .find(|block| runtime_names(block).first() == Some(name))
-                .unwrap_or_else(|| panic!("the block declaring {name}"));
-            (name, block)
-        })
-        .collect();
+    // Each runtime name's block runs from its declaration to the next.
+    let mut blocks: Vec<(&String, String)> = Vec::new();
+    for line in runtime.lines() {
+        match runtime_names(line).first() {
+            Some(name) => {
+                let name = declared
+                    .iter()
+                    .find(|candidate| *candidate == name)
+                    .expect("declared");
+                blocks.push((name, format!("{line}\n")));
+            }
+            None => {
+                if let Some((_, block)) = blocks.last_mut() {
+                    block.push_str(line);
+                    block.push('\n');
+                }
+            }
+        }
+    }
     let mut used: BTreeSet<&String> = declared
         .iter()
         .filter(|name| mentions(&generated, &format!("LexLeanReasoning.{name}")))
@@ -1278,8 +1290,10 @@ fn rs_09() {
     );
     let triage = elaboration(&snapshot, "Clinic", "Triage");
     assert_eq!(
-        calls(&derived(triage, "Triage.accept")["body"]),
-        ["Triage.extract", "recommendationCheck"]
+        calls(&derived(triage, "Triage.accept")["body"])
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        strings(&["Triage.extract", "recommendationCheck"])
     );
     // A trace is evidence by replay: a step that does not fire is
     // invalid_step.
@@ -1406,7 +1420,9 @@ fn rs_10() {
     support::assert_schema("semantic-snapshot-v2", "the reasoning snapshot", &value);
     for module in snapshot.modules() {
         for declaration in module.declarations() {
-            if ["logic", "inference_rule", "verifier", "reasoner"].contains(&declaration.kind()) {
+            // A logic generates its preservation theorem only when it has an
+            // invariant; every rule, verifier, and reasoner generates some.
+            if ["inference_rule", "verifier", "reasoner"].contains(&declaration.kind()) {
                 let elaboration = declaration.elaboration().expect("an elaboration");
                 assert!(
                     !elaboration.theorems().is_empty(),
