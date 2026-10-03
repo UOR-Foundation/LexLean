@@ -31,10 +31,13 @@ pub const LIBRARY_DIR: &str = "language/preservation-1.2/library";
 /// byte-equal to the compiler project's golden modules (§17.14).
 pub const MODULES_DIR: &str = "language/preservation-1.2/modules";
 
-/// The calculus modules a certificate imports, in dependency order.
-pub const TARGET_MODULES: [&str; 2] = [
+/// The calculus and Rust machine modules a certificate imports, in
+/// dependency order.
+pub const TARGET_MODULES: [&str; 4] = [
     "LexLeanTarget.TargetSyntax",
     "LexLeanTarget.TargetSemantics",
+    "LexLeanTarget.RustSyntax",
+    "LexLeanTarget.RustSemantics",
 ];
 
 /// Module roots the preservation environment owns. A project whose module

@@ -12,7 +12,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 284 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 285 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
@@ -2272,7 +2272,16 @@ calculus modules with the compiler golden, and refuses planted `sorry`,
 `axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
 import. Each theorem is a kernel-checked proof about the root it names; the
 generator, the library's coverage of constructs, and the coverage example are `build`
-evidence for roots not certified. `conformance_sp_05` verifies
+evidence for roots not certified. `conformance_sp_07` checks the declared Rust machine: the generated
+`RustSyntax` and `RustSemantics` sources equal their generator
+(`crates/conformance/src/rust_source.rs`), their shipped copies equal the
+compiler golden (which `cargo xtask verify-examples` reverifies with exact
+axioms), the machine declares exactly the renderer's runtime items with the
+renderer's failure and heap classes, and every certified root's crate, in
+every target it is eligible for, prints to a `RustSyntax` term that the
+pinned Lean elaborates and evaluates on the differential's seeded inputs,
+each outcome equal to the calculus interpreter's on the lowered program.
+`conformance_sp_05` verifies
 `examples/production` and requires every certificate, the audit output, and a
 schema-valid `preservation.json` bound by the attestation in the published
 set; the negative fixtures `certificate-rejected` (a lake overlay turns the

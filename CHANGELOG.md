@@ -37,6 +37,14 @@ versions, and the entries below say what each tag does and does not claim.
   3, `conformance_cl_11` asserts every registered code's class and exit code
   against `model/errors.toml`, and the `extraction-authority-drift` fixture
   expects exit 3.
+- The declared Rust machine (SPEC.md §17.17, `SP-07`): the meaning of a
+  rendered crate is stated by the generated, kernel-checked LexLean modules
+  `RustSyntax` (the closed Rust AST) and `RustSemantics` (its evaluator over
+  calculus values, `?` as a raise out of the function, each runtime item as
+  the calculus primitive it realizes, and the machine's abort on an
+  unrealizable sequence length), shipped beside the calculus modules. Every
+  certified root's crate prints to a Lean term (`production::rust_term`) that
+  the machine evaluates in agreement with the calculus interpreter.
 - Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
   refused every root that reached an `Init` function whose module does not
   expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,

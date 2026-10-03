@@ -363,6 +363,9 @@ pub struct Case {
     pub root: String,
     /// The Lean terms of the inputs.
     pub arguments: Vec<String>,
+    /// The inputs as calculus values, which the lowered program and its
+    /// crates receive.
+    pub values: Vec<Value>,
     /// The interpreter's outcome.
     pub outcome: Outcome,
 }
@@ -400,6 +403,7 @@ pub fn cases(project: &P) -> BTreeMap<String, Vec<Case>> {
                     .zip(&values)
                     .map(|(parameter, value)| lean_term(&modules, &parameter.r#type, value))
                     .collect(),
+                values,
                 outcome,
             });
         }

@@ -43,3 +43,9 @@ Feature: preservation
     When the constructs the roots realize are collected, with a type parameter counted where a generic definition is instantiated
     Then every runtime row is exercised by some certified root
     And with the coverage example's collection roots withheld, their constructs are reported as unexercised
+
+  @SP-07 @build
+  Scenario: The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax.
+    Given the generated RustSyntax and RustSemantics modules, the runtime item table, and the crate of every certified root
+    When the compiler project is verified, the shipped copies are compared with its golden, the item classes with the renderer, and each crate term is elaborated
+    Then the modules verify with exact axioms, the copies and classes agree, and every crate term elaborates

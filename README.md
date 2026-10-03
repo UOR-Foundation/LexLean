@@ -135,7 +135,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 284 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 285 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 `just vv` is the Linux x86-64 gate. On the other four supported hosts (§8.3) the crate builds and every test runs. A case whose assertions need something the host does not have runs its platform-independent assertions and prints which ones it skipped: the pinned toolchain, a `#!/bin/sh` program for the external-provider cases, a filesystem that distinguishes two names differing only in case, or one that accepts a name that is not valid UTF-8. Each is detected at run time rather than assumed from the target triple, and on Linux x86-64 the toolchain gate is mandatory, so nothing there passes vacuously.
 

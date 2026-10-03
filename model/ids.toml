@@ -1711,3 +1711,9 @@ id = "SP-06"
 level = "build"
 suite = "preservation"
 statement = "The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported."
+
+[[id]]
+id = "SP-07"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax."

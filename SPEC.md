@@ -3687,6 +3687,34 @@ each certificate under `preserve/`, the audit output, process records, and
 theorem axioms, and per root its targets, certificate module, theorem, and
 the certificate's byte length and SHA-256, which the attestation binds.
 
+**Rust machine.** The meaning of a rendered crate (§17.16) is declared by two
+generated LexLean modules of the `compiler` project, verified and shipped
+like the calculus modules (`language/preservation-1.2/modules/`):
+`RustSyntax` states every construct of the closed Rust AST, without origins,
+and `RustSemantics` its evaluator. The machine's values are the calculus's
+(§17.14): a `u64` is a `nat` below `2^64`, an `i64` an `int` in range, a fixed
+width its scalar, `Str`, `Bytes`, and `List` the string, bytes, and list, an
+`Rc` or a box the value it holds, an ADT variant the ADT value of the same
+constructor, and a defunctionalized closure the calculus closure of the same
+function and captures. A move, clone, copy, dereference, or unboxing reads
+the binding; a block binds its lets in order; a match takes the first arm
+whose pattern matches; `?` on `Err` raises out of the function, which returns
+`Err(Overflow)` exactly when its result type is `R<T>`; an application
+dispatches through the `apply` arm of the closure's function and capture
+count. Every runtime item (`rust::runtime::Item`) is declared as the calculus
+primitive it realizes on the same operands (the successor as `nat_add` with
+one), fallible exactly when the renderer types it `R<T>`, and present in
+`rust-core` only when it needs no heap; an overflow of an item that cannot
+fail is the machine's *abort*, which no machine can avoid: the only such
+overflow is the length of a sequence of `2^64` or more elements. An operand
+of another width than an item's is a Rust type error the renderer's checks
+refuse, so the machine states nothing about it. Every certified root's crate
+prints to a `RustSyntax` term (`production::rust_term`, audited for default
+arms) that Lean elaborates and the machine evaluates; on the seeded inputs of
+the differential, its outcome equals the calculus interpreter's on the
+lowered program. That rustc agrees with this declaration is `build`
+evidence, measured by the conformance suite, never assumed by a proof.
+
 **Evidence.** The conformance suite certifies every production root of
 `examples/production` and `examples/production-coverage`, and verification
 checks both examples' certificates as part of their published sets. Together
@@ -6048,8 +6076,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-04` | `preservation` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
 | `SP-06` | `preservation` | The certified roots of examples/production and examples/production-coverage together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
+| `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
 
-**Total required capability IDs:** 284.
+**Total required capability IDs:** 285.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

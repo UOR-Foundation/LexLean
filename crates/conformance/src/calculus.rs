@@ -3512,6 +3512,7 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     // change to committed bytes.
     out.extend(crate::rust_packages::files());
     out.extend(crate::calculus_source::files());
+    out.extend(crate::rust_source::files());
     out
 }
 

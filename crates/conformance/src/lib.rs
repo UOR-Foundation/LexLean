@@ -16,12 +16,14 @@ pub mod fixtures;
 pub mod gnaf;
 pub mod gnaf_model;
 mod lx;
+pub mod machine;
 pub mod meta;
 pub mod preservation;
 pub mod runner;
 pub mod rust_differential;
 pub mod rust_harness;
 pub mod rust_packages;
+pub mod rust_source;
 pub mod schema;
 
 pub mod support;

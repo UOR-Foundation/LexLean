@@ -389,6 +389,79 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.16, §17.17: the declared Rust machine.
+        "SP-07" => {
+            for (path, bytes) in crate::rust_source::files() {
+                let committed =
+                    std::fs::read(repo_root().join(&path).as_std_path()).expect("a source");
+                assert_eq!(committed, bytes, "{path} equals its generator");
+            }
+            assert_eq!(
+                crate::calculus::shipped_modules(repo_root().as_std_path(), false)
+                    .expect("the shipped modules equal the compiler golden"),
+                preserve::TARGET_MODULES.len()
+            );
+            assert!(preserve::TARGET_MODULES.contains(&"LexLeanTarget.RustSemantics"));
+            // The machine declares exactly the renderer's runtime items, with
+            // the renderer's failure and heap classes; a width is the
+            // constructor's argument.
+            let declared = crate::rust_source::item_constructors();
+            let mut named: Vec<&str> = Vec::new();
+            for item in lexlean::calculus::rust::runtime::Item::all() {
+                let term = lexlean::production::rust_term::item(item);
+                let spelled = term
+                    .trim_start_matches('(')
+                    .trim_start_matches('.')
+                    .split(' ')
+                    .next()
+                    .expect("a constructor");
+                let (name, fields) = declared
+                    .iter()
+                    .find(|(name, _)| *name == spelled)
+                    .unwrap_or_else(|| panic!("{item:?} (`{term}`) is declared"));
+                assert_eq!(fields.len(), usize::from(term.starts_with('(')), "{name}");
+                assert_eq!(
+                    crate::rust_source::item_classes(name),
+                    Some((item.fallible(), item.heap())),
+                    "{name}: the machine's classes equal the renderer's"
+                );
+                if !named.contains(name) {
+                    named.push(name);
+                }
+            }
+            let mut order: Vec<&str> = declared.iter().map(|(name, _)| *name).collect();
+            named.sort_unstable();
+            order.sort_unstable();
+            assert_eq!(
+                named, order,
+                "the machine declares exactly the renderer's items"
+            );
+            // A drifted class is reported.
+            assert_ne!(
+                crate::rust_source::item_classes("natSub"),
+                Some((true, false)),
+                "natSub cannot fail"
+            );
+            if !support::lean_backed("SP-07") {
+                return;
+            }
+            for (name, report) in reports() {
+                let targets: usize = report
+                    .certified
+                    .iter()
+                    .map(|entry| entry.targets.len())
+                    .sum();
+                assert_eq!(
+                    report.crates.len(),
+                    targets,
+                    "{name}: one crate per root and target"
+                );
+                assert!(
+                    report.machine > 0,
+                    "{name}: the machine evaluated the cases"
+                );
+            }
+        }
         // §17.13, §17.17: the certified examples exercise the registry.
         "SP-06" => {
             let mut held = Vec::new();

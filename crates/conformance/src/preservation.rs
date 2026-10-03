@@ -24,6 +24,8 @@ pub struct Certified {
     pub targets: Vec<String>,
     /// The certificate.
     pub certificate: Certificate,
+    /// The lowered program the certificate is about.
+    pub program: lexlean::calculus::Program,
 }
 
 /// The certificates of every production root of `project`, in root order.
@@ -70,6 +72,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                     .map(|row| row.target.clone())
                     .collect(),
                 certificate,
+                program: lowered.program,
             }
         })
         .collect()
@@ -221,6 +224,11 @@ pub struct Report {
     pub differential_output: String,
     /// Each certificate's module, observation, and cases.
     pub denotes: Vec<(String, String, Vec<crate::differential::Case>)>,
+    /// The crates of every root in every target it is eligible for.
+    pub crates: Vec<crate::machine::Rendered>,
+    /// The cases on which the declared Rust machine, evaluating each crate,
+    /// agreed with the interpreter.
+    pub machine: usize,
 }
 
 /// Certify every production root of `project` end to end, then run the
@@ -274,12 +282,29 @@ pub fn certify(project: &P, name: &str) -> Report {
     );
     let differential = crate::differential::compare(&text, &denotes)
         .unwrap_or_else(|failures| panic!("{name}: differential:\n{failures}"));
+    let crates = crate::machine::crates(&certified);
+    let path = scratch.path().join("src/LexLeanPreserve/Machine.lean");
+    std::fs::write(&path, crate::machine::module(&crates, &cases)).expect("write");
+    let output = lean(scratch.path(), &[path.display().to_string()]);
+    let machine_text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        output.status.success(),
+        "{name}: the machine module was rejected:\n{machine_text}"
+    );
+    let machine = crate::machine::compare(&machine_text, &crates, &cases)
+        .unwrap_or_else(|failures| panic!("{name}: machine:\n{failures}"));
     Report {
         certified,
         differential,
         audit_output: checked.audit_output,
         differential_output: text,
         denotes,
+        crates,
+        machine,
     }
 }
 

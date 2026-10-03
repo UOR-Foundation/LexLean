@@ -620,7 +620,12 @@ fn bytes_literal(hex: &str) -> Result<String, String> {
     Ok(format!("ByteArray.mk #[{}]", values.join(", ")))
 }
 
-fn render_value(value: &Value) -> Result<String, String> {
+/// A calculus value as a `TargetSyntax.Value` term.
+///
+/// # Errors
+///
+/// Returns the reason a byte literal is malformed.
+pub fn render_value(value: &Value) -> Result<String, String> {
     Ok(match value {
         Value::Unit => ".unit".to_owned(),
         Value::Bool { value } => format!("(.bool {value})"),
@@ -857,8 +862,12 @@ fn render_expr(expr: &Expr) -> Result<String, String> {
     })
 }
 
-/// The program as a Lean term of type `Program`.
-fn render_program(program: &Program) -> Result<String, String> {
+/// A program as a `TargetSyntax.Program` term.
+///
+/// # Errors
+///
+/// Returns the reason a literal is malformed.
+pub fn render_program(program: &Program) -> Result<String, String> {
     let mut out = String::from("{ adts := [");
     for (index, adt) in program.adts.iter().enumerate() {
         if index > 0 {

@@ -1,0 +1,407 @@
+module
+public import Init
+public import LexLeanTarget.RustSyntax
+public import LexLeanTarget.TargetSemantics
+public import LexLeanTarget.TargetSyntax
+set_option autoImplicit false
+set_option maxRecDepth 100000
+set_option maxHeartbeats 1000000000
+namespace LexLeanTarget.RustSemantics
+
+namespace LexLeanRuntime
+
+public class ToMathInt (α : Type) where
+  toInt : α -> Int
+
+public class Fixed (α : Type) extends ToMathInt α where
+  fromInt : Int -> α
+  minimum : Int
+  maximum : Int
+  bitAnd : α -> α -> α
+  bitOr : α -> α -> α
+  bitXor : α -> α -> α
+  bitNot : α -> α
+  shiftLeft : α -> UInt32 -> Option α
+  shiftRight : α -> UInt32 -> Option α
+
+public instance : ToMathInt Int where toInt := fun value => value
+
+public instance : Fixed Int8 where
+  toInt := Int8.toInt
+  fromInt := Int8.ofInt
+  minimum := -128
+  maximum := 127
+  bitAnd := Int8.land
+  bitOr := Int8.lor
+  bitXor := Int8.xor
+  bitNot := Int8.complement
+  shiftLeft := fun value amount => if amount.toNat < 8 then some (Int8.shiftLeft value (Int8.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 8 then some (Int8.shiftRight value (Int8.ofNat amount.toNat)) else none
+
+public instance : Fixed Int16 where
+  toInt := Int16.toInt
+  fromInt := Int16.ofInt
+  minimum := -32768
+  maximum := 32767
+  bitAnd := Int16.land
+  bitOr := Int16.lor
+  bitXor := Int16.xor
+  bitNot := Int16.complement
+  shiftLeft := fun value amount => if amount.toNat < 16 then some (Int16.shiftLeft value (Int16.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 16 then some (Int16.shiftRight value (Int16.ofNat amount.toNat)) else none
+
+public instance : Fixed Int32 where
+  toInt := Int32.toInt
+  fromInt := Int32.ofInt
+  minimum := -2147483648
+  maximum := 2147483647
+  bitAnd := Int32.land
+  bitOr := Int32.lor
+  bitXor := Int32.xor
+  bitNot := Int32.complement
+  shiftLeft := fun value amount => if amount.toNat < 32 then some (Int32.shiftLeft value (Int32.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 32 then some (Int32.shiftRight value (Int32.ofNat amount.toNat)) else none
+
+public instance : Fixed Int64 where
+  toInt := Int64.toInt
+  fromInt := Int64.ofInt
+  minimum := -9223372036854775808
+  maximum := 9223372036854775807
+  bitAnd := Int64.land
+  bitOr := Int64.lor
+  bitXor := Int64.xor
+  bitNot := Int64.complement
+  shiftLeft := fun value amount => if amount.toNat < 64 then some (Int64.shiftLeft value (Int64.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 64 then some (Int64.shiftRight value (Int64.ofNat amount.toNat)) else none
+
+public instance : Fixed UInt8 where
+  toInt := fun value => Int.ofNat value.toNat
+  fromInt := UInt8.ofInt
+  minimum := 0
+  maximum := 255
+  bitAnd := UInt8.land
+  bitOr := UInt8.lor
+  bitXor := UInt8.xor
+  bitNot := UInt8.complement
+  shiftLeft := fun value amount => if amount.toNat < 8 then some (UInt8.shiftLeft value (UInt8.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 8 then some (UInt8.shiftRight value (UInt8.ofNat amount.toNat)) else none
+
+public instance : Fixed UInt16 where
+  toInt := fun value => Int.ofNat value.toNat
+  fromInt := UInt16.ofInt
+  minimum := 0
+  maximum := 65535
+  bitAnd := UInt16.land
+  bitOr := UInt16.lor
+  bitXor := UInt16.xor
+  bitNot := UInt16.complement
+  shiftLeft := fun value amount => if amount.toNat < 16 then some (UInt16.shiftLeft value (UInt16.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 16 then some (UInt16.shiftRight value (UInt16.ofNat amount.toNat)) else none
+
+public instance : Fixed UInt32 where
+  toInt := fun value => Int.ofNat value.toNat
+  fromInt := UInt32.ofInt
+  minimum := 0
+  maximum := 4294967295
+  bitAnd := UInt32.land
+  bitOr := UInt32.lor
+  bitXor := UInt32.xor
+  bitNot := UInt32.complement
+  shiftLeft := fun value amount => if amount.toNat < 32 then some (UInt32.shiftLeft value amount) else none
+  shiftRight := fun value amount => if amount.toNat < 32 then some (UInt32.shiftRight value amount) else none
+
+public instance : Fixed UInt64 where
+  toInt := fun value => Int.ofNat value.toNat
+  fromInt := UInt64.ofInt
+  minimum := 0
+  maximum := 18446744073709551615
+  bitAnd := UInt64.land
+  bitOr := UInt64.lor
+  bitXor := UInt64.xor
+  bitNot := UInt64.complement
+  shiftLeft := fun value amount => if amount.toNat < 64 then some (UInt64.shiftLeft value (UInt64.ofNat amount.toNat)) else none
+  shiftRight := fun value amount => if amount.toNat < 64 then some (UInt64.shiftRight value (UInt64.ofNat amount.toNat)) else none
+
+@[expose] public def checkedFromInt {α : Type} [Fixed α] (value : Int) : Option α :=
+  if value < Fixed.minimum (α := α) then none else if Fixed.maximum (α := α) < value then none else some (Fixed.fromInt value)
+
+@[expose] public def checkedConvert {α β : Type} [ToMathInt α] [Fixed β] (value : α) : Option β :=
+  checkedFromInt (ToMathInt.toInt value)
+
+@[expose] public def checkedAdd {α : Type} [Fixed α] (left right : α) : Option α :=
+  checkedFromInt (ToMathInt.toInt left + ToMathInt.toInt right)
+
+@[expose] public def checkedSubtract {α : Type} [Fixed α] (left right : α) : Option α :=
+  checkedFromInt (ToMathInt.toInt left - ToMathInt.toInt right)
+
+@[expose] public def checkedMultiply {α : Type} [Fixed α] (left right : α) : Option α :=
+  checkedFromInt (ToMathInt.toInt left * ToMathInt.toInt right)
+
+@[expose] public def checkedNegate {α : Type} [Fixed α] (value : α) : Option α :=
+  checkedFromInt (-ToMathInt.toInt value)
+
+@[expose] public def checkedQuotient {α : Type} [Fixed α] (left right : α) : Option α :=
+  if ToMathInt.toInt right = 0 then none else checkedFromInt (Int.tdiv (ToMathInt.toInt left) (ToMathInt.toInt right))
+
+@[expose] public def checkedAddInt64 (left right : Int64) : Option Int64 :=
+  let value := left + right
+  if (0 < right && value < left) || (right < 0 && left < value) then none else some value
+
+@[expose] public def checkedSubtractInt64 (left right : Int64) : Option Int64 :=
+  let value := left - right
+  if (0 < right && left < value) || (right < 0 && value < left) then none else some value
+
+@[expose] public def checkedNegateInt64 (value : Int64) : Option Int64 :=
+  if value == (-9223372036854775808 : Int64) then none else some (-value)
+
+@[expose] public def magnitudeInt64 (value : Int64) : UInt64 :=
+  let bits := value.toUInt64
+  if value < 0 then 0 - bits else bits
+
+@[expose] public def signedMagnitudeInt64 (negative : Bool) (value : UInt64) : Int64 :=
+  (if negative then 0 - value else value).toInt64
+
+@[expose] public def divideMagnitudeInt64 : Nat -> UInt64 -> UInt64 -> UInt64 -> UInt64 -> UInt64
+  | 0, _, _, _, quotient => quotient
+  | Nat.succ fuel, source, divisor, remainder, quotient =>
+      let high := 9223372036854775808 <= source
+      let source := source + source
+      let remainder := remainder + remainder + if high then 1 else 0
+      let quotient := quotient + quotient
+      if divisor <= remainder then
+        divideMagnitudeInt64 fuel source divisor (remainder - divisor) (quotient + 1)
+      else
+        divideMagnitudeInt64 fuel source divisor remainder quotient
+
+@[expose] public def checkedQuotientInt64 (left right : Int64) : Option Int64 :=
+  if right == 0 then none
+  else if left == (-9223372036854775808 : Int64) && right == (-1 : Int64) then none
+  else
+    let negative := (left < 0) != (right < 0)
+    some (signedMagnitudeInt64 negative
+      (divideMagnitudeInt64 64 (magnitudeInt64 left) (magnitudeInt64 right) 0 0))
+
+@[expose] public def multiplyMagnitudeInt64 : Nat -> UInt64 -> UInt64 -> UInt64 -> Bool -> Option UInt64
+  | 0, _, _, accumulator, _ => some accumulator
+  | Nat.succ fuel, source, multiplicand, accumulator, negative =>
+      let high := 9223372036854775808 <= source
+      let limit := if negative then 9223372036854775808 else 9223372036854775807
+      let halfLimit := if negative then 4611686018427387904 else 4611686018427387903
+      if halfLimit < accumulator then none
+      else
+        let doubled := accumulator + accumulator
+        if high then
+          if limit < multiplicand || limit - multiplicand < doubled then none
+          else multiplyMagnitudeInt64 fuel (source + source) multiplicand
+            (doubled + multiplicand) negative
+        else
+          multiplyMagnitudeInt64 fuel (source + source) multiplicand doubled negative
+
+@[expose] public def checkedMultiplyInt64 (left right : Int64) : Option Int64 :=
+  let negative := (left < 0) != (right < 0)
+  match multiplyMagnitudeInt64 64 (magnitudeInt64 right) (magnitudeInt64 left) 0 negative with
+  | none => none
+  | some value => some (signedMagnitudeInt64 negative value)
+
+@[expose, noinline] public def subtract {α : Type} [Sub α] (left right : α) : α := left - right
+@[expose, noinline] public def multiply {α : Type} [Mul α] (left right : α) : α := left * right
+@[expose, noinline] public def negate {α : Type} [Neg α] (value : α) : α := -value
+
+public class Quotient (α : Type) where
+  quotient : α -> α -> α
+  remainder : α -> α -> α
+  isZero : α -> Bool
+
+public instance : Quotient Nat where
+  quotient := Nat.div
+  remainder := Nat.mod
+  isZero := fun value => value == 0
+
+public instance : Quotient Int where
+  quotient := Int.tdiv
+  remainder := Int.tmod
+  isZero := fun value => value == 0
+
+@[expose, noinline] public def quotient {α : Type} [Quotient α] (left right zeroCase : α) : α :=
+  if Quotient.isZero right then zeroCase else Quotient.quotient left right
+
+@[expose, noinline] public def remainder {α : Type} [Quotient α] (left right zeroCase : α) : α :=
+  if Quotient.isZero right then zeroCase else Quotient.remainder left right
+
+@[expose] public def bitAnd {α : Type} [Fixed α] (left right : α) : α := Fixed.bitAnd left right
+@[expose] public def bitOr {α : Type} [Fixed α] (left right : α) : α := Fixed.bitOr left right
+@[expose] public def bitXor {α : Type} [Fixed α] (left right : α) : α := Fixed.bitXor left right
+@[expose] public def bitNot {α : Type} [Fixed α] (value : α) : α := Fixed.bitNot value
+@[expose] public def shiftLeft {α : Type} [Fixed α] (value : α) (amount : UInt32) : Option α := Fixed.shiftLeft value amount
+@[expose] public def shiftRight {α : Type} [Fixed α] (value : α) (amount : UInt32) : Option α := Fixed.shiftRight value amount
+
+public class Appendable (α : Type) where append : α -> α -> α
+public instance {α : Type} : Appendable (List α) where append := List.append
+public instance : Appendable ByteArray where append := ByteArray.append
+@[expose] public def append {α : Type} [Appendable α] (left right : α) : α := Appendable.append left right
+
+public class Lengthable (α : Type) where length : α -> Nat
+public instance {α : Type} : Lengthable (List α) where length := List.length
+public instance : Lengthable ByteArray where length := ByteArray.size
+public instance : Lengthable String where length := String.length
+@[expose] public def length {α : Type} [Lengthable α] (value : α) : Nat := Lengthable.length value
+
+@[expose] public def listIndex {α : Type} : List α -> Nat -> Option α
+  | [], _ => none
+  | head :: _, 0 => some head
+  | _ :: tail, index + 1 => listIndex tail index
+
+public class Indexable (α β : Type) where index : α -> Nat -> Option β
+public instance {α : Type} : Indexable (List α) α where index := listIndex
+public instance : Indexable ByteArray UInt8 where index := fun value offset => value.data[offset]?
+@[expose, noinline] public def index {α β : Type} [Indexable α β] (value : α) (offset : Nat) : Option β := Indexable.index value offset
+
+public class Sliceable (α : Type) where slice : α -> Nat -> Nat -> Option α
+public instance {α : Type} : Sliceable (List α) where
+  slice := fun value start count => if start + count <= value.length then some ((value.drop start).take count) else none
+public instance : Sliceable ByteArray where
+  slice := fun value start count => if start + count <= value.size then some (value.extract start (start + count)) else none
+@[expose, noinline] public def slice {α : Type} [Sliceable α] (value : α) (start count : Nat) : Option α := Sliceable.slice value start count
+
+@[expose, noinline] public def utf8Encode (value : String) : ByteArray := value.toUTF8
+@[expose, noinline] public def utf8Decode (value : ByteArray) : Option String := String.fromUTF8? value
+@[expose, noinline] public def compareBytes (left right : ByteArray) : Ordering := compare left.toList right.toList
+@[expose] public def equal {α : Type} [BEq α] (left right : α) : Bool := left == right
+
+@[expose, noinline] public def splitExact (value delimiter : String) (maximum : UInt32) : Option (List String) :=
+  let fields := value.splitOn delimiter
+  if delimiter.isEmpty || maximum.toNat < fields.length then none else some fields
+
+@[expose, noinline] public def join (values : List String) (delimiter : String) : String := delimiter.intercalate values
+
+public class Decimal (α : Type) where
+  parse : String -> Option α
+  format : α -> String
+
+public instance : Decimal Int where
+  parse := fun value => match value.toInt? with | some parsed => if toString parsed = value then some parsed else none | none => none
+  format := toString
+
+public instance {α : Type} [Fixed α] [ToString α] : Decimal α where
+  parse := fun value => match value.toInt? with | some parsed => if toString parsed = value then checkedFromInt parsed else none | none => none
+  format := toString
+
+@[expose, noinline] public def parseDecimal {α : Type} [Decimal α] (value : String) : Option α := Decimal.parse value
+@[expose, noinline] public def formatDecimal {α : Type} [Decimal α] (value : α) : String := Decimal.format value
+
+end LexLeanRuntime
+
+public inductive ROutcome where
+  | value (_ : LexLeanTarget.TargetSyntax.Value)
+  | raise
+  | abort
+  | stuck
+  | exhausted
+
+public inductive ROutcomes where
+  | values (_ : List (LexLeanTarget.TargetSyntax.Value))
+  | raise
+  | abort
+  | stuck
+  | exhausted
+
+@[expose] public def kindNumber (kind : LexLeanTarget.RustSyntax.IdentKind) : Nat := (match kind with | LexLeanTarget.RustSyntax.IdentKind.binding => 0 | LexLeanTarget.RustSyntax.IdentKind.holder => 1 | LexLeanTarget.RustSyntax.IdentKind.operand => 2 | LexLeanTarget.RustSyntax.IdentKind.callee => 3 | LexLeanTarget.RustSyntax.IdentKind.boxed => 4 | LexLeanTarget.RustSyntax.IdentKind.part => 5 | LexLeanTarget.RustSyntax.IdentKind.capture => 6 | LexLeanTarget.RustSyntax.IdentKind.param => 7 | LexLeanTarget.RustSyntax.IdentKind.function => 8)
+
+@[expose] public def sameIdent (ident : LexLeanTarget.RustSyntax.Ident) (other : LexLeanTarget.RustSyntax.Ident) : Bool := (match ident with | LexLeanTarget.RustSyntax.Ident.generated kind index => (match other with | LexLeanTarget.RustSyntax.Ident.generated otherKind otherIndex => ((Nat.beq (kindNumber (kind)) (kindNumber (otherKind))) && (Nat.beq (index) (otherIndex))) | LexLeanTarget.RustSyntax.Ident.exported _ => false) | LexLeanTarget.RustSyntax.Ident.exported name => (match other with | LexLeanTarget.RustSyntax.Ident.generated _ _ => false | LexLeanTarget.RustSyntax.Ident.exported otherName => (LexLeanRuntime.equal (name) (otherName) : Bool)))
+
+@[expose] public def lookup : (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> (name : LexLeanTarget.RustSyntax.Ident) -> Option (LexLeanTarget.TargetSyntax.Value)
+  | List.nil, _name => Option.none
+  | List.cons entry rest, name => (if sameIdent ((entry).1) (name) then Option.some ((entry).2) else lookup (rest) (name))
+
+@[expose] public def literal (written : LexLeanTarget.RustSyntax.Lit) : Option (LexLeanTarget.TargetSyntax.Value) := (match written with | LexLeanTarget.RustSyntax.Lit.unit => Option.some (LexLeanTarget.TargetSyntax.Value.unit) | LexLeanTarget.RustSyntax.Lit.bool flag => Option.some (LexLeanTarget.TargetSyntax.Value.bool (flag)) | LexLeanTarget.RustSyntax.Lit.nat number => Option.some (LexLeanTarget.TargetSyntax.Value.nat (number)) | LexLeanTarget.RustSyntax.Lit.int number => Option.some (LexLeanTarget.TargetSyntax.Value.int (number)) | LexLeanTarget.RustSyntax.Lit.fixed kind number => (match kind with | LexLeanTarget.TargetSyntax.IntKind.u8 => (match (LexLeanRuntime.checkedConvert (number) : Option (UInt8)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.u8 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.u16 => (match (LexLeanRuntime.checkedConvert (number) : Option (UInt16)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.u16 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.u32 => (match (LexLeanRuntime.checkedConvert (number) : Option (UInt32)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.u32 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.u64 => (match (LexLeanRuntime.checkedConvert (number) : Option (UInt64)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.u64 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.i8 => (match (LexLeanRuntime.checkedConvert (number) : Option (Int8)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.i8 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.i16 => (match (LexLeanRuntime.checkedConvert (number) : Option (Int16)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.i16 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.i32 => (match (LexLeanRuntime.checkedConvert (number) : Option (Int32)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.i32 (scalar))) | LexLeanTarget.TargetSyntax.IntKind.i64 => (match (LexLeanRuntime.checkedConvert (number) : Option (Int64)) with | Option.none => Option.none | Option.some scalar => Option.some (LexLeanTarget.TargetSyntax.Value.i64 (scalar)))) | LexLeanTarget.RustSyntax.Lit.str text => Option.some (LexLeanTarget.TargetSyntax.Value.string (text)) | LexLeanTarget.RustSyntax.Lit.bytes octets => Option.some (LexLeanTarget.TargetSyntax.Value.bytes (octets)) | LexLeanTarget.RustSyntax.Lit.ordering order => Option.some (LexLeanTarget.TargetSyntax.Value.ordering (order)))
+
+@[expose] public def widened (value : LexLeanTarget.TargetSyntax.Value) : Option (LexLeanTarget.TargetSyntax.Value) := (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int number => Option.some (LexLeanTarget.TargetSyntax.Value.int (number)) | LexLeanTarget.TargetSyntax.Value.u8 number => Option.some (LexLeanTarget.TargetSyntax.Value.u8 (number)) | LexLeanTarget.TargetSyntax.Value.u16 number => Option.some (LexLeanTarget.TargetSyntax.Value.u16 (number)) | LexLeanTarget.TargetSyntax.Value.u32 number => Option.some (LexLeanTarget.TargetSyntax.Value.u32 (number)) | LexLeanTarget.TargetSyntax.Value.u64 number => Option.some (LexLeanTarget.TargetSyntax.Value.u64 (number)) | LexLeanTarget.TargetSyntax.Value.i8 number => Option.some (LexLeanTarget.TargetSyntax.Value.i8 (number)) | LexLeanTarget.TargetSyntax.Value.i16 number => Option.some (LexLeanTarget.TargetSyntax.Value.i16 (number)) | LexLeanTarget.TargetSyntax.Value.i32 number => Option.some (LexLeanTarget.TargetSyntax.Value.i32 (number)) | LexLeanTarget.TargetSyntax.Value.i64 number => Option.some (LexLeanTarget.TargetSyntax.Value.i64 (number)) | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+
+mutual
+@[expose] public def bindPattern : (pattern : LexLeanTarget.RustSyntax.Pat) -> (value : LexLeanTarget.TargetSyntax.Value) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> Option (List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value))))
+  | LexLeanTarget.RustSyntax.Pat.wild, _value, environment => Option.some (environment)
+  | LexLeanTarget.RustSyntax.Pat.bind name, value, environment => Option.some (((name, value) :: environment))
+  | LexLeanTarget.RustSyntax.Pat.unit, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.some (environment) | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.tuple patterns, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair left right => bindPatterns (patterns) ((left :: (right :: ([] : List (LexLeanTarget.TargetSyntax.Value))))) (environment) | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.none, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.some (environment) | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.some inner, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some held => bindPattern (inner) (held) (environment) | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.ok inner, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok held => bindPattern (inner) (held) (environment) | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.err inner, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error held => bindPattern (inner) (held) (environment) | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.ordering order, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering found => (if LexLeanTarget.TargetSemantics.sameOrder (order) (found) then Option.some (environment) else Option.none) | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+  | LexLeanTarget.RustSyntax.Pat.adt _ constructor patterns, value, environment => (match value with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list _ => Option.none | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt tag fields => (if (Nat.beq (tag) (constructor)) then bindPatterns (patterns) (fields) (environment) else Option.none) | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none)
+termination_by structural pattern _ _ => pattern
+
+@[expose] public def bindPatterns : (patterns : List (LexLeanTarget.RustSyntax.Pat)) -> (values : List (LexLeanTarget.TargetSyntax.Value)) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> Option (List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value))))
+  | List.nil, values, environment => (match values with | List.nil => Option.some (environment) | List.cons _ _ => Option.none)
+  | List.cons pattern rest, values, environment => (match values with | List.nil => Option.none | List.cons first others => (match bindPattern (pattern) (first) (environment) with | Option.none => Option.none | Option.some bound => bindPatterns (rest) (others) (bound)))
+termination_by structural patterns _ _ => patterns
+end
+
+@[expose] public def constructValue (building : LexLeanTarget.RustSyntax.Ctor) (values : List (LexLeanTarget.TargetSyntax.Value)) : Option (LexLeanTarget.TargetSyntax.Value) := (match building with | LexLeanTarget.RustSyntax.Ctor.none _ => (match values with | List.nil => Option.some (LexLeanTarget.TargetSyntax.Value.none) | List.cons _ _ => Option.none) | LexLeanTarget.RustSyntax.Ctor.some => (match values with | List.nil => Option.none | List.cons operand rest203 => (match rest203 with | List.nil => Option.some (LexLeanTarget.TargetSyntax.Value.some (operand)) | List.cons _ _ => Option.none)) | LexLeanTarget.RustSyntax.Ctor.ok _ _ => (match values with | List.nil => Option.none | List.cons operand rest204 => (match rest204 with | List.nil => Option.some (LexLeanTarget.TargetSyntax.Value.ok (operand)) | List.cons _ _ => Option.none)) | LexLeanTarget.RustSyntax.Ctor.err _ _ => (match values with | List.nil => Option.none | List.cons operand rest205 => (match rest205 with | List.nil => Option.some (LexLeanTarget.TargetSyntax.Value.error (operand)) | List.cons _ _ => Option.none)) | LexLeanTarget.RustSyntax.Ctor.adt _ tag => Option.some (LexLeanTarget.TargetSyntax.Value.adt (tag) (values)) | LexLeanTarget.RustSyntax.Ctor.closure _ function => Option.some (LexLeanTarget.TargetSyntax.Value.closure (function) (values)) | LexLeanTarget.RustSyntax.Ctor.cons => (match values with | List.nil => Option.none | List.cons head rest206 => (match rest206 with | List.nil => Option.none | List.cons tail extras => (match extras with | List.nil => (match tail with | LexLeanTarget.TargetSyntax.Value.unit => Option.none | LexLeanTarget.TargetSyntax.Value.bool _ => Option.none | LexLeanTarget.TargetSyntax.Value.nat _ => Option.none | LexLeanTarget.TargetSyntax.Value.int _ => Option.none | LexLeanTarget.TargetSyntax.Value.u8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.u64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i8 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i16 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i32 _ => Option.none | LexLeanTarget.TargetSyntax.Value.i64 _ => Option.none | LexLeanTarget.TargetSyntax.Value.string _ => Option.none | LexLeanTarget.TargetSyntax.Value.bytes _ => Option.none | LexLeanTarget.TargetSyntax.Value.ordering _ => Option.none | LexLeanTarget.TargetSyntax.Value.none => Option.none | LexLeanTarget.TargetSyntax.Value.some _ => Option.none | LexLeanTarget.TargetSyntax.Value.ok _ => Option.none | LexLeanTarget.TargetSyntax.Value.error _ => Option.none | LexLeanTarget.TargetSyntax.Value.list items => Option.some (LexLeanTarget.TargetSyntax.Value.list ((head :: items))) | LexLeanTarget.TargetSyntax.Value.pair _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.adt _ _ => Option.none | LexLeanTarget.TargetSyntax.Value.closure _ _ => Option.none) | List.cons _ _ => Option.none))) | LexLeanTarget.RustSyntax.Ctor.nil _ => (match values with | List.nil => Option.some (LexLeanTarget.TargetSyntax.Value.list (([] : List (LexLeanTarget.TargetSyntax.Value)))) | List.cons _ _ => Option.none))
+
+@[expose] public def itemPrimitive (item : LexLeanTarget.RustSyntax.Item) : LexLeanTarget.TargetSyntax.Prim := (match item with | LexLeanTarget.RustSyntax.Item.natAdd => LexLeanTarget.TargetSyntax.Prim.natAdd | LexLeanTarget.RustSyntax.Item.natSub => LexLeanTarget.TargetSyntax.Prim.natSub | LexLeanTarget.RustSyntax.Item.natMul => LexLeanTarget.TargetSyntax.Prim.natMul | LexLeanTarget.RustSyntax.Item.natQuot => LexLeanTarget.TargetSyntax.Prim.natQuot | LexLeanTarget.RustSyntax.Item.natRem => LexLeanTarget.TargetSyntax.Prim.natRem | LexLeanTarget.RustSyntax.Item.natEq => LexLeanTarget.TargetSyntax.Prim.natEq | LexLeanTarget.RustSyntax.Item.natLe => LexLeanTarget.TargetSyntax.Prim.natLe | LexLeanTarget.RustSyntax.Item.natLt => LexLeanTarget.TargetSyntax.Prim.natLt | LexLeanTarget.RustSyntax.Item.natSucc => LexLeanTarget.TargetSyntax.Prim.natAdd | LexLeanTarget.RustSyntax.Item.intAdd => LexLeanTarget.TargetSyntax.Prim.intAdd | LexLeanTarget.RustSyntax.Item.intSub => LexLeanTarget.TargetSyntax.Prim.intSub | LexLeanTarget.RustSyntax.Item.intMul => LexLeanTarget.TargetSyntax.Prim.intMul | LexLeanTarget.RustSyntax.Item.intNeg => LexLeanTarget.TargetSyntax.Prim.intNeg | LexLeanTarget.RustSyntax.Item.intQuot => LexLeanTarget.TargetSyntax.Prim.intQuot | LexLeanTarget.RustSyntax.Item.intRem => LexLeanTarget.TargetSyntax.Prim.intRem | LexLeanTarget.RustSyntax.Item.boolNot => LexLeanTarget.TargetSyntax.Prim.boolNot | LexLeanTarget.RustSyntax.Item.boolAnd => LexLeanTarget.TargetSyntax.Prim.boolAnd | LexLeanTarget.RustSyntax.Item.boolOr => LexLeanTarget.TargetSyntax.Prim.boolOr | LexLeanTarget.RustSyntax.Item.equal => LexLeanTarget.TargetSyntax.Prim.equal | LexLeanTarget.RustSyntax.Item.compare => LexLeanTarget.TargetSyntax.Prim.compare | LexLeanTarget.RustSyntax.Item.checkedAdd _ => LexLeanTarget.TargetSyntax.Prim.checkedAdd | LexLeanTarget.RustSyntax.Item.checkedSub _ => LexLeanTarget.TargetSyntax.Prim.checkedSub | LexLeanTarget.RustSyntax.Item.checkedMul _ => LexLeanTarget.TargetSyntax.Prim.checkedMul | LexLeanTarget.RustSyntax.Item.checkedQuot _ => LexLeanTarget.TargetSyntax.Prim.checkedQuot | LexLeanTarget.RustSyntax.Item.checkedNeg _ => LexLeanTarget.TargetSyntax.Prim.checkedNeg | LexLeanTarget.RustSyntax.Item.bitAnd _ => LexLeanTarget.TargetSyntax.Prim.bitAnd | LexLeanTarget.RustSyntax.Item.bitOr _ => LexLeanTarget.TargetSyntax.Prim.bitOr | LexLeanTarget.RustSyntax.Item.bitXor _ => LexLeanTarget.TargetSyntax.Prim.bitXor | LexLeanTarget.RustSyntax.Item.bitNot _ => LexLeanTarget.TargetSyntax.Prim.bitNot | LexLeanTarget.RustSyntax.Item.shiftLeft _ => LexLeanTarget.TargetSyntax.Prim.shiftLeft | LexLeanTarget.RustSyntax.Item.shiftRight _ => LexLeanTarget.TargetSyntax.Prim.shiftRight | LexLeanTarget.RustSyntax.Item.convert target => LexLeanTarget.TargetSyntax.Prim.convert (target) | LexLeanTarget.RustSyntax.Item.appendList => LexLeanTarget.TargetSyntax.Prim.append | LexLeanTarget.RustSyntax.Item.appendBytes => LexLeanTarget.TargetSyntax.Prim.append | LexLeanTarget.RustSyntax.Item.lengthList => LexLeanTarget.TargetSyntax.Prim.length | LexLeanTarget.RustSyntax.Item.lengthBytes => LexLeanTarget.TargetSyntax.Prim.length | LexLeanTarget.RustSyntax.Item.lengthString => LexLeanTarget.TargetSyntax.Prim.length | LexLeanTarget.RustSyntax.Item.indexList => LexLeanTarget.TargetSyntax.Prim.index | LexLeanTarget.RustSyntax.Item.indexBytes => LexLeanTarget.TargetSyntax.Prim.index | LexLeanTarget.RustSyntax.Item.sliceList => LexLeanTarget.TargetSyntax.Prim.slice | LexLeanTarget.RustSyntax.Item.sliceBytes => LexLeanTarget.TargetSyntax.Prim.slice | LexLeanTarget.RustSyntax.Item.utf8Encode => LexLeanTarget.TargetSyntax.Prim.utf8Encode | LexLeanTarget.RustSyntax.Item.utf8Decode => LexLeanTarget.TargetSyntax.Prim.utf8Decode | LexLeanTarget.RustSyntax.Item.compareBytes => LexLeanTarget.TargetSyntax.Prim.compareBytes | LexLeanTarget.RustSyntax.Item.splitExact => LexLeanTarget.TargetSyntax.Prim.splitExact | LexLeanTarget.RustSyntax.Item.join => LexLeanTarget.TargetSyntax.Prim.join | LexLeanTarget.RustSyntax.Item.formatInt => LexLeanTarget.TargetSyntax.Prim.formatDecimal | LexLeanTarget.RustSyntax.Item.formatFixed _ => LexLeanTarget.TargetSyntax.Prim.formatDecimal | LexLeanTarget.RustSyntax.Item.parseInt => LexLeanTarget.TargetSyntax.Prim.parseDecimal (LexLeanTarget.TargetSyntax.Ty.int) | LexLeanTarget.RustSyntax.Item.parseFixed kind => LexLeanTarget.TargetSyntax.Prim.parseDecimal (LexLeanTarget.TargetSyntax.Ty.fixed (kind)))
+
+@[expose] public def itemFallible (item : LexLeanTarget.RustSyntax.Item) : Bool := (match item with | LexLeanTarget.RustSyntax.Item.natAdd => true | LexLeanTarget.RustSyntax.Item.natSub => false | LexLeanTarget.RustSyntax.Item.natMul => true | LexLeanTarget.RustSyntax.Item.natQuot => false | LexLeanTarget.RustSyntax.Item.natRem => false | LexLeanTarget.RustSyntax.Item.natEq => false | LexLeanTarget.RustSyntax.Item.natLe => false | LexLeanTarget.RustSyntax.Item.natLt => false | LexLeanTarget.RustSyntax.Item.natSucc => true | LexLeanTarget.RustSyntax.Item.intAdd => true | LexLeanTarget.RustSyntax.Item.intSub => true | LexLeanTarget.RustSyntax.Item.intMul => true | LexLeanTarget.RustSyntax.Item.intNeg => true | LexLeanTarget.RustSyntax.Item.intQuot => true | LexLeanTarget.RustSyntax.Item.intRem => false | LexLeanTarget.RustSyntax.Item.boolNot => false | LexLeanTarget.RustSyntax.Item.boolAnd => false | LexLeanTarget.RustSyntax.Item.boolOr => false | LexLeanTarget.RustSyntax.Item.equal => false | LexLeanTarget.RustSyntax.Item.compare => false | LexLeanTarget.RustSyntax.Item.checkedAdd _ => false | LexLeanTarget.RustSyntax.Item.checkedSub _ => false | LexLeanTarget.RustSyntax.Item.checkedMul _ => false | LexLeanTarget.RustSyntax.Item.checkedQuot _ => false | LexLeanTarget.RustSyntax.Item.checkedNeg _ => false | LexLeanTarget.RustSyntax.Item.bitAnd _ => false | LexLeanTarget.RustSyntax.Item.bitOr _ => false | LexLeanTarget.RustSyntax.Item.bitXor _ => false | LexLeanTarget.RustSyntax.Item.bitNot _ => false | LexLeanTarget.RustSyntax.Item.shiftLeft _ => false | LexLeanTarget.RustSyntax.Item.shiftRight _ => false | LexLeanTarget.RustSyntax.Item.convert _ => false | LexLeanTarget.RustSyntax.Item.appendList => false | LexLeanTarget.RustSyntax.Item.appendBytes => false | LexLeanTarget.RustSyntax.Item.lengthList => false | LexLeanTarget.RustSyntax.Item.lengthBytes => false | LexLeanTarget.RustSyntax.Item.lengthString => false | LexLeanTarget.RustSyntax.Item.indexList => false | LexLeanTarget.RustSyntax.Item.indexBytes => false | LexLeanTarget.RustSyntax.Item.sliceList => false | LexLeanTarget.RustSyntax.Item.sliceBytes => false | LexLeanTarget.RustSyntax.Item.utf8Encode => false | LexLeanTarget.RustSyntax.Item.utf8Decode => false | LexLeanTarget.RustSyntax.Item.compareBytes => false | LexLeanTarget.RustSyntax.Item.splitExact => false | LexLeanTarget.RustSyntax.Item.join => false | LexLeanTarget.RustSyntax.Item.formatInt => false | LexLeanTarget.RustSyntax.Item.formatFixed _ => false | LexLeanTarget.RustSyntax.Item.parseInt => true | LexLeanTarget.RustSyntax.Item.parseFixed _ => false)
+
+@[expose] public def itemHeap (item : LexLeanTarget.RustSyntax.Item) : Bool := (match item with | LexLeanTarget.RustSyntax.Item.natAdd => false | LexLeanTarget.RustSyntax.Item.natSub => false | LexLeanTarget.RustSyntax.Item.natMul => false | LexLeanTarget.RustSyntax.Item.natQuot => false | LexLeanTarget.RustSyntax.Item.natRem => false | LexLeanTarget.RustSyntax.Item.natEq => false | LexLeanTarget.RustSyntax.Item.natLe => false | LexLeanTarget.RustSyntax.Item.natLt => false | LexLeanTarget.RustSyntax.Item.natSucc => false | LexLeanTarget.RustSyntax.Item.intAdd => false | LexLeanTarget.RustSyntax.Item.intSub => false | LexLeanTarget.RustSyntax.Item.intMul => false | LexLeanTarget.RustSyntax.Item.intNeg => false | LexLeanTarget.RustSyntax.Item.intQuot => false | LexLeanTarget.RustSyntax.Item.intRem => false | LexLeanTarget.RustSyntax.Item.boolNot => false | LexLeanTarget.RustSyntax.Item.boolAnd => false | LexLeanTarget.RustSyntax.Item.boolOr => false | LexLeanTarget.RustSyntax.Item.equal => false | LexLeanTarget.RustSyntax.Item.compare => false | LexLeanTarget.RustSyntax.Item.checkedAdd _ => false | LexLeanTarget.RustSyntax.Item.checkedSub _ => false | LexLeanTarget.RustSyntax.Item.checkedMul _ => false | LexLeanTarget.RustSyntax.Item.checkedQuot _ => false | LexLeanTarget.RustSyntax.Item.checkedNeg _ => false | LexLeanTarget.RustSyntax.Item.bitAnd _ => false | LexLeanTarget.RustSyntax.Item.bitOr _ => false | LexLeanTarget.RustSyntax.Item.bitXor _ => false | LexLeanTarget.RustSyntax.Item.bitNot _ => false | LexLeanTarget.RustSyntax.Item.shiftLeft _ => false | LexLeanTarget.RustSyntax.Item.shiftRight _ => false | LexLeanTarget.RustSyntax.Item.convert _ => false | LexLeanTarget.RustSyntax.Item.appendList => true | LexLeanTarget.RustSyntax.Item.appendBytes => true | LexLeanTarget.RustSyntax.Item.lengthList => true | LexLeanTarget.RustSyntax.Item.lengthBytes => true | LexLeanTarget.RustSyntax.Item.lengthString => true | LexLeanTarget.RustSyntax.Item.indexList => true | LexLeanTarget.RustSyntax.Item.indexBytes => true | LexLeanTarget.RustSyntax.Item.sliceList => true | LexLeanTarget.RustSyntax.Item.sliceBytes => true | LexLeanTarget.RustSyntax.Item.utf8Encode => true | LexLeanTarget.RustSyntax.Item.utf8Decode => true | LexLeanTarget.RustSyntax.Item.compareBytes => true | LexLeanTarget.RustSyntax.Item.splitExact => true | LexLeanTarget.RustSyntax.Item.join => true | LexLeanTarget.RustSyntax.Item.formatInt => true | LexLeanTarget.RustSyntax.Item.formatFixed _ => true | LexLeanTarget.RustSyntax.Item.parseInt => true | LexLeanTarget.RustSyntax.Item.parseFixed _ => true)
+
+@[expose] public def itemOperands (item : LexLeanTarget.RustSyntax.Item) (values : List (LexLeanTarget.TargetSyntax.Value)) : List (LexLeanTarget.TargetSyntax.Value) := (match item with | LexLeanTarget.RustSyntax.Item.natAdd => values | LexLeanTarget.RustSyntax.Item.natSub => values | LexLeanTarget.RustSyntax.Item.natMul => values | LexLeanTarget.RustSyntax.Item.natQuot => values | LexLeanTarget.RustSyntax.Item.natRem => values | LexLeanTarget.RustSyntax.Item.natEq => values | LexLeanTarget.RustSyntax.Item.natLe => values | LexLeanTarget.RustSyntax.Item.natLt => values | LexLeanTarget.RustSyntax.Item.natSucc => (LexLeanRuntime.append (values) ((LexLeanTarget.TargetSyntax.Value.nat (1) :: ([] : List (LexLeanTarget.TargetSyntax.Value)))) : List (LexLeanTarget.TargetSyntax.Value)) | LexLeanTarget.RustSyntax.Item.intAdd => values | LexLeanTarget.RustSyntax.Item.intSub => values | LexLeanTarget.RustSyntax.Item.intMul => values | LexLeanTarget.RustSyntax.Item.intNeg => values | LexLeanTarget.RustSyntax.Item.intQuot => values | LexLeanTarget.RustSyntax.Item.intRem => values | LexLeanTarget.RustSyntax.Item.boolNot => values | LexLeanTarget.RustSyntax.Item.boolAnd => values | LexLeanTarget.RustSyntax.Item.boolOr => values | LexLeanTarget.RustSyntax.Item.equal => values | LexLeanTarget.RustSyntax.Item.compare => values | LexLeanTarget.RustSyntax.Item.checkedAdd _ => values | LexLeanTarget.RustSyntax.Item.checkedSub _ => values | LexLeanTarget.RustSyntax.Item.checkedMul _ => values | LexLeanTarget.RustSyntax.Item.checkedQuot _ => values | LexLeanTarget.RustSyntax.Item.checkedNeg _ => values | LexLeanTarget.RustSyntax.Item.bitAnd _ => values | LexLeanTarget.RustSyntax.Item.bitOr _ => values | LexLeanTarget.RustSyntax.Item.bitXor _ => values | LexLeanTarget.RustSyntax.Item.bitNot _ => values | LexLeanTarget.RustSyntax.Item.shiftLeft _ => values | LexLeanTarget.RustSyntax.Item.shiftRight _ => values | LexLeanTarget.RustSyntax.Item.convert _ => values | LexLeanTarget.RustSyntax.Item.appendList => values | LexLeanTarget.RustSyntax.Item.appendBytes => values | LexLeanTarget.RustSyntax.Item.lengthList => values | LexLeanTarget.RustSyntax.Item.lengthBytes => values | LexLeanTarget.RustSyntax.Item.lengthString => values | LexLeanTarget.RustSyntax.Item.indexList => values | LexLeanTarget.RustSyntax.Item.indexBytes => values | LexLeanTarget.RustSyntax.Item.sliceList => values | LexLeanTarget.RustSyntax.Item.sliceBytes => values | LexLeanTarget.RustSyntax.Item.utf8Encode => values | LexLeanTarget.RustSyntax.Item.utf8Decode => values | LexLeanTarget.RustSyntax.Item.compareBytes => values | LexLeanTarget.RustSyntax.Item.splitExact => values | LexLeanTarget.RustSyntax.Item.join => values | LexLeanTarget.RustSyntax.Item.formatInt => values | LexLeanTarget.RustSyntax.Item.formatFixed _ => values | LexLeanTarget.RustSyntax.Item.parseInt => values | LexLeanTarget.RustSyntax.Item.parseFixed _ => values)
+
+@[expose] public def runItem (profile : LexLeanTarget.RustSyntax.Profile) (item : LexLeanTarget.RustSyntax.Item) (values : List (LexLeanTarget.TargetSyntax.Value)) : ROutcome := (match profile with | LexLeanTarget.RustSyntax.Profile.core => (if itemHeap (item) then ROutcome.stuck else (match LexLeanTarget.TargetSemantics.primitive (itemPrimitive (item)) (itemOperands (item) (values)) with | LexLeanTarget.TargetSemantics.Outcome.value computed _ => (if itemFallible (item) then ROutcome.value (LexLeanTarget.TargetSyntax.Value.ok (computed)) else ROutcome.value (computed)) | LexLeanTarget.TargetSemantics.Outcome.overflow _ => (if itemFallible (item) then ROutcome.value (LexLeanTarget.TargetSyntax.Value.error (LexLeanTarget.TargetSyntax.Value.unit)) else ROutcome.abort) | LexLeanTarget.TargetSemantics.Outcome.stuck => ROutcome.stuck | LexLeanTarget.TargetSemantics.Outcome.exhausted => ROutcome.stuck)) | LexLeanTarget.RustSyntax.Profile.std => (match LexLeanTarget.TargetSemantics.primitive (itemPrimitive (item)) (itemOperands (item) (values)) with | LexLeanTarget.TargetSemantics.Outcome.value computed _ => (if itemFallible (item) then ROutcome.value (LexLeanTarget.TargetSyntax.Value.ok (computed)) else ROutcome.value (computed)) | LexLeanTarget.TargetSemantics.Outcome.overflow _ => (if itemFallible (item) then ROutcome.value (LexLeanTarget.TargetSyntax.Value.error (LexLeanTarget.TargetSyntax.Value.unit)) else ROutcome.abort) | LexLeanTarget.TargetSemantics.Outcome.stuck => ROutcome.stuck | LexLeanTarget.TargetSemantics.Outcome.exhausted => ROutcome.stuck))
+
+@[expose] public def propagated (result : ROutcome) : ROutcome := (match result with | ROutcome.value given => (match given with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok inner => ROutcome.value (inner) | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.raise | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted)
+
+@[expose] public def returned (result : ROutcome) (propagate : Bool) : ROutcome := (if propagate then propagated (result) else result)
+
+@[expose] public def dispatched (result : ROutcome) (wrap : Bool) : ROutcome := (if wrap then (match result with | ROutcome.value inner => ROutcome.value (LexLeanTarget.TargetSyntax.Value.ok (inner)) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) else result)
+
+@[expose] public def findFunction : (items : List (LexLeanTarget.RustSyntax.ItemDef)) -> (wanted : LexLeanTarget.RustSyntax.Ident) -> Option ((Prod (List (LexLeanTarget.RustSyntax.Parameter)) ((Prod (LexLeanTarget.RustSyntax.RustType) (LexLeanTarget.RustSyntax.Block)))))
+  | List.nil, _wanted => Option.none
+  | List.cons item rest, wanted => (match item with | LexLeanTarget.RustSyntax.ItemDef.enum _ _ => findFunction (rest) (wanted) | LexLeanTarget.RustSyntax.ItemDef.apply _ _ _ _ _ => findFunction (rest) (wanted) | LexLeanTarget.RustSyntax.ItemDef.function name parameters result body => (if sameIdent (name) (wanted) then Option.some ((parameters, (result, body))) else findFunction (rest) (wanted)))
+
+@[expose] public def findArm : (arms : List (LexLeanTarget.RustSyntax.Dispatch)) -> (function : Nat) -> (count : Nat) -> Option (Bool)
+  | List.nil, _function, _count => Option.none
+  | List.cons arm rest, function, count => (if ((Nat.beq ((arm).function) (function)) && (Nat.beq ((LexLeanRuntime.length ((arm).captures) : Nat)) (count))) then Option.some ((arm).functionFallible) else findArm (rest) (function) (count))
+
+@[expose] public def findDispatch : (items : List (LexLeanTarget.RustSyntax.ItemDef)) -> (function : Nat) -> (count : Nat) -> Option ((Prod (Bool) (Bool)))
+  | List.nil, _function, _count => Option.none
+  | List.cons item rest, function, count => (match item with | LexLeanTarget.RustSyntax.ItemDef.enum _ _ => findDispatch (rest) (function) (count) | LexLeanTarget.RustSyntax.ItemDef.apply _ _ _ fallible arms => (match findArm (arms) (function) (count) with | Option.none => findDispatch (rest) (function) (count) | Option.some armFallible => Option.some ((fallible, armFallible))) | LexLeanTarget.RustSyntax.ItemDef.function _ _ _ _ => findDispatch (rest) (function) (count))
+
+@[expose] public def fallibleType (type : LexLeanTarget.RustSyntax.RustType) : Bool := (match type with | LexLeanTarget.RustSyntax.RustType.unit => false | LexLeanTarget.RustSyntax.RustType.bool => false | LexLeanTarget.RustSyntax.RustType.nat => false | LexLeanTarget.RustSyntax.RustType.int => false | LexLeanTarget.RustSyntax.RustType.fixed _ => false | LexLeanTarget.RustSyntax.RustType.ordering => false | LexLeanTarget.RustSyntax.RustType.str => false | LexLeanTarget.RustSyntax.RustType.bytes => false | LexLeanTarget.RustSyntax.RustType.option _ => false | LexLeanTarget.RustSyntax.RustType.result _ _ => false | LexLeanTarget.RustSyntax.RustType.list _ => false | LexLeanTarget.RustSyntax.RustType.pair _ _ => false | LexLeanTarget.RustSyntax.RustType.adt _ => false | LexLeanTarget.RustSyntax.RustType.fn _ => false | LexLeanTarget.RustSyntax.RustType.rc _ => false | LexLeanTarget.RustSyntax.RustType.fallible _ => true | LexLeanTarget.RustSyntax.RustType.ref _ => false)
+
+@[expose] public def finished (result : ROutcome) (fallible : Bool) : ROutcome := (match result with | ROutcome.value computed => ROutcome.value (computed) | ROutcome.raise => (if fallible then ROutcome.value (LexLeanTarget.TargetSyntax.Value.error (LexLeanTarget.TargetSyntax.Value.unit)) else ROutcome.stuck) | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted)
+
+@[expose] public def patternsOf : (parameters : List (LexLeanTarget.RustSyntax.Parameter)) -> List (LexLeanTarget.RustSyntax.Pat)
+  | List.nil => ([] : List (LexLeanTarget.RustSyntax.Pat))
+  | List.cons first rest => ((first).pattern :: patternsOf (rest))
+
+mutual
+@[expose] public def eval : (fuel : Nat) -> (crate : LexLeanTarget.RustSyntax.Crate) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> (expression : LexLeanTarget.RustSyntax.Expr) -> ROutcome
+  | Nat.zero, _crate, _environment, _expression => ROutcome.exhausted
+  | Nat.succ remaining, crate, environment, expression => (match expression with | LexLeanTarget.RustSyntax.Expr.lit written => (match literal (written) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.move name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.clone name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.copy name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.deref name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.not operand => (match eval (remaining) (crate) (environment) (operand) with | ROutcome.value negated => (match negated with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool flag => ROutcome.value (LexLeanTarget.TargetSyntax.Value.bool ((!flag))) | LexLeanTarget.TargetSyntax.Value.nat _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.unbox name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => ROutcome.value (found)) | LexLeanTarget.RustSyntax.Expr.box operand => eval (remaining) (crate) (environment) (operand) | LexLeanTarget.RustSyntax.Expr.call callee operands propagate => (match evalList (remaining) (crate) (environment) (operands) with | ROutcomes.values arguments => returned ((match callee with | LexLeanTarget.RustSyntax.Callee.function index => invoke (remaining) (crate) (LexLeanTarget.RustSyntax.Ident.generated (LexLeanTarget.RustSyntax.IdentKind.function) (index)) (arguments) | LexLeanTarget.RustSyntax.Callee.runtime item => runItem ((crate).profile) (item) (arguments))) (propagate) | ROutcomes.raise => ROutcome.raise | ROutcomes.abort => ROutcome.abort | ROutcomes.stuck => ROutcome.stuck | ROutcomes.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.apply holder operands propagate => (match lookup (environment) (holder) with | Option.none => ROutcome.stuck | Option.some target => (match target with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure function captured => (match evalList (remaining) (crate) (environment) (operands) with | ROutcomes.values arguments => (match findDispatch ((crate).items) (function) ((LexLeanRuntime.length (captured) : Nat)) with | Option.none => ROutcome.stuck | Option.some dispatch => returned (dispatched (invoke (remaining) (crate) (LexLeanTarget.RustSyntax.Ident.generated (LexLeanTarget.RustSyntax.IdentKind.function) (function)) ((LexLeanRuntime.append (captured) (arguments) : List (LexLeanTarget.TargetSyntax.Value)))) (((dispatch).1 && (!(dispatch).2)))) (propagate)) | ROutcomes.raise => ROutcome.raise | ROutcomes.abort => ROutcome.abort | ROutcomes.stuck => ROutcome.stuck | ROutcomes.exhausted => ROutcome.exhausted))) | LexLeanTarget.RustSyntax.Expr.construct constructor operands => (match evalList (remaining) (crate) (environment) (operands) with | ROutcomes.values arguments => (match constructValue (constructor) (arguments) with | Option.none => ROutcome.stuck | Option.some built => ROutcome.value (built)) | ROutcomes.raise => ROutcome.raise | ROutcomes.abort => ROutcome.abort | ROutcomes.stuck => ROutcome.stuck | ROutcomes.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.pair left right => (match eval (remaining) (crate) (environment) (left) with | ROutcome.value leftValue => (match eval (remaining) (crate) (environment) (right) with | ROutcome.value rightValue => ROutcome.value (LexLeanTarget.TargetSyntax.Value.pair (leftValue) (rightValue)) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.cond condition thenBranch elseBranch => (match eval (remaining) (crate) (environment) (condition) with | ROutcome.value tested => (match tested with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool flag => (if flag then evalBlock (remaining) (crate) (environment) (thenBranch) else evalBlock (remaining) (crate) (environment) (elseBranch)) | LexLeanTarget.TargetSyntax.Value.nat _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.matchOn scrutinee arms => (match eval (remaining) (crate) (environment) (scrutinee) with | ROutcome.value matched => evalArms (remaining) (crate) (environment) (matched) (arms) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.block inner => evalBlock (remaining) (crate) (environment) (inner) | LexLeanTarget.RustSyntax.Expr.uncons name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => (match found with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list items => (match items with | List.nil => ROutcome.value (LexLeanTarget.TargetSyntax.Value.none) | List.cons head tail => ROutcome.value (LexLeanTarget.TargetSyntax.Value.some (LexLeanTarget.TargetSyntax.Value.pair (head) (LexLeanTarget.TargetSyntax.Value.list (tail))))) | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck)) | LexLeanTarget.RustSyntax.Expr.isZero name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => (match found with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat number => ROutcome.value (LexLeanTarget.TargetSyntax.Value.bool ((Nat.beq (number) (0)))) | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck)) | LexLeanTarget.RustSyntax.Expr.nonZero name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => (match found with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat number => ROutcome.value (LexLeanTarget.TargetSyntax.Value.bool ((!(Nat.beq (number) (0))))) | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck)) | LexLeanTarget.RustSyntax.Expr.predecessor name => (match lookup (environment) (name) with | Option.none => ROutcome.stuck | Option.some found => (match found with | LexLeanTarget.TargetSyntax.Value.unit => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bool _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.nat number => (match number with | Nat.zero => ROutcome.stuck | Nat.succ below => ROutcome.value (LexLeanTarget.TargetSyntax.Value.nat (below))) | LexLeanTarget.TargetSyntax.Value.int _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.u64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i8 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i16 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i32 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.i64 _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.string _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.bytes _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ordering _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.none => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.some _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.ok _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.error _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.list _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.pair _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.adt _ _ => ROutcome.stuck | LexLeanTarget.TargetSyntax.Value.closure _ _ => ROutcome.stuck)) | LexLeanTarget.RustSyntax.Expr.widen operand => (match eval (remaining) (crate) (environment) (operand) with | ROutcome.value narrow => (match widened (narrow) with | Option.none => ROutcome.stuck | Option.some wide => ROutcome.value (wide)) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted) | LexLeanTarget.RustSyntax.Expr.succeed operand => (match eval (remaining) (crate) (environment) (operand) with | ROutcome.value succeeded => ROutcome.value (LexLeanTarget.TargetSyntax.Value.ok (succeeded)) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted))
+termination_by structural fuel _ _ _ => fuel
+
+@[expose] public def evalList : (fuel : Nat) -> (crate : LexLeanTarget.RustSyntax.Crate) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> (expressions : List (LexLeanTarget.RustSyntax.Expr)) -> ROutcomes
+  | Nat.zero, _crate, _environment, _expressions => ROutcomes.exhausted
+  | Nat.succ remaining, crate, environment, expressions => (match expressions with | List.nil => ROutcomes.values (([] : List (LexLeanTarget.TargetSyntax.Value))) | List.cons head rest => (match eval (remaining) (crate) (environment) (head) with | ROutcome.value headValue => (match evalList (remaining) (crate) (environment) (rest) with | ROutcomes.values restValues => ROutcomes.values ((headValue :: restValues)) | ROutcomes.raise => ROutcomes.raise | ROutcomes.abort => ROutcomes.abort | ROutcomes.stuck => ROutcomes.stuck | ROutcomes.exhausted => ROutcomes.exhausted) | ROutcome.raise => ROutcomes.raise | ROutcome.abort => ROutcomes.abort | ROutcome.stuck => ROutcomes.stuck | ROutcome.exhausted => ROutcomes.exhausted))
+termination_by structural fuel _ _ _ => fuel
+
+@[expose] public def evalBlock : (fuel : Nat) -> (crate : LexLeanTarget.RustSyntax.Crate) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> (block : LexLeanTarget.RustSyntax.Block) -> ROutcome
+  | Nat.zero, _crate, _environment, _block => ROutcome.exhausted
+  | Nat.succ remaining, crate, environment, block => (match block with | LexLeanTarget.RustSyntax.Block.mk lets tail => (match lets with | List.nil => eval (remaining) (crate) (environment) (tail) | List.cons binding rest => (match binding with | LexLeanTarget.RustSyntax.Let.mk pattern _ bound => (match eval (remaining) (crate) (environment) (bound) with | ROutcome.value boundValue => (match bindPattern (pattern) (boundValue) (environment) with | Option.none => ROutcome.stuck | Option.some extended => evalBlock (remaining) (crate) (extended) (LexLeanTarget.RustSyntax.Block.mk (rest) (tail))) | ROutcome.raise => ROutcome.raise | ROutcome.abort => ROutcome.abort | ROutcome.stuck => ROutcome.stuck | ROutcome.exhausted => ROutcome.exhausted))))
+termination_by structural fuel _ _ _ => fuel
+
+@[expose] public def evalArms : (fuel : Nat) -> (crate : LexLeanTarget.RustSyntax.Crate) -> (environment : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value)))) -> (scrutinee : LexLeanTarget.TargetSyntax.Value) -> (arms : List (LexLeanTarget.RustSyntax.Arm)) -> ROutcome
+  | Nat.zero, _crate, _environment, _scrutinee, _arms => ROutcome.exhausted
+  | Nat.succ remaining, crate, environment, scrutinee, arms => (match arms with | List.nil => ROutcome.stuck | List.cons first rest => (match first with | LexLeanTarget.RustSyntax.Arm.mk pattern body => (match bindPattern (pattern) (scrutinee) (environment) with | Option.none => evalArms (remaining) (crate) (environment) (scrutinee) (rest) | Option.some extended => evalBlock (remaining) (crate) (extended) (body))))
+termination_by structural fuel _ _ _ _ => fuel
+
+@[expose] public def invoke : (fuel : Nat) -> (crate : LexLeanTarget.RustSyntax.Crate) -> (callee : LexLeanTarget.RustSyntax.Ident) -> (arguments : List (LexLeanTarget.TargetSyntax.Value)) -> ROutcome
+  | Nat.zero, _crate, _callee, _arguments => ROutcome.exhausted
+  | Nat.succ remaining, crate, callee, arguments => (match findFunction ((crate).items) (callee) with | Option.none => ROutcome.stuck | Option.some function => (match bindPatterns (patternsOf ((function).1)) (arguments) (([] : List ((Prod (LexLeanTarget.RustSyntax.Ident) (LexLeanTarget.TargetSyntax.Value))))) with | Option.none => ROutcome.stuck | Option.some bound => finished (evalBlock (remaining) (crate) (bound) (((function).2).2)) (fallibleType (((function).2).1))))
+termination_by structural fuel _ _ _ => fuel
+end
+
+@[expose] public def runExport (fuel : Nat) (crate : LexLeanTarget.RustSyntax.Crate) (name : String) (arguments : List (LexLeanTarget.TargetSyntax.Value)) : ROutcome := invoke (fuel) (crate) (LexLeanTarget.RustSyntax.Ident.exported (name)) (arguments)
+
+end LexLeanTarget.RustSemantics

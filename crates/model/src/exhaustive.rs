@@ -274,10 +274,11 @@ fn forbidden(code: &str) -> Option<&'static str> {
 /// The preservation sources that lower and certify every runtime construct
 /// (§17.17). A default branch there would realize or prove a construct
 /// nobody considered, so they obey the eligibility analysis's rules.
-pub const PRESERVATION_SOURCES: [&str; 3] = [
+pub const PRESERVATION_SOURCES: [&str; 4] = [
     "crates/lexlean/src/production/lower.rs",
     "crates/lexlean/src/production/certificate.rs",
     "crates/lexlean/src/production/source.rs",
+    "crates/lexlean/src/production/rust_term.rs",
 ];
 
 /// Audit the eligibility analysis source against the IR source.
@@ -296,7 +297,12 @@ pub fn audit_eligibility(eligibility: &str, semantic: &str) -> Result<(), String
 ///
 /// Returns every violation found, one per line.
 pub fn audit_preservation(path: &str, text: &str, semantic: &str) -> Result<(), String> {
-    audit_source(path, text, semantic, path != PRESERVATION_SOURCES[2])
+    audit_source(
+        path,
+        text,
+        semantic,
+        path == PRESERVATION_SOURCES[0] || path == PRESERVATION_SOURCES[1],
+    )
 }
 
 fn audit_source(

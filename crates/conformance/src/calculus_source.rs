@@ -36,7 +36,7 @@ const CLASSICAL: &[&str] = &["Classical.choice", "Quot.sound", "propext"];
 
 /// The fixed widths: the `TargetSyntax` constructor, and the LexLean type
 /// that realizes it.
-const FIXED: [(&str, &str); 8] = [
+pub(crate) const FIXED: [(&str, &str); 8] = [
     ("u8", "uint8"),
     ("u16", "uint16"),
     ("u32", "uint32"),
@@ -57,7 +57,8 @@ const SIGNED: [(&str, &str); 4] = [
 
 /// The integer `Value` constructors a conversion or decimal formatting
 /// reads.
-const INTEGERS: [&str; 9] = ["int", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"];
+pub(crate) const INTEGERS: [&str; 9] =
+    ["int", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"];
 
 /// The `Value` constructors `equal` compares by LexLean's own equality.
 const EQUATABLE: [&str; 12] = [
@@ -133,7 +134,7 @@ const PRIMITIVES: [&str; 40] = [
 ];
 
 /// A constructor table: each constructor with its field types.
-type Constructors = Vec<(&'static str, Vec<Json>)>;
+pub(crate) type Constructors = Vec<(&'static str, Vec<Json>)>;
 
 // --- references ------------------------------------------------------------
 
@@ -205,7 +206,7 @@ fn ty_constructors() -> Constructors {
     ]
 }
 
-fn value_constructors() -> Constructors {
+pub(crate) fn value_constructors() -> Constructors {
     let value = || local_t("Value");
     let mut out = vec![
         ("unit", vec![]),
@@ -2773,6 +2774,8 @@ pub fn main_module() -> String {
             SEMANTICS,
             ORACLE,
             FIXTURES,
+            crate::rust_source::RUST_SYNTAX,
+            crate::rust_source::RUST_SEMANTICS,
             lexlean::gnaf::MODEL,
             crate::gnaf::FIXTURES_MODULE,
         ],
