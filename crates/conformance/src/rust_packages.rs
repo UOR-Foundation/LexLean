@@ -38,7 +38,7 @@ pub fn compiler_semantic_id() -> String {
 
 /// The declarations the semantic module of a committed `.lex.tex` source
 /// states.
-fn declarations(source: &str) -> Result<Vec<serde_json::Value>, String> {
+pub(crate) fn declarations(source: &str) -> Result<Vec<serde_json::Value>, String> {
     let start = source
         .find("\\semanticdata{")
         .ok_or("the module states no semantic data")?

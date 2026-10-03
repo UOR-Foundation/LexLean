@@ -251,6 +251,7 @@ fn probe_host(
             erased: BTreeSet::new(),
             constructs: std::collections::BTreeMap::new(),
             targets: Vec::new(),
+            reasoning: Vec::new(),
         }],
     };
     let driver = lcnf::driver(&"0".repeat(32), &roots, &["Probe.Main".to_owned()]).expect("driver");

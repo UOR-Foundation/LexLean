@@ -5789,6 +5789,36 @@ Tests MUST establish that LexLean rejects, at minimum:
   (`LLT4009`);
 - false evidence stating the exact claim, refused by verification
   (`LLV7002`).
+- a logic declaration under language 1.1, a reasoner with an oracle member
+  outside the closed schema, an unregistered strategy, and an unregistered
+  reasoner claim kind (`LLT4001`);
+- a logic binding its state and next-state names alike, a relation of
+  another signature, an invariant-preservation theorem stating another
+  obligation, a rule over a declaration that is not a logic or with type
+  arguments its logic does not take, a guard that is not Boolean, candidates
+  that are not a list, a soundness or progress theorem stating another
+  obligation, progress over a logic without a ranking, a verifier check that
+  is not a Boolean function or is not executable, a completeness theorem
+  stating another obligation, a reasoner naming a declaration that is not a
+  verifier, a verifier of another candidate type, an answer that is not an
+  option, an observation of another state type, no rules, a rule named
+  twice, a non-executable rule in an executable reasoner, a rule over
+  another logic, claims out of order, an initial-invariant claim over a
+  logic without an invariant, and an initial-invariant or fuel-bound theorem
+  stating another obligation (`LLT4010`);
+- a forward reasoner without fuel, a search without a frontier, a frontier
+  of zero, deduplication over a state type without a canonical order, a
+  fuel or frontier that is not a natural number, a termination claim by a
+  search, and a termination claim with a rule that states no progress, with
+  no initial invariant for the progress it assumes, or over a logic without
+  a ranking (`LLT4011`);
+- an executable definition reaching a rule's unguarded conclusion and one
+  reaching a reasoner's unverified answer (`LLT4012`);
+- a rule whose guard admits a step its relation forbids, a rule that does
+  not decrease the ranking, a verifier whose check accepts a candidate its
+  specification forbids, a fuel bound false for the observation, and a
+  forged trace claimed to replay, each stating its exact obligation and
+  refused by verification (`LLV7002`).
 
 ### 28.6 Example verification
 

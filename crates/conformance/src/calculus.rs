@@ -26,6 +26,8 @@ use serde_json::{json, Value as Json};
 
 use crate::lx;
 
+pub mod reasoning;
+
 /// The library instance a fixture exercises.
 #[derive(Debug, Clone)]
 pub struct LibraryUse {
@@ -3436,6 +3438,7 @@ fn library_cases() -> Vec<Case> {
 pub fn cases() -> Vec<Case> {
     let mut out = core_cases();
     out.extend(library_cases());
+    out.extend(reasoning::cases());
     out.sort_by(|left, right| left.fixture.name.cmp(&right.fixture.name));
     out
 }
@@ -3446,7 +3449,9 @@ const RUN_AXIOMS: [&str; 3] = ["Classical.choice", "Quot.sound", "propext"];
 /// The `TargetFixtures` module.
 #[must_use]
 pub fn fixtures_module(cases: &[Case]) -> String {
-    let mut declarations = Vec::new();
+    // The encoders of the reasoning oracle's values come first, so every
+    // agreement theorem below can state them.
+    let mut declarations = reasoning::encoders();
     for case in cases {
         let id = identifier(&case.fixture.name);
         let mut items = term::fixture_declarations(&case.fixture, &id);
@@ -3486,7 +3491,12 @@ pub fn fixtures_module(cases: &[Case]) -> String {
     }
     lx::module_tex(
         "TargetFixtures",
-        &[term::SYNTAX, term::SEMANTICS, "TargetOracle"],
+        &[
+            term::SYNTAX,
+            term::SEMANTICS,
+            "TargetOracle",
+            reasoning::ORACLE,
+        ],
         declarations,
     )
 }

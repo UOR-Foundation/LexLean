@@ -183,7 +183,7 @@ const TERM_SAMPLES: [&str; 42] = [
 /// allocation, overflowing representations, and recursion. A changed column
 /// is a change to LexLean's production contract, so it must change here too.
 #[rustfmt::skip]
-const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 137] = [
+const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 142] = [
     ("type.type", "formal-only", false, &[], false),
     ("type.parameter", "runtime", false, &[], false),
     ("type.nat", "runtime", false, &[], false),

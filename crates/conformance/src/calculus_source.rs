@@ -2772,6 +2772,7 @@ pub fn main_module() -> String {
             SYNTAX,
             SEMANTICS,
             ORACLE,
+            crate::calculus::reasoning::ORACLE,
             FIXTURES,
             lexlean::gnaf::MODEL,
             crate::gnaf::FIXTURES_MODULE,
@@ -2846,6 +2847,10 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
         (SYNTAX, syntax_module()),
         (SEMANTICS, semantics_module()),
         (ORACLE, oracle_module()),
+        (
+            crate::calculus::reasoning::ORACLE,
+            crate::calculus::reasoning::oracle_module(),
+        ),
         ("Main", main_module()),
     ] {
         out.insert(format!("compiler/src/{module}.lex.tex"), text.into_bytes());
