@@ -253,12 +253,22 @@ impl Render<'_> {
                 conclude_accept,
                 conclude_sound,
             } => format!(
-                "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
+                "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · split at llE\n    · rename_i llW llH\n      cases llE\n      exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ llH) ({conclude_sound} _ _ _ llH)\n    · cases llE\n  · cases llE\n",
                 reasoner = m(reasoner),
                 run = m(run),
                 answer = m(answer),
                 run_trace = m(run_trace),
                 conclude_accept = m(conclude_accept),
+                conclude_sound = m(conclude_sound)
+            ),
+            Proof::VerdictForward {
+                verdict,
+                saturate,
+                conclude_sound,
+            } => format!(
+                "by\n  intro llV llE\n  dsimp only [{verdict}] at llE\n  generalize llRun : {saturate} {x} = llR at llE\n  split at llE\n  · exact {conclude_sound} _ _ _ llE\n  · cases llE\n",
+                verdict = m(verdict),
+                saturate = m(saturate),
                 conclude_sound = m(conclude_sound)
             ),
             Proof::Extend {

@@ -652,6 +652,12 @@ pub enum Proof {
         search_ok: MemberRef,
         accept_sound: MemberRef,
     },
+    /// A forward reasoner's verdict is sound.
+    VerdictForward {
+        verdict: MemberRef,
+        saturate: MemberRef,
+        conclude_sound: MemberRef,
+    },
     /// A search reasoner's verdict is sound.
     VerdictSearch {
         reasoner: MemberRef,
@@ -700,6 +706,7 @@ impl Proof {
             Self::SearchPeak { .. } => "search_peak",
             Self::SearchCount { .. } => "search_count",
             Self::ExplainedSearch { .. } => "explained_search",
+            Self::VerdictForward { .. } => "verdict_forward",
             Self::VerdictSearch { .. } => "verdict_search",
         }
     }
@@ -1477,6 +1484,21 @@ fn require_obligation(
     model::require_statement(env, &obligation.theorem, obligation, code)
 }
 
+/// Every binder a reasoning declaration's source writes is a source name:
+/// its elaborated copy is checked admitting generated binders, so the
+/// source is checked first, as for an ordinary declaration (§17.12).
+fn check_source_binders(declaration: &SemanticDeclaration) -> Result<(), SemanticFailure> {
+    let mut failure = None;
+    super::declaration_binders(declaration, &mut |binder| {
+        if failure.is_none() {
+            if let Err(reason) = check_name(binder, "binder") {
+                failure = Some(reason);
+            }
+        }
+    });
+    failure.map_or(Ok(()), |reason| Err(reason.into()))
+}
+
 /// Check every source term of a reasoning declaration at the runtime
 /// boundary and elaborate its checked model applications.
 fn lower_source(
@@ -1647,40 +1669,10 @@ fn check_rule(
     }
     check_signature(name, type_parameters, &binders, &types, env)?;
     let state = var(&at.state_binder);
-    let mut locals: Vec<(&str, &SemanticType)> = vec![(at.state_binder.as_str(), &s)];
-    if let Some(binding) = binding {
-        let candidates_type = list_type(binding.r#type.clone());
-        require_term(
-            &binding.candidates,
-            &locals,
-            &scope,
-            &candidates_type,
-            env,
-            &format!("inference rule `{name}` candidates"),
-            mismatch,
-        )?;
-        locals.push((binding.name.as_str(), &binding.r#type));
-    }
-    require_term(
-        guard,
-        &locals,
-        &scope,
-        &SemanticType::Bool,
-        env,
-        &format!("inference rule `{name}` guard"),
-        mismatch,
-    )?;
-    require_term(
-        conclusion,
-        &locals,
-        &scope,
-        &s,
-        env,
-        &format!("inference rule `{name}` conclusion"),
-        mismatch,
-    )?;
+    check_source_binders(declaration)?;
     // The rule's source terms are executable exactly when the rule is, and
-    // never reach another rule's conclusion or a reasoner's raw answer.
+    // never reach another rule's conclusion or a reasoner's raw answer;
+    // they are typed as linking elaborated them.
     let mut sources: Vec<SemanticTerm> = binding
         .iter()
         .map(|binding| binding.candidates.clone())
@@ -1695,6 +1687,42 @@ fn check_rule(
         ),
         None => (None, sources[0].clone(), sources[1].clone()),
     };
+    let mut locals: Vec<(&str, &SemanticType)> = vec![(at.state_binder.as_str(), &s)];
+    env.derived = true;
+    let typed = (|| {
+        if let (Some(binding), Some(candidates)) = (binding, &candidates_term) {
+            require_term(
+                candidates,
+                &locals,
+                &scope,
+                &list_type(binding.r#type.clone()),
+                env,
+                &format!("inference rule `{name}` candidates"),
+                mismatch,
+            )?;
+            locals.push((binding.name.as_str(), &binding.r#type));
+        }
+        require_term(
+            &guard_term,
+            &locals,
+            &scope,
+            &SemanticType::Bool,
+            env,
+            &format!("inference rule `{name}` guard"),
+            mismatch,
+        )?;
+        require_term(
+            &conclusion_term,
+            &locals,
+            &scope,
+            &s,
+            env,
+            &format!("inference rule `{name}` conclusion"),
+            mismatch,
+        )
+    })();
+    env.derived = false;
+    typed?;
     let own = parameter_types(type_parameters);
     let local_member = |suffix: &str| local(&format!("{name}.{suffix}"));
     let mut parameters = vec![parameter(&at.state_binder, &s)];
@@ -2218,46 +2246,15 @@ fn check_reasoner(
     }
     let x = observation.name.as_str();
     let input_locals = [(x, &observation.r#type)];
-    require_term(
-        observe,
-        &input_locals,
-        &scope,
-        &state,
-        env,
-        &format!("reasoner `{name}` observation"),
-        mismatch,
-    )?;
-    require_term(
-        &answer.value,
-        &[(answer.name.as_str(), &state)],
-        &scope,
-        &option_type(answer.r#type.clone()),
-        env,
-        &format!("reasoner `{name}` answer"),
-        mismatch,
-    )?;
-    let bound = |term: Option<&SemanticTerm>,
-                 what: &str|
-     -> Result<SemanticTerm, SemanticFailure> {
-        let Some(term) = term else {
-            return Err(unbounded(format!(
-                "reasoner `{name}` declares no {what}; every reasoning strategy is bounded by an explicit natural-number {what}"
-            )));
-        };
-        require_term(
-            term,
-            &input_locals,
-            &scope,
-            &SemanticType::Nat,
-            env,
-            &format!("reasoner `{name}` {what}"),
-            unbounded,
-        )?;
-        Ok(term.clone())
+    check_source_binders(declaration)?;
+    let missing = |what: &str| {
+        unbounded(format!(
+            "reasoner `{name}` declares no {what}; every reasoning strategy is bounded by an explicit natural-number {what}"
+        ))
     };
     let (fuel, frontier, order, deduplicate) = match strategy {
         ReasoningStrategy::Forward { fuel } => (
-            bound(fuel.as_ref(), "fuel")?,
+            fuel.clone().ok_or_else(|| missing("fuel"))?,
             None,
             SearchOrder::BreadthFirst,
             false,
@@ -2268,8 +2265,8 @@ fn check_reasoner(
             frontier,
             deduplicate,
         } => {
-            let fuel = bound(fuel.as_ref(), "fuel")?;
-            let frontier = bound(frontier.as_ref(), "frontier")?;
+            let fuel = fuel.clone().ok_or_else(|| missing("fuel"))?;
+            let frontier = frontier.clone().ok_or_else(|| missing("frontier"))?;
             if matches!(&frontier, SemanticTerm::Nat { value } if value == "0") {
                 return Err(unbounded(format!(
                     "reasoner `{name}` bounds its frontier by zero, so it can explore nothing"
@@ -2286,12 +2283,48 @@ fn check_reasoner(
         }
     };
     // The source terms run at the boundary exactly when the reasoner does;
-    // obligations are stated over them as linking elaborated them.
+    // they are typed, and obligations stated over them, as linking
+    // elaborated them.
     let mut sources = vec![observe.clone(), answer.value.clone(), fuel];
     if let Some(frontier) = &frontier {
         sources.push(frontier.clone());
     }
     lower_source(name, sources.iter_mut().collect(), *executable, &scope, env)?;
+    env.derived = true;
+    let typed = (|| {
+        require_term(
+            &sources[0],
+            &input_locals,
+            &scope,
+            &state,
+            env,
+            &format!("reasoner `{name}` observation"),
+            mismatch,
+        )?;
+        require_term(
+            &sources[1],
+            &[(answer.name.as_str(), &state)],
+            &scope,
+            &option_type(answer.r#type.clone()),
+            env,
+            &format!("reasoner `{name}` answer"),
+            mismatch,
+        )?;
+        for (term, what) in sources[2..].iter().zip(["fuel", "frontier"]) {
+            require_term(
+                term,
+                &input_locals,
+                &scope,
+                &SemanticType::Nat,
+                env,
+                &format!("reasoner `{name}` {what}"),
+                unbounded,
+            )?;
+        }
+        Ok::<(), SemanticFailure>(())
+    })();
+    env.derived = false;
+    typed?;
     let observed = sources[0].clone();
     let fuel = sources[2].clone();
     // Claims: strictly sorted by kind, each at most once.
@@ -2957,24 +2990,13 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             &run,
         ),
     ));
-    lowering.declarations.push(engine.define(
-        "failure",
-        vec![parameter("__saturated", &SemanticType::Bool)],
-        SemanticType::ReasoningFailure,
-        if_then(
-            var("__saturated"),
-            failure_value("unsolved"),
-            failure_value("exhausted"),
-        ),
-    ));
+    // A forward reasoner answers only from a saturated state, so its answer
+    // never depends on how much fuel was left: a run cut short by its fuel
+    // is `exhausted` whatever its partial state holds.
     let r = engine.answer.clone();
     lowering.declarations.push(engine.define(
         "conclude",
-        vec![
-            parameter(x, &engine.input),
-            parameter("__s", &s),
-            parameter("__saturated", &SemanticType::Bool),
-        ],
+        vec![parameter(x, &engine.input), parameter("__s", &s)],
         result_of(r.clone()),
         matching(
             engine.call_own("accept", vec![var(x), var("__s")]),
@@ -2991,11 +3013,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                                 vec!["__v"],
                                 error_of(&r, failure_value("rejected")),
                             ),
-                            (
-                                "Option.none",
-                                vec![],
-                                error_of(&r, engine.call_own("failure", vec![var("__saturated")])),
-                            ),
+                            ("Option.none", vec![], error_of(&r, failure_value("unsolved"))),
                         ],
                     ),
                 ),
@@ -3011,12 +3029,15 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             "__final",
             product(s.clone(), SemanticType::Bool),
             saturated.clone(),
-            engine.call_own(
-                "conclude",
+            matching(
+                model::second(var("__final")),
                 vec![
-                    var(x),
-                    model::first(var("__final")),
-                    model::second(var("__final")),
+                    (
+                        "Bool.true",
+                        vec![],
+                        engine.call_own("conclude", vec![var(x), model::first(var("__final"))]),
+                    ),
+                    ("Bool.false", vec![], error_of(&r, failure_value("exhausted"))),
                 ],
             ),
         ),
@@ -3032,24 +3053,37 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             product(run.clone(), SemanticType::Bool),
             engine.call_own("run", vec![var(x)]),
             matching(
-                engine.call_own(
-                    "conclude",
-                    vec![
-                        var(x),
-                        project(final_run.clone(), "state"),
-                        model::second(var("__final")),
-                    ],
-                ),
+                model::second(var("__final")),
                 vec![
                     (
-                        "Result.ok",
-                        vec!["__v"],
-                        ok_of(&explained, pair(var("__v"), project(final_run, "trace"))),
+                        "Bool.true",
+                        vec![],
+                        matching(
+                            engine.call_own(
+                                "conclude",
+                                vec![var(x), project(final_run.clone(), "state")],
+                            ),
+                            vec![
+                                (
+                                    "Result.ok",
+                                    vec!["__v"],
+                                    ok_of(
+                                        &explained,
+                                        pair(var("__v"), project(final_run, "trace")),
+                                    ),
+                                ),
+                                (
+                                    "Result.error",
+                                    vec!["__e"],
+                                    error_of(&explained, var("__e")),
+                                ),
+                            ],
+                        ),
                     ),
                     (
-                        "Result.error",
-                        vec!["__e"],
-                        error_of(&explained, var("__e")),
+                        "Bool.false",
+                        vec![],
+                        error_of(&explained, failure_value("exhausted")),
                     ),
                 ],
             ),
@@ -3409,13 +3443,12 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         ));
     }
     let concluded = eq(
-        engine.call_own("conclude", vec![var(x), var("__s"), var("__b")]),
+        engine.call_own("conclude", vec![var(x), var("__s")]),
         ok_of(&r, var("__v")),
     );
     let conclude_parameters = vec![
         parameter(x, &engine.input),
         parameter("__s", &s),
-        parameter("__b", &SemanticType::Bool),
         parameter("__v", &r),
     ];
     lowering.theorems.push(theorem(
@@ -3458,23 +3491,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                 engine.spec(var("__v")),
             ),
         )),
-        unfolding(
-            vec![engine.own("verdict")],
-            assume(
-                &["llV", "llE"],
-                cite(
-                    &engine.own("conclude_sound"),
-                    &[],
-                    vec![
-                        given(var(x)),
-                        given(saturated_state),
-                        given(model::second(saturated)),
-                        hypothesis("llV"),
-                        hypothesis("llE"),
-                    ],
-                ),
-            ),
-        ),
+        Proof::VerdictForward {
+            verdict: engine.own("verdict"),
+            saturate: engine.own("saturate"),
+            conclude_sound: engine.own("conclude_sound"),
+        },
     ));
     explained_theorem(
         engine,
