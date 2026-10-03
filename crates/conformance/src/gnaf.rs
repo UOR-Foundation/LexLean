@@ -23,6 +23,8 @@ use lexlean::gnaf::{
 use lexlean::Sha256Digest;
 use serde_json::{json, Value as Json};
 
+pub mod reasoning;
+
 fn nat_t() -> Ty {
     Ty::Nat
 }
@@ -780,6 +782,8 @@ fn requests() -> Vec<(&'static str, Request)> {
             with_machine(|machine| set_charge(machine, kind, Charge::Steps)),
         ));
     }
+    // §17.12: requests over forward-chaining plans.
+    out.extend(reasoning::requests());
     out.into_iter()
         .map(|(name, request)| (name, identified(request)))
         .collect()

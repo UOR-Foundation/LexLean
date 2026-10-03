@@ -460,6 +460,45 @@ versions, and the entries below say what each tag does and does not claim.
     definition), the model declaration variants, `CheckedApply`,
     `ContractViolation`, and `LessThan`. Downstream exhaustive matches must
     add them.
+- Language-1.2 reasoning machines (§17.12, issue #31): `logic`,
+  `inference_rule`, `verifier`, and `reasoner` declarations and the
+  `reasoning_failure` type, in the closed `lexlean/semantic-module/2`
+  schema, with no oracle, prompt, or reasoner primitive. Each elaborates in
+  linking to ordinary inductives, structures, definitions, and theorems over
+  `match`, `if`, `list_fold`, `iterate_until`, and set primitives.
+  - Rules are guarded transitions of a logic's state with statement-exact
+    soundness and progress theorems; verifiers are executable checks with
+    exact soundness (and completeness) theorems; reasoners are `forward`
+    (first applicable rule in priority and candidate order, under fuel),
+    `search` (breadth- or depth-first under fuel and a frontier bound,
+    optionally deduplicating over an ordered state type), or
+    `generate_and_verify` (a generator's candidates checked in order within a
+    mandatory budget). Logics, rules, verifiers, and reasoners may be
+    generic. Claims `initial_invariant`, `terminates` (forward only, from a
+    ranking, progress on every rule, and an exact fuel bound), and
+    `answer_correct` (the answer term correct on every state, which erases
+    the check).
+  - Verdicts are the verifier-accepted (or proved-correct) answer or one of
+    `exhausted`, `unsolved`, `rejected`, `invalid_step`; a forward reasoner
+    answers only from a saturated state. Traces are `E.Step` data, evidence
+    only by replay. A six-counter ledger (iterations, guard evaluations,
+    firings, expansions, verifications, frontier peak) accounts every run.
+  - Generated theorems are fixed-template applications of the formal-only,
+    axiom-free `LexLeanReasoning` runtime and are restated by pinned Lean;
+    executable code reaching a rule's conclusion or an unverified answer is
+    refused (`LLT4012`).
+  - New diagnostics `LLT4010`, `LLT4011`, and `LLT4012`; new conformance IDs
+    `RS-01` to `RS-14`; new example `examples/reasoning` (five modules and a
+    title glossary); 56 new negative fixtures; the `compiler` project's
+    `ReasoningOracle` with five calculus transcriptions of the clinical
+    engine and their rust-core and rust-std packages; GNAF requests over
+    forward-chaining plans.
+  - The language-1.2 `semantic_ir`, `lean_backend`, and `latex_backend`
+    versions are bumped; `linear_arithmetic` also rewrites with
+    `Bool.and_eq_true`, `Bool.or_eq_true`, `Bool.not_eq_true'`, `and_true`,
+    `true_and`, and `Option.some.injEq`. The eligibility report gains
+    per-root `reasoning` rows, and its schema now admits the model and
+    reasoning construct keys. The snapshot elaboration gains `theorems`.
 ## 0.3.0
 
 - Support exhaustive Boolean matches and keep imported list construction

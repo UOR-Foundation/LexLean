@@ -2,6 +2,7 @@ module
 public import Init
 public import Compiler.Gnaf
 public import Compiler.GnafFixtures
+public import Compiler.ReasoningOracle
 public import Compiler.TargetFixtures
 public import Compiler.TargetOracle
 public import Compiler.TargetSemantics

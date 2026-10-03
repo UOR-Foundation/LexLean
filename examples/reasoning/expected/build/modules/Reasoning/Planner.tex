@@ -1,0 +1,176 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Moves}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((t).1 <= 4) /\textbackslash{} ((t).2 <= 3))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Fits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((s).1 <= 4) /\textbackslash{} ((s).2 <= 3))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fits\_kept}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{(Fits (s) -> (Moves (s) (t) -> Fits (t)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Pouring}}
+\noindent Kind: \texttt{logic}.\par
+\noindent States: \texttt{s, t : (Prod (Nat) (Nat))}.\par
+\noindent Relation: \texttt{Moves}.\par
+\noindent Invariant: \texttt{Fits, preserved by the relation as fits\_kept states}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (logic Pouring preserves its invariant): \texttt{forall (s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat))), (Fits (s) -> (Moves (s) (t) -> Fits (t))); stated exactly by fits\_kept}.\par
+\noindent Generates theorem (term template): \texttt{Pouring.preserves : (LexLeanReasoning.Preserves ((Moves)) ((Fits)))}.\par
+\subsection*{\texttt{filla\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{((((Nat.blt ((s).1) (4)) \&\& (Nat.ble ((s).2) (3))) = true) -> Moves (s) ((4, (s).2)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{FillA}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Pouring}.\par
+\noindent Guard: \texttt{((Nat.blt ((s).1) (4)) \&\& (Nat.ble ((s).2) (3)))}.\par
+\noindent Conclusion: \texttt{(4, (s).2)}.\par
+\noindent Soundness: \texttt{filla\_sound}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (inference rule FillA soundness): \texttt{forall (s : (Prod (Nat) (Nat))), ((((Nat.blt ((s).1) (4)) \&\& (Nat.ble ((s).2) (3))) = true) -> Moves (s) ((4, (s).2))); stated exactly by filla\_sound}.\par
+\noindent Elaborates to: \texttt{FillA.guard (s : (Prod (Nat) (Nat))) : Bool := ((Nat.blt ((s).1) (4)) \&\& (Nat.ble ((s).2) (3)))}.\par
+\noindent Elaborates to: \texttt{FillA.conclusion (s : (Prod (Nat) (Nat))) : (Prod (Nat) (Nat)) := (4, (s).2)}.\par
+\noindent Elaborates to: \texttt{FillA.apply (s : (Prod (Nat) (Nat))) : Option ((Prod (Nat) (Nat))) := (if FillA.guard (s) then Option.some (FillA.conclusion (s)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{FillA.apply\_sound : forall (s : (Prod (Nat) (Nat))) (\_\_t : (Prod (Nat) (Nat))), ((FillA.apply (s) = Option.some (\_\_t)) -> Moves (s) (\_\_t))}.\par
+\subsection*{\texttt{emptyb\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{((((Nat.blt (0) ((s).2)) \&\& (Nat.ble ((s).1) (4))) = true) -> Moves (s) (((s).1, 0)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{EmptyB}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Pouring}.\par
+\noindent Guard: \texttt{((Nat.blt (0) ((s).2)) \&\& (Nat.ble ((s).1) (4)))}.\par
+\noindent Conclusion: \texttt{((s).1, 0)}.\par
+\noindent Soundness: \texttt{emptyb\_sound}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (inference rule EmptyB soundness): \texttt{forall (s : (Prod (Nat) (Nat))), ((((Nat.blt (0) ((s).2)) \&\& (Nat.ble ((s).1) (4))) = true) -> Moves (s) (((s).1, 0))); stated exactly by emptyb\_sound}.\par
+\noindent Elaborates to: \texttt{EmptyB.guard (s : (Prod (Nat) (Nat))) : Bool := ((Nat.blt (0) ((s).2)) \&\& (Nat.ble ((s).1) (4)))}.\par
+\noindent Elaborates to: \texttt{EmptyB.conclusion (s : (Prod (Nat) (Nat))) : (Prod (Nat) (Nat)) := ((s).1, 0)}.\par
+\noindent Elaborates to: \texttt{EmptyB.apply (s : (Prod (Nat) (Nat))) : Option ((Prod (Nat) (Nat))) := (if EmptyB.guard (s) then Option.some (EmptyB.conclusion (s)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{EmptyB.apply\_sound : forall (s : (Prod (Nat) (Nat))) (\_\_t : (Prod (Nat) (Nat))), ((EmptyB.apply (s) = Option.some (\_\_t)) -> Moves (s) (\_\_t))}.\par
+\subsection*{\texttt{pour\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (k : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.ble (k) ((s).1)) \&\& ((Nat.ble (((s).2 + k)) (3)) \&\& (Nat.ble ((s).1) (4)))) = true) -> Moves (s) (((LexLeanRuntime.subtract ((s).1) (k) : Nat), ((s).2 + k))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{Pour}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Pouring}.\par
+\noindent Binding: \texttt{k : Nat, ranging over (1 :: (2 :: (3 :: ([] : List (Nat))))) in order}.\par
+\noindent Guard: \texttt{((Nat.ble (k) ((s).1)) \&\& ((Nat.ble (((s).2 + k)) (3)) \&\& (Nat.ble ((s).1) (4))))}.\par
+\noindent Conclusion: \texttt{((LexLeanRuntime.subtract ((s).1) (k) : Nat), ((s).2 + k))}.\par
+\noindent Soundness: \texttt{pour\_sound}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (inference rule Pour soundness): \texttt{forall (s : (Prod (Nat) (Nat))) (k : Nat), ((((Nat.ble (k) ((s).1)) \&\& ((Nat.ble (((s).2 + k)) (3)) \&\& (Nat.ble ((s).1) (4)))) = true) -> Moves (s) (((LexLeanRuntime.subtract ((s).1) (k) : Nat), ((s).2 + k)))); stated exactly by pour\_sound}.\par
+\noindent Elaborates to: \texttt{Pour.guard (s : (Prod (Nat) (Nat))) (k : Nat) : Bool := ((Nat.ble (k) ((s).1)) \&\& ((Nat.ble (((s).2 + k)) (3)) \&\& (Nat.ble ((s).1) (4))))}.\par
+\noindent Elaborates to: \texttt{Pour.conclusion (s : (Prod (Nat) (Nat))) (k : Nat) : (Prod (Nat) (Nat)) := ((LexLeanRuntime.subtract ((s).1) (k) : Nat), ((s).2 + k))}.\par
+\noindent Elaborates to: \texttt{Pour.candidates (s : (Prod (Nat) (Nat))) : List (Nat) := (1 :: (2 :: (3 :: ([] : List (Nat)))))}.\par
+\noindent Elaborates to: \texttt{Pour.apply (s : (Prod (Nat) (Nat))) (k : Nat) : Option ((Prod (Nat) (Nat))) := (if Pour.guard (s) (k) then Option.some (Pour.conclusion (s) (k)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Pour.apply\_sound : forall (s : (Prod (Nat) (Nat))) (k : Nat) (\_\_t : (Prod (Nat) (Nat))), ((Pour.apply (s) (k) = Option.some (\_\_t)) -> Moves (s) (\_\_t))}.\par
+\subsection*{\texttt{Measures}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(target : Nat) (r : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((r).2 = target) /\textbackslash{} ((r).1 <= 4))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{measuresCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(target : Nat) (r : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((Nat.beq ((r).2) (target)) \&\& (Nat.ble ((r).1) (4)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{measures\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(target : Nat) (r : (Prod (Nat) (Nat)))}.\par
+\noindent Statement: \texttt{((measuresCheck (target) (r) = true) -> Measures (target) (r))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Measured}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{target : Nat}.\par
+\noindent Candidate: \texttt{r : (Prod (Nat) (Nat))}.\par
+\noindent Specification: \texttt{Measures}.\par
+\noindent Check: \texttt{measuresCheck}.\par
+\noindent Soundness: \texttt{measures\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (verifier Measured sound): \texttt{forall (target : Nat) (r : (Prod (Nat) (Nat))), ((measuresCheck (target) (r) = true) -> Measures (target) (r)); stated exactly by measures\_sound}.\par
+\noindent Generates theorem (term template): \texttt{Measured.sound : (LexLeanReasoning.Sound ((measuresCheck)) ((Measures)))}.\par
+\subsection*{\texttt{empty\_jugs\_fit}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(target : Nat)}.\par
+\noindent Statement: \texttt{Fits ((0, 0))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{Plan}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Logic: \texttt{Pouring}.\par
+\noindent Observation: \texttt{target : Nat, observed as (0, 0)}.\par
+\noindent Rules in priority order: \texttt{FillA, EmptyB, Pour}.\par
+\noindent Strategy: \texttt{breadth-first search, at most (LexLeanRuntime.multiply (target) (8) : Nat) iterations and (target + target) frontier nodes, each state expanded once}.\par
+\noindent Answer: \texttt{jugs |-> Option.some (jugs) : Option ((Prod (Nat) (Nat)))}.\par
+\noindent Verifier: \texttt{Measured}.\par
+\noindent Claim: \texttt{initial invariant, discharged by empty\_jugs\_fit}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (reasoner Plan initial invariant): \texttt{forall (target : Nat), Fits ((0, 0)); stated exactly by empty\_jugs\_fit}.\par
+\noindent Elaborates to: \texttt{inductive Plan.Step with FillA(), EmptyB(), Pour(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Plan.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Plan.observe (target : Nat) : (Prod (Nat) (Nat)) := (0, 0)}.\par
+\noindent Elaborates to: \texttt{Plan.fire (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Plan.Step) : Option ((Prod (Nat) (Nat))) := (match \_\_step with | Plan.Step.FillA => FillA.apply (\_\_s) | Plan.Step.EmptyB => EmptyB.apply (\_\_s) | Plan.Step.Pour \_\_b => Pour.apply (\_\_s) (\_\_b))}.\par
+\noindent Elaborates to: \texttt{Plan.replay (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Plan.Step) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Plan.fire (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Plan.follow (target : Nat) (\_\_trace : List (Plan.Step)) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Plan.replay)) (Except.ok (Plan.observe (target))) (\_\_trace) : Except (ReasoningFailure) ((Prod (Nat) (Nat))))}.\par
+\noindent Elaborates to: \texttt{Plan.extract (jugs : (Prod (Nat) (Nat))) : Option ((Prod (Nat) (Nat))) := Option.some (jugs)}.\par
+\noindent Elaborates to: \texttt{Plan.accept (target : Nat) (\_\_s : (Prod (Nat) (Nat))) : Option ((Prod (Nat) (Nat))) := (match Plan.extract (\_\_s) with | Option.none => Option.none | Option.some \_\_v => (if measuresCheck (target) (\_\_v) then Option.some (\_\_v) else Option.none))}.\par
+\noindent Elaborates to: \texttt{Plan.answer (target : Nat) (\_\_trace : List (Plan.Step)) : Option ((Prod (Nat) (Nat))) := (match Plan.follow (target) (\_\_trace) with | Except.ok \_\_s => Plan.accept (target) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{structure Plan.Node with state : (Prod (Nat) (Nat)), trace : List (Plan.Step)}.\par
+\noindent Elaborates to: \texttt{structure Plan.Search with frontier : List (Plan.Node), visited : Set ((Prod (Nat) (Nat))), found : Option ((Prod ((Prod (Nat) (Nat))) (Plan.Node))), truncated : Bool, ledger : Plan.Ledger}.\par
+\noindent Elaborates to: \texttt{Plan.FillA.successors (\_\_node : Plan.Node) : List (Plan.Node) := (match Plan.fire ((\_\_node).state) (Plan.Step.FillA) with | Option.none => ([] : List (Plan.Node)) | Option.some \_\_t => ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_node).trace) ((Plan.Step.FillA :: ([] : List (Plan.Step)))) : List (Plan.Step)) \} : Plan.Node) :: ([] : List (Plan.Node))))}.\par
+\noindent Elaborates to: \texttt{Plan.EmptyB.successors (\_\_node : Plan.Node) : List (Plan.Node) := (match Plan.fire ((\_\_node).state) (Plan.Step.EmptyB) with | Option.none => ([] : List (Plan.Node)) | Option.some \_\_t => ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_node).trace) ((Plan.Step.EmptyB :: ([] : List (Plan.Step)))) : List (Plan.Step)) \} : Plan.Node) :: ([] : List (Plan.Node))))}.\par
+\noindent Elaborates to: \texttt{Plan.Pour.collect (\_\_node : Plan.Node) (\_\_acc : List (Plan.Node)) (\_\_b : Nat) : List (Plan.Node) := (match Plan.fire ((\_\_node).state) (Plan.Step.Pour (\_\_b)) with | Option.none => \_\_acc | Option.some \_\_t => (LexLeanRuntime.append (\_\_acc) (((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_node).trace) ((Plan.Step.Pour (\_\_b) :: ([] : List (Plan.Step)))) : List (Plan.Step)) \} : Plan.Node) :: ([] : List (Plan.Node)))) : List (Plan.Node)))}.\par
+\noindent Elaborates to: \texttt{Plan.Pour.successors (\_\_node : Plan.Node) : List (Plan.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Plan.Node)) (\_\_b : Nat) => Plan.Pour.collect (\_\_node) (\_\_acc) (\_\_b))) (([] : List (Plan.Node))) (Pour.candidates ((\_\_node).state)) : List (Plan.Node))}.\par
+\noindent Elaborates to: \texttt{Plan.successors (\_\_node : Plan.Node) : List (Plan.Node) := (LexLeanRuntime.append (Plan.FillA.successors (\_\_node)) ((LexLeanRuntime.append (Plan.EmptyB.successors (\_\_node)) ((LexLeanRuntime.append (Plan.Pour.successors (\_\_node)) (([] : List (Plan.Node))) : List (Plan.Node))) : List (Plan.Node))) : List (Plan.Node))}.\par
+\noindent Elaborates to: \texttt{Plan.fresh (\_\_visited : Set ((Prod (Nat) (Nat)))) (\_\_nodes : List (Plan.Node)) : (Prod (List (Plan.Node)) (Set ((Prod (Nat) (Nat))))) := (LexLeanCollections.listFold ((fun (\_\_acc : (Prod (List (Plan.Node)) (Set ((Prod (Nat) (Nat)))))) (\_\_n : Plan.Node) => (if (LexLeanCollections.setContains ((\_\_acc).2) ((\_\_n).state) : Bool) then \_\_acc else ((LexLeanRuntime.append ((\_\_acc).1) ((\_\_n :: ([] : List (Plan.Node)))) : List (Plan.Node)), (LexLeanCollections.setInsert ((\_\_acc).2) ((\_\_n).state) : Set ((Prod (Nat) (Nat)))))))) ((([] : List (Plan.Node)), \_\_visited)) (\_\_nodes) : (Prod (List (Plan.Node)) (Set ((Prod (Nat) (Nat))))))}.\par
+\noindent Elaborates to: \texttt{Plan.start (target : Nat) : Plan.Search := (let \_\_first : List (Plan.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Plan.Node)) (\_\_n : Plan.Node) => (if (Nat.blt ((LexLeanRuntime.length (\_\_acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (\_\_acc) ((\_\_n :: ([] : List (Plan.Node)))) : List (Plan.Node)) else \_\_acc))) (([] : List (Plan.Node))) (((\{ state := Plan.observe (target), trace := ([] : List (Plan.Step)) \} : Plan.Node) :: ([] : List (Plan.Node)))) : List (Plan.Node)); (\{ frontier := \_\_first, visited := (LexLeanCollections.setInsert (([] : List ((Prod (Nat) (Nat))))) (Plan.observe (target)) : Set ((Prod (Nat) (Nat)))), found := Option.none, truncated := (Nat.blt ((target + target)) (1)), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := (LexLeanRuntime.length (\_\_first) : Nat) \} : Plan.Ledger) \} : Plan.Search))}.\par
+\noindent Elaborates to: \texttt{Plan.attempts (\_\_s : (Prod (Nat) (Nat))) : Nat := (1 + (1 + ((LexLeanRuntime.length (Pour.candidates (\_\_s)) : Nat) + 0)))}.\par
+\noindent Elaborates to: \texttt{Plan.searchStep (target : Nat) (\_\_r : Plan.Search) : Option (Plan.Search) := (match (\_\_r).found with | Option.some \_ => Option.none | Option.none => (match (\_\_r).frontier with | List.nil => Option.none | List.cons \_\_node \_\_rest => (match Plan.accept (target) ((\_\_node).state) with | Option.some \_\_v => Option.some ((\{ frontier := \_\_rest, visited := (\_\_r).visited, found := Option.some ((\_\_v, \_\_node)), truncated := (\_\_r).truncated, ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := ((\_\_r).ledger).attempts, firings := ((\_\_r).ledger).firings, expansions := ((\_\_r).ledger).expansions, verifications := (((\_\_r).ledger).verifications + 1), frontier := ((\_\_r).ledger).frontier \} : Plan.Ledger) \} : Plan.Search)) | Option.none => (let \_\_successors : List (Plan.Node) := Plan.successors (\_\_node); (let \_\_fresh : (Prod (List (Plan.Node)) (Set ((Prod (Nat) (Nat))))) := Plan.fresh ((\_\_r).visited) (\_\_successors); (let \_\_ordered : List (Plan.Node) := (LexLeanRuntime.append (\_\_rest) ((\_\_fresh).1) : List (Plan.Node)); (let \_\_next : List (Plan.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Plan.Node)) (\_\_n : Plan.Node) => (if (Nat.blt ((LexLeanRuntime.length (\_\_acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (\_\_acc) ((\_\_n :: ([] : List (Plan.Node)))) : List (Plan.Node)) else \_\_acc))) (([] : List (Plan.Node))) (\_\_ordered) : List (Plan.Node)); Option.some ((\{ frontier := \_\_next, visited := (\_\_fresh).2, found := Option.none, truncated := ((\_\_r).truncated || (Nat.blt ((target + target)) ((LexLeanRuntime.length (\_\_ordered) : Nat)))), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Plan.attempts ((\_\_node).state)), firings := (((\_\_r).ledger).firings + (LexLeanRuntime.length (\_\_successors) : Nat)), expansions := (((\_\_r).ledger).expansions + 1), verifications := (((\_\_r).ledger).verifications + 1), frontier := (if (Nat.blt (((\_\_r).ledger).frontier) ((LexLeanRuntime.length (\_\_next) : Nat))) then (LexLeanRuntime.length (\_\_next) : Nat) else ((\_\_r).ledger).frontier) \} : Plan.Ledger) \} : Plan.Search)))))))))}.\par
+\noindent Elaborates to: \texttt{Plan.run (target : Nat) : (Prod (Plan.Search) (Bool)) := (LexLeanCollections.iterateUntil ((fun (\_\_r : Plan.Search) => Plan.searchStep (target) (\_\_r))) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Plan.start (target)) : (Prod (Plan.Search) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Plan.failure (\_\_saturated : Bool) (\_\_truncated : Bool) : ReasoningFailure := (if (\_\_saturated \&\& (!\_\_truncated)) then ReasoningFailure.unsolved else ReasoningFailure.exhausted)}.\par
+\noindent Elaborates to: \texttt{Plan (target : Nat) : Except (ReasoningFailure) ((Prod ((Prod (Nat) (Nat))) (List (Plan.Step)))) := (let \_\_final : (Prod (Plan.Search) (Bool)) := Plan.run (target); (match ((\_\_final).1).found with | Option.some \_\_hit => Except.ok (((\_\_hit).1, ((\_\_hit).2).trace)) | Option.none => Except.error (Plan.failure ((\_\_final).2) (((\_\_final).1).truncated))))}.\par
+\noindent Elaborates to: \texttt{Plan.verdict (target : Nat) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (match Plan (target) with | Except.ok \_\_p => Except.ok ((\_\_p).1) | Except.error \_\_e => Except.error (\_\_e))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Plan.fire\_sound : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Plan.Step) (\_\_t : (Prod (Nat) (Nat))), ((Plan.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> Moves (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Plan.replay\_fire : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Plan.Step) (\_\_t : (Prod (Nat) (Nat))), ((Plan.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Plan.replay (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Plan.replay\_sound : forall (target : Nat) (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Plan.Step), ((LexLeanReasoning.Reaches ((Moves)) (Plan.observe (target)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Moves)) (Plan.observe (target)) (Plan.replay (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Plan.derivation : forall (target : Nat) (\_\_trace : List (Plan.Step)), (LexLeanReasoning.Reaches ((Moves)) (Plan.observe (target)) (Plan.follow (target) (\_\_trace)))}.\par
+\noindent Generates theorem (term template): \texttt{Plan.follow\_invariant : forall (target : Nat) (\_\_trace : List (Plan.Step)) (\_\_s : (Prod (Nat) (Nat))), ((Plan.follow (target) (\_\_trace) = Except.ok (\_\_s)) -> Fits (\_\_s))}.\par
+\noindent Generates theorem (accept sound template): \texttt{Plan.accept\_sound : forall (target : Nat) (\_\_s : (Prod (Nat) (Nat))) (\_\_v : (Prod (Nat) (Nat))), ((Plan.accept (target) (\_\_s) = Option.some (\_\_v)) -> Measures (target) (\_\_v))}.\par
+\noindent Generates theorem (extend template): \texttt{Plan.extend : forall (target : Nat) (\_\_node : Plan.Node) (\_\_step : Plan.Step) (\_\_t : (Prod (Nat) (Nat))), ((Plan.follow (target) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> ((Plan.fire ((\_\_node).state) (\_\_step) = Option.some (\_\_t)) -> (Plan.follow (target) ((LexLeanRuntime.append ((\_\_node).trace) ((\_\_step :: ([] : List (Plan.Step)))) : List (Plan.Step))) = Except.ok (\_\_t))))}.\par
+\noindent Generates theorem (successors free template): \texttt{Plan.FillA.successors\_ok : forall (target : Nat) (\_\_node : Plan.Node), ((Plan.follow (target) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Plan.FillA.successors (\_\_node))))}.\par
+\noindent Generates theorem (successors free template): \texttt{Plan.EmptyB.successors\_ok : forall (target : Nat) (\_\_node : Plan.Node), ((Plan.follow (target) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Plan.EmptyB.successors (\_\_node))))}.\par
+\noindent Generates theorem (successors bound template): \texttt{Plan.Pour.successors\_ok : forall (target : Nat) (\_\_node : Plan.Node), ((Plan.follow (target) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Plan.Pour.successors (\_\_node))))}.\par
+\noindent Generates theorem (term template): \texttt{Plan.successors\_ok : forall (target : Nat) (\_\_node : Plan.Node), ((Plan.follow (target) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Plan.successors (\_\_node))))}.\par
+\noindent Generates theorem (term template): \texttt{Plan.fresh\_ok : forall (target : Nat) (\_\_visited : Set ((Prod (Nat) (Nat)))) (\_\_nodes : List (Plan.Node)), ((LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (\_\_nodes)) -> (LexLeanReasoning.All ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((Plan.fresh (\_\_visited) (\_\_nodes)).1)))}.\par
+\noindent Generates theorem (search step template): \texttt{Plan.search\_step : forall (target : Nat) (\_\_r : Plan.Search) (\_\_q : Plan.Search), ((Plan.searchStep (target) (\_\_r) = Option.some (\_\_q)) -> ((LexLeanReasoning.SearchOk ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Plan.Node) => Plan.accept (target) ((\_\_n).state))) ((\_\_r).frontier) ((\_\_r).found)) -> (LexLeanReasoning.SearchOk ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Plan.Node) => Plan.accept (target) ((\_\_n).state))) ((\_\_q).frontier) ((\_\_q).found))))}.\par
+\noindent Generates theorem (search peak template): \texttt{Plan.search\_peak : forall (target : Nat) (\_\_r : Plan.Search) (\_\_q : Plan.Search), ((Plan.searchStep (target) (\_\_r) = Option.some (\_\_q)) -> ((((\_\_r).ledger).frontier <= (target + target)) -> (((\_\_q).ledger).frontier <= (target + target))))}.\par
+\noindent Generates theorem (search count template): \texttt{Plan.search\_count : forall (target : Nat) (\_\_r : Plan.Search) (\_\_q : Plan.Search), ((Plan.searchStep (target) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Plan.search\_ok : forall (target : Nat), (LexLeanReasoning.SearchOk ((fun (\_\_n : Plan.Node) => (Plan.follow (target) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Plan.Node) => Plan.accept (target) ((\_\_n).state))) (((Plan.run (target)).1).frontier) (((Plan.run (target)).1).found))}.\par
+\noindent Generates theorem (unfold template): \texttt{Plan.frontier\_bounded : forall (target : Nat), ((((Plan.run (target)).1).ledger).frontier <= (target + target))}.\par
+\noindent Generates theorem (unfold template): \texttt{Plan.iterations\_bounded : forall (target : Nat), ((((Plan.run (target)).1).ledger).iterations <= (LexLeanRuntime.multiply (target) (8) : Nat))}.\par
+\noindent Generates theorem (explained search template): \texttt{Plan.explained : forall (target : Nat), (forall (\_\_v : (Prod (Nat) (Nat))), (forall (\_\_trace : List (Plan.Step)), ((Plan (target) = Except.ok ((\_\_v, \_\_trace))) -> ((Plan.answer (target) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Measures (target) (\_\_v)))))}.\par
+\noindent Generates theorem (verdict search template): \texttt{Plan.verdict\_sound : forall (target : Nat), (forall (\_\_v : (Prod (Nat) (Nat))), ((Plan.verdict (target) = Except.ok (\_\_v)) -> Measures (target) (\_\_v)))}.\par
+\end{document}
