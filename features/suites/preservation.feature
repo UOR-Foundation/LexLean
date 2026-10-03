@@ -1,0 +1,63 @@
+Feature: preservation
+
+  Semantic preservation from the source to the realization calculus: the lowering, certificate A, the differential evaluator, and the preservation library (§17.17).
+
+  @SP-01 @build
+  Scenario: Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused.
+    Given every production root of the committed examples
+    When each is lowered twice and its program, layout, and closure are inspected, and the lowering and certificate sources are audited
+    Then each program is valid, canonical, identical across the two lowerings, fully attributed, and exactly its eligibility closure
+    And a report whose closure omits a member fails with LLI9001, and a default arm planted in a preservation source is refused
+
+  @SP-02 @build
+  Scenario: Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected.
+    Given every production root of examples/production and of examples/production-coverage
+    When each certificate is compiled with the pinned Lean beside the library and the generated modules, replayed, and its axioms audited
+    Then every certificate is accepted and its root theorem depends on exactly the three classical axioms
+    And a certificate generated against each planted program mutation is rejected
+
+  @SP-03 @build
+  Scenario: On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected.
+    Given seeded inputs to every production root of examples/production and of examples/production-coverage
+    When the interpreter runs the lowered program and Lean evaluates the certificate's observation on the same inputs
+    Then every interpreter outcome equals the observation Lean prints
+    And an interpreter outcome altered in one case is reported as a disagreement
+
+  @SP-04 @build
+  Scenario: Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused.
+    Given the preservation library, its registry, and the shipped calculus modules
+    When the library is compiled and every declaration's axioms printed, and the shipped modules are compared with the compiler golden
+    Then every declaration's axioms equal the registry and every shipped module equals its golden
+    And a library module with a planted forbidden token, option, or import is refused
+
+  @SP-05 @build
+  Scenario: Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication.
+    Given examples/production, and the fixtures that plant a mutated certificate and a drifted library under the pinned toolchain
+    When each is verified
+    Then the production example publishes every certificate, the audit output, and a schema-valid preservation.json bound by its attestation
+    And the planted certificate fails with LLV7013 and the drifted library with LLV7014, each with nothing published
+
+  @SP-06 @build
+  Scenario: The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported.
+    Given the eligibility reports of every certified root and the runtime rows of the production registry
+    When the constructs the roots realize are collected, with a type parameter counted where a generic definition is instantiated
+    Then every runtime row is exercised by some certified root
+    And with the coverage example's collection roots withheld, their constructs are reported as unexercised
+
+  @SP-07 @build
+  Scenario: The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax.
+    Given the generated RustSyntax and RustSemantics modules, the runtime item table, and the crate of every certified root
+    When the compiler project is verified, the shipped copies are compared with its golden, the item classes with the renderer, and each crate term is elaborated
+    Then the modules verify with exact axioms, the copies and classes agree, and every crate term elaborates
+
+  @SP-08 @build
+  Scenario: Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused.
+    Given every production root's crate in each target and every renderer fixture's crate in each profile
+    When the aligner derives each crate's correspondence and the pinned Lean checks, replays, and audits it
+    Then every rule the aligner emits is a constructor of the correspondence and a case of its soundness theorem, every rule is used and every calculus construct named, every derivation checks, every simulation theorem has exactly the three axioms, and every mutated crate is refused
+
+  @SP-09 @build
+  Scenario: Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, invoked on the encoded source arguments, realizes certificate A's observation of the source; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition.
+    Given every production root's certificates A and B in each of its targets
+    When the composition is generated, checked, replayed, and audited by the pinned Lean, and restated with the other result shape and with another function
+    Then every composition checks with exactly the three axioms, every restatement is refused, and verification reports a rejected composition as LLV7016

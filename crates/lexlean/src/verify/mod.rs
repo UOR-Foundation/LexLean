@@ -1571,6 +1571,329 @@ pub fn run(
         process_records.push(record);
     }
 
+    // Stage 12b: certificate A (§17.17). Every production root is lowered
+    // and certified; the certificates compile beside the shipped library and
+    // calculus modules, are replayed, and their axioms audited exactly.
+    let mut preservation_row: Option<Json> = None;
+    if !production_reports.is_empty() {
+        use crate::production::certificate::certificate;
+        use crate::production::lower::{linked_modules, lower_root, roots};
+        use crate::production::preserve::{self, CertifiedRendering, CertifiedRoot};
+        use crate::production::rust_cert;
+        // Lean's first error, from its severity on: the location before it
+        // names the staging directory, which is not part of any diagnostic.
+        let first_error = |output: &str| {
+            output
+                .lines()
+                .find_map(|line| line.find("error").map(|at| line[at..].trim().to_owned()))
+                .unwrap_or_else(|| "no error was reported".to_owned())
+        };
+        let rejected = |module: &str, output: &str| {
+            Diagnostic::new(
+                code!("LLV7013"),
+                format!(
+                    "certificate A: `{module}` was rejected: {}",
+                    first_error(output)
+                ),
+            )
+        };
+        let linked = linked_modules(checked);
+        let mut certified: Vec<CertifiedRoot> = Vec::new();
+        for (index, root) in roots(checked).map_err(fail)?.iter().enumerate() {
+            let lowered =
+                lower_root(&linked, &root.module, &root.name, root.report).map_err(fail)?;
+            let module = format!("LexLeanPreserve.C{semantic_hex32}.R{index}");
+            let generated = certificate(
+                &linked,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+            )
+            .map_err(fail)?;
+            // Certificate B: the root's crate in each of its targets
+            // simulates the lowered program.
+            let mut renderings = Vec::new();
+            for row in &root.report.targets {
+                let profile =
+                    crate::calculus::rust::Profile::named(&row.target).ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust profile", row.target)))
+                    })?;
+                let rendered =
+                    crate::calculus::rust::lower(&lowered.program, profile).map_err(|reason| {
+                        fail(internal(format!(
+                            "{} has no rendering in {}: {reason}",
+                            root.report.root, row.target
+                        )))
+                    })?;
+                let module_b = rust_cert::module_for(&module, &row.target).ok_or_else(|| {
+                    fail(internal(format!("`{}` is not a Rust target", row.target)))
+                })?;
+                let certificate_b = rust_cert::certificate_b(&lowered.program, &rendered, &module_b)
+                    .map_err(|reason| {
+                        fail(Diagnostic::new(
+                            code!("LLV7015"),
+                            format!(
+                                "certificate B: `{module_b}`: no derivation relates {} to its {} rendering: {reason}",
+                                root.report.root, row.target
+                            ),
+                        ))
+                    })?;
+                // Certificate E: A and B composed, for the root's rendering.
+                let module_e = rust_cert::module_for(&format!("{module}.Compose"), &row.target)
+                    .ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust target", row.target)))
+                    })?;
+                let fallible = crate::calculus::rust::fallible_functions(&lowered.program)
+                    .map_err(|reason| fail(internal(reason)))?
+                    .get(lowered.entry() as usize)
+                    .copied()
+                    .ok_or_else(|| fail(internal("a lowered program without its entry")))?;
+                let composed = crate::production::certificate::certificate_e(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    &lowered,
+                    &module,
+                    &module_b,
+                    &module_e,
+                    fallible,
+                )
+                .map_err(fail)?;
+                renderings.push(CertifiedRendering {
+                    target: row.target.clone(),
+                    certificate: certificate_b.into_certificate(),
+                    composed,
+                });
+            }
+            certified.push(CertifiedRoot {
+                root: root.report.root.clone(),
+                targets: root
+                    .report
+                    .targets
+                    .iter()
+                    .map(|row| row.target.clone())
+                    .collect(),
+                certificate: generated,
+                renderings,
+            });
+        }
+        let certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .map(|root| root.certificate.clone())
+            .collect();
+        let rendered_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.certificate.clone())
+            })
+            .collect();
+        let composed_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.composed.clone())
+            })
+            .collect();
+        let staged_certificates: Vec<crate::production::certificate::Certificate> = certificates
+            .iter()
+            .chain(&rendered_certificates)
+            .chain(&composed_certificates)
+            .cloned()
+            .collect();
+        let is_b = |module: &str| {
+            rendered_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
+        let is_e = |module: &str| {
+            composed_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
+        let reject = |module: &str, output: &str| {
+            if is_e(module) {
+                Diagnostic::new(
+                    code!("LLV7016"),
+                    format!(
+                        "certificate E: `{module}` was rejected: {}",
+                        first_error(output)
+                    ),
+                )
+            } else if is_b(module) {
+                Diagnostic::new(
+                    code!("LLV7015"),
+                    format!(
+                        "certificate B: `{module}` was rejected: {}",
+                        first_error(output)
+                    ),
+                )
+            } else {
+                rejected(module, output)
+            }
+        };
+        let generated_modules: Vec<String> = build
+            .modules
+            .iter()
+            .map(|module| module.lean_module.clone())
+            .collect();
+        let stage = preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
+        let preserve_src = staging_utf8.join("preserve-src");
+        let preserve_oleans = staging_utf8.join("preserve-oleans");
+        let preserve_path =
+            std::env::join_paths([preserve_oleans.as_std_path(), olean_root.as_std_path()])
+                .map_err(|error| fail(internal(format!("the preservation search path: {error}"))))?
+                .to_string_lossy()
+                .into_owned();
+        for file in stage
+            .environment
+            .iter()
+            .chain(&stage.certificates)
+            .chain([&stage.audit])
+        {
+            write_staged(
+                staging.path(),
+                &format!("preserve-src/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+        }
+        let compile = |file: &preserve::StagedFile, output: bool| {
+            let source = preserve_src.join(&file.path);
+            let mut argv = vec![
+                "env".to_owned(),
+                "lean".to_owned(),
+                "-R".to_owned(),
+                preserve_src.to_string(),
+            ];
+            if output {
+                let olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
+                if let Some(parent) = olean.parent() {
+                    std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                        Diagnostic::new(code!("LLB6003"), format!("staging oleans: {io_error}"))
+                    })?;
+                }
+                argv.push("-o".to_owned());
+                argv.push(olean.to_string());
+            }
+            argv.push(source.to_string());
+            run_child(
+                &ChildSpec {
+                    tool: "lean",
+                    module: Some(file.module.clone()),
+                    program: &toolchain.lake.path,
+                    executable_sha256: toolchain.lean.sha256,
+                    argv,
+                    cwd: &workspace_root,
+                    extra_env: vec![("LEAN_PATH".to_owned(), preserve_path.clone())],
+                    home: ChildHome::Toolchain {
+                        toolchain_bin: &toolchain_bin,
+                    },
+                },
+                &limits,
+                &normalizer,
+            )
+        };
+        for file in &stage.environment {
+            let record = compile(file, true).map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                return Err(fail(Diagnostic::new(
+                    code!("LLV7014"),
+                    format!(
+                        "preservation environment: `{}` does not compile silently under the pinned Lean: {}",
+                        file.module,
+                        first_error(&format!("{}{}", record.stdout, record.stderr))
+                    ),
+                )));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/preserve/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            process_records.push(record);
+        }
+        for file in &stage.certificates {
+            let record = compile(file, true).map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                let combined = format!("{}{}", record.stdout, record.stderr);
+                return Err(fail(reject(&file.module, &combined)));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/preserve/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            process_records.push(record);
+            let replay = leanchecker::run_leanchecker(
+                &toolchain,
+                &file.module,
+                &preserve_path,
+                &workspace_root,
+                &limits,
+                &normalizer,
+            )
+            .map_err(fail)?;
+            if replay.exit_code != 0 {
+                let combined = format!("{}{}", replay.stdout, replay.stderr);
+                return Err(fail(reject(&file.module, &combined)));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/leanchecker/{}.json", file.module),
+                &replay.to_json().to_file_bytes(),
+            )?;
+            process_records.push(replay);
+        }
+        let audit_record = compile(&stage.audit, false).map_err(fail)?;
+        let audit_output = format!("{}{}", audit_record.stdout, audit_record.stderr);
+        if audit_record.exit_code != 0 {
+            return Err(fail(rejected(&stage.audit.module, &audit_output)));
+        }
+        preserve::classify_audit(
+            &audit_output,
+            &certificates,
+            &rendered_certificates,
+            &composed_certificates,
+        )
+            .map_err(fail)?;
+        write_staged(
+            staging.path(),
+            &format!("process/preserve/{}.json", stage.audit.module),
+            &audit_record.to_json().to_file_bytes(),
+        )?;
+        process_records.push(audit_record);
+        for file in &stage.certificates {
+            write_staged(
+                staging.path(),
+                &format!("preserve/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+        }
+        write_staged(
+            staging.path(),
+            "preserve/audit.txt",
+            audit_output.as_bytes(),
+        )?;
+        let bytes = preserve::record(&certified).to_file_bytes();
+        write_staged(staging.path(), "preserve/preservation.json", &bytes)?;
+        preservation_row = Some(Json::object(vec![
+            ("byte_length", Json::from_usize(bytes.len())),
+            ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
+        ]));
+        let _ = std::fs::remove_dir_all(preserve_src.as_std_path());
+        let _ = std::fs::remove_dir_all(preserve_oleans.as_std_path());
+    }
+
     // Stage 13: optional configured PDF rendering (§19.7): one row and two
     // process records per module.
     let mut pdf_rows: Vec<Json> = Vec::new();
@@ -1782,6 +2105,9 @@ pub fn run(
     ];
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
+    }
+    if let Some(row) = preservation_row {
+        body_fields.push(("preservation", row));
     }
     if !pdf_rows.is_empty() {
         body_fields.push(("pdf", Json::Arr(pdf_rows)));

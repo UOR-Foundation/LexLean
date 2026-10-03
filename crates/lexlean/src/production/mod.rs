@@ -7,8 +7,14 @@
 //! and formal-only content coexists with executable roots because only the
 //! computational closure of a root is ever inspected.
 
+pub mod certificate;
 pub mod eligibility;
 pub mod lcnf;
+pub mod lower;
+pub mod preserve;
+pub mod rust_cert;
+pub mod rust_term;
+pub(crate) mod source;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;

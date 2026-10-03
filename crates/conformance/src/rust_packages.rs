@@ -87,7 +87,7 @@ pub fn bound_to_source(committed: &Committed) -> Result<(), String> {
     }
     let map: serde_json::Value = serde_json::from_slice(
         &std::fs::read(
-            root.join("compiler/expected/build/maps/Compiler/TargetFixtures.map.json")
+            root.join("compiler/expected/build/maps/LexLeanTarget/TargetFixtures.map.json")
                 .as_std_path(),
         )
         .map_err(|error| format!("the TargetFixtures source map: {error}"))?,

@@ -1,0 +1,83 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{mapOps}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(m : Map (String) (Nat)) (k : String) (v : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Map (String) (Nat)) ((Prod (Map (String) (Nat)) ((Prod (Option (Nat)) ((Prod (Bool) ((Prod (List (String)) ((Prod (List (Nat)) ((Prod (Nat) (List ((Prod (String) (Nat)))))))))))))))))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.mapInsert (m) (k) (v) : Map (String) (Nat)), ((LexLeanCollections.mapRemove (m) (k) : Map (String) (Nat)), ((LexLeanCollections.mapLookup (m) (k) : Option (Nat)), ((LexLeanCollections.mapContains (m) (k) : Bool), ((LexLeanCollections.mapKeys (m) : List (String)), ((LexLeanCollections.mapValues (m) : List (Nat)), ((LexLeanCollections.mapSize (m) : Nat), (LexLeanCollections.mapEntries (m) : List ((Prod (String) (Nat)))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{mapFolding}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(m : Map (Nat) (Nat)) (bonus : Nat)}.\par
+\noindent Closure 1: binds \texttt{(acc, key, value)}, captures \texttt{(bonus)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.mapFold ((fun (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus)))) (0) (m) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setOps}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Set (Nat)) (t : Set (Nat)) (x : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Set (Nat)) ((Prod (Set (Nat)) ((Prod (Bool) ((Prod (Set (Nat)) ((Prod (Set (Nat)) ((Prod (Set (Nat)) ((Prod (Nat) (List (Nat)))))))))))))))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.setInsert (s) (x) : Set (Nat)), ((LexLeanCollections.setRemove (s) (x) : Set (Nat)), ((LexLeanCollections.setContains (s) (x) : Bool), ((LexLeanCollections.setUnion (s) (t) : Set (Nat)), ((LexLeanCollections.setIntersection (s) (t) : Set (Nat)), ((LexLeanCollections.setDifference (s) (t) : Set (Nat)), ((LexLeanCollections.setSize (s) : Nat), (LexLeanCollections.setElements (s) : List (Nat)))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{folds}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (s : Set (Int))}.\par
+\noindent Closure 1: binds \texttt{(a, x)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(a, x)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) (Int))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (a : Nat) (x : Nat) => (a + x))) (0) (xs) : Nat), (LexLeanCollections.setFold ((fun (a : Int) (x : Int) => (LexLeanRuntime.subtract (a) (x) : Int))) ((5 : Int)) (s) : Int))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{iterations}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat) (start : Nat)}.\par
+\noindent Closure 1: binds \texttt{(x)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(x)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Nat) (Bool))))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterate ((fun (x : Nat) => (x + 1))) (n) (start) : Nat), (LexLeanCollections.iterateUntil ((fun (x : Nat) => (if (Nat.blt (x) (10)) then Option.some ((x + 2)) else Option.none))) (n) (start) : (Prod (Nat) (Bool))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{graphs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(g : Map (Nat) (Set (Nat))) (start : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Set (Nat)) ((Prod (Set (Nat)) (Option (List (Nat))))))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.graphSuccessors (g) (start) : Set (Nat)), ((LexLeanCollections.graphReachable (g) (start) : Set (Nat)), (LexLeanCollections.graphTopological (g) : Option (List (Nat)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{stringGraph}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(g : Map (String) (Set (String)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (List (String))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.graphTopological (g) : Option (List (String)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{keyTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Map ((Prod (Nat) (String))) (Bool)) (k : (Prod (Nat) (String))) (i : Map (Int8) (Nat)) (j : Int8) (b : Map (Bool) (Nat)) (c : Bool) (d : Map (Int) (Nat)) (e : Int) (u : Map (UInt64) (Nat)) (w : UInt64)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{(Prod (Option (Bool)) ((Prod (Option (Nat)) ((Prod (Option (Nat)) ((Prod (Option (Nat)) (Option (Nat)))))))))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.mapLookup (a) (k) : Option (Bool)), ((LexLeanCollections.mapLookup (i) (j) : Option (Nat)), ((LexLeanCollections.mapLookup (b) (c) : Option (Nat)), ((LexLeanCollections.mapLookup (d) (e) : Option (Nat)), (LexLeanCollections.mapLookup (u) (w) : Option (Nat))))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{literals}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Nat) (s : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{(Prod (Map (String) (Nat)) ((Prod (Set (Nat)) (Map (Nat) (Set (Nat))))))}.\par
+\noindent Definition: \texttt{(([("a", x), ("b", 2)] : List (Prod (String) (Nat))), (([1, 3] : List (Nat)), ([(1, [2]), (2, [1])] : List (Prod (Nat) (List (Nat))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

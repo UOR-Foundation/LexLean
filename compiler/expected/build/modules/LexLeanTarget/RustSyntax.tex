@@ -1,0 +1,196 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{IdentKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{binding}: \texttt{()}.\par
+\noindent Constructor \texttt{holder}: \texttt{()}.\par
+\noindent Constructor \texttt{operand}: \texttt{()}.\par
+\noindent Constructor \texttt{callee}: \texttt{()}.\par
+\noindent Constructor \texttt{boxed}: \texttt{()}.\par
+\noindent Constructor \texttt{part}: \texttt{()}.\par
+\noindent Constructor \texttt{capture}: \texttt{()}.\par
+\noindent Constructor \texttt{param}: \texttt{()}.\par
+\noindent Constructor \texttt{function}: \texttt{()}.\par
+\subsection*{\texttt{Ident}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{generated}: \texttt{(IdentKind, Nat)}.\par
+\noindent Constructor \texttt{exported}: \texttt{(String)}.\par
+\subsection*{\texttt{RustType}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{unit}: \texttt{()}.\par
+\noindent Constructor \texttt{bool}: \texttt{()}.\par
+\noindent Constructor \texttt{nat}: \texttt{()}.\par
+\noindent Constructor \texttt{int}: \texttt{()}.\par
+\noindent Constructor \texttt{fixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{ordering}: \texttt{()}.\par
+\noindent Constructor \texttt{str}: \texttt{()}.\par
+\noindent Constructor \texttt{bytes}: \texttt{()}.\par
+\noindent Constructor \texttt{option}: \texttt{(RustType)}.\par
+\noindent Constructor \texttt{result}: \texttt{(RustType, RustType)}.\par
+\noindent Constructor \texttt{list}: \texttt{(RustType)}.\par
+\noindent Constructor \texttt{pair}: \texttt{(RustType, RustType)}.\par
+\noindent Constructor \texttt{adt}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{fn}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{rc}: \texttt{(RustType)}.\par
+\noindent Constructor \texttt{fallible}: \texttt{(RustType)}.\par
+\noindent Constructor \texttt{ref}: \texttt{(RustType)}.\par
+\subsection*{\texttt{Lit}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{unit}: \texttt{()}.\par
+\noindent Constructor \texttt{bool}: \texttt{(Bool)}.\par
+\noindent Constructor \texttt{nat}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{int}: \texttt{(Int)}.\par
+\noindent Constructor \texttt{fixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind, Int)}.\par
+\noindent Constructor \texttt{str}: \texttt{(String)}.\par
+\noindent Constructor \texttt{bytes}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{ordering}: \texttt{(LexLeanTarget.TargetSyntax.Order)}.\par
+\subsection*{\texttt{Ctor}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{none}: \texttt{(RustType)}.\par
+\noindent Constructor \texttt{some}: \texttt{()}.\par
+\noindent Constructor \texttt{ok}: \texttt{(RustType, RustType)}.\par
+\noindent Constructor \texttt{err}: \texttt{(RustType, RustType)}.\par
+\noindent Constructor \texttt{adt}: \texttt{(Nat, Nat)}.\par
+\noindent Constructor \texttt{closure}: \texttt{(Nat, Nat)}.\par
+\noindent Constructor \texttt{cons}: \texttt{()}.\par
+\noindent Constructor \texttt{nil}: \texttt{(RustType)}.\par
+\subsection*{\texttt{Pat}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{wild}: \texttt{()}.\par
+\noindent Constructor \texttt{bind}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{unit}: \texttt{()}.\par
+\noindent Constructor \texttt{tuple}: \texttt{(List (Pat))}.\par
+\noindent Constructor \texttt{none}: \texttt{()}.\par
+\noindent Constructor \texttt{some}: \texttt{(Pat)}.\par
+\noindent Constructor \texttt{ok}: \texttt{(Pat)}.\par
+\noindent Constructor \texttt{err}: \texttt{(Pat)}.\par
+\noindent Constructor \texttt{ordering}: \texttt{(LexLeanTarget.TargetSyntax.Order)}.\par
+\noindent Constructor \texttt{adt}: \texttt{(Nat, Nat, List (Pat))}.\par
+\subsection*{\texttt{Item}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{natAdd}: \texttt{()}.\par
+\noindent Constructor \texttt{natSub}: \texttt{()}.\par
+\noindent Constructor \texttt{natMul}: \texttt{()}.\par
+\noindent Constructor \texttt{natQuot}: \texttt{()}.\par
+\noindent Constructor \texttt{natRem}: \texttt{()}.\par
+\noindent Constructor \texttt{natEq}: \texttt{()}.\par
+\noindent Constructor \texttt{natLe}: \texttt{()}.\par
+\noindent Constructor \texttt{natLt}: \texttt{()}.\par
+\noindent Constructor \texttt{natSucc}: \texttt{()}.\par
+\noindent Constructor \texttt{intAdd}: \texttt{()}.\par
+\noindent Constructor \texttt{intSub}: \texttt{()}.\par
+\noindent Constructor \texttt{intMul}: \texttt{()}.\par
+\noindent Constructor \texttt{intNeg}: \texttt{()}.\par
+\noindent Constructor \texttt{intQuot}: \texttt{()}.\par
+\noindent Constructor \texttt{intRem}: \texttt{()}.\par
+\noindent Constructor \texttt{boolNot}: \texttt{()}.\par
+\noindent Constructor \texttt{boolAnd}: \texttt{()}.\par
+\noindent Constructor \texttt{boolOr}: \texttt{()}.\par
+\noindent Constructor \texttt{equal}: \texttt{()}.\par
+\noindent Constructor \texttt{compare}: \texttt{()}.\par
+\noindent Constructor \texttt{checkedAdd}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedSub}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedMul}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedQuot}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedNeg}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{bitAnd}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{bitOr}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{bitXor}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{bitNot}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{shiftLeft}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{shiftRight}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{convert}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{appendList}: \texttt{()}.\par
+\noindent Constructor \texttt{appendBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{lengthList}: \texttt{()}.\par
+\noindent Constructor \texttt{lengthBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{lengthString}: \texttt{()}.\par
+\noindent Constructor \texttt{indexList}: \texttt{()}.\par
+\noindent Constructor \texttt{indexBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{sliceList}: \texttt{()}.\par
+\noindent Constructor \texttt{sliceBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{utf8Encode}: \texttt{()}.\par
+\noindent Constructor \texttt{utf8Decode}: \texttt{()}.\par
+\noindent Constructor \texttt{compareBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{splitExact}: \texttt{()}.\par
+\noindent Constructor \texttt{join}: \texttt{()}.\par
+\noindent Constructor \texttt{formatInt}: \texttt{()}.\par
+\noindent Constructor \texttt{formatFixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{parseInt}: \texttt{()}.\par
+\noindent Constructor \texttt{parseFixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\subsection*{\texttt{Callee}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{function}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{runtime}: \texttt{(Item)}.\par
+\subsection*{\texttt{Expr}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Code}.\par
+\noindent Constructor \texttt{lit}: \texttt{(Lit)}.\par
+\noindent Constructor \texttt{move}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{clone}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{copy}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{deref}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{not}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{unbox}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{box}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{call}: \texttt{(Callee, List (Expr), Bool)}.\par
+\noindent Constructor \texttt{apply}: \texttt{(Ident, List (Expr), Bool)}.\par
+\noindent Constructor \texttt{construct}: \texttt{(Ctor, List (Expr))}.\par
+\noindent Constructor \texttt{pair}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{cond}: \texttt{(Expr, Block, Block)}.\par
+\noindent Constructor \texttt{matchOn}: \texttt{(Expr, List (Arm))}.\par
+\noindent Constructor \texttt{block}: \texttt{(Block)}.\par
+\noindent Constructor \texttt{uncons}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{isZero}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{nonZero}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{predecessor}: \texttt{(Ident)}.\par
+\noindent Constructor \texttt{widen}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{succeed}: \texttt{(Expr)}.\par
+\subsection*{\texttt{Let}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Code}.\par
+\noindent Constructor \texttt{mk}: \texttt{(Pat, Option (RustType), Expr)}.\par
+\subsection*{\texttt{Block}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Code}.\par
+\noindent Constructor \texttt{mk}: \texttt{(List (Let), Expr)}.\par
+\subsection*{\texttt{Arm}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Mutual group: \texttt{Code}.\par
+\noindent Constructor \texttt{mk}: \texttt{(Pat, Block)}.\par
+\subsection*{\texttt{CaptureRead}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{copy}: \texttt{()}.\par
+\noindent Constructor \texttt{clone}: \texttt{()}.\par
+\noindent Constructor \texttt{unbox}: \texttt{()}.\par
+\noindent Constructor \texttt{unit}: \texttt{()}.\par
+\subsection*{\texttt{Dispatch}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{function}: \texttt{Nat}.\par
+\noindent Field \texttt{captures}: \texttt{List (CaptureRead)}.\par
+\noindent Field \texttt{functionFallible}: \texttt{Bool}.\par
+\subsection*{\texttt{Variant}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{number}: \texttt{Nat}.\par
+\noindent Field \texttt{fields}: \texttt{List (RustType)}.\par
+\subsection*{\texttt{Parameter}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{pattern}: \texttt{Pat}.\par
+\noindent Field \texttt{type}: \texttt{RustType}.\par
+\subsection*{\texttt{ItemDef}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{enum}: \texttt{(RustType, List (Variant))}.\par
+\noindent Constructor \texttt{apply}: \texttt{(Nat, List (RustType), RustType, Bool, List (Dispatch))}.\par
+\noindent Constructor \texttt{function}: \texttt{(Ident, List (Parameter), RustType, Block)}.\par
+\subsection*{\texttt{Profile}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{core}: \texttt{()}.\par
+\noindent Constructor \texttt{std}: \texttt{()}.\par
+\subsection*{\texttt{Crate}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{profile}: \texttt{Profile}.\par
+\noindent Field \texttt{items}: \texttt{List (ItemDef)}.\par
+\end{document}

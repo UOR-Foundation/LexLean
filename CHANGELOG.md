@@ -15,6 +15,67 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Semantic preservation from the source to the realization calculus
+  (SPEC.md §17.17, `SP-01`..`SP-06`): every production root is lowered to a
+  target program and certified by a kernel-checked Lean theorem (certificate
+  A) that the lowered program converges on the encoded arguments to the
+  encoded source value, or to overflow exactly where the width predicate
+  fails. The hand-written proof library and the calculus modules ship as
+  language data under `language/preservation-1.2/`, with every library
+  declaration's axioms pinned in `library.toml`. `lexlean verify` checks the
+  certificates after named-root extraction, publishes them with
+  `preserve/preservation.json` (`schemas/preservation.schema.json`), binds the
+  record in the attestation, and fails closed with `LLV7013` (a rejected
+  certificate) or `LLV7014` (a drifted preservation environment). The
+  compiler project's module prefix is now `LexLeanTarget`.
+- The graph templates of the calculus library now count and order every
+  node, successors without their own entry included, as the Lean rendering
+  does; `graph_topological`'s instance is in first-binding order.
+- Fixed a pre-existing defect: `LLV7012` (Lean compiler-front-end authority
+  drift) is registered in the environment class with exit code 3, but the
+  compiler mapped it to the language class and exited 1. The code now exits
+  3, `conformance_cl_11` asserts every registered code's class and exit code
+  against `model/errors.toml`, and the `extraction-authority-drift` fixture
+  expects exit 3.
+- The declared Rust machine (SPEC.md §17.17, `SP-07`): the meaning of a
+  rendered crate is stated by the generated, kernel-checked LexLean modules
+  `RustSyntax` (the closed Rust AST) and `RustSemantics` (its evaluator over
+  calculus values, `?` as a raise out of the function, each runtime item as
+  the calculus primitive it realizes, and the machine's abort on an
+  unrealizable sequence length), shipped beside the calculus modules. Every
+  certified root's crate prints to a Lean term (`production::rust_term`) that
+  the machine evaluates in agreement with the calculus interpreter.
+- Certificate B (SPEC.md §17.17, `SP-08`): each certified root's crate in
+  each of its targets is related to its lowered program by a kernel-checked
+  simulation theorem, `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd`.
+  The library proves once that every derivation of its closed
+  correspondence `Corr` is sound for the machine (`sound`, `simulate`); the
+  aligner (`production::rust_cert`) writes each function's derivation, whose
+  side conditions the kernel decides. `audit-production` holds the aligner's
+  rules, `Corr`'s constructors, and the soundness theorem's cases to one
+  another and requires the aligner to name every calculus construct with no
+  default arm. `lexlean verify` derives, checks, replays, and audits
+  certificate B beside certificate A, records it under `renderings` in
+  `preservation.json`, and refuses a rendering it cannot certify with
+  `LLV7015` (negative fixture `certificate-b-rejected`).
+- Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
+  refused every root that reached an `Init` function whose module does not
+  expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,
+  `String.intercalate`, `List.takeTR`), because the module system exports
+  such a definition as an axiom, and every root whose LCNF types carry the
+  `borrowed` annotation (an instance over `Nat.div` or `Int.div`), because
+  the adapter recorded all metadata as unsupported. The adapter now records
+  each constant's declared kind (`Lean.getOriginalConstKind?`), whether
+  Lean's compiler holds an external's code (`Lean.IR.findEnvDecl`), and the
+  `borrowed` annotation (`Lean.annotation?`), each registered in
+  `language/lcnf-1.2/authority.toml`; the host admits an exported axiom
+  exactly when it was declared a computable definition with compiled code,
+  as Lean's own code generator does, and reads a borrowed type as the type
+  it annotates. Declared axioms, opaques, unsafe, partial, and noncomputable
+  dependencies, other metadata, and a kind that differs from the declared
+  kind still fail with `LLV7011` (`NE-03`). The coverage corpus that these
+  defects had kept out of verification is now the verified example
+  `examples/production-coverage`, whose certificates `lexlean verify` checks.
 - Language 1.2 (SPEC.md §17.12): a strict extension of language 1.1 selected
   by `language = "1.2"`, with builtin packages at `1.2.0`, the lock schema
   `lexlean/lock/2`, the semantic-module schema `lexlean/semantic-module/2`,

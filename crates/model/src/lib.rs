@@ -12,6 +12,7 @@
 #![deny(missing_docs)]
 
 pub mod codegen;
+pub mod correspondence;
 pub mod exhaustive;
 pub mod registry;
 pub mod release;

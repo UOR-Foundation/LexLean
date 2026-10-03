@@ -12,7 +12,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 290 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 299 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
@@ -23,7 +23,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
-- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, the generated `TargetFixtures` and `GnafFixtures` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` model, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the model's definition in `crates/conformance/src/gnaf_model.rs`, and the renderer produce (§17.14, §17.15); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
+- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, the generated `TargetFixtures` and `GnafFixtures` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` model, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the model's definition in `crates/conformance/src/gnaf_model.rs`, and the renderer produce (§17.14, §17.15), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
 - `just verify-write` (`cargo xtask verify-examples --write`) is the only path that rewrites `examples/*/expected/verify/`.
 - `just release` runs `vv` and then `cargo xtask release-check` (RP-12): every §30.3 artifact by content, the §30.4 completion criteria, and the crate-packaging round trip (`cargo package`, extract, offline build, `--version` equal to the in-repository binary). It is refused until 1.0.0.
 
@@ -771,6 +771,105 @@ gate failed: compiler/src/TargetSemantics.lex.tex differs from its generator; ru
 Removed: the committed module was restored; the gate reports 208 generated
 files equal to their generator.
 
+### check-calculus covers the shipped calculus modules
+
+Planted: one comment line appended to
+`language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean`, the copy
+certificates import. Command: `cargo xtask check-calculus`. Expected: the
+shipped module no longer equals the compiler project's golden module (§17.17),
+reported before any file whose provenance binds the compiler-semantics ID.
+
+```text
+gate failed: <root>/language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean differs from the compiler golden <root>/compiler/expected/build/modules/LexLeanTarget/TargetSyntax.lean; run `cargo xtask check-calculus --write`
+```
+
+Removed: the line was deleted; `cargo xtask check-calculus` reports 581
+generated files equal to their generator.
+
+### audit-production covers the preservation sources
+
+Planted: `fn planted(t: Option<u8>) { if let Some(_) = t {} }` appended to
+`crates/lexlean/src/production/certificate.rs`. Command: `cargo xtask
+validate-model`. Expected: the certificate generator matches a construct by
+default (§17.17 extends §17.13's audit to the lowering, the generator, and
+the source reader).
+
+```text
+gate failed: §17.17: crates/lexlean/src/production/certificate.rs:6381: an `if let` with an implicit default would classify constructs by default
+```
+
+Removed: the function was deleted; `audit-production` reports that the three
+preservation sources match no construct by default. `conformance_sp_01` plants
+an `if let`, a `matches!`, and a wildcard arm in each source and requires
+the audit to refuse every one.
+
+### audit-production closes certificate B's rule set
+
+Planted: in `crates/lexlean/src/production/rust_cert.rs`, the block
+judgment's arm `Term::Apply { .. } => self.apply(g, fl, false, term, lets,
+tail),` rewritten as `_ => self.apply(g, fl, false, term, lets, tail),`.
+Command: `cargo xtask validate-model`. Expected: the aligner meets a
+calculus construct by default (§17.17, SP-08).
+
+```text
+gate failed: §17.17 (SP-08): crates/lexlean/src/production/rust_cert.rs: the block judgment does not name the construct `Term::Apply`
+crates/lexlean/src/production/rust_cert.rs: the block judgment has a wildcard arm, which would meet a construct by default
+```
+
+Removed: the arm was restored; `audit-production` reports that certificate
+B's 49 rules are exactly the correspondence's constructors, each a case of
+its soundness theorem, with every calculus construct named.
+`conformance_sp_08` plants, in the repository's own sources, a rule dropped
+from the aligner's `RULES`, a case renamed in `sound`, and this wildcard arm,
+and requires each to be reported; the unit tests of
+`repo_model::correspondence` plant a duplicate rule, an extra constructor, a
+stray soundness case, a rule never written, a binding arm, and a calculus
+construct the aligner does not name.
+
+### CL-11 covers every registered code's class
+
+Planted: `LLV7012` absent from the environment arm of
+`DiagnosticCode::class` (`crates/lexlean/src/diagnostic.rs`), the state the
+repository was in before the fix. Command: `cargo test -p repo-conformance
+--test conformance conformance_cl_11`. Expected: the code's mapped class and
+exit code differ from its `model/errors.toml` row (§23.6, R1).
+
+```text
+thread 'conformance_cl_11' panicked at crates/conformance/src/cases/cli_api.rs:539:13:
+§23.6: codes whose mapped class differs from model/errors.toml: ["LLV7012: registered environment (exit 3), mapped language (exit 1)"]
+```
+
+Removed: `LLV7012` was added to the environment arm (with `LLV7014`); the case
+passes, and the `extraction-authority-drift` fixture expects exit 3.
+
+### NE-03 admits an exported axiom only as a compiled definition
+
+Planted, one at a time, in `admissible_external` and the record reader
+(`crates/lexlean/src/production/lcnf.rs`): (1) the `compiled` requirement
+dropped; (2) the `borrowed` annotation read as an unsupported form, the state
+before the fix; (3) every external reported as an axiom treated as an
+exported definition, whatever kind it was declared with. Command: `cargo test
+-p repo-conformance --all-features --test conformance conformance_ne_03
+conformance_ex_07`. Expected: the planted rule admits what §22.10 refuses, or
+refuses what it admits.
+
+```text
+(1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:382:13:
+/home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
+(2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:666:18:
+a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
+(3) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is an axiom", got Ok(CompilerInput { …
+```
+
+Removed: each plant restored; both cases pass. Before the fix, verifying
+`examples/production-coverage` failed with `LLV7011` at `String.toInt?`,
+`String.toUTF8`, and `List.takeTR` (axioms in the exported view) and at the
+`metadata` type of `instQuotientNat`; it now verifies, its 33 certificates
+included.
+
 ### calculus kernel oracle can fail
 
 Planted: the reference interpreter computed `int_rem` as a Euclidean
@@ -780,7 +879,7 @@ the stated expectation of `int-arithmetic` changed from -1 to 1. The oracle
 is Lean's kernel. Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   intArithmeticRun
 is not definitionally equal to the right-hand side
 ```
@@ -903,7 +1002,7 @@ fixtures from it. The oracle is Lean's kernel over the LexLean denotation.
 Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
   TargetSemantics.Outcome.value (TargetSyntax.Value.nat 37) 49
@@ -922,7 +1021,7 @@ the new fixture `byte-compare` applies `compare_bytes` alone. Command:
 `byte-compare`:
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   byteCompareRun
 is not definitionally equal to the right-hand side
 ```
@@ -1627,7 +1726,7 @@ module can no longer reduce `run`, which `TargetSemantics` defines through
 `LexLeanRuntime.index`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
 ```
@@ -2480,7 +2579,10 @@ Removed: the copy was discarded; the committed example verifies.
 
 The literal §29 example verifies against real `leanprover/lean4:v4.32.1`: probe elaboration, module compilation, separate-process `leanchecker` replay, exact `#print axioms` parsing, and the `\noaxioms` policy over an empty observed set (`conformance_ex_01`). The required §29.6 mutations are mechanized: a false proposition fails inside Lean and remaps to the source proof sentence (`conformance_ex_02`, `conformance_pf_18`); an undeclared title word fails lexical closure (`conformance_ex_03`); an indistinguishable same-surface entry is ambiguity, never priority (`conformance_ex_04`); an insufficient axiom allow-list fails policy checking with the observed excess recorded (`conformance_ex_05`, `conformance_vr_16`); and two clean builds in distinct paths publish byte-identical trees (`conformance_ex_06`, plus `just repro`).
 
-The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
+The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_sp_06` collects the constructs every
+certified root realizes and requires every runtime row of
+`language/production-1.2.toml` among them; with the coverage example's collection roots
+withheld, `primitive.map_insert` and the other collection rows are reported. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
 
 ## Generic language delta verification (Issue #4)
 
@@ -2504,7 +2606,7 @@ Every upstream authority cited by LexLean (`model/authorities.toml`) is bound to
 
 Oracle execution evidence binds positive and negative paths:
 - Positive execution: End-to-end elaboration, kernel replay, and axiom auditing across all examples (`list-induction`, `nat-add-zero`, `peano-arithmetic`, `propositional-logic`, `semantic-1.1`, `uor-atlas`).
-- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
+- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`, `extraction-uncompiled-external`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
 - Non-executable boundaries: Lean's mathematical correctness is an external authority guarantee (`some-true`), not proven by LexLean; `leanchecker` is a same-kernel replay mechanism rather than an independent verifier.
 
 ## First-party package identity and publishing bootstrap closure (Issue #5)
@@ -2568,3 +2670,80 @@ LexLean synthesizes complete release artifacts, evidence receipts, and authorita
   - Both positive execution (elaboration, kernel replay, axiom auditing across all examples) and negative execution (non-vacuous mutation rejection in tests/negative/) are validated and bound to upstream commit digests.
 - Downstream integration:
   - PrismPM dependency/identity checks referencing LexLean pass without manual exceptions or source assumptions.
+
+## Semantic preservation (Issue #25)
+
+`conformance_sp_01` lowers every production root of the language-1.2 examples
+(`examples/production-coverage` among them) twice and
+requires one valid program in first-binding order, an origin for every
+function and ADT, and exactly the root's eligibility closure; a report with a
+member removed must fail with `LLI9001`, and `validate-model` audits the
+lowering, the certificate generator, and the source reader for default
+matches. `conformance_sp_02` generates certificate A for every production root
+of `examples/production` (6 roots) and `examples/production-coverage` (33 roots), compiles each
+with the pinned Lean beside the shipped library, the shipped calculus modules,
+and the generated modules, replays each through `leanchecker` (the same
+kernel, §22.4), and requires every root theorem to depend on exactly
+`Classical.choice`, `Quot.sound`, and `propext`; it then regenerates
+certificates against programs with a planted branch swap, an addition that
+subtracts, a wrong constructor, a wrong callee, and a wrong literal, and
+requires Lean to reject all five. `conformance_sp_03` runs six seeded inputs
+per root through the calculus interpreter and through Lean's evaluation of
+each certificate's `denote`, requires every pair to agree (234 cases), and
+requires one altered outcome to be reported. `conformance_sp_04` compares
+every library declaration's printed axioms with
+`language/preservation-1.2/library.toml` (406 declarations), the shipped
+calculus modules with the compiler golden, and refuses planted `sorry`,
+`axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
+import. Each theorem is a kernel-checked proof about the root it names; the
+generator, the library's coverage of constructs, and the coverage example are `build`
+evidence for roots not certified. `conformance_sp_07` checks the declared Rust machine: the generated
+`RustSyntax` and `RustSemantics` sources equal their generator
+(`crates/conformance/src/rust_source.rs`), their shipped copies equal the
+compiler golden (which `cargo xtask verify-examples` reverifies with exact
+axioms), the machine declares exactly the renderer's runtime items with the
+renderer's failure and heap classes, and every certified root's crate, in
+every target it is eligible for, prints to a `RustSyntax` term that the
+pinned Lean elaborates and evaluates on the differential's seeded inputs,
+each outcome equal to the calculus interpreter's on the lowered program.
+`conformance_sp_08` checks certificate B: the closed-rule-set audit
+(`repo_model::correspondence`, also run by `cargo xtask validate-model`)
+holds on the repository's aligner, correspondence, soundness theorem, and
+calculus, the aligner's `RULES` equal `Corr`'s constructors in order, and a
+rule dropped from `RULES`, a case renamed in `sound`, and a wildcard arm in
+the block judgment are each reported; every renderer fixture in every profile
+that renders it (138 renderings) has a certificate B whose
+derivations use only declared rules, and with the certified roots'
+renderings every one of the 49 rules is used; every certified root carries a
+certificate B in each of its targets, audited in the certification run; the
+fixtures' certificates compile, replay through `leanchecker`, and their
+`root` theorems depend on exactly the three axioms. Seven crate mutations
+(an `if`'s branches swapped, `nat_add` as `nat_sub`, a checked addition
+as a checked subtraction, a sibling enum variant, a byte literal one byte
+longer, a neighbouring callee, a natural literal plus one), each planted in
+the first rendering that admits it, are refused twice: the aligner derives
+nothing for the mutated crate or Lean rejects the derivation it writes, and
+Lean rejects the unmutated derivation restated over the mutated crate. An
+eighth mutation moves the first checked operation to another width
+(`fixed_u8::checked_add` as `fixed_u16::checked_add`). The first run of
+this case planted it and Lean accepted the realigned derivation: the machine
+then read every width's item as the calculus's width-polymorphic primitive.
+The machine now indexes such items by width (`itemAccepts`), the
+correspondence's primitive rules require the operand types to have the
+item's width (`itemTyped`), and value typing carries a fixed-width value's
+width; the case requires certificate B to refuse the width change like the
+other seven, and the renderer's correspondence check to refuse it too. A
+ninth calls a list, bytes, or text item's sibling for another sequence
+(`length_string` as `length_bytes`); the machine's sequence guard
+(`itemTakes`) and value typing of lists, bytes, and text make certificate B
+refuse it as well.
+`conformance_sp_05` verifies
+`examples/production` and requires every certificate, the audit output, and a
+schema-valid `preservation.json` bound by the attestation in the published
+set; the negative fixtures `certificate-rejected` (a lake overlay turns the
+certificates' natural additions into subtractions) and `preservation-drift`
+(it appends a false theorem to the shipped library) must fail with `LLV7013`
+and `LLV7014` with nothing published, and `certificate-b-rejected` (the
+overlay turns every `nat_add` call of each certificate B's crate into
+`nat_sub`, leaving certificate A intact) with `LLV7015`.
+

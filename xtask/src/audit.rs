@@ -1209,8 +1209,8 @@ pub fn audit_generated(root: &Path) -> Result<(), Fail> {
             return Err(format!("{}: missing its $id `{identity}`", path.display()).into());
         }
     }
-    if count != 28 {
-        return Err(format!("§7 commits exactly 28 schemas, found {count}").into());
+    if count != 29 {
+        return Err(format!("§7 commits exactly 29 schemas, found {count}").into());
     }
     println!("audit-generated: {count} schemas canonical and identified");
     Ok(())
@@ -1561,9 +1561,27 @@ pub fn audit_production_exhaustive(root: &Path) -> Result<(), Fail> {
     let semantic = std::fs::read_to_string(root.join(repo_model::exhaustive::SEMANTIC_SOURCE))?;
     repo_model::exhaustive::audit_eligibility(&eligibility, &semantic)
         .map_err(|report| format!("§17.13: {report}"))?;
+    for path in repo_model::exhaustive::PRESERVATION_SOURCES {
+        let text = std::fs::read_to_string(root.join(path))?;
+        repo_model::exhaustive::audit_preservation(path, &text, &semantic)
+            .map_err(|report| format!("§17.17: {report}"))?;
+    }
+    let read = |path: &str| std::fs::read_to_string(root.join(path));
+    use repo_model::correspondence as corr;
+    let aligner = read(corr::ALIGNER_SOURCE)?;
+    let rules = corr::declared_rules(&aligner).map_err(|report| format!("§17.17: {report}"))?;
+    corr::audit(
+        &aligner,
+        &read(corr::CORRESPONDENCE_SOURCE)?,
+        &read(corr::SOUNDNESS_SOURCE)?,
+        &read(corr::CALCULUS_SOURCE)?,
+    )
+    .map_err(|report| format!("§17.17 (SP-08): {report}"))?;
     println!(
-        "audit-production: every construct of {} enums has an explicit disposition (PD-07)",
-        repo_model::exhaustive::AUDITED_ENUMS.len()
+        "audit-production: every construct of {} enums has an explicit disposition (PD-07), the {} preservation sources match no construct by default, and certificate B's {} rules are exactly the correspondence's constructors, each a case of its soundness theorem, with every calculus construct named (SP-08)",
+        repo_model::exhaustive::AUDITED_ENUMS.len(),
+        repo_model::exhaustive::PRESERVATION_SOURCES.len(),
+        rules.len()
     );
     Ok(())
 }

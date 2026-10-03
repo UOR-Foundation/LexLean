@@ -42,7 +42,10 @@ meta partial def type (e : Expr) : String :=
   | .lam .. => obj [("kind", str "unsupported"), ("expression", str "lambda")]
   | .letE .. => obj [("kind", str "unsupported"), ("expression", str "let")]
   | .lit _ => obj [("kind", str "unsupported"), ("expression", str "literal")]
-  | .mdata _ body => type body
+  | .mdata _ b =>
+    match annotation? `borrowed e with
+    | some _ => obj [("kind", str "borrowed"), ("type", type b)]
+    | none => obj [("kind", str "unsupported"), ("expression", str "metadata")]
   | .proj .. => obj [("kind", str "unsupported"), ("expression", str "projection")]
 
 meta def arg (a : Arg .pure) : String :=
@@ -106,6 +109,18 @@ meta def kind (info : ConstantInfo) : String :=
   | .ctorInfo _ => "constructor"
   | .recInfo _ => "recursor"
   | .quotInfo _ => "quotient"
+
+meta def originalKind (env : Environment) (n : Name) : String :=
+  match getOriginalConstKind? env n with
+  | some .defn => "definition"
+  | some .thm => "theorem"
+  | some .axiom => "axiom"
+  | some .opaque => "opaque"
+  | some .quot => "quotient"
+  | some .induct => "inductive"
+  | some .ctor => "constructor"
+  | some .recursor => "recursor"
+  | none => "unknown"
 
 meta partial def typeConstants (e : Expr) (out : NameSet) : NameSet :=
   match e with
@@ -229,7 +244,7 @@ meta def facts (env : Environment) (n : Name) (info : ConstantInfo) : CoreM (Lis
   let generates ← shouldGenerateCode n
   return [("name", name n), ("kind", str (kind info)), ("module", name (moduleOf env n)),
     ("computable", bool (!isNoncomputable env n)), ("generates_code", bool generates),
-    ("internal", bool n.isInternal)]
+    ("original_kind", str (originalKind env n)), ("internal", bool n.isInternal)]
 
 meta def run (roots modules : Array Name) : CoreM String := do
   let env ← getEnv
@@ -299,6 +314,7 @@ meta def run (roots modules : Array Name) : CoreM String := do
     let some info := env.find? r
       | throwError "lexlean-extract: unresolved constant `{r}`"
     let mut row ← facts env r info
+    row := row ++ [("compiled", bool (IR.findEnvDecl env r).isSome)]
     if let .ctorInfo ctor := info then
       row := row ++ [("inductive_type", name ctor.induct)]
     externals := externals.push (obj row)

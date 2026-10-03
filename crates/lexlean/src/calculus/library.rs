@@ -329,6 +329,230 @@ fn by_order(result: &Ty, key: Expr, other: Expr, less: Expr, equal: Expr, greate
     )
 }
 
+/// The boundary validators (§17.17): Boolean functions an entry calls to
+/// decide, at run time, §17.12's invariants of the values it receives. Each
+/// is the transcription of the preservation library's `Tpl.valid*Fn`, so a
+/// certificate states its index's function equal to the template by `rfl`.
+pub mod validators {
+    use super::{arm, boolean, call, cond, first, list, matching, pair, prim, second, var};
+    use crate::calculus::{Expr, Function, Prim, Shape, Ty};
+
+    fn function(types: Vec<Ty>, body: Expr) -> Function {
+        Function {
+            parameters: (0..types.len() as u64).collect(),
+            types,
+            result: Ty::Bool,
+            body,
+        }
+    }
+
+    /// `lessThanE a b`: whether the key order puts `a` strictly first.
+    fn less_than(a: Expr, b: Expr) -> Expr {
+        matching(
+            &Ty::Bool,
+            prim(Prim::Compare, vec![a, b]),
+            vec![
+                arm(Shape::Lt, Vec::new(), boolean(true)),
+                arm(Shape::Eq, Vec::new(), boolean(false)),
+                arm(Shape::Gt, Vec::new(), boolean(false)),
+            ],
+        )
+    }
+
+    /// `validTrueFn t`: a type without an invariant.
+    #[must_use]
+    pub fn trivial(ty: &Ty) -> Function {
+        function(vec![ty.clone()], boolean(true))
+    }
+
+    /// `validListFn this element t`: every element valid.
+    #[must_use]
+    pub fn list_of(this: u64, element: u64, ty: &Ty) -> Function {
+        function(
+            vec![list(ty)],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        cond(
+                            call(element, vec![var(1)]),
+                            call(this, vec![var(2)]),
+                            boolean(false),
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validSetFn this k`: the elements strictly ascending.
+    #[must_use]
+    pub fn set_of(this: u64, key: &Ty) -> Function {
+        function(
+            vec![list(key)],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        matching(
+                            &Ty::Bool,
+                            var(2),
+                            vec![
+                                arm(Shape::Nil, Vec::new(), boolean(true)),
+                                arm(
+                                    Shape::Cons,
+                                    vec![3, 4],
+                                    cond(
+                                        less_than(var(1), var(3)),
+                                        call(this, vec![var(2)]),
+                                        boolean(false),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validMapFn this value k w`: the keys strictly ascending, every
+    /// value valid.
+    #[must_use]
+    pub fn map_of(this: u64, value: u64, key: &Ty, stored: &Ty) -> Function {
+        function(
+            vec![list(&pair(key, stored))],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                    arm(
+                        Shape::Cons,
+                        vec![1, 2],
+                        cond(
+                            call(value, vec![second(var(1))]),
+                            matching(
+                                &Ty::Bool,
+                                var(2),
+                                vec![
+                                    arm(Shape::Nil, Vec::new(), boolean(true)),
+                                    arm(
+                                        Shape::Cons,
+                                        vec![3, 4],
+                                        cond(
+                                            less_than(first(var(1)), first(var(3))),
+                                            call(this, vec![var(2)]),
+                                            boolean(false),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            boolean(false),
+                        ),
+                    ),
+                ],
+            ),
+        )
+    }
+
+    /// `validOptionFn value t`.
+    #[must_use]
+    pub fn option_of(value: u64, ty: &Ty) -> Function {
+        function(
+            vec![Ty::Option {
+                value: Box::new(ty.clone()),
+            }],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::None, Vec::new(), boolean(true)),
+                    arm(Shape::Some, vec![1], call(value, vec![var(1)])),
+                ],
+            ),
+        )
+    }
+
+    /// `validPairFn left right a b`.
+    #[must_use]
+    pub fn pair_of(left: u64, right: u64, a: &Ty, b: &Ty) -> Function {
+        function(
+            vec![pair(a, b)],
+            cond(
+                call(left, vec![first(var(0))]),
+                call(right, vec![second(var(0))]),
+                boolean(false),
+            ),
+        )
+    }
+
+    /// `validResultFn ok error a b`.
+    #[must_use]
+    pub fn result_of(ok: u64, error: u64, a: &Ty, b: &Ty) -> Function {
+        function(
+            vec![Ty::Result {
+                ok: Box::new(a.clone()),
+                error: Box::new(b.clone()),
+            }],
+            matching(
+                &Ty::Bool,
+                var(0),
+                vec![
+                    arm(Shape::Ok, vec![1], call(ok, vec![var(1)])),
+                    arm(Shape::Error, vec![2], call(error, vec![var(2)])),
+                ],
+            ),
+        )
+    }
+
+    /// A document type's validator: the arm of each constructor checks its
+    /// fields that carry an invariant, in field order, with the validator
+    /// `fields[c][i]`.
+    #[must_use]
+    pub fn document(adt: u64, fields: &[Vec<Option<u64>>]) -> Function {
+        let mut next = 1;
+        let arms = fields
+            .iter()
+            .enumerate()
+            .map(|(constructor, validators)| {
+                let binders: Vec<u64> = (0..validators.len() as u64).map(|i| next + i).collect();
+                next += validators.len() as u64;
+                let body = binders.iter().zip(validators).rev().fold(
+                    boolean(true),
+                    |rest, (binder, validator)| match validator {
+                        Some(validator) => cond(
+                            call(*validator, vec![var(*binder)]),
+                            rest,
+                            boolean(false),
+                        ),
+                        None => rest,
+                    },
+                );
+                arm(
+                    Shape::Adt {
+                        constructor: constructor as u64,
+                    },
+                    binders,
+                    body,
+                )
+            })
+            .collect();
+        function(
+            vec![Ty::Adt { index: adt }],
+            matching(&Ty::Bool, var(0), arms),
+        )
+    }
+}
+
 /// Collects one instance's functions. Each method pushes its entry first and
 /// returns its index, so a helper's index is known before its caller's body
 /// is complete.
@@ -780,7 +1004,57 @@ impl Builder {
         this
     }
 
-    /// `reachableFrom graph (graph.length + 1) [start] [start]`.
+    /// `graphNodes graph`: every key and every successor, ascending, as
+    /// `graph.foldl (fun acc entry => entry.2.foldl (fun inner node =>
+    /// insertElement node inner) (insertElement entry.1 acc)) []`, applied
+    /// to the accumulator it is given.
+    fn graph_nodes(&mut self, node: &Ty) -> u64 {
+        let this = self.reserve();
+        let inner = self.reserve();
+        let insert = self.set_insert(node);
+        let nodes = list(node);
+        let graph = list(&pair(node, &nodes));
+        // The entry fold: 0 graph, 1 acc; 2 entry, 3 rest.
+        let body = matching(
+            &nodes,
+            var(0),
+            vec![
+                arm(Shape::Nil, Vec::new(), var(1)),
+                arm(
+                    Shape::Cons,
+                    vec![2, 3],
+                    call(
+                        this,
+                        vec![
+                            var(3),
+                            call(
+                                inner,
+                                vec![second(var(2)), call(insert, vec![var(1), first(var(2))])],
+                            ),
+                        ],
+                    ),
+                ),
+            ],
+        );
+        self.define(this, vec![graph, nodes.clone()], nodes.clone(), body);
+        // The successor fold: 0 successors, 1 acc; 2 node, 3 rest.
+        let body = matching(
+            &nodes,
+            var(0),
+            vec![
+                arm(Shape::Nil, Vec::new(), var(1)),
+                arm(
+                    Shape::Cons,
+                    vec![2, 3],
+                    call(inner, vec![var(3), call(insert, vec![var(1), var(2)])]),
+                ),
+            ],
+        );
+        self.define(inner, vec![nodes.clone(), nodes.clone()], nodes, body);
+        this
+    }
+
+    /// `reachableFrom graph ((graphNodes graph).length + 1) [start] [start]`.
     fn graph_reachable(&mut self, node: &Ty) -> u64 {
         let this = self.reserve();
         let rounds = self.reserve();
@@ -790,14 +1064,20 @@ impl Builder {
         let contains = self.set_contains(node);
         let insert = self.set_insert(node);
         let union = self.set_union(node);
+        let all_nodes = self.graph_nodes(node);
         let nodes = list(node);
         let graph = list(&pair(node, &nodes));
         let singleton = || cons(&nodes, var(1), nil(&nodes));
-        // graphReachable: 0 graph, 1 start.
+        // graphReachable: 0 graph, 1 start. The bound counts every node,
+        // successors without their own entry included, as the Lean
+        // rendering's does.
         let bound = prim(
             Prim::NatAdd,
             vec![
-                prim(Prim::Length, vec![var(0)]),
+                prim(
+                    Prim::Length,
+                    vec![call(all_nodes, vec![var(0), nil(&nodes)])],
+                ),
                 Expr::Value {
                     ty: Ty::Nat,
                     value: super::Value::Nat {
@@ -917,24 +1197,25 @@ impl Builder {
         this
     }
 
-    /// `topological graph (graph.length + 1) (graph.map Prod.fst) []`.
+    /// `let nodes := graphNodes graph; topological graph (nodes.length + 1) nodes []`.
     fn graph_topological(&mut self, node: &Ty) -> u64 {
         let this = self.reserve();
         let rounds = self.reserve();
         let ready = self.reserve();
         let unreached = self.reserve();
         let reverse = self.reserve();
-        let keys = self.map_project(node, &list(node), true);
+        let all_nodes = self.graph_nodes(node);
         let successors = self.graph_successors(node);
         let contains = self.set_contains(node);
         let remove = self.set_remove(node);
         let nodes = list(node);
         let graph = list(&pair(node, &nodes));
         let order = option(&nodes);
+        // graphTopological: 0 graph; 1 its nodes.
         let bound = prim(
             Prim::NatAdd,
             vec![
-                prim(Prim::Length, vec![var(0)]),
+                prim(Prim::Length, vec![var(1)]),
                 Expr::Value {
                     ty: Ty::Nat,
                     value: super::Value::Nat {
@@ -947,13 +1228,18 @@ impl Builder {
             this,
             vec![graph.clone()],
             order.clone(),
-            call(
-                rounds,
-                vec![var(0), bound, call(keys, vec![var(0)]), nil(&nodes)],
-            ),
+            Expr::Let {
+                name: 1,
+                ty: nodes.clone(),
+                bound: Box::new(call(all_nodes, vec![var(0), nil(&nodes)])),
+                body: Box::new(call(rounds, vec![var(0), bound, var(1), nil(&nodes)])),
+            },
         );
-        // topological: 0 graph, 1 fuel, 2 remaining, 3 order; 4 fuel', 5 6 ready cons.
-        let finished = || {
+        // topological: 0 graph, 1 fuel, 2 remaining, 3 order. Binders are
+        // numbered in first-binding order, so the instance is canonical:
+        // 4 5 the first finish's cons, 6 fuel', 7 8 the second finish's
+        // cons, 9 10 the ready cons.
+        let finished = |first: u64| {
             matching(
                 &order,
                 var(2),
@@ -969,7 +1255,7 @@ impl Builder {
                     ),
                     arm(
                         Shape::Cons,
-                        vec![7, 8],
+                        vec![first, first + 1],
                         build(Shape::None, &order, Vec::new()),
                     ),
                 ],
@@ -979,25 +1265,25 @@ impl Builder {
             &order,
             var(1),
             vec![
-                arm(Shape::Zero, Vec::new(), finished()),
+                arm(Shape::Zero, Vec::new(), finished(4)),
                 arm(
                     Shape::Succ,
-                    vec![4],
+                    vec![6],
                     matching(
                         &order,
                         call(ready, vec![var(0), var(2), var(2)]),
                         vec![
-                            arm(Shape::Nil, Vec::new(), finished()),
+                            arm(Shape::Nil, Vec::new(), finished(7)),
                             arm(
                                 Shape::Cons,
-                                vec![5, 6],
+                                vec![9, 10],
                                 call(
                                     rounds,
                                     vec![
                                         var(0),
-                                        var(4),
-                                        call(remove, vec![var(2), var(5)]),
-                                        cons(&nodes, var(5), var(3)),
+                                        var(6),
+                                        call(remove, vec![var(2), var(9)]),
+                                        cons(&nodes, var(9), var(3)),
                                     ],
                                 ),
                             ),
@@ -1078,5 +1364,32 @@ impl Builder {
         );
         self.define(reverse, vec![nodes.clone(), nodes.clone()], nodes, body);
         this
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Template, Ty};
+    use crate::calculus::{Program, PROGRAM_SPEC};
+
+    /// Every instance is already in first-binding order, so a lowered
+    /// program that places one is canonical as placed.
+    #[test]
+    fn every_instance_is_canonical() {
+        for template in Template::ALL {
+            let program = Program {
+                spec: PROGRAM_SPEC.to_owned(),
+                adts: Vec::new(),
+                functions: template
+                    .instantiate(&vec![Ty::Nat; template.arity()], 0)
+                    .expect("instantiates"),
+            };
+            assert_eq!(
+                program.canonical().expect("valid"),
+                program,
+                "{} is not in first-binding order",
+                template.name()
+            );
+        }
     }
 }

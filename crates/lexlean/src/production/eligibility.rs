@@ -37,7 +37,7 @@ use crate::ir::semantic::{
 
 /// The owners of the built-in constructors linking admits without a module.
 #[derive(Clone, Copy)]
-enum BuiltinOwner {
+pub(crate) enum BuiltinOwner {
     Bool,
     ContractViolation,
     Nat,
@@ -48,7 +48,7 @@ enum BuiltinOwner {
 
 impl BuiltinOwner {
     /// The number of type arguments a constructor of this type carries.
-    const fn arity(self) -> usize {
+    pub(crate) const fn arity(self) -> usize {
         match self {
             Self::Bool | Self::ContractViolation | Self::Nat => 0,
             Self::List | Self::Option => 1,
@@ -57,7 +57,7 @@ impl BuiltinOwner {
     }
 }
 
-const BUILTIN_OWNERS: [(&str, BuiltinOwner); 6] = [
+pub(crate) const BUILTIN_OWNERS: [(&str, BuiltinOwner); 6] = [
     ("Bool", BuiltinOwner::Bool),
     ("ContractViolation", BuiltinOwner::ContractViolation),
     ("Nat", BuiltinOwner::Nat),
@@ -520,7 +520,7 @@ pub const fn term_key(term: &SemanticTerm) -> &'static str {
 }
 
 /// The type of an integer literal representation.
-const fn integer_type(representation: SemanticInteger) -> SemanticType {
+pub(crate) const fn integer_type(representation: SemanticInteger) -> SemanticType {
     match representation {
         SemanticInteger::Int => SemanticType::Int,
         SemanticInteger::Int8 => SemanticType::Int8,
@@ -617,7 +617,7 @@ fn representation(ty: &SemanticType) -> Option<Representation> {
 }
 
 /// The canonical spelling of a type in a report.
-fn type_text(ty: &SemanticType, owner: &Owner<'_>) -> String {
+pub(crate) fn type_text(ty: &SemanticType, owner: &Owner<'_>) -> String {
     let wrap = |inner: &SemanticType| format!("({})", type_text(inner, owner));
     match ty {
         SemanticType::Type => "Type".to_owned(),
@@ -666,7 +666,7 @@ fn type_text(ty: &SemanticType, owner: &Owner<'_>) -> String {
 }
 
 /// Substitute declaration type parameters.
-fn substitute(ty: &SemanticType, map: &BTreeMap<String, SemanticType>) -> SemanticType {
+pub(crate) fn substitute(ty: &SemanticType, map: &BTreeMap<String, SemanticType>) -> SemanticType {
     let boxed = |inner: &SemanticType| Box::new(substitute(inner, map));
     match ty {
         SemanticType::Parameter { name } => match map.get(name) {
@@ -731,7 +731,7 @@ fn substitute(ty: &SemanticType, map: &BTreeMap<String, SemanticType>) -> Semant
 
 /// Re-anchor a type written in `from` so that it reads the same in another
 /// module: every local reference gains its module.
-fn anchor(ty: &SemanticType, from: &str) -> SemanticType {
+pub(crate) fn anchor(ty: &SemanticType, from: &str) -> SemanticType {
     let boxed = |inner: &SemanticType| Box::new(anchor(inner, from));
     match ty {
         SemanticType::Named { member, arguments } => SemanticType::Named {
@@ -791,7 +791,7 @@ fn anchor(ty: &SemanticType, from: &str) -> SemanticType {
     }
 }
 
-fn anchor_member(member: &MemberRef, from: &str) -> MemberRef {
+pub(crate) fn anchor_member(member: &MemberRef, from: &str) -> MemberRef {
     MemberRef {
         module: Some(member.module.clone().unwrap_or_else(|| from.to_owned())),
         name: member.name.clone(),
@@ -799,9 +799,9 @@ fn anchor_member(member: &MemberRef, from: &str) -> MemberRef {
 }
 
 /// The module a reference is resolved in.
-struct Owner<'a> {
-    module: &'a str,
-    modules: &'a BTreeMap<String, LinkedModule<'a>>,
+pub(crate) struct Owner<'a> {
+    pub(crate) module: &'a str,
+    pub(crate) modules: &'a BTreeMap<String, LinkedModule<'a>>,
 }
 
 impl Owner<'_> {
@@ -809,7 +809,7 @@ impl Owner<'_> {
         member.module.as_deref().unwrap_or(self.module)
     }
 
-    fn lean_name(&self, member: &MemberRef) -> String {
+    pub(crate) fn lean_name(&self, member: &MemberRef) -> String {
         let module = self.module_of(member);
         let prefix = self
             .modules

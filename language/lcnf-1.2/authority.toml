@@ -157,6 +157,15 @@ plumbing = [
   "Lean.ConstantInfo.rec",
   "Lean.ConstantInfo.recInfo",
   "Lean.ConstantInfo.thmInfo",
+  "Lean.ConstantKind.axiom",
+  "Lean.ConstantKind.casesOn",
+  "Lean.ConstantKind.ctor",
+  "Lean.ConstantKind.defn",
+  "Lean.ConstantKind.induct",
+  "Lean.ConstantKind.opaque",
+  "Lean.ConstantKind.quot",
+  "Lean.ConstantKind.recursor",
+  "Lean.ConstantKind.thm",
   "Lean.ConstantVal.type",
   "Lean.ConstructorVal.induct",
   "Lean.ConstructorVal.numFields",
@@ -371,8 +380,15 @@ plumbing = [
   "instToStringString",
   "ite",
   "liftM",
-  "noConfusion_of_Nat",
+  "noConfusion_of_Nat"
 ]
+
+[[call]]
+name = "Lean.annotation?"
+signature = "Lean.Name → Lean.Expr → Option Lean.Expr"
+source = "src/lean/Lean/Expr.lean"
+source_sha256 = "7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"
+role = "recognize the `borrowed` annotation LCNF types carry on parameter domains"
 
 [[call]]
 name = "Lean.getConstInfo"
@@ -380,6 +396,13 @@ signature = "{m : Type → Type} → [Monad m] → [Lean.MonadEnv m] → [Lean.M
 source = "src/lean/Lean/MonadEnv.lean"
 source_sha256 = "1c168f46d68a62564d44a1996d856d19b41f0088f02f3f481be38580c907ef95"
 role = "the declaration whose signature a probe checks"
+
+[[call]]
+name = "Lean.getOriginalConstKind?"
+signature = "Lean.Environment → Lean.Name → Option Lean.ConstantKind"
+source = "src/lean/Lean/OriginalConstKind.lean"
+source_sha256 = "68222f86a4a8587c5fc1eee11b5870678fe55384f35e460b3358696ed1455bcc"
+role = "the kind a constant was declared with, which the module system's exported view can weaken to an axiom"
 
 [[call]]
 name = "Lean.githash"
@@ -534,6 +557,13 @@ signature = "Lean.Expr → Bool"
 source = "src/lean/Lean/Expr.lean"
 source_sha256 = "7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"
 role = "whether a result is a universe"
+
+[[call]]
+name = "Lean.IR.findEnvDecl"
+signature = "Lean.Environment → Lean.Name → Option Lean.IR.Decl"
+source = "src/lean/Lean/Compiler/IR/CompilerM.lean"
+source_sha256 = "fa67405b0bc83900ffd0a7c88bb7934e9fcd2255761a89400a73847a85cc3235"
+role = "whether Lean's compiler produced code for a constant"
 
 [[call]]
 name = "Lean.Meta.isInstanceCore"
@@ -799,6 +829,12 @@ source_sha256 = "ca8ef13f4bb13725ebf7bc23c7de72ff1e0af75580a7007f5d3a7c69cc4004d
 constructors = ["axiomInfo", "defnInfo", "thmInfo", "opaqueInfo", "quotInfo", "inductInfo", "ctorInfo", "recInfo"]
 
 [[type]]
+name = "Lean.ConstantKind"
+source = "src/lean/Lean/Environment.lean"
+source_sha256 = "100b207523d1005ae87f62f4e1693806854a35c59cd9b3210dfeeaa875d0ff98"
+constructors = ["defn", "thm", "axiom", "opaque", "quot", "induct", "ctor", "recursor"]
+
+[[type]]
 name = "Lean.ConstructorVal"
 source = "src/lean/Lean/Declaration.lean"
 source_sha256 = "ca8ef13f4bb13725ebf7bc23c7de72ff1e0af75580a7007f5d3a7c69cc4004de"
@@ -1019,6 +1055,12 @@ name = "Lean.Core.State"
 source = "src/lean/Lean/CoreM.lean"
 source_sha256 = "0e94919972c60e8f2bdc73ecc9845a745c9a3373fce4069b9e27ae52560c0a7a"
 constructors = ["mk"]
+
+[[type]]
+name = "Lean.IR.Decl"
+source = "src/lean/Lean/Compiler/IR/Basic.lean"
+source_sha256 = "4f67ddee0a326b2caae8bbcaab2488a99823bf0d10da7c3a17bd7972e4723d25"
+constructors = ["fdecl", "extern"]
 
 [[type]]
 name = "Lean.Meta.AbstractMVarsResult"

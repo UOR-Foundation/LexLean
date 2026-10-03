@@ -1,7 +1,7 @@
 spec = "lexlean/project/1"
 name = "compiler"
 language = "1.2"
-module_prefix = "Compiler"
+module_prefix = "LexLeanTarget"
 source_roots = ["src"]
 entrypoints = ["src/Main.lex.tex"]
 build_root = ".lexlean"
