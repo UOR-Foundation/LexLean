@@ -111,6 +111,10 @@ pub struct SnapshotElaboration {
     obligations: Vec<serde_json::Value>,
     cross_checks: Vec<serde_json::Value>,
     required_checks: Vec<String>,
+    /// Language 1.2 (reasoning): every theorem the declaration generates,
+    /// with its statement and the name of the fixed template proving it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    theorems: Vec<serde_json::Value>,
 }
 
 impl SnapshotElaboration {
@@ -142,6 +146,12 @@ impl SnapshotElaboration {
     #[must_use]
     pub fn required_checks(&self) -> &[String] {
         &self.required_checks
+    }
+
+    /// The theorems a reasoning declaration generates.
+    #[must_use]
+    pub fn theorems(&self) -> &[serde_json::Value] {
+        &self.theorems
     }
 }
 
@@ -294,6 +304,20 @@ impl SemanticSnapshot {
                                     .iter()
                                     .map(|check| {
                                         crate::ir::semantic::model::check_name_of(*check).to_owned()
+                                    })
+                                    .collect(),
+                                theorems: semantic
+                                    .elaboration
+                                    .theorems(index)
+                                    .iter()
+                                    .map(|theorem| {
+                                        canonical_value(&serde_json::json!({
+                                            "name": theorem.name,
+                                            "type_parameters": theorem.type_parameters,
+                                            "parameters": theorem.parameters,
+                                            "statement": theorem.statement,
+                                            "template": theorem.template(),
+                                        }))
                                     })
                                     .collect(),
                             }

@@ -103,7 +103,7 @@ fn schema_kinds(definition: &str, property: &str) -> BTreeSet<String> {
 
 /// One minimal well-formed value of every type kind and every term kind, as
 /// semantic-module JSON. The analysis must map each to its own registry key.
-const TYPE_SAMPLES: [&str; 27] = [
+const TYPE_SAMPLES: [&str; 28] = [
     r#"{"kind":"type"}"#,
     r#"{"kind":"parameter","name":"T"}"#,
     r#"{"kind":"nat"}"#,
@@ -131,6 +131,7 @@ const TYPE_SAMPLES: [&str; 27] = [
     r#"{"kind":"map","key":{"kind":"nat"},"value":{"kind":"nat"}}"#,
     r#"{"kind":"set","element":{"kind":"nat"}}"#,
     r#"{"kind":"contract_violation"}"#,
+    r#"{"kind":"reasoning_failure"}"#,
 ];
 
 const TERM_SAMPLES: [&str; 42] = [
@@ -210,6 +211,7 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 137] = [
     ("type.map", "runtime", true, &[], false),
     ("type.set", "runtime", true, &[], false),
     ("type.contract_violation", "runtime", false, &[], false),
+    ("type.reasoning_failure", "runtime", false, &[], false),
     ("term.var", "runtime", false, &[], false),
     ("term.nat", "runtime", false, &[], false),
     ("term.integer", "runtime", false, &[], false),
@@ -320,6 +322,10 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 137] = [
     ("declaration.realization", "runtime", false, &[], false),
     ("declaration.evidence", "erased", false, &[], false),
     ("declaration.model", "runtime", false, &[], false),
+    ("declaration.logic", "erased", false, &[], false),
+    ("declaration.inference_rule", "runtime", false, &[], false),
+    ("declaration.verifier", "erased", false, &[], false),
+    ("declaration.reasoner", "runtime", false, &[], false),
 ];
 
 /// Run the case for one PD conformance ID.

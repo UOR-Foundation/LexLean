@@ -25,8 +25,8 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::{
-    registry, BoundaryRow, ClosureMember, Disposition, EffectRow, ModuleReport, Registry,
-    RootReport, TargetRow,
+    registry, BoundaryRow, ClosureMember, Disposition, EffectRow, ModuleReport, ReasoningRow,
+    Registry, RootReport, TargetRow,
 };
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticConstructor, SemanticDeclaration,
@@ -43,6 +43,7 @@ enum BuiltinOwner {
     Nat,
     List,
     Option,
+    ReasoningFailure,
     Result,
 }
 
@@ -50,19 +51,20 @@ impl BuiltinOwner {
     /// The number of type arguments a constructor of this type carries.
     const fn arity(self) -> usize {
         match self {
-            Self::Bool | Self::ContractViolation | Self::Nat => 0,
+            Self::Bool | Self::ContractViolation | Self::Nat | Self::ReasoningFailure => 0,
             Self::List | Self::Option => 1,
             Self::Result => 2,
         }
     }
 }
 
-const BUILTIN_OWNERS: [(&str, BuiltinOwner); 6] = [
+const BUILTIN_OWNERS: [(&str, BuiltinOwner); 7] = [
     ("Bool", BuiltinOwner::Bool),
     ("ContractViolation", BuiltinOwner::ContractViolation),
     ("Nat", BuiltinOwner::Nat),
     ("List", BuiltinOwner::List),
     ("Option", BuiltinOwner::Option),
+    ("ReasoningFailure", BuiltinOwner::ReasoningFailure),
     ("Result", BuiltinOwner::Result),
 ];
 
@@ -1988,6 +1990,7 @@ impl<'a> Walk<'a> {
                 match builtin {
                     BuiltinOwner::Bool => SemanticType::Bool,
                     BuiltinOwner::ContractViolation => SemanticType::ContractViolation,
+                    BuiltinOwner::ReasoningFailure => SemanticType::ReasoningFailure,
                     BuiltinOwner::Nat => SemanticType::Nat,
                     BuiltinOwner::List => SemanticType::List {
                         element: argument(0),
@@ -2877,11 +2880,12 @@ fn analyse_root(
                 .collect(),
         });
     }
-    let runtime = walk
+    let runtime: Vec<ClosureMember> = walk
         .member_order
         .iter()
         .filter_map(|instance| walk.members.get(instance).cloned())
         .collect();
+    let reasoning = reasoning_rows(&runtime, modules);
     Ok(RootReport {
         root,
         declared_effects: production.effects.clone(),
@@ -2890,7 +2894,116 @@ fn analyse_root(
         erased: walk.erased,
         constructs: walk.constructs,
         targets,
+        reasoning,
     })
+}
+
+/// The canonical semantic JSON of a bound term, as the report states it.
+fn canonical_term(term: &SemanticTerm) -> String {
+    let text = serde_json::to_string(term).expect("semantic terms serialize");
+    crate::artifact::canonical_json::Json::parse(text.as_bytes())
+        .expect("a serialized term is JSON")
+        .to_canonical_string()
+}
+
+/// §17.12, §17.13: the explicit resource account of every reasoner whose
+/// elaboration the runtime closure reaches. A reasoner's cost is its loop,
+/// bounded by its fuel (and, for a search, its frontier), and the
+/// generated theorems that bound its ledger are named, never asserted.
+fn reasoning_rows(
+    runtime: &[ClosureMember],
+    modules: &BTreeMap<String, LinkedModule<'_>>,
+) -> Vec<ReasoningRow> {
+    use crate::ir::semantic::{ReasoningStrategy, SearchOrder};
+    let reached: BTreeSet<&str> = runtime
+        .iter()
+        .map(|member| member.declaration.as_str())
+        .collect();
+    let mut rows = Vec::new();
+    for linked in modules.values() {
+        let qualify = |name: &str| format!("{}.{name}", linked.lean_module);
+        for (index, declaration) in linked.semantic.declarations.iter().enumerate() {
+            let SemanticDeclaration::Reasoner {
+                name,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules,
+                strategy,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
+                axioms: _,
+            } = declaration
+            else {
+                continue;
+            };
+            let runs = linked
+                .semantic
+                .elaboration
+                .lowered(index)
+                .iter()
+                .any(|derived| reached.contains(qualify(derived.name()).as_str()));
+            if !runs {
+                continue;
+            }
+            let (kind, deduplicate, fuel, frontier) = match strategy {
+                ReasoningStrategy::Forward { fuel } => ("forward", false, fuel.as_ref(), None),
+                ReasoningStrategy::Search {
+                    order,
+                    fuel,
+                    frontier,
+                    deduplicate,
+                } => (
+                    match order {
+                        SearchOrder::BreadthFirst => "breadth_first",
+                        SearchOrder::DepthFirst => "depth_first",
+                    },
+                    *deduplicate,
+                    fuel.as_ref(),
+                    frontier.as_ref(),
+                ),
+            };
+            let rule_names = rules
+                .iter()
+                .map(|rule| match &rule.member.module {
+                    Some(module) => modules.get(module).map_or_else(
+                        || format!("{module}.{}", rule.member.name),
+                        |other| format!("{}.{}", other.lean_module, rule.member.name),
+                    ),
+                    None => qualify(&rule.member.name),
+                })
+                .collect();
+            let bounds = linked
+                .semantic
+                .elaboration
+                .theorems(index)
+                .iter()
+                .filter(|theorem| {
+                    ["iterations_bounded", "frontier_bounded", "saturates"]
+                        .iter()
+                        .any(|suffix| theorem.name == format!("{name}.{suffix}"))
+                })
+                .map(|theorem| qualify(&theorem.name))
+                .collect();
+            rows.push(ReasoningRow {
+                reasoner: qualify(name),
+                strategy: kind.to_owned(),
+                deduplicate,
+                fuel: fuel.map(canonical_term).unwrap_or_default(),
+                frontier: frontier.map(canonical_term),
+                rules: rule_names,
+                ledger: ["iterations", "firings", "frontier"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                bounds,
+            });
+        }
+    }
+    rows.sort_by(|left, right| left.reasoner.cmp(&right.reasoner));
+    rows
 }
 
 /// The eligibility report of one module, or `None` when it declares no
