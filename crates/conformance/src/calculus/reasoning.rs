@@ -475,7 +475,7 @@ fn adts(traced: bool) -> Vec<Vec<Vec<Ty>>> {
         RULES.iter().map(|_| Vec::new()).collect(),
     ];
     if traced {
-        out.push(vec![vec![Ty::Nat, Ty::Nat, Ty::Nat]]);
+        out.push(vec![vec![Ty::Nat; 6]]);
         out.push(vec![vec![
             chart_t(),
             super::list_t(adt(STEP_ADT)),
@@ -570,9 +570,9 @@ fn verdict_functions(fuel: u64, verifier: Verifier) -> (Vec<Function>, u64) {
 }
 
 /// The traced transcription of `Triage`: the explained verdict with the
-/// run's iterations and firings.
+/// run's guard evaluations and firings, as `Triage.account` counts them.
 fn traced_functions() -> (Vec<Function>, u64) {
-    let layout = Layout { base: 3 };
+    let layout = Layout { base: 4 };
     let iterate = layout.end();
     let step_t = adt(STEP_ADT);
     let steps_t = super::list_t(step_t.clone());
@@ -628,10 +628,19 @@ fn traced_functions() -> (Vec<Function>, u64) {
                             ),
                             build(Shape::Error, explained_t, vec![failure(false, false)]),
                         ),
+                        // `Triage.account`: the final scan's guard
+                        // evaluations count when the run saturated.
                         build(
                             Shape::Pair,
                             pair_t(Ty::Nat, Ty::Nat),
-                            vec![ledger(v(2), 0), ledger(v(2), 1)],
+                            vec![
+                                cond(
+                                    super::second(v(1)),
+                                    plus(ledger(v(2), 1), call(3, vec![field(v(2), 0)])),
+                                    ledger(v(2), 1),
+                                ),
+                                ledger(v(2), 2),
+                            ],
                         ),
                     ],
                 ),
@@ -651,7 +660,7 @@ fn traced_functions() -> (Vec<Function>, u64) {
                 build(
                     Shape::Adt { constructor: 0 },
                     ledger_t.clone(),
-                    vec![nat(0), nat(0), nat(0)],
+                    vec![nat(0), nat(0), nat(0), nat(0), nat(0), nat(0)],
                 ),
             ],
         ),
@@ -703,8 +712,14 @@ fn traced_functions() -> (Vec<Function>, u64) {
                                                 ledger_t,
                                                 vec![
                                                     plus(ledger(v(0), 0), nat(1)),
-                                                    plus(ledger(v(0), 1), nat(1)),
-                                                    ledger(v(0), 2),
+                                                    plus(
+                                                        ledger(v(0), 1),
+                                                        call(3, vec![field(v(0), 0)]),
+                                                    ),
+                                                    plus(ledger(v(0), 2), nat(1)),
+                                                    ledger(v(0), 3),
+                                                    ledger(v(0), 4),
+                                                    ledger(v(0), 5),
                                                 ],
                                             ),
                                         ],
@@ -717,7 +732,17 @@ fn traced_functions() -> (Vec<Function>, u64) {
             ],
         ),
     );
-    let mut functions = vec![entry, start, step];
+    // attempts: the guard evaluations `select` makes on a chart.
+    let mut attempts = nat(0);
+    for index in (0..RULES.len()).rev() {
+        attempts = cond(
+            call(layout.guard(index), vec![v(0)]),
+            nat(1),
+            plus(attempts, nat(1)),
+        );
+    }
+    let attempts = function(vec![chart_t()], Ty::Nat, attempts);
+    let mut functions = vec![entry, start, step, attempts];
     functions.extend(shared(layout, Verifier::Recommendation));
     (functions, iterate)
 }
@@ -769,16 +794,8 @@ pub fn cases() -> Vec<Case> {
             verdict_oracle(reasoner, values),
         )
     };
-    let run = oracle_call("Triage.run", vec![patient_term(SHOCKED)]);
-    let ledger = |counter: &str| {
-        lx::value(
-            "nat",
-            vec![lx::project(
-                lx::project(lx::first(run.clone()), "ledger"),
-                counter,
-            )],
-        )
-    };
+    let account = oracle_call("Triage.account", vec![patient_term(SHOCKED)]);
+    let ledger = |counter: &str| lx::value("nat", vec![lx::project(account.clone(), counter)]);
     vec![
         verdict(
             "reasoning-triage-shock",
@@ -835,7 +852,7 @@ pub fn cases() -> Vec<Case> {
                             )
                         },
                     ),
-                    lx::value("pair", vec![ledger("iterations"), ledger("firings")]),
+                    lx::value("pair", vec![ledger("attempts"), ledger("firings")]),
                 ],
             ),
         ),

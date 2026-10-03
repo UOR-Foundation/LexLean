@@ -5806,6 +5806,13 @@ Tests MUST establish that LexLean rejects, at minimum:
   another logic, claims out of order, an initial-invariant claim over a
   logic without an invariant, and an initial-invariant or fuel-bound theorem
   stating another obligation (`LLT4010`);
+- a generate-and-verify reasoner with rules, with a logic, with a claim, or
+  with a generator that is not a list of its verifier's candidates; a
+  rule-based reasoner without its logic; an answer-correctness theorem
+  stating another obligation; and an answer-correctness claim out of order
+  (`LLT4010`);
+- a generate-and-verify reasoner without a budget, and a budget that is not
+  a natural number (`LLT4011`);
 - a forward reasoner without fuel, a search without a frontier, a frontier
   of zero, deduplication over a state type without a canonical order, a
   fuel or frontier that is not a natural number, a termination claim by a
@@ -5817,8 +5824,9 @@ Tests MUST establish that LexLean rejects, at minimum:
 - a rule whose guard admits a step its relation forbids, a rule that does
   not decrease the ranking, a verifier whose check accepts a candidate its
   specification forbids, a fuel bound false for the observation, and a
-  forged trace claimed to replay, each stating its exact obligation and
-  refused by verification (`LLV7002`).
+  forged trace claimed to replay, and an answer claimed correct on every
+  state that is not, each stating its exact obligation and refused by
+  verification (`LLV7002`).
 
 ### 28.6 Example verification
 
