@@ -1154,7 +1154,7 @@ fn admissible_external(external: &RawExternal) -> Result<(), String> {
 }
 
 /// The kind `getOriginalConstKind?` reports for a constant of a reported
-/// kind: Lean's `ConstantKind` has no unsafe definition.
+/// kind: Lean's `ConstantKind` records an `unsafe`-marked definition as a definition.
 fn declared_kind(kind: &str) -> &str {
     match kind {
         "unsafe-definition" => "definition",
