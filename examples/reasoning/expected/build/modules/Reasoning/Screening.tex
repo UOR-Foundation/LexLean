@@ -1,0 +1,177 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Short}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(w : Nat) (doses : List (Nat))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.length (doses) : Nat) <= 4)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shortCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(w : Nat) (doses : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble ((LexLeanRuntime.length (doses) : Nat)) (4))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{short\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(w : Nat) (doses : List (Nat))}.\par
+\noindent Statement: \texttt{((shortCheck (w) (doses) = true) -> Short (w) (doses))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{DoseContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input w : Nat, output doses : List (Nat)}.\par
+\noindent Postcondition: \texttt{Short}.\par
+\noindent Runtime validator: \texttt{shortCheck validates the postcondition, sound by short\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator postcondition sound): \texttt{forall (w : Nat) (doses : List (Nat)), ((shortCheck (w) (doses) = true) -> Short (w) (doses)); stated exactly by short\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{DoseContract.postcondition\_sound}.\par
+\subsection*{\texttt{DoseCandidates}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input w : Nat, output List (Nat)}.\par
+\noindent Deterministic denotation: \texttt{((LexLeanRuntime.subtract (w) (10) : Nat) :: ((LexLeanRuntime.subtract (w) (20) : Nat) :: ((LexLeanRuntime.subtract (w) (30) : Nat) :: ((LexLeanRuntime.subtract (w) (50) : Nat) :: ([] : List (Nat))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{DoseCandidates (w : Nat) : List (Nat) := ((LexLeanRuntime.subtract (w) (10) : Nat) :: ((LexLeanRuntime.subtract (w) (20) : Nat) :: ((LexLeanRuntime.subtract (w) (30) : Nat) :: ((LexLeanRuntime.subtract (w) (50) : Nat) :: ([] : List (Nat))))))}.\par
+\subsection*{\texttt{DoseModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract DoseContract to realization DoseCandidates}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{postcondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{DoseModel (\_\_input : Nat) : List (Nat) := DoseCandidates (\_\_input)}.\par
+\subsection*{\texttt{Proposed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((s).2 = 0) /\textbackslash{} (((t).1 = (s).1) /\textbackslash{} (0 < (t).2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Prescribing}}
+\noindent Kind: \texttt{logic}.\par
+\noindent States: \texttt{s, t : (Prod (Nat) (Nat))}.\par
+\noindent Relation: \texttt{Proposed}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{propose\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : (Prod (Nat) (Nat))) (d : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.beq ((s).2) (0)) \&\& (Nat.blt (0) (d))) = true) -> Proposed (s) (((s).1, d)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Propose}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Prescribing}.\par
+\noindent Binding: \texttt{d : Nat, ranging over (match (checked DoseModel ((s).1) [postcondition]) with | Except.ok proposed => proposed | Except.error \_ => ([] : List (Nat))) in order}.\par
+\noindent Guard: \texttt{((Nat.beq ((s).2) (0)) \&\& (Nat.blt (0) (d)))}.\par
+\noindent Conclusion: \texttt{((s).1, d)}.\par
+\noindent Soundness: \texttt{propose\_sound}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (inference rule Propose soundness): \texttt{forall (s : (Prod (Nat) (Nat))) (d : Nat), ((((Nat.beq ((s).2) (0)) \&\& (Nat.blt (0) (d))) = true) -> Proposed (s) (((s).1, d))); stated exactly by propose\_sound}.\par
+\noindent Elaborates to: \texttt{Propose.guard (s : (Prod (Nat) (Nat))) (d : Nat) : Bool := ((Nat.beq ((s).2) (0)) \&\& (Nat.blt (0) (d)))}.\par
+\noindent Elaborates to: \texttt{Propose.conclusion (s : (Prod (Nat) (Nat))) (d : Nat) : (Prod (Nat) (Nat)) := ((s).1, d)}.\par
+\noindent Elaborates to: \texttt{Propose.candidates (s : (Prod (Nat) (Nat))) : List (Nat) := (match (let \_\_checked1\_input : Nat := (s).1; (let \_\_checked1\_output : List (Nat) := DoseModel (\_\_checked1\_input); (if shortCheck (\_\_checked1\_input) (\_\_checked1\_output) then Except.ok (\_\_checked1\_output) else Except.error (ContractViolation.postcondition)))) with | Except.ok proposed => proposed | Except.error \_ => ([] : List (Nat)))}.\par
+\noindent Elaborates to: \texttt{Propose.apply (s : (Prod (Nat) (Nat))) (d : Nat) : Option ((Prod (Nat) (Nat))) := (if Propose.guard (s) (d) then Option.some (Propose.conclusion (s) (d)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Propose.apply\_sound : forall (s : (Prod (Nat) (Nat))) (d : Nat) (\_\_t : (Prod (Nat) (Nat))), ((Propose.apply (s) (d) = Option.some (\_\_t)) -> Proposed (s) (\_\_t))}.\par
+\subsection*{\texttt{Safe}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(w : Nat) (r : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((r + r) <= w)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{safeCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(w : Nat) (r : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble ((r + r)) (w))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{safe\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(w : Nat) (r : Nat)}.\par
+\noindent Statement: \texttt{((safeCheck (w) (r) = true) -> Safe (w) (r))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{SafeDose}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{w : Nat}.\par
+\noindent Candidate: \texttt{r : Nat}.\par
+\noindent Specification: \texttt{Safe}.\par
+\noindent Check: \texttt{safeCheck}.\par
+\noindent Soundness: \texttt{safe\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (verifier SafeDose sound): \texttt{forall (w : Nat) (r : Nat), ((safeCheck (w) (r) = true) -> Safe (w) (r)); stated exactly by safe\_sound}.\par
+\noindent Generates theorem (term template): \texttt{SafeDose.sound : (LexLeanReasoning.Sound ((safeCheck)) ((Safe)))}.\par
+\subsection*{\texttt{Dose}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Observation: \texttt{w : Nat}.\par
+\noindent Strategy: \texttt{generate and verify the candidates (match (checked DoseModel (w) [postcondition]) with | Except.ok proposed => proposed | Except.error \_ => ([] : List (Nat))), checking at most 3}.\par
+\noindent Verifier: \texttt{SafeDose}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{inductive Dose.Step with candidate(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Dose.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Dose.candidates (w : Nat) : List (Nat) := (match (let \_\_checked1\_input : Nat := w; (let \_\_checked1\_output : List (Nat) := DoseModel (\_\_checked1\_input); (if shortCheck (\_\_checked1\_input) (\_\_checked1\_output) then Except.ok (\_\_checked1\_output) else Except.error (ContractViolation.postcondition)))) with | Except.ok proposed => proposed | Except.error \_ => ([] : List (Nat)))}.\par
+\noindent Elaborates to: \texttt{Dose.verify (w : Nat) (\_\_c : Nat) : Option (Nat) := (if safeCheck (w) (\_\_c) then Option.some (\_\_c) else Option.none)}.\par
+\noindent Elaborates to: \texttt{structure Dose.Trial with found : Option (Nat), truncated : Bool, ledger : Dose.Ledger}.\par
+\noindent Elaborates to: \texttt{Dose.try (w : Nat) (\_\_t : Dose.Trial) (\_\_c : Nat) : Dose.Trial := (match (\_\_t).found with | Option.some \_ => \_\_t | Option.none => (match (Nat.blt (((\_\_t).ledger).verifications) (3)) with | Bool.true => (\{ found := Dose.verify (w) (\_\_c), truncated := (\_\_t).truncated, ledger := (\{ iterations := (((\_\_t).ledger).iterations + 1), attempts := (((\_\_t).ledger).attempts + 1), firings := ((\_\_t).ledger).firings, expansions := ((\_\_t).ledger).expansions, verifications := (((\_\_t).ledger).verifications + 1), frontier := ((\_\_t).ledger).frontier \} : Dose.Ledger) \} : Dose.Trial) | Bool.false => (\{ found := Option.none, truncated := true, ledger := (\_\_t).ledger \} : Dose.Trial)))}.\par
+\noindent Elaborates to: \texttt{Dose.run (w : Nat) : Dose.Trial := (LexLeanCollections.listFold ((fun (\_\_t : Dose.Trial) (\_\_c : Nat) => Dose.<U+00AB>try<U+00BB> (w) (\_\_t) (\_\_c))) ((\{ found := Option.none, truncated := false, ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := 0 \} : Dose.Ledger) \} : Dose.Trial)) (Dose.candidates (w)) : Dose.Trial)}.\par
+\noindent Elaborates to: \texttt{Dose.failure (\_\_t : Dose.Trial) : ReasoningFailure := (match (\_\_t).truncated with | Bool.true => ReasoningFailure.exhausted | Bool.false => (match (Nat.beq (((\_\_t).ledger).verifications) (0)) with | Bool.true => ReasoningFailure.unsolved | Bool.false => ReasoningFailure.rejected))}.\par
+\noindent Elaborates to: \texttt{Dose.verdict (w : Nat) : Except (ReasoningFailure) (Nat) := (let \_\_final : Dose.Trial := Dose.run (w); (match (\_\_final).found with | Option.some \_\_v => Except.ok (\_\_v) | Option.none => Except.error (Dose.failure (\_\_final))))}.\par
+\noindent Elaborates to: \texttt{Dose (w : Nat) : Except (ReasoningFailure) ((Prod (Nat) (List (Dose.Step)))) := (let \_\_final : Dose.Trial := Dose.run (w); (match (\_\_final).found with | Option.some \_\_v => Except.ok ((\_\_v, (Dose.Step.candidate (\_\_v) :: ([] : List (Dose.Step))))) | Option.none => Except.error (Dose.failure (\_\_final))))}.\par
+\noindent Elaborates to: \texttt{Dose.answer (w : Nat) (\_\_trace : List (Dose.Step)) : Option (Nat) := (match \_\_trace with | List.nil => Option.none | List.cons \_\_step \_\_rest => (match \_\_rest with | List.nil => (match \_\_step with | Dose.Step.candidate \_\_c => Dose.verify (w) (\_\_c)) | List.cons \_ \_ => Option.none))}.\par
+\noindent Generates theorem (verify sound template): \texttt{Dose.verify\_sound : forall (w : Nat) (\_\_c : Nat) (\_\_v : Nat), ((Dose.verify (w) (\_\_c) = Option.some (\_\_v)) -> ((Dose.verify (w) (\_\_v) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v)))}.\par
+\noindent Generates theorem (try sound template): \texttt{Dose.try\_sound : forall (w : Nat) (\_\_t : Dose.Trial) (\_\_c : Nat), ((forall (\_\_v : Nat), (((\_\_t).found = Option.some (\_\_v)) -> ((Dose.verify (w) (\_\_v) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v)))) -> (forall (\_\_v : Nat), (((Dose.<U+00AB>try<U+00BB> (w) (\_\_t) (\_\_c)).found = Option.some (\_\_v)) -> ((Dose.verify (w) (\_\_v) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v)))))}.\par
+\noindent Generates theorem (try count template): \texttt{Dose.try\_count : forall (w : Nat) (\_\_t : Dose.Trial) (\_\_c : Nat), ((((\_\_t).ledger).verifications <= 3) -> (((Dose.<U+00AB>try<U+00BB> (w) (\_\_t) (\_\_c)).ledger).verifications <= 3))}.\par
+\noindent Generates theorem (unfold template): \texttt{Dose.run\_sound : forall (w : Nat), (forall (\_\_v : Nat), (((Dose.run (w)).found = Option.some (\_\_v)) -> ((Dose.verify (w) (\_\_v) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v))))}.\par
+\noindent Generates theorem (unfold template): \texttt{Dose.verifications\_bounded : forall (w : Nat), (((Dose.run (w)).ledger).verifications <= 3)}.\par
+\noindent Generates theorem (verdict generate template): \texttt{Dose.verdict\_sound : forall (w : Nat), (forall (\_\_v : Nat), ((Dose.verdict (w) = Except.ok (\_\_v)) -> Safe (w) (\_\_v)))}.\par
+\noindent Generates theorem (explained generate template): \texttt{Dose.explained : forall (w : Nat), (forall (\_\_v : Nat), (forall (\_\_trace : List (Dose.Step)), ((Dose (w) = Except.ok ((\_\_v, \_\_trace))) -> ((Dose.answer (w) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v)))))}.\par
+\subsection*{\texttt{Screen}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Logic: \texttt{Prescribing}.\par
+\noindent Observation: \texttt{w : Nat, observed as (w, 0)}.\par
+\noindent Rules in priority order: \texttt{Propose}.\par
+\noindent Strategy: \texttt{depth-first search, at most 8 iterations and 3 frontier nodes}.\par
+\noindent Answer: \texttt{pick |-> (if (Nat.blt (0) ((pick).2)) then Option.some ((pick).2) else Option.none) : Option (Nat)}.\par
+\noindent Verifier: \texttt{SafeDose}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Elaborates to: \texttt{inductive Screen.Step with Propose(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Screen.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Screen.observe (w : Nat) : (Prod (Nat) (Nat)) := (w, 0)}.\par
+\noindent Elaborates to: \texttt{Screen.fire (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Screen.Step) : Option ((Prod (Nat) (Nat))) := (match \_\_step with | Screen.Step.Propose \_\_b => Propose.apply (\_\_s) (\_\_b))}.\par
+\noindent Elaborates to: \texttt{Screen.replay (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Screen.Step) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Screen.fire (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Screen.follow (w : Nat) (\_\_trace : List (Screen.Step)) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Screen.replay)) (Except.ok (Screen.observe (w))) (\_\_trace) : Except (ReasoningFailure) ((Prod (Nat) (Nat))))}.\par
+\noindent Elaborates to: \texttt{Screen.extract (pick : (Prod (Nat) (Nat))) : Option (Nat) := (if (Nat.blt (0) ((pick).2)) then Option.some ((pick).2) else Option.none)}.\par
+\noindent Elaborates to: \texttt{Screen.accept (w : Nat) (\_\_s : (Prod (Nat) (Nat))) : Option (Nat) := (match Screen.extract (\_\_s) with | Option.none => Option.none | Option.some \_\_v => (if safeCheck (w) (\_\_v) then Option.some (\_\_v) else Option.none))}.\par
+\noindent Elaborates to: \texttt{Screen.answer (w : Nat) (\_\_trace : List (Screen.Step)) : Option (Nat) := (match Screen.follow (w) (\_\_trace) with | Except.ok \_\_s => Screen.accept (w) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{structure Screen.Node with state : (Prod (Nat) (Nat)), trace : List (Screen.Step)}.\par
+\noindent Elaborates to: \texttt{structure Screen.Search with frontier : List (Screen.Node), found : Option ((Prod (Nat) (Screen.Node))), truncated : Bool, ledger : Screen.Ledger}.\par
+\noindent Elaborates to: \texttt{Screen.Propose.collect (\_\_node : Screen.Node) (\_\_acc : List (Screen.Node)) (\_\_b : Nat) : List (Screen.Node) := (match Screen.fire ((\_\_node).state) (Screen.Step.Propose (\_\_b)) with | Option.none => \_\_acc | Option.some \_\_t => (LexLeanRuntime.append (\_\_acc) (((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_node).trace) ((Screen.Step.Propose (\_\_b) :: ([] : List (Screen.Step)))) : List (Screen.Step)) \} : Screen.Node) :: ([] : List (Screen.Node)))) : List (Screen.Node)))}.\par
+\noindent Elaborates to: \texttt{Screen.Propose.successors (\_\_node : Screen.Node) : List (Screen.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Screen.Node)) (\_\_b : Nat) => Screen.Propose.collect (\_\_node) (\_\_acc) (\_\_b))) (([] : List (Screen.Node))) (Propose.candidates ((\_\_node).state)) : List (Screen.Node))}.\par
+\noindent Elaborates to: \texttt{Screen.successors (\_\_node : Screen.Node) : List (Screen.Node) := (LexLeanRuntime.append (Screen.Propose.successors (\_\_node)) (([] : List (Screen.Node))) : List (Screen.Node))}.\par
+\noindent Elaborates to: \texttt{Screen.start (w : Nat) : Screen.Search := (let \_\_first : List (Screen.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Screen.Node)) (\_\_n : Screen.Node) => (if (Nat.blt ((LexLeanRuntime.length (\_\_acc) : Nat)) (3)) then (LexLeanRuntime.append (\_\_acc) ((\_\_n :: ([] : List (Screen.Node)))) : List (Screen.Node)) else \_\_acc))) (([] : List (Screen.Node))) (((\{ state := Screen.observe (w), trace := ([] : List (Screen.Step)) \} : Screen.Node) :: ([] : List (Screen.Node)))) : List (Screen.Node)); (\{ frontier := \_\_first, found := Option.none, truncated := (Nat.blt (3) (1)), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := (LexLeanRuntime.length (\_\_first) : Nat) \} : Screen.Ledger) \} : Screen.Search))}.\par
+\noindent Elaborates to: \texttt{Screen.attempts (\_\_s : (Prod (Nat) (Nat))) : Nat := ((LexLeanRuntime.length (Propose.candidates (\_\_s)) : Nat) + 0)}.\par
+\noindent Elaborates to: \texttt{Screen.searchStep (w : Nat) (\_\_r : Screen.Search) : Option (Screen.Search) := (match (\_\_r).found with | Option.some \_ => Option.none | Option.none => (match (\_\_r).frontier with | List.nil => Option.none | List.cons \_\_node \_\_rest => (match Screen.accept (w) ((\_\_node).state) with | Option.some \_\_v => Option.some ((\{ frontier := \_\_rest, found := Option.some ((\_\_v, \_\_node)), truncated := (\_\_r).truncated, ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := ((\_\_r).ledger).attempts, firings := ((\_\_r).ledger).firings, expansions := ((\_\_r).ledger).expansions, verifications := (((\_\_r).ledger).verifications + 1), frontier := ((\_\_r).ledger).frontier \} : Screen.Ledger) \} : Screen.Search)) | Option.none => (let \_\_successors : List (Screen.Node) := Screen.successors (\_\_node); (let \_\_fresh : List (Screen.Node) := \_\_successors; (let \_\_ordered : List (Screen.Node) := (LexLeanRuntime.append (\_\_fresh) (\_\_rest) : List (Screen.Node)); (let \_\_next : List (Screen.Node) := (LexLeanCollections.listFold ((fun (\_\_acc : List (Screen.Node)) (\_\_n : Screen.Node) => (if (Nat.blt ((LexLeanRuntime.length (\_\_acc) : Nat)) (3)) then (LexLeanRuntime.append (\_\_acc) ((\_\_n :: ([] : List (Screen.Node)))) : List (Screen.Node)) else \_\_acc))) (([] : List (Screen.Node))) (\_\_ordered) : List (Screen.Node)); Option.some ((\{ frontier := \_\_next, found := Option.none, truncated := ((\_\_r).truncated || (Nat.blt (3) ((LexLeanRuntime.length (\_\_ordered) : Nat)))), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Screen.attempts ((\_\_node).state)), firings := (((\_\_r).ledger).firings + (LexLeanRuntime.length (\_\_successors) : Nat)), expansions := (((\_\_r).ledger).expansions + 1), verifications := (((\_\_r).ledger).verifications + 1), frontier := (if (Nat.blt (((\_\_r).ledger).frontier) ((LexLeanRuntime.length (\_\_next) : Nat))) then (LexLeanRuntime.length (\_\_next) : Nat) else ((\_\_r).ledger).frontier) \} : Screen.Ledger) \} : Screen.Search)))))))))}.\par
+\noindent Elaborates to: \texttt{Screen.run (w : Nat) : (Prod (Screen.Search) (Bool)) := (LexLeanCollections.iterateUntil ((fun (\_\_r : Screen.Search) => Screen.searchStep (w) (\_\_r))) (8) (Screen.start (w)) : (Prod (Screen.Search) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Screen.failure (\_\_saturated : Bool) (\_\_truncated : Bool) : ReasoningFailure := (if (\_\_saturated \&\& (!\_\_truncated)) then ReasoningFailure.unsolved else ReasoningFailure.exhausted)}.\par
+\noindent Elaborates to: \texttt{Screen (w : Nat) : Except (ReasoningFailure) ((Prod (Nat) (List (Screen.Step)))) := (let \_\_final : (Prod (Screen.Search) (Bool)) := Screen.run (w); (match ((\_\_final).1).found with | Option.some \_\_hit => Except.ok (((\_\_hit).1, ((\_\_hit).2).trace)) | Option.none => Except.error (Screen.failure ((\_\_final).2) (((\_\_final).1).truncated))))}.\par
+\noindent Elaborates to: \texttt{Screen.verdict (w : Nat) : Except (ReasoningFailure) (Nat) := (match Screen (w) with | Except.ok \_\_p => Except.ok ((\_\_p).1) | Except.error \_\_e => Except.error (\_\_e))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Screen.fire\_sound : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Screen.Step) (\_\_t : (Prod (Nat) (Nat))), ((Screen.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> Proposed (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Screen.replay\_fire : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Screen.Step) (\_\_t : (Prod (Nat) (Nat))), ((Screen.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Screen.replay (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Screen.replay\_sound : forall (w : Nat) (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Screen.Step), ((LexLeanReasoning.Reaches ((Proposed)) (Screen.observe (w)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Proposed)) (Screen.observe (w)) (Screen.replay (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Screen.derivation : forall (w : Nat) (\_\_trace : List (Screen.Step)), (LexLeanReasoning.Reaches ((Proposed)) (Screen.observe (w)) (Screen.follow (w) (\_\_trace)))}.\par
+\noindent Generates theorem (accept sound template): \texttt{Screen.accept\_sound : forall (w : Nat) (\_\_s : (Prod (Nat) (Nat))) (\_\_v : Nat), ((Screen.accept (w) (\_\_s) = Option.some (\_\_v)) -> Safe (w) (\_\_v))}.\par
+\noindent Generates theorem (extend template): \texttt{Screen.extend : forall (w : Nat) (\_\_node : Screen.Node) (\_\_step : Screen.Step) (\_\_t : (Prod (Nat) (Nat))), ((Screen.follow (w) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> ((Screen.fire ((\_\_node).state) (\_\_step) = Option.some (\_\_t)) -> (Screen.follow (w) ((LexLeanRuntime.append ((\_\_node).trace) ((\_\_step :: ([] : List (Screen.Step)))) : List (Screen.Step))) = Except.ok (\_\_t))))}.\par
+\noindent Generates theorem (successors bound template): \texttt{Screen.Propose.successors\_ok : forall (w : Nat) (\_\_node : Screen.Node), ((Screen.follow (w) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Screen.Node) => (Screen.follow (w) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Screen.Propose.successors (\_\_node))))}.\par
+\noindent Generates theorem (term template): \texttt{Screen.successors\_ok : forall (w : Nat) (\_\_node : Screen.Node), ((Screen.follow (w) ((\_\_node).trace) = Except.ok ((\_\_node).state)) -> (LexLeanReasoning.All ((fun (\_\_n : Screen.Node) => (Screen.follow (w) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) (Screen.successors (\_\_node))))}.\par
+\noindent Generates theorem (search step template): \texttt{Screen.search\_step : forall (w : Nat) (\_\_r : Screen.Search) (\_\_q : Screen.Search), ((Screen.searchStep (w) (\_\_r) = Option.some (\_\_q)) -> ((LexLeanReasoning.SearchOk ((fun (\_\_n : Screen.Node) => (Screen.follow (w) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Screen.Node) => Screen.accept (w) ((\_\_n).state))) ((\_\_r).frontier) ((\_\_r).found)) -> (LexLeanReasoning.SearchOk ((fun (\_\_n : Screen.Node) => (Screen.follow (w) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Screen.Node) => Screen.accept (w) ((\_\_n).state))) ((\_\_q).frontier) ((\_\_q).found))))}.\par
+\noindent Generates theorem (search peak template): \texttt{Screen.search\_peak : forall (w : Nat) (\_\_r : Screen.Search) (\_\_q : Screen.Search), ((Screen.searchStep (w) (\_\_r) = Option.some (\_\_q)) -> ((((\_\_r).ledger).frontier <= 3) -> (((\_\_q).ledger).frontier <= 3)))}.\par
+\noindent Generates theorem (search count template): \texttt{Screen.search\_count : forall (w : Nat) (\_\_r : Screen.Search) (\_\_q : Screen.Search), ((Screen.searchStep (w) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Screen.search\_ok : forall (w : Nat), (LexLeanReasoning.SearchOk ((fun (\_\_n : Screen.Node) => (Screen.follow (w) ((\_\_n).trace) = Except.ok ((\_\_n).state)))) ((fun (\_\_n : Screen.Node) => Screen.accept (w) ((\_\_n).state))) (((Screen.run (w)).1).frontier) (((Screen.run (w)).1).found))}.\par
+\noindent Generates theorem (unfold template): \texttt{Screen.frontier\_bounded : forall (w : Nat), ((((Screen.run (w)).1).ledger).frontier <= 3)}.\par
+\noindent Generates theorem (unfold template): \texttt{Screen.iterations\_bounded : forall (w : Nat), ((((Screen.run (w)).1).ledger).iterations <= 8)}.\par
+\noindent Generates theorem (explained search template): \texttt{Screen.explained : forall (w : Nat), (forall (\_\_v : Nat), (forall (\_\_trace : List (Screen.Step)), ((Screen (w) = Except.ok ((\_\_v, \_\_trace))) -> ((Screen.answer (w) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Safe (w) (\_\_v)))))}.\par
+\noindent Generates theorem (verdict search template): \texttt{Screen.verdict\_sound : forall (w : Nat), (forall (\_\_v : Nat), ((Screen.verdict (w) = Except.ok (\_\_v)) -> Safe (w) (\_\_v)))}.\par
+\end{document}

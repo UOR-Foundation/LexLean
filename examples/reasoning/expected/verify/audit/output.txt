@@ -1,0 +1,503 @@
+'Reasoning.Budget.Burn.apply' does not depend on any axioms
+'Reasoning.Budget.Burn.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Burn.apply_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Burn.candidates' does not depend on any axioms
+'Reasoning.Budget.Burn.conclusion' does not depend on any axioms
+'Reasoning.Budget.Burn.guard' does not depend on any axioms
+'Reasoning.Budget.Drained.sound' depends on axioms: [propext]
+'Reasoning.Budget.Empty' does not depend on any axioms
+'Reasoning.Budget.Refund' does not depend on any axioms
+'Reasoning.Budget.Refund.Ledger' does not depend on any axioms
+'Reasoning.Budget.Refund.Run' does not depend on any axioms
+'Reasoning.Budget.Refund.Step' does not depend on any axioms
+'Reasoning.Budget.Refund.accept' does not depend on any axioms
+'Reasoning.Budget.Refund.accept_sound' depends on axioms: [propext]
+'Reasoning.Budget.Refund.account' does not depend on any axioms
+'Reasoning.Budget.Refund.answer' does not depend on any axioms
+'Reasoning.Budget.Refund.attempts' does not depend on any axioms
+'Reasoning.Budget.Refund.conclude' does not depend on any axioms
+'Reasoning.Budget.Refund.conclude_accept' does not depend on any axioms
+'Reasoning.Budget.Refund.conclude_sound' depends on axioms: [propext]
+'Reasoning.Budget.Refund.derivation' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Refund.explained' depends on axioms: [propext]
+'Reasoning.Budget.Refund.extract' does not depend on any axioms
+'Reasoning.Budget.Refund.fire' does not depend on any axioms
+'Reasoning.Budget.Refund.fire_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Refund.follow' does not depend on any axioms
+'Reasoning.Budget.Refund.iterations_bounded' does not depend on any axioms
+'Reasoning.Budget.Refund.next' does not depend on any axioms
+'Reasoning.Budget.Refund.next_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Refund.observe' does not depend on any axioms
+'Reasoning.Budget.Refund.replay' does not depend on any axioms
+'Reasoning.Budget.Refund.replay_fire' does not depend on any axioms
+'Reasoning.Budget.Refund.replay_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Refund.run' does not depend on any axioms
+'Reasoning.Budget.Refund.run_state' does not depend on any axioms
+'Reasoning.Budget.Refund.run_trace' does not depend on any axioms
+'Reasoning.Budget.Refund.saturate' does not depend on any axioms
+'Reasoning.Budget.Refund.saturate_derivation' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Refund.select' does not depend on any axioms
+'Reasoning.Budget.Refund.start' does not depend on any axioms
+'Reasoning.Budget.Refund.step' does not depend on any axioms
+'Reasoning.Budget.Refund.step_count' does not depend on any axioms
+'Reasoning.Budget.Refund.step_none' does not depend on any axioms
+'Reasoning.Budget.Refund.step_some' does not depend on any axioms
+'Reasoning.Budget.Refund.step_trace' does not depend on any axioms
+'Reasoning.Budget.Refund.verdict' does not depend on any axioms
+'Reasoning.Budget.Refund.verdict_sound' depends on axioms: [propext]
+'Reasoning.Budget.Remaining' does not depend on any axioms
+'Reasoning.Budget.Spend' does not depend on any axioms
+'Reasoning.Budget.Spend.Ledger' does not depend on any axioms
+'Reasoning.Budget.Spend.Run' does not depend on any axioms
+'Reasoning.Budget.Spend.Step' does not depend on any axioms
+'Reasoning.Budget.Spend.accept' does not depend on any axioms
+'Reasoning.Budget.Spend.accept_sound' depends on axioms: [propext]
+'Reasoning.Budget.Spend.account' does not depend on any axioms
+'Reasoning.Budget.Spend.answer' does not depend on any axioms
+'Reasoning.Budget.Spend.attempts' does not depend on any axioms
+'Reasoning.Budget.Spend.conclude' does not depend on any axioms
+'Reasoning.Budget.Spend.conclude_accept' does not depend on any axioms
+'Reasoning.Budget.Spend.conclude_sound' depends on axioms: [propext]
+'Reasoning.Budget.Spend.derivation' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.explained' depends on axioms: [propext]
+'Reasoning.Budget.Spend.extract' does not depend on any axioms
+'Reasoning.Budget.Spend.fire' does not depend on any axioms
+'Reasoning.Budget.Spend.fire_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.fire_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.follow' does not depend on any axioms
+'Reasoning.Budget.Spend.iterations_bounded' does not depend on any axioms
+'Reasoning.Budget.Spend.next' does not depend on any axioms
+'Reasoning.Budget.Spend.next_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.next_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.observe' does not depend on any axioms
+'Reasoning.Budget.Spend.replay' does not depend on any axioms
+'Reasoning.Budget.Spend.replay_fire' does not depend on any axioms
+'Reasoning.Budget.Spend.replay_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.run' does not depend on any axioms
+'Reasoning.Budget.Spend.run_state' does not depend on any axioms
+'Reasoning.Budget.Spend.run_trace' does not depend on any axioms
+'Reasoning.Budget.Spend.saturate' does not depend on any axioms
+'Reasoning.Budget.Spend.saturate_derivation' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.saturates' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Spend.select' does not depend on any axioms
+'Reasoning.Budget.Spend.start' does not depend on any axioms
+'Reasoning.Budget.Spend.step' does not depend on any axioms
+'Reasoning.Budget.Spend.step_count' does not depend on any axioms
+'Reasoning.Budget.Spend.step_none' does not depend on any axioms
+'Reasoning.Budget.Spend.step_some' does not depend on any axioms
+'Reasoning.Budget.Spend.step_trace' does not depend on any axioms
+'Reasoning.Budget.Spend.verdict' does not depend on any axioms
+'Reasoning.Budget.Spend.verdict_sound' depends on axioms: [propext]
+'Reasoning.Budget.Spent' does not depend on any axioms
+'Reasoning.Budget.Tick.apply' does not depend on any axioms
+'Reasoning.Budget.Tick.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Tick.apply_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.Tick.conclusion' does not depend on any axioms
+'Reasoning.Budget.Tick.guard' does not depend on any axioms
+'Reasoning.Budget.allowance_bound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.burn_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.burn_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.emptyCheck' does not depend on any axioms
+'Reasoning.Budget.empty_sound' depends on axioms: [propext]
+'Reasoning.Budget.tick_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Budget.tick_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Chart' does not depend on any axioms
+'Reasoning.Clinic.Consistent' does not depend on any axioms
+'Reasoning.Clinic.Discharged' does not depend on any axioms
+'Reasoning.Clinic.Escalate.apply' does not depend on any axioms
+'Reasoning.Clinic.Escalate.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Escalate.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Escalate.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Escalate.guard' does not depend on any axioms
+'Reasoning.Clinic.Febrile' does not depend on any axioms
+'Reasoning.Clinic.Fever.apply' does not depend on any axioms
+'Reasoning.Clinic.Fever.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Fever.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Fever.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Fever.guard' does not depend on any axioms
+'Reasoning.Clinic.Findings.preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Hypotensive' does not depend on any axioms
+'Reasoning.Clinic.Indicated' does not depend on any axioms
+'Reasoning.Clinic.Justified' does not depend on any axioms
+'Reasoning.Clinic.Leukocytic' does not depend on any axioms
+'Reasoning.Clinic.Leukocytosis.apply' does not depend on any axioms
+'Reasoning.Clinic.Leukocytosis.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Leukocytosis.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Leukocytosis.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Leukocytosis.guard' does not depend on any axioms
+'Reasoning.Clinic.Outpatient.sound' depends on axioms: [propext]
+'Reasoning.Clinic.Pending' does not depend on any axioms
+'Reasoning.Clinic.Recommendation.complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Recommendation.sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review' does not depend on any axioms
+'Reasoning.Clinic.Review.Ledger' does not depend on any axioms
+'Reasoning.Clinic.Review.Run' does not depend on any axioms
+'Reasoning.Clinic.Review.Step' does not depend on any axioms
+'Reasoning.Clinic.Review.accept' does not depend on any axioms
+'Reasoning.Clinic.Review.accept_sound' depends on axioms: [propext]
+'Reasoning.Clinic.Review.account' does not depend on any axioms
+'Reasoning.Clinic.Review.answer' does not depend on any axioms
+'Reasoning.Clinic.Review.attempts' does not depend on any axioms
+'Reasoning.Clinic.Review.conclude' does not depend on any axioms
+'Reasoning.Clinic.Review.conclude_accept' does not depend on any axioms
+'Reasoning.Clinic.Review.conclude_sound' depends on axioms: [propext]
+'Reasoning.Clinic.Review.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.explained' depends on axioms: [propext]
+'Reasoning.Clinic.Review.extract' does not depend on any axioms
+'Reasoning.Clinic.Review.fire' does not depend on any axioms
+'Reasoning.Clinic.Review.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.follow' does not depend on any axioms
+'Reasoning.Clinic.Review.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.iterations_bounded' does not depend on any axioms
+'Reasoning.Clinic.Review.next' does not depend on any axioms
+'Reasoning.Clinic.Review.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.observe' does not depend on any axioms
+'Reasoning.Clinic.Review.replay' does not depend on any axioms
+'Reasoning.Clinic.Review.replay_fire' does not depend on any axioms
+'Reasoning.Clinic.Review.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.run' does not depend on any axioms
+'Reasoning.Clinic.Review.run_state' does not depend on any axioms
+'Reasoning.Clinic.Review.run_trace' does not depend on any axioms
+'Reasoning.Clinic.Review.saturate' does not depend on any axioms
+'Reasoning.Clinic.Review.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Review.select' does not depend on any axioms
+'Reasoning.Clinic.Review.start' does not depend on any axioms
+'Reasoning.Clinic.Review.step' does not depend on any axioms
+'Reasoning.Clinic.Review.step_count' does not depend on any axioms
+'Reasoning.Clinic.Review.step_none' does not depend on any axioms
+'Reasoning.Clinic.Review.step_some' does not depend on any axioms
+'Reasoning.Clinic.Review.step_trace' does not depend on any axioms
+'Reasoning.Clinic.Review.verdict' does not depend on any axioms
+'Reasoning.Clinic.Review.verdict_sound' depends on axioms: [propext]
+'Reasoning.Clinic.Sepsis.apply' does not depend on any axioms
+'Reasoning.Clinic.Sepsis.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Sepsis.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Sepsis.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Sepsis.guard' does not depend on any axioms
+'Reasoning.Clinic.Shock.apply' does not depend on any axioms
+'Reasoning.Clinic.Shock.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Shock.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Shock.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Shock.guard' does not depend on any axioms
+'Reasoning.Clinic.Sirs.apply' does not depend on any axioms
+'Reasoning.Clinic.Sirs.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Sirs.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Sirs.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Sirs.guard' does not depend on any axioms
+'Reasoning.Clinic.Tachycardia.apply' does not depend on any axioms
+'Reasoning.Clinic.Tachycardia.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Tachycardia.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Tachycardia.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Tachycardia.guard' does not depend on any axioms
+'Reasoning.Clinic.Tachycardic' does not depend on any axioms
+'Reasoning.Clinic.Tachypnea.apply' does not depend on any axioms
+'Reasoning.Clinic.Tachypnea.apply_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Tachypnea.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Tachypnea.conclusion' does not depend on any axioms
+'Reasoning.Clinic.Tachypnea.guard' does not depend on any axioms
+'Reasoning.Clinic.Tachypneic' does not depend on any axioms
+'Reasoning.Clinic.Triage' does not depend on any axioms
+'Reasoning.Clinic.Triage.Ledger' does not depend on any axioms
+'Reasoning.Clinic.Triage.Run' does not depend on any axioms
+'Reasoning.Clinic.Triage.Step' does not depend on any axioms
+'Reasoning.Clinic.Triage.accept' does not depend on any axioms
+'Reasoning.Clinic.Triage.accept_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.account' does not depend on any axioms
+'Reasoning.Clinic.Triage.answer' does not depend on any axioms
+'Reasoning.Clinic.Triage.attempts' does not depend on any axioms
+'Reasoning.Clinic.Triage.conclude' does not depend on any axioms
+'Reasoning.Clinic.Triage.conclude_accept' does not depend on any axioms
+'Reasoning.Clinic.Triage.conclude_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.extract' does not depend on any axioms
+'Reasoning.Clinic.Triage.fire' does not depend on any axioms
+'Reasoning.Clinic.Triage.fire_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Triage.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.follow' does not depend on any axioms
+'Reasoning.Clinic.Triage.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.iterations_bounded' does not depend on any axioms
+'Reasoning.Clinic.Triage.next' does not depend on any axioms
+'Reasoning.Clinic.Triage.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.next_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.Triage.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.observe' does not depend on any axioms
+'Reasoning.Clinic.Triage.replay' does not depend on any axioms
+'Reasoning.Clinic.Triage.replay_fire' does not depend on any axioms
+'Reasoning.Clinic.Triage.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.run' does not depend on any axioms
+'Reasoning.Clinic.Triage.run_state' does not depend on any axioms
+'Reasoning.Clinic.Triage.run_trace' does not depend on any axioms
+'Reasoning.Clinic.Triage.saturate' does not depend on any axioms
+'Reasoning.Clinic.Triage.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Triage.select' does not depend on any axioms
+'Reasoning.Clinic.Triage.start' does not depend on any axioms
+'Reasoning.Clinic.Triage.step' does not depend on any axioms
+'Reasoning.Clinic.Triage.step_count' does not depend on any axioms
+'Reasoning.Clinic.Triage.step_none' does not depend on any axioms
+'Reasoning.Clinic.Triage.step_some' does not depend on any axioms
+'Reasoning.Clinic.Triage.step_trace' does not depend on any axioms
+'Reasoning.Clinic.Triage.verdict' does not depend on any axioms
+'Reasoning.Clinic.Triage.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.Vitals' does not depend on any axioms
+'Reasoning.Clinic.Warranted' does not depend on any axioms
+'Reasoning.Clinic.admitted_consistent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.admitted_pending' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.consistent_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.dischargeCheck' does not depend on any axioms
+'Reasoning.Clinic.discharge_sound' depends on axioms: [propext]
+'Reasoning.Clinic.escalate_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.escalate_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.fever_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.fever_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.feverish' does not depend on any axioms
+'Reasoning.Clinic.hypotensive' does not depend on any axioms
+'Reasoning.Clinic.leukocytic' does not depend on any axioms
+'Reasoning.Clinic.leukocytosis_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.leukocytosis_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.recommendationCheck' does not depend on any axioms
+'Reasoning.Clinic.recommendation_complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.recommendation_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.sepsis_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.sepsis_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.shock_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.shock_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.sirs_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.sirs_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.tachycardia_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.tachycardia_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.tachycardic' does not depend on any axioms
+'Reasoning.Clinic.tachypnea_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Clinic.tachypnea_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Clinic.tachypneic' does not depend on any axioms
+'Reasoning.Main.GatewayEvidence.gateway_safe' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.GatewayModel' does not depend on any axioms
+'Reasoning.Main.GatewayTriage' does not depend on any axioms
+'Reasoning.Main.Grade' does not depend on any axioms
+'Reasoning.Main.Grade.Ledger' does not depend on any axioms
+'Reasoning.Main.Grade.Run' does not depend on any axioms
+'Reasoning.Main.Grade.Step' does not depend on any axioms
+'Reasoning.Main.Grade.accept' does not depend on any axioms
+'Reasoning.Main.Grade.accept_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.account' does not depend on any axioms
+'Reasoning.Main.Grade.answer' does not depend on any axioms
+'Reasoning.Main.Grade.attempts' does not depend on any axioms
+'Reasoning.Main.Grade.conclude' does not depend on any axioms
+'Reasoning.Main.Grade.conclude_accept' does not depend on any axioms
+'Reasoning.Main.Grade.conclude_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.explained' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.extract' does not depend on any axioms
+'Reasoning.Main.Grade.fire' does not depend on any axioms
+'Reasoning.Main.Grade.fire_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.follow' does not depend on any axioms
+'Reasoning.Main.Grade.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.iterations_bounded' does not depend on any axioms
+'Reasoning.Main.Grade.next' does not depend on any axioms
+'Reasoning.Main.Grade.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.next_progress' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.observe' does not depend on any axioms
+'Reasoning.Main.Grade.replay' does not depend on any axioms
+'Reasoning.Main.Grade.replay_fire' does not depend on any axioms
+'Reasoning.Main.Grade.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.run' does not depend on any axioms
+'Reasoning.Main.Grade.run_state' does not depend on any axioms
+'Reasoning.Main.Grade.run_trace' does not depend on any axioms
+'Reasoning.Main.Grade.saturate' does not depend on any axioms
+'Reasoning.Main.Grade.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.select' does not depend on any axioms
+'Reasoning.Main.Grade.start' does not depend on any axioms
+'Reasoning.Main.Grade.step' does not depend on any axioms
+'Reasoning.Main.Grade.step_count' does not depend on any axioms
+'Reasoning.Main.Grade.step_none' does not depend on any axioms
+'Reasoning.Main.Grade.step_some' does not depend on any axioms
+'Reasoning.Main.Grade.step_trace' does not depend on any axioms
+'Reasoning.Main.Grade.verdict' does not depend on any axioms
+'Reasoning.Main.Grade.verdict_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Graded' does not depend on any axioms
+'Reasoning.Main.Guaranteed' does not depend on any axioms
+'Reasoning.Main.Scale.sound' depends on axioms: [propext]
+'Reasoning.Main.doseLevel' does not depend on any axioms
+'Reasoning.Main.dose_exhausted' does not depend on any axioms
+'Reasoning.Main.dose_found' does not depend on any axioms
+'Reasoning.Main.gatewayLevel' does not depend on any axioms
+'Reasoning.Main.gateway_level' does not depend on any axioms
+'Reasoning.Main.gateway_safe' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.gradeLevel' does not depend on any axioms
+'Reasoning.Main.grade_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.grade_correct' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.grade_pending' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.grade_shock' does not depend on any axioms
+'Reasoning.Main.gradedCheck' does not depend on any axioms
+'Reasoning.Main.graded_sound' depends on axioms: [propext]
+'Reasoning.Main.planLeft' depends on axioms: [propext]
+'Reasoning.Main.plan_found' depends on axioms: [propext]
+'Reasoning.Main.plan_frontier' depends on axioms: [propext]
+'Reasoning.Main.plan_unsolved' depends on axioms: [propext]
+'Reasoning.Main.refund_drained' does not depend on any axioms
+'Reasoning.Main.refund_unsolved' does not depend on any axioms
+'Reasoning.Main.review_exhausted' does not depend on any axioms
+'Reasoning.Main.review_rejected' does not depend on any axioms
+'Reasoning.Main.screenDose' does not depend on any axioms
+'Reasoning.Main.screen_found' does not depend on any axioms
+'Reasoning.Main.screen_truncated' does not depend on any axioms
+'Reasoning.Main.spendLeft' does not depend on any axioms
+'Reasoning.Main.spend_drained' does not depend on any axioms
+'Reasoning.Main.triageLevel' does not depend on any axioms
+'Reasoning.Main.triageSteps' does not depend on any axioms
+'Reasoning.Main.triage_forged' does not depend on any axioms
+'Reasoning.Main.triage_inapplicable' does not depend on any axioms
+'Reasoning.Main.triage_iterations' does not depend on any axioms
+'Reasoning.Main.triage_level' does not depend on any axioms
+'Reasoning.Main.triage_replays' does not depend on any axioms
+'Reasoning.Main.triage_shock' does not depend on any axioms
+'Reasoning.Main.triage_well' does not depend on any axioms
+'Reasoning.Planner.EmptyB.apply' does not depend on any axioms
+'Reasoning.Planner.EmptyB.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.EmptyB.conclusion' does not depend on any axioms
+'Reasoning.Planner.EmptyB.guard' does not depend on any axioms
+'Reasoning.Planner.FillA.apply' does not depend on any axioms
+'Reasoning.Planner.FillA.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.FillA.conclusion' does not depend on any axioms
+'Reasoning.Planner.FillA.guard' does not depend on any axioms
+'Reasoning.Planner.Fits' does not depend on any axioms
+'Reasoning.Planner.Measured.sound' depends on axioms: [propext]
+'Reasoning.Planner.Measures' does not depend on any axioms
+'Reasoning.Planner.Moves' does not depend on any axioms
+'Reasoning.Planner.Plan' depends on axioms: [propext]
+'Reasoning.Planner.Plan.EmptyB.successors' does not depend on any axioms
+'Reasoning.Planner.Plan.EmptyB.successors_ok' does not depend on any axioms
+'Reasoning.Planner.Plan.FillA.successors' does not depend on any axioms
+'Reasoning.Planner.Plan.FillA.successors_ok' does not depend on any axioms
+'Reasoning.Planner.Plan.Ledger' does not depend on any axioms
+'Reasoning.Planner.Plan.Node' does not depend on any axioms
+'Reasoning.Planner.Plan.Pour.collect' does not depend on any axioms
+'Reasoning.Planner.Plan.Pour.successors' does not depend on any axioms
+'Reasoning.Planner.Plan.Pour.successors_ok' does not depend on any axioms
+'Reasoning.Planner.Plan.Search' does not depend on any axioms
+'Reasoning.Planner.Plan.Step' does not depend on any axioms
+'Reasoning.Planner.Plan.accept' does not depend on any axioms
+'Reasoning.Planner.Plan.accept_sound' depends on axioms: [propext]
+'Reasoning.Planner.Plan.answer' does not depend on any axioms
+'Reasoning.Planner.Plan.attempts' does not depend on any axioms
+'Reasoning.Planner.Plan.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.Plan.explained' depends on axioms: [propext]
+'Reasoning.Planner.Plan.extend' does not depend on any axioms
+'Reasoning.Planner.Plan.extract' does not depend on any axioms
+'Reasoning.Planner.Plan.failure' does not depend on any axioms
+'Reasoning.Planner.Plan.fire' does not depend on any axioms
+'Reasoning.Planner.Plan.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.Plan.follow' does not depend on any axioms
+'Reasoning.Planner.Plan.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.Plan.fresh' depends on axioms: [propext]
+'Reasoning.Planner.Plan.fresh_ok' depends on axioms: [propext]
+'Reasoning.Planner.Plan.frontier_bounded' depends on axioms: [propext]
+'Reasoning.Planner.Plan.iterations_bounded' depends on axioms: [propext]
+'Reasoning.Planner.Plan.observe' does not depend on any axioms
+'Reasoning.Planner.Plan.replay' does not depend on any axioms
+'Reasoning.Planner.Plan.replay_fire' does not depend on any axioms
+'Reasoning.Planner.Plan.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.Plan.run' depends on axioms: [propext]
+'Reasoning.Planner.Plan.searchStep' depends on axioms: [propext]
+'Reasoning.Planner.Plan.search_count' depends on axioms: [propext]
+'Reasoning.Planner.Plan.search_ok' depends on axioms: [propext]
+'Reasoning.Planner.Plan.search_peak' depends on axioms: [propext]
+'Reasoning.Planner.Plan.search_step' depends on axioms: [propext]
+'Reasoning.Planner.Plan.start' depends on axioms: [propext]
+'Reasoning.Planner.Plan.successors' does not depend on any axioms
+'Reasoning.Planner.Plan.successors_ok' does not depend on any axioms
+'Reasoning.Planner.Plan.verdict' depends on axioms: [propext]
+'Reasoning.Planner.Plan.verdict_sound' depends on axioms: [propext]
+'Reasoning.Planner.Pour.apply' does not depend on any axioms
+'Reasoning.Planner.Pour.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.Pour.candidates' does not depend on any axioms
+'Reasoning.Planner.Pour.conclusion' does not depend on any axioms
+'Reasoning.Planner.Pour.guard' does not depend on any axioms
+'Reasoning.Planner.Pouring.preserves' does not depend on any axioms
+'Reasoning.Planner.empty_jugs_fit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.emptyb_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.fits_kept' does not depend on any axioms
+'Reasoning.Planner.measuresCheck' does not depend on any axioms
+'Reasoning.Planner.measures_sound' depends on axioms: [propext]
+'Reasoning.Planner.pour_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Screening.Dose' does not depend on any axioms
+'Reasoning.Screening.Dose.Ledger' does not depend on any axioms
+'Reasoning.Screening.Dose.Step' does not depend on any axioms
+'Reasoning.Screening.Dose.Trial' does not depend on any axioms
+'Reasoning.Screening.Dose.answer' does not depend on any axioms
+'Reasoning.Screening.Dose.candidates' does not depend on any axioms
+'Reasoning.Screening.Dose.explained' depends on axioms: [propext]
+'Reasoning.Screening.Dose.failure' does not depend on any axioms
+'Reasoning.Screening.Dose.run' does not depend on any axioms
+'Reasoning.Screening.Dose.run_sound' depends on axioms: [propext]
+'Reasoning.Screening.Dose.try' does not depend on any axioms
+'Reasoning.Screening.Dose.try_count' does not depend on any axioms
+'Reasoning.Screening.Dose.try_sound' depends on axioms: [propext]
+'Reasoning.Screening.Dose.verdict' does not depend on any axioms
+'Reasoning.Screening.Dose.verdict_sound' depends on axioms: [propext]
+'Reasoning.Screening.Dose.verifications_bounded' does not depend on any axioms
+'Reasoning.Screening.Dose.verify' does not depend on any axioms
+'Reasoning.Screening.Dose.verify_sound' depends on axioms: [propext]
+'Reasoning.Screening.DoseCandidates' does not depend on any axioms
+'Reasoning.Screening.DoseContract.postcondition_sound' depends on axioms: [propext]
+'Reasoning.Screening.DoseModel' does not depend on any axioms
+'Reasoning.Screening.Propose.apply' does not depend on any axioms
+'Reasoning.Screening.Propose.apply_sound' depends on axioms: [propext]
+'Reasoning.Screening.Propose.candidates' does not depend on any axioms
+'Reasoning.Screening.Propose.conclusion' does not depend on any axioms
+'Reasoning.Screening.Propose.guard' does not depend on any axioms
+'Reasoning.Screening.Proposed' does not depend on any axioms
+'Reasoning.Screening.Safe' does not depend on any axioms
+'Reasoning.Screening.SafeDose.sound' depends on axioms: [propext]
+'Reasoning.Screening.Screen' does not depend on any axioms
+'Reasoning.Screening.Screen.Ledger' does not depend on any axioms
+'Reasoning.Screening.Screen.Node' does not depend on any axioms
+'Reasoning.Screening.Screen.Propose.collect' does not depend on any axioms
+'Reasoning.Screening.Screen.Propose.successors' does not depend on any axioms
+'Reasoning.Screening.Screen.Propose.successors_ok' does not depend on any axioms
+'Reasoning.Screening.Screen.Search' does not depend on any axioms
+'Reasoning.Screening.Screen.Step' does not depend on any axioms
+'Reasoning.Screening.Screen.accept' does not depend on any axioms
+'Reasoning.Screening.Screen.accept_sound' depends on axioms: [propext]
+'Reasoning.Screening.Screen.answer' does not depend on any axioms
+'Reasoning.Screening.Screen.attempts' does not depend on any axioms
+'Reasoning.Screening.Screen.derivation' depends on axioms: [propext]
+'Reasoning.Screening.Screen.explained' depends on axioms: [propext]
+'Reasoning.Screening.Screen.extend' does not depend on any axioms
+'Reasoning.Screening.Screen.extract' does not depend on any axioms
+'Reasoning.Screening.Screen.failure' does not depend on any axioms
+'Reasoning.Screening.Screen.fire' does not depend on any axioms
+'Reasoning.Screening.Screen.fire_sound' depends on axioms: [propext]
+'Reasoning.Screening.Screen.follow' does not depend on any axioms
+'Reasoning.Screening.Screen.frontier_bounded' does not depend on any axioms
+'Reasoning.Screening.Screen.iterations_bounded' does not depend on any axioms
+'Reasoning.Screening.Screen.observe' does not depend on any axioms
+'Reasoning.Screening.Screen.replay' does not depend on any axioms
+'Reasoning.Screening.Screen.replay_fire' does not depend on any axioms
+'Reasoning.Screening.Screen.replay_sound' depends on axioms: [propext]
+'Reasoning.Screening.Screen.run' does not depend on any axioms
+'Reasoning.Screening.Screen.searchStep' does not depend on any axioms
+'Reasoning.Screening.Screen.search_count' does not depend on any axioms
+'Reasoning.Screening.Screen.search_ok' does not depend on any axioms
+'Reasoning.Screening.Screen.search_peak' does not depend on any axioms
+'Reasoning.Screening.Screen.search_step' does not depend on any axioms
+'Reasoning.Screening.Screen.start' does not depend on any axioms
+'Reasoning.Screening.Screen.successors' does not depend on any axioms
+'Reasoning.Screening.Screen.successors_ok' does not depend on any axioms
+'Reasoning.Screening.Screen.verdict' does not depend on any axioms
+'Reasoning.Screening.Screen.verdict_sound' depends on axioms: [propext]
+'Reasoning.Screening.Short' does not depend on any axioms
+'Reasoning.Screening.propose_sound' depends on axioms: [propext]
+'Reasoning.Screening.safeCheck' does not depend on any axioms
+'Reasoning.Screening.safe_sound' depends on axioms: [propext]
+'Reasoning.Screening.shortCheck' does not depend on any axioms
+'Reasoning.Screening.short_sound' depends on axioms: [propext]
