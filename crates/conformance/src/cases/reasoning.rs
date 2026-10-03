@@ -14,8 +14,8 @@ const EXAMPLE: &str = "reasoning";
 pub fn run(id: &str) {
     match id {
         "RS-01" => rs_01(),
-        "RS-02" | "RS-03" | "RS-04" | "RS-05" | "RS-06" | "RS-07" | "RS-08" | "RS-09"
-        | "RS-10" | "RS-11" | "RS-12" | "RS-13" | "RS-14" => example_links(),
+        "RS-02" | "RS-03" | "RS-04" | "RS-05" | "RS-06" | "RS-07" | "RS-08" | "RS-09" | "RS-10"
+        | "RS-11" | "RS-12" | "RS-13" | "RS-14" => example_links(),
         _ => panic!("no reasoning case {id}"),
     }
 }

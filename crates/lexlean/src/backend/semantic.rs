@@ -1559,7 +1559,6 @@ namespace LexLeanModels
 end LexLeanModels
 "#;
 
-
 /// The fixed reasoning runtime (§17.12, reasoning): the propositions a
 /// generated statement names and the lemmas every generated proof applies,
 /// written once and independently of the elaborator. Every lemma is proved

@@ -8674,68 +8674,67 @@ fn register_structure(
         return Ok(());
     };
     let name = name.as_str();
-        if !parameters.is_empty() {
+    if !parameters.is_empty() {
+        return Err(
+            format!("`{name}` value parameters are not part of a finite data declaration").into(),
+        );
+    }
+    let type_parameter_names = type_parameters.clone();
+    check_type_parameter_spelling(
+        &type_parameter_names,
+        &BTreeSet::from([name.to_owned()]),
+        &env,
+    )?;
+    let type_parameters = type_parameter_set(type_parameters)?;
+    let _ = check_parameters(parameters, &env, &type_parameters)?;
+    if fields.is_empty() {
+        return Err(format!("`{name}` has no fields").into());
+    }
+    if env.language_1_2 {
+        let own = BTreeSet::from([name.to_owned()]);
+        if fields
+            .iter()
+            .any(|field| mentions_group(&field.r#type, &own))
+        {
             return Err(format!(
-                "`{name}` value parameters are not part of a finite data declaration"
-            )
-            .into());
-        }
-        let type_parameter_names = type_parameters.clone();
-        check_type_parameter_spelling(
-            &type_parameter_names,
-            &BTreeSet::from([name.to_owned()]),
-            &env,
-        )?;
-        let type_parameters = type_parameter_set(type_parameters)?;
-        let _ = check_parameters(parameters, &env, &type_parameters)?;
-        if fields.is_empty() {
-            return Err(format!("`{name}` has no fields").into());
-        }
-        if env.language_1_2 {
-            let own = BTreeSet::from([name.to_owned()]);
-            if fields
-                .iter()
-                .any(|field| mentions_group(&field.r#type, &own))
-            {
-                return Err(format!(
                     "structure or class `{name}` refers to itself; recursive data is declared as an inductive"
                 ).into());
-            }
         }
-        let mut field_names = Vec::new();
-        for field in fields {
-            check_name(&field.name, "field")?;
-            check_type(&field.r#type, &env)?;
-            check_type_parameters(&field.r#type, &type_parameters)?;
-            if field_names.contains(&field.name) {
-                return Err(format!("duplicate field `{}.{}`", name, field.name).into());
-            }
-            field_names.push(field.name.clone());
-            let generated = format!("{name}.{}", field.name);
-            if !generated_names.insert(generated.clone()) {
-                return Err(format!("duplicate generated name `{generated}`").into());
-            }
+    }
+    let mut field_names = Vec::new();
+    for field in fields {
+        check_name(&field.name, "field")?;
+        check_type(&field.r#type, &env)?;
+        check_type_parameters(&field.r#type, &type_parameters)?;
+        if field_names.contains(&field.name) {
+            return Err(format!("duplicate field `{}.{}`", name, field.name).into());
         }
-        let constructor = format!("{name}.mk");
-        if !generated_names.insert(constructor.clone()) {
-            return Err(format!("duplicate generated name `{constructor}`").into());
+        field_names.push(field.name.clone());
+        let generated = format!("{name}.{}", field.name);
+        if !generated_names.insert(generated.clone()) {
+            return Err(format!("duplicate generated name `{generated}`").into());
         }
-        env.types.insert(
-            name.to_owned(),
-            TypeInfo {
-                parameters: type_parameters.len(),
-                fields: field_names,
-                constructors: BTreeMap::from([(format!("{name}.mk"), fields.len())]),
-                type_parameters: type_parameter_names,
-                field_types: fields.iter().map(|field| field.r#type.clone()).collect(),
-                constructor_types: BTreeMap::from([(
-                    format!("{name}.mk"),
-                    fields.iter().map(|field| field.r#type.clone()).collect(),
-                )]),
-                class: matches!(declaration, SemanticDeclaration::Class { .. }),
-                ..TypeInfo::default()
-            },
-        );
+    }
+    let constructor = format!("{name}.mk");
+    if !generated_names.insert(constructor.clone()) {
+        return Err(format!("duplicate generated name `{constructor}`").into());
+    }
+    env.types.insert(
+        name.to_owned(),
+        TypeInfo {
+            parameters: type_parameters.len(),
+            fields: field_names,
+            constructors: BTreeMap::from([(format!("{name}.mk"), fields.len())]),
+            type_parameters: type_parameter_names,
+            field_types: fields.iter().map(|field| field.r#type.clone()).collect(),
+            constructor_types: BTreeMap::from([(
+                format!("{name}.mk"),
+                fields.iter().map(|field| field.r#type.clone()).collect(),
+            )]),
+            class: matches!(declaration, SemanticDeclaration::Class { .. }),
+            ..TypeInfo::default()
+        },
+    );
     Ok(())
 }
 

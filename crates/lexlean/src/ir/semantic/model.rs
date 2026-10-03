@@ -1269,7 +1269,12 @@ pub(super) fn constructor(
     }
 }
 
-pub(super) fn let_in(name: &str, ty: SemanticType, value: SemanticTerm, body: SemanticTerm) -> SemanticTerm {
+pub(super) fn let_in(
+    name: &str,
+    ty: SemanticType,
+    value: SemanticTerm,
+    body: SemanticTerm,
+) -> SemanticTerm {
     SemanticTerm::Let {
         binder: SemanticParameter {
             name: name.to_owned(),
@@ -2626,7 +2631,11 @@ fn less_than(left: SemanticTerm, right: SemanticTerm) -> SemanticTerm {
     )
 }
 
-pub(super) fn append_one(list: SemanticTerm, element: &SemanticType, value: SemanticTerm) -> SemanticTerm {
+pub(super) fn append_one(
+    list: SemanticTerm,
+    element: &SemanticType,
+    value: SemanticTerm,
+) -> SemanticTerm {
     primitive(
         SemanticPrimitive::Append,
         vec![list, list_literal(element, vec![value])],

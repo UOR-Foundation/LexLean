@@ -553,6 +553,13 @@ pub enum ProofTerm {
 pub enum Proof {
     /// A proof term.
     Term { term: ProofTerm },
+    /// A proof term checked after unfolding exactly the named generated
+    /// definitions, so that Lean compares the term's type with the goal
+    /// syntactically instead of evaluating a bounded loop to compare them.
+    Unfold {
+        definitions: Vec<MemberRef>,
+        term: ProofTerm,
+    },
     /// `cases` over the step type, each arm one guarded-application
     /// theorem.
     FireCases { arms: Vec<FireArm> },
@@ -602,6 +609,7 @@ pub enum Proof {
     /// A forward reasoner's explained answer replays and is sound.
     ExplainedForward {
         reasoner: MemberRef,
+        run: MemberRef,
         answer: MemberRef,
         run_trace: MemberRef,
         conclude_accept: MemberRef,
@@ -639,12 +647,14 @@ pub enum Proof {
     /// A search reasoner's explained answer replays and is sound.
     ExplainedSearch {
         reasoner: MemberRef,
+        run: MemberRef,
         answer: MemberRef,
         search_ok: MemberRef,
         accept_sound: MemberRef,
     },
     /// A search reasoner's verdict is sound.
     VerdictSearch {
+        reasoner: MemberRef,
         verdict: MemberRef,
         explained: MemberRef,
     },
@@ -669,6 +679,7 @@ impl Proof {
     pub const fn template(&self) -> &'static str {
         match self {
             Self::Term { .. } => "term",
+            Self::Unfold { .. } => "unfold",
             Self::FireCases { .. } => "fire_cases",
             Self::ReplayFire { .. } => "replay_fire",
             Self::ReplaySound { .. } => "replay_sound",
@@ -1002,11 +1013,25 @@ fn nil(element: &SemanticType) -> SemanticTerm {
     }
 }
 
-fn list_fold(step: SemanticTerm, initial: SemanticTerm, values: SemanticTerm, state: SemanticType) -> SemanticTerm {
-    primitive(SemanticPrimitive::ListFold, vec![step, initial, values], state)
+fn list_fold(
+    step: SemanticTerm,
+    initial: SemanticTerm,
+    values: SemanticTerm,
+    state: SemanticType,
+) -> SemanticTerm {
+    primitive(
+        SemanticPrimitive::ListFold,
+        vec![step, initial, values],
+        state,
+    )
 }
 
-fn iterate_until(step: SemanticTerm, fuel: SemanticTerm, initial: SemanticTerm, state: &SemanticType) -> SemanticTerm {
+fn iterate_until(
+    step: SemanticTerm,
+    fuel: SemanticTerm,
+    initial: SemanticTerm,
+    state: &SemanticType,
+) -> SemanticTerm {
     primitive(
         SemanticPrimitive::IterateUntil,
         vec![step, fuel, initial],
@@ -1084,11 +1109,23 @@ fn by_term(proof: ProofTerm) -> Proof {
     Proof::Term { term: proof }
 }
 
+/// A proof term checked after unfolding the given generated definitions.
+fn unfolding(definitions: Vec<MemberRef>, proof: ProofTerm) -> Proof {
+    Proof::Unfold {
+        definitions,
+        term: proof,
+    }
+}
+
 fn lemma(lemma: Lemma, arguments: Vec<ProofTerm>) -> ProofTerm {
     ProofTerm::Lemma { lemma, arguments }
 }
 
-fn cite(theorem: &MemberRef, type_arguments: &[SemanticType], arguments: Vec<ProofTerm>) -> ProofTerm {
+fn cite(
+    theorem: &MemberRef,
+    type_arguments: &[SemanticType],
+    arguments: Vec<ProofTerm>,
+) -> ProofTerm {
     ProofTerm::Theorem {
         theorem: theorem.clone(),
         type_arguments: type_arguments.to_vec(),
@@ -1364,7 +1401,13 @@ fn resolve_rule(
     let Some(info) = env.reasoning.rules.get(&key) else {
         return Err(mismatch(format!("`{key}` is not a prior inference rule")));
     };
-    let map = use_at(reference, &info.type_parameters, scope, env, "inference rule")?;
+    let map = use_at(
+        reference,
+        &info.type_parameters,
+        scope,
+        env,
+        "inference rule",
+    )?;
     Ok(RuleAt {
         member: reference.member.clone(),
         type_arguments: reference.type_arguments.clone(),
@@ -1522,7 +1565,10 @@ fn check_logic(
             parameters: vec![parameter(&state.name, s), parameter(&state.next, s)],
             statement: implies(
                 holds(before.clone()),
-                implies(call(relation, &arguments, vec![before, after.clone()]), holds(after)),
+                implies(
+                    call(relation, &arguments, vec![before, after.clone()]),
+                    holds(after),
+                ),
             ),
         };
         require_obligation(env, &obligation, code!("LLT4010"))?;
@@ -1579,7 +1625,12 @@ fn check_rule(
     };
     check_axioms(name, axioms)?;
     let scope = type_parameter_set(type_parameters)?;
-    let at = resolve_logic(logic, &scope, env, &format!("inference rule `{name}` logic"))?;
+    let at = resolve_logic(
+        logic,
+        &scope,
+        env,
+        &format!("inference rule `{name}` logic"),
+    )?;
     let s = at.state.clone();
     let mut binders = vec![at.state_binder.as_str()];
     let mut types = vec![&s];
@@ -1630,7 +1681,11 @@ fn check_rule(
         .collect();
     lower_source(name, sources.iter_mut().collect(), *executable, &scope, env)?;
     let (candidates_term, guard_term, conclusion_term) = match binding {
-        Some(_) => (Some(sources[0].clone()), sources[1].clone(), sources[2].clone()),
+        Some(_) => (
+            Some(sources[0].clone()),
+            sources[1].clone(),
+            sources[2].clone(),
+        ),
         None => (None, sources[0].clone(), sources[1].clone()),
     };
     let own = parameter_types(type_parameters);
@@ -1738,7 +1793,10 @@ fn check_rule(
         &format!("{name}.apply_sound"),
         type_parameters,
         theorem_parameters.clone(),
-        term(implies(applied.clone(), at.relation(state.clone(), var(target)))),
+        term(implies(
+            applied.clone(),
+            at.relation(state.clone(), var(target)),
+        )),
         by_term(lemma(
             Lemma::Guarded,
             vec![
@@ -1752,11 +1810,9 @@ fn check_rule(
         )),
     ));
     if let Some(progress) = progress {
-        let (Some(rank_ref), Some(before), Some(after)) = (
-            at.rank_ref(),
-            at.rank(state.clone()),
-            at.rank(var(target)),
-        ) else {
+        let (Some(rank_ref), Some(before), Some(after)) =
+            (at.rank_ref(), at.rank(state.clone()), at.rank(var(target)))
+        else {
             return Err(format!("internal: rule `{name}` progress lost its ranking").into());
         };
         let decreases = implies(applied, lt(after, before));
@@ -1804,9 +1860,10 @@ fn check_rule(
             executable: *executable,
         },
     );
-    env.reasoning
-        .guarded
-        .insert(format!("{name}.conclusion"), "the unguarded conclusion of a rule");
+    env.reasoning.guarded.insert(
+        format!("{name}.conclusion"),
+        "the unguarded conclusion of a rule",
+    );
     Ok(lowering)
 }
 
@@ -2008,11 +2065,29 @@ impl Engine<'_> {
         )
     }
 
-    fn define(&self, suffix: &str, parameters: Vec<SemanticParameter>, result: SemanticType, body: SemanticTerm) -> SemanticDeclaration {
-        definition(&self.own_name(suffix), parameters, result, body, self.executable, self.axioms)
+    fn define(
+        &self,
+        suffix: &str,
+        parameters: Vec<SemanticParameter>,
+        result: SemanticType,
+        body: SemanticTerm,
+    ) -> SemanticDeclaration {
+        definition(
+            &self.own_name(suffix),
+            parameters,
+            result,
+            body,
+            self.executable,
+            self.axioms,
+        )
     }
 
-    fn ledger(&self, iterations: SemanticTerm, firings: SemanticTerm, frontier: SemanticTerm) -> SemanticTerm {
+    fn ledger(
+        &self,
+        iterations: SemanticTerm,
+        firings: SemanticTerm,
+        frontier: SemanticTerm,
+    ) -> SemanticTerm {
         record(
             &self.own_name("Ledger"),
             vec![
@@ -2102,7 +2177,9 @@ fn check_reasoner(
         )));
     }
     if rules.is_empty() {
-        return Err(mismatch(format!("reasoner `{name}` names no inference rule")));
+        return Err(mismatch(format!(
+            "reasoner `{name}` names no inference rule"
+        )));
     }
     let mut resolved = Vec::new();
     let mut constructors = BTreeSet::new();
@@ -2152,7 +2229,9 @@ fn check_reasoner(
         &format!("reasoner `{name}` answer"),
         mismatch,
     )?;
-    let bound = |term: Option<&SemanticTerm>, what: &str| -> Result<SemanticTerm, SemanticFailure> {
+    let bound = |term: Option<&SemanticTerm>,
+                 what: &str|
+     -> Result<SemanticTerm, SemanticFailure> {
         let Some(term) = term else {
             return Err(unbounded(format!(
                 "reasoner `{name}` declares no {what}; every reasoning strategy is bounded by an explicit natural-number {what}"
@@ -2170,9 +2249,12 @@ fn check_reasoner(
         Ok(term.clone())
     };
     let (fuel, frontier, order, deduplicate) = match strategy {
-        ReasoningStrategy::Forward { fuel } => {
-            (bound(fuel.as_ref(), "fuel")?, None, SearchOrder::BreadthFirst, false)
-        }
+        ReasoningStrategy::Forward { fuel } => (
+            bound(fuel.as_ref(), "fuel")?,
+            None,
+            SearchOrder::BreadthFirst,
+            false,
+        ),
         ReasoningStrategy::Search {
             order,
             fuel,
@@ -2305,9 +2387,10 @@ fn check_reasoner(
     } else {
         elaborate_forward(&engine, &mut lowering);
     }
-    env.reasoning
-        .guarded
-        .insert(engine.own_name("extract"), "the unverified answer of a reasoner");
+    env.reasoning.guarded.insert(
+        engine.own_name("extract"),
+        "the unverified answer of a reasoner",
+    );
     Ok(lowering)
 }
 
@@ -2371,17 +2454,19 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
             )
         })
         .collect();
-    lowering.declarations.push(engine.define(
-        "fire",
-        vec![parameter("__s", &s), parameter("__step", &step)],
-        option_type(s.clone()),
-        matching(
-            var("__step"),
-            arms.iter()
-                .map(|(name, binders, body)| (name.as_str(), binders.clone(), body.clone()))
-                .collect(),
+    lowering.declarations.push(
+        engine.define(
+            "fire",
+            vec![parameter("__s", &s), parameter("__step", &step)],
+            option_type(s.clone()),
+            matching(
+                var("__step"),
+                arms.iter()
+                    .map(|(name, binders, body)| (name.as_str(), binders.clone(), body.clone()))
+                    .collect(),
+            ),
         ),
-    ));
+    );
     let replay_type = engine.replay_type();
     lowering.declarations.push(engine.define(
         "replay",
@@ -2397,7 +2482,11 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
                     matching(
                         engine.call_own("fire", vec![var("__s"), var("__step")]),
                         vec![
-                            ("Option.none", vec![], error_of(&s, failure_value("invalid_step"))),
+                            (
+                                "Option.none",
+                                vec![],
+                                error_of(&s, failure_value("invalid_step")),
+                            ),
                             ("Option.some", vec!["__t"], ok_of(&s, var("__t"))),
                         ],
                     ),
@@ -2407,7 +2496,10 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
     ));
     lowering.declarations.push(engine.define(
         "follow",
-        vec![parameter(x, &engine.input), parameter("__trace", &list_type(step.clone()))],
+        vec![
+            parameter(x, &engine.input),
+            parameter("__trace", &list_type(step.clone())),
+        ],
         replay_type.clone(),
         list_fold(
             function_ref(&engine.own("replay"), &[]),
@@ -2449,7 +2541,10 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
     ));
     lowering.declarations.push(engine.define(
         "answer",
-        vec![parameter(x, &engine.input), parameter("__trace", &list_type(step.clone()))],
+        vec![
+            parameter(x, &engine.input),
+            parameter("__trace", &list_type(step.clone())),
+        ],
         option_type(r.clone()),
         matching(
             engine.call_own("follow", vec![var(x), var("__trace")]),
@@ -2528,7 +2623,10 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
     ));
     let start = engine.call_own("observe", vec![var(x)]);
     let reaches = |held: SemanticTerm| {
-        helper(Helper::Reaches, vec![at.relation_ref(), start.clone(), held])
+        helper(
+            Helper::Reaches,
+            vec![at.relation_ref(), start.clone(), held],
+        )
     };
     lowering.theorems.push(theorem(
         &engine.own_name("replay_sound"),
@@ -2663,7 +2761,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
     for rule in engine.rules.iter().rev() {
         select = match &rule.binding {
             None => if_then(
-                call(&rule.companion("guard"), &rule.type_arguments, vec![var("__s")]),
+                call(
+                    &rule.companion("guard"),
+                    &rule.type_arguments,
+                    vec![var("__s")],
+                ),
                 some_of(&step, engine.step_value(rule, None)),
                 select,
             ),
@@ -2674,7 +2776,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         matching(
                             var("__acc"),
                             vec![
-                                ("Option.some", vec!["__found"], some_of(&step, var("__found"))),
+                                (
+                                    "Option.some",
+                                    vec!["__found"],
+                                    some_of(&step, var("__found")),
+                                ),
                                 (
                                     "Option.none",
                                     vec![],
@@ -2692,11 +2798,19 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         ),
                     ),
                     none_of(&step),
-                    call(&rule.companion("candidates"), &rule.type_arguments, vec![var("__s")]),
+                    call(
+                        &rule.companion("candidates"),
+                        &rule.type_arguments,
+                        vec![var("__s")],
+                    ),
                     option_step.clone(),
                 ),
                 vec![
-                    ("Option.some", vec!["__found"], some_of(&step, var("__found"))),
+                    (
+                        "Option.some",
+                        vec!["__found"],
+                        some_of(&step, var("__found")),
+                    ),
                     ("Option.none", vec![], select),
                 ],
             ),
@@ -2784,7 +2898,10 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                     "Option.some",
                     vec!["__step"],
                     matching(
-                        engine.call_own("fire", vec![project(current.clone(), "state"), var("__step")]),
+                        engine.call_own(
+                            "fire",
+                            vec![project(current.clone(), "state"), var("__step")],
+                        ),
                         vec![
                             ("Option.none", vec![], none_of(&run)),
                             (
@@ -2862,7 +2979,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                     matching(
                         engine.call_own("extract", vec![var("__s")]),
                         vec![
-                            ("Option.some", vec!["__v"], error_of(&r, failure_value("rejected"))),
+                            (
+                                "Option.some",
+                                vec!["__v"],
+                                error_of(&r, failure_value("rejected")),
+                            ),
                             (
                                 "Option.none",
                                 vec![],
@@ -2918,7 +3039,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         vec!["__v"],
                         ok_of(&explained, pair(var("__v"), project(final_run, "trace"))),
                     ),
-                    ("Result.error", vec!["__e"], error_of(&explained, var("__e"))),
+                    (
+                        "Result.error",
+                        vec!["__e"],
+                        error_of(&explained, var("__e")),
+                    ),
                 ],
             ),
         ),
@@ -2937,7 +3062,10 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         &engine.own_name("next_sound"),
         &[],
         pair_types("__s", "__t", &s),
-        term(implies(next_some.clone(), at.relation(var("__s"), var("__t")))),
+        term(implies(
+            next_some.clone(),
+            at.relation(var("__s"), var("__t")),
+        )),
         Proof::NextSound {
             next: engine.own("next"),
             fire_sound: engine.own("fire_sound"),
@@ -2990,12 +3118,8 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             ));
         }
     }
-    let step_some = |q: SemanticTerm| {
-        eq(
-            engine.call_own("step", vec![var("__r")]),
-            some_of(&run, q),
-        )
-    };
+    let step_some =
+        |q: SemanticTerm| eq(engine.call_own("step", vec![var("__r")]), some_of(&run, q));
     lowering.theorems.push(theorem(
         &engine.own_name("step_none"),
         &[],
@@ -3062,95 +3186,116 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
     let ran = engine.call_own("run", vec![var(x)]);
     let ran_record = model::first(ran.clone());
     let star = |target: SemanticTerm| {
-        helper(Helper::Star, vec![at.relation_ref(), observed.clone(), target])
+        helper(
+            Helper::Star,
+            vec![at.relation_ref(), observed.clone(), target],
+        )
     };
     lowering.theorems.push(theorem(
         &engine.own_name("saturate_derivation"),
         &[],
         x_only.clone(),
         star(saturated_state.clone()),
-        by_term(lemma(
-            Lemma::IterateUntilInvariant,
-            vec![
-                given(function_ref(&engine.own("next"), &[])),
-                predicate("__s", &s, star(var("__s"))),
-                assume(
-                    &["llA", "llB", "llE", "llH"],
-                    lemma(
-                        Lemma::StarTail,
-                        vec![
-                            ProofTerm::Infer,
-                            hypothesis("llA"),
-                            hypothesis("llB"),
-                            hypothesis("llH"),
-                            cite(
-                                &engine.own("next_sound"),
-                                &[],
-                                vec![hypothesis("llA"), hypothesis("llB"), hypothesis("llE")],
-                            ),
-                        ],
+        unfolding(
+            vec![engine.own("saturate")],
+            lemma(
+                Lemma::IterateUntilInvariant,
+                vec![
+                    given(function_ref(&engine.own("next"), &[])),
+                    predicate("__s", &s, star(var("__s"))),
+                    assume(
+                        &["llA", "llB", "llE", "llH"],
+                        lemma(
+                            Lemma::StarTail,
+                            vec![
+                                ProofTerm::Infer,
+                                hypothesis("llA"),
+                                hypothesis("llB"),
+                                hypothesis("llH"),
+                                cite(
+                                    &engine.own("next_sound"),
+                                    &[],
+                                    vec![hypothesis("llA"), hypothesis("llB"), hypothesis("llE")],
+                                ),
+                            ],
+                        ),
                     ),
-                ),
-                given(engine.fuel.clone()),
-                given(observed.clone()),
-                lemma(Lemma::StarRefl, vec![ProofTerm::Infer]),
-            ],
-        )),
+                    given(engine.fuel.clone()),
+                    given(observed.clone()),
+                    lemma(Lemma::StarRefl, vec![ProofTerm::Infer]),
+                ],
+            ),
+        ),
     ));
     lowering.theorems.push(theorem(
         &engine.own_name("run_state"),
         &[],
         x_only.clone(),
         term(both(
-            eq(project(ran_record.clone(), "state"), saturated_state.clone()),
+            eq(
+                project(ran_record.clone(), "state"),
+                saturated_state.clone(),
+            ),
             eq(model::second(ran.clone()), model::second(saturated.clone())),
         )),
-        by_term(lemma(
-            Lemma::IterateUntilSimulate,
-            vec![
-                given(function_ref(&engine.own("step"), &[])),
-                given(function_ref(&engine.own("next"), &[])),
-                given(lambda(vec![("__r", run.clone())], project(var("__r"), "state"))),
-                cite(&engine.own("step_none"), &[], Vec::new()),
-                cite(&engine.own("step_some"), &[], Vec::new()),
-                given(engine.fuel.clone()),
-                given(engine.call_own("start", vec![var(x)])),
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run"), engine.own("saturate")],
+            lemma(
+                Lemma::IterateUntilSimulate,
+                vec![
+                    given(function_ref(&engine.own("step"), &[])),
+                    given(function_ref(&engine.own("next"), &[])),
+                    given(lambda(
+                        vec![("__r", run.clone())],
+                        project(var("__r"), "state"),
+                    )),
+                    cite(&engine.own("step_none"), &[], Vec::new()),
+                    cite(&engine.own("step_some"), &[], Vec::new()),
+                    given(engine.fuel.clone()),
+                    given(engine.call_own("start", vec![var(x)])),
+                ],
+            ),
+        ),
     ));
     lowering.theorems.push(theorem(
         &engine.own_name("run_trace"),
         &[],
         x_only.clone(),
         term(engine.replays(&ran_record)),
-        by_term(lemma(
-            Lemma::IterateUntilInvariant,
-            vec![
-                given(function_ref(&engine.own("step"), &[])),
-                predicate("__r", &run, term(engine.replays(&var("__r")))),
-                cite(&engine.own("step_trace"), &[], vec![given(var(x))]),
-                given(engine.fuel.clone()),
-                given(engine.call_own("start", vec![var(x)])),
-                ProofTerm::Refl,
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilInvariant,
+                vec![
+                    given(function_ref(&engine.own("step"), &[])),
+                    predicate("__r", &run, term(engine.replays(&var("__r")))),
+                    cite(&engine.own("step_trace"), &[], vec![given(var(x))]),
+                    given(engine.fuel.clone()),
+                    given(engine.call_own("start", vec![var(x)])),
+                    ProofTerm::Refl,
+                ],
+            ),
+        ),
     ));
     lowering.theorems.push(theorem(
         &engine.own_name("iterations_bounded"),
         &[],
         x_only.clone(),
         term(le(iterations(ran_record.clone()), engine.fuel.clone())),
-        by_term(lemma(
-            Lemma::IterateUntilCount,
-            vec![
-                given(function_ref(&engine.own("step"), &[])),
-                given(lambda(vec![("__r", run.clone())], iterations(var("__r")))),
-                cite(&engine.own("step_count"), &[], Vec::new()),
-                given(engine.fuel.clone()),
-                given(engine.call_own("start", vec![var(x)])),
-                ProofTerm::Refl,
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilCount,
+                vec![
+                    given(function_ref(&engine.own("step"), &[])),
+                    given(lambda(vec![("__r", run.clone())], iterations(var("__r")))),
+                    cite(&engine.own("step_count"), &[], Vec::new()),
+                    given(engine.fuel.clone()),
+                    given(engine.call_own("start", vec![var(x)])),
+                    ProofTerm::Refl,
+                ],
+            ),
+        ),
     ));
     if let (Some(invariant_ref), Some(holds_start), Some(holds_final)) = (
         at.invariant_ref(),
@@ -3185,7 +3330,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             &[],
             x_only.clone(),
             term(statement),
-            by_term(proof),
+            unfolding(vec![engine.own("saturate")], proof),
         ));
     }
     if let (Some(terminates), Some(rank_ref)) = (&engine.terminates, at.rank_ref()) {
@@ -3195,7 +3340,12 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                 cite(
                     &engine.own("next_preserves"),
                     &[],
-                    vec![hypothesis("llA"), hypothesis("llB"), hypothesis("llE"), hypothesis("llH")],
+                    vec![
+                        hypothesis("llA"),
+                        hypothesis("llB"),
+                        hypothesis("llE"),
+                        hypothesis("llH"),
+                    ],
                 ),
                 cite(initial, &[], vec![given(var(x))]),
             ),
@@ -3214,29 +3364,41 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             &[],
             x_only.clone(),
             term(eq(model::second(saturated.clone()), boolean(true))),
-            by_term(lemma(
-                Lemma::IterateUntilStops,
-                vec![
-                    given(function_ref(&engine.own("next"), &[])),
-                    invariant,
-                    given(rank_ref),
-                    assume(
-                        &["llA", "llB", "llE", if at.invariant.is_some() { "llH" } else { "_llH" }],
-                        ProofTerm::Both {
-                            left: Box::new(keep),
-                            right: Box::new(cite(
-                                &engine.own("next_progress"),
-                                &[],
-                                progress_arguments,
-                            )),
-                        },
-                    ),
-                    given(engine.fuel.clone()),
-                    given(observed.clone()),
-                    initial,
-                    cite(terminates, &[], vec![given(var(x))]),
-                ],
-            )),
+            unfolding(
+                vec![engine.own("saturate")],
+                lemma(
+                    Lemma::IterateUntilStops,
+                    vec![
+                        given(function_ref(&engine.own("next"), &[])),
+                        invariant,
+                        given(rank_ref),
+                        assume(
+                            &[
+                                "llA",
+                                "llB",
+                                "llE",
+                                if at.invariant.is_some() {
+                                    "llH"
+                                } else {
+                                    "_llH"
+                                },
+                            ],
+                            ProofTerm::Both {
+                                left: Box::new(keep),
+                                right: Box::new(cite(
+                                    &engine.own("next_progress"),
+                                    &[],
+                                    progress_arguments,
+                                )),
+                            },
+                        ),
+                        given(engine.fuel.clone()),
+                        given(observed.clone()),
+                        initial,
+                        cite(terminates, &[], vec![given(var(x))]),
+                    ],
+                ),
+            ),
         ));
     }
     let concluded = eq(
@@ -3279,29 +3441,36 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         &[],
         vec![parameter(x, &engine.input), parameter("__v", &r)],
         term(implies(
-            eq(engine.call_own("verdict", vec![var(x)]), ok_of(&r, var("__v"))),
+            eq(
+                engine.call_own("verdict", vec![var(x)]),
+                ok_of(&r, var("__v")),
+            ),
             engine.spec(var("__v")),
         )),
-        by_term(assume(
-            &["llE"],
-            cite(
-                &engine.own("conclude_sound"),
-                &[],
-                vec![
-                    given(var(x)),
-                    given(saturated_state),
-                    given(model::second(saturated)),
-                    given(var("__v")),
-                    hypothesis("llE"),
-                ],
+        unfolding(
+            vec![engine.own("verdict")],
+            assume(
+                &["llE"],
+                cite(
+                    &engine.own("conclude_sound"),
+                    &[],
+                    vec![
+                        given(var(x)),
+                        given(saturated_state),
+                        given(model::second(saturated)),
+                        given(var("__v")),
+                        hypothesis("llE"),
+                    ],
+                ),
             ),
-        )),
+        ),
     ));
     explained_theorem(
         engine,
         lowering,
         Proof::ExplainedForward {
             reasoner: engine.me(),
+            run: engine.own("run"),
             answer: engine.own("answer"),
             run_trace: engine.own("run_trace"),
             conclude_accept: engine.own("conclude_accept"),
@@ -3413,11 +3582,7 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                 ("state", state),
                 (
                     "trace",
-                    append(
-                        project(var("__node"), "trace"),
-                        single(&step, value),
-                        &step,
-                    ),
+                    append(project(var("__node"), "trace"), single(&step, value), &step),
                 ),
             ],
         )
@@ -3465,7 +3630,11 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                             (
                                 "Option.some",
                                 vec!["__t"],
-                                append(var("__acc"), single(&node, child(var("__t"), value)), &node),
+                                append(
+                                    var("__acc"),
+                                    single(&node, child(var("__t"), value)),
+                                    &node,
+                                ),
                             ),
                         ],
                     ),
@@ -3498,7 +3667,11 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                 ));
             }
         }
-        successor_lists.push(call(&local(&format!("{prefix}.successors")), &[], vec![var("__node")]));
+        successor_lists.push(call(
+            &local(&format!("{prefix}.successors")),
+            &[],
+            vec![var("__node")],
+        ));
     }
     let mut all = nil(&node);
     for list in successor_lists.into_iter().rev() {
@@ -3640,9 +3813,7 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                         &search,
                         search_record(
                             var("__next"),
-                            engine
-                                .deduplicate
-                                .then(|| model::second(var("__fresh"))),
+                            engine.deduplicate.then(|| model::second(var("__fresh"))),
                             none_of(&hit),
                             SemanticTerm::Or {
                                 left: Box::new(project(current.clone(), "truncated")),
@@ -3793,7 +3964,11 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
         matching(
             call(&engine.me(), &[], vec![var(x)]),
             vec![
-                ("Result.ok", vec!["__p"], ok_of(&r, model::first(var("__p")))),
+                (
+                    "Result.ok",
+                    vec!["__p"],
+                    ok_of(&r, model::first(var("__p"))),
+                ),
                 ("Result.error", vec!["__e"], error_of(&r, var("__e"))),
             ],
         ),
@@ -3878,7 +4053,11 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                 ProofTerm::Infer,
                 ProofTerm::Infer,
                 ProofTerm::Infer,
-                cite(ok, &[], vec![given(var(x)), given(var("__node")), hypothesis("llH")]),
+                cite(
+                    ok,
+                    &[],
+                    vec![given(var(x)), given(var("__node")), hypothesis("llH")],
+                ),
                 chain,
             ],
         );
@@ -3904,15 +4083,17 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
             ],
             entails(
                 all_ok(var("__nodes")),
-                all_ok(model::first(engine.call_own(
-                    "fresh",
-                    vec![var("__visited"), var("__nodes")],
-                ))),
+                all_ok(model::first(
+                    engine.call_own("fresh", vec![var("__visited"), var("__nodes")]),
+                )),
             ),
             by_term(lemma(
                 Lemma::FreshAll,
                 vec![
-                    given(lambda(vec![("__n", node.clone())], project(var("__n"), "state"))),
+                    given(lambda(
+                        vec![("__n", node.clone())],
+                        project(var("__n"), "state"),
+                    )),
                     node_ok.clone(),
                     given(var("__visited")),
                     given(var("__nodes")),
@@ -4000,80 +4181,97 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
         &[],
         x_only.clone(),
         search_ok(ran.clone()),
-        by_term(lemma(
-            Lemma::IterateUntilInvariant,
-            vec![
-                given(stepper.clone()),
-                predicate("__r", &search, search_ok(var("__r"))),
-                cite(&engine.own("search_step"), &[], vec![given(var(x))]),
-                given(engine.fuel.clone()),
-                given(start.clone()),
-                lemma(
-                    Lemma::SearchStart,
-                    vec![
-                        given(node_ok_term.clone()),
-                        given(accept_term.clone()),
-                        ProofTerm::Infer,
-                        lemma(
-                            Lemma::CapAll,
-                            vec![
-                                given(node_ok_term.clone()),
-                                given(frontier_bound.clone()),
-                                ProofTerm::Infer,
-                                lemma(
-                                    Lemma::AllSingle,
-                                    vec![given(node_ok_term.clone()), given(root_value), ProofTerm::Refl],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilInvariant,
+                vec![
+                    given(stepper.clone()),
+                    predicate("__r", &search, search_ok(var("__r"))),
+                    cite(&engine.own("search_step"), &[], vec![given(var(x))]),
+                    given(engine.fuel.clone()),
+                    given(start.clone()),
+                    lemma(
+                        Lemma::SearchStart,
+                        vec![
+                            given(node_ok_term.clone()),
+                            given(accept_term.clone()),
+                            ProofTerm::Infer,
+                            lemma(
+                                Lemma::CapAll,
+                                vec![
+                                    given(node_ok_term.clone()),
+                                    given(frontier_bound.clone()),
+                                    ProofTerm::Infer,
+                                    lemma(
+                                        Lemma::AllSingle,
+                                        vec![
+                                            given(node_ok_term.clone()),
+                                            given(root_value),
+                                            ProofTerm::Refl,
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ),
     ));
     lowering.theorems.push(theorem(
         &engine.own_name("frontier_bounded"),
         &[],
         x_only.clone(),
         term(le(peak(ran.clone()), frontier_bound.clone())),
-        by_term(lemma(
-            Lemma::IterateUntilBound,
-            vec![
-                given(stepper.clone()),
-                given(lambda(vec![("__r", search.clone())], peak(var("__r")))),
-                given(frontier_bound.clone()),
-                cite(&engine.own("search_peak"), &[], vec![given(var(x))]),
-                given(engine.fuel.clone()),
-                given(start.clone()),
-                lemma(
-                    Lemma::CapBound,
-                    vec![given(frontier_bound.clone()), ProofTerm::Infer],
-                ),
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilBound,
+                vec![
+                    given(stepper.clone()),
+                    given(lambda(vec![("__r", search.clone())], peak(var("__r")))),
+                    given(frontier_bound.clone()),
+                    cite(&engine.own("search_peak"), &[], vec![given(var(x))]),
+                    given(engine.fuel.clone()),
+                    given(start.clone()),
+                    lemma(
+                        Lemma::CapBound,
+                        vec![given(frontier_bound.clone()), ProofTerm::Infer],
+                    ),
+                ],
+            ),
+        ),
     ));
     lowering.theorems.push(theorem(
         &engine.own_name("iterations_bounded"),
         &[],
         x_only,
         term(le(iterations(ran), engine.fuel.clone())),
-        by_term(lemma(
-            Lemma::IterateUntilCount,
-            vec![
-                given(stepper),
-                given(lambda(vec![("__r", search.clone())], iterations(var("__r")))),
-                cite(&engine.own("search_count"), &[], vec![given(var(x))]),
-                given(engine.fuel.clone()),
-                given(start),
-                ProofTerm::Refl,
-            ],
-        )),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilCount,
+                vec![
+                    given(stepper),
+                    given(lambda(
+                        vec![("__r", search.clone())],
+                        iterations(var("__r")),
+                    )),
+                    cite(&engine.own("search_count"), &[], vec![given(var(x))]),
+                    given(engine.fuel.clone()),
+                    given(start),
+                    ProofTerm::Refl,
+                ],
+            ),
+        ),
     ));
     explained_theorem(
         engine,
         lowering,
         Proof::ExplainedSearch {
             reasoner: engine.me(),
+            run: engine.own("run"),
             answer: engine.own("answer"),
             search_ok: engine.own("search_ok"),
             accept_sound: engine.own("accept_sound"),
@@ -4084,10 +4282,14 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
         &[],
         vec![parameter(x, &engine.input), parameter("__v", &r)],
         term(implies(
-            eq(engine.call_own("verdict", vec![var(x)]), ok_of(&r, var("__v"))),
+            eq(
+                engine.call_own("verdict", vec![var(x)]),
+                ok_of(&r, var("__v")),
+            ),
             engine.spec(var("__v")),
         )),
         Proof::VerdictSearch {
+            reasoner: engine.me(),
             verdict: engine.own("verdict"),
             explained: engine.own("explained"),
         },

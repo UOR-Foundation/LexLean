@@ -4,7 +4,7 @@
 //! with the declaration's names substituted. No template inspects the
 //! goal; Lean's kernel checks every one.
 
-use super::{identifier, latex_line, latex_policy, latex_use, tex_escape, term_uses, Render};
+use super::{identifier, latex_line, latex_policy, latex_use, term_uses, tex_escape, Render};
 use crate::ir::semantic::reasoning::{FireArm, Formula, GeneratedTheorem, Proof, ProofTerm};
 use crate::ir::semantic::{
     MemberRef, ModelUse, ReasoningClaim, ReasoningStrategy, SearchOrder, SemanticDeclaration,
@@ -36,7 +36,13 @@ impl Render<'_> {
             self.type_parameters(&theorem.type_parameters),
             self.parameters(&theorem.parameters),
             self.formula(&theorem.statement),
-            self.generated_proof(&theorem.proof)
+            self.generated_proof(
+                &theorem.proof,
+                theorem
+                    .parameters
+                    .first()
+                    .map_or("_", |parameter| parameter.name.as_str())
+            )
         )
     }
 
@@ -115,11 +121,9 @@ impl Render<'_> {
                 self.ty(&binder.r#type),
                 self.formula(body)
             ),
-            ProofTerm::Assume { binders, body } => format!(
-                "(fun {} => {})",
-                binders.join(" "),
-                self.proof_term(body)
-            ),
+            ProofTerm::Assume { binders, body } => {
+                format!("(fun {} => {})", binders.join(" "), self.proof_term(body))
+            }
             ProofTerm::Hypothesis { name } => name.clone(),
             ProofTerm::Both { left, right } => format!(
                 "(And.intro {} {})",
@@ -149,10 +153,16 @@ impl Render<'_> {
 
     /// The fixed proof text of one template.
     #[allow(clippy::too_many_lines)]
-    fn generated_proof(&self, proof: &Proof) -> String {
+    fn generated_proof(&self, proof: &Proof, input: &str) -> String {
+        let x = identifier(input);
         let m = |member: &MemberRef| self.member(member);
         match proof {
             Proof::Term { term } => format!("  {}\n", self.proof_term(term)),
+            Proof::Unfold { definitions, term } => format!(
+                "by\n  dsimp only [{}]\n  exact {}\n",
+                definitions.iter().map(m).collect::<Vec<_>>().join(", "),
+                self.proof_term(term)
+            ),
             Proof::FireCases { arms } => {
                 let mut out = "by\n  cases __step with\n".to_owned();
                 for arm in arms {
@@ -237,13 +247,15 @@ impl Render<'_> {
             ),
             Proof::ExplainedForward {
                 reasoner,
+                run,
                 answer,
                 run_trace,
                 conclude_accept,
                 conclude_sound,
             } => format!(
-                "by\n  intro llE\n  dsimp only [{reasoner}] at llE\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [{run_trace} _]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
+                "by\n  intro llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · rename_i llW llH\n    cases llE\n    exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ _ llH) ({conclude_sound} _ _ _ _ llH)\n  · cases llE\n",
                 reasoner = m(reasoner),
+                run = m(run),
                 answer = m(answer),
                 run_trace = m(run_trace),
                 conclude_accept = m(conclude_accept),
@@ -311,20 +323,27 @@ impl Render<'_> {
             ),
             Proof::ExplainedSearch {
                 reasoner,
+                run,
                 answer,
                 search_ok,
                 accept_sound,
             } => format!(
-                "by\n  intro llE\n  dsimp only [{reasoner}] at llE\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right ({search_ok} _)\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
+                "by\n  intro llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
                 reasoner = m(reasoner),
+                run = m(run),
                 answer = m(answer),
                 search_ok = m(search_ok),
                 accept_sound = m(accept_sound)
             ),
-            Proof::VerdictSearch { verdict, explained } => format!(
-                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · rename_i llP llH\n    cases llE\n    exact And.right ({} _ llP.1 llP.2 llH)\n  · cases llE\n",
-                m(verdict),
-                m(explained)
+            Proof::VerdictSearch {
+                reasoner,
+                verdict,
+                explained,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{verdict}] at llE\n  generalize llHP : {reasoner} {x} = llR at llE\n  cases llR with\n  | error _ => cases llE\n  | ok llP =>\n    cases llE\n    exact And.right ({explained} _ llP.1 llP.2 llHP)\n",
+                reasoner = m(reasoner),
+                verdict = m(verdict),
+                explained = m(explained)
             ),
         }
     }
@@ -362,7 +381,12 @@ pub(super) fn latex_reasoning(
             latex_line(
                 text,
                 "States",
-                &format!("{}, {} : {}", state.name, state.next, render.ty(&state.r#type)),
+                &format!(
+                    "{}, {} : {}",
+                    state.name,
+                    state.next,
+                    render.ty(&state.r#type)
+                ),
             );
             latex_line(text, "Relation", &render.member(relation));
             if let Some(invariant) = invariant {
@@ -620,8 +644,15 @@ pub(super) fn latex_reasoning(
         };
         latex_line(
             text,
-            &format!("Generates theorem ({} template)", theorem.template().replace('_', " ")),
-            &format!("{} : {binders}{}", theorem.name, render.formula(&theorem.statement)),
+            &format!(
+                "Generates theorem ({} template)",
+                theorem.template().replace('_', " ")
+            ),
+            &format!(
+                "{} : {binders}{}",
+                theorem.name,
+                render.formula(&theorem.statement)
+            ),
         );
     }
 }
