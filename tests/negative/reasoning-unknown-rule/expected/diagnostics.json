@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLT4010","help":[],"labels":[],"message":"phase link: `Bound` is not a prior inference rule","notes":[],"primary":{"byte_end":13430,"byte_start":127,"column_end":13318,"column_start":15,"line_end":5,"line_start":5,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]
