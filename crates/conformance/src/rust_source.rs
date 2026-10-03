@@ -1231,14 +1231,182 @@ fn item_operands(m: &Machine) -> Json {
     )
 }
 
+/// Whether `value` is a scalar of width `kind`.
+fn has_width(m: &Machine) -> Json {
+    definition(
+        "hasWidth",
+        vec![
+            parameter("kind", int_kind_t()),
+            parameter("value", value_t()),
+        ],
+        bool_t(),
+        m.kind_match(var("kind"), |name, _| {
+            m.value_match(
+                var("value"),
+                vec![(name, &["ignoredScalar"], lx::boolean(true))],
+                lx::boolean(false),
+            )
+        }),
+    )
+}
+
+/// Whether every value is a scalar of width `kind`.
+fn all_width() -> Json {
+    recursive(
+        "values",
+        definition(
+            "allWidth",
+            vec![
+                parameter("kind", int_kind_t()),
+                parameter("values", values_t()),
+            ],
+            bool_t(),
+            list_match(
+                var("values"),
+                lx::boolean(true),
+                "head",
+                "rest",
+                lx::ite(
+                    call("hasWidth", vec![var("kind"), var("head")]),
+                    call("allWidth", vec![var("kind"), var("rest")]),
+                    lx::boolean(false),
+                ),
+            ),
+        ),
+    )
+}
+
+/// The width an item checks its operands against: the checked, bitwise,
+/// shift, and formatting items'. Rust's typing makes
+/// `fixed_u8::checked_add` and `fixed_u16::checked_add` different
+/// functions; without a guard the machine would read both as the
+/// calculus's width-polymorphic primitive, and a crate calling one where
+/// the program means the other would mean what the program means.
+fn item_width(m: &Machine) -> Json {
+    item_table(
+        m,
+        "itemWidth",
+        option_t(int_kind_t()),
+        |_| none(int_kind_t()),
+        |item| match item {
+            "convert" | "parseFixed" => none(int_kind_t()),
+            _ => some(int_kind_t(), var("kind")),
+        },
+    )
+}
+
+/// Whether an item checks only its first operand's width: a shift, whose
+/// amount is a `u32` the primitive checks.
+fn item_shifts(m: &Machine) -> Json {
+    item_table(
+        m,
+        "itemShifts",
+        bool_t(),
+        |_| lx::boolean(false),
+        |item| lx::boolean(matches!(item, "shiftLeft" | "shiftRight")),
+    )
+}
+
+/// Whether `value` is a value of the sequence or text constructor `name`.
+fn is_constructor(m: &Machine, function: &str, name: &'static str) -> Json {
+    definition(
+        function,
+        vec![parameter("value", value_t())],
+        bool_t(),
+        m.value_match(
+            var("value"),
+            vec![(name, &["ignoredContents"], lx::boolean(true))],
+            lx::boolean(false),
+        ),
+    )
+}
+
+/// Whether an item takes `first` as its first operand: a list, bytes, or
+/// text item takes only a list, bytes, or text. Rust's typing makes
+/// `length_list`, `length_bytes`, and `length_string` different functions;
+/// without this guard the machine would read each as the calculus's
+/// polymorphic primitive, and `length_bytes` on text would count its
+/// characters where Rust counts bytes.
+fn item_takes(m: &Machine) -> Json {
+    let kind = |item: &str| -> Option<&'static str> {
+        match item {
+            "appendList" | "lengthList" | "indexList" | "sliceList" => Some("isList"),
+            "appendBytes" | "lengthBytes" | "indexBytes" | "sliceBytes" => Some("isBytes"),
+            "lengthString" => Some("isString"),
+            _ => None,
+        }
+    };
+    let mut cases: Vec<(&str, Vec<String>, Json)> = Vec::new();
+    for (item, _, _, _) in ITEMS.iter().chain(MORE_ITEMS.iter()) {
+        if let Some(check) = kind(item) {
+            cases.push((item, Vec::new(), call(check, vec![var("first")])));
+        }
+    }
+    definition(
+        "itemTakes",
+        vec![
+            parameter("item", syntax_t("Item")),
+            parameter("first", value_t()),
+        ],
+        bool_t(),
+        m.match_or(
+            var("item"),
+            RUST_SYNTAX,
+            "Item",
+            &item_constructors(),
+            cases,
+            Some(&lx::boolean(true)),
+        ),
+    )
+}
+
+/// Whether an item takes `values`: every operand of an item with a width
+/// is a scalar of that width, or, for a shift, its shifted operand is; and
+/// a sequence or text item's first operand is its sequence or text.
+fn item_accepts() -> Json {
+    definition(
+        "itemAccepts",
+        vec![
+            parameter("item", syntax_t("Item")),
+            parameter("values", values_t()),
+        ],
+        bool_t(),
+        lx::ite(
+            list_match(
+                var("values"),
+                lx::boolean(true),
+                "first",
+                "ignoredOthers",
+                call("itemTakes", vec![var("item"), var("first")]),
+            ),
+            option_match(
+                call("itemWidth", vec![var("item")]),
+                lx::boolean(true),
+                "kind",
+                lx::ite(
+                    call("itemShifts", vec![var("item")]),
+                    list_match(
+                        var("values"),
+                        lx::boolean(false),
+                        "head",
+                        "ignoredRest",
+                        call("hasWidth", vec![var("kind"), var("head")]),
+                    ),
+                    call("allWidth", vec![var("kind"), var("values")]),
+                ),
+            ),
+            lx::boolean(false),
+        ),
+    )
+}
+
 /// A runtime item applied to `values` in `profile`: the primitive it
 /// realizes, a fallible item's overflow as `Err(Overflow)` and its value
 /// as `Ok`. An overflow of an item that cannot fail is the machine's abort:
 /// the only such overflow is the length of a sequence of `2^64` or more
-/// elements, which no machine holds. An item outside its profile and an
-/// operation the primitive does not define are stuck. An operand of another width than the item's is a
-/// Rust type error, which the renderer's checks refuse before any crate
-/// exists, so the machine states nothing about it.
+/// elements, which no machine holds. An item outside its profile, an
+/// operand of another width or sequence than the item's, and an operation
+/// the primitive does not define are stuck.
 fn run_item(m: &Machine) -> Json {
     let fallible = || call("itemFallible", vec![var("item")]);
     let realized = lx::call(
@@ -1281,19 +1449,23 @@ fn run_item(m: &Machine) -> Json {
             ),
         ],
     );
-    let available = m.syntax_match(
-        var("profile"),
-        "Profile",
-        &nullary(&["core", "std"]),
-        vec![
-            (
-                "core",
-                &[],
-                lx::ite(call("itemHeap", vec![var("item")]), stuck(), result.clone()),
-            ),
-            ("std", &[], result),
-        ],
-        None,
+    let available = lx::ite(
+        call("itemAccepts", vec![var("item"), var("values")]),
+        m.syntax_match(
+            var("profile"),
+            "Profile",
+            &nullary(&["core", "std"]),
+            vec![
+                (
+                    "core",
+                    &[],
+                    lx::ite(call("itemHeap", vec![var("item")]), stuck(), result.clone()),
+                ),
+                ("std", &[], result),
+            ],
+            None,
+        ),
+        stuck(),
     );
     axioms(
         CLASSICAL,
@@ -2223,6 +2395,15 @@ pub fn semantics_module() -> String {
     declarations.push(item_fallible(&m));
     declarations.push(item_heap(&m));
     declarations.push(item_operands(&m));
+    declarations.push(has_width(&m));
+    declarations.push(all_width());
+    declarations.push(item_width(&m));
+    declarations.push(item_shifts(&m));
+    declarations.push(is_constructor(&m, "isList", "list"));
+    declarations.push(is_constructor(&m, "isBytes", "bytes"));
+    declarations.push(is_constructor(&m, "isString", "string"));
+    declarations.push(item_takes(&m));
+    declarations.push(item_accepts());
     declarations.push(run_item(&m));
     declarations.push(propagated(&m));
     declarations.push(returned());

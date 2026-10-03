@@ -3711,9 +3711,18 @@ primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in
 `rust-core` only when it needs no heap; an overflow of an item that cannot
 fail is the machine's *abort*, which no machine can avoid: the only such
-overflow is the length of a sequence of `2^64` or more elements. An operand
-of another width than an item's is a Rust type error the renderer's checks
-refuse, so the machine states nothing about it. Every certified root's crate
+overflow is the length of a sequence of `2^64` or more elements. An item
+of a width is a distinct Rust function per width, so the machine indexes it
+by its width: a checked, bitwise, shift, or formatting item takes only
+operands of its width (a shift only its shifted operand), and is stuck on
+any other, so `fixed_u16::checked_add` on two `u8` values means nothing,
+as in Rust, rather than the `u8` addition the calculus primitive would
+compute. Likewise a list, bytes, or text item (`length_list`,
+`length_bytes`, `length_string`, and the append, index, and slice items)
+takes only a first operand of its own sequence, so `length_bytes` on text
+does not count its characters. The correspondence's value typing carries
+what these guards read: a fixed-width value's width, and a list's, bytes',
+or text's constructor. Every certified root's crate
 prints to a `RustSyntax` term (`production::rust_term`, audited for default
 arms) that Lean elaborates and the machine evaluates; on the seeded inputs of
 the differential, its outcome equals the calculus interpreter's on the
@@ -3782,11 +3791,11 @@ fixture (§17.14) in every profile that renders it through certificate B, and
 plants defects in rendered crates (branches swapped, an addition that
 subtracts, a checked operation bounded as another operation, a sibling
 constructor, a byte buffer one byte longer, a wrong callee, a wrong
-literal): the aligner finds no derivation or Lean rejects the one it writes,
-and Lean rejects the unmutated derivation restated over the mutated crate.
-A checked operation at another width is a Rust type error about which the
-machine states nothing; the renderer's correspondence check (§17.16)
-refuses it. It runs a differential: on seeded
+literal, a checked operation at another width, a sequence item for another
+sequence): the aligner finds no
+derivation or Lean rejects the one it writes, and Lean rejects the
+unmutated derivation restated over the mutated crate. The width change is
+also refused by the renderer's correspondence check (§17.16). It runs a differential: on seeded
 inputs to every root, the calculus interpreter's outcome must equal the
 certificate's `denote` evaluated by Lean. The theorems are proofs about the
 roots they name; the generator and the suite are `build` evidence for any

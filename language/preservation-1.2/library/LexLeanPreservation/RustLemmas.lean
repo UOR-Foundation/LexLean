@@ -196,11 +196,13 @@ theorem itemOperands_eq {item : RustSyntax.Item} (h : item ≠ .natSucc) (vs : L
     RustSemantics.itemOperands item vs = vs := by
   cases item <;> simp_all [RustSemantics.itemOperands]
 
-theorem runItem_eq {c : RCrate} {item vs} (hok : itemOK c item = true) (hs : item ≠ .natSucc) :
+theorem runItem_eq {c : RCrate} {item vs} (hok : itemOK c item = true) (hs : item ≠ .natSucc)
+    (hacc : RustSemantics.itemAccepts item vs = true) :
     RustSemantics.runItem c.profile item vs =
       itemResult (RustSemantics.itemFallible item)
         (TargetSemantics.primitive (RustSemantics.itemPrimitive item) vs) := by
   unfold RustSemantics.runItem
+  simp only [hacc, if_true]
   rw [itemOperands_eq hs vs]
   cases hp : c.profile with
   | core =>
@@ -209,6 +211,606 @@ theorem runItem_eq {c : RCrate} {item vs} (hok : itemOK c item = true) (hs : ite
     cases TargetSemantics.primitive (RustSemantics.itemPrimitive item) vs <;> simp [itemResult]
   | std =>
     cases TargetSemantics.primitive (RustSemantics.itemPrimitive item) vs <;> simp [itemResult]
+
+/-! Widths: a width-indexed item's guard holds on well-typed operands, and
+a primitive whose value has a fixed-width type gives a value of that
+width. -/
+
+mutual
+theorem tyBeq_eq : ∀ a b : Ty, tyBeq a b = true → a = b
+  | .unit, b, h | .bool, b, h | .nat, b, h | .int, b, h | .string, b, h | .bytes, b, h
+  | .ordering, b, h => by cases b <;> simp_all [tyBeq]
+  | .fixed k, b, h => by cases b <;> simp_all [tyBeq]
+  | .option a, b, h => by
+    cases b <;> simp [tyBeq] at h
+    rw [tyBeq_eq a _ h]
+  | .list a, b, h => by
+    cases b <;> simp [tyBeq] at h
+    rw [tyBeq_eq a _ h]
+  | .result a1 a2, b, h => by
+    cases b <;> simp [tyBeq] at h
+    rw [tyBeq_eq a1 _ h.1, tyBeq_eq a2 _ h.2]
+  | .pair a1 a2, b, h => by
+    cases b <;> simp [tyBeq] at h
+    rw [tyBeq_eq a1 _ h.1, tyBeq_eq a2 _ h.2]
+  | .adt i, b, h => by cases b <;> simp_all [tyBeq]
+  | .fn ps r, b, h => by
+    cases b <;> simp [tyBeq] at h
+    rw [tysBeq_eq ps _ h.1, tyBeq_eq r _ h.2]
+theorem tysBeq_eq : ∀ a b : List Ty, tysBeq a b = true → a = b
+  | [], b, h => by cases b <;> simp_all [tysBeq]
+  | a :: as, b, h => by
+    cases b <;> simp [tysBeq] at h
+    rw [tyBeq_eq a _ h.1, tysBeq_eq as _ h.2]
+end
+
+theorem hasWidth_u8 {v : Value} (h : RustSemantics.hasWidth .u8 v = true) : ∃ x, v = .u8 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_u16 {v : Value} (h : RustSemantics.hasWidth .u16 v = true) : ∃ x, v = .u16 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_u32 {v : Value} (h : RustSemantics.hasWidth .u32 v = true) : ∃ x, v = .u32 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_u64 {v : Value} (h : RustSemantics.hasWidth .u64 v = true) : ∃ x, v = .u64 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_i8 {v : Value} (h : RustSemantics.hasWidth .i8 v = true) : ∃ x, v = .i8 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_i16 {v : Value} (h : RustSemantics.hasWidth .i16 v = true) : ∃ x, v = .i16 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_i32 {v : Value} (h : RustSemantics.hasWidth .i32 v = true) : ∃ x, v = .i32 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+theorem hasWidth_i64 {v : Value} (h : RustSemantics.hasWidth .i64 v = true) : ∃ x, v = .i64 x := by
+  cases v <;> simp_all [RustSemantics.hasWidth]
+
+theorem wt_fixed {p c A} {v : Value} {w : IntKind} :
+    WT p c A v (.fixed w) ↔ RustSemantics.hasWidth w v = true := by
+  cases v <;> simp [WT]
+
+theorem allWidth_of {p c A w} : ∀ (vs : List Value) (ts : List Ty),
+    (ts.all fun t => tyBeq t (.fixed w)) = true → WTL p c A vs ts → RustSemantics.allWidth w vs = true
+  | [], [], _, _ => by simp [RustSemantics.allWidth]
+  | [], _ :: _, _, h => by simp [WTL] at h
+  | _ :: _, [], _, h => by simp [WTL] at h
+  | v :: vs, t :: ts, ht, hw => by
+    simp only [List.all_cons, Bool.and_eq_true] at ht
+    simp only [WTL] at hw
+    rw [tyBeq_eq _ _ ht.1] at hw
+    simp only [RustSemantics.allWidth, wt_fixed.mp hw.1, if_true]
+    exact allWidth_of vs ts ht.2 hw.2
+
+theorem wtAll_iff {p c A} {t : Ty} : ∀ vs : List Value, WTAll p c A vs t ↔ ∀ v ∈ vs, WT p c A v t
+  | [] => by simp [WTAll]
+  | v :: vs => by simp [WTAll, wtAll_iff vs]
+
+theorem wt_list_inv {p c A} {v : Value} {e : Ty} (h : WT p c A v (.list e)) :
+    ∃ xs, v = .list xs ∧ WTAll p c A xs e := by
+  cases v <;> simp [WT, inert] at h
+  exact ⟨_, rfl, h⟩
+
+theorem wt_bytes_inv {p c A} {v : Value} (h : WT p c A v .bytes) : ∃ b, v = .bytes b := by
+  cases v <;> simp [WT, inert] at h
+  exact ⟨_, rfl⟩
+
+theorem wt_string_inv {p c A} {v : Value} (h : WT p c A v .string) : ∃ b, v = .string b := by
+  cases v <;> simp [WT, inert] at h
+  exact ⟨_, rfl⟩
+
+theorem isSeq_eq {a : Ty} (h : isSeq a = true) : (∃ e, a = .list e) ∨ a = .bytes := by
+  cases a <;> simp_all [isSeq]
+
+theorem wtl_three {p c A} {vs : List Value} {a b d : Ty} (h : WTL p c A vs [a, b, d]) :
+    ∃ x y z, vs = [x, y, z] ∧ WT p c A x a := by
+  match vs, h with
+  | [x, y, z], h => simp only [WTL] at h; exact ⟨x, y, z, rfl, h.1⟩
+
+theorem takes_of_typed {p c A item t v} (h : RustSemantics.itemTakes item (shapeOf t) = true)
+    (hw : WT p c A v t) : RustSemantics.itemTakes item v = true := by
+  cases t
+  case list e =>
+    obtain ⟨xs, rfl, -⟩ := wt_list_inv hw
+    cases item <;> simp_all [RustSemantics.itemTakes, RustSemantics.isList,
+      RustSemantics.isBytes, RustSemantics.isString, shapeOf]
+  case bytes =>
+    obtain ⟨b, rfl⟩ := wt_bytes_inv hw
+    cases item <;> simp_all [RustSemantics.itemTakes, RustSemantics.isList,
+      RustSemantics.isBytes, RustSemantics.isString, shapeOf]
+  case string =>
+    obtain ⟨b, rfl⟩ := wt_string_inv hw
+    cases item <;> simp_all [RustSemantics.itemTakes, RustSemantics.isList,
+      RustSemantics.isBytes, RustSemantics.isString, shapeOf]
+  all_goals cases item <;> simp_all [RustSemantics.itemTakes, RustSemantics.isList,
+    RustSemantics.isBytes, RustSemantics.isString, shapeOf]
+
+theorem width_of_typed {p c A item ts vs}
+    (h : (match RustSemantics.itemWidth item with
+      | none => true
+      | some w => if RustSemantics.itemShifts item then
+          (match ts with
+           | t :: _ => tyBeq t (.fixed w)
+           | [] => false)
+        else ts.all fun t => tyBeq t (.fixed w)) = true)
+    (hw : WTL p c A vs ts) :
+    (match RustSemantics.itemWidth item with
+      | none => true
+      | some kind => if RustSemantics.itemShifts item then
+          (match vs with
+           | [] => false
+           | head :: _ => RustSemantics.hasWidth kind head)
+        else RustSemantics.allWidth kind vs) = true := by
+  cases hi : RustSemantics.itemWidth item with
+  | none => rfl
+  | some w =>
+    rw [hi] at h
+    simp only at h ⊢
+    cases hs : RustSemantics.itemShifts item
+    · simp only [hs, Bool.false_eq_true, if_false] at h ⊢
+      exact allWidth_of vs ts h hw
+    · simp only [hs, if_true] at h ⊢
+      cases ts with
+      | nil => simp at h
+      | cons t ts =>
+        cases vs with
+        | nil => simp [WTL] at hw
+        | cons v vs =>
+          simp only [WTL] at hw
+          simp only at h
+          rw [tyBeq_eq _ _ h] at hw
+          exact wt_fixed.mp hw.1
+
+theorem accepts_of_typed {p c A item ts vs} (h : itemTyped item ts = true) (hw : WTL p c A vs ts) :
+    RustSemantics.itemAccepts item vs = true := by
+  unfold itemTyped at h
+  simp only [Bool.and_eq_true] at h
+  obtain ⟨hk, h⟩ := h
+  have hwid := width_of_typed h hw
+  unfold RustSemantics.itemAccepts
+  cases vs with
+  | nil => simp only [if_true]; exact hwid
+  | cons v rest =>
+    cases ts with
+    | nil => simp [WTL] at hw
+    | cons t ts' =>
+      simp only at hk
+      have ht := takes_of_typed hk (by simp only [WTL] at hw; exact hw.1)
+      simp only [ht, if_true]
+      exact hwid
+
+theorem isFixed_eq {a : Ty} (h : isFixed a = true) : ∃ k, a = .fixed k := by
+  cases a <;> simp_all [isFixed]
+
+theorem wtl_two {p c A} {vs : List Value} {a b : Ty} (h : WTL p c A vs [a, b]) :
+    ∃ x y, vs = [x, y] ∧ WT p c A x a ∧ WT p c A y b := by
+  match vs, h with
+  | [x, y], h => simp only [WTL] at h; exact ⟨x, y, rfl, h.1, h.2.1⟩
+
+theorem wtl_one {p c A} {vs : List Value} {a : Ty} (h : WTL p c A vs [a]) :
+    ∃ x, vs = [x] ∧ WT p c A x a := by
+  match vs, h with
+  | [x], h => simp only [WTL] at h; exact ⟨x, rfl, h.1⟩
+
+set_option maxHeartbeats 2000000 in
+/-- A checked operation on two operands of a width gives a value of that
+width, or none. -/
+theorem wt_checked {p c A op k x y w s}
+    (hop : op = .checkedAdd ∨ op = .checkedSub ∨ op = .checkedMul ∨ op = .checkedQuot)
+    (hx : RustSemantics.hasWidth k x = true) (hy : RustSemantics.hasWidth k y = true)
+    (hp : TargetSemantics.primitive op [x, y] = .value w s) : WT p c A w (.option (.fixed k)) := by
+  rcases hop with rfl | rfl | rfl | rfl
+  all_goals cases k
+  all_goals first
+    | (obtain ⟨x, rfl⟩ := hasWidth_u8 hx; obtain ⟨y, rfl⟩ := hasWidth_u8 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u16 hx; obtain ⟨y, rfl⟩ := hasWidth_u16 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u32 hx; obtain ⟨y, rfl⟩ := hasWidth_u32 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u64 hx; obtain ⟨y, rfl⟩ := hasWidth_u64 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i8 hx; obtain ⟨y, rfl⟩ := hasWidth_i8 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i16 hx; obtain ⟨y, rfl⟩ := hasWidth_i16 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i32 hx; obtain ⟨y, rfl⟩ := hasWidth_i32 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i64 hx; obtain ⟨y, rfl⟩ := hasWidth_i64 hy)
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+set_option maxHeartbeats 2000000 in
+/-- A bitwise operation on two operands of a width gives a value of that
+width. -/
+theorem wt_bitwise {p c A op k x y w s}
+    (hop : op = .bitAnd ∨ op = .bitOr ∨ op = .bitXor)
+    (hx : RustSemantics.hasWidth k x = true) (hy : RustSemantics.hasWidth k y = true)
+    (hp : TargetSemantics.primitive op [x, y] = .value w s) : WT p c A w (.fixed k) := by
+  rcases hop with rfl | rfl | rfl
+  all_goals cases k
+  all_goals first
+    | (obtain ⟨x, rfl⟩ := hasWidth_u8 hx; obtain ⟨y, rfl⟩ := hasWidth_u8 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u16 hx; obtain ⟨y, rfl⟩ := hasWidth_u16 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u32 hx; obtain ⟨y, rfl⟩ := hasWidth_u32 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_u64 hx; obtain ⟨y, rfl⟩ := hasWidth_u64 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i8 hx; obtain ⟨y, rfl⟩ := hasWidth_i8 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i16 hx; obtain ⟨y, rfl⟩ := hasWidth_i16 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i32 hx; obtain ⟨y, rfl⟩ := hasWidth_i32 hy)
+    | (obtain ⟨x, rfl⟩ := hasWidth_i64 hx; obtain ⟨y, rfl⟩ := hasWidth_i64 hy)
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+/-- A checked negation or a complement gives a value of its operand's
+width. -/
+theorem wt_unary {p c A op k x w s t}
+    (hop : op = .checkedNeg ∧ t = .option (.fixed k) ∨ op = .bitNot ∧ t = .fixed k)
+    (hx : RustSemantics.hasWidth k x = true)
+    (hp : TargetSemantics.primitive op [x] = .value w s) : WT p c A w t := by
+  rcases hop with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  all_goals cases k
+  all_goals first
+    | obtain ⟨x, rfl⟩ := hasWidth_u8 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u16 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u32 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u64 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i8 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i16 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i32 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i64 hx
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+/-- A shift gives a value of its shifted operand's width. -/
+theorem wt_shift {p c A op k x a w s} (hop : op = .shiftLeft ∨ op = .shiftRight)
+    (hx : RustSemantics.hasWidth k x = true)
+    (hp : TargetSemantics.primitive op [x, .u32 a] = .value w s) :
+    WT p c A w (.option (.fixed k)) := by
+  rcases hop with rfl | rfl
+  all_goals cases k
+  all_goals first
+    | obtain ⟨x, rfl⟩ := hasWidth_u8 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u16 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u32 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_u64 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i8 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i16 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i32 hx
+    | obtain ⟨x, rfl⟩ := hasWidth_i64 hx
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+/-- A conversion gives a value of its target width. -/
+theorem wt_convert {p c A k x w s} (hp : TargetSemantics.primitive (.convert k) [x] = .value w s) :
+    WT p c A w (.option (.fixed k)) := by
+  cases k
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+/-- A parse gives a value of its target width. -/
+theorem wt_parse {p c A k x w s}
+    (hp : TargetSemantics.primitive (.parseDecimal (.fixed k)) [x] = .value w s) :
+    WT p c A w (.option (.fixed k)) := by
+  cases k
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+theorem slice_eq (xs : List Value) (start count : Nat) :
+    TargetSemantics.LexLeanRuntime.slice xs start count =
+      if start + count ≤ xs.length then some ((xs.drop start).take count) else none := rfl
+
+/-- An append keeps the elements of the lists it appends. -/
+theorem wt_append {p c A x y w s t} (hx : WT p c A x t) (hy : WT p c A y t) (hs : isSeq t = true)
+    (hp : TargetSemantics.primitive .append [x, y] = .value w s) : WT p c A w t := by
+  rw [TargetSemantics.primitive.eq_def] at hp
+  rcases isSeq_eq hs with ⟨e, rfl⟩ | rfl
+  · obtain ⟨xs, rfl, hxs⟩ := wt_list_inv hx
+    obtain ⟨ys, rfl, hys⟩ := wt_list_inv hy
+    dsimp only at hp
+    simp only [TargetSemantics.Outcome.value.injEq] at hp
+    obtain ⟨rfl, -⟩ := hp
+    simp only [WT]
+    rw [wtAll_iff] at hxs hys ⊢
+    intro v hv
+    change v ∈ xs ++ ys at hv
+    rcases List.mem_append.mp hv with hv | hv
+    · exact hxs v hv
+    · exact hys v hv
+  · obtain ⟨b1, rfl⟩ := wt_bytes_inv hx
+    obtain ⟨b2, rfl⟩ := wt_bytes_inv hy
+    dsimp only at hp
+    simp only [TargetSemantics.Outcome.value.injEq] at hp
+    obtain ⟨rfl, -⟩ := hp
+    simp [WT]
+
+/-- A slice keeps the elements of the list it slices. -/
+theorem wt_slice {p c A x y z w s t} (hx : WT p c A x t) (hs : isSeq t = true)
+    (hp : TargetSemantics.primitive .slice [x, y, z] = .value w s) : WT p c A w (.option t) := by
+  rw [TargetSemantics.primitive.eq_def] at hp
+  rcases isSeq_eq hs with ⟨e, rfl⟩ | rfl
+  · obtain ⟨xs, rfl, hxs⟩ := wt_list_inv hx
+    dsimp only at hp
+    repeat' (split at hp)
+    all_goals first
+      | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp [WT]; done)
+      | (rename_i part hpart
+         simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp only [WT]
+         rw [wtAll_iff] at hxs ⊢
+         intro v hv
+         rw [slice_eq] at hpart
+         split at hpart
+         · simp only [Option.some.injEq] at hpart
+           subst hpart
+           exact hxs v (List.mem_of_mem_drop (List.mem_of_mem_take hv))
+         · simp at hpart)
+      | simp at hp
+  · obtain ⟨b1, rfl⟩ := wt_bytes_inv hx
+    dsimp only at hp
+    repeat' (split at hp)
+    all_goals first
+      | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp [WT])
+      | simp at hp
+
+/-- A read of a list gives one of its elements, and of bytes a byte. -/
+theorem wt_index {p c A x y w s e e'}
+    (hx : WT p c A x (.list e) ∧ e' = e ∨ WT p c A x .bytes ∧ e' = .fixed .u8)
+    (hp : TargetSemantics.primitive .index [x, y] = .value w s) : WT p c A w (.option e') := by
+  rw [TargetSemantics.primitive.eq_def] at hp
+  rcases hx with ⟨hx, rfl⟩ | ⟨hx, rfl⟩
+  · obtain ⟨xs, rfl, hxs⟩ := wt_list_inv hx
+    dsimp only at hp
+    repeat' (split at hp)
+    all_goals first
+      | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp [WT]; done)
+      | (rename_i item hitem
+         simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp only [WT]
+         rw [index_eq] at hitem
+         exact (wtAll_iff xs).mp hxs item (List.mem_of_getElem? hitem))
+      | simp at hp
+  · obtain ⟨b1, rfl⟩ := wt_bytes_inv hx
+    dsimp only at hp
+    repeat' (split at hp)
+    all_goals first
+      | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+         obtain ⟨rfl, -⟩ := hp
+         simp [WT, RustSemantics.hasWidth])
+      | simp at hp
+
+theorem fromStrings_wt {p c A} : ∀ texts : List String,
+    WTAll p c A (TargetSemantics.fromStrings texts) .string
+  | [] => by simp [TargetSemantics.fromStrings, WTAll]
+  | t :: ts => by simp [TargetSemantics.fromStrings, WTAll, WT, fromStrings_wt ts]
+
+/-- Text operations build text, bytes, or lists of text. -/
+theorem wt_encode {p c A b w s} (hp : TargetSemantics.primitive .utf8Encode [.string b] = .value w s) :
+    WT p c A w .bytes := by
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+theorem wt_decode {p c A b w s} (hp : TargetSemantics.primitive .utf8Decode [.bytes b] = .value w s) :
+    WT p c A w (.option .string) := by
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+theorem wt_join {p c A xs d w s} (hp : TargetSemantics.primitive .join [.list xs, .string d] = .value w s) :
+    WT p c A w .string := by
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+theorem wt_format {p c A x w s} (hp : TargetSemantics.primitive .formatDecimal [x] = .value w s) :
+    WT p c A w .string := by
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       simp [WT, RustSemantics.hasWidth])
+    | simp at hp
+
+theorem wt_split {p c A a b d w s}
+    (hp : TargetSemantics.primitive .splitExact [.string a, .string b, .u32 d] = .value w s) :
+    WT p c A w (.option (.list .string)) := by
+  all_goals rw [TargetSemantics.primitive.eq_def] at hp
+  all_goals dsimp only at hp
+  all_goals (repeat' (split at hp))
+  all_goals first
+    | (simp only [TargetSemantics.Outcome.value.injEq] at hp
+       obtain ⟨rfl, -⟩ := hp
+       first
+         | (simp [WT]; done)
+         | (simp only [WT]; exact fromStrings_wt _))
+    | simp at hp
+
+/-- A primitive whose value's type value typing constrains gives a value of
+that type. -/
+theorem wt_fixedTyped {p c A op ts t vs w s} (h : fixedTyped op ts t = true)
+    (hw : WTL p c A vs ts) (hp : TargetSemantics.primitive op vs = .value w s) :
+    WT p c A w t := by
+  cases op <;> simp only [fixedTyped] at h
+  all_goals first | exact absurd h Bool.false_ne_true | skip
+  case checkedAdd | checkedSub | checkedMul | checkedQuot | bitAnd | bitOr | bitXor =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨⟨ha, hb⟩, ht⟩ := h
+      obtain ⟨k, rfl⟩ := isFixed_eq ha
+      rw [tyBeq_eq _ _ hb] at hw
+      obtain ⟨x, y, rfl, hx, hy⟩ := wtl_two hw
+      rw [wt_fixed] at hx hy
+      rw [tyBeq_eq _ _ ht]
+      first
+        | exact wt_checked (by simp) hx hy hp
+        | exact wt_bitwise (by simp) hx hy hp
+    · exact absurd h Bool.false_ne_true
+  case checkedNeg | bitNot =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨ha, ht⟩ := h
+      obtain ⟨k, rfl⟩ := isFixed_eq ha
+      obtain ⟨x, rfl, hx⟩ := wtl_one hw
+      rw [wt_fixed] at hx
+      rw [tyBeq_eq _ _ ht]
+      exact wt_unary (by simp) hx hp
+    · exact absurd h Bool.false_ne_true
+  case shiftLeft | shiftRight =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨⟨ha, hb⟩, ht⟩ := h
+      obtain ⟨k, rfl⟩ := isFixed_eq ha
+      rw [tyBeq_eq _ _ hb] at hw
+      rw [tyBeq_eq _ _ ht]
+      obtain ⟨x, y, rfl, hx, hy⟩ := wtl_two hw
+      rw [wt_fixed] at hx hy
+      obtain ⟨a, rfl⟩ := hasWidth_u32 hy
+      exact wt_shift (by simp) hx hp
+    · exact absurd h Bool.false_ne_true
+  case convert k =>
+    rw [tyBeq_eq _ _ h]
+    rcases vs with _ | ⟨x, _ | ⟨y, rest⟩⟩
+    · rw [TargetSemantics.primitive.eq_def] at hp; simp at hp
+    · exact wt_convert hp
+    · rw [TargetSemantics.primitive.eq_def] at hp; simp at hp
+  case parseDecimal target =>
+    simp only [Bool.and_eq_true] at h
+    obtain ⟨ha, ht⟩ := h
+    obtain ⟨k, rfl⟩ := isFixed_eq ha
+    rw [tyBeq_eq _ _ ht]
+    rcases vs with _ | ⟨x, _ | ⟨y, rest⟩⟩
+    · rw [TargetSemantics.primitive.eq_def] at hp; simp at hp
+    · exact wt_parse hp
+    · rw [TargetSemantics.primitive.eq_def] at hp; simp at hp
+  case append =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨⟨ha, hb⟩, ht⟩ := h
+      rw [tyBeq_eq _ _ hb] at hw
+      rw [tyBeq_eq _ _ ht]
+      obtain ⟨x, y, rfl, hx, hy⟩ := wtl_two hw
+      exact wt_append hx hy ha hp
+    · exact absurd h Bool.false_ne_true
+  case slice =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨ha, ht⟩ := h
+      rw [tyBeq_eq _ _ ht]
+      obtain ⟨x, y, z, rfl, hx⟩ := wtl_three hw
+      exact wt_slice hx ha hp
+    · exact absurd h Bool.false_ne_true
+  case index =>
+    split at h
+    · obtain ⟨x, y, rfl, hx, -⟩ := wtl_two hw
+      simp only [Bool.or_eq_true, Bool.and_eq_true] at h
+      rcases h with ⟨⟨-, hl⟩, ht⟩ | ⟨hb, ht⟩
+      · rw [tyBeq_eq _ _ hl] at hx
+        rw [tyBeq_eq _ _ ht]
+        exact wt_index (.inl ⟨hx, rfl⟩) hp
+      · rw [tyBeq_eq _ _ hb] at hx
+        rw [tyBeq_eq _ _ ht]
+        exact wt_index (e := .unit) (.inr ⟨hx, rfl⟩) hp
+    · exact absurd h Bool.false_ne_true
+  case utf8Encode | utf8Decode =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨ha, ht⟩ := h
+      rw [tyBeq_eq _ _ ht]
+      rw [tyBeq_eq _ _ ha] at hw
+      obtain ⟨x, rfl, hx⟩ := wtl_one hw
+      first
+        | (obtain ⟨b, rfl⟩ := wt_string_inv hx; exact wt_encode hp)
+        | (obtain ⟨b, rfl⟩ := wt_bytes_inv hx; exact wt_decode hp)
+    · exact absurd h Bool.false_ne_true
+  case join =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨⟨ha, hb⟩, ht⟩ := h
+      rw [tyBeq_eq _ _ ht]
+      rw [tyBeq_eq _ _ ha, tyBeq_eq _ _ hb] at hw
+      obtain ⟨x, y, rfl, hx, hy⟩ := wtl_two hw
+      obtain ⟨xs, rfl, -⟩ := wt_list_inv hx
+      obtain ⟨d, rfl⟩ := wt_string_inv hy
+      exact wt_join hp
+    · exact absurd h Bool.false_ne_true
+  case formatDecimal =>
+    split at h
+    · rw [tyBeq_eq _ _ h]
+      obtain ⟨x, rfl, -⟩ := wtl_one hw
+      exact wt_format hp
+    · exact absurd h Bool.false_ne_true
+  case splitExact =>
+    split at h
+    · simp only [Bool.and_eq_true] at h
+      obtain ⟨⟨⟨ha, hb⟩, hd⟩, ht⟩ := h
+      rw [tyBeq_eq _ _ ht]
+      rw [tyBeq_eq _ _ ha, tyBeq_eq _ _ hb, tyBeq_eq _ _ hd] at hw
+      match vs, hw with
+      | [x, y, z], hw =>
+        simp only [WTL] at hw
+        obtain ⟨hx, hy, hz, -⟩ := hw
+        obtain ⟨a1, rfl⟩ := wt_string_inv hx
+        obtain ⟨a2, rfl⟩ := wt_string_inv hy
+        rw [wt_fixed] at hz
+        obtain ⟨a3, rfl⟩ := hasWidth_u32 hz
+        exact wt_split hp
+    · exact absurd h Bool.false_ne_true
+
+theorem wt_prim {p c A op ts t vs w s} (h : primTyped op ts t = true) (hw : WTL p c A vs ts)
+    (hp : TargetSemantics.primitive op vs = .value w s) : WT p c A w t := by
+  simp only [primTyped, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact wt_of_inert w t h
+  · exact wt_fixedTyped h hw hp
 
 mutual
 /-- The identifiers a pattern binds are the only ones it adds. -/
@@ -459,21 +1061,38 @@ variable {p : Program} {c : RCrate} {A : Flags}
 
 theorem sem_prim {n Γ fl op es ts t lets args item} (hops : Sem p c A n Γ fl (.ops es ts lets args))
     (hop : RustSemantics.itemPrimitive item = op) (hs : item ≠ .natSucc) (hok : itemOK c item = true)
-    (hinert : inert t = true) (hfl : RustSemantics.itemFallible item = true → fl = true) :
+    (hty : itemTyped item ts = true) (hpt : primTyped op ts t = true)
+    (hfl : RustSemantics.itemFallible item = true → fl = true) :
     Sem p c A (n+1) Γ fl (.b false (.prim op es) t lets
       (.call (.runtime item) args (RustSemantics.itemFallible item))) := by
   intro env renv hrel o ho hst
-  refine ⟨fun v _ => wt_of_inert v t hinert, ?_⟩
+  have hwt : ∀ v, o = .value v → WT p c A v t := by
+    intro v hv
+    subst hv
+    simp only [TargetSemantics.eval.eq_11] at ho
+    cases h1 : TargetSemantics.evalList n p env es with
+    | values vs s1 =>
+      rw [h1] at ho
+      simp only [obs_chargeResult] at ho
+      obtain ⟨hv, _⟩ := hops env renv hrel (.values vs) (by rw [h1]; rfl) nofun
+      obtain ⟨hwl, -⟩ := hv vs rfl
+      cases hpr : TargetSemantics.primitive op vs with
+      | value w s2 =>
+        rw [hpr] at ho; simp only [obs, Option.some.injEq, Obs.value.injEq] at ho; subst ho
+        exact wt_prim hpt hwl hpr
+      | _ => rw [hpr] at ho; simp [obs] at ho
+    | _ => rw [h1] at ho; simp [obs] at ho
+  refine ⟨hwt, ?_⟩
   simp only [TargetSemantics.eval.eq_11] at ho
   cases h1 : TargetSemantics.evalList n p env es with
   | values vs s1 =>
     rw [h1] at ho
     simp only [obs_chargeResult] at ho
     obtain ⟨hv, _⟩ := hops env renv hrel (.values vs) (by rw [h1]; rfl) nofun
-    obtain ⟨_, new, hnew, hl, hargs⟩ := hv vs rfl
+    obtain ⟨hwl, new, hnew, hl, hargs⟩ := hv vs rfl
     left
     refine ⟨new, hnew, hl, ?_⟩
-    have hrun := runItem_eq (vs := vs) hok hs
+    have hrun := runItem_eq (vs := vs) hok hs (accepts_of_typed hty hwl)
     rw [hop] at hrun
     cases hpr : TargetSemantics.primitive op vs with
     | value w s2 =>
@@ -1119,7 +1738,8 @@ theorem runItem_succ {c : RCrate} (k : Nat) :
     simp [TargetSemantics.primitive]
   unfold RustSemantics.runItem
   cases c.profile <;> simp only [hop] <;>
-    simp [RustSemantics.itemHeap, RustSemantics.itemPrimitive, RustSemantics.itemFallible, hprim] <;>
+    simp [RustSemantics.itemAccepts, RustSemantics.itemWidth, RustSemantics.itemHeap,
+      RustSemantics.itemPrimitive, RustSemantics.itemFallible, hprim] <;>
     cases TargetSemantics.natResult (k + 1) <;> rfl
 
 section rules
@@ -1483,20 +2103,37 @@ theorem sem_callF {n Γ f es ts t lets args} {fn : TargetSyntax.Function}
 
 theorem sem_primF {n Γ op es ts t lets args item} (hops : Sem p c A n Γ true (.ops es ts lets args))
     (hop : RustSemantics.itemPrimitive item = op) (hs : item ≠ .natSucc) (hok : itemOK c item = true)
-    (hinert : inert t = true) (hfal : RustSemantics.itemFallible item = true) :
+    (hty : itemTyped item ts = true) (hpt : primTyped op ts t = true)
+    (hfal : RustSemantics.itemFallible item = true) :
     Sem p c A (n+1) Γ true (.b true (.prim op es) t lets (.call (.runtime item) args false)) := by
   intro env renv hrel o ho hst
-  refine ⟨fun v _ => wt_of_inert v t hinert, ?_⟩
+  have hwt : ∀ v, o = .value v → WT p c A v t := by
+    intro v hv
+    subst hv
+    simp only [TargetSemantics.eval.eq_11] at ho
+    cases h1 : TargetSemantics.evalList n p env es with
+    | values vs s1 =>
+      rw [h1] at ho
+      simp only [obs_chargeResult] at ho
+      obtain ⟨hv, _⟩ := hops env renv hrel (.values vs) (by rw [h1]; rfl) nofun
+      obtain ⟨hwl, -⟩ := hv vs rfl
+      cases hpr : TargetSemantics.primitive op vs with
+      | value w s2 =>
+        rw [hpr] at ho; simp only [obs, Option.some.injEq, Obs.value.injEq] at ho; subst ho
+        exact wt_prim hpt hwl hpr
+      | _ => rw [hpr] at ho; simp [obs] at ho
+    | _ => rw [h1] at ho; simp [obs] at ho
+  refine ⟨hwt, ?_⟩
   simp only [TargetSemantics.eval.eq_11] at ho
   cases h1 : TargetSemantics.evalList n p env es with
   | values vs s1 =>
     rw [h1] at ho
     simp only [obs_chargeResult] at ho
     obtain ⟨hv, _⟩ := hops env renv hrel (.values vs) (by rw [h1]; rfl) nofun
-    obtain ⟨_, new, hnew, hl, hargs⟩ := hv vs rfl
+    obtain ⟨hwl, new, hnew, hl, hargs⟩ := hv vs rfl
     left
     refine ⟨new, hnew, hl, ?_⟩
-    have hrun := runItem_eq (vs := vs) hok hs
+    have hrun := runItem_eq (vs := vs) hok hs (accepts_of_typed hty hwl)
     rw [hop, hfal] at hrun
     have := rc_call_runtime (item := item) (F := false) hargs
     rw [hrun] at this
@@ -1559,11 +2196,27 @@ theorem rcl_widen_one {c renv r o} (h : RCL c renv [r] o) (hs : o ≠ .stuck)
   · have := rcl_nil_inv h2; rcases hh with rfl | rfl <;> cases this
 
 theorem sem_primWiden {n Γ fl k e t0 t lets a} (hops : Sem p c A n Γ fl (.ops [e] [t0] lets [a]))
-    (hok : itemOK c (.convert k) = true) (hinert : inert t = true) :
+    (hok : itemOK c (.convert k) = true) (hpt : primTyped (.convert k) [t0] t = true) :
     Sem p c A (n+1) Γ fl (.b false (.prim (.convert k) [e]) t lets
       (.call (.runtime (.convert k)) [.widen a] false)) := by
   intro env renv hrel o ho hst
-  refine ⟨fun v _ => wt_of_inert v t hinert, ?_⟩
+  have hwt : ∀ v, o = .value v → WT p c A v t := by
+    intro v hv
+    subst hv
+    simp only [TargetSemantics.eval.eq_11] at ho
+    cases h1 : TargetSemantics.evalList n p env [e] with
+    | values vs s1 =>
+      rw [h1] at ho
+      simp only [obs_chargeResult] at ho
+      obtain ⟨hv, _⟩ := hops env renv hrel (.values vs) (by rw [h1]; rfl) nofun
+      obtain ⟨hwl, -⟩ := hv vs rfl
+      cases hpr : TargetSemantics.primitive (.convert k) vs with
+      | value w s2 =>
+        rw [hpr] at ho; simp only [obs, Option.some.injEq, Obs.value.injEq] at ho; subst ho
+        exact wt_prim hpt hwl hpr
+      | _ => rw [hpr] at ho; simp [obs] at ho
+    | _ => rw [h1] at ho; simp [obs] at ho
+  refine ⟨hwt, ?_⟩
   simp only [TargetSemantics.eval.eq_11] at ho
   cases h1 : TargetSemantics.evalList n p env [e] with
   | values vs s1 =>
@@ -1577,7 +2230,7 @@ theorem sem_primWiden {n Γ fl k e t0 t lets a} (hops : Sem p c A n Γ fl (.ops 
       intro h; rw [h] at ho; simp [obs] at ho; subst ho; exact hst rfl
     obtain ⟨v, rfl, hw⟩ := convert_args k vs hpst
     have hargs' := rcl_widen_one hargs nofun (fun ws hws w hm => by cases hws; simp at hm; subst hm; exact hw)
-    have hrun := runItem_eq (vs := [v]) hok (by intro h; cases h)
+    have hrun := runItem_eq (vs := [v]) hok (by intro h; cases h) rfl
     have := rc_call_runtime (item := .convert k) (F := false) hargs'
     rw [hrun] at this
     simp only [RustSemantics.returned, Bool.false_eq_true, if_false, RustSemantics.itemFallible,

@@ -115,8 +115,8 @@ theorem sound (hcrate : CrateOK p c A) :
         | lCons he hes _ _ => exact sem_lCons (low _ _ _ he) (low _ _ _ hes)
         | opsNil => exact sem_opsNil
         | opsCons he hes hk hf _ _ => exact sem_opsCons (low _ _ _ he) (low _ _ _ hes) (kind_ne hk) hf
-        | prim hops hop hs hok hin hfl _ =>
-          exact sem_prim (low _ _ _ hops) hop (item_ne hs) hok hin (fl_of hfl)
+        | prim hops hop hs hok hty hpt hfl _ =>
+          exact sem_prim (low _ _ _ hops) hop (item_ne hs) hok hty hpt (fl_of hfl)
         | fOfB _ ih' => exact sem_fOfB ih'
         | value hl ht => exact sem_value hl ht
         | eOfBNil _ ih' => exact sem_eOfBNil ih'
@@ -129,8 +129,8 @@ theorem sound (hcrate : CrateOK p c A) :
         | letWild hb hbody _ _ => exact sem_letWild (low _ _ _ hb) (low _ _ _ hbody)
         | buildSucc hl _ => exact sem_buildSucc (low _ _ _ hl)
         | primWiden hops hok hin _ => exact sem_primWiden (low _ _ _ hops) hok hin
-        | primF hops hop hs hok hin hfal _ =>
-          exact sem_primF (low _ _ _ hops) hop (item_ne hs) hok hin hfal
+        | primF hops hop hs hok hty hpt hfal _ =>
+          exact sem_primF (low _ _ _ hops) hop (item_ne hs) hok hty hpt hfal
         | callOps hops hidx hts hres hF hfl _ =>
           exact sem_callOps (low _ _ _ hops) (hfun _) hidx hts hres hF (fl_of hfl)
         | callF hops hidx hts hres hF _ => exact sem_callF (low _ _ _ hops) (hfun _) hidx hts hres hF

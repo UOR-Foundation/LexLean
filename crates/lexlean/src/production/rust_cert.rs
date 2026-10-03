@@ -957,13 +957,29 @@ impl<'a> Aligner<'a> {
             Ok(rule(
                 "primF",
                 vec![("ts", types_term(&types))],
-                vec![sub(operands_d), Decided, Decided, Decided, Decided, Decided],
+                vec![
+                    sub(operands_d),
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                ],
             ))
         } else {
             Ok(rule(
                 "prim",
                 vec![("ts", types_term(&types))],
-                vec![sub(operands_d), Decided, Decided, Decided, Decided, Decided],
+                vec![
+                    sub(operands_d),
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                    Decided,
+                ],
             ))
         }
     }

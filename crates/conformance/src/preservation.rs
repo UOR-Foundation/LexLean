@@ -655,11 +655,14 @@ pub enum RustMutation {
     /// subtraction an addition's, so it overflows where the program does
     /// not.
     Overflow,
-    /// The first checked fixed-width operation works at another width. The
-    /// machine states nothing about an operand of another width than its
-    /// item's, which is a Rust type error: the renderer's correspondence
-    /// check refuses this one, not certificate B.
+    /// The first checked fixed-width operation works at another width: the
+    /// machine's item of that width takes no operand of the program's, as
+    /// Rust's typing takes none.
     Width,
+    /// The first list, bytes, or text item calls its sibling for another
+    /// sequence: `length_string` as `length_bytes`, which counts bytes
+    /// where the program counts characters.
+    Sequence,
     /// The first construction of an enum variant builds a sibling variant.
     Constructor,
     /// The first byte-buffer literal gains a byte.
@@ -671,11 +674,13 @@ pub enum RustMutation {
 }
 
 impl RustMutation {
-    /// Every mutation certificate B refuses.
-    pub const ALL: [Self; 7] = [
+    /// Every mutation.
+    pub const ALL: [Self; 9] = [
         Self::Branches,
         Self::Arithmetic,
         Self::Overflow,
+        Self::Width,
+        Self::Sequence,
         Self::Constructor,
         Self::Buffer,
         Self::Recursion,
@@ -767,6 +772,29 @@ fn mutate_rust(
             }
             _ => false,
         },
+        (
+            RustMutation::Sequence,
+            R::Call {
+                callee: Callee::Runtime(item),
+                ..
+            },
+        ) => {
+            let sibling = match *item {
+                Item::LengthString | Item::LengthList => Some(Item::LengthBytes),
+                Item::LengthBytes => Some(Item::LengthList),
+                Item::AppendList => Some(Item::AppendBytes),
+                Item::AppendBytes => Some(Item::AppendList),
+                Item::IndexList => Some(Item::IndexBytes),
+                Item::IndexBytes => Some(Item::IndexList),
+                Item::SliceList => Some(Item::SliceBytes),
+                Item::SliceBytes => Some(Item::SliceList),
+                _ => None,
+            };
+            sibling.is_some_and(|sibling| {
+                *item = sibling;
+                true
+            })
+        }
         (
             RustMutation::Constructor,
             R::Construct {

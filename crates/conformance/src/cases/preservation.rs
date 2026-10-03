@@ -556,8 +556,8 @@ pub fn run(id: &str) {
                 preservation::RustMutation::ALL.into_iter().collect(),
                 "every crate mutation applies to some rendering"
             );
-            // A width change is a Rust type error the machine says nothing
-            // about; the renderer's correspondence check refuses it.
+            // A width change is refused by certificate B below, and also by
+            // the renderer's correspondence check, before any crate exists.
             let widened = renderings
                 .iter()
                 .find_map(|rendering| {

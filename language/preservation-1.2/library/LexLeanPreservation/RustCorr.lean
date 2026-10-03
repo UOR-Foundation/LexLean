@@ -57,6 +57,117 @@ def itemOK (c : RCrate) (item : RustSyntax.Item) : Bool :=
   | .std => true
   | .core => !RustSemantics.itemHeap item
 
+/-- A value of a type's sequence or text shape, as an item's sequence
+guard reads it; any other type's is the unit. -/
+def shapeOf : Ty → Value
+  | .list _ => .list []
+  | .bytes => .bytes .empty
+  | .string => .string ""
+  | .unit | .bool | .nat | .int | .fixed _ | .ordering | .option _ | .result _ _
+  | .pair _ _ | .adt _ | .fn _ _ => .unit
+
+/-- Whether operand types meet an item's guard: a sequence or text item's
+first operand has its sequence or text, and every operand of an item of a
+width, or a shift's shifted operand, has the item's width. -/
+def itemTyped (item : RustSyntax.Item) (ts : List Ty) : Bool :=
+  (match ts with
+   | t :: _ => RustSemantics.itemTakes item (shapeOf t)
+   | [] => true) &&
+  match RustSemantics.itemWidth item with
+  | none => true
+  | some w => if RustSemantics.itemShifts item then
+      (match ts with
+       | t :: _ => tyBeq t (.fixed w)
+       | [] => false)
+    else ts.all fun t => tyBeq t (.fixed w)
+
+/-- A fixed-width type. -/
+def isFixed : Ty → Bool
+  | .fixed _ => true
+  | _ => false
+
+/-- A sequence type: a list or bytes. -/
+def isSeq : Ty → Bool
+  | .list _ => true
+  | .bytes => true
+  | _ => false
+
+/-- A list type's element type. -/
+def elemOf : Ty → Ty
+  | .list t => t
+  | _ => .unit
+
+/-- The primitives whose value's type value typing constrains, at their
+operand types: the checked, bitwise, and shift operations at their
+operands' width, a conversion and a parse at their target's, and the
+sequence and text operations at the sequence or text they build. -/
+def fixedTyped (op : Prim) (ts : List Ty) (t : Ty) : Bool :=
+  match op with
+  | .checkedAdd | .checkedSub | .checkedMul | .checkedQuot =>
+    match ts with
+    | [a, b] => isFixed a && tyBeq b a && tyBeq t (.option a)
+    | _ => false
+  | .checkedNeg =>
+    match ts with
+    | [a] => isFixed a && tyBeq t (.option a)
+    | _ => false
+  | .bitAnd | .bitOr | .bitXor =>
+    match ts with
+    | [a, b] => isFixed a && tyBeq b a && tyBeq t a
+    | _ => false
+  | .bitNot =>
+    match ts with
+    | [a] => isFixed a && tyBeq t a
+    | _ => false
+  | .shiftLeft | .shiftRight =>
+    match ts with
+    | [a, b] => isFixed a && tyBeq b (.fixed .u32) && tyBeq t (.option a)
+    | _ => false
+  | .convert k => tyBeq t (.option (.fixed k))
+  | .parseDecimal target => isFixed target && tyBeq t (.option target)
+  | .append =>
+    match ts with
+    | [a, b] => isSeq a && tyBeq b a && tyBeq t a
+    | _ => false
+  | .slice =>
+    match ts with
+    | [a, _, _] => isSeq a && tyBeq t (.option a)
+    | _ => false
+  | .index =>
+    match ts with
+    | [a, _] => (isSeq a && tyBeq a (.list (elemOf a)) && tyBeq t (.option (elemOf a))) ||
+        (tyBeq a .bytes && tyBeq t (.option (.fixed .u8)))
+    | _ => false
+  | .utf8Encode =>
+    match ts with
+    | [a] => tyBeq a .string && tyBeq t .bytes
+    | _ => false
+  | .utf8Decode =>
+    match ts with
+    | [a] => tyBeq a .bytes && tyBeq t (.option .string)
+    | _ => false
+  | .join =>
+    match ts with
+    | [a, b] => tyBeq a (.list .string) && tyBeq b .string && tyBeq t .string
+    | _ => false
+  | .formatDecimal =>
+    match ts with
+    | [_] => tyBeq t .string
+    | _ => false
+  | .splitExact =>
+    match ts with
+    | [a, b, d] => tyBeq a .string && tyBeq b .string && tyBeq d (.fixed .u32) &&
+        tyBeq t (.option (.list .string))
+    | _ => false
+  | .natAdd | .natSub | .natMul | .natQuot | .natRem | .natEq | .natLe | .natLt
+  | .intAdd | .intSub | .intMul | .intNeg | .intQuot | .intRem | .equal | .boolNot
+  | .boolAnd | .boolOr | .length | .compareBytes | .compare => false
+
+/-- The type a primitive's value has, as the correspondence knows it:
+inert, or fixed by its operands' widths. -/
+def primTyped (op : Prim) (ts : List Ty) (t : Ty) : Bool :=
+  inert t || fixedTyped op ts t
+
 mutual
 /-- The value a Rust literal expression builds, if it is one. -/
 def litValue : RExpr → Option Value
@@ -84,6 +195,9 @@ def typedLit (p : Program) : Value → Ty → Bool
     | some ts => typedLits p fs ts
     | none => false
   | .closure _ _, _ => false
+  | v, .fixed w => RustSemantics.hasWidth w v
+  | .string _, .string => true
+  | .bytes _, .bytes => true
   | _, t => inert t
 def typedLitAll (p : Program) : List Value → Ty → Bool
   | [], _ => true
@@ -485,7 +599,8 @@ inductive Corr (p : Program) (c : RCrate) (A : Flags) : Ctx → Bool → Jd → 
         (.move (.generated k j) :: args))
   | prim {Γ fl op es ts t lets args item} : Corr p c A Γ fl (.ops es ts lets args) →
       RustSemantics.itemPrimitive item = op → plainItem item = true → itemOK c item = true →
-      inert t = true → (!RustSemantics.itemFallible item || fl) = true →
+      itemTyped item ts = true → primTyped op ts t = true →
+      (!RustSemantics.itemFallible item || fl) = true →
       Corr p c A Γ fl (.b false (.prim op es) t lets
         (.call (.runtime item) args (RustSemantics.itemFallible item)))
   | fOfB {Γ e t lets tail} : Corr p c A Γ true (.b false e t lets tail) →
@@ -513,12 +628,13 @@ inductive Corr (p : Program) (c : RCrate) (A : Flags) : Ctx → Bool → Jd → 
   | buildSucc {Γ e r} : Corr p c A Γ true (.l [e] [.nat] [r]) →
       Corr p c A Γ true (.e (.build .succ .nat [e]) .nat (.call (.runtime .natSucc) [r] true))
   | primWiden {Γ fl k e t0 t lets a} : Corr p c A Γ fl (.ops [e] [t0] lets [a]) →
-      itemOK c (.convert k) = true → inert t = true →
+      itemOK c (.convert k) = true → primTyped (.convert k) [t0] t = true →
       Corr p c A Γ fl (.b false (.prim (.convert k) [e]) t lets
         (.call (.runtime (.convert k)) [.widen a] false))
   | primF {Γ op es ts t lets args item} : Corr p c A Γ true (.ops es ts lets args) →
       RustSemantics.itemPrimitive item = op → plainItem item = true → itemOK c item = true →
-      inert t = true → RustSemantics.itemFallible item = true →
+      itemTyped item ts = true → primTyped op ts t = true →
+      RustSemantics.itemFallible item = true →
       Corr p c A Γ true (.b true (.prim op es) t lets (.call (.runtime item) args false))
   | callOps {Γ fl f es ts t lets args F} {fn : TargetSyntax.Function} :
       Corr p c A Γ fl (.ops es ts lets args) →
@@ -769,7 +885,7 @@ mutual
 theorem wt_of_inert {p c A} : ∀ (v : Value) (t : Ty), inert t = true → WT p c A v t
   | v, t, h => by
     cases t with
-    | unit | adt _ | fn _ _ => simp [inert] at h
+    | unit | adt _ | fn _ _ | list _ => simp [inert] at h
     | option t =>
       cases v with
       | some x => simp only [WT]; exact wt_of_inert x t (by simpa [inert] using h)
@@ -780,16 +896,12 @@ theorem wt_of_inert {p c A} : ∀ (v : Value) (t : Ty), inert t = true → WT p 
       | ok x => simp only [WT]; exact wt_of_inert x a h.1
       | error x => simp only [WT]; exact wt_of_inert x b h.2
       | _ => simp [WT, inert, h]
-    | list t =>
-      cases v with
-      | list xs => simp only [WT]; exact wtAll_of_inert xs t (by simpa [inert] using h)
-      | _ => simp [WT] <;> simpa using h
     | pair a b =>
       simp [inert] at h
       cases v with
       | pair x y => simp only [WT]; exact ⟨wt_of_inert x a h.1, wt_of_inert y b h.2⟩
       | _ => simp [WT, inert, h]
-    | _ => cases v <;> simp [WT, inert]
+    | _ => cases v <;> simp_all [WT, inert]
 theorem wtAll_of_inert {p c A} : ∀ (vs : List Value) (t : Ty), inert t = true → WTAll p c A vs t
   | [], _, _ => by simp [WTAll]
   | v :: vs, t, h => by simp only [WTAll]; exact ⟨wt_of_inert v t h, wtAll_of_inert vs t h⟩

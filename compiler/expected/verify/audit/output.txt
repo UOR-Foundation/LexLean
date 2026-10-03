@@ -346,6 +346,7 @@
 'LexLeanTarget.Main.emptyProgram' does not depend on any axioms
 'LexLeanTarget.RustSemantics.ROutcome' does not depend on any axioms
 'LexLeanTarget.RustSemantics.ROutcomes' does not depend on any axioms
+'LexLeanTarget.RustSemantics.allWidth' does not depend on any axioms
 'LexLeanTarget.RustSemantics.bindPattern' does not depend on any axioms
 'LexLeanTarget.RustSemantics.bindPatterns' does not depend on any axioms
 'LexLeanTarget.RustSemantics.constructValue' does not depend on any axioms
@@ -359,11 +360,19 @@
 'LexLeanTarget.RustSemantics.findDispatch' does not depend on any axioms
 'LexLeanTarget.RustSemantics.findFunction' does not depend on any axioms
 'LexLeanTarget.RustSemantics.finished' does not depend on any axioms
+'LexLeanTarget.RustSemantics.hasWidth' does not depend on any axioms
 'LexLeanTarget.RustSemantics.invoke' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.RustSemantics.isBytes' does not depend on any axioms
+'LexLeanTarget.RustSemantics.isList' does not depend on any axioms
+'LexLeanTarget.RustSemantics.isString' does not depend on any axioms
+'LexLeanTarget.RustSemantics.itemAccepts' does not depend on any axioms
 'LexLeanTarget.RustSemantics.itemFallible' does not depend on any axioms
 'LexLeanTarget.RustSemantics.itemHeap' does not depend on any axioms
 'LexLeanTarget.RustSemantics.itemOperands' does not depend on any axioms
 'LexLeanTarget.RustSemantics.itemPrimitive' does not depend on any axioms
+'LexLeanTarget.RustSemantics.itemShifts' does not depend on any axioms
+'LexLeanTarget.RustSemantics.itemTakes' does not depend on any axioms
+'LexLeanTarget.RustSemantics.itemWidth' does not depend on any axioms
 'LexLeanTarget.RustSemantics.kindNumber' does not depend on any axioms
 'LexLeanTarget.RustSemantics.literal' depends on axioms: [propext, Quot.sound]
 'LexLeanTarget.RustSemantics.lookup' does not depend on any axioms

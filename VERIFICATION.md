@@ -2321,12 +2321,20 @@ as a checked subtraction, a sibling enum variant, a byte literal one byte
 longer, a neighbouring callee, a natural literal plus one), each planted in
 the first rendering that admits it, are refused twice: the aligner derives
 nothing for the mutated crate or Lean rejects the derivation it writes, and
-Lean rejects the unmutated derivation restated over the mutated crate. A
-checked operation moved to another width is not refused by certificate B:
-the first run of this case planted that mutation and Lean accepted the
-realigned derivation, because the machine states nothing about an operand
-of another width than its item's. Such a crate is a Rust type error, and the
-case now requires the renderer's correspondence check to refuse it.
+Lean rejects the unmutated derivation restated over the mutated crate. An
+eighth mutation moves the first checked operation to another width
+(`fixed_u8::checked_add` as `fixed_u16::checked_add`). The first run of
+this case planted it and Lean accepted the realigned derivation: the machine
+then read every width's item as the calculus's width-polymorphic primitive.
+The machine now indexes such items by width (`itemAccepts`), the
+correspondence's primitive rules require the operand types to have the
+item's width (`itemTyped`), and value typing carries a fixed-width value's
+width; the case requires certificate B to refuse the width change like the
+other seven, and the renderer's correspondence check to refuse it too. A
+ninth calls a list, bytes, or text item's sibling for another sequence
+(`length_string` as `length_bytes`); the machine's sequence guard
+(`itemTakes`) and value typing of lists, bytes, and text make certificate B
+refuse it as well.
 `conformance_sp_05` verifies
 `examples/production` and requires every certificate, the audit output, and a
 schema-valid `preservation.json` bound by the attestation in the published

@@ -234,16 +234,18 @@ abbrev ROut := RustSemantics.ROutcome
 abbrev local_ (m : Nat) : RIdent := .generated .binding m
 
 /-- Types whose values the correspondence needs no fact about: no unit,
-ADT, or function type occurs in them. -/
+ADT, function, or fixed-width type occurs in them (a fixed-width value's
+width is what a width-indexed runtime item checks). -/
 def inert : Ty → Bool
   | .unit => false
   | .adt _ => false
   | .fn _ _ => false
   | .option t => inert t
   | .result a b => inert a && inert b
-  | .list t => inert t
+  | .list _ => false
   | .pair a b => inert a && inert b
-  | .bool | .nat | .int | .fixed _ | .string | .bytes | .ordering => true
+  | .fixed _ | .string | .bytes => false
+  | .bool | .nat | .int | .ordering => true
 
 def adtFields (p : Program) (i k : Nat) : Option (List Ty) :=
   (p.adts[i]?).bind fun adt => adt.constructors[k]?
@@ -300,6 +302,9 @@ def WT (p : Program) (c : RCrate) (A : Flags) : Value → Ty → Prop
       flagOf A ps r = some af ∧
       ∃ ff, RustSemantics.findDispatch c.items f cs.length = some (af, ff) ∧
         fnFallible c f = some ff ∧ (!ff || af) = true
+  | v, .fixed w => RustSemantics.hasWidth w v = true
+  | .string _, .string => True
+  | .bytes _, .bytes => True
   | _, t => inert t = true
 def WTAll (p : Program) (c : RCrate) (A : Flags) : List Value → Ty → Prop
   | [], _ => True
