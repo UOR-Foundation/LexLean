@@ -1322,7 +1322,8 @@ pub fn f38(v0: Adt0, v1: Adt1) -> Option<u64> {
             None::<u64>
         }
         Some(v2) => {
-            if f40(v0.clone(), v2) {
+            let v3: bool = f40(v0.clone(), v2);
+            if v3 {
                 Some(v2)
             } else {
                 None::<u64>

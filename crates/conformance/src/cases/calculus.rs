@@ -288,6 +288,7 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
         "TargetSyntax",
         "TargetSemantics",
         "TargetOracle",
+        "ReasoningOracle",
         "TargetFixtures",
     ] {
         let built = std::process::Command::new(&lean)

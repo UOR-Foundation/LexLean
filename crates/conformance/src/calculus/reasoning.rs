@@ -390,13 +390,17 @@ fn shared(layout: Layout, verifier: Verifier) -> Vec<Function> {
             call(layout.extract(), vec![v(1)]),
             vec![
                 arm(Shape::None, Vec::new(), none(&Ty::Nat)),
+                // The check's result is bound before it is tested, so the
+                // rendered arm is not a bare `if` the Rust lints would
+                // rewrite into a filter.
                 arm(
                     Shape::Some,
                     vec![2],
-                    cond(
+                    super::let_in(
+                        3,
+                        Ty::Bool,
                         call(layout.check(), vec![v(0), v(2)]),
-                        some(&Ty::Nat, v(2)),
-                        none(&Ty::Nat),
+                        cond(v(3), some(&Ty::Nat, v(2)), none(&Ty::Nat)),
                     ),
                 ),
             ],

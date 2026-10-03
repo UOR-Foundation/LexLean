@@ -283,7 +283,7 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
 /// the primitive keys, which [`PRIMITIVES`] enumerates. The conformance suite
 /// checks this list, the primitive keys, and the declaration keys against
 /// the registry rows in both directions.
-pub const STRUCTURAL_KEYS: [&str; 83] = [
+pub const STRUCTURAL_KEYS: [&str; 88] = [
     "type.type",
     "type.parameter",
     "type.nat",
@@ -311,6 +311,7 @@ pub const STRUCTURAL_KEYS: [&str; 83] = [
     "type.map",
     "type.set",
     "type.contract_violation",
+    "type.reasoning_failure",
     "term.var",
     "term.nat",
     "term.integer",
@@ -367,6 +368,10 @@ pub const STRUCTURAL_KEYS: [&str; 83] = [
     "declaration.realization",
     "declaration.evidence",
     "declaration.model",
+    "declaration.logic",
+    "declaration.inference_rule",
+    "declaration.verifier",
+    "declaration.reasoner",
 ];
 
 /// The registry key of a type, before its arguments are visited.
@@ -2959,9 +2964,10 @@ fn reasoning_rows(
                 ReasoningStrategy::Forward { fuel } => {
                     ("forward", false, fuel.as_ref(), None, None)
                 }
-                ReasoningStrategy::GenerateAndVerify { budget, .. } => {
-                    ("generate_and_verify", false, None, None, budget.as_ref())
-                }
+                ReasoningStrategy::GenerateAndVerify {
+                    budget,
+                    generator: _,
+                } => ("generate_and_verify", false, None, None, budget.as_ref()),
                 ReasoningStrategy::Search {
                     order,
                     fuel,

@@ -2796,7 +2796,7 @@ fn check_generator(
     let x = observation.name.as_str();
     let input_locals = [(x, &observation.r#type)];
     let answer_type = verifier_at.candidate.clone();
-    let mut sources = vec![generator.clone(), budget.clone()];
+    let mut sources = [generator.clone(), budget.clone()];
     lower_source(name, sources.iter_mut().collect(), *executable, &scope, env)?;
     env.derived = true;
     let typed = (|| {

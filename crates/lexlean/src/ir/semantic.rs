@@ -8699,20 +8699,20 @@ fn register_structure(
     };
     let name = name.as_str();
     if !parameters.is_empty() {
-        return Err(
-            format!("`{name}` value parameters are not part of a finite data declaration").into(),
-        );
+        return Err(format!(
+            "`{name}` value parameters are not part of a finite data declaration"
+        ));
     }
     let type_parameter_names = type_parameters.clone();
     check_type_parameter_spelling(
         &type_parameter_names,
         &BTreeSet::from([name.to_owned()]),
-        &env,
+        env,
     )?;
     let type_parameters = type_parameter_set(type_parameters)?;
-    let _ = check_parameters(parameters, &env, &type_parameters)?;
+    let _ = check_parameters(parameters, env, &type_parameters)?;
     if fields.is_empty() {
-        return Err(format!("`{name}` has no fields").into());
+        return Err(format!("`{name}` has no fields"));
     }
     if env.language_1_2 {
         let own = BTreeSet::from([name.to_owned()]);
@@ -8722,26 +8722,26 @@ fn register_structure(
         {
             return Err(format!(
                     "structure or class `{name}` refers to itself; recursive data is declared as an inductive"
-                ).into());
+                ));
         }
     }
     let mut field_names = Vec::new();
     for field in fields {
         check_name(&field.name, "field")?;
-        check_type(&field.r#type, &env)?;
+        check_type(&field.r#type, env)?;
         check_type_parameters(&field.r#type, &type_parameters)?;
         if field_names.contains(&field.name) {
-            return Err(format!("duplicate field `{}.{}`", name, field.name).into());
+            return Err(format!("duplicate field `{}.{}`", name, field.name));
         }
         field_names.push(field.name.clone());
         let generated = format!("{name}.{}", field.name);
         if !generated_names.insert(generated.clone()) {
-            return Err(format!("duplicate generated name `{generated}`").into());
+            return Err(format!("duplicate generated name `{generated}`"));
         }
     }
     let constructor = format!("{name}.mk");
     if !generated_names.insert(constructor.clone()) {
-        return Err(format!("duplicate generated name `{constructor}`").into());
+        return Err(format!("duplicate generated name `{constructor}`"));
     }
     env.types.insert(
         name.to_owned(),
