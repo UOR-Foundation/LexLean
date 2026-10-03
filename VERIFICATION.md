@@ -418,7 +418,7 @@ Expected: the committed language-1.2 example no longer checks, and the
 negative fixture of a `let` under language 1.1 is accepted.
 
 ```text
-thread 'conformance_sm_23' panicked at crates/conformance/src/support.rs:408:14:
+thread 'conformance_sm_23' panicked at crates/conformance/src/support.rs:441:14:
 check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: `let` is a language-1.2 construct; language 1.1 rejects it", ... }] }
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 227 filtered out
 gate failed: tests/negative/language-1.2-construct-under-1.1: step 1 `check ` exited 0, case.toml expects 1
@@ -796,7 +796,7 @@ repo-conformance --test conformance -- conformance_tc_07`. Expected: the
 compiled rendering of `nat-arithmetic` prints a different value.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1351:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1352:17:
 assertion `left == right` failed: natArithmetic_rust_std: the Rust rendering and the denotation disagree
 ```
 
@@ -811,7 +811,7 @@ while its value stayed correct. Command: `cargo test -p repo-conformance
 `list-append-long` counts more work than the denotation charges steps.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1356:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1357:17:
 listAppendLong_rust_std: the rendering worked 1220 units for 87 steps
 ```
 
@@ -827,7 +827,7 @@ conformance -- conformance_tc_07`. Expected: `rust-core` renders a program
 whose realization requires allocation.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1271:29:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1272:29:
 binding-and-shapes: rust-core renders a program that needs the heap
 ```
 
@@ -841,7 +841,7 @@ Planted: the realization row of `primitive.map_size` was deleted from
 repo-conformance --test conformance -- conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1149:48:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1150:48:
 the realization table: "runtime construct `primitive.map_size` has no realization row"
 ```
 
@@ -855,7 +855,7 @@ Command: `cargo test -p repo-conformance --test conformance --
 conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1165:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1166:13:
 allocation disagreements: [
     "term.nil: registry true, realization false",
 ]
@@ -872,7 +872,7 @@ repo-conformance --test conformance -- conformance_tc_06`. Expected: the
 typed (primitive, width) pairs only those fixtures exercise are reported.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1219:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1220:13:
 (primitive, width) pairs no fixture exercises: [("bit_and", "u16"), ("bit_not", "u16"), ("bit_or", "u16"), ("bit_xor", "u16"), ("checked_mul", "u16"), ("checked_quot", "u16"), ("compare", "u16"), ("format_decimal", "u16"), ("parse_decimal", "u16"), ("shift_left", "u16"), ("shift_right", "u16")]
 ```
 
@@ -1644,7 +1644,7 @@ seeded graphs and the 24-node chain, whose last node is such a successor,
 disagree with the independent model.
 
 ```text
-thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.graphTopological
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1662,7 +1662,7 @@ canonical order disagreed with Lean's `Key Int` instance. Command: `cargo test
 insertion of the source order, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  [-2, -10, -100, 0, 3, 9, 100] =\n    LexLeanCollections.listFold (fun built element => LexLeanCollections.setInsert built element) []\n      [3, -2, 0, -10, 100, -100, 9]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1679,7 +1679,7 @@ conformance -- conformance_sm_28`. Expected: the seeded union theorems,
 whose right-hand sides come from `BTreeSet`, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.setUnion [1, 2, 3] [0, 5] = [0, 1, 2, 3, 5]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -2087,7 +2087,7 @@ evidence; `model-forged-evidence` links (`check-fixtures` and
 `conformance_ex_07` both fail on it).
 
 ```text
-thread 'conformance_md_06' (23724) panicked at crates/conformance/src/support.rs:526:5:
+thread 'conformance_md_06' (23724) panicked at crates/conformance/src/support.rs:559:5:
 expected LLT4009, found ["LLT4001"] (LLT4001: phase link: duplicate generated name `DigitEvidence.digit_net_exact`)
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out
 ```
@@ -2155,7 +2155,7 @@ test -p repo-conformance --test conformance -- conformance_md_02`.
 Expected: a shape the bytes cannot hold is no longer a schema violation.
 
 ```text
-thread 'conformance_md_02' (13418) panicked at crates/conformance/src/support.rs:526:5:
+thread 'conformance_md_02' (13418) panicked at crates/conformance/src/support.rs:559:5:
 expected LLR3008, found ["LLT4006"] (LLT4006: phase link: neural realization `DigitNet` layer 1 weights `hiddenWeights` is a int_tensor of shape [12, 8]; the slot needs an integer tensor of shape [12, 7])
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out
 ```
@@ -2188,7 +2188,7 @@ Expected: a Boolean label of a natural-number output is no longer an
 interface mismatch.
 
 ```text
-thread 'conformance_md_04' (15034) panicked at crates/conformance/src/support.rs:526:5:
+thread 'conformance_md_04' (15034) panicked at crates/conformance/src/support.rs:559:5:
 expected LLT4006, found ["LLT4001"] (LLT4001: phase link: realization declaration `DigitNet` elaborates to `DigitNet`, which is ill-formed: list head has type Bool, expected Nat)
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out
 ```
@@ -2231,13 +2231,13 @@ values, and the portable runtime's integer quotient flooring (`Int.ediv`
 for `Int.tdiv`). Expected: Lean refuses the seeded expectations.
 
 ```text
-thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Tie Sample.s0 = 1\nis false", ...
-thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:1936:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Quantized Sample.s0 = [0, -14, -37, -33, -40, 10, -32, 46]\nis false", ...
 ```
 
@@ -2448,7 +2448,7 @@ union... != declaration.axioms()` in `verify/mod.rs`). Command: `cargo test
 evidence stating an axiom none of its declarations observes verifies.
 
 ```text
-thread 'conformance_md_06' (21466) panicked at crates/conformance/src/support.rs:445:14:
+thread 'conformance_md_06' (21466) panicked at crates/conformance/src/support.rs:478:14:
 verify fails
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out
 ```
@@ -2475,6 +2475,137 @@ is false
 ```
 
 Removed: the copy was discarded; the committed example verifies.
+
+### reasoning rule priority order can fail
+
+Planted: `E.select` was built over the rules in declared order (`for rule in engine.rules.iter()` in `elaborate_forward`), so the last rule is tried first. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a forward reasoner that fires rules out of their declared priority order.
+
+```text
+thread 'conformance_rs_05' (5065) panicked at crates/conformance/src/cases/reasoning.rs:786:5:
+assertion `left == right` failed: select tries the rules in declared priority order
+  left: ["Escalate.guard", "Shock.guard", "Sepsis.guard", "Sirs.guard", "Leukocytosis.guard", "Tachypnea.guard", "Tachycardia.guard", "Fever.guard"]
+ right: ["Fever.guard", "Tachycardia.guard", "Tachypnea.guard", "Leukocytosis.guard", "Sirs.guard", "Sepsis.guard", "Shock.guard", "Escalate.guard"]
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.81s
+```
+
+Removed: the reversal was restored; `conformance_rs_05` passes, and its Lean-backed half also requires the reversed order to be refused by verification.
+
+### reasoning firing without the guard can fail
+
+Planted: each arm of `E.fire` applied the rule's conclusion directly (`some (N.conclusion s)`) instead of its guarded application. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a reasoner step that applies a rule whose guard does not hold.
+
+```text
+thread 'conformance_rs_05' (5662) panicked at crates/conformance/src/cases/reasoning.rs:797:5:
+assertion `left == right` failed: every step fires through its rule's guarded application
+  left: ["Fever.conclusion", "Tachycardia.conclusion", "Tachypnea.conclusion", "Leukocytosis.conclusion", "Sirs.conclusion", "Sepsis.conclusion", "Shock.conclusion", "Escalate.conclusion"]
+ right: ["Fever.apply", "Tachycardia.apply", "Tachypnea.apply", "Leukocytosis.apply", "Sirs.apply", "Sepsis.apply", "Shock.apply", "Escalate.apply"]
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.95s
+```
+
+Removed: the guarded application was restored; `conformance_rs_05` passes.
+
+### reasoning guard evaluations can go unaccounted
+
+Planted: a forward step's ledger kept its `attempts` counter instead of adding `E.attempts` of the state it scanned. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a ledger that charges firings but not the rules tried.
+
+```text
+thread 'conformance_rs_05' (7028) panicked at crates/conformance/src/cases/reasoning.rs:802:5:
+assertion failed: calls(&derived(triage,
+                    "Triage.step")["body"]).contains(&"Triage.attempts".to_owned())
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.84s
+```
+
+Removed: the count was restored; `conformance_rs_05` passes.
+
+### reasoning runtime boundary can fail
+
+Planted: `check_boundary` no longer refused a guarded member (`env.reasoning.guarded(&key).filter(|_| false)` in `model.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: executable code reaching a rule's conclusion or an unverified answer links.
+
+```text
+thread 'conformance_rs_09' (8223) panicked at crates/conformance/src/support.rs:451:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.26s
+```
+
+Removed: the refusal was restored; `conformance_rs_09` passes.
+
+### reasoning answer correctness erasure can fail
+
+Planted: `E.accept` always ran the verifier's check (`match &None::<MemberRef>` for the claim in `elaborate_common`), so an `answer_correct` claim erased nothing. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: a check proved unnecessary still runs, so the claim states a runtime effect it does not have.
+
+```text
+thread 'conformance_rs_09' (6308) panicked at crates/conformance/src/cases/reasoning.rs:1282:5:
+assertion `left == right` failed
+  left: ["gradedCheck", "Grade.extract"]
+ right: ["Grade.extract"]
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 2.60s
+```
+
+Removed: the erasure was restored; `conformance_rs_09` passes.
+
+### generate-and-verify budget is checked by Lean
+
+Planted: `E.try` checked a candidate while fewer than the budget plus one had been checked, so a generate-and-verify reasoner could exceed its budget. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_06`. Expected: the generated `E.try_count` and `E.verifications_bounded` theorems are refused by pinned Lean.
+
+```text
+thread 'conformance_rs_06' (10047) panicked at crates/conformance/src/cases/reasoning.rs:229:14:
+the reasoning example verifies under pinned Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Reasoning.Screening` (error): Application type mismatch: The argument\n  llB\nhas type\n  __t.ledger.verifications.blt (3 + 1) = true\nbut is expected to have type\n  __t.ledger.verifications.blt 3 = true ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 20.39s
+```
+
+Removed: the bound was restored; `conformance_rs_06` passes.
+
+### generic reasoner elaboration can fail
+
+Planted: a rule-based reasoner's elaboration was no longer generalized (the `generalize` call in `check_reasoner` was removed), so a generic reasoner's declarations would mention its type parameters unbound. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_04`. Expected: the generic `Spend` of the example is refused in linking.
+
+```text
+thread 'conformance_rs_04' (7644) panicked at crates/conformance/src/cases/reasoning.rs:149:10:
+snapshot: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: reasoner declaration `Spend` elaborates to `Spend.observe`, which is ill-formed: unbound type parameter `T`", ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.31s
+```
+
+Removed: the call was restored; `conformance_rs_04` passes.
+
+### reasoning eligibility rows can be dropped
+
+Planted: the eligibility report omitted every root's `reasoning` rows (`if false && !root.reasoning.is_empty()` in `production/mod.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_11`. Expected: a production root whose search resources are unreported.
+
+```text
+thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:1501:32:
+Reasoning.Main.triageLevel records its reasoning
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.73s
+```
+
+Removed: the rows were restored; `conformance_rs_11` passes.
+
+### a calculus transcription that skips guard accounting can fail
+
+Planted: the traced transcription of `Triage` counted no guard evaluation per step (`nat(0)` for the step's attempts in `calculus/reasoning.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_12`. Expected: a transcription whose account charges firings it never searched for.
+
+```text
+thread 'conformance_rs_12' (9480) panicked at crates/conformance/src/cases/reasoning.rs:1745:5:
+every firing follows a guard evaluation
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.17s
+```
+
+Removed: the count was restored; `conformance_rs_12` passes. The case also plants, in itself, a transcription answering without searching, and requires its steps to fall below the account.
+
+### a reasoning capability without its scenario can fail
+
+Planted: `features/suites/reasoning.feature` was moved away. Command: `cargo test -p repo-conformance --test bdd`. Expected: R3 names every RS row that has no scenario.
+
+```text
+thread 'every_id_has_a_scenario_and_a_test' (10919) panicked at crates/conformance/tests/bdd.rs:31:5:
+R3: RS-01 is registered but has no scenario in features/suites/.
+R3: RS-02 is registered but has no scenario in features/suites/.
+```
+
+Removed: the file was restored; the BDD gate passes.
+
+### a mutated reasoning runtime lemma and a planted rule threshold are refused by Lean
+
+`conformance_rs_08` plants, in itself, a mutated `LexLeanReasoning.guarded` statement (`r t s` for `r s t`) in a standalone copy of the emitted runtime and requires pinned Lean to refuse it, after requiring the unmutated runtime to be accepted with every name reported axiom-free by `#print axioms`. `conformance_rs_14` plants, in a copy of `examples/reasoning`, the tachycardia threshold 80 for 90: linking accepts it, and verification refuses it with `LLV7002`, because the `Tachycardia` rule would then conclude a finding its relation does not justify.
 
 ## End-to-end Lean evidence
 
