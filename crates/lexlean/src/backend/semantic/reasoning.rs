@@ -41,7 +41,8 @@ impl Render<'_> {
                 theorem
                     .parameters
                     .first()
-                    .map_or("_", |parameter| parameter.name.as_str())
+                    .map_or("_", |parameter| parameter.name.as_str()),
+                &theorem.type_parameters
             )
         )
     }
@@ -153,9 +154,23 @@ impl Render<'_> {
 
     /// The fixed proof text of one template.
     #[allow(clippy::too_many_lines)]
-    fn generated_proof(&self, proof: &Proof, input: &str) -> String {
+    fn generated_proof(&self, proof: &Proof, input: &str, type_parameters: &[String]) -> String {
         let x = identifier(input);
+        // A member as `dsimp` names it, and as a head applied to arguments:
+        // every member a template names is the reasoner's own, so a generic
+        // reasoner's are applied to its type parameters.
         let m = |member: &MemberRef| self.member(member);
+        let own_arguments: String = type_parameters
+            .iter()
+            .map(|parameter| format!(" ({})", identifier(parameter)))
+            .collect();
+        let h = |member: &MemberRef| {
+            if own_arguments.is_empty() {
+                self.member(member)
+            } else {
+                format!("({}{own_arguments})", self.member(member))
+            }
+        };
         match proof {
             Proof::Term { term } => format!("  {}\n", self.proof_term(term)),
             Proof::Unfold { definitions, term } => format!(
@@ -177,12 +192,12 @@ impl Render<'_> {
             Proof::ReplaySound { replay, fire_sound } => format!(
                 "by\n  intro llH llT llE\n  cases __acc with\n  | error _ => cases llE\n  | ok llS =>\n    dsimp only [{}] at llE\n    split at llE\n    · cases llE\n    · cases llE\n      exact LexLeanReasoning.Star.tail _ llS _ (llH llS rfl) ({} llS __step _ ‹_›)\n",
                 m(replay),
-                m(fire_sound)
+                h(fire_sound)
             ),
             Proof::NextSound { next, fire_sound } => format!(
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · exact {} __s _ __t llE\n",
                 m(next),
-                m(fire_sound)
+                h(fire_sound)
             ),
             Proof::NextProgress {
                 next,
@@ -190,9 +205,9 @@ impl Render<'_> {
                 invariant,
             } => {
                 let last = if *invariant {
-                    format!("exact fun llJ => {} __s _ __t llJ llE", m(fire_progress))
+                    format!("exact fun llJ => {} __s _ __t llJ llE", h(fire_progress))
                 } else {
-                    format!("exact {} __s _ __t llE", m(fire_progress))
+                    format!("exact {} __s _ __t llE", h(fire_progress))
                 };
                 format!(
                     "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · {last}\n",
@@ -217,7 +232,7 @@ impl Render<'_> {
                 "by\n  intro llE llH\n  dsimp only [{step}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · cases llE\n      dsimp only [{follow}]\n      rw [LexLeanReasoning.foldSnoc]\n      dsimp only [{follow}] at llH\n      rw [llH]\n      apply {replay_fire}\n      assumption\n",
                 step = m(step),
                 follow = m(follow),
-                replay_fire = m(replay_fire)
+                replay_fire = h(replay_fire)
             ),
             Proof::StepCount { step } => format!(
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · cases llE\n      rfl\n",
@@ -239,7 +254,7 @@ impl Render<'_> {
             } => format!(
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    exact {} _ _ _ ‹_›\n  · split at llE\n    · cases llE\n    · cases llE\n",
                 m(conclude),
-                m(accept_sound)
+                h(accept_sound)
             ),
             Proof::ConcludeAccept { conclude } => format!(
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    assumption\n  · split at llE\n    · cases llE\n    · cases llE\n",
@@ -255,11 +270,11 @@ impl Render<'_> {
             } => format!(
                 "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · split at llE\n    · rename_i llW llH\n      cases llE\n      exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ llH) ({conclude_sound} _ _ _ llH)\n    · cases llE\n  · cases llE\n",
                 reasoner = m(reasoner),
-                run = m(run),
+                run = h(run),
                 answer = m(answer),
-                run_trace = m(run_trace),
-                conclude_accept = m(conclude_accept),
-                conclude_sound = m(conclude_sound)
+                run_trace = h(run_trace),
+                conclude_accept = h(conclude_accept),
+                conclude_sound = h(conclude_sound)
             ),
             Proof::VerdictForward {
                 verdict,
@@ -268,8 +283,8 @@ impl Render<'_> {
             } => format!(
                 "by\n  intro llV llE\n  dsimp only [{verdict}] at llE\n  generalize llRun : {saturate} {x} = llR at llE\n  split at llE\n  · exact {conclude_sound} _ _ _ llE\n  · cases llE\n",
                 verdict = m(verdict),
-                saturate = m(saturate),
-                conclude_sound = m(conclude_sound)
+                saturate = h(saturate),
+                conclude_sound = h(conclude_sound)
             ),
             Proof::Extend {
                 follow,
@@ -277,12 +292,12 @@ impl Render<'_> {
             } => format!(
                 "by\n  intro llH llE\n  dsimp only [{follow}]\n  rw [LexLeanReasoning.foldSnoc]\n  dsimp only [{follow}] at llH\n  rw [llH]\n  exact {replay_fire} _ __step __t llE\n",
                 follow = m(follow),
-                replay_fire = m(replay_fire)
+                replay_fire = h(replay_fire)
             ),
             Proof::SuccessorsFree { successors, extend } => format!(
                 "by\n  intro llH\n  dsimp only [{}]\n  split\n  · exact LexLeanReasoning.All.nil\n  · exact LexLeanReasoning.allSingle _ _ ({} _ __node _ _ llH ‹_›)\n",
                 m(successors),
-                m(extend)
+                h(extend)
             ),
             Proof::SuccessorsBound {
                 successors,
@@ -294,8 +309,8 @@ impl Render<'_> {
                 "by\n  intro llH\n  dsimp only [{successors}]\n  exact LexLeanReasoning.foldInvariant _ (LexLeanReasoning.All (fun (llN : {node}) => {follow} _ llN.trace = Except.ok llN.state))\n    (fun llA llB llP => by\n      dsimp only [{collect}]\n      split\n      · exact llP\n      · exact LexLeanReasoning.allAppend _ _ _ llP (LexLeanReasoning.allSingle _ _ ({extend} _ __node _ _ llH ‹_›)))\n    _ _ LexLeanReasoning.All.nil\n",
                 successors = m(successors),
                 collect = m(collect),
-                extend = m(extend),
-                follow = m(follow),
+                extend = h(extend),
+                follow = h(follow),
                 node = self.ty(node)
             ),
             Proof::SearchStep {
@@ -305,9 +320,9 @@ impl Render<'_> {
                 order,
             } => {
                 let successors =
-                    format!("({} _ llNode llNodeOk)", m(successors_ok));
+                    format!("({} _ llNode llNodeOk)", h(successors_ok));
                 let fresh = match fresh_ok {
-                    Some(fresh_ok) => format!("({} _ _ _ {successors})", m(fresh_ok)),
+                    Some(fresh_ok) => format!("({} _ _ _ {successors})", h(fresh_ok)),
                     None => successors,
                 };
                 let ordered = match order {
@@ -340,10 +355,10 @@ impl Render<'_> {
             } => format!(
                 "by\n  intro llV llT llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
                 reasoner = m(reasoner),
-                run = m(run),
+                run = h(run),
                 answer = m(answer),
-                search_ok = m(search_ok),
-                accept_sound = m(accept_sound)
+                search_ok = h(search_ok),
+                accept_sound = h(accept_sound)
             ),
             Proof::VerdictSearch {
                 reasoner,
@@ -351,9 +366,53 @@ impl Render<'_> {
                 explained,
             } => format!(
                 "by\n  intro llV llE\n  dsimp only [{verdict}] at llE\n  generalize llHP : {reasoner} {x} = llR at llE\n  cases llR with\n  | error _ => cases llE\n  | ok llP =>\n    cases llE\n    exact And.right ({explained} _ llP.1 llP.2 llHP)\n",
-                reasoner = m(reasoner),
+                reasoner = h(reasoner),
                 verdict = m(verdict),
-                explained = m(explained)
+                explained = h(explained)
+            ),
+            Proof::VerifySound {
+                verify,
+                sound,
+                type_arguments,
+            } => format!(
+                "by\n  intro llE\n  dsimp only [{verify}] at llE\n  have llC := LexLeanReasoning.checked _ _ _ llE\n  cases llC.right\n  exact And.intro (by dsimp only [{verify}]; rw [llC.left]; rfl) ({sound}{arguments} _ _ llC.left)\n",
+                verify = m(verify),
+                sound = m(sound),
+                arguments = self.type_argument_list(type_arguments)
+            ),
+            Proof::TrySound {
+                attempt,
+                verify_sound,
+            } => format!(
+                "by\n  intro llH llV llE\n  dsimp only [{attempt}] at llE\n  split at llE\n  · exact llH llV llE\n  · split at llE\n    · exact {verify_sound} _ _ _ llE\n    · cases llE\n",
+                attempt = m(attempt),
+                verify_sound = h(verify_sound)
+            ),
+            Proof::TryCount { attempt } => format!(
+                "by\n  intro llH\n  dsimp only [{}]\n  split\n  · exact llH\n  · split\n    · rename_i llB\n      exact LexLeanReasoning.bltSucc _ _ llB\n    · exact llH\n",
+                m(attempt)
+            ),
+            Proof::VerdictGenerate {
+                verdict,
+                run,
+                run_sound,
+            } => format!(
+                "by\n  intro llV llE\n  have llS := {run_sound} {x}\n  dsimp only [{verdict}] at llE\n  generalize llRun : {run} {x} = llR at llE llS\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    exact And.right (llS _ llF)\n  · cases llE\n",
+                verdict = m(verdict),
+                run = h(run),
+                run_sound = h(run_sound)
+            ),
+            Proof::ExplainedGenerate {
+                reasoner,
+                run,
+                run_sound,
+                answer,
+            } => format!(
+                "by\n  intro llV llT llE\n  have llS := {run_sound} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llS\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := llS _ llF\n    exact And.intro (by dsimp only [{answer}]; exact And.left llOk) (And.right llOk)\n  · cases llE\n",
+                reasoner = m(reasoner),
+                run = h(run),
+                run_sound = h(run_sound),
+                answer = m(answer)
             ),
         }
     }
@@ -485,6 +544,7 @@ pub(super) fn latex_reasoning(
             latex_line(text, "Axiom policy", &latex_policy(axioms));
         }
         SemanticDeclaration::Reasoner {
+            type_parameters,
             logic,
             observation,
             observe,
@@ -497,18 +557,28 @@ pub(super) fn latex_reasoning(
             axioms,
             ..
         } => {
-            latex_line(text, "Logic", &latex_use(render, logic));
+            if !type_parameters.is_empty() {
+                latex_line(text, "Type parameters", &type_parameters.join(", "));
+            }
+            if let Some(logic) = logic {
+                latex_line(text, "Logic", &latex_use(render, logic));
+            }
             latex_line(
                 text,
                 "Observation",
-                &format!(
-                    "{} : {}, observed as {}",
-                    observation.name,
-                    render.ty(&observation.r#type),
-                    render.term(observe)
-                ),
+                &match observe {
+                    Some(observe) => format!(
+                        "{} : {}, observed as {}",
+                        observation.name,
+                        render.ty(&observation.r#type),
+                        render.term(observe)
+                    ),
+                    None => format!("{} : {}", observation.name, render.ty(&observation.r#type)),
+                },
             );
-            latex_line(text, "Rules in priority order", &uses(rules));
+            if !rules.is_empty() {
+                latex_line(text, "Rules in priority order", &uses(rules));
+            }
             let bound = |term: &Option<SemanticTerm>| {
                 term.as_ref()
                     .map_or_else(|| "none".to_owned(), |term| render.term(term))
@@ -536,23 +606,33 @@ pub(super) fn latex_reasoning(
                         ""
                     }
                 ),
+                ReasoningStrategy::GenerateAndVerify { generator, budget } => format!(
+                    "generate and verify the candidates {}, checking at most {}",
+                    render.term(generator),
+                    bound(budget)
+                ),
             };
             latex_line(text, "Strategy", &strategy_text);
-            latex_line(
-                text,
-                "Answer",
-                &format!(
-                    "{} |-> {} : Option ({})",
-                    answer.name,
-                    render.term(&answer.value),
-                    render.ty(&answer.r#type)
-                ),
-            );
+            if let Some(answer) = answer {
+                latex_line(
+                    text,
+                    "Answer",
+                    &format!(
+                        "{} |-> {} : Option ({})",
+                        answer.name,
+                        render.term(&answer.value),
+                        render.ty(&answer.r#type)
+                    ),
+                );
+            }
             latex_line(text, "Verifier", &latex_use(render, verifier));
             for claim in claims {
                 let (kind, theorem) = match claim {
                     ReasoningClaim::InitialInvariant { theorem } => ("initial invariant", theorem),
                     ReasoningClaim::Terminates { theorem } => ("terminates", theorem),
+                    ReasoningClaim::AnswerCorrect { theorem } => {
+                        ("answer correct, its check erased", theorem)
+                    }
                 };
                 latex_line(
                     text,

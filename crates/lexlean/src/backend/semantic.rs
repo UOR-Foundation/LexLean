@@ -1077,11 +1077,11 @@ impl Render<'_> {
                 };
                 if definitions.is_empty() {
                     format!(
-                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
+                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
                     )
                 } else {
                     format!(
-                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
+                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
                         definitions
                             .iter()
                             .map(|member| self.member(member))
@@ -1771,6 +1771,15 @@ public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ ->
 public theorem iterateUntilBound {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (k : Nat) (h : forall (a b : σ), step a = some b -> c a <= k -> c b <= k) :
     forall (n : Nat) (a : σ), c a <= k -> c (LexLeanCollections.iterateUntil step n a).1 <= k :=
   iterateUntilInvariant step (fun (a : σ) => c a <= k) h
+public theorem noneSome {ρ : Type} {q : Prop} (v : ρ) (h : (none : Option ρ) = some v) : q := by
+  cases h
+
+public theorem zeroLe (n : Nat) : 0 <= n :=
+  Nat.zero_le n
+
+public theorem bltSucc (a b : Nat) (h : Nat.blt a b = true) : a + 1 <= b :=
+  Nat.le_of_ble_eq_true h
+
 end LexLeanReasoning
 "#;
 

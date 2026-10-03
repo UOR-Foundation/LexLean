@@ -21,8 +21,7 @@
 
 use lexlean::calculus::{Expr, Function, Prim, Program, Ty, Value, PROGRAM_SPEC};
 use lexlean::gnaf::{
-    ActionKind, Carrier, Charge, ClaimClass, Completeness, Objective, Request, Scope,
-    REQUEST_SPEC,
+    ActionKind, Carrier, Charge, ClaimClass, Completeness, Objective, Request, Scope, REQUEST_SPEC,
 };
 use lexlean::Sha256Digest;
 

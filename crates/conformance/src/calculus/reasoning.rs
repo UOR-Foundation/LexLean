@@ -371,11 +371,7 @@ fn shared(layout: Layout, verifier: Verifier) -> Vec<Function> {
             call(layout.select(), vec![v(0)]),
             vec![
                 arm(Shape::None, Vec::new(), none(&chart_t())),
-                arm(
-                    Shape::Some,
-                    vec![1],
-                    call(layout.fire(), vec![v(0), v(1)]),
-                ),
+                arm(Shape::Some, vec![1], call(layout.fire(), vec![v(0), v(1)])),
             ],
         ),
     ));
@@ -529,7 +525,10 @@ fn encode_result(result: Json, ok: impl FnOnce(Json) -> Json) -> Json {
                 vec!["failure".to_owned()],
                 lx::value(
                     "error",
-                    vec![lx::call(lx::member("encodeFailure"), vec![lx::var("failure")])],
+                    vec![lx::call(
+                        lx::member("encodeFailure"),
+                        vec![lx::var("failure")],
+                    )],
                 ),
             ),
         ],
@@ -694,11 +693,7 @@ fn traced_functions() -> (Vec<Function>, u64) {
                                                         steps_t.clone(),
                                                         vec![
                                                             v(1),
-                                                            build(
-                                                                Shape::Nil,
-                                                                steps_t,
-                                                                Vec::new(),
-                                                            ),
+                                                            build(Shape::Nil, steps_t, Vec::new()),
                                                         ],
                                                     ),
                                                 ],
@@ -867,7 +862,10 @@ pub fn encoders() -> Vec<Json> {
     };
     let encode_failure = lx::definition(
         "encodeFailure",
-        vec![lx::parameter("failure", json!({"kind": "reasoning_failure"}))],
+        vec![lx::parameter(
+            "failure",
+            json!({"kind": "reasoning_failure"}),
+        )],
         value_t.clone(),
         lx::matching(
             lx::var("failure"),
@@ -893,10 +891,7 @@ pub fn encoders() -> Vec<Json> {
                     lx::branch(
                         lexlean::calculus::term::member(ORACLE, &format!("Triage.Step.{rule}")),
                         Vec::new(),
-                        lx::value(
-                            "adt",
-                            vec![lx::nat(index as u64), lx::nil(value_t.clone())],
-                        ),
+                        lx::value("adt", vec![lx::nat(index as u64), lx::nil(value_t.clone())]),
                     )
                 })
                 .collect(),

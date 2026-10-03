@@ -1134,6 +1134,7 @@ impl<'a> Walk<'a> {
                         }
                         | SemanticDeclaration::Reasoner {
                             name: _,
+                            type_parameters: _,
                             logic: _,
                             observation: _,
                             observe: _,
@@ -1300,6 +1301,7 @@ impl<'a> Walk<'a> {
                 } => "declaration.verifier",
                 SemanticDeclaration::Reasoner {
                     name: _,
+                    type_parameters: _,
                     logic: _,
                     observation: _,
                     observe: _,
@@ -1622,6 +1624,7 @@ impl<'a> Walk<'a> {
             }
             | SemanticDeclaration::Reasoner {
                 name: _,
+                type_parameters: _,
                 logic: _,
                 observation: _,
                 observe: _,
@@ -2176,6 +2179,7 @@ impl<'a> Walk<'a> {
             }) => "declaration.verifier",
             Some(SemanticDeclaration::Reasoner {
                 name: _,
+                type_parameters: _,
                 logic: _,
                 observation: _,
                 observe: _,
@@ -2399,6 +2403,7 @@ impl<'a> Walk<'a> {
                 }
                 | SemanticDeclaration::Reasoner {
                     name: _,
+                    type_parameters: _,
                     logic: _,
                     observation: _,
                     observe: _,
@@ -2607,6 +2612,7 @@ fn inductive_group(
             }
             | SemanticDeclaration::Reasoner {
                 name: _,
+                type_parameters: _,
                 logic: _,
                 observation: _,
                 observe: _,
@@ -2925,6 +2931,7 @@ fn reasoning_rows(
         for (index, declaration) in linked.semantic.declarations.iter().enumerate() {
             let SemanticDeclaration::Reasoner {
                 name,
+                type_parameters: _,
                 logic: _,
                 observation: _,
                 observe: _,
@@ -2948,8 +2955,13 @@ fn reasoning_rows(
             if !runs {
                 continue;
             }
-            let (kind, deduplicate, fuel, frontier) = match strategy {
-                ReasoningStrategy::Forward { fuel } => ("forward", false, fuel.as_ref(), None),
+            let (kind, deduplicate, fuel, frontier, budget) = match strategy {
+                ReasoningStrategy::Forward { fuel } => {
+                    ("forward", false, fuel.as_ref(), None, None)
+                }
+                ReasoningStrategy::GenerateAndVerify { budget, .. } => {
+                    ("generate_and_verify", false, None, None, budget.as_ref())
+                }
                 ReasoningStrategy::Search {
                     order,
                     fuel,
@@ -2963,6 +2975,7 @@ fn reasoning_rows(
                     *deduplicate,
                     fuel.as_ref(),
                     frontier.as_ref(),
+                    None,
                 ),
             };
             let rule_names = rules
@@ -2981,9 +2994,14 @@ fn reasoning_rows(
                 .theorems(index)
                 .iter()
                 .filter(|theorem| {
-                    ["iterations_bounded", "frontier_bounded", "saturates"]
-                        .iter()
-                        .any(|suffix| theorem.name == format!("{name}.{suffix}"))
+                    [
+                        "iterations_bounded",
+                        "frontier_bounded",
+                        "verifications_bounded",
+                        "saturates",
+                    ]
+                    .iter()
+                    .any(|suffix| theorem.name == format!("{name}.{suffix}"))
                 })
                 .map(|theorem| qualify(&theorem.name))
                 .collect();
@@ -2991,10 +3009,11 @@ fn reasoning_rows(
                 reasoner: qualify(name),
                 strategy: kind.to_owned(),
                 deduplicate,
-                fuel: fuel.map(canonical_term).unwrap_or_default(),
+                fuel: fuel.map(canonical_term),
+                budget: budget.map(canonical_term),
                 frontier: frontier.map(canonical_term),
                 rules: rule_names,
-                ledger: ["iterations", "firings", "frontier"]
+                ledger: crate::ir::semantic::reasoning::LEDGER
                     .into_iter()
                     .map(str::to_owned)
                     .collect(),
@@ -3174,6 +3193,7 @@ pub fn analyse_module(
             }
             | SemanticDeclaration::Reasoner {
                 name: _,
+                type_parameters: _,
                 logic: _,
                 observation: _,
                 observe: _,

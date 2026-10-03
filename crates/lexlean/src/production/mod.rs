@@ -311,12 +311,16 @@ pub struct RootReport {
 pub struct ReasoningRow {
     /// The qualified Lean name of the reasoner.
     pub reasoner: String,
-    /// `forward`, `breadth_first`, or `depth_first`.
+    /// `forward`, `breadth_first`, `depth_first`, or `generate_and_verify`.
     pub strategy: String,
     /// Whether a search expands each state once.
     pub deduplicate: bool,
-    /// The canonical semantic JSON of the iteration bound.
-    pub fuel: String,
+    /// The canonical semantic JSON of the iteration bound of a rule-based
+    /// reasoner.
+    pub fuel: Option<String>,
+    /// The canonical semantic JSON of the check budget of a
+    /// generate-and-verify reasoner.
+    pub budget: Option<String>,
     /// The canonical semantic JSON of the frontier bound of a search.
     pub frontier: Option<String>,
     /// Its rules, qualified, in priority order.
@@ -404,11 +408,16 @@ impl ModuleReport {
                                 "reasoner": row.reasoner,
                                 "strategy": row.strategy,
                                 "deduplicate": row.deduplicate,
-                                "fuel": row.fuel,
                                 "rules": strings(row.rules.iter().cloned()),
                                 "ledger": strings(row.ledger.iter().cloned()),
                                 "bounds": strings(row.bounds.iter().cloned()),
                             });
+                            if let Some(fuel) = &row.fuel {
+                                item["fuel"] = serde_json::Value::String(fuel.clone());
+                            }
+                            if let Some(budget) = &row.budget {
+                                item["budget"] = serde_json::Value::String(budget.clone());
+                            }
                             if let Some(frontier) = &row.frontier {
                                 item["frontier"] = serde_json::Value::String(frontier.clone());
                             }

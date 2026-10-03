@@ -11,7 +11,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::model::{
     self, anchor, anchor_use, boolean, call, check_axioms, constructor, eq, function_ref, if_then,
@@ -54,15 +54,19 @@ fn terms_of(declaration: &SemanticDeclaration) -> Vec<&SemanticTerm> {
             answer,
             ..
         } => {
-            out.push(observe);
+            out.extend(observe.iter());
             match strategy {
                 ReasoningStrategy::Forward { fuel } => out.extend(fuel.iter()),
                 ReasoningStrategy::Search { fuel, frontier, .. } => {
                     out.extend(fuel.iter());
                     out.extend(frontier.iter());
                 }
+                ReasoningStrategy::GenerateAndVerify { generator, budget } => {
+                    out.push(generator);
+                    out.extend(budget.iter());
+                }
             }
-            out.push(&answer.value);
+            out.extend(answer.iter().map(|answer| &answer.value));
         }
         SemanticDeclaration::Structure { .. }
         | SemanticDeclaration::Class { .. }
@@ -115,7 +119,9 @@ pub(super) fn declaration_terms_mut(
             answer,
             ..
         } => {
-            super::visit_terms_mut(observe, visit);
+            if let Some(observe) = observe {
+                super::visit_terms_mut(observe, visit);
+            }
             match strategy {
                 ReasoningStrategy::Forward { fuel } => {
                     if let Some(fuel) = fuel {
@@ -130,8 +136,16 @@ pub(super) fn declaration_terms_mut(
                         super::visit_terms_mut(frontier, visit);
                     }
                 }
+                ReasoningStrategy::GenerateAndVerify { generator, budget } => {
+                    super::visit_terms_mut(generator, visit);
+                    if let Some(budget) = budget {
+                        super::visit_terms_mut(budget, visit);
+                    }
+                }
             }
-            super::visit_terms_mut(&mut answer.value, visit);
+            if let Some(answer) = answer {
+                super::visit_terms_mut(&mut answer.value, visit);
+            }
         }
         SemanticDeclaration::Structure { .. }
         | SemanticDeclaration::Class { .. }
@@ -179,12 +193,16 @@ fn types_of(declaration: &SemanticDeclaration) -> Vec<&SemanticType> {
             verifier,
             ..
         } => {
-            use_types(logic, &mut out);
+            if let Some(logic) = logic {
+                use_types(logic, &mut out);
+            }
             out.push(&observation.r#type);
             for rule in rules {
                 use_types(rule, &mut out);
             }
-            out.push(&answer.r#type);
+            if let Some(answer) = answer {
+                out.push(&answer.r#type);
+            }
             use_types(verifier, &mut out);
         }
         SemanticDeclaration::Structure { .. }
@@ -237,7 +255,9 @@ pub(super) fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut
             ..
         } => {
             visit(&observation.name);
-            visit(&answer.name);
+            if let Some(answer) = answer {
+                visit(&answer.name);
+            }
         }
         SemanticDeclaration::Structure { .. }
         | SemanticDeclaration::Class { .. }
@@ -298,21 +318,27 @@ pub(super) fn source_node_count(declaration: &SemanticDeclaration) -> u64 {
             ..
         } => count(type_parameters.len()) + 5 + u64::from(complete.is_some()),
         SemanticDeclaration::Reasoner {
+            type_parameters,
+            logic,
             rules,
             strategy,
             claims,
             ..
         } => {
-            5 + count(rules.len())
+            3 + count(type_parameters.len())
+                + 2 * u64::from(logic.is_some())
+                + count(rules.len())
                 + match strategy {
-                    ReasoningStrategy::Forward { .. } => 1,
+                    ReasoningStrategy::Forward { .. }
+                    | ReasoningStrategy::GenerateAndVerify { .. } => 1,
                     ReasoningStrategy::Search { deduplicate, .. } => 2 + u64::from(*deduplicate),
                 }
                 + claims
                     .iter()
                     .map(|claim| match claim {
                         ReasoningClaim::InitialInvariant { .. }
-                        | ReasoningClaim::Terminates { .. } => 2,
+                        | ReasoningClaim::Terminates { .. }
+                        | ReasoningClaim::AnswerCorrect { .. } => 2,
                     })
                     .sum::<u64>()
         }
@@ -362,7 +388,7 @@ pub fn declaration_construct(declaration: &SemanticDeclaration) -> Option<&'stat
 /// stated as an ordinary proposition is registered like a prior theorem of
 /// the module, so later proofs may `apply` it; one stated with the
 /// `LexLeanReasoning` helpers exists only in Lean.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GeneratedTheorem {
     /// The generated Lean declaration name, below the module.
     pub name: String,
@@ -395,7 +421,7 @@ impl GeneratedTheorem {
 
 /// A generated statement: an ordinary proposition, a fixed
 /// `LexLeanReasoning` predicate, or an implication between them.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Formula {
     /// An ordinary language-1.2 proposition.
@@ -415,7 +441,7 @@ pub enum Formula {
 }
 
 /// The fixed `LexLeanReasoning` propositions a statement may name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Helper {
     /// The reflexive-transitive closure of a relation.
@@ -452,7 +478,7 @@ impl Helper {
 
 /// The fixed `LexLeanReasoning` lemmas and constructors a proof term may
 /// apply.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Lemma {
     Guarded,
@@ -474,6 +500,8 @@ pub enum Lemma {
     StarRefl,
     StarTail,
     AllNil,
+    NoneSome,
+    ZeroLe,
 }
 
 impl Lemma {
@@ -500,12 +528,14 @@ impl Lemma {
             Self::StarRefl => "Star.refl",
             Self::StarTail => "Star.tail",
             Self::AllNil => "All.nil",
+            Self::NoneSome => "noneSome",
+            Self::ZeroLe => "zeroLe",
         }
     }
 }
 
 /// A proof term: an application of fixed lemmas, prior theorems, and terms.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProofTerm {
     /// A fixed `LexLeanReasoning` lemma applied to arguments.
@@ -548,7 +578,7 @@ pub enum ProofTerm {
 
 /// How a generated theorem is proved: a proof term, or one fixed tactic
 /// script with names substituted (§17.12, *Reasoning machines* rule 9).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Proof {
     /// A proof term.
@@ -664,10 +694,37 @@ pub enum Proof {
         verdict: MemberRef,
         explained: MemberRef,
     },
+    /// A verified candidate satisfies the specification and verifies again.
+    VerifySound {
+        verify: MemberRef,
+        sound: MemberRef,
+        type_arguments: Vec<SemanticType>,
+    },
+    /// A generate-and-verify step keeps every found candidate verified.
+    TrySound {
+        attempt: MemberRef,
+        verify_sound: MemberRef,
+    },
+    /// A generate-and-verify step checks within its budget.
+    TryCount { attempt: MemberRef },
+    /// A generate-and-verify reasoner's verdict is sound.
+    VerdictGenerate {
+        verdict: MemberRef,
+        run: MemberRef,
+        run_sound: MemberRef,
+    },
+    /// A generate-and-verify reasoner's explained answer replays and is
+    /// sound.
+    ExplainedGenerate {
+        reasoner: MemberRef,
+        run: MemberRef,
+        run_sound: MemberRef,
+        answer: MemberRef,
+    },
 }
 
 /// One arm of a `cases` over a reasoner's step type.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FireArm {
     /// The step constructor's own name.
     pub constructor: String,
@@ -708,6 +765,11 @@ impl Proof {
             Self::ExplainedSearch { .. } => "explained_search",
             Self::VerdictForward { .. } => "verdict_forward",
             Self::VerdictSearch { .. } => "verdict_search",
+            Self::VerifySound { .. } => "verify_sound",
+            Self::TrySound { .. } => "try_sound",
+            Self::TryCount { .. } => "try_count",
+            Self::VerdictGenerate { .. } => "verdict_generate",
+            Self::ExplainedGenerate { .. } => "explained_generate",
         }
     }
 }
@@ -2020,8 +2082,8 @@ fn check_verifier(
 // ---------------------------------------------------------------------------
 // Reasoners.
 
-/// The checked interface of one reasoner, from which its elaboration is
-/// generated.
+/// The checked interface of one rule-based reasoner, from which its
+/// elaboration is generated.
 struct Engine<'a> {
     name: &'a str,
     logic: LogicAt,
@@ -2043,8 +2105,101 @@ struct Engine<'a> {
     deduplicate: bool,
     initial: Option<MemberRef>,
     terminates: Option<MemberRef>,
+    /// The theorem that the answer term is correct on every state, which
+    /// erases the verifier's check.
+    answer_correct: Option<MemberRef>,
+    /// The reasoner's type parameters: every elaborated declaration and
+    /// generated theorem takes them (see [`generalize`]).
+    type_parameters: &'a [String],
     executable: bool,
     axioms: &'a [String],
+}
+
+/// The six counters of a reasoner's ledger, in field order.
+pub const LEDGER: [&str; 6] = [
+    "iterations",
+    "attempts",
+    "firings",
+    "expansions",
+    "verifications",
+    "frontier",
+];
+
+/// One value per ledger counter.
+struct Counts {
+    iterations: SemanticTerm,
+    attempts: SemanticTerm,
+    firings: SemanticTerm,
+    expansions: SemanticTerm,
+    verifications: SemanticTerm,
+    frontier: SemanticTerm,
+}
+
+impl Counts {
+    /// Every counter zero but the frontier.
+    fn zero(frontier: SemanticTerm) -> Self {
+        Self {
+            iterations: nat(0),
+            attempts: nat(0),
+            firings: nat(0),
+            expansions: nat(0),
+            verifications: nat(0),
+            frontier,
+        }
+    }
+
+    /// The counters of the ledger `ledger` holds, unchanged.
+    fn of(ledger: &SemanticTerm) -> Self {
+        let field = |name: &str| project(ledger.clone(), name);
+        Self {
+            iterations: field("iterations"),
+            attempts: field("attempts"),
+            firings: field("firings"),
+            expansions: field("expansions"),
+            verifications: field("verifications"),
+            frontier: field("frontier"),
+        }
+    }
+
+    fn fields(self) -> [SemanticTerm; 6] {
+        [
+            self.iterations,
+            self.attempts,
+            self.firings,
+            self.expansions,
+            self.verifications,
+            self.frontier,
+        ]
+    }
+}
+
+/// `value + 1`.
+fn succ(value: SemanticTerm) -> SemanticTerm {
+    add(value, nat(1))
+}
+
+/// The ledger structure every reasoner elaborates.
+fn ledger_structure(name: &str) -> SemanticDeclaration {
+    SemanticDeclaration::Structure {
+        name: format!("{name}.Ledger"),
+        type_parameters: Vec::new(),
+        parameters: Vec::new(),
+        fields: LEDGER
+            .into_iter()
+            .map(|field| SemanticField {
+                name: field.to_owned(),
+                r#type: SemanticType::Nat,
+            })
+            .collect(),
+    }
+}
+
+/// A ledger record of reasoner `name`.
+fn ledger_record(name: &str, counts: Counts) -> SemanticTerm {
+    record(
+        &format!("{name}.Ledger"),
+        LEDGER.into_iter().zip(counts.fields()).collect(),
+    )
 }
 
 impl Engine<'_> {
@@ -2117,20 +2272,8 @@ impl Engine<'_> {
         )
     }
 
-    fn ledger(
-        &self,
-        iterations: SemanticTerm,
-        firings: SemanticTerm,
-        frontier: SemanticTerm,
-    ) -> SemanticTerm {
-        record(
-            &self.own_name("Ledger"),
-            vec![
-                ("iterations", iterations),
-                ("firings", firings),
-                ("frontier", frontier),
-            ],
-        )
+    fn ledger(&self, counts: Counts) -> SemanticTerm {
+        ledger_record(self.name, counts)
     }
 
     /// `follow x n.trace = ok n.state` for a node or loop record `n`.
@@ -2166,6 +2309,56 @@ impl Engine<'_> {
             list_type(node),
         )
     }
+
+    /// The guard evaluations of a rule over the state `state`: one for a
+    /// binding-free rule, one per candidate for a binding rule.
+    fn guard_count(rule: &RuleAt, state: SemanticTerm) -> SemanticTerm {
+        match rule.binding {
+            None => nat(1),
+            Some(_) => length(call(
+                &rule.companion("candidates"),
+                &rule.type_arguments,
+                vec![state],
+            )),
+        }
+    }
+}
+
+/// The claims of a reasoner, strictly sorted by kind, each at most once.
+struct Claims {
+    initial: Option<MemberRef>,
+    terminates: Option<MemberRef>,
+    answer_correct: Option<MemberRef>,
+}
+
+fn sorted_claims(name: &str, claims: &[ReasoningClaim]) -> Result<Claims, SemanticFailure> {
+    let mut out = Claims {
+        initial: None,
+        terminates: None,
+        answer_correct: None,
+    };
+    let mut previous: Option<u8> = None;
+    for claim in claims {
+        let rank = match claim {
+            ReasoningClaim::InitialInvariant { .. } => 0,
+            ReasoningClaim::Terminates { .. } => 1,
+            ReasoningClaim::AnswerCorrect { .. } => 2,
+        };
+        if previous.is_some_and(|prior| prior >= rank) {
+            return Err(mismatch(format!(
+                "reasoner `{name}` claims are not strictly sorted by kind"
+            )));
+        }
+        previous = Some(rank);
+        match claim {
+            ReasoningClaim::InitialInvariant { theorem } => out.initial = Some(theorem.clone()),
+            ReasoningClaim::Terminates { theorem } => out.terminates = Some(theorem.clone()),
+            ReasoningClaim::AnswerCorrect { theorem } => {
+                out.answer_correct = Some(theorem.clone());
+            }
+        }
+    }
+    Ok(out)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -2175,6 +2368,7 @@ fn check_reasoner(
 ) -> Result<Lowering, SemanticFailure> {
     let SemanticDeclaration::Reasoner {
         name,
+        type_parameters,
         logic,
         observation,
         observe,
@@ -2190,16 +2384,23 @@ fn check_reasoner(
         return Ok(Lowering::default());
     };
     check_axioms(name, axioms)?;
-    let scope = BTreeSet::new();
-    let at = resolve_logic(logic, &scope, env, &format!("reasoner `{name}` logic"))?;
-    let state = at.state.clone();
-    check_signature(
+    if let ReasoningStrategy::GenerateAndVerify { generator, budget } = strategy {
+        return check_generator(declaration, generator, budget.as_ref(), env);
+    }
+    let (Some(logic), Some(observe), Some(answer)) = (logic, observe, answer) else {
+        return Err(mismatch(format!(
+            "reasoner `{name}` applies inference rules, so it names its logic, the state it observes, and its answer"
+        )));
+    };
+    let scope = check_signature(
         name,
-        &[],
+        type_parameters,
         &[&observation.name, &answer.name],
         &[&observation.r#type, &answer.r#type],
         env,
     )?;
+    let at = resolve_logic(logic, &scope, env, &format!("reasoner `{name}` logic"))?;
+    let state = at.state.clone();
     let verifier_at = resolve_verifier(verifier, &scope, env)?;
     if verifier_at.subject != observation.r#type || verifier_at.candidate != answer.r#type {
         return Err(mismatch(format!(
@@ -2281,6 +2482,9 @@ fn check_reasoner(
             }
             (fuel, Some(frontier), *order, *deduplicate)
         }
+        ReasoningStrategy::GenerateAndVerify { .. } => {
+            return Err(format!("internal: reasoner `{name}` generates and verifies").into());
+        }
     };
     // The source terms run at the boundary exactly when the reasoner does;
     // they are typed, and obligations stated over them, as linking
@@ -2327,26 +2531,11 @@ fn check_reasoner(
     typed?;
     let observed = sources[0].clone();
     let fuel = sources[2].clone();
-    // Claims: strictly sorted by kind, each at most once.
-    let mut initial = None;
-    let mut terminates = None;
-    let mut previous: Option<u8> = None;
-    for claim in claims {
-        let rank = match claim {
-            ReasoningClaim::InitialInvariant { .. } => 0,
-            ReasoningClaim::Terminates { .. } => 1,
-        };
-        if previous.is_some_and(|prior| prior >= rank) {
-            return Err(mismatch(format!(
-                "reasoner `{name}` claims are not strictly sorted by kind"
-            )));
-        }
-        previous = Some(rank);
-        match claim {
-            ReasoningClaim::InitialInvariant { theorem } => initial = Some(theorem.clone()),
-            ReasoningClaim::Terminates { theorem } => terminates = Some(theorem.clone()),
-        }
-    }
+    let Claims {
+        initial,
+        terminates,
+        answer_correct,
+    } = sorted_claims(name, claims)?;
     let x_parameter = vec![parameter(x, &observation.r#type)];
     let mut lowering = Lowering::default();
     if let Some(theorem_member) = &initial {
@@ -2359,7 +2548,7 @@ fn check_reasoner(
         let obligation = Obligation {
             role: format!("reasoner `{name}` initial invariant"),
             theorem: theorem_member.clone(),
-            type_parameters: Vec::new(),
+            type_parameters: type_parameters.clone(),
             parameters: x_parameter.clone(),
             statement: holds,
         };
@@ -2393,9 +2582,34 @@ fn check_reasoner(
         let obligation = Obligation {
             role: format!("reasoner `{name}` fuel bound"),
             theorem: theorem_member.clone(),
-            type_parameters: Vec::new(),
+            type_parameters: type_parameters.clone(),
             parameters: x_parameter.clone(),
             statement: lt(ranked, fuel.clone()),
+        };
+        require_obligation(env, &obligation, code!("LLT4010"))?;
+        lowering.obligations.push(obligation);
+    }
+    if let Some(theorem_member) = &answer_correct {
+        // Correct on every state, the answer needs no check on the states
+        // the reasoner reaches; the obligation names only prior source, so
+        // it is stated, and proved, before the reasoner.
+        let answered = sources[1].clone();
+        let mut parameters = x_parameter.clone();
+        parameters.push(parameter(&answer.name, &state));
+        parameters.push(parameter("__v", &answer.r#type));
+        let obligation = Obligation {
+            role: format!("reasoner `{name}` answer correctness"),
+            theorem: theorem_member.clone(),
+            type_parameters: type_parameters.clone(),
+            parameters,
+            statement: implies(
+                eq(answered, some_of(&answer.r#type, var("__v"))),
+                call(
+                    &verifier_at.specification,
+                    &verifier_at.type_arguments,
+                    vec![var(x), var("__v")],
+                ),
+            ),
         };
         require_obligation(env, &obligation, code!("LLT4010"))?;
         lowering.obligations.push(obligation);
@@ -2418,6 +2632,8 @@ fn check_reasoner(
         deduplicate,
         initial,
         terminates,
+        answer_correct,
+        type_parameters,
         executable: *executable,
         axioms,
     };
@@ -2427,11 +2643,712 @@ fn check_reasoner(
     } else {
         elaborate_forward(&engine, &mut lowering);
     }
-    env.reasoning.guarded.insert(
-        engine.own_name("extract"),
-        "the unverified answer of a reasoner",
-    );
+    if engine.answer_correct.is_none() {
+        env.reasoning.guarded.insert(
+            engine.own_name("extract"),
+            "the unverified answer of a reasoner",
+        );
+    }
+    generalize(name, type_parameters, &mut lowering);
     Ok(lowering)
+}
+
+/// The checked interface of one generate-and-verify reasoner.
+struct Generate<'a> {
+    name: &'a str,
+    verifier: VerifierAt,
+    x: &'a str,
+    input: SemanticType,
+    answer: SemanticType,
+    generator: SemanticTerm,
+    budget: SemanticTerm,
+    executable: bool,
+    axioms: &'a [String],
+}
+
+impl Generate<'_> {
+    fn own(&self, suffix: &str) -> MemberRef {
+        local(&format!("{}.{suffix}", self.name))
+    }
+
+    fn own_name(&self, suffix: &str) -> String {
+        format!("{}.{suffix}", self.name)
+    }
+
+    fn call_own(&self, suffix: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
+        call(&self.own(suffix), &[], arguments)
+    }
+
+    fn define(
+        &self,
+        suffix: &str,
+        parameters: Vec<SemanticParameter>,
+        result: SemanticType,
+        body: SemanticTerm,
+    ) -> SemanticDeclaration {
+        definition(
+            &self.own_name(suffix),
+            parameters,
+            result,
+            body,
+            self.executable,
+            self.axioms,
+        )
+    }
+
+    fn spec(&self, candidate: SemanticTerm) -> SemanticTerm {
+        call(
+            &self.verifier.specification,
+            &self.verifier.type_arguments,
+            vec![var(self.x), candidate],
+        )
+    }
+
+    /// `verify x v = some v /\ Spec x v`: what every accepted candidate
+    /// satisfies.
+    fn accepted(&self, candidate: SemanticTerm) -> SemanticTerm {
+        both(
+            eq(
+                self.call_own("verify", vec![var(self.x), candidate.clone()]),
+                some_of(&self.answer, candidate.clone()),
+            ),
+            self.spec(candidate),
+        )
+    }
+
+    /// `forall v, t.found = some v -> accepted v` for a trial `t`.
+    fn found_accepted(&self, trial: SemanticTerm) -> SemanticTerm {
+        forall(
+            "__v",
+            &self.answer,
+            implies(
+                eq(project(trial, "found"), some_of(&self.answer, var("__v"))),
+                self.accepted(var("__v")),
+            ),
+        )
+    }
+}
+
+/// Check a generate-and-verify reasoner: no logic, observed state, answer,
+/// rule, or claim; a generator of candidate answers over the observation;
+/// and a mandatory budget of checks.
+#[allow(clippy::too_many_lines)]
+fn check_generator(
+    declaration: &SemanticDeclaration,
+    generator: &SemanticTerm,
+    budget: Option<&SemanticTerm>,
+    env: &mut Environment<'_>,
+) -> Result<Lowering, SemanticFailure> {
+    let SemanticDeclaration::Reasoner {
+        name,
+        type_parameters,
+        logic,
+        observation,
+        observe,
+        rules,
+        answer,
+        verifier,
+        claims,
+        executable,
+        axioms,
+        ..
+    } = declaration
+    else {
+        return Ok(Lowering::default());
+    };
+    if logic.is_some() || observe.is_some() || answer.is_some() {
+        return Err(mismatch(format!(
+            "generate-and-verify reasoner `{name}` draws its answers from its generator, so it names no logic, observed state, or answer"
+        )));
+    }
+    if !rules.is_empty() {
+        return Err(mismatch(format!(
+            "generate-and-verify reasoner `{name}` applies no inference rule; its verifier checks every candidate its generator proposes"
+        )));
+    }
+    if !claims.is_empty() {
+        return Err(mismatch(format!(
+            "generate-and-verify reasoner `{name}` makes no claim: an answer is used only once its verifier accepts it"
+        )));
+    }
+    let scope = check_signature(
+        name,
+        type_parameters,
+        &[&observation.name],
+        &[&observation.r#type],
+        env,
+    )?;
+    let verifier_at = resolve_verifier(verifier, &scope, env)?;
+    if verifier_at.subject != observation.r#type {
+        return Err(mismatch(format!(
+            "reasoner `{name}` observes {}, but verifier `{}` checks a {} subject",
+            observation.r#type,
+            member_key(&verifier.member),
+            verifier_at.subject
+        )));
+    }
+    let Some(budget) = budget else {
+        return Err(unbounded(format!(
+            "reasoner `{name}` declares no budget; a generate-and-verify reasoner checks at most an explicit natural-number budget of candidates"
+        )));
+    };
+    check_source_binders(declaration)?;
+    let x = observation.name.as_str();
+    let input_locals = [(x, &observation.r#type)];
+    let answer_type = verifier_at.candidate.clone();
+    let mut sources = vec![generator.clone(), budget.clone()];
+    lower_source(name, sources.iter_mut().collect(), *executable, &scope, env)?;
+    env.derived = true;
+    let typed = (|| {
+        require_term(
+            &sources[0],
+            &input_locals,
+            &scope,
+            &list_type(answer_type.clone()),
+            env,
+            &format!("reasoner `{name}` generator"),
+            mismatch,
+        )?;
+        require_term(
+            &sources[1],
+            &input_locals,
+            &scope,
+            &SemanticType::Nat,
+            env,
+            &format!("reasoner `{name}` budget"),
+            unbounded,
+        )
+    })();
+    env.derived = false;
+    typed?;
+    let engine = Generate {
+        name,
+        verifier: verifier_at,
+        x,
+        input: observation.r#type.clone(),
+        answer: answer_type,
+        generator: sources[0].clone(),
+        budget: sources[1].clone(),
+        executable: *executable,
+        axioms,
+    };
+    let mut lowering = Lowering::default();
+    elaborate_generate(&engine, &mut lowering);
+    generalize(name, type_parameters, &mut lowering);
+    Ok(lowering)
+}
+
+/// A generate-and-verify reasoner: check the generator's candidates in
+/// order, at most the budget of them, and answer the first the verifier
+/// accepts. Its trace names the accepted candidate, and replaying it checks
+/// that candidate again.
+#[allow(clippy::too_many_lines)]
+fn elaborate_generate(engine: &Generate<'_>, lowering: &mut Lowering) {
+    let x = engine.x;
+    let r = engine.answer.clone();
+    let step = named(&engine.own_name("Step"));
+    let trial = named(&engine.own_name("Trial"));
+    let ledger = named(&engine.own_name("Ledger"));
+    lowering.declarations.push(SemanticDeclaration::Inductive {
+        name: engine.own_name("Step"),
+        type_parameters: Vec::new(),
+        parameters: Vec::new(),
+        constructors: vec![SemanticConstructor {
+            name: "candidate".to_owned(),
+            fields: vec![r.clone()],
+        }],
+        mutual: None,
+    });
+    lowering.declarations.push(ledger_structure(engine.name));
+    lowering.declarations.push(engine.define(
+        "candidates",
+        vec![parameter(x, &engine.input)],
+        list_type(r.clone()),
+        engine.generator.clone(),
+    ));
+    lowering.declarations.push(engine.define(
+        "verify",
+        vec![parameter(x, &engine.input), parameter("__c", &r)],
+        option_type(r.clone()),
+        if_then(
+            call(
+                &engine.verifier.check,
+                &engine.verifier.type_arguments,
+                vec![var(x), var("__c")],
+            ),
+            some_of(&r, var("__c")),
+            none_of(&r),
+        ),
+    ));
+    lowering.declarations.push(SemanticDeclaration::Structure {
+        name: engine.own_name("Trial"),
+        type_parameters: Vec::new(),
+        parameters: Vec::new(),
+        fields: vec![
+            SemanticField {
+                name: "found".to_owned(),
+                r#type: option_type(r.clone()),
+            },
+            SemanticField {
+                name: "truncated".to_owned(),
+                r#type: SemanticType::Bool,
+            },
+            SemanticField {
+                name: "ledger".to_owned(),
+                r#type: ledger.clone(),
+            },
+        ],
+    });
+    let trial_record = |found: SemanticTerm, truncated: SemanticTerm, counts: SemanticTerm| {
+        record(
+            &engine.own_name("Trial"),
+            vec![
+                ("found", found),
+                ("truncated", truncated),
+                ("ledger", counts),
+            ],
+        )
+    };
+    let current = var("__t");
+    let current_ledger = project(current.clone(), "ledger");
+    let unchanged = Counts::of(&current_ledger);
+    let checked = Counts {
+        iterations: succ(unchanged.iterations.clone()),
+        attempts: succ(unchanged.attempts.clone()),
+        verifications: succ(unchanged.verifications.clone()),
+        ..Counts::of(&current_ledger)
+    };
+    lowering.declarations.push(engine.define(
+        "try",
+        vec![
+            parameter(x, &engine.input),
+            parameter("__t", &trial),
+            parameter("__c", &r),
+        ],
+        trial.clone(),
+        matching(
+            project(current.clone(), "found"),
+            vec![
+                ("Option.some", vec!["__hit"], current.clone()),
+                (
+                    "Option.none",
+                    vec![],
+                    matching(
+                        blt(
+                            project(current_ledger.clone(), "verifications"),
+                            engine.budget.clone(),
+                        ),
+                        vec![
+                            (
+                                "Bool.true",
+                                vec![],
+                                trial_record(
+                                    engine.call_own("verify", vec![var(x), var("__c")]),
+                                    project(current.clone(), "truncated"),
+                                    ledger_record(engine.name, checked),
+                                ),
+                            ),
+                            (
+                                "Bool.false",
+                                vec![],
+                                trial_record(none_of(&r), boolean(true), current_ledger),
+                            ),
+                        ],
+                    ),
+                ),
+            ],
+        ),
+    ));
+    let start = trial_record(
+        none_of(&r),
+        boolean(false),
+        ledger_record(engine.name, Counts::zero(nat(0))),
+    );
+    let tried = lambda(
+        vec![("__t", trial.clone()), ("__c", r.clone())],
+        engine.call_own("try", vec![var(x), var("__t"), var("__c")]),
+    );
+    let candidates = engine.call_own("candidates", vec![var(x)]);
+    lowering.declarations.push(engine.define(
+        "run",
+        vec![parameter(x, &engine.input)],
+        trial.clone(),
+        list_fold(
+            tried.clone(),
+            start.clone(),
+            candidates.clone(),
+            trial.clone(),
+        ),
+    ));
+    // No candidate was accepted: the budget cut the candidates short
+    // (`exhausted`), the generator proposed none (`unsolved`), or the
+    // verifier refused every one (`rejected`).
+    lowering.declarations.push(engine.define(
+        "failure",
+        vec![parameter("__t", &trial)],
+        SemanticType::ReasoningFailure,
+        matching(
+            project(current.clone(), "truncated"),
+            vec![
+                ("Bool.true", vec![], failure_value("exhausted")),
+                (
+                    "Bool.false",
+                    vec![],
+                    matching(
+                        SemanticTerm::Beq {
+                            left: Box::new(project(
+                                project(current.clone(), "ledger"),
+                                "verifications",
+                            )),
+                            right: Box::new(nat(0)),
+                        },
+                        vec![
+                            ("Bool.true", vec![], failure_value("unsolved")),
+                            ("Bool.false", vec![], failure_value("rejected")),
+                        ],
+                    ),
+                ),
+            ],
+        ),
+    ));
+    let ran = engine.call_own("run", vec![var(x)]);
+    let final_trial = var("__final");
+    let failed =
+        |ok: &SemanticType| error_of(ok, engine.call_own("failure", vec![final_trial.clone()]));
+    lowering.declarations.push(engine.define(
+        "verdict",
+        vec![parameter(x, &engine.input)],
+        result_of(r.clone()),
+        let_in(
+            "__final",
+            trial.clone(),
+            ran.clone(),
+            matching(
+                project(final_trial.clone(), "found"),
+                vec![
+                    ("Option.some", vec!["__v"], ok_of(&r, var("__v"))),
+                    ("Option.none", vec![], failed(&r)),
+                ],
+            ),
+        ),
+    ));
+    let explained = product(r.clone(), list_type(step.clone()));
+    let candidate_step = |value: SemanticTerm| {
+        constructor(
+            &format!("{}.Step.candidate", engine.name),
+            Vec::new(),
+            vec![value],
+        )
+    };
+    lowering.declarations.push(definition(
+        engine.name,
+        vec![parameter(x, &engine.input)],
+        result_of(explained.clone()),
+        let_in(
+            "__final",
+            trial.clone(),
+            ran.clone(),
+            matching(
+                project(final_trial.clone(), "found"),
+                vec![
+                    (
+                        "Option.some",
+                        vec!["__v"],
+                        ok_of(
+                            &explained,
+                            pair(var("__v"), single(&step, candidate_step(var("__v")))),
+                        ),
+                    ),
+                    ("Option.none", vec![], failed(&explained)),
+                ],
+            ),
+        ),
+        engine.executable,
+        engine.axioms,
+    ));
+    lowering.declarations.push(engine.define(
+        "answer",
+        vec![
+            parameter(x, &engine.input),
+            parameter("__trace", &list_type(step.clone())),
+        ],
+        option_type(r.clone()),
+        matching(
+            var("__trace"),
+            vec![
+                ("List.nil", vec![], none_of(&r)),
+                (
+                    "List.cons",
+                    vec!["__step", "__rest"],
+                    matching(
+                        var("__rest"),
+                        vec![
+                            (
+                                "List.nil",
+                                vec![],
+                                matching(
+                                    var("__step"),
+                                    vec![(
+                                        &*format!("{}.Step.candidate", engine.name),
+                                        vec!["__c"],
+                                        engine.call_own("verify", vec![var(x), var("__c")]),
+                                    )],
+                                ),
+                            ),
+                            ("List.cons", vec!["__next", "__more"], none_of(&r)),
+                        ],
+                    ),
+                ),
+            ],
+        ),
+    ));
+    // Generated theorems.
+    let x_only = vec![parameter(x, &engine.input)];
+    lowering.theorems.push(theorem(
+        &engine.own_name("verify_sound"),
+        &[],
+        vec![
+            parameter(x, &engine.input),
+            parameter("__c", &r),
+            parameter("__v", &r),
+        ],
+        term(implies(
+            eq(
+                engine.call_own("verify", vec![var(x), var("__c")]),
+                some_of(&r, var("__v")),
+            ),
+            engine.accepted(var("__v")),
+        )),
+        Proof::VerifySound {
+            verify: engine.own("verify"),
+            sound: engine.verifier.sound.clone(),
+            type_arguments: engine.verifier.type_arguments.clone(),
+        },
+    ));
+    let tried_trial = engine.call_own("try", vec![var(x), var("__t"), var("__c")]);
+    let trial_parameters = vec![
+        parameter(x, &engine.input),
+        parameter("__t", &trial),
+        parameter("__c", &r),
+    ];
+    lowering.theorems.push(theorem(
+        &engine.own_name("try_sound"),
+        &[],
+        trial_parameters.clone(),
+        term(implies(
+            engine.found_accepted(var("__t")),
+            engine.found_accepted(tried_trial.clone()),
+        )),
+        Proof::TrySound {
+            attempt: engine.own("try"),
+            verify_sound: engine.own("verify_sound"),
+        },
+    ));
+    let checks = |value: SemanticTerm| project(project(value, "ledger"), "verifications");
+    lowering.theorems.push(theorem(
+        &engine.own_name("try_count"),
+        &[],
+        trial_parameters,
+        term(implies(
+            le(checks(var("__t")), engine.budget.clone()),
+            le(checks(tried_trial), engine.budget.clone()),
+        )),
+        Proof::TryCount {
+            attempt: engine.own("try"),
+        },
+    ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("run_sound"),
+        &[],
+        x_only.clone(),
+        term(engine.found_accepted(ran.clone())),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::FoldInvariant,
+                vec![
+                    given(tried.clone()),
+                    predicate("__t", &trial, term(engine.found_accepted(var("__t")))),
+                    cite(&engine.own("try_sound"), &[], vec![given(var(x))]),
+                    given(candidates.clone()),
+                    given(start.clone()),
+                    assume(
+                        &["llV", "llE"],
+                        lemma(Lemma::NoneSome, vec![ProofTerm::Infer, hypothesis("llE")]),
+                    ),
+                ],
+            ),
+        ),
+    ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("verifications_bounded"),
+        &[],
+        x_only.clone(),
+        term(le(checks(ran.clone()), engine.budget.clone())),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::FoldInvariant,
+                vec![
+                    given(tried),
+                    predicate(
+                        "__t",
+                        &trial,
+                        term(le(checks(var("__t")), engine.budget.clone())),
+                    ),
+                    cite(&engine.own("try_count"), &[], vec![given(var(x))]),
+                    given(candidates),
+                    given(start),
+                    lemma(Lemma::ZeroLe, vec![ProofTerm::Infer]),
+                ],
+            ),
+        ),
+    ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("verdict_sound"),
+        &[],
+        x_only.clone(),
+        term(forall(
+            "__v",
+            &r,
+            implies(
+                eq(
+                    engine.call_own("verdict", vec![var(x)]),
+                    ok_of(&r, var("__v")),
+                ),
+                engine.spec(var("__v")),
+            ),
+        )),
+        Proof::VerdictGenerate {
+            verdict: engine.own("verdict"),
+            run: engine.own("run"),
+            run_sound: engine.own("run_sound"),
+        },
+    ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("explained"),
+        &[],
+        x_only,
+        term(forall(
+            "__v",
+            &r,
+            forall(
+                "__trace",
+                &list_type(step),
+                implies(
+                    eq(
+                        call(&local(engine.name), &[], vec![var(x)]),
+                        ok_of(&explained, pair(var("__v"), var("__trace"))),
+                    ),
+                    both(
+                        eq(
+                            engine.call_own("answer", vec![var(x), var("__trace")]),
+                            some_of(&r, var("__v")),
+                        ),
+                        engine.spec(var("__v")),
+                    ),
+                ),
+            ),
+        )),
+        Proof::ExplainedGenerate {
+            reasoner: local(engine.name),
+            run: engine.own("run"),
+            run_sound: engine.own("run_sound"),
+            answer: engine.own("answer"),
+        },
+    ));
+}
+
+/// Make the elaboration of a generic reasoner generic: every elaborated
+/// declaration and generated theorem takes the reasoner's type parameters,
+/// and every reference to one of them, as a call, a function value, a
+/// constructor, a record, a named type, or a cited theorem, passes them on.
+/// The elaboration is built at no type arguments and rewritten here, once,
+/// so no template can forget one.
+fn generalize(name: &str, type_parameters: &[String], lowering: &mut Lowering) {
+    fn rewrite(
+        value: &mut serde_json::Value,
+        own: &BTreeSet<String>,
+        arguments: &serde_json::Value,
+    ) {
+        match value {
+            serde_json::Value::Array(items) => {
+                items
+                    .iter_mut()
+                    .for_each(|item| rewrite(item, own, arguments));
+            }
+            serde_json::Value::Object(object) => {
+                let is_own = |key: &str, object: &serde_json::Map<String, serde_json::Value>| {
+                    object.get(key).is_some_and(|member| {
+                        member.get("module").is_none()
+                            && member
+                                .get("name")
+                                .and_then(serde_json::Value::as_str)
+                                .is_some_and(|name| own.contains(name))
+                    })
+                };
+                let target = match object.get("kind").and_then(serde_json::Value::as_str) {
+                    Some("call" | "function_ref") if is_own("function", object) => {
+                        Some("type_arguments")
+                    }
+                    Some("constructor") if is_own("constructor", object) => Some("type_arguments"),
+                    Some("record") if is_own("type", object) => Some("type_arguments"),
+                    Some("theorem") if is_own("theorem", object) => Some("type_arguments"),
+                    Some("named") if is_own("member", object) => Some("arguments"),
+                    _ => None,
+                };
+                object
+                    .values_mut()
+                    .for_each(|child| rewrite(child, own, arguments));
+                if let Some(target) = target {
+                    object.insert(target.to_owned(), arguments.clone());
+                }
+            }
+            serde_json::Value::Null
+            | serde_json::Value::Bool(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::String(_) => {}
+        }
+    }
+    if type_parameters.is_empty() {
+        return;
+    }
+    let mut own = BTreeSet::from([name.to_owned()]);
+    for declaration in &lowering.declarations {
+        own.insert(declaration.name().to_owned());
+        if let SemanticDeclaration::Inductive {
+            name: inductive,
+            constructors,
+            ..
+        } = declaration
+        {
+            for constructor in constructors {
+                own.insert(format!("{inductive}.{}", constructor.name));
+            }
+        }
+    }
+    own.extend(
+        lowering
+            .theorems
+            .iter()
+            .map(|generated| generated.name.clone()),
+    );
+    let arguments =
+        serde_json::to_value(parameter_types(type_parameters)).expect("types serialize");
+    let parameters = serde_json::to_value(type_parameters).expect("names serialize");
+    for declaration in &mut lowering.declarations {
+        let mut value = serde_json::to_value(&*declaration).expect("a declaration serializes");
+        rewrite(&mut value, &own, &arguments);
+        value["type_parameters"] = parameters.clone();
+        *declaration =
+            serde_json::from_value(value).expect("a generalized declaration deserializes");
+    }
+    for generated in &mut lowering.theorems {
+        let mut value = serde_json::to_value(&*generated).expect("a theorem serializes");
+        rewrite(&mut value, &own, &arguments);
+        value["type_parameters"] = parameters.clone();
+        *generated = serde_json::from_value(value).expect("a generalized theorem deserializes");
+    }
 }
 
 /// The declarations and theorems every reasoner elaborates to: its step
@@ -2456,18 +3373,7 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
             .collect(),
         mutual: None,
     });
-    lowering.declarations.push(SemanticDeclaration::Structure {
-        name: engine.own_name("Ledger"),
-        type_parameters: Vec::new(),
-        parameters: Vec::new(),
-        fields: ["iterations", "firings", "frontier"]
-            .into_iter()
-            .map(|field| SemanticField {
-                name: field.to_owned(),
-                r#type: SemanticType::Nat,
-            })
-            .collect(),
-    });
+    lowering.declarations.push(ledger_structure(engine.name));
     lowering.declarations.push(engine.define(
         "observe",
         vec![parameter(x, &engine.input)],
@@ -2555,11 +3461,12 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
         option_type(r.clone()),
         engine.extract.clone(),
     ));
-    lowering.declarations.push(engine.define(
-        "accept",
-        vec![parameter(x, &engine.input), parameter("__s", &s)],
-        option_type(r.clone()),
-        matching(
+    // The accepted answer: the extracted answer the verifier's check
+    // accepts, or, when the answer is proved correct on every state, the
+    // extracted answer itself, with the check erased.
+    let checked = match &engine.answer_correct {
+        Some(_) => engine.call_own("extract", vec![var("__s")]),
+        None => matching(
             engine.call_own("extract", vec![var("__s")]),
             vec![
                 ("Option.none", vec![], none_of(&r)),
@@ -2578,6 +3485,12 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
                 ),
             ],
         ),
+    };
+    lowering.declarations.push(engine.define(
+        "accept",
+        vec![parameter(x, &engine.input), parameter("__s", &s)],
+        option_type(r.clone()),
+        checked,
     ));
     lowering.declarations.push(engine.define(
         "answer",
@@ -2742,7 +3655,14 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
         let (statement, proof) = match &engine.initial {
             Some(initial) => (
                 implies(followed, conclusion),
-                assume(&["llE"], preserved(cite(initial, &[], vec![given(var(x))]))),
+                assume(
+                    &["llE"],
+                    preserved(cite(
+                        initial,
+                        &parameter_types(engine.type_parameters),
+                        vec![given(var(x))],
+                    )),
+                ),
             ),
             None => (
                 implies(holds_start, implies(followed, conclusion)),
@@ -2777,10 +3697,25 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
             ),
             engine.spec(var("__v")),
         )),
-        Proof::AcceptSound {
-            accept: engine.own("accept"),
-            sound: engine.verifier.sound.clone(),
-            type_arguments: engine.verifier.type_arguments.clone(),
+        match &engine.answer_correct {
+            Some(correct) => by_term(assume(
+                &["llE"],
+                cite(
+                    correct,
+                    &parameter_types(engine.type_parameters),
+                    vec![
+                        given(var(x)),
+                        given(var("__s")),
+                        given(var("__v")),
+                        hypothesis("llE"),
+                    ],
+                ),
+            )),
+            None => Proof::AcceptSound {
+                accept: engine.own("accept"),
+                sound: engine.verifier.sound.clone(),
+                type_arguments: engine.verifier.type_arguments.clone(),
+            },
         },
     ));
 }
@@ -2862,6 +3797,66 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         option_step.clone(),
         select,
     ));
+    // E.attempts: the guard evaluations `select` makes on a state, in the
+    // same order, so the ledger accounts every rule tried, not only every
+    // rule fired.
+    let mut attempts = nat(0);
+    for rule in engine.rules.iter().rev() {
+        attempts = match &rule.binding {
+            None => if_then(
+                call(
+                    &rule.companion("guard"),
+                    &rule.type_arguments,
+                    vec![var("__s")],
+                ),
+                nat(1),
+                succ(attempts),
+            ),
+            Some((_, binding)) => {
+                let tried = product(SemanticType::Bool, SemanticType::Nat);
+                let acc = var("__acc");
+                let_in(
+                    "__tried",
+                    tried.clone(),
+                    list_fold(
+                        lambda(
+                            vec![("__acc", tried.clone()), ("__b", binding.clone())],
+                            if_then(
+                                model::first(acc.clone()),
+                                acc.clone(),
+                                pair(
+                                    call(
+                                        &rule.companion("guard"),
+                                        &rule.type_arguments,
+                                        vec![var("__s"), var("__b")],
+                                    ),
+                                    succ(model::second(acc)),
+                                ),
+                            ),
+                        ),
+                        pair(boolean(false), nat(0)),
+                        call(
+                            &rule.companion("candidates"),
+                            &rule.type_arguments,
+                            vec![var("__s")],
+                        ),
+                        tried,
+                    ),
+                    if_then(
+                        model::first(var("__tried")),
+                        model::second(var("__tried")),
+                        add(model::second(var("__tried")), attempts),
+                    ),
+                )
+            }
+        };
+    }
+    lowering.declarations.push(engine.define(
+        "attempts",
+        vec![parameter("__s", &s)],
+        SemanticType::Nat,
+        attempts,
+    ));
     lowering.declarations.push(engine.define(
         "next",
         vec![parameter("__s", &s)],
@@ -2920,7 +3915,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             vec![
                 ("state", observed.clone()),
                 ("trace", nil(&step)),
-                ("ledger", engine.ledger(nat(0), nat(0), nat(0))),
+                ("ledger", engine.ledger(Counts::zero(nat(0)))),
             ],
         ),
     ));
@@ -2963,11 +3958,21 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                                             ),
                                             (
                                                 "ledger",
-                                                engine.ledger(
-                                                    add(counter("iterations"), nat(1)),
-                                                    add(counter("firings"), nat(1)),
-                                                    counter("frontier"),
-                                                ),
+                                                engine.ledger(Counts {
+                                                    iterations: succ(counter("iterations")),
+                                                    attempts: add(
+                                                        counter("attempts"),
+                                                        engine.call_own(
+                                                            "attempts",
+                                                            vec![project(current.clone(), "state")],
+                                                        ),
+                                                    ),
+                                                    firings: succ(counter("firings")),
+                                                    ..Counts::of(&project(
+                                                        current.clone(),
+                                                        "ledger",
+                                                    ))
+                                                }),
                                             ),
                                         ],
                                     ),
@@ -2988,6 +3993,45 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             engine.fuel.clone(),
             engine.call_own("start", vec![var(x)]),
             &run,
+        ),
+    ));
+    // E.account: the run's ledger with the actions after its last step:
+    // the scan that found no rule applicable, and the one check of the
+    // saturated state's answer.
+    let final_ledger = project(model::first(var("__final")), "ledger");
+    lowering.declarations.push(engine.define(
+        "account",
+        vec![parameter(x, &engine.input)],
+        ledger.clone(),
+        let_in(
+            "__final",
+            product(run.clone(), SemanticType::Bool),
+            engine.call_own("run", vec![var(x)]),
+            matching(
+                model::second(var("__final")),
+                vec![
+                    (
+                        "Bool.true",
+                        vec![],
+                        engine.ledger(Counts {
+                            attempts: add(
+                                project(final_ledger.clone(), "attempts"),
+                                engine.call_own(
+                                    "attempts",
+                                    vec![project(model::first(var("__final")), "state")],
+                                ),
+                            ),
+                            verifications: if engine.answer_correct.is_some() {
+                                project(final_ledger.clone(), "verifications")
+                            } else {
+                                succ(project(final_ledger.clone(), "verifications"))
+                            },
+                            ..Counts::of(&final_ledger)
+                        }),
+                    ),
+                    ("Bool.false", vec![], final_ledger.clone()),
+                ],
+            ),
         ),
     ));
     // A forward reasoner answers only from a saturated state, so its answer
@@ -3013,7 +4057,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                                 vec!["__v"],
                                 error_of(&r, failure_value("rejected")),
                             ),
-                            ("Option.none", vec![], error_of(&r, failure_value("unsolved"))),
+                            (
+                                "Option.none",
+                                vec![],
+                                error_of(&r, failure_value("unsolved")),
+                            ),
                         ],
                     ),
                 ),
@@ -3037,7 +4085,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         vec![],
                         engine.call_own("conclude", vec![var(x), model::first(var("__final"))]),
                     ),
-                    ("Bool.false", vec![], error_of(&r, failure_value("exhausted"))),
+                    (
+                        "Bool.false",
+                        vec![],
+                        error_of(&r, failure_value("exhausted")),
+                    ),
                 ],
             ),
         ),
@@ -3359,7 +4411,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         let (statement, proof) = match &engine.initial {
             Some(initial) => (
                 holds_final,
-                preserved(cite(initial, &[], vec![given(var(x))])),
+                preserved(cite(
+                    initial,
+                    &parameter_types(engine.type_parameters),
+                    vec![given(var(x))],
+                )),
             ),
             None => (
                 implies(holds_start, holds_final),
@@ -3388,7 +4444,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         hypothesis("llH"),
                     ],
                 ),
-                cite(initial, &[], vec![given(var(x))]),
+                cite(
+                    initial,
+                    &parameter_types(engine.type_parameters),
+                    vec![given(var(x))],
+                ),
             ),
             _ => (
                 predicate("__s", &s, Formula::True),
@@ -3436,7 +4496,11 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         given(engine.fuel.clone()),
                         given(observed.clone()),
                         initial,
-                        cite(terminates, &[], vec![given(var(x))]),
+                        cite(
+                            terminates,
+                            &parameter_types(engine.type_parameters),
+                            vec![given(var(x))],
+                        ),
                     ],
                 ),
             ),
@@ -3802,10 +4866,31 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                 }),
                 none_of(&hit),
                 blt(frontier_bound.clone(), nat(1)),
-                engine.ledger(nat(0), nat(0), length(var("__first"))),
+                engine.ledger(Counts::zero(length(var("__first")))),
             ),
         ),
     ));
+    // E.attempts: every guard evaluation expanding a node makes, one per
+    // binding-free rule and one per candidate of a binding rule.
+    let mut attempts = nat(0);
+    for rule in engine.rules.iter().rev() {
+        attempts = add(Engine::guard_count(rule, var("__s")), attempts);
+    }
+    lowering.declarations.push(engine.define(
+        "attempts",
+        vec![parameter("__s", &s)],
+        SemanticType::Nat,
+        attempts,
+    ));
+    // Each popped node's answer is checked once, unless the answer is
+    // proved correct and the check erased.
+    let checked_once = |count: SemanticTerm| {
+        if engine.answer_correct.is_some() {
+            count
+        } else {
+            succ(count)
+        }
+    };
     let current = var("__r");
     let counter = |field: &str| project(project(current.clone(), "ledger"), field);
     let fresh_nodes = if engine.deduplicate {
@@ -3858,15 +4943,24 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                                     length(var("__ordered")),
                                 )),
                             },
-                            engine.ledger(
-                                add(counter("iterations"), nat(1)),
-                                add(counter("firings"), length(var("__successors"))),
-                                if_then(
+                            engine.ledger(Counts {
+                                iterations: succ(counter("iterations")),
+                                attempts: add(
+                                    counter("attempts"),
+                                    engine.call_own(
+                                        "attempts",
+                                        vec![project(var("__node"), "state")],
+                                    ),
+                                ),
+                                firings: add(counter("firings"), length(var("__successors"))),
+                                expansions: succ(counter("expansions")),
+                                verifications: checked_once(counter("verifications")),
+                                frontier: if_then(
                                     blt(counter("frontier"), length(var("__next"))),
                                     length(var("__next")),
                                     counter("frontier"),
                                 ),
-                            ),
+                            }),
                         ),
                     ),
                 ),
@@ -3880,11 +4974,11 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
             .then(|| project(current.clone(), "visited")),
         some_of(&hit, pair(var("__v"), var("__node"))),
         project(current.clone(), "truncated"),
-        engine.ledger(
-            add(counter("iterations"), nat(1)),
-            counter("firings"),
-            counter("frontier"),
-        ),
+        engine.ledger(Counts {
+            iterations: succ(counter("iterations")),
+            verifications: checked_once(counter("verifications")),
+            ..Counts::of(&project(current.clone(), "ledger"))
+        }),
     );
     lowering.declarations.push(engine.define(
         "searchStep",

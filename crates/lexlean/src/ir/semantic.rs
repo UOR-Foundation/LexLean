@@ -1027,6 +1027,16 @@ pub enum ReasoningStrategy {
         #[serde(default, skip_serializing_if = "core::ops::Not::not")]
         deduplicate: bool,
     },
+    /// Draw candidate answers from a generator, in order, and return the
+    /// first one the verifier's check accepts, checking at most the budget.
+    /// The candidates carry no evidence: this is the strategy whose
+    /// generator may be anything, a model's output among them, because
+    /// nothing it proposes is used unverified.
+    GenerateAndVerify {
+        generator: SemanticTerm,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        budget: Option<SemanticTerm>,
+    },
 }
 
 /// Language 1.2 (reasoning): the closed reasoner claims, each discharged by
@@ -1040,6 +1050,11 @@ pub enum ReasoningClaim {
     /// The ranking of the observed state is below the fuel, so a forward
     /// reasoner whose every rule decreases the ranking saturates.
     Terminates { theorem: MemberRef },
+    /// The answer term is correct on every state: whatever it extracts meets
+    /// the verifier's specification, so the verifier's check is erased and
+    /// the unverified answer may be used (the reasoning analogue of an
+    /// evidence claim discharging a model's runtime check).
+    AnswerCorrect { theorem: MemberRef },
 }
 
 /// A closed declaration.
@@ -1254,12 +1269,19 @@ pub enum SemanticDeclaration {
     /// answer its verifier accepts, with the trace that derives it.
     Reasoner {
         name: String,
-        logic: ModelUse,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        /// The logic, observed state, and answer of a rule-based reasoner;
+        /// a generate-and-verify reasoner states none of them.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        logic: Option<ModelUse>,
         observation: ModelBinder,
-        observe: SemanticTerm,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        observe: Option<SemanticTerm>,
         rules: Vec<ModelUse>,
         strategy: ReasoningStrategy,
-        answer: ReasoningAnswer,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        answer: Option<ReasoningAnswer>,
         verifier: ModelUse,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         claims: Vec<ReasoningClaim>,
@@ -2914,8 +2936,10 @@ fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut impl FnMut
         }
         | SemanticDeclaration::Verifier {
             type_parameters, ..
+        }
+        | SemanticDeclaration::Reasoner {
+            type_parameters, ..
         } => (type_parameters, &[]),
-        SemanticDeclaration::Reasoner { .. } => (&[], &[]),
     };
     model::declaration_binders(declaration, visit);
     reasoning::declaration_binders(declaration, visit);
