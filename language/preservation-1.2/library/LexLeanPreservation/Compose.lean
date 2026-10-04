@@ -107,4 +107,49 @@ theorem wt_encExcept {ε α : Type} {ee : ε → Value} {ea : α → Value} {s t
   | .error e => by simp only [encExcept, WT]; exact he e
 end wt
 
+/-! The arguments a Rust caller can pass: a natural number is a `u64` and an
+integer an `i64`, wherever it occurs in the argument. Certificate E quantifies
+over these only. -/
+
+mutual
+def Representable : Value → Prop
+  | .nat n => n < 18446744073709551616
+  | .int i => -9223372036854775808 ≤ i ∧ i ≤ 9223372036854775807
+  | .some v => Representable v
+  | .ok v => Representable v
+  | .error v => Representable v
+  | .list vs => RepresentableL vs
+  | .pair a b => Representable a ∧ Representable b
+  | .adt _ vs => RepresentableL vs
+  | .closure _ vs => RepresentableL vs
+  | _ => True
+def RepresentableL : List Value → Prop
+  | [] => True
+  | v :: vs => Representable v ∧ RepresentableL vs
+end
+
+theorem repL_nil : RepresentableL [] := trivial
+theorem repL_cons {v : Value} {vs : List Value} (hv : Representable v) (hs : RepresentableL vs) :
+    RepresentableL (v :: vs) := ⟨hv, hs⟩
+
+/-- The machine aborts only in an item that cannot fail: an item whose Rust
+function returns `R<T>` reports an overflow as `Err(Overflow)`. The suite
+checks that the only item of the table that can overflow while infallible is
+a length (SPEC.md §17.17). -/
+theorem runItem_abort_infallible (profile : LexLeanTarget.RustSyntax.Profile)
+    (item : LexLeanTarget.RustSyntax.Item) (values : List Value)
+    (h : RustSemantics.runItem profile item values = .abort) :
+    RustSemantics.itemFallible item = false := by
+  cases hf : RustSemantics.itemFallible item
+  · rfl
+  · exfalso
+    unfold RustSemantics.runItem at h
+    simp only [hf, if_true] at h
+    repeat split at h
+    all_goals (first | contradiction | simp at h | skip)
+    all_goals
+      generalize TargetSemantics.primitive (RustSemantics.itemPrimitive item)
+        (RustSemantics.itemOperands item values) = r at h
+      cases r <;> simp at h
+
 end LexLeanPreservation.Rust

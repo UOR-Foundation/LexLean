@@ -4019,9 +4019,26 @@ primitive contributes exactly the range check its calculus result makes
 (below 2^64 for a natural, within `Int64` for an integer), a call conjoins
 its arguments' predicates with its callee's, a conditional conjoins its
 condition's with the chosen branch's, and a collection operation contributes
-its template's. The arguments are unbounded; boundary widths belong to the
-Rust step. The module also defines `denote`, the theorem's observation as a
-function of the arguments.
+its template's. Certificate A's arguments are unbounded: it speaks of every
+natural number and integer, including those no Rust caller can pass; the
+representable arguments are certificate E's domain. The module also defines
+`denote`, the theorem's observation as a function of the arguments.
+
+**Limits.** A lowered program grows with the size of the types a generic
+definition is instantiated at: a definition `g_k<T> = g_{k+1}<(T, T)>` chained
+16 deep has a type of 2^16 nodes, and the certificates repeat every type
+node in the program literal, the encoders, the crate term, and the
+statements. The lowering therefore charges every type node and every
+expression node to `max_ir_nodes` as it builds them, and, once the program
+is built, refuses a root whose certificates are estimated (400 bytes per
+node and 8 KiB) to exceed `max_file_bytes`; each generated certificate is
+checked against `max_file_bytes` again before it is staged. A refusal is
+`LLS8002` and happens before the toolchain is touched and before any
+certificate is generated. The estimate is never below the largest
+certificate A, B, or E of any root of the examples (`conformance_sp_02`).
+Types are not shared between the generated declarations, so the certificates
+of a program grow with the tree size of its types, and the limits bound it;
+the chain above verifies 10 deep and is refused from 11.
 
 **Proof.** The proof follows the source term construct by construct through
 the library's compatibility lemmas. A recursive definition's relation is
@@ -4039,9 +4056,8 @@ program enters the proof only as the literal the kernel evaluates.
 
 **Boundary.** §17.12 states that a map is its strictly ascending entry list
 and a set its strictly ascending element list, an invariant the Lean type
-`List` does not carry: every operation preserves it and the proofs of the
-operations rely on it, but a caller of a rendered root can hand over any
-list. The lowering therefore appends, for a root with a parameter whose type
+`List` does not carry: a caller of a rendered root can hand over any list.
+The lowering therefore appends, for a root with a parameter whose type
 can hold a map, set, or graph (a graph is a map from node to set), one
 *validator* per closed type that carries the invariant, and an *entry*:
 
@@ -4064,11 +4080,28 @@ can hold a map, set, or graph (a graph is a map from node to set), one
   invoke function 0.
 - a validator is referenced only by the entry and by validators; no function
   of the closure references one, and the entry references only validators
-  and the root. Inside the program the invariants hold by construction, as
-  the operations' proofs establish; a validator there would turn a
-  proof-only invariant into a runtime check, as would one for termination
-  evidence. `production::lower::audit_boundary` checks this of every lowered
-  program, and a violation is `LLI9001`.
+  and the root. A validator is the guard of the boundary: it restricts the
+  entry to the values the source treats as maps, sets, and graphs, linked to
+  the proposition of §17.12 by the theorems below. Certificates A, B, and E
+  hold for every list, whatever its order: the templates transcribe Lean's
+  functions exactly and nothing in a certificate uses the invariant, so none
+  assumes it, and none claims the closure's operations preserve it. That each
+  operation maps strictly ascending lists to strictly ascending lists, so
+  that a validated input stays valid inside the program and no validator is
+  called there, is §17.12 item 2's differential evidence (`SM-28`, `SM-30`),
+  `build` level; a validator inside the program would be a runtime check of
+  what that evidence says holds, as one for termination evidence would be of
+  what a proof establishes. `production::lower::audit_boundary` checks that
+  no validator is referenced from the closure, and a violation is `LLI9001`.
+- the entry validates exactly the parameters whose types carry the
+  invariant, each by the validator of its own type, and each validator
+  checks exactly the components of its type that carry it. The certificate
+  generator decides which from the source types of the root's parameters, by
+  its own recursion and not from the lowering's layout, and refuses with
+  `LLI9001`, before any theorem is written, a lowering whose entry or
+  validators differ: a parameter whose check is omitted, a validator that
+  checks nothing for a type that carries the invariant, a component whose
+  check is dropped. `accepts`, below, is built from that judgement.
 
 Certificate A states, for the root's module, each validator's definition
 `__valid_k`, the proposition `__inv_k` of §17.12 it decides (built from the
@@ -4093,6 +4126,154 @@ theorem entry_refuses (h : ¬ accepts x₁ … xₙ) :
 where `e` is the entry's index, so the entry's outcome is the root's
 observation as `some` exactly when §17.12's invariants hold and `none`
 exactly when they do not.
+
+**Statement vocabulary.** What the certificates state is written in
+definitions of the library that are hand-written, not generated by the
+compiler, because they are the statement the library's proofs are about: the
+observations of a program and their convergence, the value typing the
+rendering relies on, how a rendering realizes an observation, the simulation
+statement `FunSem`, the correspondence `Corr` with its side conditions, and
+the arguments certificate E quantifies over. The machine they relate
+(`RustSyntax`, `RustSemantics`) is generated. A theorem is trusted only as
+far as these definitions are read, so the specification quotes them below, and
+`cargo xtask validate-spec-links` requires each quoted declaration to equal,
+byte for byte, a declaration of the library file its block names; a
+definition changed on one side only fails the gate.
+
+```lean-library
+-- LexLeanPreservation/Core.lean
+inductive Obs where
+  | value (v : Value)
+  | overflow
+  | stuck
+
+def Rel (fits : Bool) (v : Value) : Obs := cond fits (.value v) .overflow
+def RelL (fits : Bool) (vs : List Value) : ObsL := cond fits (.values vs) .overflow
+
+def Conv (p : Program) (env : List (Nat × Value)) (e : Expr) (o : Obs) : Prop :=
+  ∃ n, obs (eval n p env e) = some o
+def ConvL (p : Program) (env : List (Nat × Value)) (es : List Expr) (o : ObsL) : Prop :=
+  ∃ n, obsL (evalList n p env es) = some o
+def ConvA (p : Program) (env : List (Nat × Value)) (v : Value) (arms : List Arm) (o : Obs) : Prop :=
+  ∃ n, obs (evalArms n p env v arms) = some o
+def FunRel (p : Program) (f : Nat) (args : List Value) (o : Obs) : Prop :=
+  ∃ fn : Function, LexLeanRuntime.index p.functions f = some fn ∧
+    ∃ env, bindAll fn.parameters args [] = some env ∧ Conv p env fn.body o
+def RunConv (p : Program) (entry : Nat) (args : List Value) (o : Obs) : Prop :=
+  ∃ n, obs (run n p entry args) = some o
+```
+
+```lean-library
+-- LexLeanPreservation/RustBase.lean
+mutual
+/-- Value typing: what the correspondence knows of a value of a type. -/
+def WT (p : Program) (c : RCrate) (A : Flags) : Value → Ty → Prop
+  | .unit, .unit => True
+  | .none, .option _ => True
+  | .some v, .option t => WT p c A v t
+  | .ok v, .result a _ => WT p c A v a
+  | .error v, .result _ b => WT p c A v b
+  | .list vs, .list t => WTAll p c A vs t
+  | .pair a b, .pair s t => WT p c A a s ∧ WT p c A b t
+  | .adt k fs, .adt i => ∃ tys, adtFields p i k = some tys ∧ WTL p c A fs tys
+  | .closure f cs, .fn ps r => ∃ fn capTys af, p.functions[f]? = some fn ∧
+      fn.types = capTys ++ ps ∧ fn.result = r ∧ WTL p c A cs capTys ∧
+      flagOf A ps r = some af ∧
+      ∃ ff, RustSemantics.findDispatch c.items f cs.length = some (af, ff) ∧
+        fnFallible c f = some ff ∧ (!ff || af) = true
+  | v, .fixed w => RustSemantics.hasWidth w v = true
+  | .string _, .string => True
+  | .bytes _, .bytes => True
+  | _, t => inert t = true
+def WTAll (p : Program) (c : RCrate) (A : Flags) : List Value → Ty → Prop
+  | [], _ => True
+  | v :: vs, t => WT p c A v t ∧ WTAll p c A vs t
+def WTL (p : Program) (c : RCrate) (A : Flags) : List Value → List Ty → Prop
+  | [], [] => True
+  | v :: vs, t :: ts => WT p c A v t ∧ WTL p c A vs ts
+  | _, _ => False
+end
+```
+
+```lean-library
+-- LexLeanPreservation/RustCorr.lean
+/-- How the rendering realizes an observation in value position: the same
+value; an overflow raised, in a scope that may fail, or the machine's
+abort. -/
+def Realizes (fl : Bool) : Obs → ROut → Prop
+  | .value v, .value w => w = v
+  | .overflow, .raise => fl = true
+  | .overflow, .abort => True
+  | _, _ => False
+
+/-- A function's result: its value, or, for a fallible one, `Ok` of it and
+`Err(Overflow)` for an overflow. -/
+def RealizesFn (fallible : Bool) : Obs → ROut → Prop
+  | .value v, .value w => w = cond fallible (.ok v) v
+  | .overflow, .value w => fallible = true ∧ w = .error .unit
+  | .overflow, .abort => True
+  | _, _ => False
+
+/-- A function of the program, called at fuel `n`, is simulated by its
+rendering. -/
+def FunSem (n : Nat) (f : Nat) : Prop :=
+  ∀ (fn : TargetSyntax.Function) args env F,
+    TargetSemantics.LexLeanRuntime.index p.functions f = some fn → WTL p c A args fn.types →
+    TargetSemantics.bindAll fn.parameters args [] = some env → fnFallible c f = some F →
+    ∀ o, obs (TargetSemantics.eval n p env fn.body) = some o → o ≠ .stuck →
+      (∀ v, o = .value v → WT p c A v fn.result) ∧
+      ∃ ro, RealizesFn F o ro ∧ RCI c (fnIdent f) args ro
+end
+```
+
+```lean-library
+-- LexLeanPreservation/Compose.lean
+mutual
+def Representable : Value → Prop
+  | .nat n => n < 18446744073709551616
+  | .int i => -9223372036854775808 ≤ i ∧ i ≤ 9223372036854775807
+  | .some v => Representable v
+  | .ok v => Representable v
+  | .error v => Representable v
+  | .list vs => RepresentableL vs
+  | .pair a b => Representable a ∧ Representable b
+  | .adt _ vs => RepresentableL vs
+  | .closure _ vs => RepresentableL vs
+  | _ => True
+def RepresentableL : List Value → Prop
+  | [] => True
+  | v :: vs => Representable v ∧ RepresentableL vs
+end
+
+/-- The machine aborts only in an item that cannot fail: an item whose Rust
+function returns `R<T>` reports an overflow as `Err(Overflow)`. The suite
+checks that the only item of the table that can overflow while infallible is
+a length (SPEC.md §17.17). -/
+theorem runItem_abort_infallible (profile : LexLeanTarget.RustSyntax.Profile)
+    (item : LexLeanTarget.RustSyntax.Item) (values : List Value)
+    (h : RustSemantics.runItem profile item values = .abort) :
+    RustSemantics.itemFallible item = false := by
+  cases hf : RustSemantics.itemFallible item
+  · rfl
+  · exfalso
+    unfold RustSemantics.runItem at h
+    simp only [hf, if_true] at h
+    repeat split at h
+    all_goals (first | contradiction | simp at h | skip)
+    all_goals
+      generalize TargetSemantics.primitive (RustSemantics.itemPrimitive item)
+        (RustSemantics.itemOperands item values) = r at h
+      cases r <;> simp at h
+```
+
+`Realizes` allows the machine's *abort* as the realization of an overflow:
+the outcome of an item that cannot fail, at the one overflow no machine can
+avoid. `runItem_abort_infallible` proves the machine aborts only in an item
+whose Rust function does not return `R<T>`, and the conformance suite
+checks that every item of the primitive differential that cannot fail,
+except a length, never overflows on its boundary values and seeded inputs
+(`conformance_sp_07`), so an abort is not a way to realize an overflow of an
+item that reports it.
 
 **Library.** `language/preservation-1.2/library/LexLeanPreservation/` holds
 the hand-written proof library (`Core`, `Values`, `Primitives`, `Fixed`,
@@ -4126,21 +4307,44 @@ every root theorem's must be exactly `Classical.choice`, `Quot.sound`, and
 named-root extraction (§22.1 stage 12): it renders each root's program in
 each of its targets, derives certificate B, composes certificate E, stages the shipped environment,
 compiles each module and certificate silently with the pinned Lean, replays
-each certificate through `leanchecker`, and audits the axioms. A shipped
+each certificate through `leanchecker`, and audits the axioms. Every root is
+lowered, and its size charged to the limits (**Limits**), before the
+toolchain is touched. A shipped
 module that fails its token audit or does not compile silently, or a library
 declaration whose axioms differ from its registry row, is `LLV7014`; a
 certificate A that does not compile silently, fails its replay, or whose
 root theorem's axioms are not exactly the three above is `LLV7013`; a
 rendering the aligner derives no correspondence for, or a certificate B that
 fails any of the same checks, is `LLV7015`; a certificate E that fails
-them is `LLV7016`. It publishes each certificate
-under `preserve/`, the audit output, process records, and
+them is `LLV7016`. Each of the three names the module, the declaration of the
+certificate Lean's first error lies in (the relation `__rel_k` of a function,
+the derivation `fun<k>` of one, the composition `root`), the root, and the
+first error with the lines that say what it concerns, bounded to twelve lines
+and 1500 bytes. These are class `language`, exit 1, as `LLV7002` is: the
+pinned Lean rejected a module LexLean generated from the user's program, and
+verification fails closed with nothing published; that the defect lies in the
+lowering or generator rather than the user's source is a reading of the
+message, which the declaration and root locate, not a different class, and an
+inconsistency inside LexLean's own code is `LLI9001`. A pinned Lean that
+exhausts its heartbeat or recursion budget or its memory while checking a
+certificate, or is killed with no message, is `LLS8002`, not `LLV7013` and not
+`LLV7014`: the generated module is beyond what the machine checks. It
+publishes each certificate
+under `preserve/`, the audit output, process records, the lowered program of
+each root (`preserve/program/R<i>.json`) and the rendered crate of each
+target (`preserve/crate/R<i>.<target>.rs`), and
 `preserve/preservation.json` (`lexlean/preservation/1`,
 `schemas/preservation.schema.json`): the registry's SHA-256, the root
 theorem axioms, and per root its targets, certificate module, theorem, and
 the certificate's byte length and SHA-256, and per target its certificate
-B's module, theorem, byte length, and SHA-256 and its certificate E's
-module, theorem, byte length, and SHA-256, which the attestation binds.
+B's module, theorem, byte length, and SHA-256, its certificate E's module,
+theorem, byte length, and SHA-256, and the byte length and SHA-256 of its
+crate, and per root those of its program, which the attestation binds.
+Certificate B is about that crate and E about the root's rendering in it. The
+export wrappers, the package files, the text printer, and `rustc` are outside
+E; the rustc differential measures them (`SP-11`), and the package of a root
+with an entry exports the entry only, so a caller cannot reach the
+unvalidated root.
 
 **Rust machine.** The meaning of a rendered crate (§17.16) is declared by two
 generated LexLean modules of the `compiler` project, verified and shipped
@@ -4230,7 +4434,7 @@ statement, the module `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or
 `.Compose.RustStd`, which imports both and proves
 
 ```lean
-theorem root (x₁ … xₙ) :
+theorem root (x₁ … xₙ) (hrep : RepresentableL [enc x₁, …, enc xₙ]) :
     ∃ ro, RealizesFn F (denote x₁ … xₙ) ro ∧
       RCI krate (fnIdent 0) [enc x₁, …, enc xₙ] ro
 ```
@@ -4245,7 +4449,7 @@ root with a boundary entry, the function invoked is the entry and the
 theorem is
 
 ```lean
-theorem root (x₁ … xₙ) :
+theorem root (x₁ … xₙ) (hrep : RepresentableL [enc x₁, …, enc xₙ]) :
     ∃ ro, RCI krate (fnIdent e) [enc x₁, …, enc xₙ] ro ∧
       (accepts x₁ … xₙ → RealizesFn F (someObs (denote x₁ … xₙ)) ro) ∧
       (¬ accepts x₁ … xₙ → RealizesFn F (Obs.value Value.none) ro)
@@ -4253,7 +4457,14 @@ theorem root (x₁ … xₙ) :
 
 so the rendered entry realizes the encoded source result as `some` for
 arguments that satisfy §17.12's invariants and refuses every other with
-`none`. The
+`none`. `RepresentableL` restricts the theorem to the arguments a Rust caller
+can pass: a natural number is a `u64` and an integer an `i64`, wherever it
+occurs in an argument (the proof does not use it; the statement is the
+smaller). The machine has no stack and no heap bound: a call that exhausts
+the stack or fails to allocate aborts the process in Rust, the theorem says
+nothing of it (§17.16 gives no stack-depth guarantee), and the only abort the
+machine itself models is the overflow of an item that cannot fail, the length
+of a sequence of 2^64 or more elements. The
 proof is the library's `compose` applied to the two theorems and to a
 generated proof that every encoded argument is well typed for the root's
 parameters, `WT (enc x) t`, written construct by construct over the
@@ -4279,31 +4490,60 @@ number, and whose boundary validators are one mutual group.
 Mutations. It plants defects after lowering, while the proof is still
 derived from the source, in the lowered program: branches swapped, an
 addition that subtracts, a checked operation bounded as another, a wrong
-constructor, a slice's bounds exchanged, a wrong callee, a wrong literal, an
-entry that omits its first validator, and a validator that admits an equal
-key; and Lean must reject each at the relation of the function it changed
-(`__rel_k` for a definition or instance `k`, `__vrel_k` for a validator,
-`entry` for the entry). It plants defects after rendering, in each crate,
-while the program is unchanged, as above and as an entry that omits its first
-validator: the aligner finds no derivation or Lean rejects the one it writes,
-and Lean rejects the unmutated derivation restated over the mutated crate;
-the width change is also refused by the renderer's correspondence check
-(§17.16). A defect in either leaves certificate E unbuildable, since it
-imports both; it also plants, in certificate E's own statement, the other
-result shape and another function, and Lean rejects both. Planting a
-validator's call inside the program, a validator that reaches the program,
-and validators with no entry are each refused by the boundary audit.
+constructor, a slice's bounds exchanged, a wrong callee, a wrong literal; and
+in the boundary, an entry that omits the check of a validated parameter, a
+validator that omits the check of a component of its type, and a validator
+that admits an equal key. Each of the first seven is planted at the first, a
+middle, and the last place it applies in the roots of the coverage example,
+and each of the three of the boundary at every place it applies, so that every
+validated parameter and every component check is planted in turn. Lean must
+reject each, and the first error must lie in the relation of the function the
+mutation changed (`__rel_k` for a definition, instance, or lambda `k`,
+`__vrel_k` for a validator, `entry` for the entry; for a member of a library
+template, whose relation the certificate states where it is instantiated, the
+relation of a caller). It plants defects after rendering, in each crate,
+while the program is unchanged: the same kinds, and an entry that omits the
+check of a validated parameter, at the first, a middle, and the last place
+each applies across the renderings of the renderer fixtures and of the entries
+of the coverage roots (every validated parameter for the last); the aligner
+must refuse the crate naming the mutated function, or Lean's first error on
+the realigned derivation and on the unmutated derivation restated over the
+mutated crate must lie in the derivation `fun<k>` of that function; the
+width change is also refused by the renderer's correspondence check (§17.16).
+A defect in A or B leaves certificate E unbuildable, since it imports both; it
+also plants, in certificate E's own statement, at every place, the other
+result shape of each `RealizesFn` and another function for each `fnIdent`,
+and Lean's first error must lie in the composition `root`. A lowering that does
+not validate a parameter, or lowers a validator that checks nothing, is
+planted in the lowered program and the certificate generator must refuse it
+(**Boundary**); a call of a validator from the root, a validator that reaches
+the program, and validators with no entry are each refused by the boundary
+audit.
 
-Differentials. On seeded inputs to every root, and to its entry on valid
-inputs and on inputs that break an invariant, the calculus interpreter's
-outcome must equal the certificate's `denote` or `denoteEntry` evaluated by
-Lean and the declared machine's outcome on the root's crate. Every
+Differentials. On seeded inputs to every root, on inputs with larger numbers
+and longer sequences, on inputs at the top and the bottom of every scalar type
+and with each parameter in turn at the top, on a search over inputs whose
+scalars are each small or at a bound, and, through its entry, on valid inputs
+and on inputs that break the invariant of each validated parameter in turn,
+the calculus interpreter's outcome must equal the certificate's `denote` or
+`denoteEntry` evaluated by Lean and the declared machine's outcome on the
+root's crate. Every root whose closure declares an overflow is run on an input
+on which it overflows, so the overflow arm of each statement is exercised on
+the interpreter, Lean, the machine, and rustc, except the roots listed in
+`conformance_sp_03`, whose declared overflow no input reaches (the registry's
+effect rows over-approximate; the list is checked both ways). Every
 certified root is also rendered in each target as a package, built under the
-pinned Rust toolchain, and run on the same inputs through its root and its
-entry; each printed outcome must equal the interpreter's. That rustc agrees
-with the machine the certificates are about is `build` evidence, never a
-premise of a proof. The theorems are proofs about the roots they name; the
-generator and the suite are `build` evidence for any root not certified.
+pinned Rust toolchain, and run on the same inputs through its root, or through
+its entry alone when it has one; each printed outcome must equal the
+interpreter's. That rustc agrees with the machine the certificates are about
+is `build` evidence, never a premise of a proof. That every
+production-eligible construct is lowered and certified is evidenced by the
+three example corpora and the exhaustiveness audits (§17.13), not proved of
+every program; the model constructs `declaration.model` and `checked_apply`
+reach the lowering only through their elaboration into ordinary declarations,
+and are an explicit internal error otherwise. The theorems are proofs about
+the roots they name; the generator and the suite are `build` evidence for any
+root not certified.
 
 ## 18. Lean backend
 
@@ -5108,6 +5348,8 @@ extract/<extraction-module>.lean           # when a production root exists
 extract/process.json                       # when a production root exists
 production/compiler-input.json             # when a production root exists
 preserve/LexLeanPreserve/*/*.lean          # when a production root exists
+preserve/program/R<i>.json                 # when a production root exists
+preserve/crate/R<i>.<target>.rs            # when a production root exists
 preserve/audit.txt                         # when a production root exists
 preserve/preservation.json                 # when a production root exists
 process/preserve/*.json                    # when a production root exists
@@ -6698,7 +6940,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
 | `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
-| `SP-04` | `preservation` | Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
+| `SP-04` | `preservation` | Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication. | §17.17, §22.8, §22.9 |
 | `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |

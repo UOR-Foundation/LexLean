@@ -37,6 +37,7 @@ use super::RootReport;
 use crate::calculus::library::{validators, Template};
 use crate::calculus::{Adt, Arm, Expr, Function, IntKind, Prim, Program, Shape, Ty, Value};
 use crate::code;
+use crate::config::Limits;
 use crate::diagnostic::Diagnostic;
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticDeclaration, SemanticEdge,
@@ -229,7 +230,16 @@ struct Lowerer<'a> {
     lambdas: BTreeMap<u64, u64>,
     /// Boundary validators by the type they check.
     validators: BTreeMap<String, u64>,
+    /// The nodes of the lowered program charged so far, and the limit
+    /// (`max_ir_nodes`) they are charged against.
+    spent: u64,
+    budget: u64,
+    /// The functions whose bodies have been charged.
+    charged: BTreeSet<usize>,
 }
+
+/// Marks a failure that is a resource limit, not a defect.
+const LIMIT: &str = "limit: ";
 
 /// Lower one eligible root. A failure is a compiler defect: eligibility
 /// already admitted every construct the closure reaches.
@@ -237,12 +247,16 @@ struct Lowerer<'a> {
 /// # Errors
 ///
 /// Returns `LLI9001` naming the construct that could not be lowered, or a
-/// disagreement between the lowered closure and the eligibility report.
+/// disagreement between the lowered closure and the eligibility report; and
+/// `LLS8002` when the lowered program, which grows with the size of the types
+/// a generic definition is instantiated at, exceeds `max_ir_nodes`, or when
+/// the certificates it implies would exceed `max_file_bytes`.
 pub fn lower_root(
     modules: &BTreeMap<String, LinkedModule<'_>>,
     module: &str,
     name: &str,
     report: &RootReport,
+    limits: &Limits,
 ) -> Result<Lowered, Diagnostic> {
     let mut lowerer = Lowerer {
         source: Source { modules },
@@ -256,14 +270,26 @@ pub fn lower_root(
         queue: VecDeque::new(),
         lambdas: BTreeMap::new(),
         validators: BTreeMap::new(),
+        spent: 0,
+        budget: limits.max_ir_nodes,
+        charged: BTreeSet::new(),
     };
-    let root = lowerer.definition(module, name, &[]).map_err(internal)?;
+    let describe = |reason: String| match reason.strip_prefix(LIMIT) {
+        Some(limit) => {
+            Diagnostic::new(code!("LLS8002"), format!("root `{}`: {limit}", report.root))
+        }
+        None => internal(reason),
+    };
+    let root = lowerer.definition(module, name, &[]).map_err(describe)?;
     if root != 0 {
         return Err(internal("the root is not function 0"));
     }
     loop {
         match lowerer.queue.pop_front() {
-            Some(pending) => lowerer.pending(pending).map_err(internal)?,
+            Some(pending) => {
+                lowerer.pending(pending).map_err(describe)?;
+                lowerer.charge_functions().map_err(describe)?;
+            }
             None => break,
         }
     }
@@ -319,7 +345,8 @@ pub fn lower_root(
     }
     // The boundary follows the closure, so the root stays function 0 and
     // the closure's functions keep their indices.
-    lowerer.entry(module, name).map_err(internal)?;
+    lowerer.entry(module, name).map_err(describe)?;
+    lowerer.charge_functions().map_err(describe)?;
     let functions = lowerer
         .functions
         .into_iter()
@@ -355,11 +382,139 @@ pub fn lower_root(
         },
     };
     audit_boundary(&lowered).map_err(internal)?;
+    // The certificates are generated as text from the program; refuse before
+    // generating them when they would not fit the largest file the project
+    // allows, rather than let the generator and the pinned Lean discover it.
+    let estimate = certificate_estimate(program_nodes(&lowered.program));
+    if estimate > limits.max_file_bytes {
+        return Err(Diagnostic::new(
+            code!("LLS8002"),
+            format!(
+                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, its certificates are estimated at {estimate} bytes ({} program nodes)",
+                report.root,
+                limits.max_file_bytes,
+                program_nodes(&lowered.program)
+            ),
+        ));
+    }
     Ok(lowered)
 }
 
+/// The bytes a program node costs the certificates, measured on every
+/// certified root and rounded up (SP-02 requires the estimate to be at least
+/// the size of every certificate A, B, and E generated).
+pub const CERTIFICATE_BYTES_PER_NODE: u64 = 400;
+
+/// What a certificate costs besides its nodes: its imports, its encoders,
+/// and the statement of its root.
+pub const CERTIFICATE_BASE_BYTES: u64 = 8192;
+
+/// The bytes the certificates of a program with `nodes` nodes are estimated
+/// to take, the largest of them.
+#[must_use]
+pub fn certificate_estimate(nodes: u64) -> u64 {
+    nodes
+        .saturating_mul(CERTIFICATE_BYTES_PER_NODE)
+        .saturating_add(CERTIFICATE_BASE_BYTES)
+}
+
+fn type_nodes(ty: &Ty) -> u64 {
+    1 + match ty {
+        Ty::Unit
+        | Ty::Bool
+        | Ty::Nat
+        | Ty::Int
+        | Ty::String
+        | Ty::Bytes
+        | Ty::Ordering
+        | Ty::Fixed { width: _ }
+        | Ty::Adt { index: _ } => 0,
+        Ty::Option { value: inner } | Ty::List { element: inner } => type_nodes(inner),
+        Ty::Result {
+            ok: left,
+            error: right,
+        }
+        | Ty::Pair { left, right } => type_nodes(left) + type_nodes(right),
+        Ty::Fn { parameters, result } => {
+            parameters.iter().map(type_nodes).sum::<u64>() + type_nodes(result)
+        }
+    }
+}
+
+fn expr_nodes(expr: &Expr) -> u64 {
+    1 + match expr {
+        Expr::Value { ty, value: _ } => type_nodes(ty),
+        Expr::Var { name: _ } => 0,
+        Expr::Let {
+            name: _,
+            ty,
+            bound,
+            body,
+        } => type_nodes(ty) + expr_nodes(bound) + expr_nodes(body),
+        Expr::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => expr_nodes(condition) + expr_nodes(then_branch) + expr_nodes(else_branch),
+        Expr::Match {
+            ty,
+            scrutinee,
+            arms,
+        } => {
+            type_nodes(ty)
+                + expr_nodes(scrutinee)
+                + arms
+                    .iter()
+                    .map(|arm| 1 + expr_nodes(&arm.body))
+                    .sum::<u64>()
+        }
+        Expr::Build {
+            shape: _,
+            ty,
+            operands,
+        } => type_nodes(ty) + operands.iter().map(expr_nodes).sum::<u64>(),
+        Expr::Call {
+            function: _,
+            operands,
+        }
+        | Expr::Prim {
+            operation: _,
+            operands,
+        } => operands.iter().map(expr_nodes).sum(),
+        Expr::Closure {
+            function: _,
+            captures,
+        } => captures.iter().map(expr_nodes).sum(),
+        Expr::Apply { target, operands } => {
+            expr_nodes(target) + operands.iter().map(expr_nodes).sum::<u64>()
+        }
+        Expr::First { value } | Expr::Second { value } | Expr::Field { value, index: _ } => {
+            expr_nodes(value)
+        }
+    }
+}
+
+fn function_nodes(function: &Function) -> u64 {
+    function.types.iter().map(type_nodes).sum::<u64>()
+        + type_nodes(&function.result)
+        + expr_nodes(&function.body)
+}
+
+/// The size of a program: the nodes of every type and expression in it,
+/// which the certificates, the crate terms, and the encoders all repeat.
+#[must_use]
+pub fn program_nodes(program: &Program) -> u64 {
+    program.functions.iter().map(function_nodes).sum::<u64>()
+        + program
+            .adts
+            .iter()
+            .flat_map(|adt| adt.constructors.iter().flatten())
+            .map(type_nodes)
+            .sum::<u64>()
+}
+
 /// The functions an expression calls or closes over, in evaluation order.
-fn referenced(expr: &Expr, out: &mut Vec<u64>) {
+pub fn referenced(expr: &Expr, out: &mut Vec<u64>) {
     match expr {
         Expr::Value { ty: _, value: _ } | Expr::Var { name: _ } => {}
         Expr::Let {
@@ -933,6 +1088,34 @@ pub(crate) fn template_of(
 }
 
 impl Lowerer<'_> {
+    /// Charge `nodes` to `max_ir_nodes`.
+    fn charge(&mut self, nodes: u64) -> Result<(), String> {
+        self.spent = self.spent.saturating_add(nodes);
+        if self.spent > self.budget {
+            return Err(format!(
+                "{LIMIT}max_ir_nodes exceeded in phase lowering: configured {}, observed at least {} nodes of the lowered program",
+                self.budget, self.spent
+            ));
+        }
+        Ok(())
+    }
+
+    /// Charge the body of every function lowered since the last charge.
+    fn charge_functions(&mut self) -> Result<(), String> {
+        for index in 0..self.functions.len() {
+            if self.charged.contains(&index) {
+                continue;
+            }
+            let nodes = match &self.functions[index] {
+                Some(function) => function_nodes(function),
+                None => continue,
+            };
+            self.charged.insert(index);
+            self.charge(nodes)?;
+        }
+        Ok(())
+    }
+
     /// Reserve the next function index.
     fn reserve(&mut self, origin: Origin) -> u64 {
         self.functions.push(None);
@@ -1318,6 +1501,7 @@ impl Lowerer<'_> {
 
     /// The target type of a closed source type.
     fn ty(&mut self, ty: &SemanticType) -> Result<Ty, String> {
+        self.charge(1)?;
         Ok(match ty {
             SemanticType::Nat => Ty::Nat,
             SemanticType::Bool => Ty::Bool,

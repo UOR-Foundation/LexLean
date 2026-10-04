@@ -60,12 +60,13 @@ pub fn certificates(project: &P) -> Vec<Certified> {
     let checked = support::checked_project(project);
     let modules = linked_modules(&checked);
     let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+    let limits = support::limits(project);
     roots(&checked)
         .expect("the eligibility reports")
         .iter()
         .enumerate()
         .map(|(index, root)| {
-            let lowered = lower_root(&modules, &root.module, &root.name, root.report)
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
                 .unwrap_or_else(|diagnostic| {
                     panic!("{}: lowering failed: {diagnostic:?}", root.report.root)
                 });
@@ -386,34 +387,47 @@ impl CompositionMutation {
     /// Every mutation.
     pub const ALL: [Self; 2] = [Self::Fallibility, Self::Function];
 
-    /// `text` with this defect planted, or `None` when it does not apply.
+    /// The places of `text` this defect applies to: each statement of a
+    /// result shape, each function the entry is claimed to be.
+    fn marks(self, text: &str) -> Vec<usize> {
+        let mark = match self {
+            Self::Fallibility => "Rust.RealizesFn ",
+            Self::Function => "Rust.fnIdent ",
+        };
+        text.match_indices(mark)
+            .map(|(at, found)| at + found.len())
+            .collect()
+    }
+
+    /// How many places `text` has for this defect.
     #[must_use]
-    pub fn plant(self, text: &str) -> Option<String> {
-        match self {
+    pub fn places(self, text: &str) -> usize {
+        self.marks(text).len()
+    }
+
+    /// `text` with this defect planted at its `nth` place, or `None` when it
+    /// has none.
+    #[must_use]
+    pub fn plant(self, text: &str, nth: usize) -> Option<String> {
+        let at = *self.marks(text).get(nth)?;
+        Some(match self {
             Self::Fallibility => {
-                let (from, to) = if text.contains("Rust.RealizesFn true ") {
-                    ("Rust.RealizesFn true ", "Rust.RealizesFn false ")
+                let (word, other) = if text[at..].starts_with("true ") {
+                    ("true", "false")
                 } else {
-                    ("Rust.RealizesFn false ", "Rust.RealizesFn true ")
+                    ("false", "true")
                 };
-                text.contains(from).then(|| text.replacen(from, to, 1))
+                format!("{}{}{}", &text[..at], other, &text[at + word.len()..])
             }
             Self::Function => {
-                const MARK: &str = "Rust.fnIdent ";
-                let at = text.find(MARK)? + MARK.len();
                 let digits: String = text[at..]
                     .chars()
                     .take_while(char::is_ascii_digit)
                     .collect();
                 let index: u64 = digits.parse().ok()?;
-                Some(format!(
-                    "{}{}{}",
-                    &text[..at],
-                    index + 1,
-                    &text[at + digits.len()..]
-                ))
+                format!("{}{}{}", &text[..at], index + 1, &text[at + digits.len()..])
             }
-        }
+        })
     }
 }
 
@@ -426,6 +440,10 @@ pub struct ComposedPlant {
     pub target: String,
     /// The defect.
     pub mutation: CompositionMutation,
+    /// The place of the defect within the statement.
+    pub nth: usize,
+    /// The declaration the first error lies in; `root` is the composition.
+    pub declaration: Option<String>,
     /// Whether the pinned Lean accepted the planted module.
     pub accepted: bool,
     /// The pinned Lean's output.
@@ -526,28 +544,37 @@ fn plant_composed(certified: &[Certified], root: &Path) -> Vec<ComposedPlant> {
             continue;
         };
         for mutation in CompositionMutation::ALL {
-            let text = mutation
-                .plant(&composed.text)
-                .unwrap_or_else(|| panic!("{mutation:?} applies to `{}`", composed.module));
-            jobs.push((entry.root.clone(), target.clone(), mutation, text));
+            let places = mutation.places(&composed.text);
+            assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
+            for nth in 0..places {
+                let text = mutation
+                    .plant(&composed.text, nth)
+                    .expect("the place was counted");
+                jobs.push((entry.root.clone(), target.clone(), mutation, nth, text));
+            }
         }
     }
     let directory = root.join("src/LexLeanPreserve/Planted");
     std::fs::create_dir_all(&directory).expect("mkdir");
-    parallel(&jobs, |(root_name, target, mutation, text)| {
+    parallel(&jobs, |(root_name, target, mutation, nth, text)| {
         let index = jobs
             .iter()
-            .position(|job| job.0 == *root_name && job.1 == *target && job.2 == *mutation)
+            .position(|job| {
+                job.0 == *root_name && job.1 == *target && job.2 == *mutation && job.3 == *nth
+            })
             .expect("the job");
         let path = directory.join(format!("E{index}.lean"));
         std::fs::write(&path, text).expect("write");
         let output = lean(root, &[path.display().to_string()]);
+        let output_text = joined(&output);
         ComposedPlant {
             root: root_name.clone(),
             target: target.clone(),
             mutation: *mutation,
+            nth: *nth,
+            declaration: failing_declaration(text, &output_text),
             accepted: output.status.success(),
-            output: joined(&output),
+            output: output_text,
         }
     })
 }
@@ -579,11 +606,14 @@ pub enum Mutation {
     Overflow,
     /// The first slice takes its bounds in the other order.
     Buffer,
-    /// The entry calls the root without its first validator's check
+    /// The entry calls the root without one validated parameter's check
     /// (§17.17): an invariant is no longer checked at the boundary.
     Validation,
-    /// The last order-checking validator admits an equal successor: a map
-    /// with a repeated key, or a set with a repeated element, passes.
+    /// A validator omits the check of one component of its type: the
+    /// elements of a list, the values of a map, a field of a document.
+    Clause,
+    /// An order-checking validator admits an equal successor: a map with a
+    /// repeated key, or a set with a repeated element, passes.
     Weakening,
 }
 
@@ -600,7 +630,7 @@ impl Mutation {
     ];
 
     /// The mutations of the boundary.
-    pub const BOUNDARY: [Self; 2] = [Self::Validation, Self::Weakening];
+    pub const BOUNDARY: [Self; 3] = [Self::Validation, Self::Clause, Self::Weakening];
 }
 
 /// Whether `expr` is a validator's key comparison: `less_than` as the
@@ -615,7 +645,8 @@ fn key_comparison(arms: &[lexlean::calculus::Arm]) -> bool {
         && constant(&arms[1].body, Shape::False)
 }
 
-fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
+/// Plant `mutation` at `expr` itself, when it applies there.
+fn apply(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
     use lexlean::calculus::{Prim, Shape};
     match (mutation, &mut *expr) {
         (
@@ -658,9 +689,29 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
             }
             return true;
         }
+        (
+            Mutation::Clause,
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            },
+        ) if matches!(**condition, Expr::Call { .. })
+            && matches!(
+                **else_branch,
+                Expr::Build {
+                    shape: Shape::False,
+                    ..
+                }
+            ) =>
+        {
+            let kept = (**then_branch).clone();
+            *expr = kept;
+            return true;
+        }
         _ => {}
     }
-    let here = match (mutation, &mut *expr) {
+    match (mutation, &mut *expr) {
         (
             Mutation::Overflow,
             Expr::Prim {
@@ -764,31 +815,48 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
             true
         }
         _ => false,
-    };
-    if here {
-        return true;
+    }
+}
+
+/// Where a mutation is planted: the `skip`-th place it applies in a
+/// function, counted in evaluation order, and how many places it applied.
+struct Site {
+    skip: usize,
+    seen: usize,
+}
+
+fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program, site: &mut Site) -> bool {
+    let saved = expr.clone();
+    if apply(expr, mutation, program) {
+        site.seen += 1;
+        if site.skip == 0 {
+            return true;
+        }
+        site.skip -= 1;
+        *expr = saved;
     }
     match expr {
         Expr::Value { .. } | Expr::Var { .. } => false,
         Expr::Let { bound, body, .. } => {
-            mutate_expr(bound, mutation, program) || mutate_expr(body, mutation, program)
+            mutate_expr(bound, mutation, program, site)
+                || mutate_expr(body, mutation, program, site)
         }
         Expr::Cond {
             condition,
             then_branch,
             else_branch,
         } => {
-            mutate_expr(condition, mutation, program)
-                || mutate_expr(then_branch, mutation, program)
-                || mutate_expr(else_branch, mutation, program)
+            mutate_expr(condition, mutation, program, site)
+                || mutate_expr(then_branch, mutation, program, site)
+                || mutate_expr(else_branch, mutation, program, site)
         }
         Expr::Match {
             scrutinee, arms, ..
         } => {
-            mutate_expr(scrutinee, mutation, program)
+            mutate_expr(scrutinee, mutation, program, site)
                 || arms
                     .iter_mut()
-                    .any(|arm| mutate_expr(&mut arm.body, mutation, program))
+                    .any(|arm| mutate_expr(&mut arm.body, mutation, program, site))
         }
         Expr::Build { operands, .. }
         | Expr::Call { operands, .. }
@@ -797,50 +865,95 @@ fn mutate_expr(expr: &mut Expr, mutation: Mutation, program: &Program) -> bool {
             captures: operands, ..
         } => operands
             .iter_mut()
-            .any(|operand| mutate_expr(operand, mutation, program)),
+            .any(|operand| mutate_expr(operand, mutation, program, site)),
         Expr::Apply { target, operands } => {
-            mutate_expr(target, mutation, program)
+            mutate_expr(target, mutation, program, site)
                 || operands
                     .iter_mut()
-                    .any(|operand| mutate_expr(operand, mutation, program))
+                    .any(|operand| mutate_expr(operand, mutation, program, site))
         }
         Expr::First { value } | Expr::Second { value } | Expr::Field { value, .. } => {
-            mutate_expr(value, mutation, program)
+            mutate_expr(value, mutation, program, site)
         }
     }
 }
 
-/// The lowered program with `mutation` planted at its first applicable
-/// site, if any: a boundary mutation in the entry or a validator, from the
-/// last back; any other in the closure, from the root on.
+/// Whether the function of `origin` is one `mutation` is planted in: the
+/// entry for a validation, the validators for a clause or a weakening, the
+/// closure for every other.
+fn eligible(origin: &lexlean::production::lower::Origin, mutation: Mutation) -> bool {
+    use lexlean::production::lower::Origin;
+    match origin {
+        Origin::Entry { .. } => mutation == Mutation::Validation,
+        Origin::Validator { .. } => matches!(mutation, Mutation::Clause | Mutation::Weakening),
+        Origin::Definition { .. }
+        | Origin::Instance { .. }
+        | Origin::Lambda { .. }
+        | Origin::Template { .. } => !Mutation::BOUNDARY.contains(&mutation),
+    }
+}
+
+/// Every place `mutation` applies in `lowered`, as (function, ordinal of the
+/// place within the function), in function order.
 #[must_use]
-pub fn mutate(
+pub fn sites(
     lowered: &lexlean::production::lower::Lowered,
     mutation: Mutation,
-) -> Option<(Program, usize)> {
-    use lexlean::production::lower::Origin;
+) -> Vec<(usize, usize)> {
     let program = &lowered.program;
-    let mut mutated = program.clone();
-    let boundary = Mutation::BOUNDARY.contains(&mutation);
-    let count = mutated.functions.len();
-    for position in 0..count {
-        let index = if boundary {
-            count - 1 - position
-        } else {
-            position
-        };
-        let at_boundary = matches!(
-            lowered.layout.functions[index],
-            Origin::Validator { .. } | Origin::Entry { .. }
-        );
-        if at_boundary != boundary {
+    let mut out = Vec::new();
+    for (index, function) in program.functions.iter().enumerate() {
+        if !eligible(&lowered.layout.functions[index], mutation) {
             continue;
         }
-        if mutate_expr(&mut mutated.functions[index].body, mutation, program) {
-            return Some((mutated, index));
-        }
+        let mut probe = function.body.clone();
+        let mut site = Site {
+            skip: usize::MAX,
+            seen: 0,
+        };
+        mutate_expr(&mut probe, mutation, program, &mut site);
+        out.extend((0..site.seen).map(|ordinal| (index, ordinal)));
     }
-    None
+    out
+}
+
+/// The lowered program with `mutation` planted at the `ordinal`-th place it
+/// applies in `function`.
+#[must_use]
+pub fn mutate_at(
+    lowered: &lexlean::production::lower::Lowered,
+    mutation: Mutation,
+    function: usize,
+    ordinal: usize,
+) -> Option<Program> {
+    let program = &lowered.program;
+    let mut mutated = program.clone();
+    let mut site = Site {
+        skip: ordinal,
+        seen: 0,
+    };
+    mutate_expr(
+        &mut mutated.functions[function].body,
+        mutation,
+        program,
+        &mut site,
+    )
+    .then_some(mutated)
+}
+
+/// The sites to plant: the first, one in the middle, and the last, so that a
+/// mutation is exercised at the start, in the interior, and at the end of
+/// whatever it applies to.
+#[must_use]
+pub fn spread<T: Clone>(all: &[T]) -> Vec<T> {
+    let mut chosen: Vec<usize> = vec![0, all.len() / 2, all.len().saturating_sub(1)];
+    chosen.dedup();
+    chosen.sort_unstable();
+    chosen.dedup();
+    chosen
+        .into_iter()
+        .filter_map(|index| all.get(index).cloned())
+        .collect()
 }
 
 /// One planted mutation and what Lean made of its certificate.
@@ -852,8 +965,14 @@ pub struct Planted {
     pub mutation: Mutation,
     /// The function whose body was mutated.
     pub function: usize,
+    /// The place within that function, in evaluation order.
+    pub ordinal: usize,
     /// How the lowering produced that function.
     pub origin: lexlean::production::lower::Origin,
+    /// The declarations the first error may lie in: the relation of the
+    /// function changed, or, for a library template whose relation the
+    /// certificate states at its callers, a relation of one of them.
+    pub expected: Vec<String>,
     /// Lean's output on the mutated certificate; empty when it was
     /// accepted, which is a failure of the certificate.
     pub rejection: String,
@@ -867,23 +986,119 @@ pub struct Planted {
 /// `output` lies in.
 #[must_use]
 pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
-    let line: usize = output.lines().find_map(|line| {
-        let (_, rest) = line.split_once(".lean:")?;
-        let (number, rest) = rest.split_once(':')?;
-        let (_, rest) = rest.split_once(": ")?;
-        rest.starts_with("error").then(|| number.parse().ok())?
-    })?;
-    text.lines()
-        .take(line)
-        .filter(|line| line.starts_with("theorem ") || line.starts_with("def "))
-        .last()
-        .and_then(|line| line.split_whitespace().nth(1))
-        .map(str::to_owned)
+    lexlean::production::preserve::failing_declaration(text, output)
 }
 
-/// Plant each of `mutations` in the first root of `project` whose program
-/// admits it, regenerate that root's certificate against the mutated
-/// program, and compile it.
+/// `lowered` as a lowering would produce it if it did not validate the
+/// parameter at `position`: the entry omits the check and its layout says
+/// the parameter has no validator, consistently, so that only a judgement
+/// from the source types can see it.
+///
+/// # Panics
+///
+/// Panics when `lowered` has no entry or that parameter has no validator.
+#[must_use]
+pub fn skip_parameter_validator(
+    lowered: &lexlean::production::lower::Lowered,
+    position: usize,
+) -> lexlean::production::lower::Lowered {
+    use lexlean::production::lower::Origin;
+    let entry = lowered.entry() as usize;
+    let Origin::Entry { validators } = lowered.layout.functions[entry].clone() else {
+        panic!("a root with an entry");
+    };
+    assert!(validators[position].is_some(), "a validated parameter");
+    let ordinal = validators[..position].iter().flatten().count();
+    let mut out = lowered.clone();
+    out.program =
+        mutate_at(lowered, Mutation::Validation, entry, ordinal).expect("the entry has that check");
+    let mut skipped = validators;
+    skipped[position] = None;
+    out.layout.functions[entry] = Origin::Entry {
+        validators: skipped,
+    };
+    out
+}
+
+/// `lowered` as a lowering would produce it if it decided that the type
+/// checked by validator `index` carries no invariant: the validator is the
+/// trivial one.
+#[must_use]
+pub fn trivialize_validator(
+    lowered: &lexlean::production::lower::Lowered,
+    index: usize,
+) -> lexlean::production::lower::Lowered {
+    use lexlean::calculus::Shape;
+    use lexlean::production::lower::{Origin, Validation};
+    let mut out = lowered.clone();
+    let Origin::Validator {
+        ty,
+        module,
+        kind: _,
+    } = lowered.layout.functions[index].clone()
+    else {
+        panic!("a validator");
+    };
+    out.layout.functions[index] = Origin::Validator {
+        ty,
+        module,
+        kind: Validation::Trivial,
+    };
+    out.program.functions[index].body = Expr::Build {
+        shape: Shape::True,
+        ty: Ty::Bool,
+        operands: Vec::new(),
+    };
+    out
+}
+
+/// The declarations of certificate A in which a defect in the body of
+/// `function` is found: its own relation, or for a template member, the
+/// relation of every function that calls into its instance.
+fn expected_declarations(
+    lowered: &lexlean::production::lower::Lowered,
+    function: usize,
+) -> Vec<String> {
+    use lexlean::production::lower::{referenced, Origin};
+    match &lowered.layout.functions[function] {
+        Origin::Definition { .. } | Origin::Instance { .. } | Origin::Lambda { .. } => {
+            vec![format!("__rel_{function}")]
+        }
+        Origin::Validator { .. } => vec![format!("__vrel_{function}")],
+        Origin::Entry { .. } => vec!["entry".to_owned()],
+        Origin::Template {
+            template,
+            types,
+            entry,
+            ..
+        } => {
+            let in_instance = |index: usize| {
+                matches!(
+                    &lowered.layout.functions[index],
+                    Origin::Template { template: t, types: ty, entry: e, .. }
+                        if t == template && ty == types && e == entry
+                )
+            };
+            let mut callers = Vec::new();
+            for (index, body) in lowered.program.functions.iter().enumerate() {
+                if in_instance(index) {
+                    continue;
+                }
+                let mut called = Vec::new();
+                referenced(&body.body, &mut called);
+                if called.iter().any(|callee| in_instance(*callee as usize)) {
+                    callers.push(format!("__rel_{index}"));
+                }
+            }
+            callers
+        }
+    }
+}
+
+/// Plant `mutations` after lowering, while the proof is still derived from
+/// the source: each at the first, a middle, and the last place it applies in
+/// the project's roots; regenerate that root's certificate against the
+/// mutated program, and compile it.
 ///
 /// # Panics
 ///
@@ -906,50 +1121,79 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
     let compiled = check(&base, scratch.path());
     assert!(compiled.failure.is_none(), "{:?}", compiled.failure);
     let roots = roots(&checked).expect("the eligibility reports");
-    let mut out = Vec::new();
+    let limits = support::limits(project);
+    let lowerings: Vec<_> = roots
+        .iter()
+        .map(|root| {
+            lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("an eligible root lowers")
+        })
+        .collect();
+    let mut jobs = Vec::new();
     for mutation in mutations.iter().copied() {
-        for root in &roots {
-            let mut lowered = lower_root(&modules, &root.module, &root.name, root.report)
-                .expect("an eligible root lowers");
-            let Some((program, function)) = mutate(&lowered, mutation) else {
-                continue;
-            };
-            let origin = lowered.layout.functions[function].clone();
-            lowered.program = program;
-            let module = format!("LexLeanPreserve.Planted.{mutation:?}");
-            let certificate = certificate(
-                &modules,
-                &root.module,
-                &root.name,
-                root.report,
-                &lowered,
-                &module,
-            )
-            .expect("the certificate is generated from the source");
-            let path = scratch
-                .path()
-                .join("src")
-                .join(lexlean::production::preserve::module_path(&module));
-            std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
-            std::fs::write(&path, &certificate.text).expect("write");
-            let output = lean(scratch.path(), &[path.display().to_string()]);
-            let rejection = if output.status.success() {
-                String::new()
-            } else {
-                joined(&output)
-            };
-            out.push(Planted {
-                root: root.report.root.clone(),
-                mutation,
-                function,
-                origin,
-                declaration: failing_declaration(&certificate.text, &rejection),
-                rejection,
-            });
-            break;
+        let all: Vec<(usize, usize, usize)> = lowerings
+            .iter()
+            .enumerate()
+            .flat_map(|(root, lowered)| {
+                sites(lowered, mutation)
+                    .into_iter()
+                    .map(move |(function, ordinal)| (root, function, ordinal))
+            })
+            .collect();
+        // A mutation of the boundary is planted at every place it applies:
+        // each validated parameter in turn, each component check of each
+        // validator, each order comparison.
+        let chosen = if Mutation::BOUNDARY.contains(&mutation) {
+            all
+        } else {
+            spread(&all)
+        };
+        for (root, function, ordinal) in chosen {
+            jobs.push((mutation, root, function, ordinal));
         }
     }
-    out
+    let directory = scratch.path().join("src/LexLeanPreserve/Planted");
+    std::fs::create_dir_all(&directory).expect("mkdir");
+    parallel(&jobs, |(mutation, root, function, ordinal)| {
+        let (mutation, root, function, ordinal) = (*mutation, *root, *function, *ordinal);
+        let mut lowered = lowerings[root].clone();
+        let origin = lowered.layout.functions[function].clone();
+        let expected = expected_declarations(&lowered, function);
+        lowered.program =
+            mutate_at(&lowered, mutation, function, ordinal).expect("the site was counted");
+        let index = jobs
+            .iter()
+            .position(|job| *job == (mutation, root, function, ordinal))
+            .expect("the job");
+        let module = format!("LexLeanPreserve.Planted.P{index}");
+        let certificate = certificate(
+            &modules,
+            &roots[root].module,
+            &roots[root].name,
+            roots[root].report,
+            &lowered,
+            &module,
+        )
+        .expect("the certificate is generated from the source");
+        let path = directory.join(format!("P{index}.lean"));
+        std::fs::write(&path, &certificate.text).expect("write");
+        let output = lean(scratch.path(), &[path.display().to_string()]);
+        let rejection = if output.status.success() {
+            String::new()
+        } else {
+            joined(&output)
+        };
+        Planted {
+            root: roots[root].report.root.clone(),
+            mutation,
+            function,
+            ordinal,
+            origin,
+            expected,
+            declaration: failing_declaration(&certificate.text, &rejection),
+            rejection,
+        }
+    })
 }
 
 /// A defect planted in a rendered crate after rendering, while the program
@@ -1018,19 +1262,25 @@ fn other_width(kind: lexlean::calculus::IntKind) -> lexlean::calculus::IntKind {
     }
 }
 
-/// Whether a block ends in `None`: the refusal of an entry.
+/// Whether a block ends in `None`, or `Ok(None)` in a function that can
+/// fail: the refusal of an entry.
 fn refuses(block: &lexlean::calculus::rust::ast::Block) -> bool {
     use lexlean::calculus::rust::ast::{Ctor, Expr as R};
-    matches!(
-        block.tail,
-        R::Construct {
-            ctor: Ctor::None(_),
-            ..
+    fn none(expr: &R) -> bool {
+        match expr {
+            R::Construct {
+                ctor: Ctor::None(_),
+                ..
+            } => true,
+            R::Succeed(inner, _) => none(inner),
+            _ => false,
         }
-    )
+    }
+    none(&block.tail)
 }
 
-fn mutate_rust(
+/// Plant `mutation` at `expr` itself, when it applies there.
+fn apply_rust(
     expr: &mut lexlean::calculus::rust::ast::Expr,
     mutation: RustMutation,
     variants: &dyn Fn(u64) -> u64,
@@ -1038,7 +1288,7 @@ fn mutate_rust(
 ) -> bool {
     use lexlean::calculus::rust::ast::{Callee, Ctor, Expr as R, Lit};
     use lexlean::calculus::rust::runtime::Item;
-    let here = match (mutation, &mut *expr) {
+    match (mutation, &mut *expr) {
         (
             RustMutation::Validation,
             R::If {
@@ -1167,14 +1417,32 @@ fn mutate_rust(
             true
         }
         (RustMutation::Literal, R::Lit(Lit::Nat(value), _)) => {
-            *value += 1;
+            *value = value.wrapping_add(1);
             true
         }
         _ => false,
-    };
-    here || rust_children(expr)
+    }
+}
+
+fn mutate_rust(
+    expr: &mut lexlean::calculus::rust::ast::Expr,
+    mutation: RustMutation,
+    variants: &dyn Fn(u64) -> u64,
+    functions: u64,
+    site: &mut Site,
+) -> bool {
+    let saved = expr.clone();
+    if apply_rust(expr, mutation, variants, functions) {
+        site.seen += 1;
+        if site.skip == 0 {
+            return true;
+        }
+        site.skip -= 1;
+        *expr = saved;
+    }
+    rust_children(expr)
         .into_iter()
-        .any(|child| mutate_rust(child, mutation, variants, functions))
+        .any(|child| mutate_rust(child, mutation, variants, functions, site))
 }
 
 /// The expressions directly below `expr`, in rendering order.
@@ -1233,23 +1501,49 @@ fn rust_children(
     }
 }
 
-/// `krate` with `mutation` planted at its first applicable site, if any.
-#[must_use]
-pub fn mutate_crate(
-    krate: &lexlean::calculus::rust::ast::Crate,
+/// The number of the program function a crate function renders.
+fn function_number(name: &lexlean::calculus::rust::ast::Ident) -> Option<usize> {
+    use lexlean::calculus::rust::ast::Ident;
+    match name {
+        Ident::Function(number) => usize::try_from(*number).ok(),
+        Ident::Local(_)
+        | Ident::Holder(_)
+        | Ident::Operand(_)
+        | Ident::Callee(_)
+        | Ident::Boxed(_)
+        | Ident::Part(_)
+        | Ident::Capture(_)
+        | Ident::Param(_)
+        | Ident::Export(_) => None,
+    }
+}
+
+/// Run `plant` on the body of the crate function `number`, which is
+/// `mutation`'s to change: every function, except that a validation is
+/// planted only in the entry, the crate's last function.
+fn crate_function<R>(
+    krate: &mut lexlean::calculus::rust::ast::Crate,
     mutation: RustMutation,
-) -> Option<lexlean::calculus::rust::ast::Crate> {
+    mut visit: impl FnMut(
+        usize,
+        &mut lexlean::calculus::rust::ast::Block,
+        &dyn Fn(u64) -> u64,
+        u64,
+    ) -> Option<R>,
+) -> Option<R> {
     use lexlean::calculus::rust::ast::{ItemDef, Type};
-    let variants = |adt: u64| {
-        krate
-            .items
+    let variants: Vec<(Type, u64)> = krate
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            ItemDef::Enum { name, variants, .. } => Some((name.clone(), variants.len() as u64)),
+            _ => None,
+        })
+        .collect();
+    let count = |adt: u64| {
+        variants
             .iter()
-            .find_map(|item| match item {
-                ItemDef::Enum { name, variants, .. } if *name == Type::Adt(adt) => {
-                    Some(variants.len() as u64)
-                }
-                _ => None,
-            })
+            .find_map(|(name, count)| (*name == Type::Adt(adt)).then_some(*count))
             .unwrap_or(0)
     };
     let functions = krate
@@ -1257,32 +1551,99 @@ pub fn mutate_crate(
         .iter()
         .filter(|item| matches!(item, ItemDef::Function { .. }))
         .count() as u64;
-    let mut mutated = krate.clone();
-    // A boundary mutation is in the entry, the crate's last function.
-    let skip = if mutation == RustMutation::Validation {
-        (functions as usize).saturating_sub(1)
-    } else {
-        0
-    };
-    for item in mutated
+    let last = krate
         .items
-        .iter_mut()
-        .filter(|item| matches!(item, ItemDef::Function { .. }))
-        .skip(skip)
-    {
-        if let ItemDef::Function { body, .. } = item {
-            let planted = body
-                .lets
-                .iter_mut()
-                .map(|binding| &mut binding.value)
-                .chain([&mut body.tail])
-                .any(|expr| mutate_rust(expr, mutation, &variants, functions));
-            if planted {
-                return Some(mutated);
+        .iter()
+        .filter_map(|item| match item {
+            ItemDef::Function { name, .. } => function_number(name),
+            _ => None,
+        })
+        .max();
+    for item in &mut krate.items {
+        if let ItemDef::Function { name, body, .. } = item {
+            let Some(number) = function_number(name) else {
+                continue;
+            };
+            if mutation == RustMutation::Validation && Some(number) != last {
+                continue;
+            }
+            if let Some(found) = visit(number, body, &count, functions) {
+                return Some(found);
             }
         }
     }
     None
+}
+
+/// Every place `mutation` applies in `krate`, as (program function, ordinal
+/// of the place within it), in function order.
+#[must_use]
+pub fn crate_sites(
+    krate: &lexlean::calculus::rust::ast::Crate,
+    mutation: RustMutation,
+) -> Vec<(usize, usize)> {
+    let mut probe = krate.clone();
+    let mut out = Vec::new();
+    let _: Option<()> =
+        crate_function(&mut probe, mutation, |number, body, variants, functions| {
+            let mut site = Site {
+                skip: usize::MAX,
+                seen: 0,
+            };
+            for expr in body
+                .lets
+                .iter_mut()
+                .map(|binding| &mut binding.value)
+                .chain([&mut body.tail])
+            {
+                mutate_rust(expr, mutation, variants, functions, &mut site);
+            }
+            out.extend((0..site.seen).map(|ordinal| (number, ordinal)));
+            None
+        });
+    out
+}
+
+/// `krate` with `mutation` planted at the `ordinal`-th place it applies in
+/// the crate function `function`.
+#[must_use]
+pub fn mutate_crate_at(
+    krate: &lexlean::calculus::rust::ast::Crate,
+    mutation: RustMutation,
+    function: usize,
+    ordinal: usize,
+) -> Option<lexlean::calculus::rust::ast::Crate> {
+    let mut mutated = krate.clone();
+    crate_function(
+        &mut mutated,
+        mutation,
+        |number, body, variants, functions| {
+            if number != function {
+                return None;
+            }
+            let mut site = Site {
+                skip: ordinal,
+                seen: 0,
+            };
+            body.lets
+                .iter_mut()
+                .map(|binding| &mut binding.value)
+                .chain([&mut body.tail])
+                .any(|expr| mutate_rust(expr, mutation, variants, functions, &mut site))
+                .then_some(())
+        },
+    )?;
+    Some(mutated)
+}
+
+/// `krate` with `mutation` planted at its first applicable site, if any.
+#[must_use]
+pub fn mutate_crate(
+    krate: &lexlean::calculus::rust::ast::Crate,
+    mutation: RustMutation,
+) -> Option<lexlean::calculus::rust::ast::Crate> {
+    let (function, ordinal) = *crate_sites(krate, mutation).first()?;
+    mutate_crate_at(krate, mutation, function, ordinal)
 }
 
 /// One renderer fixture rendered in one profile, with its certificate B.
@@ -1400,31 +1761,55 @@ pub struct RustPlanted {
     pub target: String,
     /// The mutation.
     pub mutation: RustMutation,
+    /// The program function whose rendering was mutated.
+    pub function: usize,
+    /// The place within it, in rendering order.
+    pub ordinal: usize,
     /// The aligner's reason when it derives nothing for the mutated crate.
     pub unaligned: Option<String>,
     /// Lean's output on the derivation the aligner wrote for the mutated
     /// crate, when it wrote one; empty when Lean accepted it.
     pub realigned: Option<String>,
+    /// The declaration of the realigned derivation Lean's first error lies
+    /// in.
+    pub realigned_declaration: Option<String>,
     /// Lean's output on the unmutated derivation restated over the mutated
     /// crate; empty when Lean accepted it.
     pub stale: String,
+    /// The declaration of the restated derivation Lean's first error lies
+    /// in: the derivation `fun<k>` of the mutated function.
+    pub stale_declaration: Option<String>,
 }
 
-/// Plant every mutation in the first rendering that admits it: ask the
-/// aligner for the mutated crate's certificate, and restate the
-/// unmutated certificate over the mutated crate.
+/// Plant every mutation at the first, a middle, and the last place it
+/// applies across the renderings: ask the aligner for the mutated crate's
+/// certificate, and restate the unmutated certificate over the mutated crate.
 #[must_use]
 pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(String, String)>)> {
     let mut out = Vec::new();
     for mutation in RustMutation::ALL {
-        for rendering in renderings {
-            if mutation == RustMutation::Validation && !rendering.entry {
-                continue;
-            }
-            let Some(mutated) = mutate_crate(&rendering.krate, mutation) else {
-                continue;
-            };
-            let base = format!("LexLeanPreserve.Planted.{mutation:?}");
+        let all: Vec<(usize, usize, usize)> = renderings
+            .iter()
+            .enumerate()
+            .filter(|(_, rendering)| mutation != RustMutation::Validation || rendering.entry)
+            .flat_map(|(index, rendering)| {
+                crate_sites(&rendering.krate, mutation)
+                    .into_iter()
+                    .map(move |(function, ordinal)| (index, function, ordinal))
+            })
+            .collect();
+        // A validation is planted at every validated parameter of every
+        // entry; any other mutation at the first, a middle, and the last.
+        let chosen = if mutation == RustMutation::Validation {
+            all
+        } else {
+            spread(&all)
+        };
+        for (index, function, ordinal) in chosen {
+            let rendering = &renderings[index];
+            let mutated = mutate_crate_at(&rendering.krate, mutation, function, ordinal)
+                .expect("the site was counted");
+            let base = format!("LexLeanPreserve.Planted.{mutation:?}F{index}N{function}O{ordinal}");
             let stale_module = format!("{base}.Stale");
             let stale_text = rendering
                 .certificate
@@ -1448,13 +1833,16 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
                     fixture: rendering.fixture.clone(),
                     target: rendering.target.clone(),
                     mutation,
+                    function,
+                    ordinal,
                     unaligned,
                     realigned: None,
+                    realigned_declaration: None,
                     stale: String::new(),
+                    stale_declaration: None,
                 },
                 modules,
             ));
-            break;
         }
     }
     out
@@ -1521,11 +1909,14 @@ pub fn check_renderings(
         }
     });
     let mut planted: Vec<RustPlanted> = planted.into_iter().map(|(plant, _)| plant).collect();
-    for ((index, module, _), verdict) in jobs.iter().zip(verdicts) {
+    for ((index, module, text), verdict) in jobs.iter().zip(verdicts) {
+        let declaration = failing_declaration(text, &verdict);
         if module.ends_with(".Stale") {
             planted[*index].stale = verdict;
+            planted[*index].stale_declaration = declaration;
         } else {
             planted[*index].realigned = Some(verdict);
+            planted[*index].realigned_declaration = declaration;
         }
     }
     RenderingsChecked {
@@ -1576,9 +1967,14 @@ pub fn rustc_differential(project: &P, certified: &[Certified]) -> RustcRun {
     for (position, entry) in certified.iter().enumerate() {
         let fallible =
             lexlean::calculus::rust::fallible_functions(&entry.program).expect("a valid program");
-        let functions: Vec<(u64, &str)> = std::iter::once((0, "root"))
-            .chain((entry.entry != 0).then_some((entry.entry, "entry")))
-            .collect();
+        // A caller reaches a root with a boundary through its entry alone:
+        // exporting the root beside it would let a caller bypass the
+        // validators, so the package exports the entry only (§17.17).
+        let functions: Vec<(u64, &str)> = if entry.entry == 0 {
+            vec![(0, "root")]
+        } else {
+            vec![(entry.entry, "entry")]
+        };
         for target in &entry.targets {
             let profile = Profile::named(target).expect("a profile");
             let name = format!(
@@ -1719,4 +2115,56 @@ pub fn rustc_differential(project: &P, certified: &[Certified]) -> RustcRun {
         runs,
         entered,
     }
+}
+
+/// The fully qualified declarations a library module states at top level,
+/// as its namespaces qualify them: what `library.toml` must list, one row
+/// each, so that no theorem of the library escapes the axiom audit.
+#[must_use]
+pub fn library_declarations(text: &str) -> Vec<String> {
+    let mut namespaces: Vec<String> = Vec::new();
+    let mut out = Vec::new();
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("namespace ") {
+            namespaces.push(rest.trim().to_owned());
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("end ") {
+            if namespaces.last().is_some_and(|last| last == rest.trim()) {
+                namespaces.pop();
+                continue;
+            }
+        }
+        let mut rest = line;
+        if let Some(after) = rest.strip_prefix("@[") {
+            match after.find(']') {
+                Some(close) => rest = after[close + 1..].trim_start(),
+                None => continue,
+            }
+        }
+        loop {
+            let stripped = ["public ", "private ", "protected "]
+                .iter()
+                .find_map(|modifier| rest.strip_prefix(modifier));
+            match stripped {
+                Some(after) => rest = after,
+                None => break,
+            }
+        }
+        for keyword in ["theorem ", "def ", "structure ", "inductive ", "abbrev "] {
+            if let Some(after) = rest.strip_prefix(keyword) {
+                let name: String = after
+                    .chars()
+                    .take_while(|c| !c.is_whitespace() && !matches!(c, '(' | '{' | ':'))
+                    .collect();
+                if !name.is_empty() {
+                    let mut qualified = namespaces.clone();
+                    qualified.push(name);
+                    out.push(qualified.join("."));
+                }
+                break;
+            }
+        }
+    }
+    out
 }

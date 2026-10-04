@@ -91,6 +91,34 @@ versions, and the entries below say what each tag does and does not claim.
   package under the pinned toolchain and compares its printed outcomes,
   through the root and through the entry, with the interpreter's
   (`SP-11`), as build evidence that rustc agrees with the declared machine.
+- Review of the semantic-preservation work (SPEC.md §17.17): the certificate
+  generator now judges which parameters the entry validates, and which
+  components each validator checks, from the source types by its own
+  recursion, and refuses a lowering that differs (a skipped parameter, a
+  validator that checks nothing); the validation mutation is planted at every
+  validated parameter, every component check, and every order comparison, and
+  the differential breaks each validated parameter's invariant in turn. Every
+  mutation, in the lowered program, in the crate, and in certificate E, is
+  planted at its first, a middle, and its last place and must fail in the
+  declaration of the function it changed. Certificate E is stated for the
+  arguments a Rust caller can pass (`RepresentableL`); the machine's abort
+  is proved to arise only in an item that cannot fail
+  (`runItem_abort_infallible`) and the suite checks that no infallible item
+  other than a length overflows. The differential reaches the overflow arm
+  (top and bottom of every scalar type, larger and longer inputs, a search),
+  and the rustc differential runs a root with an entry through the entry
+  alone. `preservation.json` binds the lowered program and each rendered
+  crate, which are published beside the certificates. The statement
+  vocabulary SPEC.md quotes is held byte-equal to the library's by
+  `validate-spec-links`, and every library declaration must be registered.
+- A root whose lowered program, or the certificates it implies, would exceed
+  the project's limits is refused with `LLS8002` before the toolchain is
+  touched (SPEC.md §17.17 *Limits*; negative fixture `lowering-size-limit`),
+  and a pinned Lean that exhausts its heartbeat or recursion budget or its
+  memory, or is killed, while checking a certificate is `LLS8002` too, not a
+  rejected certificate or environment drift (negative fixture
+  `certificate-resource-exhausted`). Rejections of certificates A, B, and E
+  name the declaration, the root, and the bounded first error.
 - Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
   refused every root that reached an `Init` function whose module does not
   expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,

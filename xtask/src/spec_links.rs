@@ -130,6 +130,14 @@ pub fn validate(root: &Path) -> Result<(), Fail> {
     }
     let _ = register;
 
+    // The statement vocabulary the specification quotes equals the library's
+    // (§17.17, SP-04).
+    let library = root.join(repo_model::vocabulary::LIBRARY_DIR);
+    repo_model::vocabulary::audit(&spec, &|file| {
+        std::fs::read_to_string(library.join(file)).ok()
+    })
+    .map_err(|report| format!("§17.17 (SP-04): {report}"))?;
+
     // Every source section referenced by an ID exists.
     for row in &rows {
         for section in &row.sections {

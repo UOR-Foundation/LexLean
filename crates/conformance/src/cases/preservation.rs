@@ -25,47 +25,69 @@ fn certified_projects() -> [(&'static str, P); 3] {
     ]
 }
 
-/// The failure of a planted mutation is targeted: Lean's first error lies
-/// in the relation of the function the mutation changed (or, for a
-/// function with no relation of its own, in a relation of the certificate),
-/// not in the library, the environment, or an unrelated function.
+/// The roots whose closure declares an overflow (§17.13's effect rows
+/// over-approximate) that no input of the differential reaches: none of
+/// the seeded, medium, top, bottom, and 400 mixed inputs of
+/// `differential::cases`. For the first group the operands that can overflow
+/// do not depend on the root's parameters (`roseTotal`, `halvings`,
+/// `wellFounded`, `natOps`) or the overflow is a sequence, text, or
+/// collection of 2^64 elements, which no test can build (`sequences`,
+/// `text`, `decimals`, `mapOps`, `setOps`, `graphs`, `stringGraph`); for the
+/// model roots no input found overflows their arithmetic over the decoded
+/// weights. The list is checked both ways: a root on it that overflows, or a
+/// root off it that does not, fails SP-03.
+const UNREACHED_OVERFLOW: [&str; 19] = [
+    "Production.Main.halvings",
+    "Coverage.Colls.mapOps",
+    "Coverage.Colls.setOps",
+    "Coverage.Colls.graphs",
+    "Coverage.Colls.stringGraph",
+    "Coverage.Main.natOps",
+    "Coverage.Prims.sequences",
+    "Coverage.Prims.decimals",
+    "Coverage.Prims.text",
+    "Coverage.RecRoots.roseTotal",
+    "Coverage.RecRoots.syntaxTotal",
+    "Coverage.RecRoots.wellFounded",
+    "Models.Main.classify",
+    "Models.Main.classifyChecked",
+    "Models.Main.respond",
+    "Models.Main.admitCosts",
+    "Models.Main.ledgerPost",
+    "Models.Main.ledgerFull",
+    "Models.Main.guessChecked",
+];
+
+/// The failure of a planted mutation is targeted: Lean's first error lies in
+/// the relation of the function the mutation changed, or, for a function of
+/// a library template, whose relation the certificate states where the
+/// template is instantiated, in the relation of a caller; not in the library,
+/// the environment, or an unrelated function.
 fn assert_targeted(plant: &preservation::Planted) {
-    use lexlean::production::lower::Origin;
     let declaration = plant.declaration.as_deref().unwrap_or_else(|| {
         panic!(
             "{} {:?}: no declaration:\n{}",
             plant.root, plant.mutation, plant.rejection
         )
     });
-    let relation = |name: &str| {
-        name.starts_with("__rel_")
-            || name.starts_with("__vrel_")
-            || name.starts_with("__viff_")
-            || name == "entry"
-            || name == "root"
-    };
     assert!(
-        relation(declaration),
-        "{} {:?}: the error lies in `{declaration}`, not a relation:\n{}",
+        !plant.expected.is_empty(),
+        "{} {:?}: function {} ({:?}) has no relation to fail in",
         plant.root,
         plant.mutation,
+        plant.function,
+        plant.origin
+    );
+    assert!(
+        plant.expected.iter().any(|name| name == declaration),
+        "{} {:?} in function {} ({:?}): the error lies in `{declaration}`, not in {:?}:\n{}",
+        plant.root,
+        plant.mutation,
+        plant.function,
+        plant.origin,
+        plant.expected,
         plant.rejection
     );
-    let expected = match &plant.origin {
-        Origin::Definition { .. } | Origin::Instance { .. } => {
-            Some(format!("__rel_{}", plant.function))
-        }
-        Origin::Validator { .. } => Some(format!("__vrel_{}", plant.function)),
-        Origin::Entry { .. } => Some("entry".to_owned()),
-        Origin::Lambda { .. } | Origin::Template { .. } => None,
-    };
-    if let Some(expected) = expected {
-        assert_eq!(
-            declaration, expected,
-            "{} {:?}: the error lies in the wrong declaration:\n{}",
-            plant.root, plant.mutation, plant.rejection
-        );
-    }
 }
 
 /// Certifying both projects takes minutes; the cases share one run.
@@ -153,11 +175,14 @@ pub fn run(id: &str) {
             for (name, project) in lowered_projects() {
                 let checked = support::checked_project(&project);
                 let modules = linked_modules(&checked);
+                let limits = support::limits(&project);
                 for root in roots(&checked).expect("the eligibility reports") {
-                    let first = lower_root(&modules, &root.module, &root.name, root.report)
-                        .unwrap_or_else(|d| panic!("{name}: {}: {d:?}", root.report.root));
-                    let second = lower_root(&modules, &root.module, &root.name, root.report)
-                        .expect("lowers again");
+                    let first =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .unwrap_or_else(|d| panic!("{name}: {}: {d:?}", root.report.root));
+                    let second =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .expect("lowers again");
                     assert_eq!(
                         first.program.to_file_bytes(),
                         second.program.to_file_bytes(),
@@ -186,8 +211,9 @@ pub fn run(id: &str) {
                     // what the lowering reaches.
                     let mut planted = root.report.clone();
                     if planted.runtime.pop().is_some() {
-                        let error = lower_root(&modules, &root.module, &root.name, &planted)
-                            .expect_err("a closure disagreement is refused");
+                        let error =
+                            lower_root(&modules, &root.module, &root.name, &planted, &limits)
+                                .expect_err("a closure disagreement is refused");
                         assert_eq!(error.code.as_str(), "LLI9001", "{error:?}");
                     }
                     lowered += 1;
@@ -236,8 +262,36 @@ pub fn run(id: &str) {
                         "{}: the certificate states the root theorem",
                         entry.root
                     );
+                    // The size estimate the lowering charges against
+                    // `max_file_bytes` before anything is generated is never
+                    // below the largest certificate generated.
+                    let estimate = lexlean::production::lower::certificate_estimate(
+                        lexlean::production::lower::program_nodes(&entry.program),
+                    );
+                    let biggest = std::iter::once(&entry.certificate)
+                        .chain(entry.renderings.iter().map(|(_, b)| b))
+                        .chain(entry.composed.iter().map(|(_, e)| e))
+                        .map(|certificate| certificate.text.len() as u64)
+                        .max()
+                        .unwrap_or(0);
+                    assert!(
+                        estimate >= biggest,
+                        "{}: the estimate {estimate} is below the {biggest} bytes generated",
+                        entry.root
+                    );
                 }
             }
+            // A root whose lowered program, or the certificates it implies,
+            // would exceed the project's limits is refused before anything is
+            // generated from it: a generic chain `g_k<T> = g_{k+1}<(T, T)>`
+            // 16 deep has a type of 2^16 nodes (its certificates are
+            // estimated at fifty times the limit), and `lexlean verify`
+            // refuses it with `LLS8002` without starting Lean.
+            let case =
+                crate::fixtures::load_case(&repo_root().join("tests/negative/lowering-size-limit"))
+                    .expect("the fixture loads");
+            let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+            assert_eq!(observed.codes, ["LLS8002"]);
             if !support::lean_backed("SP-02") {
                 return;
             }
@@ -278,6 +332,39 @@ pub fn run(id: &str) {
                         case.arguments
                     );
                 }
+                // The overflow arm of the statements is exercised: every
+                // root whose closure may overflow is run on an input where
+                // it does, on the interpreter here and on Lean's `denote`,
+                // the declared machine, and rustc in SP-03, SP-07, SP-11,
+                // except the roots below, whose declared overflow no input
+                // reaches.
+                let checked = support::checked_project(&project);
+                for root in roots(&checked).expect("the eligibility reports") {
+                    if !root
+                        .report
+                        .declared_effects
+                        .iter()
+                        .any(|effect| effect == "overflow")
+                    {
+                        continue;
+                    }
+                    let overflows = cases.get(&root.report.root).is_some_and(|cases| {
+                        cases
+                            .iter()
+                            .any(|case| matches!(case.outcome, Outcome::Overflow { .. }))
+                    });
+                    let exempt = UNREACHED_OVERFLOW.contains(&root.report.root.as_str());
+                    assert!(
+                        overflows != exempt,
+                        "{name}: `{}` {} (exempt: {exempt})",
+                        root.report.root,
+                        if overflows {
+                            "overflows on a sampled input but is listed as unreached"
+                        } else {
+                            "has no input on which it overflows"
+                        }
+                    );
+                }
             }
             if !support::lean_backed("SP-03") {
                 return;
@@ -315,6 +402,45 @@ pub fn run(id: &str) {
             );
             crate::calculus::shipped_modules(repo_root().as_std_path(), false)
                 .unwrap_or_else(|reason| panic!("{reason}"));
+            // Every declaration the library states is registered: a theorem
+            // that is not listed is not audited.
+            for module in &library.modules {
+                let text = module_text(module).expect("a shipped module");
+                let stated: BTreeSet<String> = preservation::library_declarations(text)
+                    .into_iter()
+                    .map(|name| format!("{module}\u{0}{name}"))
+                    .collect();
+                let listed: BTreeSet<String> = library
+                    .declaration
+                    .iter()
+                    .filter(|row| &row.module == module)
+                    .map(|row| format!("{module}\u{0}{}", row.name))
+                    .collect();
+                assert_eq!(
+                    stated.difference(&listed).collect::<Vec<_>>(),
+                    Vec::<&String>::new(),
+                    "{module}: declarations the registry does not list"
+                );
+                assert_eq!(
+                    listed.difference(&stated).collect::<Vec<_>>(),
+                    Vec::<&String>::new(),
+                    "{module}: registry rows with no declaration"
+                );
+            }
+            // The vocabulary SPEC.md quotes equals the library's.
+            let spec = std::fs::read_to_string(repo_root().join("SPEC.md").as_std_path())
+                .expect("SPEC.md");
+            let quoted = repo_model::vocabulary::audit(&spec, &|file| {
+                std::fs::read_to_string(
+                    repo_root()
+                        .join(repo_model::vocabulary::LIBRARY_DIR)
+                        .join(file)
+                        .as_std_path(),
+                )
+                .ok()
+            })
+            .unwrap_or_else(|report| panic!("{report}"));
+            assert!(quoted >= 8, "{quoted} quoted declarations");
             let mut environment: BTreeSet<String> = preserve::TARGET_MODULES
                 .iter()
                 .map(|module| (*module).to_owned())
@@ -398,6 +524,34 @@ pub fn run(id: &str) {
                     ),
                     "{module}: the record binds the published certificate"
                 );
+                // The program the certificates are about and each target's
+                // crate are published and bound too.
+                let digest = |path: &std::path::Path| {
+                    lexlean::artifact::content_id::Sha256Digest::of(
+                        &std::fs::read(path).expect("a published file"),
+                    )
+                    .to_hex()
+                };
+                let index = rows
+                    .iter()
+                    .position(|candidate| candidate == row)
+                    .expect("the row");
+                assert_eq!(
+                    row["program"]["sha256"].as_str(),
+                    Some(digest(&root.join(format!("preserve/program/R{index}.json"))).as_str()),
+                    "{module}: the record binds the published program"
+                );
+                for rendering in row["renderings"].as_array().expect("renderings") {
+                    let target = rendering["target"].as_str().expect("a target");
+                    assert_eq!(
+                        rendering["crate"]["sha256"].as_str(),
+                        Some(
+                            digest(&root.join(format!("preserve/crate/R{index}.{target}.rs")))
+                                .as_str()
+                        ),
+                        "{module}: the record binds the published crate in {target}"
+                    );
+                }
                 // Certificates B and E of each target are published and bound
                 // the same way.
                 for rendering in row["renderings"].as_array().expect("renderings") {
@@ -437,6 +591,7 @@ pub fn run(id: &str) {
                 ("certificate-rejected", "LLV7013"),
                 ("certificate-b-rejected", "LLV7015"),
                 ("certificate-e-rejected", "LLV7016"),
+                ("certificate-resource-exhausted", "LLS8002"),
                 ("preservation-drift", "LLV7014"),
             ] {
                 let case =
@@ -506,6 +661,43 @@ pub fn run(id: &str) {
                 named, order,
                 "the machine declares exactly the renderer's items"
             );
+            // The machine aborts only for an item that cannot fail
+            // (`runItem_abort_infallible`), and the only such item that can
+            // overflow is a length of 2^64 elements or more: every other
+            // infallible item of the primitive differential, on its boundary
+            // values and seeded inputs, has an outcome the calculus does not
+            // call an overflow.
+            for profile in lexlean::calculus::rust::Profile::ALL {
+                let differential = crate::rust_differential::differential(profile);
+                let fallible = lexlean::calculus::rust::fallible_functions(&differential.program)
+                    .expect("a valid program");
+                let mut checked = 0;
+                for (function, lists) in differential.arguments.iter().enumerate() {
+                    if fallible[function] || differential.names[function].starts_with("length_") {
+                        continue;
+                    }
+                    for list in lists {
+                        let outcome = lexlean::calculus::interp::run(
+                            &differential.program,
+                            1_000_000,
+                            function as u64,
+                            list,
+                        );
+                        assert!(
+                            !matches!(outcome, Outcome::Overflow { .. }),
+                            "{}: the infallible item {} overflows on {list:?}",
+                            profile.target(),
+                            differential.names[function]
+                        );
+                        checked += 1;
+                    }
+                }
+                assert!(
+                    checked > 500,
+                    "{}: {checked} infallible runs",
+                    profile.target()
+                );
+            }
             // A drifted class is reported.
             assert_ne!(
                 crate::rust_source::item_classes("natSub"),
@@ -687,26 +879,58 @@ pub fn run(id: &str) {
                     rendering.certificate.theorem
                 );
             }
+            // Every mutation is refused where it was planted: the aligner
+            // names the mutated function, or Lean's first error, on the
+            // realigned derivation and on the unmutated derivation restated
+            // over the mutated crate, lies in the derivation `fun<k>` of
+            // that function (the unmutated crate's derivations all compiled
+            // above).
             for plant in &checked.planted {
                 let what = format!(
-                    "{:?} in {} ({})",
-                    plant.mutation, plant.fixture, plant.target
+                    "{:?} at {}:{} in {} ({})",
+                    plant.mutation, plant.function, plant.ordinal, plant.fixture, plant.target
                 );
-                assert!(
-                    plant.stale.contains("error"),
-                    "{what}: the unmutated derivation proves the mutated crate"
+                let expected = format!("fun{}", plant.function);
+                assert_eq!(
+                    plant.stale_declaration.as_deref(),
+                    Some(expected.as_str()),
+                    "{what}: the unmutated derivation restated over the mutated crate:\n{}",
+                    plant.stale
                 );
                 match (&plant.unaligned, &plant.realigned) {
-                    (Some(reason), None) => assert!(!reason.is_empty(), "{what}"),
-                    (None, Some(rejection)) => assert!(
-                        rejection.contains("error"),
-                        "{what}: Lean accepted the mutated crate's derivation"
+                    (Some(reason), None) => assert!(
+                        reason.starts_with(&format!("function {}:", plant.function)),
+                        "{what}: the aligner's refusal does not name the function: {reason}"
+                    ),
+                    (None, Some(rejection)) => assert_eq!(
+                        plant.realigned_declaration.as_deref(),
+                        Some(expected.as_str()),
+                        "{what}: the realigned derivation:\n{rejection}"
                     ),
                     (unaligned, realigned) => {
                         panic!("{what}: {unaligned:?} / {realigned:?}")
                     }
                 }
             }
+            // Each kind is planted at its first, a middle, and its last
+            // place; a validation at every validated parameter.
+            let kinds: BTreeSet<preservation::RustMutation> =
+                checked.planted.iter().map(|plant| plant.mutation).collect();
+            assert_eq!(kinds, preservation::RustMutation::ALL.into_iter().collect());
+            let validated: usize =
+                crate::differential::carriers(&P::copy_example("production-coverage"))
+                    .values()
+                    .map(Vec::len)
+                    .sum();
+            assert_eq!(
+                checked
+                    .planted
+                    .iter()
+                    .filter(|plant| plant.mutation == preservation::RustMutation::Validation)
+                    .count(),
+                validated,
+                "a validation mutation per validated parameter of an entry crate"
+            );
         }
         // §17.12, §17.17: the boundary validators and the entry.
         "SP-10" => {
@@ -717,10 +941,13 @@ pub fn run(id: &str) {
             for (name, project) in certified_projects() {
                 let checked = support::checked_project(&project);
                 let modules = linked_modules(&checked);
+                let limits = support::limits(&project);
+                let oracle = crate::differential::carriers(&project);
                 let cases = crate::differential::cases(&project);
                 for root in roots(&checked).expect("the eligibility reports") {
-                    let lowered = lower_root(&modules, &root.module, &root.name, root.report)
-                        .unwrap_or_else(|d| panic!("{name}: {}: {d:?}", root.report.root));
+                    let lowered =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .unwrap_or_else(|d| panic!("{name}: {}: {d:?}", root.report.root));
                     // The lowering audited it already; the audit is the
                     // gate, so it is also run here on what it returned.
                     audit_boundary(&lowered)
@@ -737,17 +964,73 @@ pub fn run(id: &str) {
                         "{}: an entry exactly when a validator exists",
                         root.report.root
                     );
+                    assert_eq!(
+                        lowered.entry() != 0,
+                        !oracle[&root.report.root].is_empty(),
+                        "{}: an entry exactly when a parameter holds a map or a set",
+                        root.report.root
+                    );
                     if lowered.entry() == 0 {
                         continue;
                     }
                     entries.insert(root.name.clone());
+                    // An entry exists for exactly the roots with a parameter
+                    // the test's own oracle says carries the invariant, and
+                    // a lowering that skipped a validator is refused by the
+                    // certificate generator, which judges the boundary from
+                    // the source types: a validated parameter whose check is
+                    // omitted, and a validator that checks nothing.
+                    let carried = &oracle[&root.report.root];
+                    assert!(
+                        !carried.is_empty(),
+                        "{}: an entry for no carrier",
+                        root.report.root
+                    );
+                    let generate = |lowered: &lexlean::production::lower::Lowered| {
+                        lexlean::production::certificate::certificate(
+                            &modules,
+                            &root.module,
+                            &root.name,
+                            root.report,
+                            lowered,
+                            "LexLeanPreserve.Probe",
+                        )
+                    };
+                    generate(&lowered).expect("the lowering's own boundary is accepted");
+                    for position in carried {
+                        let skipped = preservation::skip_parameter_validator(&lowered, *position);
+                        let refusal = generate(&skipped)
+                            .expect_err("a skipped parameter validator is refused");
+                        assert!(
+                            format!("{refusal:?}").contains(&format!("parameter {position}: "))
+                                && format!("{refusal:?}").contains("does not validate"),
+                            "{}: {refusal:?}",
+                            root.report.root
+                        );
+                    }
+                    for (index, origin) in lowered.layout.functions.iter().enumerate() {
+                        if let Origin::Validator { kind, .. } = origin {
+                            if *kind == Validation::Trivial {
+                                continue;
+                            }
+                            let trivial = preservation::trivialize_validator(&lowered, index);
+                            let refusal = generate(&trivial)
+                                .expect_err("a validator that checks nothing is refused");
+                            assert!(
+                                format!("{refusal:?}").contains("checks nothing")
+                                    || format!("{refusal:?}").contains("is trivial"),
+                                "{} validator {index}: {refusal:?}",
+                                root.report.root
+                            );
+                        }
+                    }
                     // Every validated parameter is a boundary position: a
                     // validator exists only for a type of the signature.
                     for case in cases.get(&root.report.root).map_or(&[][..], Vec::as_slice) {
                         if case.function == 0 {
                             continue;
                         }
-                        match (&case.outcome, case.invalid) {
+                        match (&case.outcome, case.invalid.is_some()) {
                             (lexlean::calculus::Outcome::Value { value, steps: _ }, true) => {
                                 assert_eq!(
                                     *value,
@@ -808,13 +1091,20 @@ pub fn run(id: &str) {
             // lowering's audit, as is an entry the validators do not match.
             let checked = support::checked_project(&coverage);
             let modules = linked_modules(&checked);
+            let limits = support::limits(&coverage);
             let report = roots(&checked)
                 .expect("the eligibility reports")
                 .into_iter()
                 .find(|root| root.name == "groveRoot")
                 .expect("the root");
-            let lowered = lower_root(&modules, &report.module, &report.name, report.report)
-                .expect("the root lowers");
+            let lowered = lower_root(
+                &modules,
+                &report.module,
+                &report.name,
+                report.report,
+                &limits,
+            )
+            .expect("the root lowers");
             let validator = lowered
                 .layout
                 .functions
@@ -874,6 +1164,31 @@ pub fn run(id: &str) {
                     plant.mutation
                 );
                 assert_targeted(plant);
+            }
+            // Every validated parameter of every entry was planted in turn,
+            // and the entry of each was probed with an input breaking that
+            // parameter's invariant.
+            let carriers = crate::differential::carriers(&coverage);
+            let validated: usize = carriers.values().map(Vec::len).sum();
+            assert!(validated > 15, "{validated} validated parameters");
+            assert_eq!(
+                planted
+                    .iter()
+                    .filter(|plant| plant.mutation == Mutation::Validation)
+                    .count(),
+                validated,
+                "a validation mutation per validated parameter"
+            );
+            let cases = crate::differential::cases(&coverage);
+            for (root, positions) in &carriers {
+                for position in positions {
+                    assert!(
+                        cases.get(root).is_some_and(|cases| cases
+                            .iter()
+                            .any(|case| case.invalid == Some(*position))),
+                        "`{root}`: an input that breaks the invariant of parameter {position}"
+                    );
+                }
             }
             for (name, report) in reports() {
                 for entry in &report.certified {
@@ -936,11 +1251,24 @@ pub fn run(id: &str) {
                             );
                         }
                         assert_eq!(composed.denote, entry.certificate.denote);
+                        // E is stated for the arguments a Rust caller can
+                        // pass only.
+                        assert!(
+                            composed
+                                .text
+                                .contains("(hrep : LexLeanPreservation.Rust.RepresentableL ["),
+                            "{name}: `{}` quantifies over every argument",
+                            composed.module
+                        );
                         for mutation in preservation::CompositionMutation::ALL {
-                            let planted = mutation.plant(&composed.text).unwrap_or_else(|| {
-                                panic!("{mutation:?} applies to `{}`", composed.module)
-                            });
-                            assert_ne!(planted, composed.text, "{mutation:?}");
+                            let places = mutation.places(&composed.text);
+                            assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
+                            for nth in 0..places {
+                                let planted = mutation
+                                    .plant(&composed.text, nth)
+                                    .expect("a counted place");
+                                assert_ne!(planted, composed.text, "{mutation:?} {nth}");
+                            }
                         }
                     }
                 }
@@ -972,11 +1300,14 @@ pub fn run(id: &str) {
                 }
                 for plant in &report.composed_plants {
                     assert!(
-                        !plant.accepted && plant.output.contains("error"),
-                        "{name}: {:?} in {} ({}) was accepted:\n{}",
+                        !plant.accepted
+                            && plant.declaration.as_deref() == Some("root"),
+                        "{name}: {:?} at {} in {} ({}) is not refused in the composition (`root`): {:?}\n{}",
                         plant.mutation,
+                        plant.nth,
                         plant.root,
                         plant.target,
+                        plant.declaration,
                         plant.output
                     );
                 }

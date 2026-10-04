@@ -1698,7 +1698,7 @@ statement = "On seeded inputs to every production root of examples/production, e
 id = "SP-04"
 level = "build"
 suite = "preservation"
-statement = "Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused."
+statement = "Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused."
 
 [[id]]
 id = "SP-05"

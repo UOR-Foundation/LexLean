@@ -16,6 +16,7 @@ pub mod correspondence;
 pub mod exhaustive;
 pub mod registry;
 pub mod release;
+pub mod vocabulary;
 
 pub use registry::{Authorities, AuthorityRow, Claim, ErrorRow, Errors, IdRow, Ids, Ledger, Level};
 

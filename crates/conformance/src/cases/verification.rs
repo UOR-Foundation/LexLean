@@ -769,6 +769,14 @@ pub(crate) fn run(id: &str) {
                     }),
                 ),
                 (
+                    "preserve/program/R<i>.json",
+                    Box::new(|f: &str| f.starts_with("preserve/program/R") && f.ends_with(".json")),
+                ),
+                (
+                    "preserve/crate/R<i>.<target>.rs",
+                    Box::new(|f: &str| f.starts_with("preserve/crate/R") && f.ends_with(".rs")),
+                ),
+                (
                     "preserve/audit.txt",
                     Box::new(|f: &str| f == "preserve/audit.txt"),
                 ),

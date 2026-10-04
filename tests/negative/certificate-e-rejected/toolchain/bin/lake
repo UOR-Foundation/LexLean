@@ -9,9 +9,9 @@ if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   for source; do :; done
   case "$source" in
     */preserve-src/LexLeanPreserve/C*/R*/Compose/Rust*.lean)
-      sed -i -e 's/RealizesFn true /RealizesFn swapped /' \
+      sed -e 's/RealizesFn true /RealizesFn swapped /' \
         -e 's/RealizesFn false /RealizesFn true /' \
-        -e 's/RealizesFn swapped /RealizesFn false /' "$source"
+        -e 's/RealizesFn swapped /RealizesFn false /' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
       ;;
   esac
 fi

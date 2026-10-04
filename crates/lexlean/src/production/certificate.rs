@@ -5306,14 +5306,19 @@ impl<'a> Gen<'a> {
         let signature = self.signature(0, &scope, &result, &denotation)?;
         // The theorem's observation as a definition, so the differential
         // evaluator can compute exactly the right-hand side the theorem
-        // states and compare it with the interpreter's outcome.
+        // states and compare it with the interpreter's outcome. It is `Rel`
+        // unfolded to the lazy `cond`, definitionally the same: the value is
+        // computed only when the width predicate holds, as the interpreter
+        // computes it, so an input on which the program overflows is not an
+        // evaluation of the source's own, possibly unbounded, value.
         out.push_str(&format!(
-            "def denote {} : {} :=\n  {} ({}) {}\n\n",
+            "def denote {} : {} :=\n  cond ({}) ({} ({})) {}\n\n",
             signature.fits_binders.join(" "),
             lib("Obs"),
-            lib("Rel"),
             signature.fits_applied,
-            signature.value
+            lib("Obs.value"),
+            signature.value,
+            lib("Obs.overflow")
         ));
         out.push_str(&format!(
             "theorem root {} : {} __prog 0 {} ({} ({}) {}) :=\n  {} (__rel_0 {})\n\n",
@@ -5326,7 +5331,8 @@ impl<'a> Gen<'a> {
             lib("run_of_funRel"),
             signature.names.join(" ")
         ));
-        out.push_str(&self.boundary(&signature, &signature.names)?);
+        let parameter_types: Vec<SemanticType> = locals.iter().map(|(_, ty)| ty.clone()).collect();
+        out.push_str(&self.boundary(&signature, &signature.names, &parameter_types)?);
         out.push_str(&format!("end {name}\n"));
         Ok(out)
     }
@@ -7336,7 +7342,7 @@ impl Gen<'_> {
     ) -> Result<String, String> {
         let sem = format!("{module_b}.program {module_b}.krate {module_b}.flags");
         let mut out = format!(
-            "import {module_a}\nimport {module_b}\nimport LexLeanPreservation.Compose\nset_option autoImplicit false\nset_option maxRecDepth 100000\nnamespace {name}\n\n"
+            "import {module_a}\nimport {module_b}\nimport LexLeanPreservation.Compose\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option linter.unusedVariables false\nnamespace {name}\n\n"
         );
         out.push_str(&self.wt_theorems(module_a, &sem)?);
         let (parameters, _) = self.source.signature(root_module, root_name, &[])?;
@@ -7365,8 +7371,10 @@ impl Gen<'_> {
             // root's observation as `some` when §17.12's invariants hold,
             // and `none` when one fails.
             Some((entry, _)) => out.push_str(&format!(
-                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} : ∃ ro, {} {module_b}.krate ({} {entry}) [{}] ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) ro) :=\n  match {} (fun n => {module_b}.root n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨ro, hr, hc⟩ => ⟨ro, hc, fun h => {module_a}.entry_accepts{applied} h ▸ hr, fun h => {module_a}.entry_refuses{applied} h ▸ hr⟩\n\n",
+                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (hrep : {} [{}]) : ∃ ro, {} {module_b}.krate ({} {entry}) [{}] ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) ro) :=\n  match {} (fun n => {module_b}.root n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨ro, hr, hc⟩ => ⟨ro, hc, fun h => {module_a}.entry_accepts{applied} h ▸ hr, fun h => {module_a}.entry_refuses{applied} h ▸ hr⟩\n\n",
                 binders.join(" "),
+                lib("Rust.RepresentableL"),
+                arguments.join(", "),
                 lib("Rust.RCI"),
                 lib("Rust.fnIdent"),
                 arguments.join(", "),
@@ -7379,8 +7387,10 @@ impl Gen<'_> {
                 lib("Rust.rel_ne_stuck"),
             )),
             None => out.push_str(&format!(
-                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} : ∃ ro, {} {fallible} ({module_a}.denote{applied}) ro ∧ {} {module_b}.krate ({} 0) [{}] ro :=\n  {} (fun n => {module_b}.root n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
+                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (hrep : {} [{}]) : ∃ ro, {} {fallible} ({module_a}.denote{applied}) ro ∧ {} {module_b}.krate ({} 0) [{}] ro :=\n  {} (fun n => {module_b}.root n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
                 binders.join(" "),
+                lib("Rust.RepresentableL"),
+                arguments.join(", "),
                 lib("Rust.RealizesFn"),
                 lib("Rust.RCI"),
                 lib("Rust.fnIdent"),
@@ -7448,6 +7458,119 @@ fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
             result: _,
         }
         | SemanticType::ContractViolation => Err(format!("{ty:?} has no two components")),
+    }
+}
+
+/// The kind of validator a type calls for, by name: a set's, a map's, and so
+/// on, and `scalar` for a type with no component that could carry the
+/// invariant.
+fn shape_tag(ty: &SemanticType) -> &'static str {
+    match ty {
+        SemanticType::Set { element: _ } => "set",
+        SemanticType::Map { key: _, value: _ } => "map",
+        SemanticType::List { element: _ } => "list",
+        SemanticType::Option { value: _ } => "option",
+        SemanticType::Product { left: _, right: _ } => "pair",
+        SemanticType::Result { ok: _, error: _ } => "result",
+        SemanticType::Named {
+            member: _,
+            arguments: _,
+        } => "document",
+        SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => "scalar",
+    }
+}
+
+/// Whether a validator checks nothing.
+fn is_trivial(kind: &Validation) -> bool {
+    match kind {
+        Validation::Trivial => true,
+        Validation::Set
+        | Validation::Map { value: _ }
+        | Validation::List { element: _ }
+        | Validation::Option { value: _ }
+        | Validation::Pair { left: _, right: _ }
+        | Validation::Result { ok: _, error: _ }
+        | Validation::Document { fields: _ } => false,
+    }
+}
+
+/// The name of what a validator checks, as [`shape_tag`] names a type.
+fn kind_tag(kind: &Validation) -> &'static str {
+    match kind {
+        Validation::Trivial => "scalar",
+        Validation::Set => "set",
+        Validation::Map { value: _ } => "map",
+        Validation::List { element: _ } => "list",
+        Validation::Option { value: _ } => "option",
+        Validation::Pair { left: _, right: _ } => "pair",
+        Validation::Result { ok: _, error: _ } => "result",
+        Validation::Document { fields: _ } => "document",
+    }
+}
+
+/// The components of a container type that a validator checks, in the order
+/// [`checked`] lists the validators.
+fn component_types(ty: &SemanticType) -> Vec<SemanticType> {
+    match ty {
+        SemanticType::Map { key: _, value } => vec![value.as_ref().clone()],
+        SemanticType::List { element: inner } | SemanticType::Option { value: inner } => {
+            vec![inner.as_ref().clone()]
+        }
+        SemanticType::Product { left, right }
+        | SemanticType::Result {
+            ok: left,
+            error: right,
+        } => vec![left.as_ref().clone(), right.as_ref().clone()],
+        SemanticType::Set { element: _ }
+        | SemanticType::Named {
+            member: _,
+            arguments: _,
+        }
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation => Vec::new(),
     }
 }
 
@@ -7570,7 +7693,13 @@ impl Gen<'_> {
     /// decision theorem, and relation, in dependency order, a recursive
     /// group's in mutual blocks; then the entry's relation and its two
     /// outcomes.
-    fn boundary(&self, signature: &Signature, names: &[String]) -> Result<String, String> {
+    fn boundary(
+        &self,
+        signature: &Signature,
+        names: &[String],
+        parameters: &[SemanticType],
+    ) -> Result<String, String> {
+        self.verify_boundary(parameters)?;
         let checks = self.checks();
         let adt_graph = self.adt_graph()?;
         let graph: BTreeMap<u64, BTreeSet<u64>> = checks
@@ -7616,6 +7745,217 @@ impl Gen<'_> {
             None => {}
         }
         Ok(out)
+    }
+
+    /// Whether a closed type can hold a map, set, or graph, whose strictly
+    /// ascending order §17.12 states as an invariant: decided here from the
+    /// source type alone, by this generator's own recursion, so that what
+    /// the lowering decided to validate is checked against what the source
+    /// says needs validating, not against itself.
+    fn invariant_carrier(
+        &self,
+        ty: &SemanticType,
+        seen: &mut BTreeSet<String>,
+    ) -> Result<bool, String> {
+        match ty {
+            SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ } => Ok(true),
+            SemanticType::Option { value: inner } | SemanticType::List { element: inner } => {
+                self.invariant_carrier(inner, seen)
+            }
+            SemanticType::Product { left, right }
+            | SemanticType::Result {
+                ok: left,
+                error: right,
+            } => {
+                let first = self.invariant_carrier(left, seen)?;
+                let second = self.invariant_carrier(right, seen)?;
+                Ok(first || second)
+            }
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => {
+                if !seen.insert(self.source.type_text(ty)) {
+                    return Ok(false);
+                }
+                let shape = self.source.document(ty)?;
+                let mut found = false;
+                for field in shape.fields.iter().flatten() {
+                    found = self.invariant_carrier(field, seen)? || found;
+                }
+                Ok(found)
+            }
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::ContractViolation => Ok(false),
+        }
+    }
+
+    /// The boundary the lowering built is the boundary the source types
+    /// call for: the entry validates exactly the parameters whose types carry
+    /// the invariant, each by the validator of its own type, and every
+    /// validator checks exactly the components of its type that carry it.
+    /// A lowering that skips one is refused here, before any proof is
+    /// written, so no theorem is stated about a weaker boundary.
+    fn verify_boundary(&self, parameters: &[SemanticType]) -> Result<(), String> {
+        let checks = self.checks();
+        let carries = |ty: &SemanticType| self.invariant_carrier(ty, &mut BTreeSet::new());
+        // `index` is the validator of a component of type `expected`.
+        let component =
+            |index: u64, expected: &SemanticType, context: &str| -> Result<(), String> {
+                let (ty, _, kind) = checks
+                    .get(&index)
+                    .ok_or_else(|| format!("{context}: function {index} is not a validator"))?;
+                if self.source.type_text(ty) != self.source.type_text(expected) {
+                    return Err(format!(
+                        "{context}: the validator {index} checks `{}`, not `{}`",
+                        self.source.type_text(ty),
+                        self.source.type_text(expected)
+                    ));
+                }
+                let needed = carries(expected)?;
+                if needed == is_trivial(kind) {
+                    return Err(format!(
+                        "{context}: `{}` {} the invariant but its validator {index} {}",
+                        self.source.type_text(expected),
+                        if needed { "carries" } else { "does not carry" },
+                        if needed {
+                            "checks nothing"
+                        } else {
+                            "checks something"
+                        }
+                    ));
+                }
+                Ok(())
+            };
+        let mut any = false;
+        for parameter in parameters {
+            any = carries(parameter)? || any;
+        }
+        match self.entry_of() {
+            None => {
+                if any {
+                    return Err(
+                        "a parameter carries §17.12's invariant but the root has no entry"
+                            .to_owned(),
+                    );
+                }
+            }
+            Some((_, validators)) => {
+                if validators.len() != parameters.len() {
+                    return Err(format!(
+                        "the entry validates {} parameters of {}",
+                        validators.len(),
+                        parameters.len()
+                    ));
+                }
+                for (position, (parameter, validator)) in
+                    parameters.iter().zip(validators).enumerate()
+                {
+                    let context = format!("parameter {position}");
+                    match validator {
+                        Some(index) => component(*index, parameter, &context)?,
+                        None => {
+                            if carries(parameter)? {
+                                return Err(format!(
+                                    "{context}: `{}` carries §17.12's invariant but the entry does not validate it",
+                                    self.source.type_text(parameter)
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (index, (ty, _, kind)) in &checks {
+            let context = format!("the validator {index} of `{}`", self.source.type_text(ty));
+            // A validator of a container checks that kind of container.
+            let (shape, tag) = (shape_tag(ty), kind_tag(kind));
+            match kind {
+                Validation::Trivial => {
+                    if carries(ty)? {
+                        return Err(format!(
+                            "{context} is trivial but its type carries the invariant"
+                        ));
+                    }
+                    continue;
+                }
+                Validation::Document { fields: _ }
+                | Validation::Set
+                | Validation::Map { value: _ }
+                | Validation::List { element: _ }
+                | Validation::Option { value: _ }
+                | Validation::Pair { left: _, right: _ }
+                | Validation::Result { ok: _, error: _ } => {
+                    if shape != tag {
+                        return Err(format!("{context} is a {tag} validator of a {shape}"));
+                    }
+                }
+            }
+            match kind {
+                Validation::Trivial => {}
+                Validation::Document { fields } => {
+                    let shape = self.source.document(ty)?;
+                    if shape.fields.len() != fields.len() {
+                        return Err(format!("{context} checks another number of constructors"));
+                    }
+                    for (declared, checked) in shape.fields.iter().zip(fields) {
+                        if declared.len() != checked.len() {
+                            return Err(format!("{context} checks another number of fields"));
+                        }
+                        for (field, validator) in declared.iter().zip(checked) {
+                            match validator {
+                                Some(index) => component(*index, field, &context)?,
+                                None => {
+                                    if carries(field)? {
+                                        return Err(format!(
+                                            "{context} does not validate a field `{}` that carries the invariant",
+                                            self.source.type_text(field)
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Validation::Set
+                | Validation::Map { value: _ }
+                | Validation::List { element: _ }
+                | Validation::Option { value: _ }
+                | Validation::Pair { left: _, right: _ }
+                | Validation::Result { ok: _, error: _ } => {
+                    let expected = component_types(ty);
+                    let checked = checked(kind);
+                    if expected.len() != checked.len() {
+                        return Err(format!("{context} checks another number of components"));
+                    }
+                    for (index, expected) in checked.iter().zip(&expected) {
+                        component(*index, expected, &context)?;
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     /// One validator's statements.
@@ -8035,12 +8375,12 @@ impl Gen<'_> {
             "def entryFits {binders} : Bool :=\n  {fits}\n\n\
              def entryValue {binders} : {value} :=\n  {outcome}\n\n\
              /-- The entry's observation. -/\n\
-             def denoteEntry {binders} : {p}.Obs :=\n  {p}.Rel (entryFits {applied}) (entryValue {applied})\n\n\
+             def denoteEntry {binders} : {p}.Obs :=\n  cond (entryFits {applied}) ({p}.Obs.value (entryValue {applied})) {p}.Obs.overflow\n\n\
              /-- §17.12's invariants of the validated parameters. -/\n\
              def accepts {binders} : Prop :=\n  {accepts}\n\n\
              theorem entry {binders} : {p}.RunConv __prog {entry} {} (denoteEntry {applied}) :=\n  {p}.run_of_funRel ({p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({proof})) (by simp [entryFits]))\n\n\
-             theorem entry_accepts {binders} (__h : accepts {applied}) : denoteEntry {applied} = {p}.someObs (denote {applied}) := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue denote {p}.Rel\n  simp only [if_true{uses}]\n  cases {} <;> rfl\n\n\
-             theorem entry_refuses {binders} (__h : ¬ accepts {applied}) : denoteEntry {applied} = {p}.Obs.value {value}.none := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue {p}.Rel\n{refusal}\n",
+             theorem entry_accepts {binders} (__h : accepts {applied}) : denoteEntry {applied} = {p}.someObs (denote {applied}) := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue denote\n  simp only [if_true{uses}]\n  cases {} <;> rfl\n\n\
+             theorem entry_refuses {binders} (__h : ¬ accepts {applied}) : denoteEntry {applied} = {p}.Obs.value {value}.none := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue\n{refusal}\n",
             signature.arguments,
             signature.fits_applied,
         ))

@@ -9,7 +9,7 @@ if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   for source; do :; done
   case "$source" in
     */preserve-src/LexLeanPreserve/C*/R*/Rust*.lean)
-      sed -i 's/(\.runtime \.natAdd)/(.runtime .natSub)/g' "$source"
+      sed 's/(\.runtime \.natAdd)/(.runtime .natSub)/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
       ;;
   esac
 fi

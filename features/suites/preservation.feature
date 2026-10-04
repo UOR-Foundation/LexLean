@@ -24,7 +24,7 @@ Feature: preservation
     And an interpreter outcome altered in one case is reported as a disagreement
 
   @SP-04 @build
-  Scenario: Every declaration of the preservation library depends on exactly the axioms library.toml registers, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused.
+  Scenario: Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused.
     Given the preservation library, its registry, and the shipped calculus modules
     When the library is compiled and every declaration's axioms printed, and the shipped modules are compared with the compiler golden
     Then every declaration's axioms equal the registry and every shipped module equals its golden

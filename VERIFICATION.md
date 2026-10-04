@@ -915,13 +915,102 @@ repo-conformance --test conformance -- conformance_sp_11`. Expected: a root's
 package prints another outcome than the interpreter.
 
 ```text
-thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:1716:5:
+thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2112:5:
 root_3_core run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 root_3_std run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 ```
 
 Removed: the runtime was restored; the 68 packages build and 504 runs agree,
 96 of them through a boundary entry.
+
+### the boundary is judged from the source types
+
+At `e43d31a` the validated set was whatever the lowering wrote into the
+entry's layout, and certificate A then proved the weaker statement it
+implied: a lowering that skipped the validator of a parameter was certified
+(`conformance_sp_10` and `lexlean verify` passed). Planted in
+`crates/lexlean/src/production/lower.rs`, first the entry omitting the
+validator of the parameter named `spare : list (map nat bool)`, then
+`carries` answering false for a list. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_10`; and `lexlean verify` on a project
+whose root takes `spare : list (map nat bool)` with the second plant.
+Expected: the certificate generator, which decides which parameters carry
+§17.12's invariant from the source types by its own recursion, refuses the
+lowering before any theorem is written.
+
+```text
+thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:999:40:
+the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
+thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:999:40:
+the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
+error[LLI9001]: phase preservation: a parameter carries §17.12's invariant but the root has no entry
+```
+
+Removed: both plants were removed. `conformance_sp_10` also plants the same
+defects itself, in the lowered program (a skipped parameter validator for
+every validated parameter of every entry, a validator replaced by the
+trivial one for every non-trivial validator), requires the generator to
+refuse each naming the parameter or the validator, and requires the entry to
+exist exactly for the roots whose parameters hold a map or a set by its own
+oracle (`differential::carriers`), and an input breaking each validated
+parameter's invariant in turn to be refused with `none` by the interpreter,
+Lean, the machine, and rustc.
+
+### the statement vocabulary quoted in SPEC.md can fail
+
+Planted, first in `SPEC.md`, `Rel`'s quoted definition ending in `.stuck`
+instead of `.overflow`, then in
+`language/preservation-1.2/library/LexLeanPreservation/Core.lean`, a comment
+appended to the definition of `Rel`. Command: `cargo xtask
+validate-spec-links`. Expected: a definition changed on one side only is
+refused.
+
+```text
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/Core.lean` that the file does not state byte for byte: `def Rel (fits : Bool) (v : Value) : Obs := cond fits (.value v) .stuck`
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/Core.lean` that the file does not state byte for byte: `def Rel (fits : Bool) (v : Value) : Obs := cond fits (.value v) .overflow`
+```
+
+Removed: both edits were reverted; the gate reports the quoted
+declarations equal the library's. The unit test of
+`repo_model::vocabulary` plants a changed definition, a missing quotation,
+a missing file, and no quotation at all; `conformance_sp_04` also requires
+every declaration the library states to be registered in `library.toml`.
+
+### certificate generation is bounded
+
+`lexlean verify` of a project whose root instantiates the generic chain
+`g_k<T> = g_{k+1}<(T, T)>` (§17.17 *Limits*) before the limits existed used
+gigabytes and failed with a rejected certificate A (`LLV7013`, a heartbeat
+timeout) at 17 deep. Now the lowering charges its nodes and the certificates
+they imply, before the toolchain is touched:
+
+```text
+chain 10 deep: verified 1 module; attestation f9602577624e931f0beacc692fac32f0bd001706fa8926b92ebd4eba82c959a7
+chain 11 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 6574992 bytes (16417 program nodes)
+chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 209742592 bytes (524336 program nodes)
+```
+
+A pinned Lean that dies while checking a certificate is `LLS8002` too. The
+negative fixture `certificate-resource-exhausted` (a lake overlay gives
+certificate A a heartbeat budget of one) exits 4 with nothing published:
+
+```text
+error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0` (maximum number of heartbeats): the generated module is within max_file_bytes 4194304 but beyond what the machine checks, and the project's types are too large for it
+```
+
+The unit tests of `lexlean::verify` classify a heartbeat message, an
+out-of-memory message, and a kill by signal as limits and a type mismatch as
+not. Rejections of certificates A, B, and E now carry the declaration, the
+root, and the bounded first error, as the fixtures' expected output records:
+
+```text
+error[LLV7015]: certificate B: `LexLeanPreserve.C….R2.RustCore` was rejected in `fun2` of root `Production.Main.quadruple`: error: Application type mismatch: The argument
+  rfl
+has type
+  ?m.157 = ?m.157
+but is expected to have type
+  RustSemantics.itemFallible RustSyntax.Item.natSub = true
+```
 
 ### CL-11 covers every registered code's class
 
@@ -953,7 +1042,7 @@ refuses what it admits.
 ```text
 (1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
 expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
-(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:419:13:
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:421:13:
 /home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
 (2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:666:18:
 a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
@@ -1840,7 +1929,7 @@ seeded graphs and the 24-node chain, whose last node is such a successor,
 disagree with the independent model.
 
 ```text
-thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.graphTopological
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1858,7 +1947,7 @@ canonical order disagreed with Lean's `Key Int` instance. Command: `cargo test
 insertion of the source order, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  [-2, -10, -100, 0, 3, 9, 100] =\n    LexLeanCollections.listFold (fun built element => LexLeanCollections.setInsert built element) []\n      [3, -2, 0, -10, 100, -100, 9]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1875,7 +1964,7 @@ conformance -- conformance_sm_28`. Expected: the seeded union theorems,
 whose right-hand sides come from `BTreeSet`, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.setUnion [1, 2, 3] [0, 5] = [0, 1, 2, 3, 5]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -2427,13 +2516,13 @@ values, and the portable runtime's integer quotient flooring (`Int.ediv`
 for `Int.tdiv`). Expected: Lean refuses the seeded expectations.
 
 ```text
-thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Tie Sample.s0 = 1\nis false", ...
-thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:1903:10:
+thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:1911:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Quantized Sample.s0 = [0, -14, -37, -33, -40, 10, -32, 46]\nis false", ...
 ```
 

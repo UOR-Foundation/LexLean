@@ -916,6 +916,14 @@ pub fn checked_project(project: &P) -> lexlean::link::CheckedProject {
         .expect("check_project")
 }
 
+/// The resource limits a fixture's project configures.
+pub fn limits(project: &P) -> lexlean::config::Limits {
+    lexlean::project::Project::load(&project.root.join("lexlean.toml"))
+        .expect("project loads")
+        .config
+        .limits
+}
+
 /// The rendered build for a fixture (no Lean, no publication).
 pub fn rendered(project: &P) -> lexlean::api::RenderedBuild {
     let inner =

@@ -4646,3 +4646,28 @@ axioms = ["propext"]
 module = "LexLeanPreservation.Compose"
 name = "LexLeanPreservation.Rust.wt_encExcept"
 axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.Representable"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.RepresentableL"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.repL_nil"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.repL_cons"
+axioms = ["propext"]
+
+[[declaration]]
+module = "LexLeanPreservation.Compose"
+name = "LexLeanPreservation.Rust.runItem_abort_infallible"
+axioms = ["Classical.choice", "Quot.sound", "propext"]

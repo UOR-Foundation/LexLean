@@ -88,7 +88,27 @@ fn first_of(value: &Value) -> &Value {
 
 /// A sampled value of `ty`, small enough that most computations stay in
 /// range and deep enough to exercise every constructor.
-fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -> Value {
+/// Where a sampled scalar lies: anywhere small, or at the top or bottom of
+/// its type, the inputs on which an overflow is possible (§17.17).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Extreme {
+    Small,
+    /// Larger numbers and longer sequences than the small seeded inputs,
+    /// so recursion and iteration run through more than a few steps.
+    Medium,
+    High,
+    Low,
+    /// Each scalar independently small, at the top, or at the bottom.
+    Mixed,
+}
+
+fn sample(
+    modules: &Modules<'_>,
+    rng: &mut Rng,
+    ty: &SemanticType,
+    depth: u32,
+    extreme: Extreme,
+) -> Value {
     let small = |rng: &mut Rng, span: u64| rng.below(span).to_string();
     let signed = |rng: &mut Rng, span: u64| {
         let magnitude = i128::from(rng.below(span));
@@ -99,37 +119,90 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
         })
         .to_string()
     };
-    let length = |rng: &mut Rng| if depth >= 3 { 0 } else { rng.below(4) as usize };
+    let here = match extreme {
+        Extreme::Mixed => [Extreme::Small, Extreme::High, Extreme::Low][rng.below(3) as usize],
+        fixed @ (Extreme::Small | Extreme::Medium | Extreme::High | Extreme::Low) => fixed,
+    };
+    let high = here == Extreme::High;
+    let bound = matches!(here, Extreme::High | Extreme::Low);
+    let medium = extreme == Extreme::Medium;
+    let length = |rng: &mut Rng| {
+        if depth >= 3 {
+            0
+        } else {
+            rng.below(if medium { 9 } else { 4 }) as usize
+        }
+    };
     match ty {
         SemanticType::Nat => Value::Nat {
-            value: small(rng, 40),
+            value: if bound {
+                if high { u64::MAX } else { 0 }.to_string()
+            } else {
+                small(rng, if medium { 3000 } else { 40 })
+            },
         },
         SemanticType::Int => Value::Int {
-            value: signed(rng, 60),
+            value: if bound {
+                if high { i64::MAX } else { i64::MIN }.to_string()
+            } else {
+                signed(rng, if medium { 3000 } else { 60 })
+            },
         },
         SemanticType::Int8 => Value::I8 {
-            value: signed(rng, 100),
+            value: if bound {
+                if high { i8::MAX } else { i8::MIN }.to_string()
+            } else {
+                signed(rng, 100)
+            },
         },
         SemanticType::Int16 => Value::I16 {
-            value: signed(rng, 300),
+            value: if bound {
+                if high { i16::MAX } else { i16::MIN }.to_string()
+            } else {
+                signed(rng, 300)
+            },
         },
         SemanticType::Int32 => Value::I32 {
-            value: signed(rng, 100_000),
+            value: if bound {
+                if high { i32::MAX } else { i32::MIN }.to_string()
+            } else {
+                signed(rng, 100_000)
+            },
         },
         SemanticType::Int64 => Value::I64 {
-            value: signed(rng, 1_000_000),
+            value: if bound {
+                if high { i64::MAX } else { i64::MIN }.to_string()
+            } else {
+                signed(rng, 1_000_000)
+            },
         },
         SemanticType::UInt8 => Value::U8 {
-            value: small(rng, 256),
+            value: if bound {
+                if high { u8::MAX } else { 0 }.to_string()
+            } else {
+                small(rng, 256)
+            },
         },
         SemanticType::UInt16 => Value::U16 {
-            value: small(rng, 65_536),
+            value: if bound {
+                if high { u16::MAX } else { 0 }.to_string()
+            } else {
+                small(rng, 65_536)
+            },
         },
         SemanticType::UInt32 => Value::U32 {
-            value: small(rng, 100_000),
+            value: if bound {
+                if high { u32::MAX } else { 0 }.to_string()
+            } else {
+                small(rng, 100_000)
+            },
         },
         SemanticType::UInt64 => Value::U64 {
-            value: small(rng, 1_000_000),
+            value: if bound {
+                if high { u64::MAX } else { 0 }.to_string()
+            } else {
+                small(rng, 1_000_000)
+            },
         },
         SemanticType::Bool => Value::Bool {
             value: rng.below(2) == 0,
@@ -164,18 +237,18 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
                 Value::None
             } else {
                 Value::Some {
-                    value: Box::new(sample(modules, rng, value, depth + 1)),
+                    value: Box::new(sample(modules, rng, value, depth + 1, extreme)),
                 }
             }
         }
         SemanticType::Result { ok, error } => {
             if rng.below(2) == 0 {
                 Value::Ok {
-                    value: Box::new(sample(modules, rng, ok, depth + 1)),
+                    value: Box::new(sample(modules, rng, ok, depth + 1, extreme)),
                 }
             } else {
                 Value::Error {
-                    value: Box::new(sample(modules, rng, error, depth + 1)),
+                    value: Box::new(sample(modules, rng, error, depth + 1, extreme)),
                 }
             }
         }
@@ -183,14 +256,14 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
             let count = length(rng);
             Value::List {
                 items: (0..count)
-                    .map(|_| sample(modules, rng, element, depth + 1))
+                    .map(|_| sample(modules, rng, element, depth + 1, extreme))
                     .collect(),
             }
         }
         SemanticType::Set { element } => {
             let count = length(rng) + 1;
             let items = (0..count)
-                .map(|_| sample(modules, rng, element, depth + 1))
+                .map(|_| sample(modules, rng, element, depth + 1, extreme))
                 .collect();
             Value::List {
                 items: sorted_unique(items, |item| item),
@@ -200,8 +273,8 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
             let count = length(rng) + 1;
             let items = (0..count)
                 .map(|_| Value::Pair {
-                    left: Box::new(sample(modules, rng, key, depth + 1)),
-                    right: Box::new(sample(modules, rng, value, depth + 1)),
+                    left: Box::new(sample(modules, rng, key, depth + 1, extreme)),
+                    right: Box::new(sample(modules, rng, value, depth + 1, extreme)),
                 })
                 .collect();
             Value::List {
@@ -209,8 +282,8 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
             }
         }
         SemanticType::Product { left, right } => Value::Pair {
-            left: Box::new(sample(modules, rng, left, depth + 1)),
-            right: Box::new(sample(modules, rng, right, depth + 1)),
+            left: Box::new(sample(modules, rng, left, depth + 1, extreme)),
+            right: Box::new(sample(modules, rng, right, depth + 1, extreme)),
         },
         // A violation is the pair of Booleans it lowers to (§17.12 rule 9).
         SemanticType::ContractViolation => Value::Pair {
@@ -244,7 +317,7 @@ fn sample(modules: &Modules<'_>, rng: &mut Rng, ty: &SemanticType, depth: u32) -
                 fields: constructors[chosen]
                     .fields
                     .iter()
-                    .map(|field| sample(modules, rng, field, depth + 1))
+                    .map(|field| sample(modules, rng, field, depth + 1, extreme))
                     .collect(),
             }
         }
@@ -379,9 +452,9 @@ pub struct Case {
     pub outcome: Outcome,
     /// The function invoked: the root, function 0, or its entry (§17.17).
     pub function: u64,
-    /// Whether an input was made to break §17.12's invariants, which the
-    /// entry must refuse with `none`.
-    pub invalid: bool,
+    /// The parameter whose §17.12 invariant the input was made to break,
+    /// which the entry must refuse with `none`.
+    pub invalid: Option<usize>,
 }
 
 /// `value` of `ty` with one map's or set's members no longer strictly
@@ -457,17 +530,121 @@ fn invalidate(modules: &Modules<'_>, ty: &SemanticType, value: &Value) -> Option
     }
 }
 
+/// The interpreter's outcome within a small fuel, on a thread whose stack
+/// holds the recursion that fuel allows.
+fn bounded(program: &lexlean::calculus::Program, function: u64, values: &[Value]) -> Outcome {
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(1 << 29)
+            .spawn_scoped(scope, || {
+                interp::run(program, BOUNDED_FUEL, function, values)
+            })
+            .expect("a thread")
+            .join()
+            .expect("the interpreter runs")
+    })
+}
+
+/// Tries of the search for an input that overflows.
+const SEARCH: u64 = 400;
+
+/// The fuel of an input at the bounds of its types.
+const BOUNDED_FUEL: u64 = 100_000;
+
+/// Whether a source type can hold a map or a set: the test's own oracle for
+/// which parameters an entry must validate, independent of the lowering and
+/// of the certificate generator.
+fn holds_collection(
+    modules: &Modules<'_>,
+    ty: &SemanticType,
+    seen: &mut std::collections::BTreeSet<String>,
+) -> bool {
+    match ty {
+        SemanticType::Map { key: _, value: _ } | SemanticType::Set { element: _ } => true,
+        SemanticType::Option { value: inner } | SemanticType::List { element: inner } => {
+            holds_collection(modules, inner, seen)
+        }
+        SemanticType::Product { left, right }
+        | SemanticType::Result {
+            ok: left,
+            error: right,
+        } => holds_collection(modules, left, seen) || holds_collection(modules, right, seen),
+        SemanticType::Named {
+            member: _,
+            arguments: _,
+        } => {
+            if !seen.insert(format!("{ty:?}")) {
+                return false;
+            }
+            let (_, constructors) = source_type(modules, ty).expect("a document type");
+            constructors
+                .iter()
+                .flat_map(|constructor| constructor.fields.iter())
+                .any(|field| holds_collection(modules, field, seen))
+        }
+        _ => false,
+    }
+}
+
+/// For each root of `project`, the positions of the parameters whose types
+/// can hold a map or a set, which an entry must validate (§17.17), by the
+/// test's own oracle.
+#[must_use]
+pub fn carriers(project: &P) -> BTreeMap<String, Vec<usize>> {
+    let checked = support::checked_project(project);
+    let modules = linked_modules(&checked);
+    roots(&checked)
+        .expect("the eligibility reports")
+        .into_iter()
+        .map(|root| {
+            let (parameters, _) =
+                root_signature(&modules, &root.module, &root.name).expect("a root signature");
+            let positions = parameters
+                .iter()
+                .enumerate()
+                .filter(|(_, parameter)| {
+                    holds_collection(
+                        &modules,
+                        &parameter.r#type,
+                        &mut std::collections::BTreeSet::new(),
+                    )
+                })
+                .map(|(position, _)| position)
+                .collect();
+            (root.report.root.clone(), positions)
+        })
+        .collect()
+}
+
 /// The cases of every root of `project`, by root name.
+///
+/// Each root is run on seeded small inputs, on inputs at the top and at the
+/// bottom of every scalar type and with each parameter in turn at the top,
+/// where the overflow arm of the statements is reached (§17.17), and, when
+/// it has an entry, through the entry on the same inputs and on inputs that
+/// break the invariant of each validated parameter in turn.
 #[must_use]
 pub fn cases(project: &P) -> BTreeMap<String, Vec<Case>> {
     let checked = support::checked_project(project);
     let modules = linked_modules(&checked);
+    let limits = support::limits(project);
     let mut out: BTreeMap<String, Vec<Case>> = BTreeMap::new();
     for root in roots(&checked).expect("the eligibility reports") {
-        let lowered: Lowered = lower_root(&modules, &root.module, &root.name, root.report)
+        let lowered: Lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
             .unwrap_or_else(|diagnostic| panic!("{}: {diagnostic:?}", root.report.root));
         let (parameters, _) =
             root_signature(&modules, &root.module, &root.name).expect("a root signature");
+        let carriers: Vec<bool> = parameters
+            .iter()
+            .map(|parameter| {
+                holds_collection(
+                    &modules,
+                    &parameter.r#type,
+                    &mut std::collections::BTreeSet::new(),
+                )
+            })
+            .collect();
+        let entry = lowered.entry();
         let mut seed = root
             .report
             .root
@@ -475,47 +652,153 @@ pub fn cases(project: &P) -> BTreeMap<String, Vec<Case>> {
             .fold(0x9E37_79B9_7F4A_7C15_u64, |hash, byte| {
                 (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3)
             });
-        for _ in 0..SAMPLES {
+        let mut next = move || {
             seed = seed.wrapping_add(0x9E37_79B9_7F4A_7C15) | 1;
-            let mut rng = Rng(seed);
-            let values: Vec<Value> = parameters
-                .iter()
-                .map(|parameter| sample(&modules, &mut rng, &parameter.r#type, 0))
-                .collect();
-            let entry = lowered.entry();
-            let mut inputs = vec![(0, false, values.clone())];
-            // A root with an entry is also invoked through it, on the same
-            // inputs and on inputs that break an invariant, which the
-            // entry refuses.
-            if entry != 0 {
-                inputs.push((entry, false, values.clone()));
-                let broken = parameters.iter().zip(&values).enumerate().find_map(
-                    |(position, (parameter, value))| {
-                        let broken = invalidate(&modules, &parameter.r#type, value)?;
-                        let mut values = values.clone();
-                        values[position] = broken;
-                        Some(values)
-                    },
-                );
-                if let Some(broken) = broken {
-                    inputs.push((entry, true, broken));
+            Rng(seed)
+        };
+        // (inputs, whether the inputs are the small seeded ones)
+        let mut batches: Vec<(Vec<Value>, bool)> = Vec::new();
+        for _ in 0..SAMPLES {
+            let mut rng = next();
+            batches.push((
+                parameters
+                    .iter()
+                    .map(|parameter| {
+                        sample(&modules, &mut rng, &parameter.r#type, 0, Extreme::Small)
+                    })
+                    .collect(),
+                true,
+            ));
+        }
+        for extreme in [
+            Extreme::Medium,
+            Extreme::Medium,
+            Extreme::High,
+            Extreme::Low,
+        ] {
+            let mut rng = next();
+            batches.push((
+                parameters
+                    .iter()
+                    .map(|parameter| sample(&modules, &mut rng, &parameter.r#type, 0, extreme))
+                    .collect(),
+                false,
+            ));
+        }
+        for position in 0..parameters.len() {
+            let mut rng = next();
+            batches.push((
+                parameters
+                    .iter()
+                    .enumerate()
+                    .map(|(at, parameter)| {
+                        let extreme = if at == position {
+                            Extreme::High
+                        } else {
+                            Extreme::Small
+                        };
+                        sample(&modules, &mut rng, &parameter.r#type, 0, extreme)
+                    })
+                    .collect(),
+                false,
+            ));
+        }
+        // A root that may overflow is searched, on inputs whose scalars are
+        // each small or at a bound, for one that does, so that the overflow
+        // arm of every statement is exercised on it (§17.17).
+        if root
+            .report
+            .declared_effects
+            .iter()
+            .any(|effect| effect == "overflow")
+        {
+            let overflows = |values: &Vec<Value>| {
+                matches!(
+                    bounded(&lowered.program, 0, values),
+                    Outcome::Overflow { .. }
+                )
+            };
+            if !batches.iter().any(|(values, _)| overflows(values)) {
+                for _ in 0..SEARCH {
+                    let mut rng = next();
+                    let values: Vec<Value> = parameters
+                        .iter()
+                        .map(|parameter| {
+                            sample(&modules, &mut rng, &parameter.r#type, 0, Extreme::Mixed)
+                        })
+                        .collect();
+                    if overflows(&values) {
+                        batches.push((values, false));
+                        break;
+                    }
                 }
             }
-            for (function, invalid, values) in inputs {
-                let outcome = interp::run(&lowered.program, FUEL, function, &values);
-                out.entry(root.report.root.clone()).or_default().push(Case {
-                    root: root.report.root.clone(),
-                    arguments: parameters
-                        .iter()
-                        .zip(&values)
-                        .map(|(parameter, value)| lean_term(&modules, &parameter.r#type, value))
-                        .collect(),
-                    values,
-                    outcome,
-                    function,
-                    invalid,
-                });
+        }
+        let mut inputs: Vec<(u64, Option<usize>, Vec<Value>, bool)> = Vec::new();
+        for (values, small) in &batches {
+            // A root with an entry is invoked through the entry alone by a
+            // caller, and through function 0 here to state the root's own
+            // observation.
+            inputs.push((0, None, values.clone(), *small));
+            if entry != 0 {
+                inputs.push((entry, None, values.clone(), *small));
             }
+        }
+        if entry != 0 {
+            // One input per validated parameter that breaks its invariant,
+            // each parameter's value resampled until it has something to
+            // break.
+            for (values, small) in batches.iter().filter(|(_, small)| *small) {
+                for (position, carries) in carriers.iter().enumerate() {
+                    if !carries {
+                        continue;
+                    }
+                    let mut broken =
+                        invalidate(&modules, &parameters[position].r#type, &values[position]);
+                    let mut tries = 0;
+                    while broken.is_none() && tries < 64 {
+                        let mut rng = next();
+                        let fresh = sample(
+                            &modules,
+                            &mut rng,
+                            &parameters[position].r#type,
+                            0,
+                            Extreme::Small,
+                        );
+                        broken = invalidate(&modules, &parameters[position].r#type, &fresh);
+                        tries += 1;
+                    }
+                    if let Some(broken) = broken {
+                        let mut values = values.clone();
+                        values[position] = broken;
+                        inputs.push((entry, Some(position), values, *small));
+                    }
+                }
+            }
+        }
+        for (function, invalid, values, small) in inputs {
+            // An input at the bounds that a recursion cannot finish within a
+            // small fuel is no case; a small one must finish.
+            let outcome = if small {
+                interp::run(&lowered.program, FUEL, function, &values)
+            } else {
+                bounded(&lowered.program, function, &values)
+            };
+            if !small && matches!(outcome, Outcome::Exhausted) {
+                continue;
+            }
+            out.entry(root.report.root.clone()).or_default().push(Case {
+                root: root.report.root.clone(),
+                arguments: parameters
+                    .iter()
+                    .zip(&values)
+                    .map(|(parameter, value)| lean_term(&modules, &parameter.r#type, value))
+                    .collect(),
+                values,
+                outcome,
+                function,
+                invalid,
+            });
         }
     }
     out

@@ -686,6 +686,8 @@ pub struct CertifiedRendering {
     /// Certificate E: certificates A and B composed, whose theorem is that
     /// the crate's root realizes the encoded source result.
     pub composed: Certificate,
+    /// The rendered crate's text, which certificate B is about.
+    pub crate_text: String,
 }
 
 /// One certified root as `preservation.json` records it.
@@ -694,6 +696,9 @@ pub struct CertifiedRoot {
     pub root: String,
     pub targets: Vec<String>,
     pub certificate: Certificate,
+    /// The canonical file bytes of the lowered program the certificates are
+    /// about.
+    pub program: Vec<u8>,
     /// Certificate B of the root's crate in each of its targets.
     pub renderings: Vec<CertifiedRendering>,
 }
@@ -744,6 +749,16 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             ("theorem", Json::Str(root.certificate.theorem.clone())),
                             ("byte_length", Json::from_usize(root.certificate.text.len())),
                             (
+                                "program",
+                                Json::object(vec![
+                                    ("byte_length", Json::from_usize(root.program.len())),
+                                    (
+                                        "sha256",
+                                        Json::Str(Sha256Digest::of(&root.program).to_hex()),
+                                    ),
+                                ]),
+                            ),
+                            (
                                 "sha256",
                                 Json::Str(
                                     Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
@@ -760,6 +775,26 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                             Json::object(vec![
                                                 ("target", Json::Str(rendering.target.clone())),
                                                 ("module", Json::Str(certificate.module.clone())),
+                                                (
+                                                    "crate",
+                                                    Json::object(vec![
+                                                        (
+                                                            "byte_length",
+                                                            Json::from_usize(
+                                                                rendering.crate_text.len(),
+                                                            ),
+                                                        ),
+                                                        (
+                                                            "sha256",
+                                                            Json::Str(
+                                                                Sha256Digest::of(
+                                                                    rendering.crate_text.as_bytes(),
+                                                                )
+                                                                .to_hex(),
+                                                            ),
+                                                        ),
+                                                    ]),
+                                                ),
                                                 ("theorem", Json::Str(certificate.theorem.clone())),
                                                 (
                                                     "byte_length",
@@ -811,4 +846,23 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
             ),
         ),
     ])
+}
+
+/// The top-level declaration of a certificate's `text` that the first error
+/// of Lean's `output` lies in: the relation, derivation, or composition a
+/// rejection concerns.
+#[must_use]
+pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    let line: usize = output.lines().find_map(|line| {
+        let (_, rest) = line.split_once(".lean:")?;
+        let (number, rest) = rest.split_once(':')?;
+        let (_, rest) = rest.split_once(": ")?;
+        rest.starts_with("error").then(|| number.parse().ok())?
+    })?;
+    text.lines()
+        .take(line)
+        .filter(|line| line.starts_with("theorem ") || line.starts_with("def "))
+        .last()
+        .and_then(|line| line.split_whitespace().nth(1))
+        .map(str::to_owned)
 }

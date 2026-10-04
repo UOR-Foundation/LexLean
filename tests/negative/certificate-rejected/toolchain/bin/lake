@@ -8,7 +8,7 @@ if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   for source; do :; done
   case "$source" in
     */preserve-src/LexLeanPreserve/C*.lean)
-      sed -i 's/\.prim \.natAdd/.prim .natSub/g' "$source"
+      sed 's/\.prim \.natAdd/.prim .natSub/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
       ;;
   esac
 fi
