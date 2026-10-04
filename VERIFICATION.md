@@ -1012,6 +1012,120 @@ but is expected to have type
   RustSemantics.itemFallible RustSyntax.Item.natSub = true
 ```
 
+### the certificate estimate is checked against what is generated
+
+Planted: `CERTIFICATE_BYTES_PER_NODE` in
+`crates/lexlean/src/production/lower.rs` lowered from 400 to 50, so that the
+lowering charges a program far less than its certificates cost. Command:
+`cargo test -p repo-conformance --test conformance -- conformance_sp_02`.
+Expected: the coverage example's generated certificate is larger than the
+estimate and the check refuses.
+
+```text
+Coverage.Boundary.groveRoot: the estimate 36942 is below the 85745 bytes generated
+```
+
+Removed: the constant was restored; every example's estimate is above what
+is generated, so a program that passes the limit before generation cannot
+exceed it after.
+
+### the unreached-overflow list is checked both ways
+
+Planted: the exemption of `Coverage.Main.shapes` kept in `UNREACHED_OVERFLOW`
+although a sampled input of that root overflows. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_03`. Expected: a root
+listed as unreached that is reached is refused, as is a root absent from the
+list that never overflows.
+
+```text
+Coverage.Main.shapes overflows on a sampled input but is listed as unreached (exempt: true)
+```
+
+Removed: the list was restored.
+
+### the interpreter, Lean, the machine, and rustc agree where arithmetic overflows
+
+Planted: the skip of fallible operations removed from the check of the
+declared machine's infallible items. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_07`. Expected: an infallible item
+overflows on an argument it was never meant to receive, which the check names.
+
+```text
+rust-core: the infallible item op_nat_add overflows on [Nat 1, Nat 18446744073709551615]
+```
+
+Removed: the skip was restored; the machine's `abort` allowance is pinned to
+the fallible items only.
+
+### certificate E quantifies over representable arguments only
+
+Planted: the `hrep` binder of certificate E renamed in
+`crates/lexlean/src/production/certificate.rs`. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_09`. Expected: the
+audit that the composed theorem is stated for representable arguments only
+refuses.
+
+```text
+production: `LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0.Compose.RustCore` quantifies over every argument
+```
+
+Removed: the binder was restored.
+
+### the mutation checks name the declaration
+
+Planted: the declaration expected for a mutation of an entry in
+`expected_declarations` (`crates/conformance/src/preservation.rs`) renamed
+from `entry` to `entry_wrong`. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_10`. Expected: Lean rejects the mutated
+entry in `entry`, the check compares that name with the expected one and
+refuses. (`conformance_sp_02` passes under the same plant: it plants the
+lowered-program mutations of the closure, not the entry.)
+
+```text
+Coverage.Boundary.groveRoot Validation in function 18 (Entry { validators: [Some(2), Some(13), Some(14), Some(15)] }): the error lies in `entry`, not in ["entry_wrong"]:
+Planted/P0.lean:381:1236: error: Application type mismatch: The argument
+  __vrel_2 g
+```
+
+Removed: the name was restored. The same check holds for B and E (each
+rejected rendering must fail inside the declaration of the function mutated,
+or of its callers for a member of a template instance) and for the first,
+middle, and last site of every kind.
+
+### the published program and crate are bound by the record
+
+Planted: the digest of a rendering's crate in `preservation.json` computed
+over the text without its trailing newline
+(`crates/lexlean/src/production/preserve.rs`). Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_05`. Expected: the
+digest the record carries differs from the digest of the file published
+under `preserve/crate`.
+
+```text
+LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0: the record binds the published crate in rust-core
+  left: Some("62fd4c69178f72589d4336ed4f5695f4515fd7b322669e892acddf48ba5b1dcb")
+ right: Some("a9ae0afab91c841fada5f7d20ccfe8a41dfc2ca90b5b46dab280d5cd17d1385f")
+```
+
+Removed: the digest was restored; the program digest is bound the same way.
+
+### the cost of certification is fixed, not proportional to the roots
+
+`lexlean verify` of a project with a production root compiles the whole
+preservation library (13 modules) before the first certificate, whether the
+project has one root or many; a reviewer measured about 2.5 minutes for it,
+209 s for a six-root project and 144 to 157 s for a three-root one. The
+preservation suite reflects it: on the host that ran the plants above,
+`conformance_sp_10` took 236 s, `conformance_sp_05` 131 s, and
+`conformance_sp_02` 727 s alone; the whole suite is about 24 minutes at three
+test threads. A CI budget for the Lean-backed jobs must count that, not the
+number of roots.
+
+Scope note: the relaxation of named-root extraction that admits `Init`
+definitions exported as axioms (NE-03) shares this change because the
+certificates need it; it is recorded in `CHANGELOG.md` and is not part of the
+semantic-preservation claim.
+
 ### CL-11 covers every registered code's class
 
 Planted: `LLV7012` absent from the environment arm of
