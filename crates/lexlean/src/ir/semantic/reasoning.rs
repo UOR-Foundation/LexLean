@@ -495,6 +495,7 @@ pub enum Lemma {
     IterateUntilInvariant,
     IterateUntilSimulate,
     IterateUntilCount,
+    IterateUntilGrowth,
     IterateUntilStops,
     IterateUntilBound,
     StarRefl,
@@ -523,6 +524,7 @@ impl Lemma {
             Self::IterateUntilInvariant => "iterateUntilInvariant",
             Self::IterateUntilSimulate => "iterateUntilSimulate",
             Self::IterateUntilCount => "iterateUntilCount",
+            Self::IterateUntilGrowth => "iterateUntilGrowth",
             Self::IterateUntilStops => "iterateUntilStops",
             Self::IterateUntilBound => "iterateUntilBound",
             Self::StarRefl => "Star.refl",
@@ -633,6 +635,8 @@ pub enum Proof {
     ConcludeSound {
         conclude: MemberRef,
         accept_sound: MemberRef,
+        /// Whether the answer's correctness assumes the logic's invariant.
+        invariant: bool,
     },
     /// A concluded answer is the accepted answer.
     ConcludeAccept { conclude: MemberRef },
@@ -644,6 +648,9 @@ pub enum Proof {
         run_trace: MemberRef,
         conclude_accept: MemberRef,
         conclude_sound: MemberRef,
+        /// The theorem that the run's state satisfies the invariant, when the
+        /// answer's correctness assumes it.
+        run_invariant: Option<MemberRef>,
     },
     /// A node's trace extended by a firing step replays to its result.
     Extend {
@@ -674,6 +681,8 @@ pub enum Proof {
     SearchPeak { search_step: MemberRef },
     /// A search step counts one iteration.
     SearchCount { search_step: MemberRef },
+    /// A search step expands at most one node.
+    SearchExpansion { search_step: MemberRef },
     /// A search reasoner's explained answer replays and is sound.
     ExplainedSearch {
         reasoner: MemberRef,
@@ -681,12 +690,23 @@ pub enum Proof {
         answer: MemberRef,
         search_ok: MemberRef,
         accept_sound: MemberRef,
+        /// The theorem that a replayed trace ends in a state satisfying the
+        /// invariant, when the answer's correctness assumes it.
+        follow_invariant: Option<MemberRef>,
+    },
+    /// A forward run's state satisfies the invariant.
+    RunInvariant {
+        run_state: MemberRef,
+        saturate_invariant: MemberRef,
     },
     /// A forward reasoner's verdict is sound.
     VerdictForward {
         verdict: MemberRef,
         saturate: MemberRef,
         conclude_sound: MemberRef,
+        /// The theorem that the saturated state satisfies the invariant,
+        /// when the answer's correctness assumes it.
+        saturate_invariant: Option<MemberRef>,
     },
     /// A search reasoner's verdict is sound.
     VerdictSearch {
@@ -762,9 +782,11 @@ impl Proof {
             Self::SearchStep { .. } => "search_step",
             Self::SearchPeak { .. } => "search_peak",
             Self::SearchCount { .. } => "search_count",
+            Self::SearchExpansion { .. } => "search_expansion",
             Self::ExplainedSearch { .. } => "explained_search",
             Self::VerdictForward { .. } => "verdict_forward",
             Self::VerdictSearch { .. } => "verdict_search",
+            Self::RunInvariant { .. } => "run_invariant",
             Self::VerifySound { .. } => "verify_sound",
             Self::TrySound { .. } => "try_sound",
             Self::TryCount { .. } => "try_count",
@@ -2195,6 +2217,8 @@ struct Engine<'a> {
     /// The theorem that the answer term is correct on every state, which
     /// erases the verifier's check.
     answer_correct: Option<MemberRef>,
+    /// Whether that theorem assumes the logic's invariant.
+    answer_invariant: bool,
     /// The reasoner's type parameters: every elaborated declaration and
     /// generated theorem takes them (see [`generalize`]).
     type_parameters: &'a [String],
@@ -2453,7 +2477,7 @@ fn sorted_claims(name: &str, claims: &[ReasoningClaim]) -> Result<Claims, Semant
         };
         if previous.is_some_and(|prior| prior >= rank) {
             return Err(mismatch(format!(
-                "reasoner `{name}` claims are not strictly sorted by kind"
+                "reasoner `{name}` claims are not strictly sorted by kind, each at most once"
             )));
         }
         previous = Some(rank);
@@ -2532,11 +2556,26 @@ fn check_reasoner(
         if rule_at.logic.member != logic.member
             || rule_at.logic.type_arguments != logic.type_arguments
         {
+            let shown = |member: &MemberRef, arguments: &[SemanticType]| {
+                if arguments.is_empty() {
+                    member_key(member)
+                } else {
+                    format!(
+                        "{}<{}>",
+                        member_key(member),
+                        arguments
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                }
+            };
             return Err(mismatch(format!(
                 "reasoner `{name}` reasons in logic `{}`, but rule `{}` is over logic `{}`",
-                member_key(&logic.member),
-                member_key(&rule.member),
-                member_key(&rule_at.logic.member)
+                shown(&logic.member, &logic.type_arguments),
+                shown(&rule.member, &rule.type_arguments),
+                shown(&rule_at.logic.member, &rule_at.logic.type_arguments)
             )));
         }
         if !constructors.insert(rule.member.name.clone()) {
@@ -2697,30 +2736,55 @@ fn check_reasoner(
         require_obligation(env, &obligation, code!("LLT4010"))?;
         lowering.obligations.push(obligation);
     }
+    let mut answer_invariant = false;
     if let Some(theorem_member) = &answer_correct {
-        // Correct on every state, the answer needs no check on the states
-        // the reasoner reaches; the obligation names only prior source, so
-        // it is stated, and proved, before the reasoner.
+        // Correct on every state, or on every state satisfying the logic's
+        // invariant, which every state a run reaches does: the answer needs
+        // no check on the states the reasoner reaches. The obligation names
+        // only prior source, so it is stated, and proved, before the
+        // reasoner.
         let answered = sources[1].clone();
         let mut parameters = x_parameter.clone();
         parameters.push(parameter(&answer.name, &state));
         parameters.push(parameter("__v", &answer.r#type));
-        let obligation = Obligation {
+        let correct = implies(
+            eq(answered, some_of(&answer.r#type, var("__v"))),
+            call(
+                &verifier_at.specification,
+                &verifier_at.type_arguments,
+                vec![var(x), var("__v")],
+            ),
+        );
+        let obligation = |statement: SemanticTerm| Obligation {
             role: format!("reasoner `{name}` answer correctness"),
             theorem: theorem_member.clone(),
             type_parameters: type_parameters.clone(),
-            parameters,
-            statement: implies(
-                eq(answered, some_of(&answer.r#type, var("__v"))),
-                call(
-                    &verifier_at.specification,
-                    &verifier_at.type_arguments,
-                    vec![var(x), var("__v")],
-                ),
-            ),
+            parameters: parameters.clone(),
+            statement,
         };
-        require_obligation(env, &obligation, code!("LLT4010"))?;
-        lowering.obligations.push(obligation);
+        let unconditional = obligation(correct.clone());
+        let stated = match require_obligation(env, &unconditional, code!("LLT4010")) {
+            Ok(()) => unconditional,
+            Err(refusal) => {
+                // The same statement under the invariant is the other form.
+                let Some(holds) = at.invariant(var(&answer.name)) else {
+                    return Err(refusal);
+                };
+                let conditional = obligation(implies(holds, correct));
+                if require_obligation(env, &conditional, code!("LLT4010")).is_err() {
+                    return Err(refusal);
+                }
+                if initial.is_none() {
+                    return Err(mismatch(format!(
+                        "reasoner `{name}` claims an answer correct under the invariant of logic `{}`, which holds of every state its run reaches only given the initial invariant, and it claims none",
+                        member_key(&logic.member)
+                    )));
+                }
+                answer_invariant = true;
+                conditional
+            }
+        };
+        lowering.obligations.push(stated);
     }
     // Charged before anything is elaborated: the elaboration copies the
     // state, answer, and observation types and the source terms into many
@@ -2731,6 +2795,13 @@ fn check_reasoner(
         .iter()
         .filter_map(|rule| rule.binding.as_ref())
         .map(|(_, ty)| super::type_node_count(ty) + 1)
+        .fold(0_u64, u64::saturating_add);
+    // Every use of a rule copies the type arguments it and its logic are
+    // used at into each declaration that mentions the rule.
+    let rule_type_arguments = resolved
+        .iter()
+        .flat_map(|rule| rule.type_arguments.iter().chain(&rule.logic.type_arguments))
+        .map(|ty| super::type_node_count(ty) + 1)
         .fold(0_u64, u64::saturating_add);
     let bound = 1500u64
         .saturating_add(
@@ -2743,7 +2814,8 @@ fn check_reasoner(
             ),
         )
         .saturating_add(250u64.saturating_mul(resolved.len() as u64))
-        .saturating_add(40u64.saturating_mul(bindings));
+        .saturating_add(40u64.saturating_mul(bindings))
+        .saturating_add(16u64.saturating_mul(rule_type_arguments));
     charge(artifacts, &format!("reasoner `{name}`"), bound)?;
     let engine = Engine {
         name,
@@ -2764,6 +2836,7 @@ fn check_reasoner(
         initial,
         terminates,
         answer_correct,
+        answer_invariant,
         type_parameters,
         executable: *executable,
         axioms,
@@ -3834,27 +3907,33 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
             parameter("__s", &s),
             parameter("__v", &r_type),
         ],
-        term(implies(
-            eq(
-                engine.call_own("accept", vec![var(x), var("__s")]),
-                some_of(&r_type, var("__v")),
+        term(model::premised(
+            engine
+                .answer_invariant
+                .then(|| engine.logic.invariant(var("__s")))
+                .flatten(),
+            implies(
+                eq(
+                    engine.call_own("accept", vec![var(x), var("__s")]),
+                    some_of(&r_type, var("__v")),
+                ),
+                engine.spec(var("__v")),
             ),
-            engine.spec(var("__v")),
         )),
         match &engine.answer_correct {
-            Some(correct) => by_term(assume(
-                &["llE"],
-                cite(
-                    correct,
-                    &parameter_types(engine.type_parameters),
-                    vec![
-                        given(var(x)),
-                        given(var("__s")),
-                        given(var("__v")),
-                        hypothesis("llE"),
-                    ],
-                ),
-            )),
+            Some(correct) => {
+                let mut arguments = vec![given(var(x)), given(var("__s")), given(var("__v"))];
+                let mut binders = vec!["llE"];
+                if engine.answer_invariant {
+                    arguments.push(hypothesis("llJ"));
+                    binders.insert(0, "llJ");
+                }
+                arguments.push(hypothesis("llE"));
+                by_term(assume(
+                    &binders,
+                    cite(correct, &parameter_types(engine.type_parameters), arguments),
+                ))
+            }
             None => Proof::AcceptSound {
                 accept: engine.own("accept"),
                 sound: engine.verifier.sound.clone(),
@@ -4448,6 +4527,20 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             step: engine.own("step"),
         },
     ));
+    let firings = |value: SemanticTerm| project(project(value, "ledger"), "firings");
+    // Every step of a forward run fires exactly one rule.
+    lowering.theorems.push(theorem(
+        &engine.own_name("step_fired"),
+        &[],
+        pair_types("__r", "__q", &run),
+        term(implies(
+            step_some(var("__q")),
+            eq(firings(var("__q")), add(firings(var("__r")), nat(1))),
+        )),
+        Proof::StepCount {
+            step: engine.own("step"),
+        },
+    ));
     let x_only = vec![parameter(x, &engine.input)];
     let saturated_state = model::first(saturated.clone());
     let ran = engine.call_own("run", vec![var(x)]);
@@ -4564,6 +4657,26 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             ),
         ),
     ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("firings_bounded"),
+        &[],
+        x_only.clone(),
+        term(le(firings(ran_record.clone()), engine.fuel.clone())),
+        unfolding(
+            vec![engine.own("run")],
+            lemma(
+                Lemma::IterateUntilCount,
+                vec![
+                    given(function_ref(&engine.own("step"), &[])),
+                    given(lambda(vec![("__r", run.clone())], firings(var("__r")))),
+                    cite(&engine.own("step_fired"), &[], Vec::new()),
+                    given(engine.fuel.clone()),
+                    given(engine.call_own("start", vec![var(x)])),
+                    ProofTerm::Refl,
+                ],
+            ),
+        ),
+    ));
     if let (Some(invariant_ref), Some(holds_start), Some(holds_final)) = (
         at.invariant_ref(),
         at.invariant(observed.clone()),
@@ -4603,6 +4716,20 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             term(statement),
             unfolding(vec![engine.own("saturate")], proof),
         ));
+        if engine.answer_invariant {
+            if let Some(holds_run) = at.invariant(project(ran_record.clone(), "state")) {
+                lowering.theorems.push(theorem(
+                    &engine.own_name("run_invariant"),
+                    &[],
+                    x_only.clone(),
+                    term(holds_run),
+                    Proof::RunInvariant {
+                        run_state: engine.own("run_state"),
+                        saturate_invariant: engine.own("saturate_invariant"),
+                    },
+                ));
+            }
+        }
     }
     if let (Some(terminates), Some(rank_ref)) = (&engine.terminates, at.rank_ref()) {
         let (invariant, keep, initial) = match (at.invariant_ref(), &engine.initial) {
@@ -4708,10 +4835,17 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         &engine.own_name("conclude_sound"),
         &[],
         conclude_parameters,
-        term(implies(concluded, engine.spec(var("__v")))),
+        term(model::premised(
+            engine
+                .answer_invariant
+                .then(|| engine.logic.invariant(var("__s")))
+                .flatten(),
+            implies(concluded, engine.spec(var("__v"))),
+        )),
         Proof::ConcludeSound {
             conclude: engine.own("conclude"),
             accept_sound: engine.own("accept_sound"),
+            invariant: engine.answer_invariant,
         },
     ));
     lowering.theorems.push(theorem(
@@ -4733,6 +4867,9 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             verdict: engine.own("verdict"),
             saturate: engine.own("saturate"),
             conclude_sound: engine.own("conclude_sound"),
+            saturate_invariant: engine
+                .answer_invariant
+                .then(|| engine.own("saturate_invariant")),
         },
     ));
     explained_theorem(
@@ -4745,6 +4882,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             run_trace: engine.own("run_trace"),
             conclude_accept: engine.own("conclude_accept"),
             conclude_sound: engine.own("conclude_sound"),
+            run_invariant: engine.answer_invariant.then(|| engine.own("run_invariant")),
         },
     );
 }
@@ -5471,12 +5609,45 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
     lowering.theorems.push(theorem(
         &engine.own_name("search_count"),
         &[],
-        step_parameters,
+        step_parameters.clone(),
         term(implies(
-            stepped,
+            stepped.clone(),
             eq(iterations(var("__q")), add(iterations(var("__r")), nat(1))),
         )),
         Proof::SearchCount {
+            search_step: engine.own("searchStep"),
+        },
+    ));
+    // Every step of a search verifies the node it pops, and expands at most
+    // that one.
+    let counter =
+        |name: &'static str| move |value: SemanticTerm| project(project(value, "ledger"), name);
+    let verifications = counter("verifications");
+    let expansions = counter("expansions");
+    lowering.theorems.push(theorem(
+        &engine.own_name("search_verify_count"),
+        &[],
+        step_parameters.clone(),
+        term(implies(
+            stepped.clone(),
+            eq(
+                verifications(var("__q")),
+                add(verifications(var("__r")), nat(1)),
+            ),
+        )),
+        Proof::SearchCount {
+            search_step: engine.own("searchStep"),
+        },
+    ));
+    lowering.theorems.push(theorem(
+        &engine.own_name("search_expanded"),
+        &[],
+        step_parameters,
+        term(implies(
+            stepped,
+            le(expansions(var("__q")), add(expansions(var("__r")), nat(1))),
+        )),
+        Proof::SearchExpansion {
             search_step: engine.own("searchStep"),
         },
     ));
@@ -5554,6 +5725,41 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
             ),
         ),
     ));
+    for (name, measure, lemma_name, step_theorem) in [
+        (
+            "verifications_bounded",
+            &verifications as &dyn Fn(SemanticTerm) -> SemanticTerm,
+            Lemma::IterateUntilCount,
+            "search_verify_count",
+        ),
+        (
+            "expansions_bounded",
+            &expansions,
+            Lemma::IterateUntilGrowth,
+            "search_expanded",
+        ),
+    ] {
+        lowering.theorems.push(theorem(
+            &engine.own_name(name),
+            &[],
+            x_only.clone(),
+            term(le(measure(ran.clone()), engine.fuel.clone())),
+            unfolding(
+                vec![engine.own("run")],
+                lemma(
+                    lemma_name,
+                    vec![
+                        given(stepper.clone()),
+                        given(lambda(vec![("__r", search.clone())], measure(var("__r")))),
+                        cite(&engine.own(step_theorem), &[], vec![given(var(x))]),
+                        given(engine.fuel.clone()),
+                        given(start.clone()),
+                        ProofTerm::Refl,
+                    ],
+                ),
+            ),
+        ));
+    }
     lowering.theorems.push(theorem(
         &engine.own_name("iterations_bounded"),
         &[],
@@ -5586,6 +5792,9 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
             answer: engine.own("answer"),
             search_ok: engine.own("search_ok"),
             accept_sound: engine.own("accept_sound"),
+            follow_invariant: engine
+                .answer_invariant
+                .then(|| engine.own("follow_invariant")),
         },
     );
     lowering.theorems.push(theorem(

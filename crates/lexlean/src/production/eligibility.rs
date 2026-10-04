@@ -3002,6 +3002,8 @@ fn reasoning_rows(
                 .filter(|theorem| {
                     [
                         "iterations_bounded",
+                        "firings_bounded",
+                        "expansions_bounded",
                         "frontier_bounded",
                         "verifications_bounded",
                         "saturates",

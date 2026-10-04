@@ -3259,9 +3259,15 @@ and the axiom audit read only the elaboration.
    progress, with an initial invariant claimed when progress assumes the
    invariant (`LLT4011` otherwise); its theorem states exactly `Mu o < f`.
    `answer_correct` names a theorem stating exactly `forall x s v, a = some
-   v -> Spec x v` over the answer term: the answer is correct on every
-   state, so the verifier's check is erased (rule 9). A
-   generate-and-verify reasoner makes no claim (`LLT4010`).
+   v -> Spec x v` over the answer term (the answer is correct on every
+   state) or exactly `forall x s v, J s -> a = some v -> Spec x v` (it is
+   correct on every state satisfying the logic's invariant `J`, which holds
+   of every state a run reaches: the generated run theorem `E.run_invariant`
+   discharges the premise). The second form needs the logic's invariant and
+   an `initial_invariant` claim, since the invariant holds of reached states
+   only from an initial state that satisfies it (`LLT4010` otherwise). Either
+   form erases the verifier's check (rule 9). A generate-and-verify reasoner
+   makes no claim (`LLT4010`).
 8. **Elaboration.** Every reasoner elaborates, in a fixed order, to:
    `E.Step`, an inductive with one constructor per rule carrying its
    binding (generate-and-verify: `E.Step.candidate` carrying the accepted
@@ -3294,11 +3300,15 @@ and the axiom audit read only the elaboration.
    accepts it), `E.Trial`, `E.try` (check the next candidate while fewer
    than the budget have been checked, else record truncation), `E.run x`
    (the left fold of `E.try` over the candidates), `E.failure`, `E.verdict
-   x`, `E x`, and `E.answer`.
+   x`, `E x`, and `E.answer`. The generator is a term evaluated in full
+   before the budget applies, so the ledger accounts the verifications the
+   budget limits and not the work of generating the candidates.
 9. **Verdicts and the runtime boundary** (`LLT4012`). `E.verdict x :
    result R reasoning_failure` and `E x : result (product R (list E.Step))
    reasoning_failure` answer only a candidate the verifier's check accepted,
-   or, under `answer_correct`, the extracted answer. A forward reasoner
+   or, under `answer_correct`, the extracted answer, which the claim's
+   theorem proves correct on every state or on every state that satisfies
+   the invariant (rule 7). A forward reasoner
    answers only from a saturated state; a forward run cut short by its fuel
    is `exhausted` whatever its partial state holds. A search or generation
    cut short by a bound is `exhausted` and never `unsolved`; a saturated
@@ -3306,7 +3316,9 @@ and the axiom audit read only the elaboration.
    that proposed nothing are `unsolved`; an answer the check refused is
    `rejected`. Executable code that reaches a rule's `N.conclusion`, or a
    reasoner's `E.extract` without an `answer_correct` claim, other than
-   through the reasoner's own elaboration, is `LLT4012`.
+   through the reasoner's own elaboration, is `LLT4012`, whether it is
+   called, applied, folded, iterated, bound to a name, or mentioned in a
+   lambda, a branch, a rule's guard, an observation, or a generator.
 10. **The `reasoning_failure` type.** Its four nullary constructors
     `ReasoningFailure.exhausted`, `.unsolved`, `.rejected`, and
     `.invalid_step` are ordinary data, lowered to the pairs of `Prod Bool
@@ -3327,7 +3339,13 @@ and the axiom audit read only the elaboration.
     (`E.derivation : Reaches Rel (E.observe x) (E.follow x trace)`),
     invariant preservation, the traced and state-only loops agreeing
     (`E.run_state`), the trace of every run replaying to its state
-    (`E.run_trace`), iteration, frontier, and verification bounds,
+    (`E.run_trace`), the bounds the fuel, the frontier, and the budget give
+    (a forward run's iterations and firings, a search's iterations,
+    verifications, expansions, and frontier peak, a generation's
+    verifications, each at most its bound; the guard evaluations of a run and
+    the firings of a search count work over a rule's candidate list, a user
+    term, so they are accounted in the ledger and decided counter by counter
+    for the example's runs, not bounded by a theorem),
     saturation under a `terminates` claim (`E.saturates`), and answer
     soundness (`E.verdict_sound : forall v, E.verdict x = ok v -> Spec x v`
     and `E.explained`: an explained answer replays from its trace and meets
@@ -3347,9 +3365,11 @@ and the axiom audit read only the elaboration.
     its source terms and types and the number of rules it names, *before*
     any of it is built, running across the link like an artifact's decoded
     value (rule 2); exceeding the limit is `LLS8002` naming the declaration
-    and "before elaborating". The bound is never an estimate to be
-    exceeded: an elaboration that exceeded its bound is a defect of the
-    bound, reported as an internal error, never a silent overrun. The rules
+    and "before elaborating". The bound is a proved ceiling on the elaboration's size for
+    every admitted input, fitted to the committed shapes (many rules, wide
+    states and bindings, large terms): an elaboration that exceeded it is a
+    defect of the bound, reported as the internal error `LLT4001` with the
+    prefix `internal:`, never a silent overrun and never a user error. The rules
     of a reasoner are combined as balanced trees, in their declared order,
     wherever the elaboration combines them (selection, guard-evaluation
     counts, successors, and the proof that successors replay), so the
@@ -3371,8 +3391,9 @@ and the axiom audit read only the elaboration.
 derivation with its invariant and termination, a generic terminating
 countdown, a deduplicating breadth-first planner, a depth-first search and a
 generate-and-verify reasoner over model-generated candidates, and an answer
-proved correct on every state with its check erased, all verified by pinned
-Lean.
+proved correct on every state its run reaches, with its check erased, all
+verified by pinned Lean, with the six-counter ledger of each run decided
+counter by counter by Lean's kernel.
 
 Routing is fixed by the project language and is never inferred from module
 content, so no byte sequence has two meanings:
@@ -3606,9 +3627,12 @@ Production compilation targets one closed calculus, defined before any
 optimizer and independently of every renderer. The calculus is LexLean: the
 language-1.2 project `compiler/` defines its syntax (`TargetSyntax`), its
 denotation (`TargetSemantics`), encoders of LexLean collection values
-(`TargetOracle`), the clinical reasoning declarations the reasoning
-fixtures are compared with (`ReasoningOracle`, §17.15), and the statements
-about its fixtures (`TargetFixtures`). Lean elaborates, replays, and axiom-audits these modules like any other
+(`TargetOracle`), the reasoning declarations the reasoning fixtures are
+compared with (`ReasoningOracle`, `GradeOracle`, `BudgetOracle`,
+`PlannerOracle`, and `ScreeningOracle`, §17.15), and the statements about its
+fixtures (`TargetFixtures`, and `ReasoningFixtures` for the reasoning
+fixtures, so neither module outgrows the project's file limit). Lean
+elaborates, replays, and axiom-audits these modules like any other
 LexLean program, and `compiler/` passes the verify, golden, and
 reproducibility gates of §28.6. No meaning is read from rendered Rust text.
 
@@ -3961,18 +3985,41 @@ their calculus definitions are `schemas/target-program.schema.json`'s own.
 **Reasoning plans.** A reasoner's rule search is execution: every guard it
 evaluates and every rule it fires is work of the system that runs it, charged
 as calculus steps like any other work, and it is never an action charged
-separately. The `compiler` project's module `ReasoningOracle` states exactly
-the declarations of `examples/reasoning/src/Clinic.lex.tex`, so Lean
-elaborates the clinical reasoners `Triage` and `Review` there to the same
+separately. The `compiler` project's oracle modules state exactly the declarations
+of every reasoner the reasoning example's production roots run: `ReasoningOracle`
+those of `examples/reasoning/src/Clinic.lex.tex` (the forward reasoners
+`Triage` and `Review`), `GradeOracle` the `Grade` reasoner of `Main` and what
+it is declared with (over the clinical rules, whose module the oracle
+imports under its own name), and `BudgetOracle`, `PlannerOracle`, and
+`ScreeningOracle` the modules `Budget` (the generic forward reasoner `Spend`
+and `Refund`), `Planner` (the breadth-first search with deduplication
+`Plan`), and `Screening` (the depth-first search `Screen` and the
+generate-and-verify reasoner `Dose`). Lean elaborates each there to the
 definitions the example verifies (`RS-12`). The fixtures `reasoning-*`
-(§17.14) hand-transcribe those elaborations to calculus programs, each stated
-equal to the oracle's verdict, explained answer, or account by Lean's kernel,
-and each charges at least the guard evaluations and firings of the oracle's
-account in steps. The requests `reasoning-argmin` and `reasoning-frontier`
-pose the same problem over three forward-chaining plans (priority-order
-chaining, one sweep, and a goal-directed decision) over findings held as the
-bits of a natural number, so the plans that search more are charged more and
-the argmin is the plan that searches least. `reject-reasoning-free-search`
+(§17.14) hand-transcribe those elaborations to calculus programs, function
+for function and through the realization library's `list_fold`,
+`set_insert`, `set_contains`, and `iterate_until` instances: the forward
+engine of `Triage`, `Review`, and `Grade` (whose answer is proved correct,
+so its transcription runs no check), the generic `Spend` at a
+natural-number payload with its binding rule, the node, frontier, visited
+set, frontier cut, and truncation of `Plan` and `Screen`, and the budgeted
+fold over `Dose`'s candidates. Each is stated equal to the oracle's verdict,
+and `Triage`'s traced one to its explained answer and account, by Lean's
+kernel, and each charges at least the guard evaluations and firings of the
+oracle reasoner's ledger on the same argument in steps. That ledger is the
+one the example's committed theorems (`triage_ledger`, `plan_ledger`, and the
+others) state for the run, which Lean's kernel decides counter by counter.
+The requests `reasoning-argmin` and `reasoning-frontier` pose an analogous
+problem over three forward-chaining plans (priority-order chaining, one
+sweep, and a goal-directed decision) over findings held as the bits of a
+natural number, because GNAF realizations admit no algebraic types: the
+plans that search more are charged more and the argmin is the plan that
+searches least. Each plan is also a fixture, `reasoning-gnaf-priority`,
+`-sweep`, and `-goal`, whose function is the plan the request declares and
+which Lean's kernel decides computes, on every patient of the request's
+domain, the level the oracle's `Triage` derives from the same findings
+(observed as the vital signs that state them), so the plans are, on that
+domain, the problem `Triage` solves. `reject-reasoning-free-search`
 (`hidden_cost`) charges the search nothing, and
 `reject-reasoning-discovered-universe` (`discovered_universe`) takes the
 candidates one search encountered as its universe; both are refused. No
@@ -6039,7 +6086,9 @@ Tests MUST establish that LexLean rejects, at minimum:
 - a logic declaration under language 1.1, a reasoner with an oracle member
   outside the closed schema, an unregistered strategy, and an unregistered
   reasoner claim kind (`LLT4001`);
-- a binder spelled with the reserved generated prefix (`LLT4001`);
+- a binder spelled with the reserved generated prefix, and a declaration
+  named like, or below, a namespace the generated Lean refers to
+  (`LLT4001`);
 - a logic binding its state and next-state names alike, a relation of
   another signature or that is not a definition or takes other type
   parameters than the logic's, an invariant or a ranking of another
@@ -6056,14 +6105,17 @@ Tests MUST establish that LexLean rejects, at minimum:
   verifier, a verifier of another candidate type, an answer that is not an
   option, an observation of another state type, no rules, a rule named
   twice, a non-executable rule in an executable reasoner, a rule over
-  another logic, claims out of order, an initial-invariant claim over a
-  logic without an invariant, and an initial-invariant or fuel-bound theorem
-  stating another obligation (`LLT4010`);
+  another logic, a rule used at type arguments other than its reasoner's
+  logic, a verifier of another subject type, claims out of order or naming
+  a kind twice, an initial-invariant claim over a logic without an
+  invariant, and an initial-invariant or fuel-bound theorem stating another
+  obligation (`LLT4010`);
 - a generate-and-verify reasoner with rules, with a logic, with a claim, or
   with a generator that is not a list of its verifier's candidates; a
   rule-based reasoner without its logic; an answer-correctness theorem
-  stating another obligation; and an answer-correctness claim out of order
-  (`LLT4010`);
+  stating another obligation; an answer-correctness claim out of order; and
+  an answer-correctness claim under the invariant without the initial
+  invariant that makes it hold of every reached state (`LLT4010`);
 - a generate-and-verify reasoner without a budget, and a budget that is not
   a natural number (`LLT4011`);
 - a reasoner whose elaboration would exceed `max_ir_nodes`, refused before it
@@ -6075,13 +6127,16 @@ Tests MUST establish that LexLean rejects, at minimum:
   no initial invariant for the progress it assumes, or over a logic without
   a ranking (`LLT4011`);
 - an executable definition reaching a rule's unguarded conclusion and one
-  reaching a reasoner's unverified answer (`LLT4012`);
+  reaching a reasoner's unverified answer, each by a call, a function value
+  applied or folded or iterated, a name bound to one, a lambda body, a
+  branch, a rule guard, a reasoner's observation, a generator, and another
+  reasoner's answer (`LLT4012`);
 - a rule whose guard admits a step its relation forbids, a rule that does
   not decrease the ranking, a verifier whose check accepts a candidate its
   specification forbids, a fuel bound false for the observation, and a
   forged trace claimed to replay, and an answer claimed correct on every
-  state that is not, each stating its exact obligation and refused by
-  verification (`LLV7002`).
+  state, or on every state satisfying the invariant, that is not, each
+  stating its exact obligation and refused by verification (`LLV7002`).
 
 ### 28.6 Example verification
 
@@ -6640,11 +6695,11 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RS-06` | `reasoning` | A search reasoner explores states breadth-first or depth-first under explicit natural-number fuel and frontier bounds, with optional deduplication over an ordered state type, and accepts only a state whose answer its verifier's check accepts, and a generate-and-verify reasoner checks at most its budget of its generator's candidates in order and answers the first its verifier accepts; a missing or non-natural bound or budget, a literal zero frontier, or deduplication over an unordered state fails with LLT4011, and a search or generation cut short by a bound yields exhausted and never unsolved. | §17.12 |
 | `RS-07` | `reasoning` | A terminates claim requires a ranking, a statement-exact progress theorem on every rule, an initial-invariant claim when progress assumes the invariant, and a statement-exact fuel-bound theorem, and generates a kernel-checked theorem that the forward reasoner saturates within its fuel; a claim without that evidence fails with LLT4011, and a false progress theorem for a rule that undoes another is refused by verification with LLV7002. | §17.12, §22.6 |
 | `RS-08` | `reasoning` | Each logic, rule, verifier, and reasoner generates fixed-template theorems over its elaboration, among them guarded-application soundness, trace replay, derivation, invariant preservation, iteration, frontier, and verification bounds, saturation, and answer soundness, whose proofs apply only the emitted, axiom-free LexLeanReasoning runtime and the declaration's own theorems; every runtime lemma and every template is used by the committed example and accepted by pinned Lean, and a mutated runtime lemma statement is refused by Lean. | §17.12, §22.6 |
-| `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
+| `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, or on every state satisfying the logic's invariant, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
 | `RS-10` | `reasoning` | Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified. | §17.12, §21.4 |
 | `RS-11` | `reasoning` | Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds or budget, rule order, ledger counters, and the theorems bounding them, and the example's rust-core and rust-std reasoning roots extract through Lean. | §17.13, §17.14, §22.10 |
-| `RS-12` | `reasoning` | The compiler project's reasoning oracle declares exactly the declarations of the reasoning example's clinical module, and calculus transcriptions of its forward engines produce the oracle's verdicts, explained answer, and account on every fixture argument as the kernel decides, compile to committed rust-core and rust-std packages, and charge at least the guard evaluations and firings of the reasoner's account in calculus steps. | §17.14, §17.16 |
-| `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |
+| `RS-12` | `reasoning` | The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage, Review, Grade, and the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose), and a calculus transcription of each produces the oracle's verdict on every fixture argument, Triage's explained answer and account too, as the kernel decides, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps. | §17.14, §17.16 |
+| `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |
 | `RS-14` | `reasoning` | The committed reasoning example verifies a multi-step clinical forward derivation with its invariant and termination, a generic terminating countdown, a deduplicating breadth-first planner, a depth-first search and a generate-and-verify reasoner over model-generated candidates, and an answer proved correct with its check erased, with every generated theorem kernel-checked, and planting a rule-threshold mutation in it is refused by verification. | §17.12, §28.6 |
 
 **Total required capability IDs:** 304.

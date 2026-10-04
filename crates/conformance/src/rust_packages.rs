@@ -58,9 +58,10 @@ pub(crate) fn declarations(source: &str) -> Result<Vec<serde_json::Value>, Strin
 /// Check that a committed package binds the LexLean build that states its
 /// program (§17.16): its sources are exactly the semantic ID of the
 /// published `compiler` build, which the committed verification records
-/// name; that build's `TargetFixtures` source map binds the committed
-/// module source; and that source states the package's program as the
-/// declaration `<fixture>Program`.
+/// name; that build's source map of the module stating the fixture
+/// (`TargetFixtures`, or `ReasoningFixtures` for a reasoning fixture) binds
+/// the committed module source; and that source states the package's
+/// program as the declaration `<fixture>Program`.
 ///
 /// # Errors
 ///
@@ -85,26 +86,29 @@ pub fn bound_to_source(committed: &Committed) -> Result<(), String> {
             "no verification of the build {semantic} is committed"
         ));
     }
+    let module = crate::calculus::fixture_module(&committed.fixture);
     let map: serde_json::Value = serde_json::from_slice(
         &std::fs::read(
-            root.join("compiler/expected/build/maps/Compiler/TargetFixtures.map.json")
-                .as_std_path(),
+            root.join(format!(
+                "compiler/expected/build/maps/Compiler/{module}.map.json"
+            ))
+            .as_std_path(),
         )
-        .map_err(|error| format!("the TargetFixtures source map: {error}"))?,
+        .map_err(|error| format!("the {module} source map: {error}"))?,
     )
-    .map_err(|error| format!("the TargetFixtures source map: {error}"))?;
+    .map_err(|error| format!("the {module} source map: {error}"))?;
     let source = std::fs::read(
-        root.join("compiler/src/TargetFixtures.lex.tex")
+        root.join(format!("compiler/src/{module}.lex.tex"))
             .as_std_path(),
     )
-    .map_err(|error| format!("the TargetFixtures source: {error}"))?;
+    .map_err(|error| format!("the {module} source: {error}"))?;
     let digest = lexlean::artifact::content_id::Sha256Digest::of(&source).to_hex();
     if map["semantic_id"] != semantic.as_str()
-        || map["sources"][0]["path"] != "src/TargetFixtures.lex.tex"
+        || map["sources"][0]["path"] != format!("src/{module}.lex.tex").as_str()
         || map["sources"][0]["sha256"] != digest.as_str()
     {
         return Err(format!(
-            "the build {semantic} does not bind the committed TargetFixtures source {digest}"
+            "the build {semantic} does not bind the committed {module} source {digest}"
         ));
     }
     let name = format!("{}Program", crate::calculus::identifier(&committed.fixture));

@@ -28,12 +28,12 @@ use lexlean::Sha256Digest;
 use super::{machine, plan, prim, set_charge, var};
 
 /// The observed findings' bits, then the derived findings'.
-const FEVER: u64 = 0;
-const TACHYCARDIA: u64 = 1;
-const TACHYPNEA: u64 = 2;
-const LEUKOCYTOSIS: u64 = 3;
-const INFECTION: u64 = 4;
-const HYPOTENSION: u64 = 5;
+pub(crate) const FEVER: u64 = 0;
+pub(crate) const TACHYCARDIA: u64 = 1;
+pub(crate) const TACHYPNEA: u64 = 2;
+pub(crate) const LEUKOCYTOSIS: u64 = 3;
+pub(crate) const INFECTION: u64 = 4;
+pub(crate) const HYPOTENSION: u64 = 5;
 const SIRS: u64 = 6;
 const SEPSIS: u64 = 7;
 const SHOCK: u64 = 8;
@@ -163,7 +163,7 @@ fn function(body: Expr) -> Function {
 
 /// Forward chaining in priority order shock, sepsis, SIRS: fire the first
 /// applicable rule and search again from the top, until no rule applies.
-fn forward_priority(at: u64) -> Function {
+pub(crate) fn forward_priority(at: u64) -> Function {
     let findings = var(0);
     let mut body = level(&findings);
     for derived in [SIRS, SEPSIS, SHOCK] {
@@ -181,7 +181,7 @@ fn forward_priority(at: u64) -> Function {
 
 /// One sweep in dependency order: each rule fires at most once, on the
 /// findings the previous rules left.
-fn forward_sweep() -> Function {
+pub(crate) fn forward_sweep() -> Function {
     let mut body = level(&var(3));
     for (derived, from, to) in [(SHOCK, 2, 3), (SEPSIS, 1, 2), (SIRS, 0, 1)] {
         body = let_in(
@@ -198,7 +198,7 @@ fn forward_sweep() -> Function {
 }
 
 /// The level decided from the observed findings alone, most severe first.
-fn goal_directed() -> Function {
+pub(crate) fn goal_directed() -> Function {
     let findings = var(0);
     let sirs = sirs_criteria(&findings);
     let infected = and(sirs.clone(), holds(findings.clone(), INFECTION));

@@ -34,7 +34,11 @@ fn progress_runs(cases: &[Case]) -> usize {
             };
             check::check_arguments(&fixture.program, fixture.entry, &arguments)
                 .expect("a generated argument is well typed");
-            for fuel in (0..=fixture.fuel).step_by(7).chain([fixture.fuel]) {
+            // Every seventh fuel up to the stated one, and no fewer than
+            // six hundred of them for a fixture with a large fuel, so the
+            // sample of a long search stays linear in its fuel.
+            let stride = usize::try_from(fixture.fuel / 600).map_or(7, |each| each.max(7));
+            for fuel in (0..=fixture.fuel).step_by(stride).chain([fixture.fuel]) {
                 let outcome = interp::run(&fixture.program, fuel, fixture.entry, &arguments);
                 assert_ne!(
                     outcome,
@@ -270,8 +274,9 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     let mut source = String::from(EVALUATOR);
     for case in cases {
         source.push_str(&format!(
-            "#eval IO.println (\"FIXTURE {} \" ++ showOutcome Compiler.TargetFixtures.{}Run)\n",
+            "#eval IO.println (\"FIXTURE {} \" ++ showOutcome Compiler.{}.{}Run)\n",
             case.fixture.name,
+            fixtures::fixture_module(&case.fixture.name),
             fixtures::identifier(&case.fixture.name)
         ));
     }
@@ -289,7 +294,12 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
         "TargetSemantics",
         "TargetOracle",
         "ReasoningOracle",
+        "GradeOracle",
+        "BudgetOracle",
+        "PlannerOracle",
+        "ScreeningOracle",
         "TargetFixtures",
+        "ReasoningFixtures",
     ] {
         let built = std::process::Command::new(&lean)
             .arg("-o")
@@ -353,6 +363,7 @@ fn evaluator_disagreements(evaluated: &BTreeMap<String, Json>, cases: &[Case]) -
 
 /// Prints a denotation outcome in the fixtures' exact JSON form.
 const EVALUATOR: &str = r#"import Compiler.TargetFixtures
+import Compiler.ReasoningFixtures
 open Compiler.TargetSyntax Compiler.TargetSemantics
 
 def hexDigit (n : Nat) : Char := if n < 10 then Char.ofNat (48 + n) else Char.ofNat (87 + n)
@@ -420,8 +431,8 @@ fn planted_verification() -> &'static Vec<String> {
         // The realization inserts a smaller key after the element it
         // precedes; the interpreter follows the mutation, LexLean does not.
         let mut insert = named("set-insert-nat");
-        let entry =
-            usize::try_from(insert.library.as_ref().expect("a library fixture").at).expect("index");
+        let entry = usize::try_from(insert.libraries.first().expect("a library fixture").at)
+            .expect("index");
         insert.fixture.program = mutate_insert(&insert.fixture.program, entry);
         insert.fixture.expected = interp::run(
             &insert.fixture.program,
@@ -962,7 +973,8 @@ pub fn run(id: &str) {
         // states every fixture's outcome.
         "TC-03" => {
             let cases = fixtures::cases();
-            let module = fixtures::fixtures_module(&cases);
+            let module =
+                fixtures::fixtures_module(&cases) + &fixtures::reasoning_fixtures_module(&cases);
             let mut opaque = 0;
             for case in &cases {
                 let id = fixtures::identifier(&case.fixture.name);
@@ -1010,8 +1022,9 @@ pub fn run(id: &str) {
                 .expect("the committed fixtures equal their generator");
             if let Some(verified) = support::lean_backed("TC-03").then(support::verified_compiler) {
                 assert!(
-                    verified.outcome.units.contains_key("TargetFixtures"),
-                    "the fixture module is verified"
+                    verified.outcome.units.contains_key("TargetFixtures")
+                        && verified.outcome.units.contains_key("ReasoningFixtures"),
+                    "the fixture modules are verified"
                 );
                 let planted = planted_verification();
                 // Lean names the evaluation and the outcome it was told to
@@ -1068,21 +1081,31 @@ pub fn run(id: &str) {
         "TC-05" => {
             let cases = fixtures::cases();
             let mut covered = BTreeSet::new();
-            for case in cases.iter().filter(|case| case.library.is_some()) {
-                let library = case.library.as_ref().expect("library");
-                covered.insert(library.template);
-                let instance = library
-                    .template
-                    .instantiate(&library.types, library.at)
-                    .expect("instantiates");
-                let at = usize::try_from(library.at).expect("index");
+            for case in cases.iter().filter(|case| !case.libraries.is_empty()) {
+                // The instances follow the fixture's own functions, one
+                // after another.
                 let mut expected = case.fixture.program.clone();
-                expected.functions.truncate(at);
-                expected.functions.extend(instance);
+                let first = usize::try_from(case.libraries[0].at).expect("index");
+                expected.functions.truncate(first);
+                for library in &case.libraries {
+                    covered.insert(library.template);
+                    assert_eq!(
+                        expected.functions.len() as u64,
+                        library.at,
+                        "{}: an instance follows the previous one",
+                        case.fixture.name
+                    );
+                    expected.functions.extend(
+                        library
+                            .template
+                            .instantiate(&library.types, library.at)
+                            .expect("instantiates"),
+                    );
+                }
                 assert_eq!(
                     expected.canonical().expect("bound"),
                     case.fixture.program,
-                    "{}: the committed instance is the template's",
+                    "{}: the committed instances are the templates'",
                     case.fixture.name
                 );
                 assert!(
@@ -1096,9 +1119,9 @@ pub fn run(id: &str) {
                     case.fixture.name
                 );
                 let id = fixtures::identifier(&case.fixture.name);
-                assert!(
-                    fixtures::fixtures_module(&cases).contains(&format!("\"name\":\"{id}Agrees\""))
-                );
+                assert!((fixtures::fixtures_module(&cases)
+                    + &fixtures::reasoning_fixtures_module(&cases))
+                    .contains(&format!("\"name\":\"{id}Agrees\"")));
             }
             assert_eq!(
                 covered.len(),
@@ -1194,7 +1217,7 @@ pub fn run(id: &str) {
             }
             let templates: BTreeSet<Template> = fixtures::cases()
                 .iter()
-                .filter_map(|case| case.library.as_ref().map(|library| library.template))
+                .flat_map(|case| case.libraries.iter().map(|library| library.template))
                 .collect();
             assert_eq!(
                 templates.len(),

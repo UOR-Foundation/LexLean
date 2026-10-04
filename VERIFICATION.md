@@ -796,7 +796,7 @@ repo-conformance --test conformance -- conformance_tc_07`. Expected: the
 compiled rendering of `nat-arithmetic` prints a different value.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1352:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1375:17:
 assertion `left == right` failed: natArithmetic_rust_std: the Rust rendering and the denotation disagree
 ```
 
@@ -811,7 +811,7 @@ while its value stayed correct. Command: `cargo test -p repo-conformance
 `list-append-long` counts more work than the denotation charges steps.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1357:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1380:17:
 listAppendLong_rust_std: the rendering worked 1220 units for 87 steps
 ```
 
@@ -827,7 +827,7 @@ conformance -- conformance_tc_07`. Expected: `rust-core` renders a program
 whose realization requires allocation.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1272:29:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1295:29:
 binding-and-shapes: rust-core renders a program that needs the heap
 ```
 
@@ -841,7 +841,7 @@ Planted: the realization row of `primitive.map_size` was deleted from
 repo-conformance --test conformance -- conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1150:48:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1173:48:
 the realization table: "runtime construct `primitive.map_size` has no realization row"
 ```
 
@@ -855,7 +855,7 @@ Command: `cargo test -p repo-conformance --test conformance --
 conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1166:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1189:13:
 allocation disagreements: [
     "term.nil: registry true, realization false",
 ]
@@ -872,7 +872,7 @@ repo-conformance --test conformance -- conformance_tc_06`. Expected: the
 typed (primitive, width) pairs only those fixtures exercise are reported.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1220:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1243:13:
 (primitive, width) pairs no fixture exercises: [("bit_and", "u16"), ("bit_not", "u16"), ("bit_or", "u16"), ("bit_xor", "u16"), ("checked_mul", "u16"), ("checked_quot", "u16"), ("compare", "u16"), ("format_decimal", "u16"), ("parse_decimal", "u16"), ("shift_left", "u16"), ("shift_right", "u16")]
 ```
 
@@ -886,7 +886,7 @@ reach such a value. Command: `cargo test -p repo-conformance --test
 conformance -- conformance_tc_03`. Expected: a seeded random argument does.
 
 ```text
-thread '<unnamed>' (8081) panicked at crates/conformance/src/cases/calculus.rs:39:17:
+thread '<unnamed>' (8081) panicked at crates/conformance/src/cases/calculus.rs:43:17:
 assertion `left != right` failed: iterate: stuck on [Nat { value: "18446744073709551615" }] with fuel 7
 ```
 
@@ -2481,7 +2481,7 @@ Removed: the copy was discarded; the committed example verifies.
 Planted: the leaves of `E.select` were combined in reverse of the declared order (`leaves.into_iter().rev()` before `balanced` in `elaborate_forward`), so the last rule is tried first. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a forward reasoner that fires rules out of their declared priority order. The case reads the order the select term evaluates its guards in (a `match` scrutinee before its branches, a `let` value before its body), not document order, because canonical JSON orders object keys alphabetically.
 
 ```text
-thread 'conformance_rs_05' (4138) panicked at crates/conformance/src/cases/reasoning.rs:871:5:
+thread 'conformance_rs_05' (4138) panicked at crates/conformance/src/cases/reasoning.rs:887:5:
 assertion `left == right` failed: select tries the rules in declared priority order
   left: ["Escalate.guard", "Shock.guard", "Sepsis.guard", "Sirs.guard", "Leukocytosis.guard", "Tachypnea.guard", "Tachycardia.guard", "Fever.guard"]
  right: ["Fever.guard", "Tachycardia.guard", "Tachypnea.guard", "Leukocytosis.guard", "Sirs.guard", "Sepsis.guard", "Shock.guard", "Escalate.guard"]
@@ -2495,7 +2495,7 @@ Removed: the reversal was restored; `conformance_rs_05` passes, and its Lean-bac
 Planted: each arm of `E.fire` applied the rule's conclusion directly (`some (N.conclusion s)`) instead of its guarded application. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a reasoner step that applies a rule whose guard does not hold.
 
 ```text
-thread 'conformance_rs_05' (5662) panicked at crates/conformance/src/cases/reasoning.rs:882:5:
+thread 'conformance_rs_05' (5662) panicked at crates/conformance/src/cases/reasoning.rs:898:5:
 assertion `left == right` failed: every step fires through its rule's guarded application
   left: ["Fever.conclusion", "Tachycardia.conclusion", "Tachypnea.conclusion", "Leukocytosis.conclusion", "Sirs.conclusion", "Sepsis.conclusion", "Shock.conclusion", "Escalate.conclusion"]
  right: ["Fever.apply", "Tachycardia.apply", "Tachypnea.apply", "Leukocytosis.apply", "Sirs.apply", "Sepsis.apply", "Shock.apply", "Escalate.apply"]
@@ -2534,7 +2534,7 @@ Removed: the refusal was restored; `conformance_rs_09` passes.
 Planted: `E.accept` always ran the verifier's check (`match &None::<MemberRef>` for the claim in `elaborate_common`), so an `answer_correct` claim erased nothing. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: a check proved unnecessary still runs, so the claim states a runtime effect it does not have.
 
 ```text
-thread 'conformance_rs_09' (6308) panicked at crates/conformance/src/cases/reasoning.rs:1367:5:
+thread 'conformance_rs_09' (6308) panicked at crates/conformance/src/cases/reasoning.rs:1443:5:
 assertion `left == right` failed
   left: ["gradedCheck", "Grade.extract"]
  right: ["Grade.extract"]
@@ -2572,7 +2572,7 @@ Removed: the call was restored; `conformance_rs_04` passes.
 Planted: the eligibility report omitted every root's `reasoning` rows (`if false && !root.reasoning.is_empty()` in `production/mod.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_11`. Expected: a production root whose search resources are unreported.
 
 ```text
-thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:1833:32:
+thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:2024:32:
 Reasoning.Main.triageLevel records its reasoning
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.73s
 ```
@@ -2605,7 +2605,22 @@ Removed: the file was restored; the BDD gate passes.
 
 ### a mutated reasoning runtime lemma and a planted rule threshold are refused by Lean
 
-`conformance_rs_08` plants, in itself, a mutated `LexLeanReasoning.guarded` statement (`r t s` for `r s t`) in a standalone copy of the emitted runtime and requires pinned Lean to refuse it, after requiring the unmutated runtime to be accepted with every name reported axiom-free by `#print axioms`. `conformance_rs_14` plants, in a copy of `examples/reasoning`, the tachycardia threshold 80 for 90: linking accepts it, and verification refuses it with `LLV7002`, because the `Tachycardia` rule would then conclude a finding its relation does not justify.
+`conformance_rs_08` plants, in itself, a mutated `LexLeanReasoning.guarded` statement (`r t s` for `r s t`) in a standalone copy of the emitted runtime and requires pinned Lean to refuse it, after requiring the unmutated runtime to be accepted with every name reported axiom-free by `#print axioms`. `conformance_rs_14` plants, in a copy of `examples/reasoning`, the tachycardia threshold 80 for 90: linking accepts it, and verification refuses it with `LLV7002`, because the `Tachycardia` rule would then conclude a finding its relation does not justify. Both plants are inside the tests, so there is no failing test run to record; the refusals they require are these, produced by running the same two mutations by hand:
+
+```text
+Mut.lean:475:30: error: Type mismatch
+  h rfl
+has type
+  r s c
+but is expected to have type
+  r c s
+error[LLV7002]: Lean rejected `Reasoning.Clinic` (error): omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  81 ≤ a ≤ 90
+where
+ a := ↑s.vitals.heartRate
+  --> src/Clinic.lex.tex:6:22144
+```
 
 ### reasoning elaboration nesting can fail
 
@@ -2665,6 +2680,115 @@ gate failed: tests/negative/reasoning-answer-correct-unsorted: step 1 `check ` e
 ```
 
 Removed: every check was restored; the fixtures pass.
+
+### reasoning boundary can fail through a function value
+
+Planted: `check_boundary` refused a guarded member only when it was the callee of a `call` (`env.reasoning.guarded(&key).filter(|_| matches!(node, SemanticTerm::Call { .. }))` in `model.rs`), so a function value naming `N.conclusion` or `E.extract` was not refused. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: `tests/negative/reasoning-rule-bypass-ref` (a `list_fold` whose step is `function_ref Pick.conclusion`), `-alias` (a name bound to one), `-iterate`, and `reasoning-extract-bypass-ref` and `-alias` link. The other positions the fixtures cover (a lambda body, a branch, a rule guard, a reasoner's observation or generator, another reasoner's answer) reach the guarded member through a `call`, so the plant leaves them refused.
+
+```text
+thread 'conformance_rs_09' (24786) panicked at crates/conformance/src/support.rs:461:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.35s
+```
+
+Removed: the filter was removed; `conformance_rs_09` passes.
+
+### reasoning claims, type arguments, verifier types, and reserved names can fail
+
+Planted, one at a time in `reasoning.rs` and `semantic.rs`: duplicate claim kinds accepted (`prior >= rank` for `prior > rank` in `sorted_claims`); a rule used at other type arguments than its reasoner's logic (the comparison of `rule_at.logic.type_arguments` replaced by `false`); the verifier's subject type, and then its candidate type, no longer compared with the reasoner's observation and answer; the initial invariant no longer required of an answer claimed correct under the invariant (`if initial.is_none()` for `if false`); and a declaration named below `LexLeanReasoning` no longer refused (`if env.language_1_2 && BACKEND_BARE_NAMES` for `if false && ...`). Commands: `conformance_rs_07` (claims), `conformance_rs_02` (type arguments), `conformance_rs_03` (verifier types), `conformance_rs_09` (the initial invariant), `conformance_rs_01` (names). Expected: each is caught by the fixture that names it; for the type arguments and the verifier types, a later pass would still refuse the project, with another code (`LLT4001`, "ill-formed elaboration"), and the fixtures pin `LLT4010` and the message.
+
+```text
+conformance_rs_07: thread 'conformance_rs_07' (25125) panicked at crates/conformance/src/support.rs:461:14: check fails
+conformance_rs_02: expected LLT4010, found ["LLT4001"] (LLT4001: phase link: reasoner declaration `Spend` elaborates to `Spend.fire`, which is ill-formed: function `Tick.apply` argument has type Prod (T) (Nat), expected Prod (Bool) (Nat))
+conformance_rs_03 (subject): expected LLT4010, found ["LLT4001"] (LLT4001: phase link: reasoner declaration `Clinic` elaborates to `Clinic.accept`, which is ill-formed: function `probedCheck` argument has type Nat, expected Bool)
+conformance_rs_03 (candidate): expected LLT4010, found ["LLT4001"] (LLT4001: phase link: reasoner declaration `Clinic` elaborates to `Clinic.accept`, which is ill-formed: function `boundedCheck` argument has type Bool, expected Nat)
+conformance_rs_09: thread 'conformance_rs_09' (28049) panicked at crates/conformance/src/support.rs:461:14: check fails
+conformance_rs_01: thread 'conformance_rs_01' (27729) panicked at crates/conformance/src/support.rs:461:14: check fails
+```
+
+Removed: every check was restored; the cases pass.
+
+### reasoning ledger counters can go uncounted
+
+Planted, one at a time in `reasoning.rs`, then `lexlean verify examples/reasoning`: a search no longer counted its expansions (`expansions: succ(counter("expansions"))` kept as `counter("expansions")`), no longer counted the successors it fired (`firings: add(counter("firings"), length(var("__successors")))` as `counter("firings")`), and a forward step no longer counted its firing. Expected: pinned Lean refuses the example, because the committed ledger theorems (`plan_ledger`, `plan_unsolved_ledger`, `spend_ledger`, and the others) state the six counters of each run and the generated bounds (`E.expansions_bounded`, `E.firings_bounded`) are proved from the step that counts. Before the ledger theorems existed, the first two plants verified.
+
+```text
+E2 (expansions): error[LLV7002]: Lean rejected `Reasoning.Planner` (error): Type mismatch
+  Nat.le_refl ?m.252
+E3 (search firings): error[LLV7002]: Lean rejected `Reasoning.Main` (error): Tactic `rfl` failed: The left-hand side
+  ((Planner.Plan.run 2).fst.ledger.iterations, (Planner.Plan.run 2).fst.ledger.attempts,
+    (Planner.Plan.run 2).fst.ledger.firings, (Planner.Plan.run 2).fst.ledger.expansions,
+    (Planner.Plan.run 2).fst.ledger.verifications, (Planner.Plan.run 2).fst.ledger.frontier)
+is not definitionally equal to the right-hand side
+  (4, 15, 8, 3, 4, 4)
+E5 (forward firings): error[LLV7002]: Lean rejected `Reasoning.Budget` (error): Tactic `rfl` failed: The left-hand side
+  { state := __t✝, trace := LexLeanRuntime.append __r.trace [__step✝],
+        ... firings := __r.ledger.firings, ...}.ledger.firings
+is not definitionally equal to the right-hand side
+  __r.ledger.firings + 1
+```
+
+Removed: the counters were restored; the example verifies.
+
+### reasoning answer correctness under the invariant can fail
+
+Planted: the generated verdict theorem of a reasoner claiming an answer correct under the invariant no longer passed the run invariant to the correctness theorem (`pass = ""` for the `llJ` argument in the `VerdictForward` template). Command: `lexlean verify examples/reasoning`. Expected: `Grade`, whose answer is on the 0..3 scale only because its logic's invariant says so, is refused.
+
+```text
+error[LLV7002]: Lean rejected `Reasoning.Main` (error): Application type mismatch: The argument
+  llH
+has type
+  conclude v llR.fst.state = Except.ok llV
+but is expected to have type
+  Clinic.Consistent ?m.180
+in the application
+  conclude_sound ?m.179 ?m.180 ?m.181 llH
+```
+
+Removed: the argument was restored; the example verifies. `tests/negative/reasoning-false-invariant-answer-correct` states the invariant form exactly and falsely, and verification refuses it.
+
+### reasoning elaboration charge covers large type arguments
+
+Planted: the type arguments of a reasoner's rule uses (copied into every declaration that mentions the rule) no longer counted in its charge (`.saturating_add(0u64.saturating_mul(rule_type_arguments))`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_10`. Expected: a reasoner of 40 rules, each used at a type of 100 nested products, elaborates beyond what it was charged, an internal error for an admitted input. Before the charge covered it, the same input failed so, with 41688 nodes against 28100.
+
+```text
+thread 'conformance_rs_10' (2608) panicked at crates/conformance/src/support.rs:451:14:
+check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: internal: reasoner `Wide` elaborated to 41704 nodes, beyond the 28340 it was charged", ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 32.85s
+```
+
+Removed: the term was restored; `conformance_rs_10` passes.
+
+### reasoning transcriptions can lose their search, their verdict, or their plan
+
+Planted, one at a time, then `cargo test -p repo-conformance --test conformance -- conformance_rs_12` (and `conformance_rs_13`): the `Spend` transcription's entry replaced by the constant it answers (same value, no search); then, inside the Lean-backed half of `conformance_rs_12`, a `Plan` transcription whose visited-state check is removed (it never saturates, so it answers exhausted where the oracle is unsolved) and a `Dose` transcription that checks four candidates for a budget of three (it rejects where the oracle exhausts), each stated against its oracle in a copy of the compiler project; and in `gnaf/reasoning.rs` the goal-directed plan answering level 2 for two findings without an infection. Expected: the steps check refuses the first (a transcription charges at least the ledger's guard evaluations and firings), pinned Lean refuses the next two, and the plan fixture's levels refuse the last.
+
+```text
+FL: thread 'conformance_rs_12' (3262) panicked at crates/conformance/src/cases/reasoning.rs:2517:13:
+reasoning-spend-2 charges its search: 2 steps for 12 guard evaluations and firings
+Lean (Plan without the visited check): Lean rejected `Compiler.ReasoningFixtures` (error): Tactic `rfl` failed: The left-hand side
+  reasoningPlan5Run
+is not definitionally equal to the right-hand side
+  TargetSemantics.Outcome.value
+    (match PlannerOracle.Plan.verdict 5 with
+    | Except.ok found => ((TargetSyntax.Value.nat found.fst).pair (TargetSyntax.Value.nat found.snd)).ok
+    | Except.error failure => (encodeFailure failure).error)
+    193370
+Lean (Dose with a budget of four): Lean rejected `Compiler.ReasoningFixtures` (error): Tactic `rfl` failed: The left-hand side
+  reasoningDose120Run
+is not definitionally equal to the right-hand side
+  TargetSemantics.Outcome.value
+    (match ScreeningOracle.Dose.verdict 120 with
+    | Except.ok found => (TargetSyntax.Value.nat found).ok
+    | Except.error failure => (encodeFailure failure).error)
+    401
+GN: thread 'conformance_rs_13' (3483) panicked at crates/conformance/src/cases/reasoning.rs:2781:9:
+assertion `left == right` failed: reasoning-gnaf-goal computes Triage's levels
+  left: Pair { left: Nat { value: "3" }, right: Pair { left: Nat { value: "0" }, right: Pair { left: Nat { value: "2" }, right: Pair { left: Nat { value: "2" }, right: Nat { value: "0" } } } } }
+ right: Pair { left: Nat { value: "3" }, right: Pair { left: Nat { value: "0" }, right: Pair { left: Nat { value: "2" }, right: Pair { left: Nat { value: "1" }, right: Nat { value: "0" } } } } }
+```
+
+Removed: the constant, the mutations, and the plan were restored; `conformance_rs_12` and `conformance_rs_13` pass.
 
 ## End-to-end Lean evidence
 

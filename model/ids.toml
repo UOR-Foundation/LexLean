@@ -1800,7 +1800,7 @@ statement = "Each logic, rule, verifier, and reasoner generates fixed-template t
 id = "RS-09"
 level = "build"
 suite = "reasoning"
-statement = "Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does."
+statement = "Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, or on every state satisfying the logic's invariant, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does."
 
 [[id]]
 id = "RS-10"
@@ -1818,13 +1818,13 @@ statement = "Production eligibility realizes inference rules and reasoners throu
 id = "RS-12"
 level = "build"
 suite = "reasoning"
-statement = "The compiler project's reasoning oracle declares exactly the declarations of the reasoning example's clinical module, and calculus transcriptions of its forward engines produce the oracle's verdicts, explained answer, and account on every fixture argument as the kernel decides, compile to committed rust-core and rust-std packages, and charge at least the guard evaluations and firings of the reasoner's account in calculus steps."
+statement = "The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage, Review, Grade, and the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose), and a calculus transcription of each produces the oracle's verdict on every fixture argument, Triage's explained answer and account too, as the kernel decides, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps."
 
 [[id]]
 id = "RS-13"
 level = "build"
 suite = "reasoning"
-statement = "GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused."
+statement = "GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused."
 
 [[id]]
 id = "RS-14"

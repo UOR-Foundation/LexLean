@@ -251,10 +251,13 @@ impl Render<'_> {
             Proof::ConcludeSound {
                 conclude,
                 accept_sound,
+                invariant,
             } => format!(
-                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    exact {} _ _ _ ‹_›\n  · split at llE\n    · cases llE\n    · cases llE\n",
+                "by\n  intro {}llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    exact {} _ _ _ {}‹_›\n  · split at llE\n    · cases llE\n    · cases llE\n",
+                if *invariant { "llJ " } else { "" },
                 m(conclude),
-                h(accept_sound)
+                h(accept_sound),
+                if *invariant { "llJ " } else { "" }
             ),
             Proof::ConcludeAccept { conclude } => format!(
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n    assumption\n  · split at llE\n    · cases llE\n    · cases llE\n",
@@ -267,8 +270,14 @@ impl Render<'_> {
                 run_trace,
                 conclude_accept,
                 conclude_sound,
+                run_invariant,
             } => format!(
-                "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace\n  split at llE\n  · split at llE\n    · rename_i llW llH\n      cases llE\n      exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ llH) ({conclude_sound} _ _ _ llH)\n    · cases llE\n  · cases llE\n",
+                "by\n  intro llV llT llE\n  have llTrace := {run_trace} {x}\n{have_invariant}  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llTrace{at_invariant}\n  split at llE\n  · split at llE\n    · rename_i llW llH\n      cases llE\n      exact And.intro (by dsimp only [{answer}]; rw [llTrace]; exact {conclude_accept} _ _ _ llH) ({conclude_sound} _ _ _ {pass}llH)\n    · cases llE\n  · cases llE\n",
+                have_invariant = run_invariant
+                    .as_ref()
+                    .map_or(String::new(), |theorem| format!("  have llJ := {} {x}\n", h(theorem))),
+                at_invariant = if run_invariant.is_some() { " llJ" } else { "" },
+                pass = if run_invariant.is_some() { "llJ " } else { "" },
                 reasoner = m(reasoner),
                 run = h(run),
                 answer = m(answer),
@@ -280,8 +289,14 @@ impl Render<'_> {
                 verdict,
                 saturate,
                 conclude_sound,
+                saturate_invariant,
             } => format!(
-                "by\n  intro llV llE\n  dsimp only [{verdict}] at llE\n  generalize llRun : {saturate} {x} = llR at llE\n  split at llE\n  · exact {conclude_sound} _ _ _ llE\n  · cases llE\n",
+                "by\n  intro llV llE\n{have_invariant}  dsimp only [{verdict}] at llE\n  generalize llRun : {saturate} {x} = llR at llE{at_invariant}\n  split at llE\n  · exact {conclude_sound} _ _ _ {pass}llE\n  · cases llE\n",
+                have_invariant = saturate_invariant
+                    .as_ref()
+                    .map_or(String::new(), |theorem| format!("  have llJ := {} {x}\n", h(theorem))),
+                at_invariant = if saturate_invariant.is_some() { " llJ" } else { "" },
+                pass = if saturate_invariant.is_some() { "llJ " } else { "" },
                 verdict = m(verdict),
                 saturate = h(saturate),
                 conclude_sound = h(conclude_sound)
@@ -346,14 +361,20 @@ impl Render<'_> {
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        rfl\n      · cases llE\n        rfl\n",
                 m(search_step)
             ),
+            Proof::SearchExpansion { search_step } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        exact Nat.le_succ _\n      · cases llE\n        exact Nat.le_refl _\n",
+                m(search_step)
+            ),
             Proof::ExplainedSearch {
                 reasoner,
                 run,
                 answer,
                 search_ok,
                 accept_sound,
+                follow_invariant,
             } => format!(
-                "by\n  intro llV llT llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ (And.right llOk))\n  · cases llE\n",
+                "by\n  intro llV llT llE\n  have llSearch := {search_ok} {x}\n  dsimp only [{reasoner}] at llE\n  generalize llRun : {run} {x} = llR at llE llSearch\n  split at llE\n  · rename_i llHit llF\n    cases llE\n    have llOk := And.right llSearch\n    rw [llF] at llOk\n    exact And.intro (by dsimp only [{answer}]; rw [And.left llOk]; exact And.right llOk) ({accept_sound} _ _ _ {pass}(And.right llOk))\n  · cases llE\n",
+                pass = follow_invariant.as_ref().map_or(String::new(), |theorem| format!("({} {x} _ _ (And.left llOk)) ", h(theorem))),
                 reasoner = m(reasoner),
                 run = h(run),
                 answer = m(answer),
@@ -369,6 +390,14 @@ impl Render<'_> {
                 reasoner = h(reasoner),
                 verdict = m(verdict),
                 explained = h(explained)
+            ),
+            Proof::RunInvariant {
+                run_state,
+                saturate_invariant,
+            } => format!(
+                "by\n  rw [And.left ({} {x})]\n  exact {} {x}\n",
+                h(run_state),
+                h(saturate_invariant)
             ),
             Proof::VerifySound {
                 verify,

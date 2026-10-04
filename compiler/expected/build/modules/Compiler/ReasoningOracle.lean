@@ -619,6 +619,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
@@ -1082,6 +1102,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Triage.step_fired (__r : Compiler.ReasoningOracle.Triage.Run) (__q : Compiler.ReasoningOracle.Triage.Run) : ((Compiler.ReasoningOracle.Triage.step (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.ReasoningOracle.Triage.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Triage.saturate_derivation (patient : Compiler.ReasoningOracle.Vitals) : (LexLeanReasoning.Star ((Compiler.ReasoningOracle.Justified)) (Compiler.ReasoningOracle.Triage.observe (patient)) ((Compiler.ReasoningOracle.Triage.saturate (patient)).1)) :=
 by
   dsimp only [Compiler.ReasoningOracle.Triage.saturate]
@@ -1098,6 +1128,10 @@ public theorem Triage.iterations_bounded (patient : Compiler.ReasoningOracle.Vit
 by
   dsimp only [Compiler.ReasoningOracle.Triage.run]
   exact (LexLeanReasoning.iterateUntilCount ((Compiler.ReasoningOracle.Triage.step)) ((fun (__r : Compiler.ReasoningOracle.Triage.Run) => ((__r).ledger).iterations)) Compiler.ReasoningOracle.Triage.step_count (11) (Compiler.ReasoningOracle.Triage.start (patient)) rfl)
+public theorem Triage.firings_bounded (patient : Compiler.ReasoningOracle.Vitals) : ((((Compiler.ReasoningOracle.Triage.run (patient)).1).ledger).firings <= 11) :=
+by
+  dsimp only [Compiler.ReasoningOracle.Triage.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Compiler.ReasoningOracle.Triage.step)) ((fun (__r : Compiler.ReasoningOracle.Triage.Run) => ((__r).ledger).firings)) Compiler.ReasoningOracle.Triage.step_fired (11) (Compiler.ReasoningOracle.Triage.start (patient)) rfl)
 public theorem Triage.saturate_invariant (patient : Compiler.ReasoningOracle.Vitals) : Compiler.ReasoningOracle.Consistent ((Compiler.ReasoningOracle.Triage.saturate (patient)).1) :=
 by
   dsimp only [Compiler.ReasoningOracle.Triage.saturate]
@@ -1294,6 +1328,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Review.step_fired (__r : Compiler.ReasoningOracle.Review.Run) (__q : Compiler.ReasoningOracle.Review.Run) : ((Compiler.ReasoningOracle.Review.step (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.ReasoningOracle.Review.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Review.saturate_derivation (patient : Compiler.ReasoningOracle.Vitals) : (LexLeanReasoning.Star ((Compiler.ReasoningOracle.Justified)) (Compiler.ReasoningOracle.Review.observe (patient)) ((Compiler.ReasoningOracle.Review.saturate (patient)).1)) :=
 by
   dsimp only [Compiler.ReasoningOracle.Review.saturate]
@@ -1310,6 +1354,10 @@ public theorem Review.iterations_bounded (patient : Compiler.ReasoningOracle.Vit
 by
   dsimp only [Compiler.ReasoningOracle.Review.run]
   exact (LexLeanReasoning.iterateUntilCount ((Compiler.ReasoningOracle.Review.step)) ((fun (__r : Compiler.ReasoningOracle.Review.Run) => ((__r).ledger).iterations)) Compiler.ReasoningOracle.Review.step_count (6) (Compiler.ReasoningOracle.Review.start (patient)) rfl)
+public theorem Review.firings_bounded (patient : Compiler.ReasoningOracle.Vitals) : ((((Compiler.ReasoningOracle.Review.run (patient)).1).ledger).firings <= 6) :=
+by
+  dsimp only [Compiler.ReasoningOracle.Review.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Compiler.ReasoningOracle.Review.step)) ((fun (__r : Compiler.ReasoningOracle.Review.Run) => ((__r).ledger).firings)) Compiler.ReasoningOracle.Review.step_fired (6) (Compiler.ReasoningOracle.Review.start (patient)) rfl)
 public theorem Review.saturate_invariant (patient : Compiler.ReasoningOracle.Vitals) : (Compiler.ReasoningOracle.Consistent (Compiler.ReasoningOracle.Review.observe (patient)) -> Compiler.ReasoningOracle.Consistent ((Compiler.ReasoningOracle.Review.saturate (patient)).1)) :=
 by
   dsimp only [Compiler.ReasoningOracle.Review.saturate]

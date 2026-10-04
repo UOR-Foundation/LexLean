@@ -476,8 +476,8 @@ versions, and the entries below say what each tag does and does not claim.
     mandatory budget). Logics, rules, verifiers, and reasoners may be
     generic. Claims `initial_invariant`, `terminates` (forward only, from a
     ranking, progress on every rule, and an exact fuel bound), and
-    `answer_correct` (the answer term correct on every state, which erases
-    the check).
+    `answer_correct` (the answer term correct on every state, or on every
+    state satisfying the invariant, which erases the check).
   - Verdicts are the verifier-accepted (or proved-correct) answer or one of
     `exhausted`, `unsolved`, `rejected`, `invalid_step`; a forward reasoner
     answers only from a saturated state. Traces are `E.Step` data, evidence
@@ -489,10 +489,27 @@ versions, and the entries below say what each tag does and does not claim.
     refused (`LLT4012`).
   - New diagnostics `LLT4010`, `LLT4011`, and `LLT4012`; new conformance IDs
     `RS-01` to `RS-14`; new example `examples/reasoning` (five modules and a
-    title glossary); 66 new negative fixtures; the `compiler` project's
-    `ReasoningOracle` with five calculus transcriptions of the clinical
-    engine and their rust-core and rust-std packages; GNAF requests over
-    forward-chaining plans.
+    title glossary) with the six-counter ledger of each run decided by the
+    kernel; 85 new negative fixtures; the `compiler` project's five oracle
+    modules (`ReasoningOracle`, `GradeOracle`, `BudgetOracle`,
+    `PlannerOracle`, `ScreeningOracle`) stating every reasoner the example's
+    production roots run, with calculus transcriptions of each strategy
+    (the forward engines `Triage`, `Review`, `Grade`, and the generic
+    `Spend`; the breadth-first search with deduplication `Plan`; the
+    depth-first search `Screen`; the generate-and-verify `Dose`) and their
+    rust-core and rust-std packages, in the new `ReasoningFixtures` module;
+    GNAF requests over forward-chaining plans, each plan tied to the
+    oracle's `Triage` on the request's domain.
+  - `answer_correct` also admits a theorem stating the answer correct under
+    the logic's invariant (`forall x s v, J s -> a = some v -> Spec x v`),
+    which the generated run theorem `E.run_invariant` discharges for every
+    reached state; a declaration named like, or below, a namespace the
+    generated Lean refers to (`LexLeanReasoning.Star`) is refused (`LLT4001`).
+  - Generated bounds also state a forward run's firings and a search's
+    verifications and expansions at most the fuel (`E.firings_bounded`,
+    `E.verifications_bounded`, `E.expansions_bounded`), recorded in the
+    eligibility report; a run's guard evaluations and a search's firings are
+    accounted, not bounded.
   - Every logic, rule, verifier, and reasoner is charged to `max_ir_nodes`
     for the most its elaboration can be before it is elaborated
     (`LLS8002`), and the rules of a reasoner are combined as balanced

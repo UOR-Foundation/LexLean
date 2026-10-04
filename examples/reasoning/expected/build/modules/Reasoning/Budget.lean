@@ -619,6 +619,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
@@ -851,6 +871,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Spend.step_fired (T : Type) (__r : Reasoning.Budget.Spend.Run (T)) (__q : Reasoning.Budget.Spend.Run (T)) : ((Reasoning.Budget.Spend.step (T) (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Budget.Spend.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Spend.saturate_derivation (T : Type) (x : (Prod (T) (Nat))) : (LexLeanReasoning.Star ((Reasoning.Budget.Spent (T))) (Reasoning.Budget.Spend.observe (T) (x)) ((Reasoning.Budget.Spend.saturate (T) (x)).1)) :=
 by
   dsimp only [Reasoning.Budget.Spend.saturate]
@@ -867,6 +897,10 @@ public theorem Spend.iterations_bounded (T : Type) (x : (Prod (T) (Nat))) : ((((
 by
   dsimp only [Reasoning.Budget.Spend.run]
   exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Budget.Spend.step (T))) ((fun (__r : Reasoning.Budget.Spend.Run (T)) => ((__r).ledger).iterations)) (Reasoning.Budget.Spend.step_count (T)) (((x).2 + 4)) (Reasoning.Budget.Spend.start (T) (x)) rfl)
+public theorem Spend.firings_bounded (T : Type) (x : (Prod (T) (Nat))) : ((((Reasoning.Budget.Spend.run (T) (x)).1).ledger).firings <= ((x).2 + 4)) :=
+by
+  dsimp only [Reasoning.Budget.Spend.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Budget.Spend.step (T))) ((fun (__r : Reasoning.Budget.Spend.Run (T)) => ((__r).ledger).firings)) (Reasoning.Budget.Spend.step_fired (T)) (((x).2 + 4)) (Reasoning.Budget.Spend.start (T) (x)) rfl)
 public theorem Spend.saturates (T : Type) (x : (Prod (T) (Nat))) : ((Reasoning.Budget.Spend.saturate (T) (x)).2 = true) :=
 by
   dsimp only [Reasoning.Budget.Spend.saturate]
@@ -1037,6 +1071,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Refund.step_fired (__r : Reasoning.Budget.Refund.Run) (__q : Reasoning.Budget.Refund.Run) : ((Reasoning.Budget.Refund.step (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Budget.Refund.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Refund.saturate_derivation (x : Nat) : (LexLeanReasoning.Star ((Reasoning.Budget.Spent (Nat))) (Reasoning.Budget.Refund.observe (x)) ((Reasoning.Budget.Refund.saturate (x)).1)) :=
 by
   dsimp only [Reasoning.Budget.Refund.saturate]
@@ -1053,6 +1097,10 @@ public theorem Refund.iterations_bounded (x : Nat) : ((((Reasoning.Budget.Refund
 by
   dsimp only [Reasoning.Budget.Refund.run]
   exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Budget.Refund.step)) ((fun (__r : Reasoning.Budget.Refund.Run) => ((__r).ledger).iterations)) Reasoning.Budget.Refund.step_count ((x + 4)) (Reasoning.Budget.Refund.start (x)) rfl)
+public theorem Refund.firings_bounded (x : Nat) : ((((Reasoning.Budget.Refund.run (x)).1).ledger).firings <= (x + 4)) :=
+by
+  dsimp only [Reasoning.Budget.Refund.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Budget.Refund.step)) ((fun (__r : Reasoning.Budget.Refund.Run) => ((__r).ledger).firings)) Reasoning.Budget.Refund.step_fired ((x + 4)) (Reasoning.Budget.Refund.start (x)) rfl)
 public theorem Refund.conclude_accept (x : Nat) (__s : (Prod (Nat) (Nat))) (__v : Nat) : ((Reasoning.Budget.Refund.conclude (x) (__s) = Except.ok (__v)) -> (Reasoning.Budget.Refund.accept (x) (__s) = Option.some (__v))) :=
 by
   intro llE

@@ -1753,6 +1753,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by

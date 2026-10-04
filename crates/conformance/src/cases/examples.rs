@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 206] = [
+            let prescribed: [(&str, &str); 225] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -389,6 +389,25 @@ pub(crate) fn run(id: &str) {
                 ("reasoning-rule-conclusion-type", "LLT4010"),
                 ("reasoning-binder-reserved", "LLT4001"),
                 ("reasoning-generate-subject-mismatch", "LLT4010"),
+                ("reasoning-rule-bypass-ref", "LLT4012"),
+                ("reasoning-rule-bypass-alias", "LLT4012"),
+                ("reasoning-rule-bypass-lambda", "LLT4012"),
+                ("reasoning-rule-bypass-iterate", "LLT4012"),
+                ("reasoning-rule-bypass-branch", "LLT4012"),
+                ("reasoning-rule-bypass-guard", "LLT4012"),
+                ("reasoning-rule-bypass-observe", "LLT4012"),
+                ("reasoning-rule-bypass-generator", "LLT4012"),
+                ("reasoning-extract-bypass-ref", "LLT4012"),
+                ("reasoning-extract-bypass-alias", "LLT4012"),
+                ("reasoning-extract-bypass-branch", "LLT4012"),
+                ("reasoning-extract-bypass-reasoner", "LLT4012"),
+                ("reasoning-claims-duplicate", "LLT4010"),
+                ("reasoning-reasoner-rule-type-arguments", "LLT4010"),
+                ("reasoning-verifier-subject-mismatch", "LLT4010"),
+                ("reasoning-answer-invariant-without-initial", "LLT4010"),
+                ("reasoning-false-invariant-answer-correct", "LLV7002"),
+                ("reasoning-reserved-declaration-name", "LLT4001"),
+                ("reasoning-reserved-declaration-namespace", "LLT4001"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())

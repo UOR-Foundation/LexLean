@@ -1,17 +1,24 @@
 //! Calculus transcriptions of the forward engine the reasoning example's
 //! clinical module elaborates to (SPEC.md §17.12, §17.14).
 //!
-//! The `compiler` project's `ReasoningOracle` module states exactly the
-//! declarations of `examples/reasoning/src/Clinic.lex.tex`, so its `Triage`
-//! and `Review` reasoners elaborate, in Lean, to the same select, fire,
-//! saturate, conclude, and verdict definitions the example verifies. Each
-//! fixture here transcribes one of those elaborations by hand, function for
-//! function: the rules' guards, conclusions, and guarded applications, the
-//! first-applicable selection in declared priority order, the firing by
-//! step, the fuel-bounded saturation through the `iterate_until` template,
-//! and the verifier-checked conclusion. The fixture module states that the
-//! kernel reduces each transcription to the value the oracle's own reasoner
-//! computes on the same patient, so a transcription that searches
+//! The `compiler` project's oracle modules state exactly the declarations
+//! of the reasoning example's reasoners: `ReasoningOracle` those of
+//! `examples/reasoning/src/Clinic.lex.tex`, so its `Triage` and `Review`
+//! reasoners elaborate, in Lean, to the same select, fire, saturate,
+//! conclude, and verdict definitions the example verifies; `GradeOracle`
+//! the `Grade` reasoner of `Main` over the clinical rules; and
+//! `BudgetOracle`, `PlannerOracle`, and `ScreeningOracle` the other three
+//! modules, with the generic forward reasoner `Spend`, the breadth-first
+//! search `Plan`, the depth-first search `Screen`, and the
+//! generate-and-verify reasoner `Dose`. Each fixture here transcribes one of
+//! those elaborations by hand, function for function: the rules' guards,
+//! conclusions, and guarded applications, the first-applicable selection in
+//! declared priority order, the firing by step, the fuel-bounded saturation
+//! through the `iterate_until` template, the nodes, frontier, and visited
+//! set of a search, the budgeted fold of a generator's candidates, and the
+//! verifier-checked conclusion. The fixture module states that the kernel
+//! reduces each transcription to the value the oracle's own reasoner
+//! computes on the same input, so a transcription that searches
 //! differently, skips a guard, or answers a verdict the reasoner does not is
 //! refused by Lean.
 
@@ -25,11 +32,85 @@ use super::{
 };
 use crate::lx;
 
+mod engines;
+
+/// The module stating that each reasoning fixture computes what its
+/// oracle's reasoner does.
+pub const FIXTURES: &str = "ReasoningFixtures";
+
 /// The module stating the clinical declarations.
 pub const ORACLE: &str = "ReasoningOracle";
+/// The module stating the `Grade` reasoner over the clinical rules.
+pub const GRADE: &str = "GradeOracle";
+/// The module stating the budget declarations.
+pub const BUDGET: &str = "BudgetOracle";
+/// The module stating the jug-planning declarations.
+pub const PLANNER: &str = "PlannerOracle";
+/// The module stating the dose-screening declarations.
+pub const SCREENING: &str = "ScreeningOracle";
+
+/// The oracle modules, in the order each may import the ones before it.
+pub const ORACLE_MODULES: [&str; 5] = [ORACLE, GRADE, BUDGET, PLANNER, SCREENING];
 
 /// The example source whose declarations the oracle states.
 pub const SOURCE: &str = "examples/reasoning/src/Clinic.lex.tex";
+
+/// An oracle module: the example module it states, the declarations of it
+/// it states (all of them when none are named), and the module it imports.
+pub struct OracleSpec {
+    /// The oracle's module name.
+    pub module: &'static str,
+    /// The example source, relative to the repository root.
+    pub source: &'static str,
+    /// The declarations, by name, or every declaration.
+    pub select: Option<&'static [&'static str]>,
+    /// The example module's name for the module the oracle imports, and
+    /// the oracle's name for it.
+    pub import: Option<(&'static str, &'static str)>,
+}
+
+/// The oracles, in [`ORACLE_MODULES`] order.
+pub const ORACLES: [OracleSpec; 5] = [
+    OracleSpec {
+        module: ORACLE,
+        source: SOURCE,
+        select: None,
+        import: None,
+    },
+    OracleSpec {
+        module: GRADE,
+        source: "examples/reasoning/src/Main.lex.tex",
+        select: Some(&[
+            "Graded",
+            "gradedCheck",
+            "graded_sound",
+            "Scale",
+            "grade_admitted",
+            "grade_pending",
+            "grade_correct",
+            "Grade",
+        ]),
+        import: Some(("Clinic", ORACLE)),
+    },
+    OracleSpec {
+        module: BUDGET,
+        source: "examples/reasoning/src/Budget.lex.tex",
+        select: None,
+        import: None,
+    },
+    OracleSpec {
+        module: PLANNER,
+        source: "examples/reasoning/src/Planner.lex.tex",
+        select: None,
+        import: None,
+    },
+    OracleSpec {
+        module: SCREENING,
+        source: "examples/reasoning/src/Screening.lex.tex",
+        select: None,
+        import: None,
+    },
+];
 
 /// The vital signs, in field order.
 const VITALS: [&str; 6] = [
@@ -147,6 +228,10 @@ fn vital(vitals: Expr, name: &str) -> Expr {
 struct Layout {
     /// The first shared function.
     base: u64,
+    /// Whether the reasoner runs its verifier's check: a reasoner whose
+    /// answer is proved correct (`answer_correct`) does not, so it has no
+    /// check function.
+    checked: bool,
 }
 
 impl Layout {
@@ -195,11 +280,15 @@ impl Layout {
         self.base + 35
     }
     fn check(self) -> u64 {
+        assert!(
+            self.checked,
+            "a reasoner without a check has no check function"
+        );
         self.base + 36
     }
     /// The first function after the shared ones.
     fn end(self) -> u64 {
-        self.base + 37
+        self.base + 36 + u64::from(self.checked)
     }
 }
 
@@ -211,6 +300,14 @@ enum Verifier {
     Recommendation,
     /// `dischargeCheck`: level 0.
     Outpatient,
+    /// No check: the answer is proved correct on every reached state.
+    Erased,
+}
+
+impl Verifier {
+    const fn checked(self) -> bool {
+        !matches!(self, Self::Erased)
+    }
 }
 
 /// The guard of rule `index` over the chart (variable 0).
@@ -392,16 +489,21 @@ fn shared(layout: Layout, verifier: Verifier) -> Vec<Function> {
                 arm(Shape::None, Vec::new(), none(&Ty::Nat)),
                 // The check's result is bound before it is tested, so the
                 // rendered arm is not a bare `if` the Rust lints would
-                // rewrite into a filter.
+                // rewrite into a filter. A proved answer is used as
+                // extracted.
                 arm(
                     Shape::Some,
                     vec![2],
-                    super::let_in(
-                        3,
-                        Ty::Bool,
-                        call(layout.check(), vec![v(0), v(2)]),
-                        cond(v(3), some(&Ty::Nat, v(2)), none(&Ty::Nat)),
-                    ),
+                    if layout.checked {
+                        super::let_in(
+                            3,
+                            Ty::Bool,
+                            call(layout.check(), vec![v(0), v(2)]),
+                            cond(v(3), some(&Ty::Nat, v(2)), none(&Ty::Nat)),
+                        )
+                    } else {
+                        some(&Ty::Nat, v(2))
+                    },
                 ),
             ],
         ),
@@ -462,6 +564,10 @@ fn shared(layout: Layout, verifier: Verifier) -> Vec<Function> {
             )
         }
         Verifier::Outpatient => eq(v(1), nat(0)),
+        Verifier::Erased => {
+            debug_assert_eq!(layout.end(), layout.base + out.len() as u64);
+            return out;
+        }
     };
     out.push(function(vec![vitals_t, Ty::Nat], Ty::Bool, check));
     debug_assert_eq!(layout.end(), layout.base + out.len() as u64);
@@ -510,7 +616,17 @@ fn patient_term(values: [u64; 6]) -> Json {
 }
 
 fn oracle_call(name: &str, arguments: Vec<Json>) -> Json {
-    lx::call(lexlean::calculus::term::member(ORACLE, name), arguments)
+    oracle_in(ORACLE, name, Vec::new(), arguments)
+}
+
+/// A call of a declaration of oracle `module` at `type_arguments`.
+fn oracle_in(module: &str, name: &str, type_arguments: Vec<Json>, arguments: Vec<Json>) -> Json {
+    let function = lexlean::calculus::term::member(module, name);
+    if type_arguments.is_empty() {
+        lx::call(function, arguments)
+    } else {
+        lx::call_at(function, type_arguments, arguments)
+    }
 }
 
 /// `match result with ok v => Value.ok (ok v) | error e => Value.error
@@ -543,7 +659,10 @@ fn encode_result(result: Json, ok: impl FnOnce(Json) -> Json) -> Json {
 /// `verifier`: entry 0 is `verdict`, the `iterate_until` instance follows
 /// the shared functions.
 fn verdict_functions(fuel: u64, verifier: Verifier) -> (Vec<Function>, u64) {
-    let layout = Layout { base: 1 };
+    let layout = Layout {
+        base: 1,
+        checked: verifier.checked(),
+    };
     let iterate = layout.end();
     let saturated = pair_t(chart_t(), Ty::Bool);
     let verdict_t = res_t(Ty::Nat, failure_t());
@@ -576,7 +695,10 @@ fn verdict_functions(fuel: u64, verifier: Verifier) -> (Vec<Function>, u64) {
 /// The traced transcription of `Triage`: the explained verdict with the
 /// run's guard evaluations and firings, as `Triage.account` counts them.
 fn traced_functions() -> (Vec<Function>, u64) {
-    let layout = Layout { base: 4 };
+    let layout = Layout {
+        base: 4,
+        checked: true,
+    };
     let iterate = layout.end();
     let step_t = adt(STEP_ADT);
     let steps_t = super::list_t(step_t.clone());
@@ -769,40 +891,186 @@ fn reasoning_case(
             .unwrap_or_else(|reason| panic!("fixture {name}: {reason}")),
     );
     let mut out = super::case(name, super::program(adts(traced), all), 0, arguments, 4000);
-    out.library = Some(super::LibraryUse {
+    out.libraries = vec![super::LibraryUse {
         template: Template::IterateUntil,
         types: vec![state],
         at,
-    });
+    }];
     out.oracle = Some(oracle);
     out
 }
 
 /// The verdict of reasoner `reasoner` on `values`, encoded as a value.
-fn verdict_oracle(reasoner: &str, values: [u64; 6]) -> Json {
+fn verdict_oracle(module: &str, reasoner: &str, values: [u64; 6]) -> Json {
     encode_result(
-        oracle_call(&format!("{reasoner}.verdict"), vec![patient_term(values)]),
+        oracle_in(
+            module,
+            &format!("{reasoner}.verdict"),
+            Vec::new(),
+            vec![patient_term(values)],
+        ),
         |level| lx::value("nat", vec![level]),
     )
 }
 
+/// The verdict of the reasoner `reasoner` of oracle `module` on `arguments`
+/// at `type_arguments`, as the value of a `result nat reasoning_failure`.
+fn nat_verdict(
+    module: &str,
+    reasoner: &str,
+    type_arguments: Vec<Json>,
+    arguments: Vec<Json>,
+) -> Json {
+    encode_result(
+        oracle_in(
+            module,
+            &format!("{reasoner}.verdict"),
+            type_arguments,
+            arguments,
+        ),
+        |found| lx::value("nat", vec![found]),
+    )
+}
+
+/// The verdict of `Plan` for `target`: the jugs, or why none.
+fn plan_verdict(target: u64) -> Json {
+    encode_result(
+        oracle_in(PLANNER, "Plan.verdict", Vec::new(), vec![lx::nat(target)]),
+        |jugs| {
+            lx::value(
+                "pair",
+                vec![
+                    lx::value("nat", vec![lx::first(jugs.clone())]),
+                    lx::value("nat", vec![lx::second(jugs)]),
+                ],
+            )
+        },
+    )
+}
+
+/// The vital signs of the patient whose observed findings are `findings`,
+/// one bit each (fever, tachycardia, tachypnea, leukocytosis, infection,
+/// hypotension): a finding is the clinical test the rule base states.
+fn vitals_of_findings(findings: u64) -> [u64; 6] {
+    use crate::gnaf::reasoning as bits;
+    let has = |bit: u64| findings >> bit & 1 == 1;
+    [
+        if has(bits::FEVER) { 392 } else { 368 },
+        if has(bits::TACHYCARDIA) { 118 } else { 72 },
+        if has(bits::TACHYPNEA) { 26 } else { 14 },
+        if has(bits::LEUKOCYTOSIS) { 15 } else { 7 },
+        if has(bits::HYPOTENSION) { 82 } else { 120 },
+        u64::from(has(bits::INFECTION)),
+    ]
+}
+
+/// The GNAF plans (SPEC.md §17.15) as fixtures: each plan, on every patient
+/// of the request's domain, as the level `Triage` derives from the same
+/// findings, observed as the vital signs that state them. The kernel decides
+/// each agreement, so the plans pose the problem `Triage` solves.
+fn gnaf_cases() -> Vec<Case> {
+    use crate::gnaf::reasoning as plans;
+    let verdicts = nat_tuple_oracle(
+        plans::DOMAIN
+            .iter()
+            .map(|findings| {
+                lx::value(
+                    "nat",
+                    vec![lx::matching(
+                        oracle_call(
+                            "Triage.verdict",
+                            vec![patient_term(vitals_of_findings(*findings))],
+                        ),
+                        vec![
+                            lx::branch(
+                                lx::member("Result.ok"),
+                                vec!["level".to_owned()],
+                                lx::var("level"),
+                            ),
+                            lx::branch(
+                                lx::member("Result.error"),
+                                vec!["failure".to_owned()],
+                                lx::nat(9),
+                            ),
+                        ],
+                    )],
+                )
+            })
+            .collect(),
+    );
+    let arguments: Vec<Value> = plans::DOMAIN
+        .iter()
+        .map(|findings| natv(*findings))
+        .collect();
+    // The entry runs the plan, function 1, on each patient in turn.
+    let tuple_t = plans::DOMAIN[1..]
+        .iter()
+        .fold(Ty::Nat, |tail, _| pair_t(Ty::Nat, tail));
+    let entry = || {
+        let last = plans::DOMAIN.len() - 1;
+        let body = (0..last)
+            .rev()
+            .fold(call(1, vec![v(last as u64)]), |tail, index| {
+                build(
+                    Shape::Pair,
+                    (index..last).fold(Ty::Nat, |tail, _| pair_t(Ty::Nat, tail)),
+                    vec![call(1, vec![v(index as u64)]), tail],
+                )
+            });
+        function(vec![Ty::Nat; plans::DOMAIN.len()], tuple_t.clone(), body)
+    };
+    [
+        ("reasoning-gnaf-priority", plans::forward_priority(1)),
+        ("reasoning-gnaf-sweep", plans::forward_sweep()),
+        ("reasoning-gnaf-goal", plans::goal_directed()),
+    ]
+    .into_iter()
+    .map(|(name, plan)| {
+        let mut out = super::case(
+            name,
+            super::program(Vec::new(), vec![entry(), plan]),
+            0,
+            arguments.clone(),
+            10_000,
+        );
+        out.oracle = Some(verdicts.clone());
+        out
+    })
+    .collect()
+}
+
+/// A right-nested tuple of values, as a pair chain.
+fn nat_tuple_oracle(mut items: Vec<Json>) -> Json {
+    let last = items.pop().expect("a nonempty tuple");
+    items
+        .into_iter()
+        .rev()
+        .fold(last, |tail, item| lx::value("pair", vec![item, tail]))
+}
+
 /// Every reasoning fixture.
 pub fn cases() -> Vec<Case> {
-    let verdict = |name: &str, reasoner: &str, fuel: u64, verifier: Verifier, values: [u64; 6]| {
+    let verdict = |name: &str,
+                   module: &str,
+                   reasoner: &str,
+                   fuel: u64,
+                   verifier: Verifier,
+                   values: [u64; 6]| {
         reasoning_case(
             name,
             false,
             verdict_functions(fuel, verifier),
             chart_t(),
             vec![patient(values)],
-            verdict_oracle(reasoner, values),
+            verdict_oracle(module, reasoner, values),
         )
     };
     let account = oracle_call("Triage.account", vec![patient_term(SHOCKED)]);
     let ledger = |counter: &str| lx::value("nat", vec![lx::project(account.clone(), counter)]);
-    vec![
+    let mut out = vec![
         verdict(
             "reasoning-triage-shock",
+            ORACLE,
             "Triage",
             11,
             Verifier::Recommendation,
@@ -810,6 +1078,7 @@ pub fn cases() -> Vec<Case> {
         ),
         verdict(
             "reasoning-triage-well",
+            ORACLE,
             "Triage",
             11,
             Verifier::Recommendation,
@@ -817,6 +1086,7 @@ pub fn cases() -> Vec<Case> {
         ),
         verdict(
             "reasoning-review-exhausted",
+            ORACLE,
             "Review",
             6,
             Verifier::Outpatient,
@@ -824,10 +1094,60 @@ pub fn cases() -> Vec<Case> {
         ),
         verdict(
             "reasoning-review-rejected",
+            ORACLE,
             "Review",
             6,
             Verifier::Outpatient,
             FEBRILE,
+        ),
+        // Grade: the clinical rules again, answering the level as
+        // extracted, since its correctness is proved.
+        verdict(
+            "reasoning-grade-shock",
+            GRADE,
+            "Grade",
+            11,
+            Verifier::Erased,
+            SHOCKED,
+        ),
+        verdict(
+            "reasoning-grade-well",
+            GRADE,
+            "Grade",
+            11,
+            Verifier::Erased,
+            WELL,
+        ),
+        engines::spend_case(
+            2,
+            nat_verdict(
+                BUDGET,
+                "Spend",
+                vec![lx::nat_t()],
+                vec![lx::pair(lx::nat(2), lx::nat(2))],
+            ),
+        ),
+        engines::plan_case(2, plan_verdict(2)),
+        engines::plan_case(5, plan_verdict(5)),
+        engines::screen_case(
+            60,
+            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(60)]),
+        ),
+        engines::screen_case(
+            100,
+            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(100)]),
+        ),
+        engines::screen_case(
+            0,
+            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(0)]),
+        ),
+        engines::dose_case(
+            60,
+            nat_verdict(SCREENING, "Dose", Vec::new(), vec![lx::nat(60)]),
+        ),
+        engines::dose_case(
+            120,
+            nat_verdict(SCREENING, "Dose", Vec::new(), vec![lx::nat(120)]),
         ),
         reasoning_case(
             "reasoning-triage-traced",
@@ -860,7 +1180,10 @@ pub fn cases() -> Vec<Case> {
                 ],
             ),
         ),
-    ]
+    ];
+    // The GNAF plans, tied to the oracle's level on the same findings.
+    out.extend(gnaf_cases());
+    out
 }
 
 /// The encoders the fixture module states the oracle's values with: a
@@ -943,18 +1266,92 @@ pub fn encoders() -> Vec<Json> {
     vec![encode_failure, encode_step, encode_steps]
 }
 
-/// The oracle module: exactly the declarations of [`SOURCE`].
+/// `declarations` with every reference to module `from` made to module `to`,
+/// and the definitions a proof unfolds in their key order again, which the
+/// module's name is part of.
+fn renamed_module(declarations: &mut Json, from: &str, to: &str) {
+    match declarations {
+        Json::Object(object) => {
+            if object.get("module").is_some_and(|module| module == from) {
+                object.insert("module".to_owned(), Json::String(to.to_owned()));
+            }
+            for value in object.values_mut() {
+                renamed_module(value, from, to);
+            }
+            if let Some(Json::Array(definitions)) = object.get_mut("definitions") {
+                let key = |member: &Json| match member["module"].as_str() {
+                    Some(module) => format!("{module}::{}", member["name"].as_str().unwrap_or("")),
+                    None => member["name"].as_str().unwrap_or("").to_owned(),
+                };
+                definitions.sort_by_key(key);
+            }
+        }
+        Json::Array(items) => {
+            for item in items {
+                renamed_module(item, from, to);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// The index of the transcribed function `name` of engine `engine`
+/// (`spend`, `plan`, `screen`, or `dose`).
 ///
 /// # Panics
 ///
-/// Panics if the example source is missing or states no semantic data.
+/// Panics on an engine or function the transcriptions do not name.
 #[must_use]
-pub fn oracle_module() -> String {
-    let path = crate::support::repo_root().join(SOURCE);
-    let source = std::fs::read_to_string(path.as_std_path()).expect("the reasoning example");
-    let declarations = crate::rust_packages::declarations(&source)
-        .unwrap_or_else(|reason| panic!("{SOURCE}: {reason}"));
-    lx::module_tex(ORACLE, &[], declarations)
+pub fn function_index(engine: &str, name: &str) -> usize {
+    engines::function_index(engine, name)
+}
+
+/// The oracle modules, by name: each states exactly the declarations of the
+/// example module it names (those it selects, when it selects), with the
+/// module it imports under the oracle's name for it.
+///
+/// # Panics
+///
+/// Panics if an example source is missing, states no semantic data, or
+/// lacks a declaration an oracle selects.
+#[must_use]
+pub fn oracle_modules() -> Vec<(&'static str, String)> {
+    ORACLES
+        .iter()
+        .map(|spec| {
+            let path = crate::support::repo_root().join(spec.source);
+            let source =
+                std::fs::read_to_string(path.as_std_path()).expect("the reasoning example");
+            let mut declarations = crate::rust_packages::declarations(&source)
+                .unwrap_or_else(|reason| panic!("{}: {reason}", spec.source));
+            if let Some(names) = spec.select {
+                declarations.retain(|declaration| {
+                    declaration["name"]
+                        .as_str()
+                        .is_some_and(|name| names.contains(&name))
+                });
+                assert_eq!(
+                    declarations.len(),
+                    names.len(),
+                    "{} states every declaration {} selects",
+                    spec.source,
+                    spec.module
+                );
+            }
+            let mut declarations = Json::Array(declarations);
+            let imports: Vec<&str> = spec.import.iter().map(|(_, oracle)| *oracle).collect();
+            if let Some((from, to)) = spec.import {
+                renamed_module(&mut declarations, from, to);
+            }
+            let Json::Array(declarations) = declarations else {
+                unreachable!("an array")
+            };
+            (
+                spec.module,
+                lx::module_tex(spec.module, &imports, declarations),
+            )
+        })
+        .collect()
 }
 
 /// The patient values of a reasoning fixture's argument, for a test.

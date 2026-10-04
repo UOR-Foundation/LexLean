@@ -59,7 +59,7 @@ Feature: reasoning
     And a mutated runtime lemma statement is refused by Lean
 
   @RS-09 @build
-  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
+  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, or on every state satisfying the logic's invariant, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
     Given executable code using rules and reasoners
     When it calls a conclusion or an unverified answer directly, with and without an answer correctness claim, and replays forged and genuine traces
     Then a direct conclusion or unverified answer fails with LLT4012 unless the answer is proved correct
@@ -80,17 +80,18 @@ Feature: reasoning
     And each root's report records its reasoning resources and extraction succeeds for rust-core and rust-std
 
   @RS-12 @build
-  Scenario: The compiler project's reasoning oracle declares exactly the declarations of the reasoning example's clinical module, and calculus transcriptions of its forward engines produce the oracle's verdicts, explained answer, and account on every fixture argument as the kernel decides, compile to committed rust-core and rust-std packages, and charge at least the guard evaluations and firings of the reasoner's account in calculus steps.
-    Given the compiler project's reasoning oracle and transcriptions
+  Scenario: The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage, Review, Grade, and the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose), and a calculus transcription of each produces the oracle's verdict on every fixture argument, Triage's explained answer and account too, as the kernel decides, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps.
+    Given the compiler project's reasoning oracles and transcriptions
     When the transcriptions are evaluated, compared with the oracle, and rendered to Rust
     Then every outcome equals the oracle's as the kernel decides and the packages equal their generator
-    And every transcription charges at least the account's guard evaluations and firings in steps
+    And every transcription charges at least the ledger's guard evaluations and firings in steps
 
   @RS-13 @build
-  Scenario: GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused.
+  Scenario: GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused.
     Given GNAF requests over reasoning plans
     When they are answered
     Then the answer charges each plan's search in steps over the declared plans
+    And each plan computes the level the oracle's Triage derives from the same findings as the kernel decides
     And a plan whose search is charged nothing or a universe of discovered candidates is refused
 
   @RS-14 @build

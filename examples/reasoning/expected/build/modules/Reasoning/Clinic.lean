@@ -619,6 +619,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
@@ -1082,6 +1102,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Triage.step_fired (__r : Reasoning.Clinic.Triage.Run) (__q : Reasoning.Clinic.Triage.Run) : ((Reasoning.Clinic.Triage.step (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Clinic.Triage.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Triage.saturate_derivation (patient : Reasoning.Clinic.Vitals) : (LexLeanReasoning.Star ((Reasoning.Clinic.Justified)) (Reasoning.Clinic.Triage.observe (patient)) ((Reasoning.Clinic.Triage.saturate (patient)).1)) :=
 by
   dsimp only [Reasoning.Clinic.Triage.saturate]
@@ -1098,6 +1128,10 @@ public theorem Triage.iterations_bounded (patient : Reasoning.Clinic.Vitals) : (
 by
   dsimp only [Reasoning.Clinic.Triage.run]
   exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Clinic.Triage.step)) ((fun (__r : Reasoning.Clinic.Triage.Run) => ((__r).ledger).iterations)) Reasoning.Clinic.Triage.step_count (11) (Reasoning.Clinic.Triage.start (patient)) rfl)
+public theorem Triage.firings_bounded (patient : Reasoning.Clinic.Vitals) : ((((Reasoning.Clinic.Triage.run (patient)).1).ledger).firings <= 11) :=
+by
+  dsimp only [Reasoning.Clinic.Triage.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Clinic.Triage.step)) ((fun (__r : Reasoning.Clinic.Triage.Run) => ((__r).ledger).firings)) Reasoning.Clinic.Triage.step_fired (11) (Reasoning.Clinic.Triage.start (patient)) rfl)
 public theorem Triage.saturate_invariant (patient : Reasoning.Clinic.Vitals) : Reasoning.Clinic.Consistent ((Reasoning.Clinic.Triage.saturate (patient)).1) :=
 by
   dsimp only [Reasoning.Clinic.Triage.saturate]
@@ -1294,6 +1328,16 @@ by
     · cases llE
     · cases llE
       rfl
+public theorem Review.step_fired (__r : Reasoning.Clinic.Review.Run) (__q : Reasoning.Clinic.Review.Run) : ((Reasoning.Clinic.Review.step (__r) = Option.some (__q)) -> (((__q).ledger).firings = (((__r).ledger).firings + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Clinic.Review.step] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · cases llE
+      rfl
 public theorem Review.saturate_derivation (patient : Reasoning.Clinic.Vitals) : (LexLeanReasoning.Star ((Reasoning.Clinic.Justified)) (Reasoning.Clinic.Review.observe (patient)) ((Reasoning.Clinic.Review.saturate (patient)).1)) :=
 by
   dsimp only [Reasoning.Clinic.Review.saturate]
@@ -1310,6 +1354,10 @@ public theorem Review.iterations_bounded (patient : Reasoning.Clinic.Vitals) : (
 by
   dsimp only [Reasoning.Clinic.Review.run]
   exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Clinic.Review.step)) ((fun (__r : Reasoning.Clinic.Review.Run) => ((__r).ledger).iterations)) Reasoning.Clinic.Review.step_count (6) (Reasoning.Clinic.Review.start (patient)) rfl)
+public theorem Review.firings_bounded (patient : Reasoning.Clinic.Vitals) : ((((Reasoning.Clinic.Review.run (patient)).1).ledger).firings <= 6) :=
+by
+  dsimp only [Reasoning.Clinic.Review.run]
+  exact (LexLeanReasoning.iterateUntilCount ((Reasoning.Clinic.Review.step)) ((fun (__r : Reasoning.Clinic.Review.Run) => ((__r).ledger).firings)) Reasoning.Clinic.Review.step_fired (6) (Reasoning.Clinic.Review.start (patient)) rfl)
 public theorem Review.saturate_invariant (patient : Reasoning.Clinic.Vitals) : (Reasoning.Clinic.Consistent (Reasoning.Clinic.Review.observe (patient)) -> Reasoning.Clinic.Consistent ((Reasoning.Clinic.Review.saturate (patient)).1)) :=
 by
   dsimp only [Reasoning.Clinic.Review.saturate]

@@ -619,6 +619,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
@@ -876,6 +896,32 @@ by
         rfl
       · cases llE
         rfl
+public theorem Plan.search_verify_count (target : Nat) (__r : Reasoning.Planner.Plan.Search) (__q : Reasoning.Planner.Plan.Search) : ((Reasoning.Planner.Plan.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications = (((__r).ledger).verifications + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Planner.Plan.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        rfl
+      · cases llE
+        rfl
+public theorem Plan.search_expanded (target : Nat) (__r : Reasoning.Planner.Plan.Search) (__q : Reasoning.Planner.Plan.Search) : ((Reasoning.Planner.Plan.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Planner.Plan.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        exact Nat.le_succ _
+      · cases llE
+        exact Nat.le_refl _
 public theorem Plan.search_ok (target : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Reasoning.Planner.Plan.Node) => (Reasoning.Planner.Plan.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Reasoning.Planner.Plan.Node) => Reasoning.Planner.Plan.accept (target) ((__n).state))) (((Reasoning.Planner.Plan.run (target)).1).frontier) (((Reasoning.Planner.Plan.run (target)).1).found)) :=
 by
   dsimp only [Reasoning.Planner.Plan.run]
@@ -884,6 +930,14 @@ public theorem Plan.frontier_bounded (target : Nat) : ((((Reasoning.Planner.Plan
 by
   dsimp only [Reasoning.Planner.Plan.run]
   exact (LexLeanReasoning.iterateUntilBound ((fun (__r : Reasoning.Planner.Plan.Search) => Reasoning.Planner.Plan.searchStep (target) (__r))) ((fun (__r : Reasoning.Planner.Plan.Search) => ((__r).ledger).frontier)) ((target + target)) (Reasoning.Planner.Plan.search_peak (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Reasoning.Planner.Plan.start (target)) (LexLeanReasoning.capBound ((target + target)) _))
+public theorem Plan.verifications_bounded (target : Nat) : ((((Reasoning.Planner.Plan.run (target)).1).ledger).verifications <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Reasoning.Planner.Plan.run]
+  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Reasoning.Planner.Plan.Search) => Reasoning.Planner.Plan.searchStep (target) (__r))) ((fun (__r : Reasoning.Planner.Plan.Search) => ((__r).ledger).verifications)) (Reasoning.Planner.Plan.search_verify_count (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Reasoning.Planner.Plan.start (target)) rfl)
+public theorem Plan.expansions_bounded (target : Nat) : ((((Reasoning.Planner.Plan.run (target)).1).ledger).expansions <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Reasoning.Planner.Plan.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Reasoning.Planner.Plan.Search) => Reasoning.Planner.Plan.searchStep (target) (__r))) ((fun (__r : Reasoning.Planner.Plan.Search) => ((__r).ledger).expansions)) (Reasoning.Planner.Plan.search_expanded (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Reasoning.Planner.Plan.start (target)) rfl)
 public theorem Plan.iterations_bounded (target : Nat) : ((((Reasoning.Planner.Plan.run (target)).1).ledger).iterations <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
 by
   dsimp only [Reasoning.Planner.Plan.run]

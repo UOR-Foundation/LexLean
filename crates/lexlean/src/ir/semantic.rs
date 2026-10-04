@@ -3480,6 +3480,21 @@ fn check_declaration_name(name: &str, env: &Environment<'_>) -> Result<(), Strin
             "declaration name `{name}` is reserved for the built-in type whose constructors it would shadow"
         ));
     }
+    // The generated Lean refers to these namespaces without qualification
+    // inside the module's own, so a declaration named like one, or below
+    // one, would capture the reference and leave a file Lean cannot accept.
+    if env.language_1_2
+        && BACKEND_BARE_NAMES.iter().any(|bare| {
+            name == *bare
+                || name
+                    .strip_prefix(*bare)
+                    .is_some_and(|rest| rest.starts_with('.'))
+        })
+    {
+        return Err(format!(
+            "declaration name `{name}` is reserved: it is, or is below, a namespace the generated Lean refers to"
+        ));
+    }
     Ok(())
 }
 

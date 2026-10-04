@@ -587,6 +587,14 @@ fn rs_01() {
         "LLT4001",
         &[
             ("binder-reserved", "invalid interface binder name `__s`"),
+            (
+                "reserved-declaration-name",
+                "declaration name `LexLeanReasoning.Star` is reserved",
+            ),
+            (
+                "reserved-declaration-namespace",
+                "declaration name `LexLeanReasoning` is reserved",
+            ),
             ("opaque-member", "unknown field `oracle`"),
             ("unregistered-strategy", "unknown variant `neural`"),
             (
@@ -652,6 +660,10 @@ fn rs_02() {
             (
                 "rule-type-arguments",
                 "expects 0 type argument(s), received 1",
+            ),
+            (
+                "reasoner-rule-type-arguments",
+                "reasoner `Spend` reasons in logic `Countdown<T>`, but rule `Tick<Bool>` is over logic `Countdown<Bool>`",
             ),
             ("rule-guard-type", "guard has type Nat, expected Bool"),
             (
@@ -754,6 +766,10 @@ fn rs_03() {
                 "but verifier `Bound` checks a Nat subject and a Nat candidate",
             ),
             (
+                "verifier-subject-mismatch",
+                "but verifier `Probe` checks a Bool subject and a Nat candidate",
+            ),
+            (
                 "generator-type",
                 "generator has type Nat, expected List (Nat)",
             ),
@@ -805,8 +821,8 @@ fn rs_04() {
         }
     }
     assert_eq!(
-        reasoners, 8,
-        "Triage, Review, Spend, Refund, Plan, Dose, Screen, Grade"
+        reasoners, 9,
+        "Triage, Review, Spend, Refund, Plan, Dose, Screen, Grade, Cap"
     );
     // Only the existing primitives: every operation the language-1.2 term
     // schema admits, none of them a reasoning primitive.
@@ -1084,6 +1100,10 @@ fn rs_07() {
                 "claims an initial invariant, but logic `Triage` has none",
             ),
             ("claims-unsorted", "claims are not strictly sorted by kind"),
+            (
+                "claims-duplicate",
+                "claims are not strictly sorted by kind, each at most once",
+            ),
         ],
     );
     if let Some(fixture) = reasoning_backed("RS-07") {
@@ -1300,6 +1320,58 @@ fn rs_09() {
                 "unverified-answer",
                 "reaches the unverified answer of a reasoner `Clinic.extract`",
             ),
+            // The same boundary by every other way a name is mentioned: a
+            // function value folded, bound, applied, iterated, or called
+            // from a lambda or a branch; a rule's own guard; a reasoner's
+            // observation or generator; and another reasoner's answer.
+            (
+                "rule-bypass-ref",
+                "executable `shortcut` reaches the unguarded conclusion of a rule `Pick.conclusion`",
+            ),
+            (
+                "rule-bypass-alias",
+                "executable `shortcut` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-lambda",
+                "executable `shortcut` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-iterate",
+                "executable `shortcut` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-branch",
+                "executable `shortcut` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-guard",
+                "executable `Pick` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-observe",
+                "executable `Clinic` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "rule-bypass-generator",
+                "executable `Guess` reaches the unguarded conclusion of a rule `Fever.conclusion`",
+            ),
+            (
+                "extract-bypass-ref",
+                "executable `unchecked` reaches the unverified answer of a reasoner `Clinic.extract`",
+            ),
+            (
+                "extract-bypass-alias",
+                "executable `unchecked` reaches the unverified answer of a reasoner `Clinic.extract`",
+            ),
+            (
+                "extract-bypass-branch",
+                "executable `unchecked` reaches the unverified answer of a reasoner `Clinic.extract`",
+            ),
+            (
+                "extract-bypass-reasoner",
+                "executable `Echo` reaches the unverified answer of a reasoner `Clinic.extract`",
+            ),
         ],
     );
     negatives(
@@ -1312,6 +1384,10 @@ fn rs_09() {
             (
                 "answer-correct-unsorted",
                 "claims are not strictly sorted by kind",
+            ),
+            (
+                "answer-invariant-without-initial",
+                "claims an answer correct under the invariant of logic `Triage`, which holds of every state its run reaches only given the initial invariant, and it claims none",
             ),
         ],
     );
@@ -1373,6 +1449,51 @@ fn rs_09() {
         3,
         "invariant, fuel bound, correctness"
     );
+    // Grade's answer reads the chart's level, which is on the scale only
+    // because the logic's invariant says so: its correctness is stated
+    // under that invariant, discharged by the run's invariant theorem.
+    let correctness = grade
+        .obligations()
+        .iter()
+        .find(|obligation| obligation["role"] == "reasoner `Grade` answer correctness")
+        .expect("Grade's answer correctness");
+    assert_eq!(correctness["statement"]["kind"], "implies");
+    assert_eq!(
+        correctness["statement"]["premise"]["function"],
+        json!({"module": "Clinic", "name": "Consistent"})
+    );
+    let templates = |declaration: &lexlean::SnapshotElaboration| -> BTreeSet<String> {
+        declaration
+            .theorems()
+            .iter()
+            .filter_map(|theorem| theorem["template"].as_str().map(str::to_owned))
+            .collect()
+    };
+    assert!(templates(grade).contains("run_invariant"));
+    // The stronger form, correct on every state whatever the rules derived,
+    // states no premise, needs no run invariant, and erases the check too.
+    let cap = elaboration(&snapshot, "Main", "Cap");
+    let unconditional = cap
+        .obligations()
+        .iter()
+        .find(|obligation| obligation["role"] == "reasoner `Cap` answer correctness")
+        .expect("Cap's answer correctness");
+    assert_eq!(unconditional["statement"]["kind"], "implies");
+    assert_eq!(unconditional["statement"]["premise"]["kind"], "eq");
+    assert!(!templates(cap).contains("run_invariant"));
+    assert_eq!(calls(&derived(cap, "Cap.accept")["body"]), ["Cap.extract"]);
+    assert!(!templates(elaboration(&snapshot, "Clinic", "Triage")).contains("run_invariant"));
+    // Formal code, a statement and not a run, may name what executable code
+    // may not.
+    extended(
+        "Main",
+        vec![json!({"kind": "definition", "name": "formal",
+                    "parameters": [{"name": "c", "type": chart}], "result": chart,
+                    "body": {"kind": "call",
+                             "function": {"module": "Clinic", "name": "Fever.conclusion"},
+                             "arguments": [{"kind": "var", "name": "c"}]}})],
+    )
+    .check_ok();
     let triage = elaboration(&snapshot, "Clinic", "Triage");
     assert_eq!(
         calls(&derived(triage, "Triage.accept")["body"])
@@ -1406,7 +1527,14 @@ fn rs_09() {
             ],
         );
     }
-    refused_by_lean("RS-09", &["forged-trace", "false-answer-correct"]);
+    refused_by_lean(
+        "RS-09",
+        &[
+            "forged-trace",
+            "false-answer-correct",
+            "false-invariant-answer-correct",
+        ],
+    );
 }
 
 /// The smallest `max_ir_nodes` under which `project` links: what linking
@@ -1530,6 +1658,65 @@ fn nested_type(fields: usize, base: &Json) -> Json {
 /// elaboration, which is larger than its source by the weight of the types
 /// and terms it copies.
 #[allow(clippy::too_many_lines)]
+/// A copy of the example whose `Budget` module states a reasoner over
+/// `copies` rules, each used at a type of `size` nested products: every use
+/// copies its type arguments into each declaration that mentions the rule,
+/// and the charge covers that.
+fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
+    let project = P::copy_example(EXAMPLE);
+    let mut data = module_data(&project, "Budget");
+    let declarations = declarations_mut(&mut data);
+    let original = |name: &str| {
+        declarations
+            .iter()
+            .find(|declaration| declaration["name"] == name)
+            .unwrap_or_else(|| panic!("`{name}`"))
+            .clone()
+    };
+    let nat = json!({"kind": "nat"});
+    let mut wide = nat.clone();
+    for _ in 1..size {
+        wide = json!({"kind": "product", "left": nat, "right": wide});
+    }
+    let state = json!({"kind": "product", "left": wide, "right": nat});
+    let at = |ty: &Json| vec![ty.clone()];
+    let mut added = Vec::new();
+    let mut uses = Vec::new();
+    for copy in 0..copies {
+        let renamed = |name: &str| format!("{name}{copy}");
+        let mut sound = original("tick_sound");
+        sound["name"] = json!(renamed("tick_sound"));
+        let mut progress = original("tick_progress");
+        progress["name"] = json!(renamed("tick_progress"));
+        let mut rule = original("Tick");
+        rule["name"] = json!(renamed("Tick"));
+        rule["soundness"] = json!({"name": renamed("tick_sound")});
+        rule["progress"] = json!({"name": renamed("tick_progress")});
+        added.extend([sound, progress, rule]);
+        uses.push(json!({"member": {"name": renamed("Tick")}, "type_arguments": at(&wide)}));
+    }
+    let mut reasoner = original("Spend");
+    reasoner["name"] = json!("Wide");
+    reasoner
+        .as_object_mut()
+        .expect("a reasoner")
+        .remove("type_parameters");
+    reasoner["observation"]["type"] = state.clone();
+    reasoner["logic"]["type_arguments"] = json!(at(&wide));
+    reasoner["verifier"]["type_arguments"] = json!([state]);
+    reasoner["rules"] = Json::Array(uses);
+    reasoner["claims"] = json!([]);
+    if search {
+        reasoner["strategy"] = json!({"kind": "search", "order": "breadth_first",
+            "deduplicate": true,
+            "fuel": reasoner["strategy"]["fuel"], "frontier": {"kind": "nat", "value": "20"}});
+    }
+    added.push(reasoner);
+    declarations.extend(added);
+    write_module_data(&project, "Budget", &data);
+    project
+}
+
 fn wide_reasoner(strategy: &str, rules: usize, fields: usize, width: usize) -> P {
     let project = P::negative("reasoning-forged-trace");
     let nat = json!({"kind": "nat"});
@@ -1723,6 +1910,10 @@ fn rs_10() {
     ] {
         wide_reasoner(strategy, rules, fields, width).check_ok();
     }
+    // Large type arguments at every rule use are charged too.
+    for search in [false, true] {
+        wide_type_arguments(40, 100, search).check_ok();
+    }
     // An elaboration is charged, not only its source.
     let with = P::negative("reasoning-forged-trace");
     let mut data = module_data(&with, "Main");
@@ -1850,6 +2041,7 @@ fn rs_11() {
     );
     let bounds: Vec<String> = serde_json::from_value(triage[0]["bounds"].clone()).expect("bounds");
     assert!(bounds.contains(&"Reasoning.Clinic.Triage.iterations_bounded".to_owned()));
+    assert!(bounds.contains(&"Reasoning.Clinic.Triage.firings_bounded".to_owned()));
     assert!(bounds.contains(&"Reasoning.Clinic.Triage.saturates".to_owned()));
     let dose = rows("Reasoning.Main.doseLevel");
     assert_eq!(dose[0]["strategy"], "generate_and_verify");
@@ -1861,6 +2053,19 @@ fn rs_11() {
     let plan = rows("Reasoning.Main.planLeft");
     assert_eq!(plan[0]["strategy"], "breadth_first");
     assert_eq!(plan[0]["deduplicate"], true);
+    let plan_bounds: Vec<String> =
+        serde_json::from_value(plan[0]["bounds"].clone()).expect("bounds");
+    for bound in [
+        "iterations_bounded",
+        "expansions_bounded",
+        "verifications_bounded",
+        "frontier_bounded",
+    ] {
+        assert!(
+            plan_bounds.contains(&format!("Reasoning.Planner.Plan.{bound}")),
+            "Plan states {bound}"
+        );
+    }
     assert!(plan[0].get("frontier").is_some());
     assert_eq!(
         rows("Reasoning.Main.spendLeft")[0]["reasoner"],
@@ -1951,8 +2156,150 @@ fn count(value: &Value) -> u64 {
     }
 }
 
-/// §17.14, §17.16: the clinical oracle, its transcriptions, their packages,
-/// and their accounting.
+/// The numbers of the ledger a committed example theorem states, in counter
+/// order: its right-hand side is a right-nested pair of literals.
+fn stated_ledger(theorems: &[Json], name: &str) -> [u64; 6] {
+    let theorem = theorems
+        .iter()
+        .find(|declaration| declaration["name"] == name)
+        .unwrap_or_else(|| panic!("the example states the ledger theorem {name}"));
+    let mut node = &theorem["statement"]["right"];
+    let mut out = Vec::new();
+    while node["kind"] == "pair" {
+        out.push(node["left"]["value"].as_str().expect("a literal"));
+        node = &node["right"];
+    }
+    out.push(node["value"].as_str().expect("a literal"));
+    out.iter()
+        .map(|number| number.parse().expect("a count"))
+        .collect::<Vec<u64>>()
+        .try_into()
+        .unwrap_or_else(|_| panic!("{name} states six counters"))
+}
+
+/// A module's declarations, with every reference to `from` made to `to` and
+/// every definitions list in key order, so two statements of one reasoner
+/// compare equal.
+fn normalized(mut declarations: Json, from: &str, to: &str) -> Json {
+    fn walk(value: &mut Json, from: &str, to: &str) {
+        match value {
+            Json::Object(object) => {
+                if object.get("module").and_then(Json::as_str) == Some(from) {
+                    object.insert("module".to_owned(), json!(to));
+                }
+                for child in object.values_mut() {
+                    walk(child, from, to);
+                }
+                if let Some(Json::Array(definitions)) = object.get_mut("definitions") {
+                    definitions.sort_by_key(|member| {
+                        format!(
+                            "{}::{}",
+                            member["module"].as_str().unwrap_or(""),
+                            member["name"].as_str().unwrap_or("")
+                        )
+                    });
+                }
+            }
+            Json::Array(items) => items.iter_mut().for_each(|item| walk(item, from, to)),
+            _ => {}
+        }
+    }
+    walk(&mut declarations, from, to);
+    declarations
+}
+
+/// Transcriptions that disagree with their oracles: `Plan` for target 5
+/// with its visited-state check removed (so it never saturates and answers
+/// exhausted where the oracle's search is unsolved), and `Dose` for weight
+/// 120 with a budget of four candidates (so it rejects where the oracle
+/// exhausts its budget). The interpreter follows each mutation, so only
+/// the statement against the oracle fails.
+fn planted_transcriptions() -> Vec<crate::calculus::Case> {
+    let named = |name: &str| {
+        crate::calculus::cases()
+            .into_iter()
+            .find(|case| case.fixture.name == name)
+            .unwrap_or_else(|| panic!("fixture {name}"))
+    };
+    let rerun = |mut case: crate::calculus::Case| {
+        lexlean::calculus::check::check(&case.fixture.program).expect("still well typed");
+        case.fixture.expected = interp::run(
+            &case.fixture.program,
+            case.fixture.fuel,
+            case.fixture.entry,
+            &case.fixture.arguments,
+        );
+        case
+    };
+    // `fresh_step` keeps its second branch: every node is fresh.
+    let mut plan = named("reasoning-plan-5");
+    let at = crate::calculus::reasoning::function_index("plan", "fresh_step");
+    let lexlean::calculus::Expr::Cond { else_branch, .. } =
+        plan.fixture.program.functions[at].body.clone()
+    else {
+        panic!("fresh_step tests whether a state was visited")
+    };
+    plan.fixture.program.functions[at].body = *else_branch;
+    // Without the check the search runs longer than the fixture's fuel.
+    plan.fixture.fuel = 400_000;
+    // `attempt` compares the verifications with 4, not 3.
+    let mut dose = named("reasoning-dose-120");
+    let at = crate::calculus::reasoning::function_index("dose", "attempt");
+    fn widen(expression: &mut lexlean::calculus::Expr) {
+        use lexlean::calculus::Expr;
+        match expression {
+            Expr::Value {
+                value: Value::Nat { value },
+                ..
+            } if value == "3" => *value = "4".to_owned(),
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                widen(condition);
+                widen(then_branch);
+                widen(else_branch);
+            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
+                widen(scrutinee);
+                arms.iter_mut().for_each(|arm| widen(&mut arm.body));
+            }
+            Expr::Prim { operands, .. }
+            | Expr::Build { operands, .. }
+            | Expr::Call { operands, .. } => operands.iter_mut().for_each(widen),
+            Expr::Field { value, .. } => widen(value),
+            _ => {}
+        }
+    }
+    widen(&mut dose.fixture.program.functions[at].body);
+    vec![rerun(plan), rerun(dose)]
+}
+
+/// The messages with which pinned Lean refuses a copy of the compiler
+/// project whose reasoning fixtures state [`planted_transcriptions`].
+fn planted_verification() -> &'static Vec<String> {
+    static ERROR: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    ERROR.get_or_init(|| {
+        let project = P::compiler();
+        project.write(
+            "src/ReasoningFixtures.lex.tex",
+            &crate::calculus::reasoning_fixtures_module(&planted_transcriptions()),
+        );
+        let _guard = support::env_lock();
+        project
+            .verify_fails_with("LLV7002")
+            .diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.message.clone())
+            .collect()
+    })
+}
+
+/// §17.14, §17.16: the oracles, the transcriptions of every reasoner the
+/// production roots run, their packages, and their accounting.
 #[allow(clippy::too_many_lines)]
 fn rs_12() {
     use crate::calculus::reasoning;
@@ -1961,15 +2308,84 @@ fn rs_12() {
         std::fs::read_to_string(repository.join(path).as_std_path())
             .unwrap_or_else(|error| panic!("{path}: {error}"))
     };
-    let declarations = |text: &str| -> Json {
+    let declarations = |text: &str| -> Vec<Json> {
         let (start, end) = data_bounds(text);
         serde_json::from_str::<Json>(&text[start..end]).expect("module data")["declarations"]
+            .as_array()
+            .expect("declarations")
             .clone()
     };
+    // Each oracle states exactly the declarations of the reasoners it
+    // names: the whole of an example module, or the reasoner and what it
+    // is declared with, over the clinical module's oracle.
+    for spec in reasoning::ORACLES {
+        let committed = declarations(&read(&format!("compiler/src/{}.lex.tex", spec.module)));
+        let mut source = declarations(&read(spec.source));
+        if let Some(names) = spec.select {
+            source.retain(|declaration| {
+                declaration["name"]
+                    .as_str()
+                    .is_some_and(|name| names.contains(&name))
+            });
+        }
+        let (from, to) = spec.import.unwrap_or(("", ""));
+        assert_eq!(
+            normalized(json!(committed), "", ""),
+            normalized(json!(source), from, to),
+            "{} states exactly the declarations of {}",
+            spec.module,
+            spec.source
+        );
+    }
+    // Every reasoner a production root runs is stated by an oracle.
+    let project = P::copy_example(EXAMPLE);
+    let report = eligibility(&project, "Main");
+    let production: BTreeSet<String> = report["roots"]
+        .as_array()
+        .expect("roots")
+        .iter()
+        .flat_map(|root| root["reasoning"].as_array().expect("reasoning").clone())
+        .map(|row| row["reasoner"].as_str().expect("reasoner").to_owned())
+        .collect();
+    let stated: BTreeSet<String> = reasoning::ORACLES
+        .iter()
+        .flat_map(|spec| {
+            let module = spec.source.rsplit('/').next().expect("a file name");
+            let module = module.trim_end_matches(".lex.tex").to_owned();
+            declarations(&read(spec.source))
+                .into_iter()
+                .filter(|declaration| declaration["kind"] == "reasoner")
+                .filter(|declaration| {
+                    spec.select.is_none_or(|names| {
+                        names.contains(&declaration["name"].as_str().unwrap_or(""))
+                    })
+                })
+                .map(move |declaration| {
+                    format!(
+                        "Reasoning.{module}.{}",
+                        declaration["name"].as_str().expect("name")
+                    )
+                })
+        })
+        .collect();
     assert_eq!(
-        declarations(&read("compiler/src/ReasoningOracle.lex.tex")),
-        declarations(&read(reasoning::SOURCE)),
-        "the oracle states exactly the clinical module"
+        production,
+        BTreeSet::from(
+            [
+                "Reasoning.Clinic.Triage",
+                "Reasoning.Main.Grade",
+                "Reasoning.Planner.Plan",
+                "Reasoning.Screening.Dose",
+                "Reasoning.Screening.Screen",
+                "Reasoning.Budget.Spend",
+            ]
+            .map(str::to_owned)
+        ),
+        "the production roots run these reasoners"
+    );
+    assert!(
+        production.is_subset(&stated),
+        "every production reasoner is stated by an oracle: {production:?} / {stated:?}"
     );
     let cases: Vec<crate::calculus::Case> = crate::calculus::cases()
         .into_iter()
@@ -1982,13 +2398,38 @@ fn rs_12() {
     assert_eq!(
         named,
         [
+            "reasoning-dose-120",
+            "reasoning-dose-60",
+            "reasoning-gnaf-goal",
+            "reasoning-gnaf-priority",
+            "reasoning-gnaf-sweep",
+            "reasoning-grade-shock",
+            "reasoning-grade-well",
+            "reasoning-plan-2",
+            "reasoning-plan-5",
             "reasoning-review-exhausted",
             "reasoning-review-rejected",
+            "reasoning-screen-0",
+            "reasoning-screen-100",
+            "reasoning-screen-60",
+            "reasoning-spend-2",
             "reasoning-triage-shock",
             "reasoning-triage-traced",
             "reasoning-triage-well",
         ]
     );
+    // Each production reasoner has a transcription whose oracle is that
+    // reasoner's own verdict.
+    for reasoner in ["Triage", "Grade", "Plan", "Dose", "Screen", "Spend"] {
+        let verdict = format!("\"name\":\"{reasoner}.verdict\"");
+        assert!(
+            cases.iter().any(|case| case
+                .oracle
+                .as_ref()
+                .is_some_and(|oracle| oracle.to_string().contains(&verdict))),
+            "a transcription of {reasoner}"
+        );
+    }
     let failure = |left: bool, right: bool| Value::Error {
         value: Box::new(Value::Pair {
             left: Box::new(Value::Bool { value: left }),
@@ -2000,7 +2441,40 @@ fn rs_12() {
             value: n.to_string(),
         }),
     };
-    let fixtures_text = read("compiler/src/TargetFixtures.lex.tex");
+    let jugs = |left: u64, right: u64| Value::Ok {
+        value: Box::new(Value::Pair {
+            left: Box::new(Value::Nat {
+                value: left.to_string(),
+            }),
+            right: Box::new(Value::Nat {
+                value: right.to_string(),
+            }),
+        }),
+    };
+    let fixtures_text = read("compiler/src/ReasoningFixtures.lex.tex");
+    let ledgers = declarations(&read("examples/reasoning/src/Main.lex.tex"));
+    // The example's kernel-decided ledger of the reasoner's run on each
+    // fixture's argument.
+    let ledger_of = |fixture: &str| -> Option<[u64; 6]> {
+        let theorem = match fixture {
+            "reasoning-triage-shock" | "reasoning-triage-traced" => "triage_ledger",
+            "reasoning-triage-well" => "triage_well_ledger",
+            "reasoning-review-exhausted" => "review_ledger",
+            "reasoning-review-rejected" => "review_rejected_ledger",
+            "reasoning-grade-shock" => "grade_ledger",
+            "reasoning-grade-well" => "grade_well_ledger",
+            "reasoning-spend-2" => "spend_ledger",
+            "reasoning-plan-2" => "plan_ledger",
+            "reasoning-plan-5" => "plan_unsolved_ledger",
+            "reasoning-screen-60" => "screen_ledger",
+            "reasoning-screen-100" => "screen_truncated_ledger",
+            "reasoning-screen-0" => "screen_unsolved_ledger",
+            "reasoning-dose-60" => "dose_ledger",
+            "reasoning-dose-120" => "dose_exhausted_ledger",
+            _ => return None,
+        };
+        Some(stated_ledger(&ledgers, theorem))
+    };
     for case in &cases {
         assert!(
             crate::calculus::kernel_reducible(&case.fixture),
@@ -2017,22 +2491,65 @@ fn rs_12() {
             fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
             "{id}Agrees is stated"
         );
-        let Outcome::Value { value, .. } = &case.fixture.expected else {
+        let Outcome::Value { value, steps } = &case.fixture.expected else {
             panic!("{} returns a value", case.fixture.name)
         };
         let expected = match case.fixture.name.as_str() {
-            "reasoning-triage-shock" => Some(level(3)),
-            "reasoning-triage-well" => Some(level(0)),
-            "reasoning-review-exhausted" => Some(failure(false, false)),
+            "reasoning-triage-shock" | "reasoning-grade-shock" => Some(level(3)),
+            "reasoning-triage-well" | "reasoning-grade-well" => Some(level(0)),
+            "reasoning-review-exhausted" | "reasoning-screen-100" | "reasoning-dose-120" => {
+                Some(failure(false, false))
+            }
             "reasoning-review-rejected" => Some(failure(true, false)),
+            "reasoning-plan-5" | "reasoning-screen-0" => Some(failure(false, true)),
+            "reasoning-plan-2" => Some(jugs(2, 2)),
+            "reasoning-screen-60" | "reasoning-dose-60" => Some(level(30)),
+            "reasoning-spend-2" => Some(level(0)),
             _ => None,
         };
         if let Some(expected) = expected {
             assert_eq!(value, &expected, "{}", case.fixture.name);
         }
+        // A transcription charges at least the guard evaluations and
+        // firings the reasoner's ledger accounts on the same argument.
+        if let Some(ledger) = ledger_of(&case.fixture.name) {
+            let floor = ledger[1] + ledger[2];
+            assert!(
+                *steps >= floor,
+                "{} charges its search: {steps} steps for {floor} guard evaluations and firings",
+                case.fixture.name
+            );
+            // The check is falsifiable: the same value from a transcription
+            // that searches nothing is charged fewer steps than the ledger.
+            if floor > 0 {
+                let mut constant = case.fixture.program.clone();
+                constant.functions[0].body = lexlean::calculus::Expr::Value {
+                    ty: constant.functions[0].result.clone(),
+                    value: value.clone(),
+                };
+                let Outcome::Value {
+                    value: reached,
+                    steps: constant_steps,
+                } = interp::run(
+                    &constant,
+                    case.fixture.fuel,
+                    case.fixture.entry,
+                    &case.fixture.arguments,
+                )
+                else {
+                    panic!("the constant transcription returns")
+                };
+                assert_eq!(&reached, value);
+                assert!(
+                    constant_steps < floor,
+                    "{}: an uncharged search is detected ({constant_steps} < {floor})",
+                    case.fixture.name
+                );
+            }
+        }
     }
-    // The traced transcription accounts its search; every transcription on
-    // the same patient charges at least that account in steps.
+    // The traced transcription accounts its search, and the kernel decides
+    // that the account is the oracle's; the example states the same ledger.
     let find = |name: &str| {
         cases
             .iter()
@@ -2078,68 +2595,56 @@ fn rs_12() {
         attempts > firings,
         "every firing follows a guard evaluation"
     );
-    let shock = find("reasoning-triage-shock");
-    for case in [traced, shock] {
-        let Outcome::Value { steps, .. } = &case.fixture.expected else {
-            panic!("a value")
-        };
-        assert!(
-            *steps >= attempts + firings,
-            "{} charges its search: {steps} steps for {attempts} attempts and {firings} firings",
-            case.fixture.name
-        );
-    }
-    // The check is falsifiable: a transcription answering the shocked
-    // patient without searching computes the same value and is charged
-    // fewer steps than the account.
-    let mut constant = shock.fixture.program.clone();
-    constant.functions[0].body = lexlean::calculus::Expr::Value {
-        ty: constant.functions[0].result.clone(),
-        value: level(3),
-    };
-    let Outcome::Value {
-        value,
-        steps: constant_steps,
-    } = interp::run(&constant, 4000, 0, &shock.fixture.arguments)
-    else {
-        panic!("the constant transcription returns")
-    };
-    assert_eq!(value, level(3));
-    assert!(
-        constant_steps < attempts + firings,
-        "an uncharged search is detected"
+    let stated = ledger_of("reasoning-triage-traced").expect("a ledger");
+    assert_eq!(
+        (attempts, firings),
+        (stated[1], stated[2]),
+        "the account the kernel decides is the ledger the example states"
     );
-    // The packages: every verdict transcription in both profiles, the
-    // traced one, which allocates its trace, in rust-std only.
+    // The packages: every transcription in rust-std, and in rust-core when
+    // it allocates nothing: the traced one allocates its trace, the others'
+    // searches and candidate lists are lists.
     let packaged: BTreeSet<(String, String)> = crate::rust_packages::packages()
         .into_iter()
         .filter(|committed| committed.fixture.starts_with("reasoning-"))
         .map(|committed| (committed.fixture, committed.profile.target().to_owned()))
         .collect();
-    for name in [
-        "reasoning-review-exhausted",
-        "reasoning-review-rejected",
-        "reasoning-triage-shock",
-        "reasoning-triage-well",
-    ] {
-        for target in ["rust-core", "rust-std"] {
-            assert!(
-                packaged.contains(&(name.to_owned(), target.to_owned())),
-                "{name} in {target}"
-            );
-        }
+    let allocating = [
+        "reasoning-triage-traced",
+        "reasoning-spend-2",
+        "reasoning-plan-2",
+        "reasoning-plan-5",
+        "reasoning-screen-0",
+        "reasoning-screen-60",
+        "reasoning-screen-100",
+        "reasoning-dose-60",
+        "reasoning-dose-120",
+    ];
+    for name in &named {
+        assert!(
+            packaged.contains(&((*name).to_owned(), "rust-std".to_owned())),
+            "{name} in rust-std"
+        );
+        assert_eq!(
+            packaged.contains(&((*name).to_owned(), "rust-core".to_owned())),
+            !allocating.contains(name),
+            "{name} in rust-core exactly when it allocates nothing"
+        );
     }
-    let traced_in = |target: &str| {
-        packaged.contains(&("reasoning-triage-traced".to_owned(), target.to_owned()))
-    };
-    assert!(traced_in("rust-std") && !traced_in("rust-core"));
     assert!(
         crate::calculus::check(repository.as_std_path(), false).is_ok(),
-        "the committed transcriptions, oracle, and packages equal their generator"
+        "the committed transcriptions, oracles, and packages equal their generator"
     );
     if support::lean_backed("RS-12") {
         let verified = support::verified_compiler();
-        for unit in ["ReasoningOracle", "TargetFixtures"] {
+        for unit in [
+            "ReasoningOracle",
+            "GradeOracle",
+            "BudgetOracle",
+            "PlannerOracle",
+            "ScreeningOracle",
+            "ReasoningFixtures",
+        ] {
             assert!(
                 verified.outcome.units.contains_key(unit),
                 "{unit} is verified"
@@ -2149,7 +2654,22 @@ fn rs_12() {
             let id = crate::calculus::identifier(&case.fixture.name);
             assert_attested_ok(
                 &verified.attestation,
-                &[&format!("Compiler.TargetFixtures.{id}Agrees")],
+                &[&format!("Compiler.ReasoningFixtures.{id}Agrees")],
+            );
+        }
+        // The statements are falsifiable: a transcription that forgets the
+        // states it visited, and one that checks a candidate too many,
+        // compute other verdicts than their oracles, and Lean refuses them.
+        let planted = planted_verification();
+        for (run, oracle) in [
+            ("reasoningPlan5Run", "PlannerOracle.Plan.verdict 5"),
+            ("reasoningDose120Run", "ScreeningOracle.Dose.verdict 120"),
+        ] {
+            assert!(
+                planted
+                    .iter()
+                    .any(|message| message.contains(run) && message.contains(oracle)),
+                "a transcription that disagrees with its oracle is refused ({run}): {planted:#?}"
             );
         }
     }
@@ -2197,6 +2717,69 @@ fn rs_13() {
             })
             .sum()
     };
+    // Each plan is the problem the oracle's Triage solves: on every patient
+    // of the domain it computes the level Triage derives from the same
+    // findings, observed as vital signs, as the kernel decides, and the
+    // function the fixture states is the plan the request declares.
+    let cases = crate::calculus::cases();
+    let fixtures_text = std::fs::read_to_string(
+        support::repo_root()
+            .join("compiler/src/ReasoningFixtures.lex.tex")
+            .as_std_path(),
+    )
+    .expect("the reasoning fixtures");
+    for (plan, name) in [
+        (0, "reasoning-gnaf-priority"),
+        (1, "reasoning-gnaf-sweep"),
+        (2, "reasoning-gnaf-goal"),
+    ] {
+        let case = cases
+            .iter()
+            .find(|case| case.fixture.name == name)
+            .unwrap_or_else(|| panic!("fixture {name}"));
+        assert_eq!(
+            case.fixture.arguments,
+            DOMAIN
+                .iter()
+                .map(|findings| Value::Nat {
+                    value: findings.to_string()
+                })
+                .collect::<Vec<_>>(),
+            "{name} runs the request's domain"
+        );
+        let system = lexlean::gnaf::realize(&argmin.request.carrier, Selector::Fixed { plan })
+            .expect("a system")
+            .canonical()
+            .expect("a valid system");
+        assert_eq!(
+            case.fixture.program.functions[1],
+            system.functions[1 + plan as usize],
+            "{name} states the plan the request declares"
+        );
+        let id = crate::calculus::identifier(name);
+        assert!(
+            fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
+            "{id}Agrees is stated"
+        );
+        let Outcome::Value { value, .. } = &case.fixture.expected else {
+            panic!("{name} returns a value")
+        };
+        // Every finding, none, an infection after two findings, two findings
+        // alone, and tachypnea with hypotension.
+        let levels = [3u64, 0, 2, 1, 0];
+        let mut tuple = Value::Nat {
+            value: levels[levels.len() - 1].to_string(),
+        };
+        for level in levels[..levels.len() - 1].iter().rev() {
+            tuple = Value::Pair {
+                left: Box::new(Value::Nat {
+                    value: level.to_string(),
+                }),
+                right: Box::new(tuple),
+            };
+        }
+        assert_eq!(value, &tuple, "{name} computes Triage's levels");
+    }
     let (forward, sweep, goal) = (charged(0), charged(1), charged(2));
     assert!(forward > sweep && sweep > goal, "{forward} {sweep} {goal}");
     match &argmin.expected {
@@ -2232,6 +2815,9 @@ fn rs_13() {
                 "Compiler.GnafFixtures.reasoningArgminAnswer",
                 "Compiler.GnafFixtures.reasoningArgminStatuses",
                 "Compiler.GnafFixtures.reasoningFrontierAnswer",
+                "Compiler.ReasoningFixtures.reasoningGnafPriorityAgrees",
+                "Compiler.ReasoningFixtures.reasoningGnafSweepAgrees",
+                "Compiler.ReasoningFixtures.reasoningGnafGoalAgrees",
             ],
         );
     }

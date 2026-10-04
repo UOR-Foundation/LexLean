@@ -689,6 +689,26 @@ public theorem iterateUntilCount {σ : Type} (step : σ -> Option σ) (c : σ ->
   rw [h0, Nat.zero_add] at hg
   exact hg
 
+public theorem iterateUntilGrowth {σ : Type} (step : σ -> Option σ) (c : σ -> Nat) (h : forall (a b : σ), step a = some b -> c b <= c a + 1) :
+    forall (n : Nat) (a : σ), c a = 0 -> c (LexLeanCollections.iterateUntil step n a).1 <= n := by
+  have general : forall (n : Nat) (a : σ), c (LexLeanCollections.iterateUntil step n a).1 <= c a + n := by
+    intro n
+    induction n with
+    | zero => exact fun a => Nat.le_refl (c a)
+    | succ n ih =>
+      intro a
+      show c (match step a with | none => (a, true) | some next => LexLeanCollections.iterateUntil step n next).1 <= c a + (n + 1)
+      cases e : step a with
+      | none => exact Nat.le_add_right (c a) (n + 1)
+      | some b =>
+        have hb := Nat.le_trans (ih b) (Nat.add_le_add_right (h a b e) n)
+        rw [Nat.add_right_comm] at hb
+        exact hb
+  intro n a h0
+  have hg := general n a
+  rw [h0, Nat.zero_add] at hg
+  exact hg
+
 public theorem iterateUntilStops {σ : Type} (step : σ -> Option σ) (p : σ -> Prop) (μ : σ -> Nat)
     (h : forall (a b : σ), step a = some b -> p a -> p b /\ μ b < μ a) :
     forall (n : Nat) (a : σ), p a -> μ a < n -> (LexLeanCollections.iterateUntil step n a).2 = true := by
@@ -973,6 +993,32 @@ by
         rfl
       · cases llE
         rfl
+public theorem Screen.search_verify_count (w : Nat) (__r : Reasoning.Screening.Screen.Search) (__q : Reasoning.Screening.Screen.Search) : ((Reasoning.Screening.Screen.searchStep (w) (__r) = Option.some (__q)) -> (((__q).ledger).verifications = (((__r).ledger).verifications + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Screening.Screen.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        rfl
+      · cases llE
+        rfl
+public theorem Screen.search_expanded (w : Nat) (__r : Reasoning.Screening.Screen.Search) (__q : Reasoning.Screening.Screen.Search) : ((Reasoning.Screening.Screen.searchStep (w) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
+by
+  intro llE
+  dsimp only [Reasoning.Screening.Screen.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        exact Nat.le_succ _
+      · cases llE
+        exact Nat.le_refl _
 public theorem Screen.search_ok (w : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Reasoning.Screening.Screen.Node) => (Reasoning.Screening.Screen.follow (w) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Reasoning.Screening.Screen.Node) => Reasoning.Screening.Screen.accept (w) ((__n).state))) (((Reasoning.Screening.Screen.run (w)).1).frontier) (((Reasoning.Screening.Screen.run (w)).1).found)) :=
 by
   dsimp only [Reasoning.Screening.Screen.run]
@@ -981,6 +1027,14 @@ public theorem Screen.frontier_bounded (w : Nat) : ((((Reasoning.Screening.Scree
 by
   dsimp only [Reasoning.Screening.Screen.run]
   exact (LexLeanReasoning.iterateUntilBound ((fun (__r : Reasoning.Screening.Screen.Search) => Reasoning.Screening.Screen.searchStep (w) (__r))) ((fun (__r : Reasoning.Screening.Screen.Search) => ((__r).ledger).frontier)) (3) (Reasoning.Screening.Screen.search_peak (w)) (8) (Reasoning.Screening.Screen.start (w)) (LexLeanReasoning.capBound (3) _))
+public theorem Screen.verifications_bounded (w : Nat) : ((((Reasoning.Screening.Screen.run (w)).1).ledger).verifications <= 8) :=
+by
+  dsimp only [Reasoning.Screening.Screen.run]
+  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Reasoning.Screening.Screen.Search) => Reasoning.Screening.Screen.searchStep (w) (__r))) ((fun (__r : Reasoning.Screening.Screen.Search) => ((__r).ledger).verifications)) (Reasoning.Screening.Screen.search_verify_count (w)) (8) (Reasoning.Screening.Screen.start (w)) rfl)
+public theorem Screen.expansions_bounded (w : Nat) : ((((Reasoning.Screening.Screen.run (w)).1).ledger).expansions <= 8) :=
+by
+  dsimp only [Reasoning.Screening.Screen.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Reasoning.Screening.Screen.Search) => Reasoning.Screening.Screen.searchStep (w) (__r))) ((fun (__r : Reasoning.Screening.Screen.Search) => ((__r).ledger).expansions)) (Reasoning.Screening.Screen.search_expanded (w)) (8) (Reasoning.Screening.Screen.start (w)) rfl)
 public theorem Screen.iterations_bounded (w : Nat) : ((((Reasoning.Screening.Screen.run (w)).1).ledger).iterations <= 8) :=
 by
   dsimp only [Reasoning.Screening.Screen.run]
