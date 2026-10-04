@@ -126,6 +126,10 @@ struct Rule {
     name: &'static str,
     named: Vec<(&'static str, String)>,
     premises: Vec<Premise>,
+    /// The bytes `write` prints for this rule and everything below it,
+    /// kept so that the aligner can stop deriving the moment the proof it
+    /// is building exceeds what a certificate may take.
+    size: usize,
 }
 
 /// A premise: a sub-derivation, or a side condition Lean decides by
@@ -137,11 +141,31 @@ enum Premise {
 
 use Premise::Decided;
 
+/// The bytes `Rule::write` prints for a rule: `(Corr.` and the name, each
+/// named argument as ` (name := value)`, each premise after a space as `rfl`
+/// or its own text, and the closing parenthesis.
 fn rule(name: &'static str, named: Vec<(&'static str, String)>, premises: Vec<Premise>) -> Rule {
+    let size = "(Corr.".len()
+        + name.len()
+        + named
+            .iter()
+            .map(|(label, value)| " (".len() + label.len() + " := ".len() + value.len() + 1)
+            .sum::<usize>()
+        + premises
+            .iter()
+            .map(|premise| {
+                1 + match premise {
+                    Premise::Rule(inner) => inner.size,
+                    Decided => "rfl".len(),
+                }
+            })
+            .sum::<usize>()
+        + 1;
     Rule {
         name,
         named,
         premises,
+        size,
     }
 }
 
@@ -320,12 +344,21 @@ struct Aligner<'a> {
     fn_types: BTreeMap<u64, Ty>,
     /// The ADTs no value inhabits.
     empty: Vec<u64>,
+    /// The bytes the certificate may take, `max_file_bytes`.
+    budget: u64,
+    /// The bytes of the proofs finished so far.
+    used: u64,
+    /// Set when a derivation passed the limit: the aligner tries other rules
+    /// when one fails, and would carry on to the same wall again, so after
+    /// this every derivation is refused at once and the refusal, not the
+    /// failure of whatever rule was being tried, is what is reported.
+    over: Option<String>,
 }
 
 type Found = Result<Rule, String>;
 
 impl<'a> Aligner<'a> {
-    fn new(program: &'a Program, krate: &'a Crate) -> Result<Self, String> {
+    fn new(program: &'a Program, krate: &'a Crate, budget: u64) -> Result<Self, String> {
         let mut fallible = vec![false; program.functions.len()];
         for item in &krate.items {
             if let ItemDef::Function {
@@ -348,6 +381,9 @@ impl<'a> Aligner<'a> {
             fallible,
             fn_types: BTreeMap::new(),
             empty: Vec::new(),
+            budget,
+            used: 0,
+            over: None,
         };
         aligner.empty = aligner.empty_adts();
         Ok(aligner)
@@ -461,6 +497,79 @@ impl<'a> Aligner<'a> {
 
     // --- value position -------------------------------------------------------
 
+    /// The derivation of a sub-term is refused as soon as it, with the
+    /// proofs before it, is larger than the certificate may be: the text of
+    /// a derivation repeats the types and the patterns of the nodes it
+    /// derives, so it can grow with the square of a record's arity or of the
+    /// depth of a nesting, which no count of the program's nodes bounds. A
+    /// rule is checked as the derivation returns through it, so the work
+    /// done before the refusal is the size the limit allows, once.
+    fn within_budget(&mut self, derivation: Rule) -> Found {
+        let total = self.used.saturating_add(derivation.size as u64);
+        if total > self.budget {
+            return Err(self.refuse(total));
+        }
+        Ok(derivation)
+    }
+
+    /// Record that a derivation of at least `total` bytes passed the limit.
+    fn refuse(&mut self, total: u64) -> String {
+        let reason = format!(
+            "{}the derivation of a function is at least {total} bytes, beyond the {} bytes of max_file_bytes",
+            super::lower::LIMIT,
+            self.budget
+        );
+        self.over.get_or_insert_with(|| reason.clone());
+        reason
+    }
+
+    /// The refusal already made, if any.
+    fn refused(&self) -> Result<(), String> {
+        self.over.clone().map_or(Ok(()), Err)
+    }
+
+    /// `e`, refused as soon as its derivation passes the limit.
+    fn eg(&mut self, g: &Ctx, fl: bool, term: &Term, ty: &Ty, r: &Expr) -> Found {
+        self.refused()?;
+        let derivation = self.e(g, fl, term, ty, r)?;
+        self.within_budget(derivation)
+    }
+
+    /// `b`, refused as soon as its derivation passes the limit.
+    #[allow(clippy::too_many_arguments)]
+    fn bg(
+        &mut self,
+        g: &Ctx,
+        fl: bool,
+        fm: bool,
+        term: &Term,
+        ty: &Ty,
+        lets: &[Let],
+        tail: &Expr,
+    ) -> Found {
+        self.refused()?;
+        let derivation = self.b(g, fl, fm, term, ty, lets, tail)?;
+        self.within_budget(derivation)
+    }
+
+    /// `m`, refused as soon as its derivation passes the limit.
+    #[allow(clippy::too_many_arguments)]
+    fn mg(
+        &mut self,
+        g: &Ctx,
+        fl: bool,
+        st: &Ty,
+        view: bool,
+        arms: &[Arm],
+        fm: bool,
+        tau: &Ty,
+        rarms: &[(Pat, Block)],
+    ) -> Result<(Rule, Vec<u64>), String> {
+        self.refused()?;
+        let (derivation, indices) = self.m(g, fl, st, view, arms, fm, tau, rarms)?;
+        Ok((self.within_budget(derivation)?, indices))
+    }
+
     /// `.e term ty r`.
     fn e(&mut self, g: &Ctx, fl: bool, term: &Term, ty: &Ty, r: &Expr) -> Found {
         match (term, r) {
@@ -563,7 +672,7 @@ impl<'a> Aligner<'a> {
                 Ok(rule("buildSucc", vec![], vec![sub(operand)]))
             }
             (_, Expr::Block(block)) => {
-                let inner = self.b(g, fl, false, term, ty, &block.lets, &block.tail)?;
+                let inner = self.bg(g, fl, false, term, ty, &block.lets, &block.tail)?;
                 Ok(rule(
                     "eOfB",
                     vec![
@@ -574,7 +683,7 @@ impl<'a> Aligner<'a> {
                 ))
             }
             _ => {
-                let inner = self.b(g, fl, false, term, ty, &[], r)?;
+                let inner = self.bg(g, fl, false, term, ty, &[], r)?;
                 Ok(rule("eOfBNil", vec![], vec![sub(inner)]))
             }
         }
@@ -585,7 +694,7 @@ impl<'a> Aligner<'a> {
         match (terms, types, rs) {
             ([], [], []) => Ok(rule("lNil", vec![], vec![])),
             ([term, terms @ ..], [ty, types @ ..], [r, rs @ ..]) => {
-                let head = self.e(g, fl, term, ty, r)?;
+                let head = self.eg(g, fl, term, ty, r)?;
                 let rest = self.l(g, fl, terms, types, rs)?;
                 Ok(rule("lCons", vec![], vec![sub(head), sub(rest)]))
             }
@@ -612,12 +721,12 @@ impl<'a> Aligner<'a> {
             ([term, terms @ ..], [ty, types @ ..], [binding, lets @ ..], [arg, args @ ..]) => {
                 match (&binding.pat, arg) {
                     (Pat::Unit, Expr::Lit(Lit::Unit, _)) => {
-                        let head = self.e(g, fl, term, &Ty::Unit, &binding.value)?;
+                        let head = self.eg(g, fl, term, &Ty::Unit, &binding.value)?;
                         let rest = self.ops(g, fl, terms, types, lets, args)?;
                         Ok(rule("opsUnit", vec![], vec![sub(head), sub(rest)]))
                     }
                     (Pat::Bind(temp), Expr::Move(read, _)) if temp == read => {
-                        let head = self.e(g, fl, term, ty, &binding.value)?;
+                        let head = self.eg(g, fl, term, ty, &binding.value)?;
                         let rest = self.ops(g, fl, terms, types, lets, args)?;
                         Ok(rule(
                             "opsCons",
@@ -761,7 +870,7 @@ impl<'a> Aligner<'a> {
                     return Err("a projection of a non-pair".to_owned());
                 };
                 let named = vec![("ta", render_ty(left)), ("tb", render_ty(right))];
-                let scrutinee = self.e(g, fl, value, &pair_ty, &binding.value)?;
+                let scrutinee = self.eg(g, fl, value, &pair_ty, &binding.value)?;
                 Ok(rule(
                     if first { "first" } else { "second" },
                     named,
@@ -772,7 +881,7 @@ impl<'a> Aligner<'a> {
                 if !lets.is_empty() {
                     return Err("a value binds nothing".to_owned());
                 }
-                let value = self.e(g, fl, term, ty, tail)?;
+                let value = self.eg(g, fl, term, ty, tail)?;
                 Ok(rule("bOfE", vec![], vec![sub(value)]))
             }
         }
@@ -786,7 +895,7 @@ impl<'a> Aligner<'a> {
             Err(reason) => failures.push(reason),
         }
         if let Expr::Succeed(inner, _) = tail {
-            match self.b(g, true, false, term, ty, lets, inner) {
+            match self.bg(g, true, false, term, ty, lets, inner) {
                 Ok(value) => return Ok(rule("fOfB", vec![], vec![sub(value)])),
                 Err(reason) => failures.push(reason),
             }
@@ -794,7 +903,7 @@ impl<'a> Aligner<'a> {
         if let (Some((last, init)), true) = (lets.split_last(), *ty == Ty::Unit) {
             let unit_ok = matches!(tail, Expr::Succeed(inner, _) if matches!(inner.as_ref(), Expr::Lit(Lit::Unit, _)));
             if matches!(last.pat, Pat::Unit) && last.ty.is_none() && unit_ok {
-                match self.b(g, true, false, term, ty, init, &last.value) {
+                match self.bg(g, true, false, term, ty, init, &last.value) {
                     Ok(value) => {
                         return Ok(rule(
                             "fUnit",
@@ -893,9 +1002,9 @@ impl<'a> Aligner<'a> {
             return Err("a let binds nothing".to_owned());
         };
         let slot = slot_of(&first.pat)?;
-        let bound_d = self.e(g, fl, bound, bound_ty, &first.value)?;
+        let bound_d = self.eg(g, fl, bound, bound_ty, &first.value)?;
         let inner = g.with(*name, bound_ty, slot);
-        let body_d = self.b(&inner, fl, fm, body, ty, rest, tail)?;
+        let body_d = self.bg(&inner, fl, fm, body, ty, rest, tail)?;
         Ok(match slot {
             Some(_) => rule("letBind", vec![], vec![sub(bound_d), Decided, sub(body_d)]),
             None => rule("letWild", vec![], vec![sub(bound_d), sub(body_d)]),
@@ -1020,7 +1129,7 @@ impl<'a> Aligner<'a> {
         };
         let parameters = parameters.clone();
         self.record_fn_type(*position, &target_ty)?;
-        let target_d = self.e(g, fl, target, &target_ty, &first.value)?;
+        let target_d = self.eg(g, fl, target, &target_ty, &first.value)?;
         let operands_d = self.ops(g, fl, operands, &parameters, rest, args)?;
         if fm {
             if *propagate {
@@ -1098,7 +1207,7 @@ impl<'a> Aligner<'a> {
         for (split, ce, form) in candidates {
             let (lc, lk) = lets.split_at(split);
             let attempt = (|| -> Found {
-                let condition_d = self.b(g, fl, false, condition, &Ty::Bool, lc, &ce)?;
+                let condition_d = self.bg(g, fl, false, condition, &Ty::Bool, lc, &ce)?;
                 let k_d = self.k(
                     g,
                     fl,
@@ -1130,9 +1239,9 @@ impl<'a> Aligner<'a> {
         // The branches are the Boolean literals: the conditional is its
         // condition.
         let attempt = (|| -> Found {
-            let condition_d = self.b(g, fl, fm, condition, &Ty::Bool, lets, tail)?;
-            let yes = self.b(g, fl, false, then_branch, &Ty::Bool, &[], &lit_bool(true))?;
-            let no = self.b(g, fl, false, else_branch, &Ty::Bool, &[], &lit_bool(false))?;
+            let condition_d = self.bg(g, fl, fm, condition, &Ty::Bool, lets, tail)?;
+            let yes = self.bg(g, fl, false, then_branch, &Ty::Bool, &[], &lit_bool(true))?;
+            let no = self.bg(g, fl, false, else_branch, &Ty::Bool, &[], &lit_bool(false))?;
             Ok(rule(
                 "condId",
                 vec![],
@@ -1239,8 +1348,8 @@ impl<'a> Aligner<'a> {
                     }
                 }
                 let (else_ctx, else_rest, else_tail) = Self::else_side(g, kind, else_branch, b)?;
-                let then_d = self.b(g, fl, fm, a, ty, &then_branch.lets, &then_branch.tail)?;
-                let else_d = self.b(&else_ctx, fl, fm, b, ty, &else_rest, &else_tail)?;
+                let then_d = self.bg(g, fl, fm, a, ty, &then_branch.lets, &then_branch.tail)?;
+                let else_d = self.bg(&else_ctx, fl, fm, b, ty, &else_rest, &else_tail)?;
                 let named = vec![
                     ("la", lets_term(&then_branch.lets)),
                     ("ta", rust_term::expr(&then_branch.tail)),
@@ -1265,8 +1374,8 @@ impl<'a> Aligner<'a> {
                     return Err("the condition is not evaluated first".to_owned());
                 }
                 let else_ctx = Self::else_side(g, kind, &Block::of(lit_unit()), b)?.0;
-                let then_d = self.b(g, fl, fm, a, ty, rest, tail)?;
-                let else_d = self.b(&else_ctx, fl, fm, b, ty, rest, tail)?;
+                let then_d = self.bg(g, fl, fm, a, ty, rest, tail)?;
+                let else_d = self.bg(&else_ctx, fl, fm, b, ty, rest, tail)?;
                 Ok(rule(
                     "kSame",
                     vec![],
@@ -1287,8 +1396,8 @@ impl<'a> Aligner<'a> {
                 }
                 let else_ctx = Self::else_side(g, kind, &Block::of(lit_unit()), b)?.0;
                 let then_d =
-                    self.b(g, fl, false, a, &Ty::Bool, &[], &lit_bool(form == Form::Id))?;
-                let else_d = self.b(
+                    self.bg(g, fl, false, a, &Ty::Bool, &[], &lit_bool(form == Form::Id))?;
+                let else_d = self.bg(
                     &else_ctx,
                     fl,
                     false,
@@ -1366,8 +1475,8 @@ impl<'a> Aligner<'a> {
                 if !matches!(first.pat, Pat::Unit) {
                     return Err("a match on unit binds `()`".to_owned());
                 }
-                let scrutinee_d = self.e(g, fl, scrutinee, &Ty::Unit, &first.value)?;
-                let body_d = self.b(g, fl, fm, &arm.body, ty, rest, tail)?;
+                let scrutinee_d = self.eg(g, fl, scrutinee, &Ty::Unit, &first.value)?;
+                let body_d = self.bg(g, fl, fm, &arm.body, ty, rest, tail)?;
                 Ok(rule(
                     "matchUnit",
                     vec![],
@@ -1377,7 +1486,7 @@ impl<'a> Aligner<'a> {
             Ty::Nat => {
                 let (held, first) = holder.ok_or("a match on a natural holds it")?;
                 let (a, x, b) = nat_arms(arms)?;
-                let scrutinee_d = self.e(g, fl, scrutinee, &Ty::Nat, &first.value)?;
+                let scrutinee_d = self.eg(g, fl, scrutinee, &Ty::Nat, &first.value)?;
                 let ce = Expr::IsZero(
                     held.clone(),
                     crate::calculus::rust::ast::Origin::of("shape:zero"),
@@ -1416,7 +1525,7 @@ impl<'a> Aligner<'a> {
                 let (a, b) = bool_arms(arms)?;
                 if let Some((held, first)) = holder {
                     let attempt = (|| -> Found {
-                        let scrutinee_d = self.e(g, fl, scrutinee, &Ty::Bool, &first.value)?;
+                        let scrutinee_d = self.eg(g, fl, scrutinee, &Ty::Bool, &first.value)?;
                         let ce = Expr::Move(
                             held.clone(),
                             crate::calculus::rust::ast::Origin::of("expr:match"),
@@ -1433,9 +1542,9 @@ impl<'a> Aligner<'a> {
                         return attempt;
                     }
                 }
-                let scrutinee_d = self.b(g, fl, fm, scrutinee, &Ty::Bool, lets, tail)?;
-                let yes = self.b(g, fl, false, a, &Ty::Bool, &[], &lit_bool(true))?;
-                let no = self.b(g, fl, false, b, &Ty::Bool, &[], &lit_bool(false))?;
+                let scrutinee_d = self.bg(g, fl, fm, scrutinee, &Ty::Bool, lets, tail)?;
+                let yes = self.bg(g, fl, false, a, &Ty::Bool, &[], &lit_bool(true))?;
+                let no = self.bg(g, fl, false, b, &Ty::Bool, &[], &lit_bool(false))?;
                 Ok(rule(
                     "matchBoolId",
                     vec![],
@@ -1458,8 +1567,8 @@ impl<'a> Aligner<'a> {
                 }
                 let types = [left.as_ref().clone(), right.as_ref().clone()];
                 let inner = param_ctx(g, &arm.binders, &types, parts)?;
-                let scrutinee_d = self.e(g, fl, scrutinee, &st, &first.value)?;
-                let body_d = self.b(&inner, fl, fm, &arm.body, ty, &lets[2..], tail)?;
+                let scrutinee_d = self.eg(g, fl, scrutinee, &st, &first.value)?;
+                let body_d = self.bg(&inner, fl, fm, &arm.body, ty, &lets[2..], tail)?;
                 Ok(rule(
                     "matchPair",
                     vec![
@@ -1493,8 +1602,8 @@ impl<'a> Aligner<'a> {
                     };
                     if reads_holder {
                         let attempt = (|| -> Found {
-                            let scrutinee_d = self.e(g, fl, scrutinee, &st, &first.value)?;
-                            let (arms_d, idx) = self.m(g, fl, &st, view, arms, fm, ty, rarms)?;
+                            let scrutinee_d = self.eg(g, fl, scrutinee, &st, &first.value)?;
+                            let (arms_d, idx) = self.mg(g, fl, &st, view, arms, fm, ty, rarms)?;
                             Ok(rule(
                                 "matchArms",
                                 vec![
@@ -1517,8 +1626,8 @@ impl<'a> Aligner<'a> {
                 // Every arm rebuilds what it matched: the match is its
                 // scrutinee, and the rebuilding arms are stated here.
                 let rebuilt = self.rebuilt_arms(&st, arms)?;
-                let scrutinee_d = self.b(g, fl, fm, scrutinee, &st, lets, tail)?;
-                let (arms_d, idx) = self.m(g, fl, &st, false, arms, false, &st, &rebuilt)?;
+                let scrutinee_d = self.bg(g, fl, fm, scrutinee, &st, lets, tail)?;
+                let (arms_d, idx) = self.mg(g, fl, &st, false, arms, false, &st, &rebuilt)?;
                 Ok(rule(
                     "matchRebuilt",
                     vec![
@@ -1650,7 +1759,7 @@ impl<'a> Aligner<'a> {
         let Some(((pattern, block), rest)) = rarms.split_first() else {
             return Ok((rule("mNil", vec![], vec![]), Vec::new()));
         };
-        let (rest_d, mut idx) = self.m(g, fl, st, view, arms, fm, tau, rest)?;
+        let (rest_d, mut idx) = self.mg(g, fl, st, view, arms, fm, tau, rest)?;
         let (shape, inner) = arm_outer(st, view, pattern)?;
         let j = arms
             .iter()
@@ -1704,7 +1813,7 @@ impl<'a> Aligner<'a> {
         }
         let direct = direct_patterns(&inner, &loads)?;
         let inner_ctx = param_ctx(g, &arm.binders, &types, &direct)?;
-        let body_d = self.b(&inner_ctx, fl, fm, &arm.body, tau, &lets, &tail)?;
+        let body_d = self.bg(&inner_ctx, fl, fm, &arm.body, tau, &lets, &tail)?;
         idx.insert(0, j as u64);
         Ok((
             rule(
@@ -1763,7 +1872,7 @@ impl<'a> Aligner<'a> {
         let named = vec![("ts", types_term(&types)), ("rd", rust_term::expr(&read))];
         match lets {
             [] => {
-                let record_d = self.e(g, fl, value, &record_ty, scrutinee)?;
+                let record_d = self.eg(g, fl, value, &record_ty, scrutinee)?;
                 Ok(rule(
                     "fieldRead",
                     named,
@@ -1779,7 +1888,7 @@ impl<'a> Aligner<'a> {
                 ))
             }
             [binding] => {
-                let record_d = self.e(g, fl, value, &record_ty, &binding.value)?;
+                let record_d = self.eg(g, fl, value, &record_ty, &binding.value)?;
                 Ok(rule(
                     "fieldHeld",
                     named,
@@ -1847,7 +1956,7 @@ impl<'a> Aligner<'a> {
             &patterns,
         )?;
         let fallible = self.fallible_fn(index);
-        let derivation = self.b(
+        let derivation = self.bg(
             &scope,
             fallible,
             fallible,
@@ -1856,13 +1965,15 @@ impl<'a> Aligner<'a> {
             &body.lets,
             &body.tail,
         )?;
-        Ok(format!(
+        let proof = format!(
             "⟨_, rfl, .inl ⟨_, _, {}, {}, {}, rfl, rfl,\n    {}⟩⟩",
             lets_term(&body.lets),
             rust_term::expr(&body.tail),
             scope.term(),
             derivation.text()
-        ))
+        );
+        self.used = self.used.saturating_add(proof.len() as u64);
+        Ok(proof)
     }
 
     /// The `apply` flags of every function type the program closes over or
@@ -2040,21 +2151,43 @@ fn negations_of(expr: &Expr) -> Vec<Expr> {
 /// Certificate B of one root's program rendered as `krate`, as module
 /// `module`.
 ///
+/// The derivations are built under `max_bytes`, the largest file a
+/// certificate may be: the work of a root whose certificate would exceed it
+/// stops at about that size rather than at the size the root would have
+/// taken.
+///
 /// # Errors
 ///
 /// Returns the reason the aligner cannot relate the crate to the program:
-/// a rendering no rule of the correspondence derives.
+/// a rendering no rule of the correspondence derives; or, prefixed with
+/// [`super::lower::LIMIT`], that the certificate would exceed `max_bytes`.
 pub fn certificate_b(
     program: &Program,
     krate: &Crate,
     module: &str,
+    max_bytes: u64,
 ) -> Result<CertificateB, String> {
-    let mut aligner = Aligner::new(program, krate)?;
+    let mut aligner = Aligner::new(program, krate, max_bytes)?;
+    // The two literals the proofs are about are text of the certificate too,
+    // and the first of its parts to exist.
+    let program_term = render_program(program)?;
+    let crate_term = rust_term::crate_term(krate);
+    aligner.used = (program_term.len() as u64).saturating_add(crate_term.len() as u64);
+    if aligner.used > max_bytes {
+        return Err(format!(
+            "{}the program and crate terms are {} bytes, beyond the {max_bytes} bytes of max_file_bytes",
+            super::lower::LIMIT,
+            aligner.used
+        ));
+    }
     let mut proofs = Vec::new();
     for index in 0..program.functions.len() as u64 {
         let proof = aligner
             .function_proof(index)
-            .map_err(|reason| format!("function {index}: {reason}"))?;
+            .map_err(|reason| match aligner.over.clone() {
+                Some(refusal) => refusal,
+                None => format!("function {index}: {reason}"),
+            })?;
         proofs.push(proof);
     }
     let count = proofs.len();
@@ -2064,12 +2197,10 @@ pub fn certificate_b(
     out.push_str(&format!("namespace {module}\n"));
     out.push_str("open LexLeanTarget LexLeanPreservation.Rust\n\n");
     out.push_str(&format!(
-        "def program : TargetSyntax.Program :=\n  {}\n\n",
-        render_program(program)?
+        "def program : TargetSyntax.Program :=\n  {program_term}\n\n"
     ));
     out.push_str(&format!(
-        "def krate : RustSyntax.Crate :=\n  {}\n\n",
-        rust_term::crate_term(krate)
+        "def krate : RustSyntax.Crate :=\n  {crate_term}\n\n"
     ));
     out.push_str(&format!("def flags : Flags := {}\n\n", aligner.flags()?));
     for (index, proof) in proofs.iter().enumerate() {
@@ -2091,9 +2222,43 @@ pub fn certificate_b(
          theorem root : ∀ n f, FunSem program krate flags n f := fun n f => simulate crate_ok n f\n\n",
     );
     out.push_str(&format!("end {module}\n"));
+    if out.len() as u64 > max_bytes {
+        return Err(format!(
+            "{}the certificate is {} bytes, beyond the {max_bytes} bytes of max_file_bytes",
+            super::lower::LIMIT,
+            out.len()
+        ));
+    }
     Ok(CertificateB {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
         text: out,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{rule, sub, Decided};
+
+    /// The size a rule records is the length of the text it prints, which is
+    /// what the limit on a derivation is checked against.
+    #[test]
+    fn a_rules_size_is_the_length_of_its_text() {
+        let leaf = rule("mNil", vec![], vec![]);
+        let middle = rule(
+            "mCons",
+            vec![("j", "3".to_owned()), ("loads", "[(x, ∧)]".to_owned())],
+            vec![sub(leaf), Decided, Decided],
+        );
+        let top = rule(
+            "fieldRead",
+            vec![("ts", "[.nat, .nat]".to_owned())],
+            vec![sub(middle), Decided],
+        );
+        assert_eq!(top.size, top.text().len());
+        assert_eq!(top.text().len(), top.size);
+        assert!(top
+            .text()
+            .starts_with("(Corr.fieldRead (ts := [.nat, .nat]) (Corr.mCons"));
+    }
 }

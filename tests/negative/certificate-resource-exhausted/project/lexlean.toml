@@ -14,7 +14,7 @@ package = "lexlean.std.nat"
 kind = "builtin"
 
 [limits]
-max_file_bytes = 4194304
+max_file_bytes = 90302
 max_total_source_bytes = 67108864
 max_primitive_atoms = 2000000
 max_token_lattice_edges = 4000000

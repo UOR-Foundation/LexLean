@@ -111,14 +111,35 @@ versions, and the entries below say what each tag does and does not claim.
   crate, which are published beside the certificates. The statement
   vocabulary SPEC.md quotes is held byte-equal to the library's by
   `validate-spec-links`, and every library declaration must be registered.
-- A root whose lowered program, or the certificates it implies, would exceed
-  the project's limits is refused with `LLS8002` before the toolchain is
-  touched (SPEC.md §17.17 *Limits*; negative fixture `lowering-size-limit`),
-  and a pinned Lean that exhausts its heartbeat or recursion budget or its
-  memory, or is killed, while checking a certificate is `LLS8002` too, not a
-  rejected certificate or environment drift (negative fixture
-  `certificate-resource-exhausted`). Rejections of certificates A, B, and E
-  name the declaration, the root, and the bounded first error.
+- Limits (SPEC.md §17.17 *Limits*). A root whose lowered program exceeds
+  `max_ir_nodes`, or whose certificates A and E are estimated to exceed
+  `max_file_bytes` (70 bytes for each type node, 300 for each expression
+  node and each shape node, 8 KiB; a calibration at one and a half times the
+  largest measured on the corpora and on stress families, never below any of
+  them in `conformance_sp_02`), or whose field reads print so many record
+  entries that certificate B would exceed it, is refused with `LLS8002`
+  before the toolchain is touched; certificate B, whose derivations grow with
+  the square of a record's arity and cannot be estimated from node counts, is
+  generated under `max_file_bytes` and stops at it. Certificates are now
+  generated right after lowering for that reason. Negative fixtures
+  `lowering-size-limit`, `certificate-size-limit` (a record of 800 fields
+  copied field by field), and `certificate-generation-limit` (a sum of the
+  500 fields of a record) cover them. A pinned Lean that is killed, runs out
+  of memory, or overflows its stack while checking a certificate is
+  `LLS8002`; one that exhausts its heartbeat or recursion budget is `LLS8002`
+  only when the module is at least a quarter of `max_file_bytes` and is
+  otherwise Lean's verdict on the certificate, `LLV7013`, `LLV7015`, or
+  `LLV7016` (fixtures `certificate-heartbeat-rejected` and
+  `certificate-resource-exhausted`): a wrong certificate whose proof makes
+  `isDefEq` loop is not a limit. Rejections of certificates A, B, and E name
+  the declaration, the root, and the bounded first error.
+- Certificate E is stated, in full, for representable arguments, and Lean
+  applies it to arguments of the differential, some at the bounds of `u64`
+  and `i64`, so a hypothesis that cannot be met or used fails; the planted
+  `RepresentableL .. ∧ False` is refused. `preservation.json` records the
+  function each crate is invoked through, per root and target, which E states
+  and the crate defines; SPEC.md says what is and is not a package and which
+  certified roots rest on the kernel proof alone for the overflow arm.
 - Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
   refused every root that reached an `Init` function whose module does not
   expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,

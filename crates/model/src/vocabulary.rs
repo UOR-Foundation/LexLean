@@ -19,16 +19,23 @@ use std::collections::BTreeSet;
 pub const LIBRARY_DIR: &str = "language/preservation-1.2/library";
 
 /// The declarations the specification must quote, by library file and name.
-pub const REQUIRED: [(&str, &str); 10] = [
+pub const REQUIRED: [(&str, &str); 17] = [
     ("LexLeanPreservation/Core.lean", "Obs"),
     ("LexLeanPreservation/Core.lean", "Rel"),
     ("LexLeanPreservation/Core.lean", "Conv"),
     ("LexLeanPreservation/Core.lean", "FunRel"),
+    ("LexLeanPreservation/Core.lean", "RunConv"),
     ("LexLeanPreservation/RustBase.lean", "WT"),
+    ("LexLeanPreservation/RustBase.lean", "WTL"),
+    ("LexLeanPreservation/RustBase.lean", "fnIdent"),
+    ("LexLeanPreservation/RustBase.lean", "fnFallible"),
+    ("LexLeanPreservation/RustBase.lean", "RCI"),
+    ("LexLeanPreservation/Validate.lean", "someObs"),
     ("LexLeanPreservation/RustCorr.lean", "Realizes"),
     ("LexLeanPreservation/RustCorr.lean", "RealizesFn"),
     ("LexLeanPreservation/RustCorr.lean", "FunSem"),
     ("LexLeanPreservation/Compose.lean", "Representable"),
+    ("LexLeanPreservation/Compose.lean", "RepresentableL"),
     (
         "LexLeanPreservation/Compose.lean",
         "runItem_abort_infallible",

@@ -768,11 +768,19 @@ pub fn cases(project: &P) -> BTreeMap<String, Vec<Case>> {
                         broken = invalidate(&modules, &parameters[position].r#type, &fresh);
                         tries += 1;
                     }
-                    if let Some(broken) = broken {
-                        let mut values = values.clone();
-                        values[position] = broken;
-                        inputs.push((entry, Some(position), values, *small));
-                    }
+                    // A validated parameter whose invariant no input could be
+                    // made to break would leave its validator unobserved by
+                    // the differentials: that is a failure of the sampling,
+                    // not a case to leave out.
+                    let broken = broken.unwrap_or_else(|| {
+                        panic!(
+                            "{}: no sampled `{}` could be made to break its invariant in {tries} tries",
+                            root.report.root, parameters[position].name
+                        )
+                    });
+                    let mut values = values.clone();
+                    values[position] = broken;
+                    inputs.push((entry, Some(position), values, *small));
                 }
             }
         }

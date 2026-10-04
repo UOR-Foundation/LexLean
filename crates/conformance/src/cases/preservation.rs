@@ -58,12 +58,32 @@ const UNREACHED_OVERFLOW: [&str; 19] = [
     "Models.Main.guessChecked",
 ];
 
+/// What the product reports of a rejected certificate: Lean's verdict on
+/// the certificate, never a machine limit, because the certificate is small
+/// against `max_file_bytes`. A planted wrong certificate whose proof makes
+/// `isDefEq` run out of heartbeats (the overflow plant on
+/// `Coverage.Prims.fixedMiddle`) is `LLV7013`, not `LLS8002`, which would
+/// blame the project's types for a defect of the lowering.
+fn assert_not_a_limit(what: &str, output: &str, text_len: usize) {
+    static LIMITS: OnceLock<lexlean::config::Limits> = OnceLock::new();
+    let limits = LIMITS.get_or_init(|| support::limits(&P::copy_example("production")));
+    assert!(
+        lexlean::verify::resource_death("planted", 1, output, text_len as u64, limits).is_none(),
+        "{what}: a rejected certificate of {text_len} bytes is reported as an exhausted resource:\n{output}"
+    );
+}
+
 /// The failure of a planted mutation is targeted: Lean's first error lies in
 /// the relation of the function the mutation changed, or, for a function of
 /// a library template, whose relation the certificate states where the
 /// template is instantiated, in the relation of a caller; not in the library,
 /// the environment, or an unrelated function.
 fn assert_targeted(plant: &preservation::Planted) {
+    assert_not_a_limit(
+        &format!("{} {:?}", plant.root, plant.mutation),
+        &plant.rejection,
+        plant.text_len,
+    );
     let declaration = plant.declaration.as_deref().unwrap_or_else(|| {
         panic!(
             "{} {:?}: no declaration:\n{}",
@@ -87,6 +107,212 @@ fn assert_targeted(plant: &preservation::Planted) {
         plant.origin,
         plant.expected,
         plant.rejection
+    );
+}
+
+/// Certify every stress family, assert that the estimate is never below
+/// certificate A or E and that the floor from field reads is never above
+/// certificate B, and that certificate B stops at the limit it is given.
+/// Returns how far certificate B went beyond the estimate at most.
+fn stress_estimates() -> u64 {
+    let mut quadratic = 0_u64;
+    for (family, project) in crate::stress::families() {
+        for entry in preservation::certificates(&project) {
+            assert_floor(&family, &entry);
+            let estimate = estimate_of(&entry);
+            let a = entry.certificate.text.len() as u64;
+            let e = entry
+                .composed
+                .iter()
+                .map(|(_, certificate)| certificate.text.len() as u64)
+                .max()
+                .unwrap_or(0);
+            assert!(
+                estimate >= a.max(e),
+                "{family}: the estimate {estimate} is below certificate A ({a}) or E ({e})"
+            );
+            for (target, certificate) in &entry.renderings {
+                let size = certificate.text.len() as u64;
+                quadratic = quadratic.max(size.saturating_sub(estimate));
+                // Certificate B stops at the limit it is given, at
+                // the size it would have had or below it.
+                if family.starts_with("record copy 100") {
+                    let krate = lexlean::calculus::rust::lower(
+                        &entry.program,
+                        lexlean::calculus::rust::Profile::named(target).expect("a Rust profile"),
+                    )
+                    .expect("a rendering");
+                    let refused = lexlean::production::rust_cert::certificate_b(
+                        &entry.program,
+                        &krate,
+                        &certificate.module,
+                        size / 4,
+                    )
+                    .expect_err("a certificate beyond its limit is refused");
+                    assert!(
+                        refused.starts_with(lexlean::production::lower::LIMIT),
+                        "{family}: {refused}"
+                    );
+                }
+            }
+        }
+    }
+    quadratic
+}
+
+/// The floor the lowering puts under certificate B from the entries of its
+/// field reads is no more than any certificate B generated.
+fn assert_floor(label: &str, entry: &preservation::Certified) {
+    let floor = lexlean::production::lower::record_slots(&entry.program)
+        .saturating_mul(lexlean::production::lower::CERTIFICATE_BYTES_PER_SLOT);
+    for (target, certificate) in &entry.renderings {
+        assert!(
+            floor <= certificate.text.len() as u64,
+            "{label} {} ({target}): the floor {floor} is above certificate B, {} bytes",
+            entry.root,
+            certificate.text.len()
+        );
+    }
+}
+
+/// The estimate the lowering charges against `max_file_bytes` before it
+/// generates anything, for a certified root's program.
+fn estimate_of(entry: &preservation::Certified) -> u64 {
+    lexlean::production::lower::certificate_estimate(&lexlean::production::lower::measure_program(
+        &entry.program,
+    ))
+}
+
+/// The parenthesized groups of `text`, which must be nothing else but groups
+/// separated by single spaces.
+fn groups(text: &str) -> Option<Vec<&str>> {
+    let mut out = Vec::new();
+    let mut depth = 0_usize;
+    let mut start = 0;
+    for (at, character) in text.char_indices() {
+        match character {
+            '(' => {
+                if depth == 0 {
+                    start = at;
+                }
+                depth += 1;
+            }
+            ')' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    out.push(&text[start..=at]);
+                }
+            }
+            ' ' if depth == 0 => {}
+            _ if depth == 0 => return None,
+            _ => {}
+        }
+    }
+    (depth == 0 && out.join(" ") == text).then_some(out)
+}
+
+/// The statement of certificate E, in full. The binders are exactly the
+/// root's parameters, then one hypothesis, that the encodings of the
+/// arguments are representable; the conclusion is the one §17.17 states for
+/// a root with an entry or without, built here from the root's parameters
+/// and the function its rendering is invoked through. A statement with
+/// another hypothesis, a conjunct, or another conclusion is not equal to it,
+/// which a prefix match would not notice.
+fn assert_statement(
+    name: &str,
+    entry: &preservation::Certified,
+    rendering: &lexlean::production::certificate::Certificate,
+    composed: &lexlean::production::certificate::Certificate,
+) {
+    let at = composed
+        .text
+        .find("theorem root ")
+        .unwrap_or_else(|| panic!("{name}: `{}` states no root theorem", composed.module));
+    assert_eq!(
+        composed.text.matches("theorem root ").count(),
+        1,
+        "{name}: `{}` states one root theorem",
+        composed.module
+    );
+    let rest = &composed.text[at + "theorem root ".len()..];
+    let (head, _) = rest
+        .split_once(" : ∃ ro, ")
+        .unwrap_or_else(|| panic!("{name}: `{}`: no conclusion", composed.module));
+    let binders = groups(head).unwrap_or_else(|| {
+        panic!(
+            "{name}: `{}`: binders are not groups: {head}",
+            composed.module
+        )
+    });
+    let parameters = entry.program.functions[0].parameters.len();
+    assert_eq!(
+        binders.len(),
+        parameters + 1,
+        "{name}: `{}` binds the {parameters} parameters and one hypothesis: {head}",
+        composed.module
+    );
+    let (hypothesis, own) = binders.split_last().expect("a hypothesis");
+    let names: Vec<&str> = own
+        .iter()
+        .map(|binder| {
+            binder
+                .trim_start_matches('(')
+                .split(" : ")
+                .next()
+                .expect("a name")
+        })
+        .collect();
+    let list = hypothesis
+        .strip_prefix("(hrep : LexLeanPreservation.Rust.RepresentableL [")
+        .and_then(|rest| rest.strip_suffix("])"))
+        .unwrap_or_else(|| panic!("{name}: `{}`: hypothesis {hypothesis}", composed.module));
+    // The encodings, one for each parameter, each applied to its name.
+    let encodings = {
+        let mut out = Vec::new();
+        let (mut depth, mut start) = (0_usize, 0);
+        for (position, character) in list.char_indices() {
+            match character {
+                '(' | '[' => depth += 1,
+                ')' | ']' => depth -= 1,
+                ',' if depth == 0 => {
+                    out.push(&list[start..position]);
+                    start = position + 1;
+                }
+                _ => {}
+            }
+        }
+        out.push(&list[start..]);
+        out.into_iter().map(str::trim).collect::<Vec<_>>()
+    };
+    assert_eq!(encodings.len(), parameters, "{name}: `{}`", composed.module);
+    for (encoding, local) in encodings.iter().zip(&names) {
+        assert!(
+            encoding.starts_with('(') && encoding.ends_with(&format!(" {local})")),
+            "{name}: `{}`: `{encoding}` does not encode `{local}`",
+            composed.module
+        );
+    }
+    let fallible = lexlean::calculus::rust::fallible_functions(&entry.program)
+        .expect("a valid program")[entry.entry as usize];
+    let applied: String = names.iter().map(|local| format!(" {local}")).collect();
+    let (a, b) = (&entry.certificate.module, &rendering.module);
+    let encoded = encodings.join(", ");
+    let conclusion = if entry.entry == 0 {
+        format!(
+            "∃ ro, LexLeanPreservation.Rust.RealizesFn {fallible} ({a}.denote{applied}) ro ∧ LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent 0) [{encoded}] ro"
+        )
+    } else {
+        format!(
+            "∃ ro, LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent {}) [{encoded}] ro ∧\n    ({a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.someObs ({a}.denote{applied})) ro) ∧\n    (¬ {a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none) ro)",
+            entry.entry
+        )
+    };
+    let statement = format!("{head} : {conclusion} :=\n");
+    assert!(
+        rest.starts_with(&statement),
+        "{name}: `{}` does not state exactly the end-to-end theorem:\n{statement}\nbut\n{}",
+        composed.module,
+        rest.lines().take(4).collect::<Vec<_>>().join("\n")
     );
 }
 
@@ -262,12 +488,10 @@ pub fn run(id: &str) {
                         "{}: the certificate states the root theorem",
                         entry.root
                     );
-                    // The size estimate the lowering charges against
-                    // `max_file_bytes` before anything is generated is never
-                    // below the largest certificate generated.
-                    let estimate = lexlean::production::lower::certificate_estimate(
-                        lexlean::production::lower::program_nodes(&entry.program),
-                    );
+                    // On the corpora no certificate is above the estimate,
+                    // certificate B included.
+                    assert_floor(name, entry);
+                    let estimate = estimate_of(entry);
                     let biggest = std::iter::once(&entry.certificate)
                         .chain(entry.renderings.iter().map(|(_, b)| b))
                         .chain(entry.composed.iter().map(|(_, e)| e))
@@ -280,6 +504,39 @@ pub fn run(id: &str) {
                         entry.root
                     );
                 }
+            }
+            // The estimate is a bound on certificates A and E over the
+            // stress families too: programs that grow one dimension at a
+            // time (let chains, call chains, many parameters, enumerations,
+            // wide structures, record copies, a generic chain). Certificate
+            // B is not estimated, because its derivations repeat the
+            // patterns around a node and grow with the square of a record's
+            // arity: it is bounded by the limit it is generated under, which
+            // the family of record copies reaches.
+            // Certifying a family's deepest program recurses deeply, as the
+            // differential's interpreter does.
+            let quadratic = std::thread::Builder::new()
+                .stack_size(512 << 20)
+                .spawn(stress_estimates)
+                .expect("a thread")
+                .join()
+                .expect("the stress families certify");
+            assert!(
+                quadratic > 0,
+                "the record-copy family has a certificate B beyond the estimate, which is what B's own limit is for"
+            );
+            // Two negative fixtures reach the limits of certificate B before
+            // the toolchain. A record of 800 fields copied field by field
+            // has 640 000 record entries in its field reads, which the
+            // lowering refuses by their floor on B; a sum of the 500 fields
+            // of a record has 250 000, below that floor and above the limit
+            // in its derivation, which stops when it passes the limit.
+            for fixture in ["certificate-size-limit", "certificate-generation-limit"] {
+                let case =
+                    crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
+                        .expect("the fixture loads");
+                let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+                assert_eq!(observed.codes, ["LLS8002"], "{fixture}");
             }
             // A root whose lowered program, or the certificates it implies,
             // would exceed the project's limits is refused before anything is
@@ -318,6 +575,7 @@ pub fn run(id: &str) {
         }
         // §17.17: the differential evaluator.
         "SP-03" => {
+            let (mut all, mut declared, mut reached) = (0_usize, 0_usize, 0_usize);
             for (name, project) in certified_projects() {
                 let cases = crate::differential::cases(&project);
                 assert!(
@@ -340,6 +598,7 @@ pub fn run(id: &str) {
                 // reaches.
                 let checked = support::checked_project(&project);
                 for root in roots(&checked).expect("the eligibility reports") {
+                    all += 1;
                     if !root
                         .report
                         .declared_effects
@@ -348,11 +607,13 @@ pub fn run(id: &str) {
                     {
                         continue;
                     }
+                    declared += 1;
                     let overflows = cases.get(&root.report.root).is_some_and(|cases| {
                         cases
                             .iter()
                             .any(|case| matches!(case.outcome, Outcome::Overflow { .. }))
                     });
+                    reached += usize::from(overflows);
                     let exempt = UNREACHED_OVERFLOW.contains(&root.report.root.as_str());
                     assert!(
                         overflows != exempt,
@@ -366,6 +627,29 @@ pub fn run(id: &str) {
                     );
                 }
             }
+            // The specification states which certified roots rest on the
+            // kernel proof alone for the overflow arm, and how many do.
+            let spec = std::fs::read_to_string(repo_root().join("SPEC.md").as_std_path())
+                .expect("SPEC.md");
+            let listed: Vec<&str> = spec
+                .split("```unreached-overflow\n")
+                .nth(1)
+                .and_then(|rest| rest.split("```").next())
+                .expect("the specification lists the roots whose overflow no input reaches")
+                .lines()
+                .collect();
+            assert_eq!(
+                listed, UNREACHED_OVERFLOW,
+                "SPEC.md lists exactly the roots the suite exempts"
+            );
+            assert_eq!(declared - reached, UNREACHED_OVERFLOW.len());
+            let flat = spec.split_whitespace().collect::<Vec<_>>().join(" ");
+            assert!(
+                flat.contains(&format!(
+                    "Of the {all} certified roots of the three examples, {declared} declare an overflow, {reached} of them reach it"
+                )),
+                "SPEC.md states that of {all} certified roots {declared} declare an overflow and {reached} reach it"
+            );
             if !support::lean_backed("SP-03") {
                 return;
             }
@@ -490,6 +774,76 @@ pub fn run(id: &str) {
         }
         // §17.17, §22.8, §22.9: certificate A in verification.
         "SP-05" => {
+            // The record states, for each root and target, the function a
+            // caller of the crate invokes. It is the function certificate E
+            // states of the crate and the crate defines, and it is the
+            // boundary entry exactly when E has one.
+            let mut entered = 0;
+            for example in ["production", "production-coverage", "models"] {
+                let base = repo_root()
+                    .join("examples")
+                    .join(example)
+                    .join("expected/verify/preserve");
+                let record: serde_json::Value = serde_json::from_slice(
+                    &std::fs::read(base.join("preservation.json").as_std_path())
+                        .expect("a committed record"),
+                )
+                .expect("the record is JSON");
+                for (index, row) in record["roots"]
+                    .as_array()
+                    .expect("roots")
+                    .iter()
+                    .enumerate()
+                {
+                    for rendering in row["renderings"].as_array().expect("renderings") {
+                        let target = rendering["target"].as_str().expect("a target");
+                        let function = rendering["entry"]["function"].as_u64().expect("a function");
+                        assert_eq!(
+                            rendering["entry"]["symbol"].as_str(),
+                            Some(format!("f{function}").as_str())
+                        );
+                        let composed = std::fs::read_to_string(
+                            base.join(lexlean::production::preserve::module_path(
+                                rendering["composed"]["module"].as_str().expect("a module"),
+                            ))
+                            .as_std_path(),
+                        )
+                        .expect("the published certificate E");
+                        let invoked: BTreeSet<u64> = composed
+                            .match_indices("Rust.fnIdent ")
+                            .map(|(at, found)| {
+                                composed[at + found.len()..]
+                                    .chars()
+                                    .take_while(char::is_ascii_digit)
+                                    .collect::<String>()
+                                    .parse()
+                                    .expect("a function number")
+                            })
+                            .collect();
+                        assert_eq!(
+                            invoked,
+                            BTreeSet::from([function]),
+                            "{example} R{index} {target}: E states the function the record names"
+                        );
+                        assert_eq!(
+                            composed.contains("entry_accepts"),
+                            function != 0,
+                            "{example} R{index} {target}: E has an entry exactly when the record names one"
+                        );
+                        let krate = std::fs::read_to_string(
+                            base.join(format!("crate/R{index}.{target}.rs"))
+                                .as_std_path(),
+                        )
+                        .expect("the published crate");
+                        assert!(
+                            krate.contains(&format!("fn f{function}(")),
+                            "{example} R{index} {target}: the crate defines f{function}"
+                        );
+                        entered += usize::from(function != 0);
+                    }
+                }
+            }
+            assert!(entered > 0, "some certified root has a boundary entry");
             if !support::lean_backed("SP-05") {
                 return;
             }
@@ -591,6 +945,7 @@ pub fn run(id: &str) {
                 ("certificate-rejected", "LLV7013"),
                 ("certificate-b-rejected", "LLV7015"),
                 ("certificate-e-rejected", "LLV7016"),
+                ("certificate-heartbeat-rejected", "LLV7013"),
                 ("certificate-resource-exhausted", "LLS8002"),
                 ("preservation-drift", "LLV7014"),
             ] {
@@ -1210,7 +1565,7 @@ pub fn run(id: &str) {
             let mut entered = 0;
             for (name, project) in certified_projects() {
                 let certified = preservation::certificates(&project);
-                let run = preservation::rustc_differential(&project, &certified);
+                let run = preservation::rustc_differential(&project, &certified, name);
                 eprintln!(
                     "SP-11: {name}: {} crates, {} runs, {} through an entry",
                     run.crates, run.runs, run.entered
@@ -1251,15 +1606,12 @@ pub fn run(id: &str) {
                             );
                         }
                         assert_eq!(composed.denote, entry.certificate.denote);
-                        // E is stated for the arguments a Rust caller can
-                        // pass only.
-                        assert!(
-                            composed
-                                .text
-                                .contains("(hrep : LexLeanPreservation.Rust.RepresentableL ["),
-                            "{name}: `{}` quantifies over every argument",
-                            composed.module
-                        );
+                        // E is stated, in full, for the arguments a Rust caller
+                        // can pass only: the binders are the root's parameters,
+                        // the one hypothesis is that their encodings are
+                        // representable, and the conclusion is the two
+                        // statements of §17.17 and nothing else.
+                        assert_statement(name, &entry, rendering, composed);
                         for mutation in preservation::CompositionMutation::ALL {
                             let places = mutation.places(&composed.text);
                             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
@@ -1276,7 +1628,23 @@ pub fn run(id: &str) {
             if !support::lean_backed("SP-09") {
                 return;
             }
+            let mut at_bounds = 0;
             for (name, report) in reports() {
+                // Each certificate E is applied, in Lean, to arguments a
+                // Rust caller can pass, some of them at the bounds of
+                // `u64` and `i64`, so a hypothesis that cannot be met or
+                // used fails.
+                let modules: usize = report
+                    .certified
+                    .iter()
+                    .map(|entry| entry.composed.len())
+                    .sum();
+                assert!(
+                    report.witnessed.0 >= modules,
+                    "{name}: {} witnesses for {modules} certificates E",
+                    report.witnessed.0
+                );
+                at_bounds += report.witnessed.1;
                 for entry in &report.certified {
                     for (_, composed) in &entry.composed {
                         assert!(
@@ -1299,19 +1667,33 @@ pub fn run(id: &str) {
                     );
                 }
                 for plant in &report.composed_plants {
+                    assert_not_a_limit(
+                        &format!("{} {:?}", plant.root, plant.mutation),
+                        &plant.output,
+                        plant.text_len,
+                    );
                     assert!(
                         !plant.accepted
-                            && plant.declaration.as_deref() == Some("root"),
-                        "{name}: {:?} at {} in {} ({}) is not refused in the composition (`root`): {:?}\n{}",
+                            && plant
+                                .declaration
+                                .as_deref()
+                                .is_some_and(|declaration| declaration
+                                    .starts_with(plant.mutation.declaration_prefix())),
+                        "{name}: {:?} at {} in {} ({}) is not refused in `{}*`: {:?}\n{}",
                         plant.mutation,
                         plant.nth,
                         plant.root,
                         plant.target,
+                        plant.mutation.declaration_prefix(),
                         plant.declaration,
                         plant.output
                     );
                 }
             }
+            assert!(
+                at_bounds > 0,
+                "some witness applies E at the bounds of u64 or i64"
+            );
         }
         // §17.13, §17.17: the certified examples exercise the registry.
         "SP-06" => {

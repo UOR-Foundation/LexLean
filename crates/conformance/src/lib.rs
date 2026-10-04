@@ -26,6 +26,7 @@ pub mod rust_harness;
 pub mod rust_packages;
 pub mod rust_source;
 pub mod schema;
+pub mod stress;
 
 pub mod support;
 

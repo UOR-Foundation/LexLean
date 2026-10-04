@@ -688,6 +688,11 @@ pub struct CertifiedRendering {
     pub composed: Certificate,
     /// The rendered crate's text, which certificate B is about.
     pub crate_text: String,
+    /// The function of the program a caller of this rendering invokes: the
+    /// root's boundary entry when a parameter carries an invariant, else the
+    /// root, function 0. It is the function certificate E states of the
+    /// crate (`Rust.fnIdent`), and its Rust symbol is `f<function>`.
+    pub entry: u64,
 }
 
 /// One certified root as `preservation.json` records it.
@@ -775,6 +780,25 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                             Json::object(vec![
                                                 ("target", Json::Str(rendering.target.clone())),
                                                 ("module", Json::Str(certificate.module.clone())),
+                                                (
+                                                    "entry",
+                                                    Json::object(vec![
+                                                        (
+                                                            "function",
+                                                            Json::from_usize(
+                                                                usize::try_from(rendering.entry)
+                                                                    .unwrap_or(usize::MAX),
+                                                            ),
+                                                        ),
+                                                        (
+                                                            "symbol",
+                                                            Json::Str(format!(
+                                                                "f{}",
+                                                                rendering.entry
+                                                            )),
+                                                        ),
+                                                    ]),
+                                                ),
                                                 (
                                                     "crate",
                                                     Json::object(vec![

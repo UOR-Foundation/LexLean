@@ -239,7 +239,7 @@ struct Lowerer<'a> {
 }
 
 /// Marks a failure that is a resource limit, not a defect.
-const LIMIT: &str = "limit: ";
+pub const LIMIT: &str = "limit: ";
 
 /// Lower one eligible root. A failure is a compiler defect: eligibility
 /// already admitted every construct the closure reaches.
@@ -385,7 +385,7 @@ pub fn lower_root(
     // The certificates are generated as text from the program; refuse before
     // generating them when they would not fit the largest file the project
     // allows, rather than let the generator and the pinned Lean discover it.
-    let estimate = certificate_estimate(program_nodes(&lowered.program));
+    let estimate = certificate_estimate(&measure_program(&lowered.program));
     if estimate > limits.max_file_bytes {
         return Err(Diagnostic::new(
             code!("LLS8002"),
@@ -397,29 +397,92 @@ pub fn lower_root(
             ),
         ));
     }
+    // The rendering of a field read prints the record's whole pattern, so
+    // the Rust crate and certificate B grow with the square of a record's
+    // arity, and the crate is built from the program after this. A program
+    // whose reads alone would take more than the limit is refused here.
+    let slots = record_slots(&lowered.program);
+    let floor = slots.saturating_mul(CERTIFICATE_BYTES_PER_SLOT);
+    if floor > limits.max_file_bytes {
+        return Err(Diagnostic::new(
+            code!("LLS8002"),
+            format!(
+                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, its field reads print {slots} record entries, which take its certificate B at least {floor} bytes",
+                report.root, limits.max_file_bytes
+            ),
+        ));
+    }
     Ok(lowered)
 }
 
-/// The bytes a program node costs the certificates, measured on every
-/// certified root and rounded up (SP-02 requires the estimate to be at least
-/// the size of every certificate A, B, and E generated).
-pub const CERTIFICATE_BYTES_PER_NODE: u64 = 400;
+/// What the certificates repeat of a program, counted by kind: the nodes of
+/// its types wherever a type is written, its expression nodes, and its shape
+/// nodes (a field read, a constructor built, or an arm's binders), which
+/// carry the record or constructor they range over.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Measure {
+    /// Type nodes, at every position a type is written.
+    pub types: u64,
+    /// Expression nodes, an arm counting as one.
+    pub exprs: u64,
+    /// Field reads, constructors built, and the binders of arms, counted once
+    /// each with the arm.
+    pub shapes: u64,
+}
+
+impl Measure {
+    fn add(&mut self, other: Measure) {
+        self.types = self.types.saturating_add(other.types);
+        self.exprs = self.exprs.saturating_add(other.exprs);
+        self.shapes = self.shapes.saturating_add(other.shapes);
+    }
+}
+
+/// The bytes a type node costs a certificate, measured against the largest
+/// certificate of every corpus and stress family (`SP-02`) and multiplied by
+/// one and a half so that the estimate is not the measurement.
+pub const CERTIFICATE_BYTES_PER_TYPE_NODE: u64 = 70;
+
+/// The bytes an expression node costs a certificate, measured the same way.
+pub const CERTIFICATE_BYTES_PER_EXPR_NODE: u64 = 300;
+
+/// The bytes a shape node costs a certificate, measured the same way.
+pub const CERTIFICATE_BYTES_PER_SHAPE_NODE: u64 = 300;
 
 /// What a certificate costs besides its nodes: its imports, its encoders,
 /// and the statement of its root.
 pub const CERTIFICATE_BASE_BYTES: u64 = 8192;
 
-/// The bytes the certificates of a program with `nodes` nodes are estimated
-/// to take, the largest of them.
+/// The bytes the certificates A and E of a program with `measure` are
+/// estimated to take, the larger of them. Certificate B is not estimated: the
+/// derivation of a node repeats the types and patterns of the nodes around
+/// it, so its size is not a function of the counts, and it is built under the
+/// limit instead (`rust_cert::certificate_b`).
 #[must_use]
-pub fn certificate_estimate(nodes: u64) -> u64 {
-    nodes
-        .saturating_mul(CERTIFICATE_BYTES_PER_NODE)
+pub fn certificate_estimate(measure: &Measure) -> u64 {
+    measure
+        .types
+        .saturating_mul(CERTIFICATE_BYTES_PER_TYPE_NODE)
+        .saturating_add(
+            measure
+                .exprs
+                .saturating_mul(CERTIFICATE_BYTES_PER_EXPR_NODE),
+        )
+        .saturating_add(
+            measure
+                .shapes
+                .saturating_mul(CERTIFICATE_BYTES_PER_SHAPE_NODE),
+        )
         .saturating_add(CERTIFICATE_BASE_BYTES)
 }
 
-fn type_nodes(ty: &Ty) -> u64 {
-    1 + match ty {
+fn measure_type(ty: &Ty) -> Measure {
+    let mut out = Measure {
+        types: 1,
+        exprs: 0,
+        shapes: 0,
+    };
+    match ty {
         Ty::Unit
         | Ty::Bool
         | Ty::Nat
@@ -428,51 +491,81 @@ fn type_nodes(ty: &Ty) -> u64 {
         | Ty::Bytes
         | Ty::Ordering
         | Ty::Fixed { width: _ }
-        | Ty::Adt { index: _ } => 0,
-        Ty::Option { value: inner } | Ty::List { element: inner } => type_nodes(inner),
+        | Ty::Adt { index: _ } => {}
+        Ty::Option { value: inner } | Ty::List { element: inner } => out.add(measure_type(inner)),
         Ty::Result {
             ok: left,
             error: right,
         }
-        | Ty::Pair { left, right } => type_nodes(left) + type_nodes(right),
+        | Ty::Pair { left, right } => {
+            out.add(measure_type(left));
+            out.add(measure_type(right));
+        }
         Ty::Fn { parameters, result } => {
-            parameters.iter().map(type_nodes).sum::<u64>() + type_nodes(result)
+            for parameter in parameters {
+                out.add(measure_type(parameter));
+            }
+            out.add(measure_type(result));
         }
     }
+    out
 }
 
-fn expr_nodes(expr: &Expr) -> u64 {
-    1 + match expr {
-        Expr::Value { ty, value: _ } => type_nodes(ty),
-        Expr::Var { name: _ } => 0,
+fn measure_expr(expr: &Expr) -> Measure {
+    let mut out = Measure {
+        types: 0,
+        exprs: 1,
+        shapes: 0,
+    };
+    let each = |out: &mut Measure, operands: &[Expr]| {
+        for operand in operands {
+            out.add(measure_expr(operand));
+        }
+    };
+    match expr {
+        Expr::Value { ty, value: _ } => out.add(measure_type(ty)),
+        Expr::Var { name: _ } => {}
         Expr::Let {
             name: _,
             ty,
             bound,
             body,
-        } => type_nodes(ty) + expr_nodes(bound) + expr_nodes(body),
+        } => {
+            out.add(measure_type(ty));
+            out.add(measure_expr(bound));
+            out.add(measure_expr(body));
+        }
         Expr::Cond {
             condition,
             then_branch,
             else_branch,
-        } => expr_nodes(condition) + expr_nodes(then_branch) + expr_nodes(else_branch),
+        } => {
+            out.add(measure_expr(condition));
+            out.add(measure_expr(then_branch));
+            out.add(measure_expr(else_branch));
+        }
         Expr::Match {
             ty,
             scrutinee,
             arms,
         } => {
-            type_nodes(ty)
-                + expr_nodes(scrutinee)
-                + arms
-                    .iter()
-                    .map(|arm| 1 + expr_nodes(&arm.body))
-                    .sum::<u64>()
+            out.add(measure_type(ty));
+            out.add(measure_expr(scrutinee));
+            for arm in arms {
+                out.exprs = out.exprs.saturating_add(1);
+                out.shapes = out.shapes.saturating_add(1 + arm.binders.len() as u64);
+                out.add(measure_expr(&arm.body));
+            }
         }
         Expr::Build {
             shape: _,
             ty,
             operands,
-        } => type_nodes(ty) + operands.iter().map(expr_nodes).sum::<u64>(),
+        } => {
+            out.shapes = out.shapes.saturating_add(1);
+            out.add(measure_type(ty));
+            each(&mut out, operands);
+        }
         Expr::Call {
             function: _,
             operands,
@@ -480,37 +573,303 @@ fn expr_nodes(expr: &Expr) -> u64 {
         | Expr::Prim {
             operation: _,
             operands,
-        } => operands.iter().map(expr_nodes).sum(),
+        } => each(&mut out, operands),
         Expr::Closure {
             function: _,
             captures,
-        } => captures.iter().map(expr_nodes).sum(),
+        } => each(&mut out, captures),
         Expr::Apply { target, operands } => {
-            expr_nodes(target) + operands.iter().map(expr_nodes).sum::<u64>()
+            out.add(measure_expr(target));
+            each(&mut out, operands);
         }
-        Expr::First { value } | Expr::Second { value } | Expr::Field { value, index: _ } => {
-            expr_nodes(value)
+        Expr::First { value } | Expr::Second { value } => out.add(measure_expr(value)),
+        Expr::Field { value, index: _ } => {
+            out.shapes = out.shapes.saturating_add(1);
+            out.add(measure_expr(value));
         }
     }
+    out
+}
+
+fn measure_function(function: &Function) -> Measure {
+    let mut out = Measure::default();
+    for ty in &function.types {
+        out.add(measure_type(ty));
+    }
+    out.add(measure_type(&function.result));
+    out.add(measure_expr(&function.body));
+    out
 }
 
 fn function_nodes(function: &Function) -> u64 {
-    function.types.iter().map(type_nodes).sum::<u64>()
-        + type_nodes(&function.result)
-        + expr_nodes(&function.body)
+    let measure = measure_function(function);
+    measure.types.saturating_add(measure.exprs)
 }
 
-/// The size of a program: the nodes of every type and expression in it,
-/// which the certificates, the crate terms, and the encoders all repeat.
+/// What a program has that the certificates repeat: the types and the
+/// expressions of every function, and the types of every constructor.
+#[must_use]
+pub fn measure_program(program: &Program) -> Measure {
+    let mut out = Measure::default();
+    for function in &program.functions {
+        out.add(measure_function(function));
+    }
+    for ty in program
+        .adts
+        .iter()
+        .flat_map(|adt| adt.constructors.iter().flatten())
+    {
+        out.add(measure_type(ty));
+    }
+    out
+}
+
+/// The size of a program: the nodes of every type and expression in it.
 #[must_use]
 pub fn program_nodes(program: &Program) -> u64 {
-    program.functions.iter().map(function_nodes).sum::<u64>()
-        + program
-            .adts
-            .iter()
-            .flat_map(|adt| adt.constructors.iter().flatten())
-            .map(type_nodes)
-            .sum::<u64>()
+    let measure = measure_program(program);
+    measure.types.saturating_add(measure.exprs)
+}
+
+/// The bytes of certificate B that one slot of a field read costs, at the
+/// least: a read of a record of `n` fields prints a pattern of `n` entries
+/// into the crate's term, into the statement of the function, and into the
+/// derivation, and the smallest of the three families measured (a record of
+/// `n` fields copied field by field) has 22 bytes in each slot. The least
+/// is used because a refusal on it is a refusal of a certificate that is
+/// certainly too large.
+pub const CERTIFICATE_BYTES_PER_SLOT: u64 = 16;
+
+/// The entries of the patterns the Rust rendering of `program` prints for
+/// its field reads: for each read of a field of a record, the arity of that
+/// record, taken from the type of the expression read when the program
+/// states it and from the widest record otherwise. The rendering and the
+/// certificates grow with it, which no count of nodes shows: a record of
+/// 800 fields copied field by field has 800 reads of 800 entries.
+#[must_use]
+pub fn record_slots(program: &Program) -> u64 {
+    let widest = program
+        .adts
+        .iter()
+        .filter(|adt| adt.constructors.len() == 1)
+        .flat_map(|adt| adt.constructors.iter().map(Vec::len))
+        .max()
+        .unwrap_or(0) as u64;
+    let mut total = 0_u64;
+    for function in &program.functions {
+        let mut scope: BTreeMap<u64, Ty> = BTreeMap::new();
+        for (name, ty) in function.parameters.iter().zip(&function.types) {
+            scope.insert(*name, ty.clone());
+        }
+        slots_in(program, &function.body, &mut scope, widest, &mut total);
+    }
+    total
+}
+
+/// The index of the document type `ty` is.
+fn adt_index(ty: &Ty) -> Option<u64> {
+    match ty {
+        Ty::Adt { index } => Some(*index),
+        Ty::Unit
+        | Ty::Bool
+        | Ty::Nat
+        | Ty::Int
+        | Ty::String
+        | Ty::Bytes
+        | Ty::Ordering
+        | Ty::Fixed { width: _ }
+        | Ty::Option { value: _ }
+        | Ty::List { element: _ }
+        | Ty::Result { ok: _, error: _ }
+        | Ty::Pair { left: _, right: _ }
+        | Ty::Fn {
+            parameters: _,
+            result: _,
+        } => None,
+    }
+}
+
+/// The components of the product `ty` is.
+fn pair_parts(ty: Ty) -> Option<(Ty, Ty)> {
+    match ty {
+        Ty::Pair { left, right } => Some((*left, *right)),
+        Ty::Unit
+        | Ty::Bool
+        | Ty::Nat
+        | Ty::Int
+        | Ty::String
+        | Ty::Bytes
+        | Ty::Ordering
+        | Ty::Fixed { width: _ }
+        | Ty::Adt { index: _ }
+        | Ty::Option { value: _ }
+        | Ty::List { element: _ }
+        | Ty::Result { ok: _, error: _ }
+        | Ty::Fn {
+            parameters: _,
+            result: _,
+        } => None,
+    }
+}
+
+/// The fields of the first constructor of document type `index`.
+fn record_fields(program: &Program, index: u64) -> Option<&Vec<Ty>> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|at| program.adts.get(at))
+        .and_then(|record| record.constructors.first())
+}
+
+/// The type of an expression where the program states it.
+fn stated_type(program: &Program, scope: &BTreeMap<u64, Ty>, expr: &Expr) -> Option<Ty> {
+    match expr {
+        Expr::Var { name } => scope.get(name).cloned(),
+        Expr::Value { ty, value: _ } => Some(ty.clone()),
+        Expr::Build {
+            shape: _,
+            ty,
+            operands: _,
+        } => Some(ty.clone()),
+        Expr::Call {
+            function,
+            operands: _,
+        } => usize::try_from(*function)
+            .ok()
+            .and_then(|at| program.functions.get(at))
+            .map(|called| called.result.clone()),
+        Expr::Field { value, index } => stated_type(program, scope, value)
+            .as_ref()
+            .and_then(adt_index)
+            .and_then(|adt| record_fields(program, adt))
+            .and_then(|fields| usize::try_from(*index).ok().and_then(|at| fields.get(at)))
+            .cloned(),
+        Expr::First { value } => stated_type(program, scope, value)
+            .and_then(pair_parts)
+            .map(|(left, _)| left),
+        Expr::Second { value } => stated_type(program, scope, value)
+            .and_then(pair_parts)
+            .map(|(_, right)| right),
+        Expr::Let {
+            name: _,
+            ty: _,
+            bound: _,
+            body: _,
+        }
+        | Expr::Cond {
+            condition: _,
+            then_branch: _,
+            else_branch: _,
+        }
+        | Expr::Match {
+            ty: _,
+            scrutinee: _,
+            arms: _,
+        }
+        | Expr::Closure {
+            function: _,
+            captures: _,
+        }
+        | Expr::Apply {
+            target: _,
+            operands: _,
+        }
+        | Expr::Prim {
+            operation: _,
+            operands: _,
+        } => None,
+    }
+}
+
+fn slots_in(
+    program: &Program,
+    expr: &Expr,
+    scope: &mut BTreeMap<u64, Ty>,
+    widest: u64,
+    total: &mut u64,
+) {
+    match expr {
+        Expr::Value { ty: _, value: _ } | Expr::Var { name: _ } => {}
+        Expr::Let {
+            name,
+            ty,
+            bound,
+            body,
+        } => {
+            slots_in(program, bound, scope, widest, total);
+            let shadowed = scope.insert(*name, ty.clone());
+            slots_in(program, body, scope, widest, total);
+            match shadowed {
+                Some(previous) => {
+                    scope.insert(*name, previous);
+                }
+                None => {
+                    scope.remove(name);
+                }
+            }
+        }
+        Expr::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            slots_in(program, condition, scope, widest, total);
+            slots_in(program, then_branch, scope, widest, total);
+            slots_in(program, else_branch, scope, widest, total);
+        }
+        Expr::Match {
+            ty: _,
+            scrutinee,
+            arms,
+        } => {
+            slots_in(program, scrutinee, scope, widest, total);
+            for arm in arms {
+                slots_in(program, &arm.body, scope, widest, total);
+            }
+        }
+        Expr::Build {
+            shape: _,
+            ty: _,
+            operands,
+        }
+        | Expr::Call {
+            function: _,
+            operands,
+        }
+        | Expr::Prim {
+            operation: _,
+            operands,
+        } => {
+            for operand in operands {
+                slots_in(program, operand, scope, widest, total);
+            }
+        }
+        Expr::Closure {
+            function: _,
+            captures,
+        } => {
+            for capture in captures {
+                slots_in(program, capture, scope, widest, total);
+            }
+        }
+        Expr::Apply { target, operands } => {
+            slots_in(program, target, scope, widest, total);
+            for operand in operands {
+                slots_in(program, operand, scope, widest, total);
+            }
+        }
+        Expr::First { value } | Expr::Second { value } => {
+            slots_in(program, value, scope, widest, total);
+        }
+        Expr::Field { value, index: _ } => {
+            let arity = stated_type(program, scope, value)
+                .as_ref()
+                .and_then(adt_index)
+                .and_then(|adt| record_fields(program, adt))
+                .map(|fields| fields.len() as u64);
+            *total = total.saturating_add(arity.unwrap_or(widest));
+            slots_in(program, value, scope, widest, total);
+        }
+    }
 }
 
 /// The functions an expression calls or closes over, in evaluation order.

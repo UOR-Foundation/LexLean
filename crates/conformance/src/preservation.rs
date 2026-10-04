@@ -17,6 +17,9 @@ use lexlean::production::rust_cert::{certificate_b, module_for};
 
 use crate::support::{self, mangled_toolchain_name, real_elan_home, P};
 
+/// The bound of a certificate B whose size is not what its test is about.
+const UNBOUNDED: u64 = u64::MAX;
+
 /// One certified root.
 #[derive(Debug, Clone)]
 pub struct Certified {
@@ -98,13 +101,14 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                         )
                     });
                     let module_b = module_for(&module, &row.target).expect("a Rust target");
-                    let certificate_b = certificate_b(&lowered.program, &krate, &module_b)
-                        .unwrap_or_else(|reason| {
-                            panic!(
-                                "{} on {}: certificate B: {reason}",
-                                root.report.root, row.target
-                            )
-                        });
+                    let certificate_b =
+                        certificate_b(&lowered.program, &krate, &module_b, limits.max_file_bytes)
+                            .unwrap_or_else(|reason| {
+                                panic!(
+                                    "{} on {}: certificate B: {reason}",
+                                    root.report.root, row.target
+                                )
+                            });
                     (row.target.clone(), certificate_b.into_certificate())
                 })
                 .collect();
@@ -371,6 +375,9 @@ pub struct Report {
     /// Every root's first certificate E restated with a planted defect,
     /// and the pinned Lean's verdict on it.
     pub composed_plants: Vec<ComposedPlant>,
+    /// How many witnesses of certificates E the pinned Lean checked, and how
+    /// many of them apply the theorem at the bounds of `u64` or `i64`.
+    pub witnessed: (usize, usize),
 }
 
 /// A defect planted in a certificate E's statement.
@@ -381,11 +388,27 @@ pub enum CompositionMutation {
     Fallibility,
     /// The rendering of another function is claimed to realize the root.
     Function,
+    /// The hypothesis that the arguments are representable is made
+    /// unusable, `RepresentableL [..] ∧ False`: the theorem is then vacuous,
+    /// and no proof notices, because the proof never uses the hypothesis.
+    /// What notices is a witness that applies the theorem to arguments.
+    Hypothesis,
 }
 
 impl CompositionMutation {
     /// Every mutation.
-    pub const ALL: [Self; 2] = [Self::Fallibility, Self::Function];
+    pub const ALL: [Self; 3] = [Self::Fallibility, Self::Function, Self::Hypothesis];
+
+    /// The declaration Lean's first error must lie in: the composition
+    /// itself for a defect in what it states, the witness that applies it
+    /// for a statement that proves but cannot be used.
+    #[must_use]
+    pub fn declaration_prefix(self) -> &'static str {
+        match self {
+            Self::Fallibility | Self::Function => "root",
+            Self::Hypothesis => "witness_",
+        }
+    }
 
     /// The places of `text` this defect applies to: each statement of a
     /// result shape, each function the entry is claimed to be.
@@ -393,6 +416,7 @@ impl CompositionMutation {
         let mark = match self {
             Self::Fallibility => "Rust.RealizesFn ",
             Self::Function => "Rust.fnIdent ",
+            Self::Hypothesis => return hypothesis_ends(text),
         };
         text.match_indices(mark)
             .map(|(at, found)| at + found.len())
@@ -427,8 +451,150 @@ impl CompositionMutation {
                 let index: u64 = digits.parse().ok()?;
                 format!("{}{}{}", &text[..at], index + 1, &text[at + digits.len()..])
             }
+            Self::Hypothesis => format!("{} ∧ False{}", &text[..at], &text[at..]),
         })
     }
+}
+
+/// The byte offset of the end of each `RepresentableL [..]` hypothesis of
+/// `text`: where a conjunct can be appended to it.
+fn hypothesis_ends(text: &str) -> Vec<usize> {
+    let mark = "(hrep : LexLeanPreservation.Rust.RepresentableL [";
+    text.match_indices(mark)
+        .filter_map(|(at, found)| {
+            let mut depth = 1_usize;
+            for (offset, character) in text[at + found.len()..].char_indices() {
+                match character {
+                    '[' => depth += 1,
+                    ']' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            return Some(at + found.len() + offset + 1);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            None
+        })
+        .collect()
+}
+
+/// Whether a calculus value is one a Rust caller can pass: a natural number
+/// below `2^64` and an integer in the `i64` range, wherever they occur
+/// (the library's `Representable`).
+fn representable(value: &Value) -> bool {
+    match value {
+        Value::Nat { value } => value
+            .parse::<u128>()
+            .is_ok_and(|number| number < 1_u128 << 64),
+        Value::Int { value } => value.parse::<i64>().is_ok(),
+        Value::Some { value } | Value::Ok { value } | Value::Error { value } => {
+            representable(value)
+        }
+        Value::List { items } => items.iter().all(representable),
+        Value::Pair { left, right } => representable(left) && representable(right),
+        Value::Adt {
+            constructor: _,
+            fields,
+        } => fields.iter().all(representable),
+        Value::Closure {
+            function: _,
+            captures,
+        } => captures.iter().all(representable),
+        Value::Unit
+        | Value::Bool { value: _ }
+        | Value::U8 { value: _ }
+        | Value::U16 { value: _ }
+        | Value::U32 { value: _ }
+        | Value::U64 { value: _ }
+        | Value::I8 { value: _ }
+        | Value::I16 { value: _ }
+        | Value::I32 { value: _ }
+        | Value::I64 { value: _ }
+        | Value::String { value: _ }
+        | Value::Bytes { hex: _ }
+        | Value::Ordering { value: _ }
+        | Value::None => true,
+    }
+}
+
+/// The witnesses of a certificate E: definitions that apply its theorem to
+/// the arguments of the differential's cases that a Rust caller can pass,
+/// the first, one that breaks an invariant, and the ones at the bounds of
+/// `u64` and `i64`, proving the theorem's hypothesis by unfolding it. A
+/// theorem whose hypothesis cannot be met, or cannot be used, fails to apply.
+fn witnesses(
+    certificate_a: &Certificate,
+    composed: &Certificate,
+    cases: &[crate::differential::Case],
+) -> Vec<String> {
+    let bound = |case: &crate::differential::Case| {
+        let text = case.arguments.join(" ");
+        [
+            "18446744073709551615",
+            "9223372036854775807",
+            "-9223372036854775808",
+        ]
+        .iter()
+        .any(|literal| text.contains(literal))
+    };
+    let usable: Vec<usize> = (0..cases.len())
+        .filter(|at| cases[*at].values.iter().all(representable))
+        .collect();
+    let mut chosen: Vec<usize> = Vec::new();
+    for pick in [
+        usable.first(),
+        usable.iter().find(|at| cases[**at].invalid.is_some()),
+        usable.iter().find(|at| bound(&cases[**at])),
+        usable.iter().rev().find(|at| bound(&cases[**at])),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if !chosen.contains(pick) {
+            chosen.push(*pick);
+        }
+    }
+    // The names the encoders of the arguments unfold through: the ones
+    // certificate A defines and the library's.
+    let mut names: Vec<String> = Vec::new();
+    for line in certificate_a.text.lines() {
+        if let Some(rest) = line.strip_prefix("def ") {
+            let name: String = rest
+                .chars()
+                .take_while(|character| character.is_alphanumeric() || *character == '_')
+                .collect();
+            if ["__enc_", "__aux_", "__items_", "__L_", "__O_"]
+                .iter()
+                .any(|prefix| name.starts_with(prefix))
+            {
+                names.push(format!("{}.{name}", certificate_a.module));
+            }
+        }
+    }
+    for (at, found) in composed.text.match_indices("LexLeanPreservation.enc") {
+        let name: String = composed.text[at + found.len()..]
+            .chars()
+            .take_while(|character| character.is_alphanumeric())
+            .collect();
+        let full = format!("{found}{name}");
+        if !names.contains(&full) {
+            names.push(full);
+        }
+    }
+    let unfold = names.join(", ");
+    chosen
+        .iter()
+        .enumerate()
+        .map(|(position, at)| {
+            format!(
+                "def witness_{position} := {} {} (by simp [LexLeanPreservation.Rust.RepresentableL, LexLeanPreservation.Rust.Representable, {unfold}])\n",
+                composed.theorem,
+                cases[*at].arguments.join(" ")
+            )
+        })
+        .collect()
 }
 
 /// One planted certificate E and the pinned Lean's verdict.
@@ -448,6 +614,35 @@ pub struct ComposedPlant {
     pub accepted: bool,
     /// The pinned Lean's output.
     pub output: String,
+    /// The size of the planted module's text.
+    pub text_len: usize,
+}
+
+/// The function each root's crate is invoked through in each target, as the
+/// committed record of the verified example `example` states it.
+///
+/// # Panics
+///
+/// Panics when the example has no committed record.
+#[must_use]
+pub fn recorded_entries(example: &str) -> std::collections::BTreeMap<(String, String), u64> {
+    let path = support::repo_root()
+        .join("examples")
+        .join(example)
+        .join("expected/verify/preserve/preservation.json");
+    let record: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(path.as_std_path()).expect("a committed record"))
+            .expect("the record is JSON");
+    let mut out = std::collections::BTreeMap::new();
+    for row in record["roots"].as_array().expect("roots") {
+        let root = row["root"].as_str().expect("a root").to_owned();
+        for rendering in row["renderings"].as_array().expect("renderings") {
+            let target = rendering["target"].as_str().expect("a target").to_owned();
+            let function = rendering["entry"]["function"].as_u64().expect("an entry");
+            out.insert((root.clone(), target), function);
+        }
+    }
+    out
 }
 
 /// Certify every production root of `project` end to end, then run the
@@ -473,8 +668,9 @@ pub fn certify(project: &P, name: &str) -> Report {
     let certificates: Vec<Certificate> = certified.iter().flat_map(Certified::all).collect();
     audit(&checked.audit_output, &certificates)
         .unwrap_or_else(|reason| panic!("{name}: axiom audit: {reason}"));
-    let composed_plants = plant_composed(&certified, scratch.path());
     let cases = crate::differential::cases(project);
+    let witnessed = apply_witnesses(&certified, &cases, scratch.path(), name);
+    let composed_plants = plant_composed(&certified, scratch.path(), &cases);
     // Each root's cases through the root are observed by `denote`, and
     // those through its entry by `denoteEntry` (§17.17).
     let denotes: Vec<(String, String, Vec<crate::differential::Case>)> = certified
@@ -532,12 +728,85 @@ pub fn certify(project: &P, name: &str) -> Report {
         crates,
         machine,
         composed_plants,
+        witnessed,
     }
+}
+
+/// Compile the witnesses of every certificate E beside the checked
+/// workspace: each applies the end-to-end theorem of a root to arguments a
+/// Rust caller can pass, so a hypothesis that cannot be met or used fails
+/// here. Returns how many witnesses there are and how many of them are at
+/// the bounds of `u64` or `i64`.
+fn apply_witnesses(
+    certified: &[Certified],
+    cases: &std::collections::BTreeMap<String, Vec<crate::differential::Case>>,
+    root: &Path,
+    name: &str,
+) -> (usize, usize) {
+    let mut text = String::new();
+    let mut modules = std::collections::BTreeSet::new();
+    let (mut count, mut boundary) = (0, 0);
+    let mut body = String::new();
+    for entry in certified {
+        for (_, composed) in &entry.composed {
+            let found = witnesses(
+                &entry.certificate,
+                composed,
+                cases.get(&entry.root).map_or(&[][..], Vec::as_slice),
+            );
+            assert!(
+                !found.is_empty(),
+                "{name}: `{}` has no argument of the differential a Rust caller can pass to witness it",
+                composed.module
+            );
+            modules.insert(composed.module.clone());
+            count += found.len();
+            boundary += found
+                .iter()
+                .filter(|line| {
+                    [
+                        "18446744073709551615",
+                        "9223372036854775807",
+                        "-9223372036854775808",
+                    ]
+                    .iter()
+                    .any(|literal| line.contains(literal))
+                })
+                .count();
+            // A witness is named by its position within one certificate.
+            for (position, line) in found.iter().enumerate() {
+                let renamed = line.replacen(
+                    &format!("def witness_{position} "),
+                    &format!("def witness_{}_{position} ", modules.len()),
+                    1,
+                );
+                body.push_str(&renamed);
+            }
+        }
+    }
+    for module in &modules {
+        text.push_str(&format!("import {module}\n"));
+    }
+    text.push_str("set_option linter.unusedSimpArgs false\n");
+    text.push_str(&body);
+    let path = root.join("src/LexLeanPreserve/Witnesses.lean");
+    std::fs::write(&path, text).expect("write");
+    let output = lean(root, &[path.display().to_string()]);
+    assert!(
+        output.status.success(),
+        "{name}: a witness of certificate E was rejected:\n{}",
+        joined(&output)
+    );
+    (count, boundary)
 }
 
 /// Restate every root's first certificate E with each planted defect and
 /// compile it beside the checked workspace below `root`.
-fn plant_composed(certified: &[Certified], root: &Path) -> Vec<ComposedPlant> {
+fn plant_composed(
+    certified: &[Certified],
+    root: &Path,
+    cases: &std::collections::BTreeMap<String, Vec<crate::differential::Case>>,
+) -> Vec<ComposedPlant> {
     let mut jobs = Vec::new();
     for entry in certified {
         let Some((target, composed)) = entry.composed.first() else {
@@ -547,9 +816,20 @@ fn plant_composed(certified: &[Certified], root: &Path) -> Vec<ComposedPlant> {
             let places = mutation.places(&composed.text);
             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
             for nth in 0..places {
-                let text = mutation
+                let mut text = mutation
                     .plant(&composed.text, nth)
                     .expect("the place was counted");
+                if mutation == CompositionMutation::Hypothesis {
+                    // A vacuous statement proves, so only applying it shows.
+                    text.push_str("\nset_option linter.unusedSimpArgs false\n");
+                    for witness in witnesses(
+                        &entry.certificate,
+                        composed,
+                        cases.get(&entry.root).map_or(&[][..], Vec::as_slice),
+                    ) {
+                        text.push_str(&witness);
+                    }
+                }
                 jobs.push((entry.root.clone(), target.clone(), mutation, nth, text));
             }
         }
@@ -575,6 +855,7 @@ fn plant_composed(certified: &[Certified], root: &Path) -> Vec<ComposedPlant> {
             declaration: failing_declaration(text, &output_text),
             accepted: output.status.success(),
             output: output_text,
+            text_len: text.len(),
         }
     })
 }
@@ -976,6 +1257,9 @@ pub struct Planted {
     /// Lean's output on the mutated certificate; empty when it was
     /// accepted, which is a failure of the certificate.
     pub rejection: String,
+    /// The size of the mutated certificate's text, which decides whether a
+    /// heartbeat verdict on it could be read as the machine's limit.
+    pub text_len: usize,
     /// The certificate's declaration Lean's first error lies in, which is
     /// what makes the failure targeted: the relation of the mutated
     /// function, not an unrelated one.
@@ -1191,6 +1475,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             origin,
             expected,
             declaration: failing_declaration(&certificate.text, &rejection),
+            text_len: certificate.text.len(),
             rejection,
         }
     })
@@ -1693,8 +1978,8 @@ pub fn fixture_renderings() -> Vec<Rendering> {
                 profile.target(),
             )
             .expect("a Rust target");
-            let certificate =
-                certificate_b(&case.fixture.program, &krate, &module).unwrap_or_else(|reason| {
+            let certificate = certificate_b(&case.fixture.program, &krate, &module, UNBOUNDED)
+                .unwrap_or_else(|reason| {
                     panic!(
                         "{} ({}): certificate B: {reason}",
                         case.fixture.name,
@@ -1821,13 +2106,14 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
                 .replace(&rendering.certificate.module, &stale_module);
             let mut modules = vec![(stale_module, stale_text)];
             let realigned_module = format!("{base}.Realigned");
-            let unaligned = match certificate_b(&rendering.program, &mutated, &realigned_module) {
-                Ok(certificate) => {
-                    modules.push((realigned_module, certificate.text));
-                    None
-                }
-                Err(reason) => Some(reason),
-            };
+            let unaligned =
+                match certificate_b(&rendering.program, &mutated, &realigned_module, UNBOUNDED) {
+                    Ok(certificate) => {
+                        modules.push((realigned_module, certificate.text));
+                        None
+                    }
+                    Err(reason) => Some(reason),
+                };
             out.push((
                 RustPlanted {
                     fixture: rendering.fixture.clone(),
@@ -1949,13 +2235,14 @@ pub struct RustcRun {
 /// Panics when a package does not build or lint, or on every run whose
 /// outcome differs.
 #[must_use]
-pub fn rustc_differential(project: &P, certified: &[Certified]) -> RustcRun {
+pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -> RustcRun {
     use crate::rust_build::{cargo_in, workspace, Built};
     use crate::rust_harness::{render_calls, Calls};
     use lexlean::calculus::rust::package::{
         package, Errors, Export, Manifest, Passing, MANIFEST_SPEC,
     };
     let cases = crate::differential::cases(project);
+    let recorded = recorded_entries(example);
     let dir = tempfile::Builder::new()
         .prefix("lexlean-rustc-roots-")
         .tempdir()
@@ -1967,15 +2254,27 @@ pub fn rustc_differential(project: &P, certified: &[Certified]) -> RustcRun {
     for (position, entry) in certified.iter().enumerate() {
         let fallible =
             lexlean::calculus::rust::fallible_functions(&entry.program).expect("a valid program");
-        // A caller reaches a root with a boundary through its entry alone:
-        // exporting the root beside it would let a caller bypass the
-        // validators, so the package exports the entry only (§17.17).
-        let functions: Vec<(u64, &str)> = if entry.entry == 0 {
-            vec![(0, "root")]
-        } else {
-            vec![(entry.entry, "entry")]
-        };
         for target in &entry.targets {
+            // The function a caller of the crate invokes is the one the
+            // record of the verified example states for this root and
+            // target (`preservation.json`, which the attestation binds), and
+            // it is the one the generated lowering agrees with. This test's
+            // package exports it alone: exporting the root of a program with
+            // a boundary beside its entry would let a caller bypass the
+            // validators.
+            let invoked = *recorded
+                .get(&(entry.root.clone(), target.clone()))
+                .unwrap_or_else(|| panic!("{} on {target}: no recorded entry", entry.root));
+            assert_eq!(
+                invoked, entry.entry,
+                "{} on {target}: the record states function {invoked}, the lowering {}",
+                entry.root, entry.entry
+            );
+            let functions: Vec<(u64, &str)> = if invoked == 0 {
+                vec![(0, "root")]
+            } else {
+                vec![(invoked, "entry")]
+            };
             let profile = Profile::named(target).expect("a profile");
             let name = format!(
                 "root_{position}_{}",

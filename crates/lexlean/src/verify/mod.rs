@@ -773,6 +773,131 @@ pub fn run(
             .map_err(fail)?,
         );
     }
+    // The certificates are generated here too, from the lowered programs: A,
+    // and B and E for each target the root is eligible for, each under
+    // `max_file_bytes`. The derivations of B grow with the nesting of what
+    // they derive, which no count of the program bounds, so what bounds them
+    // is their generation under the limit; a root whose certificates would
+    // exceed it is refused as `LLS8002` before the toolchain is touched.
+    let semantic_hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+    let mut certified: Vec<crate::production::preserve::CertifiedRoot> = Vec::new();
+    {
+        use crate::production::certificate::certificate;
+        use crate::production::lower::roots;
+        use crate::production::preserve::{CertifiedRendering, CertifiedRoot};
+        use crate::production::rust_cert;
+        for (index, root) in roots(checked).map_err(fail)?.iter().enumerate() {
+            let lowered = lowered_roots[index].clone();
+            let module = format!("LexLeanPreserve.C{semantic_hex32}.R{index}");
+            let generated = certificate(
+                &linked,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+            )
+            .map_err(fail)?;
+            // Certificate B: the root's crate in each of its targets
+            // simulates the lowered program.
+            let mut renderings = Vec::new();
+            for row in &root.report.targets {
+                let profile =
+                    crate::calculus::rust::Profile::named(&row.target).ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust profile", row.target)))
+                    })?;
+                let rendered =
+                    crate::calculus::rust::lower(&lowered.program, profile).map_err(|reason| {
+                        fail(internal(format!(
+                            "{} has no rendering in {}: {reason}",
+                            root.report.root, row.target
+                        )))
+                    })?;
+                let module_b = rust_cert::module_for(&module, &row.target).ok_or_else(|| {
+                    fail(internal(format!("`{}` is not a Rust target", row.target)))
+                })?;
+                let certificate_b = rust_cert::certificate_b(
+                &lowered.program,
+                &rendered,
+                &module_b,
+                limits.max_file_bytes,
+            )
+            .map_err(|reason| match reason.strip_prefix(crate::production::lower::LIMIT) {
+                Some(limit) => fail(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "root `{}`: max_file_bytes exceeded in phase certificates: certificate B of its {} rendering: {limit}",
+                        root.report.root, row.target
+                    ),
+                )),
+                None => fail(Diagnostic::new(
+                    code!("LLV7015"),
+                    format!(
+                        "certificate B: `{module_b}`: no derivation relates {} to its {} rendering: {reason}",
+                        root.report.root, row.target
+                    ),
+                )),
+            })?;
+                // Certificate E: A and B composed, for the root's rendering.
+                let module_e = rust_cert::module_for(&format!("{module}.Compose"), &row.target)
+                    .ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust target", row.target)))
+                    })?;
+                let fallible = crate::calculus::rust::fallible_functions(&lowered.program)
+                    .map_err(|reason| fail(internal(reason)))?
+                    .get(lowered.entry() as usize)
+                    .copied()
+                    .ok_or_else(|| fail(internal("a lowered program without its entry")))?;
+                let composed = crate::production::certificate::certificate_e(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    &lowered,
+                    &module,
+                    &module_b,
+                    &module_e,
+                    fallible,
+                )
+                .map_err(fail)?;
+                renderings.push(CertifiedRendering {
+                    target: row.target.clone(),
+                    certificate: certificate_b.into_certificate(),
+                    composed,
+                    crate_text: crate::calculus::rust::ast::print(&rendered),
+                    entry: lowered.entry(),
+                });
+            }
+            for generated in std::iter::once(&generated).chain(
+                renderings
+                    .iter()
+                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed]),
+            ) {
+                if generated.text.len() as u64 > limits.max_file_bytes {
+                    return Err(fail(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "max_file_bytes exceeded in phase certificates: configured {}, `{}` is {} bytes",
+                        limits.max_file_bytes,
+                        generated.module,
+                        generated.text.len()
+                    ),
+                )));
+                }
+            }
+            certified.push(CertifiedRoot {
+                root: root.report.root.clone(),
+                targets: root
+                    .report
+                    .targets
+                    .iter()
+                    .map(|row| row.target.clone())
+                    .collect(),
+                certificate: generated,
+                program: lowered.program.to_file_bytes(),
+                renderings,
+            });
+        }
+    }
     // Stage 4: toolchain preflight (§22.2).
     let mut toolchain: Toolchain = toolchain::preflight(&limits).map_err(fail)?;
     let toolchain_bin = toolchain.root.join("bin");
@@ -780,7 +905,6 @@ pub fn run(
     // Stage 5: Lake workspace preflight (§10.4) and module-name conflicts
     // (§18.8, §18.9).
     workspace::preflight(project, lock).map_err(fail)?;
-    let semantic_hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
     let probe_name = format!("LexLeanProbe.P{semantic_hex32}");
     let audit_name = format!("LexLeanAudit.A{semantic_hex32}");
     let mut all_names: Vec<String> = build
@@ -1595,10 +1719,7 @@ pub fn run(
     // calculus modules, are replayed, and their axioms audited exactly.
     let mut preservation_row: Option<Json> = None;
     if !production_reports.is_empty() {
-        use crate::production::certificate::certificate;
-        use crate::production::lower::roots;
-        use crate::production::preserve::{self, CertifiedRendering, CertifiedRoot};
-        use crate::production::rust_cert;
+        use crate::production::preserve;
         // Lean's first error, from its severity on: the location before it
         // names the staging directory, which is not part of any diagnostic.
         let first_error = |output: &str| lean_error(output);
@@ -1611,105 +1732,6 @@ pub fn run(
                 ),
             )
         };
-        let mut certified: Vec<CertifiedRoot> = Vec::new();
-        for (index, root) in roots(checked).map_err(fail)?.iter().enumerate() {
-            let lowered = lowered_roots[index].clone();
-            let module = format!("LexLeanPreserve.C{semantic_hex32}.R{index}");
-            let generated = certificate(
-                &linked,
-                &root.module,
-                &root.name,
-                root.report,
-                &lowered,
-                &module,
-            )
-            .map_err(fail)?;
-            // Certificate B: the root's crate in each of its targets
-            // simulates the lowered program.
-            let mut renderings = Vec::new();
-            for row in &root.report.targets {
-                let profile =
-                    crate::calculus::rust::Profile::named(&row.target).ok_or_else(|| {
-                        fail(internal(format!("`{}` is not a Rust profile", row.target)))
-                    })?;
-                let rendered =
-                    crate::calculus::rust::lower(&lowered.program, profile).map_err(|reason| {
-                        fail(internal(format!(
-                            "{} has no rendering in {}: {reason}",
-                            root.report.root, row.target
-                        )))
-                    })?;
-                let module_b = rust_cert::module_for(&module, &row.target).ok_or_else(|| {
-                    fail(internal(format!("`{}` is not a Rust target", row.target)))
-                })?;
-                let certificate_b = rust_cert::certificate_b(&lowered.program, &rendered, &module_b)
-                    .map_err(|reason| {
-                        fail(Diagnostic::new(
-                            code!("LLV7015"),
-                            format!(
-                                "certificate B: `{module_b}`: no derivation relates {} to its {} rendering: {reason}",
-                                root.report.root, row.target
-                            ),
-                        ))
-                    })?;
-                // Certificate E: A and B composed, for the root's rendering.
-                let module_e = rust_cert::module_for(&format!("{module}.Compose"), &row.target)
-                    .ok_or_else(|| {
-                        fail(internal(format!("`{}` is not a Rust target", row.target)))
-                    })?;
-                let fallible = crate::calculus::rust::fallible_functions(&lowered.program)
-                    .map_err(|reason| fail(internal(reason)))?
-                    .get(lowered.entry() as usize)
-                    .copied()
-                    .ok_or_else(|| fail(internal("a lowered program without its entry")))?;
-                let composed = crate::production::certificate::certificate_e(
-                    &linked,
-                    &root.module,
-                    &root.name,
-                    &lowered,
-                    &module,
-                    &module_b,
-                    &module_e,
-                    fallible,
-                )
-                .map_err(fail)?;
-                renderings.push(CertifiedRendering {
-                    target: row.target.clone(),
-                    certificate: certificate_b.into_certificate(),
-                    composed,
-                    crate_text: crate::calculus::rust::ast::print(&rendered),
-                });
-            }
-            for generated in std::iter::once(&generated).chain(
-                renderings
-                    .iter()
-                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed]),
-            ) {
-                if generated.text.len() as u64 > limits.max_file_bytes {
-                    return Err(fail(Diagnostic::new(
-                        code!("LLS8002"),
-                        format!(
-                            "max_file_bytes exceeded in phase certificates: configured {}, `{}` is {} bytes",
-                            limits.max_file_bytes,
-                            generated.module,
-                            generated.text.len()
-                        ),
-                    )));
-                }
-            }
-            certified.push(CertifiedRoot {
-                root: root.report.root.clone(),
-                targets: root
-                    .report
-                    .targets
-                    .iter()
-                    .map(|row| row.target.clone())
-                    .collect(),
-                certificate: generated,
-                program: lowered.program.to_file_bytes(),
-                renderings,
-            });
-        }
         let certificates: Vec<crate::production::certificate::Certificate> = certified
             .iter()
             .map(|root| root.certificate.clone())
@@ -1761,7 +1783,9 @@ pub fn run(
         };
         let reject = |module: &str, output: &str, exit_code: i32, text: &str| {
             let place = place(module, output, text);
-            if let Some(exhausted) = resource_death(module, exit_code, output, &limits) {
+            if let Some(exhausted) =
+                resource_death(module, exit_code, output, text.len() as u64, &limits)
+            {
                 exhausted
             } else if is_e(module) {
                 Diagnostic::new(
@@ -1851,9 +1875,13 @@ pub fn run(
                 || !record.stderr.trim().is_empty()
             {
                 let combined = format!("{}{}", record.stdout, record.stderr);
-                if let Some(exhausted) =
-                    resource_death(&file.module, record.exit_code, &combined, &limits)
-                {
+                if let Some(exhausted) = resource_death(
+                    &file.module,
+                    record.exit_code,
+                    &combined,
+                    file.text.len() as u64,
+                    &limits,
+                ) {
                     return Err(fail(exhausted));
                 }
                 return Err(fail(Diagnostic::new(
@@ -1924,6 +1952,7 @@ pub fn run(
                 &stage.audit.module,
                 audit_record.exit_code,
                 &audit_output,
+                stage.audit.text.len() as u64,
                 &limits,
             ) {
                 return Err(fail(exhausted));
@@ -2319,38 +2348,64 @@ fn lean_error(output: &str) -> String {
     out
 }
 
+/// How much of `max_file_bytes` a module has to take before a heartbeat or
+/// recursion failure of the pinned Lean on it is the module's weight and not
+/// the certificate's content: a quarter of it. Lean's budgets are fixed per
+/// declaration, and a certificate whose text is a small part of what the
+/// project allows is one that the limits' own estimate says fits; when Lean
+/// gives up on it, the certificate is what it gave up on.
+const HEAVY_FRACTION: u64 = 4;
+
 /// A pinned Lean that ran out of a resource while checking a generated
-/// certificate: its heartbeat or recursion budget, its memory, or a kill by
-/// the system with no message. That is a limit, not a rejected certificate and
-/// not drift in the environment (`LLS8002`): the generated module is too large
-/// for what the machine allows, and no change to the certificate's content
-/// would be a defect to report.
-fn resource_death(
+/// certificate, as opposed to one that rejected it.
+///
+/// Dying with no message, running out of memory, and overflowing the stack
+/// say nothing of the term being checked: they are a limit (`LLS8002`).
+/// A heartbeat or recursion-depth failure is Lean's verdict on a particular
+/// declaration, and a wrong certificate produces it as readily as an
+/// oversized one (a mutated proof that makes `isDefEq` loop is the common
+/// case), so it is a limit only when the module is heavy: its `text_len` is at
+/// least a quarter of `max_file_bytes`. Below that it is a rejection of the
+/// certificate (`LLV7013`, `LLV7015`, `LLV7016`), reported with the
+/// declaration and Lean's error.
+#[must_use]
+pub fn resource_death(
     module: &str,
     exit_code: i32,
     output: &str,
+    text_len: u64,
     limits: &crate::config::Limits,
 ) -> Option<Diagnostic> {
-    const MARKERS: [&str; 6] = [
+    const UNCONDITIONAL: [&str; 3] = ["out of memory", "stack overflow", "Stack overflow"];
+    const BUDGETS: [&str; 3] = [
         "maximum number of heartbeats",
         "(deterministic) timeout",
         "maximum recursion depth",
-        "out of memory",
-        "stack overflow",
-        "Stack overflow",
     ];
-    let marked = MARKERS.iter().find(|marker| output.contains(**marker));
-    let killed = exit_code == -1;
-    if marked.is_none() && !killed {
+    let heavy = text_len.saturating_mul(HEAVY_FRACTION) >= limits.max_file_bytes;
+    let marked = UNCONDITIONAL
+        .iter()
+        .find(|marker| output.contains(**marker))
+        .or_else(|| {
+            BUDGETS
+                .iter()
+                .find(|marker| heavy && output.contains(**marker))
+        });
+    if marked.is_none() && exit_code != -1 {
         return None;
     }
+    let cause = marked.map_or("it was killed by the system", |marker| *marker);
+    let weight = if heavy {
+        format!(
+            "the generated module is {text_len} bytes, at least a quarter of max_file_bytes {}, and is beyond what the machine checks",
+            limits.max_file_bytes
+        )
+    } else {
+        format!("the generated module is {text_len} bytes and the machine could not check it",)
+    };
     Some(Diagnostic::new(
         code!("LLS8002"),
-        format!(
-            "the pinned Lean exhausted a resource checking `{module}` ({}): the generated module is within max_file_bytes {} but beyond what the machine checks, and the project's types are too large for it",
-            marked.map_or("it was killed by the system", |marker| *marker),
-            limits.max_file_bytes
-        ),
+        format!("the pinned Lean exhausted a resource checking `{module}` ({cause}): {weight}"),
     ))
 }
 
@@ -2374,23 +2429,45 @@ mod resource_tests {
         }
     }
 
-    /// A pinned Lean that gave up on its heartbeat budget, ran out of memory,
-    /// or was killed with no message is an exhausted resource, whichever
-    /// certificate it was checking; a type error is not.
+    const HEARTBEATS: &str = "R0.lean:12:3: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (200000) has been reached";
+
+    /// A pinned Lean that was killed with no message, ran out of memory, or
+    /// overflowed its stack says nothing of the certificate: a limit, whatever
+    /// the size of the module; a type error never is.
     #[test]
-    fn a_resource_death_is_a_limit_and_a_type_error_is_not() {
-        let heartbeats = "R0.lean:12:3: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (200000) has been reached";
-        let diagnostic = resource_death("M.R0", 1, heartbeats, &limits()).expect("a limit");
-        assert_eq!(diagnostic.code.as_str(), "LLS8002");
-        assert!(resource_death("M.R0", 1, "error: out of memory", &limits()).is_some());
-        assert!(resource_death("M.R0", -1, "", &limits()).is_some());
+    fn a_death_with_no_verdict_is_a_limit_and_a_type_error_is_not() {
+        assert!(resource_death("M.R0", 1, "error: out of memory", 100, &limits()).is_some());
+        assert!(resource_death("M.R0", 1, "Stack overflow detected.", 100, &limits()).is_some());
+        assert!(resource_death("M.R0", -1, "", 100, &limits()).is_some());
         assert!(resource_death(
             "M.R0",
             1,
             "R0.lean:3:1: error: Application type mismatch",
+            4_000_000,
             &limits()
         )
         .is_none());
+    }
+
+    /// Lean's heartbeat verdict on a certificate is a rejection of it when
+    /// the module is small against the limit, as it is for a wrong
+    /// certificate whose proof makes `isDefEq` loop (the lowering defect
+    /// planted in `Coverage.Prims.fixedMiddle`, 472 bytes of Lean output that
+    /// are this one, is certificate A's `LLV7013`); it is a limit when the
+    /// module is a quarter of `max_file_bytes` or more.
+    #[test]
+    fn a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module() {
+        assert!(resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none());
+        assert!(resource_death("M.R0", 1, HEARTBEATS, 1_048_575, &limits()).is_none());
+        let diagnostic =
+            resource_death("M.R0", 1, HEARTBEATS, 1_048_576, &limits()).expect("a limit");
+        assert_eq!(diagnostic.code.as_str(), "LLS8002");
+        assert!(diagnostic
+            .message
+            .contains("at least a quarter of max_file_bytes"));
+        let recursion = "R0.lean:4:1: error: maximum recursion depth has been reached";
+        assert!(resource_death("M.R0", 1, recursion, 5_000, &limits()).is_none());
+        assert!(resource_death("M.R0", 1, recursion, 2_000_000, &limits()).is_some());
     }
 
     /// The first error is reported with the lines that say what it
