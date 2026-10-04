@@ -586,7 +586,7 @@ fn md_02() {
         .expect("banner bytes");
     let embedded = banner
         .iter()
-        .map(u8::to_string)
+        .map(|byte| format!("UInt8.ofNat (nat_lit {byte})"))
         .collect::<Vec<_>>()
         .join(", ");
     assert!(lean.contains(&format!(
@@ -602,7 +602,7 @@ fn md_02() {
     .expect("weights bytes");
     let embedded = weights
         .iter()
-        .map(u8::to_string)
+        .map(|byte| format!("UInt8.ofNat (nat_lit {byte})"))
         .collect::<Vec<_>>()
         .join(", ");
     assert!(lean.contains(&format!(
