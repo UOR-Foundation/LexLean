@@ -89,6 +89,7 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
                     .map(|claim| match claim {
                         lexlean::SnapshotReasoningClaim::InitialInvariant { .. }
                         | lexlean::SnapshotReasoningClaim::Terminates { .. }
+                        | lexlean::SnapshotReasoningClaim::ObservationInvariant { .. }
                         | lexlean::SnapshotReasoningClaim::AnswerCorrect { .. } => 1,
                     })
                     .sum::<usize>()

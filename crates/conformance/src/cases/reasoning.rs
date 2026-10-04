@@ -1741,8 +1741,9 @@ fn nested_type(fields: usize, base: &Json) -> Json {
 /// `copies` rules, each used at a type of `size` nested products: every use
 /// copies its type arguments into each declaration that mentions the rule,
 /// and the charge covers that. With `phantom`, its verifier is a copy of the
-/// example's with a type parameter that nothing mentions, used at the same
-/// large type: its type arguments are copied too, and so are charged.
+/// example's with a type parameter that nothing mentions, used at a large
+/// type while every rule is used at a small one: its type arguments are
+/// copied too, and so are charged.
 fn wide_type_arguments(copies: usize, size: usize, search: bool, phantom: bool) -> P {
     let project = P::copy_example(EXAMPLE);
     let mut data = module_data(&project, "Budget");
@@ -1764,7 +1765,11 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool, phantom: bool) 
         json!({"kind": "product", "left": balanced(leaves / 2, leaf),
             "right": balanced(leaves - leaves / 2, leaf)})
     }
-    let wide = balanced(size, &nat);
+    // With `phantom` the rules, the logic, and the state stay small and only
+    // the phantom argument is large, so nothing but the verifier's own type
+    // arguments carries the size.
+    let wide = balanced(if phantom { 2 } else { size }, &nat);
+    let big = balanced(size, &nat);
     let state = json!({"kind": "product", "left": wide, "right": nat});
     let at = |ty: &Json| vec![ty.clone()];
     let mut added = Vec::new();
@@ -1840,7 +1845,7 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool, phantom: bool) 
     reasoner["verifier"]["type_arguments"] = json!([state]);
     if phantom {
         reasoner["verifier"] =
-            json!({"member": {"name": "DrainedQ"}, "type_arguments": [state, wide]});
+            json!({"member": {"name": "DrainedQ"}, "type_arguments": [state, big]});
     }
     reasoner["rules"] = Json::Array(uses);
     reasoner["claims"] = json!([]);
