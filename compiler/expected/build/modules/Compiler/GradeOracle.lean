@@ -669,14 +669,14 @@ public theorem bltSucc (a b : Nat) (h : Nat.blt a b = true) : a + 1 <= b :=
 
 end LexLeanReasoning
 
-@[expose, reducible] public def Graded (_v : Compiler.ReasoningOracle.Vitals) (r : Nat) : Prop := (r <= 3)
+@[expose, reducible] public def Graded (v : Compiler.ReasoningOracle.Vitals) (r : Nat) : Prop := ((r <= 3) /\ ((r = 3) -> Compiler.ReasoningOracle.Hypotensive (v)))
 
-@[expose] public def gradedCheck (_v : Compiler.ReasoningOracle.Vitals) (r : Nat) : Bool := (Nat.ble (r) (3))
+@[expose] public def gradedCheck (v : Compiler.ReasoningOracle.Vitals) (r : Nat) : Bool := ((Nat.ble (r) (3)) && ((!(Nat.beq (r) (3))) || Compiler.ReasoningOracle.hypotensive (v)))
 
 public theorem graded_sound (v : Compiler.ReasoningOracle.Vitals) (r : Nat) : ((gradedCheck (v) (r) = true) -> Graded (v) (r)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Graded, gradedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Graded, Compiler.ReasoningOracle.Hypotensive, Compiler.ReasoningOracle.hypotensive, gradedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem Scale.sound : (LexLeanReasoning.Sound ((Compiler.GradeOracle.gradedCheck)) ((Compiler.GradeOracle.Graded))) :=
@@ -688,10 +688,24 @@ public theorem grade_admitted (v : Compiler.ReasoningOracle.Vitals) : Compiler.R
 public theorem grade_pending (v : Compiler.ReasoningOracle.Vitals) : (Compiler.ReasoningOracle.Pending (({ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 } : Compiler.ReasoningOracle.Chart)) < 11) := by
   exact Compiler.ReasoningOracle.admitted_pending (v)
 
-public theorem grade_correct (v : Compiler.ReasoningOracle.Vitals) (chart : Compiler.ReasoningOracle.Chart) (r : Nat) : (Compiler.ReasoningOracle.Consistent (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r))) := by
+@[expose, reducible] public def Related (v : Compiler.ReasoningOracle.Vitals) (c : Compiler.ReasoningOracle.Chart) : Prop := (Compiler.ReasoningOracle.Consistent (c) /\ (Compiler.ReasoningOracle.Warranted (c) /\ ((((c).shock = 1) -> Compiler.ReasoningOracle.Hypotensive ((c).vitals)) /\ (((c).vitals).systolic = (v).systolic))))
+
+public theorem related_admitted (v : Compiler.ReasoningOracle.Vitals) : Related (v) (({ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 } : Compiler.ReasoningOracle.Chart)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Graded, Compiler.ReasoningOracle.Consistent, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Compiler.ReasoningOracle.Consistent, Compiler.ReasoningOracle.Hypotensive, Compiler.ReasoningOracle.Warranted, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem related_preserved (v : Compiler.ReasoningOracle.Vitals) (s : Compiler.ReasoningOracle.Chart) (t : Compiler.ReasoningOracle.Chart) : (Related (v) (s) -> (Compiler.ReasoningOracle.Justified (s) (t) -> Related (v) (t))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Compiler.ReasoningOracle.Consistent, Compiler.ReasoningOracle.Febrile, Compiler.ReasoningOracle.Hypotensive, Compiler.ReasoningOracle.Justified, Compiler.ReasoningOracle.Leukocytic, Compiler.ReasoningOracle.Tachycardic, Compiler.ReasoningOracle.Tachypneic, Compiler.ReasoningOracle.Warranted, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem grade_correct (v : Compiler.ReasoningOracle.Vitals) (chart : Compiler.ReasoningOracle.Chart) (r : Nat) : (Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Graded, Compiler.ReasoningOracle.Consistent, Compiler.ReasoningOracle.Hypotensive, Compiler.ReasoningOracle.Warranted, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public inductive Grade.Step where
@@ -790,7 +804,9 @@ public theorem Grade.derivation (v : Compiler.ReasoningOracle.Vitals) (__trace :
   (LexLeanReasoning.foldInvariant ((Compiler.GradeOracle.Grade.replay)) (fun (__acc : Except ((Prod Bool Bool)) (Compiler.ReasoningOracle.Chart)) => (LexLeanReasoning.Reaches ((Compiler.ReasoningOracle.Justified)) (Compiler.GradeOracle.Grade.observe (v)) (__acc))) (Compiler.GradeOracle.Grade.replay_sound (v)) (__trace) (Except.ok (Compiler.GradeOracle.Grade.observe (v))) (LexLeanReasoning.reachesStart ((Compiler.ReasoningOracle.Justified)) (Compiler.GradeOracle.Grade.observe (v))))
 public theorem Grade.follow_invariant (v : Compiler.ReasoningOracle.Vitals) (__trace : List (Compiler.GradeOracle.Grade.Step)) (__s : Compiler.ReasoningOracle.Chart) : ((Compiler.GradeOracle.Grade.follow (v) (__trace) = Except.ok (__s)) -> Compiler.ReasoningOracle.Consistent (__s)) :=
   (fun llE => (LexLeanReasoning.starPreserves ((Compiler.ReasoningOracle.Justified)) ((Compiler.ReasoningOracle.Consistent)) Compiler.ReasoningOracle.Findings.preserves (Compiler.GradeOracle.Grade.observe (v)) (__s) (Compiler.GradeOracle.Grade.derivation (v) (__trace) (__s) llE) (Compiler.GradeOracle.grade_admitted (v))))
-public theorem Grade.accept_sound (v : Compiler.ReasoningOracle.Vitals) (__s : Compiler.ReasoningOracle.Chart) (__v : Nat) : (Compiler.ReasoningOracle.Consistent (__s) -> ((Compiler.GradeOracle.Grade.accept (v) (__s) = Option.some (__v)) -> Compiler.GradeOracle.Graded (v) (__v))) :=
+public theorem Grade.follow_relation (v : Compiler.ReasoningOracle.Vitals) (__trace : List (Compiler.GradeOracle.Grade.Step)) (__s : Compiler.ReasoningOracle.Chart) : ((Compiler.GradeOracle.Grade.follow (v) (__trace) = Except.ok (__s)) -> Compiler.GradeOracle.Related (v) (__s)) :=
+  (fun llE => (LexLeanReasoning.starPreserves ((Compiler.ReasoningOracle.Justified)) (fun (__s : Compiler.ReasoningOracle.Chart) => Compiler.GradeOracle.Related (v) (__s)) (Compiler.GradeOracle.related_preserved (v)) (Compiler.GradeOracle.Grade.observe (v)) (__s) (Compiler.GradeOracle.Grade.derivation (v) (__trace) (__s) llE) (Compiler.GradeOracle.related_admitted (v))))
+public theorem Grade.accept_sound (v : Compiler.ReasoningOracle.Vitals) (__s : Compiler.ReasoningOracle.Chart) (__v : Nat) : (Compiler.GradeOracle.Related (v) (__s) -> ((Compiler.GradeOracle.Grade.accept (v) (__s) = Option.some (__v)) -> Compiler.GradeOracle.Graded (v) (__v))) :=
   (fun llJ llE => (Compiler.GradeOracle.grade_correct (v) (__s) (__v) llJ llE))
 public theorem Grade.next_sound (__s : Compiler.ReasoningOracle.Chart) (__t : Compiler.ReasoningOracle.Chart) : ((Compiler.GradeOracle.Grade.next (__s) = Option.some (__t)) -> Compiler.ReasoningOracle.Justified (__s) (__t)) :=
 by
@@ -894,10 +910,16 @@ public theorem Grade.saturate_invariant (v : Compiler.ReasoningOracle.Vitals) : 
 by
   dsimp only [Compiler.GradeOracle.Grade.saturate]
   exact (LexLeanReasoning.iterateUntilInvariant ((Compiler.GradeOracle.Grade.next)) ((Compiler.ReasoningOracle.Consistent)) Compiler.GradeOracle.Grade.next_preserves (11) (Compiler.GradeOracle.Grade.observe (v)) (Compiler.GradeOracle.grade_admitted (v)))
-public theorem Grade.run_invariant (v : Compiler.ReasoningOracle.Vitals) : Compiler.ReasoningOracle.Consistent (((Compiler.GradeOracle.Grade.run (v)).1).state) :=
+public theorem Grade.next_preserves_relation (v : Compiler.ReasoningOracle.Vitals) (__s : Compiler.ReasoningOracle.Chart) (__t : Compiler.ReasoningOracle.Chart) : ((Compiler.GradeOracle.Grade.next (__s) = Option.some (__t)) -> (Compiler.GradeOracle.Related (v) (__s) -> Compiler.GradeOracle.Related (v) (__t))) :=
+  (fun llE llH => (Compiler.GradeOracle.related_preserved (v) (__s) (__t) llH (Compiler.GradeOracle.Grade.next_sound (__s) (__t) llE)))
+public theorem Grade.saturate_relation (v : Compiler.ReasoningOracle.Vitals) : Compiler.GradeOracle.Related (v) ((Compiler.GradeOracle.Grade.saturate (v)).1) :=
+by
+  dsimp only [Compiler.GradeOracle.Grade.saturate]
+  exact (LexLeanReasoning.iterateUntilInvariant ((Compiler.GradeOracle.Grade.next)) (fun (__s : Compiler.ReasoningOracle.Chart) => Compiler.GradeOracle.Related (v) (__s)) (Compiler.GradeOracle.Grade.next_preserves_relation (v)) (11) (Compiler.GradeOracle.Grade.observe (v)) (Compiler.GradeOracle.related_admitted (v)))
+public theorem Grade.run_relation (v : Compiler.ReasoningOracle.Vitals) : Compiler.GradeOracle.Related (v) (((Compiler.GradeOracle.Grade.run (v)).1).state) :=
 by
   rw [And.left (Compiler.GradeOracle.Grade.run_state v)]
-  exact Compiler.GradeOracle.Grade.saturate_invariant v
+  exact Compiler.GradeOracle.Grade.saturate_relation v
 public theorem Grade.saturates (v : Compiler.ReasoningOracle.Vitals) : ((Compiler.GradeOracle.Grade.saturate (v)).2 = true) :=
 by
   dsimp only [Compiler.GradeOracle.Grade.saturate]
@@ -912,7 +934,7 @@ by
   · split at llE
     · cases llE
     · cases llE
-public theorem Grade.conclude_sound (v : Compiler.ReasoningOracle.Vitals) (__s : Compiler.ReasoningOracle.Chart) (__v : Nat) : (Compiler.ReasoningOracle.Consistent (__s) -> ((Compiler.GradeOracle.Grade.conclude (v) (__s) = Except.ok (__v)) -> Compiler.GradeOracle.Graded (v) (__v))) :=
+public theorem Grade.conclude_sound (v : Compiler.ReasoningOracle.Vitals) (__s : Compiler.ReasoningOracle.Chart) (__v : Nat) : (Compiler.GradeOracle.Related (v) (__s) -> ((Compiler.GradeOracle.Grade.conclude (v) (__s) = Except.ok (__v)) -> Compiler.GradeOracle.Graded (v) (__v))) :=
 by
   intro llJ llE
   dsimp only [Compiler.GradeOracle.Grade.conclude] at llE
@@ -925,7 +947,7 @@ by
 public theorem Grade.verdict_sound (v : Compiler.ReasoningOracle.Vitals) : (forall (__v : Nat), ((Compiler.GradeOracle.Grade.verdict (v) = Except.ok (__v)) -> Compiler.GradeOracle.Graded (v) (__v))) :=
 by
   intro llV llE
-  have llJ := Compiler.GradeOracle.Grade.saturate_invariant v
+  have llJ := Compiler.GradeOracle.Grade.saturate_relation v
   dsimp only [Compiler.GradeOracle.Grade.verdict] at llE
   generalize llRun : Compiler.GradeOracle.Grade.saturate v = llR at llE llJ
   split at llE
@@ -935,7 +957,7 @@ public theorem Grade.explained (v : Compiler.ReasoningOracle.Vitals) : (forall (
 by
   intro llV llT llE
   have llTrace := Compiler.GradeOracle.Grade.run_trace v
-  have llJ := Compiler.GradeOracle.Grade.run_invariant v
+  have llJ := Compiler.GradeOracle.Grade.run_relation v
   dsimp only [Compiler.GradeOracle.Grade] at llE
   generalize llRun : Compiler.GradeOracle.Grade.run v = llR at llE llTrace llJ
   split at llE

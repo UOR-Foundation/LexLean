@@ -993,7 +993,7 @@ by
         rfl
       · cases llE
         rfl
-public theorem Screen.search_verify_count (w : Nat) (__r : Compiler.ScreeningOracle.Screen.Search) (__q : Compiler.ScreeningOracle.Screen.Search) : ((Compiler.ScreeningOracle.Screen.searchStep (w) (__r) = Option.some (__q)) -> (((__q).ledger).verifications = (((__r).ledger).verifications + 1))) :=
+public theorem Screen.search_verify_growth (w : Nat) (__r : Compiler.ScreeningOracle.Screen.Search) (__q : Compiler.ScreeningOracle.Screen.Search) : ((Compiler.ScreeningOracle.Screen.searchStep (w) (__r) = Option.some (__q)) -> (((__q).ledger).verifications <= (((__r).ledger).verifications + 1))) :=
 by
   intro llE
   dsimp only [Compiler.ScreeningOracle.Screen.searchStep] at llE
@@ -1003,9 +1003,9 @@ by
     · cases llE
     · split at llE
       · cases llE
-        rfl
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
       · cases llE
-        rfl
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
 public theorem Screen.search_expanded (w : Nat) (__r : Compiler.ScreeningOracle.Screen.Search) (__q : Compiler.ScreeningOracle.Screen.Search) : ((Compiler.ScreeningOracle.Screen.searchStep (w) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
 by
   intro llE
@@ -1016,9 +1016,9 @@ by
     · cases llE
     · split at llE
       · cases llE
-        exact Nat.le_succ _
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
       · cases llE
-        exact Nat.le_refl _
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
 public theorem Screen.search_ok (w : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Compiler.ScreeningOracle.Screen.Node) => (Compiler.ScreeningOracle.Screen.follow (w) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.ScreeningOracle.Screen.Node) => Compiler.ScreeningOracle.Screen.accept (w) ((__n).state))) (((Compiler.ScreeningOracle.Screen.run (w)).1).frontier) (((Compiler.ScreeningOracle.Screen.run (w)).1).found)) :=
 by
   dsimp only [Compiler.ScreeningOracle.Screen.run]
@@ -1030,7 +1030,7 @@ by
 public theorem Screen.verifications_bounded (w : Nat) : ((((Compiler.ScreeningOracle.Screen.run (w)).1).ledger).verifications <= 8) :=
 by
   dsimp only [Compiler.ScreeningOracle.Screen.run]
-  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Compiler.ScreeningOracle.Screen.Search) => Compiler.ScreeningOracle.Screen.searchStep (w) (__r))) ((fun (__r : Compiler.ScreeningOracle.Screen.Search) => ((__r).ledger).verifications)) (Compiler.ScreeningOracle.Screen.search_verify_count (w)) (8) (Compiler.ScreeningOracle.Screen.start (w)) rfl)
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.ScreeningOracle.Screen.Search) => Compiler.ScreeningOracle.Screen.searchStep (w) (__r))) ((fun (__r : Compiler.ScreeningOracle.Screen.Search) => ((__r).ledger).verifications)) (Compiler.ScreeningOracle.Screen.search_verify_growth (w)) (8) (Compiler.ScreeningOracle.Screen.start (w)) rfl)
 public theorem Screen.expansions_bounded (w : Nat) : ((((Compiler.ScreeningOracle.Screen.run (w)).1).ledger).expansions <= 8) :=
 by
   dsimp only [Compiler.ScreeningOracle.Screen.run]

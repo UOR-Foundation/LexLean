@@ -361,8 +361,8 @@ impl Render<'_> {
                 "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        rfl\n      · cases llE\n        rfl\n",
                 m(search_step)
             ),
-            Proof::SearchExpansion { search_step } => format!(
-                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        exact Nat.le_succ _\n      · cases llE\n        exact Nat.le_refl _\n",
+            Proof::SearchGrowth { search_step } => format!(
+                "by\n  intro llE\n  dsimp only [{}] at llE\n  split at llE\n  · cases llE\n  · split at llE\n    · cases llE\n    · split at llE\n      · cases llE\n        first | exact Nat.le_refl _ | exact Nat.le_succ _\n      · cases llE\n        first | exact Nat.le_refl _ | exact Nat.le_succ _\n",
                 m(search_step)
             ),
             Proof::ExplainedSearch {
@@ -661,6 +661,23 @@ pub(super) fn latex_reasoning(
                     ReasoningClaim::Terminates { theorem } => ("terminates", theorem),
                     ReasoningClaim::AnswerCorrect { theorem } => {
                         ("answer correct, its check erased", theorem)
+                    }
+                    ReasoningClaim::ObservationInvariant {
+                        predicate,
+                        initial,
+                        preserved,
+                    } => {
+                        latex_line(
+                            text,
+                            "Claim",
+                            &format!(
+                                "observation invariant {}, discharged by {} and {}",
+                                render.member(predicate),
+                                render.member(initial),
+                                render.member(preserved)
+                            ),
+                        );
+                        continue;
                     }
                 };
                 latex_line(

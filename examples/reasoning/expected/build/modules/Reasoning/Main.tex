@@ -44,20 +44,20 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
 \noindent Type: \texttt{Prop}.\par
-\noindent Definition: \texttt{(r <= 3)}.\par
+\noindent Definition: \texttt{((r <= 3) /\textbackslash{} ((r = 3) -> Reasoning.Clinic.Hypotensive (v)))}.\par
 \noindent Axiom policy: \texttt{none}.\par
 \subsection*{\texttt{gradedCheck}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
 \noindent Type: \texttt{Bool}.\par
-\noindent Definition: \texttt{(Nat.ble (r) (3))}.\par
+\noindent Definition: \texttt{((Nat.ble (r) (3)) \&\& ((!(Nat.beq (r) (3))) || Reasoning.Clinic.hypotensive (v)))}.\par
 \noindent Axiom policy: \texttt{none}.\par
 \subsection*{\texttt{graded\_sound}}
 \noindent Kind: \texttt{theorem}.\par
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
 \noindent Statement: \texttt{((gradedCheck (v) (r) = true) -> Graded (v) (r))}.\par
-\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \subsection*{\texttt{Scale}}
 \noindent Kind: \texttt{verifier}.\par
 \noindent Subject: \texttt{v : Reasoning.Clinic.Vitals}.\par
@@ -65,7 +65,7 @@
 \noindent Specification: \texttt{Graded}.\par
 \noindent Check: \texttt{gradedCheck}.\par
 \noindent Soundness: \texttt{graded\_sound}.\par
-\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \noindent Obligation (verifier Scale sound): \texttt{forall (v : Reasoning.Clinic.Vitals) (r : Nat), ((gradedCheck (v) (r) = true) -> Graded (v) (r)); stated exactly by graded\_sound}.\par
 \noindent Generates theorem (term template): \texttt{Scale.sound : (LexLeanReasoning.Sound ((gradedCheck)) ((Graded)))}.\par
 \subsection*{\texttt{grade\_admitted}}
@@ -78,11 +78,27 @@
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals)}.\par
 \noindent Statement: \texttt{(Reasoning.Clinic.Pending ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)) < 11)}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Related}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (c : Reasoning.Clinic.Chart)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(Reasoning.Clinic.Consistent (c) /\textbackslash{} (Reasoning.Clinic.Warranted (c) /\textbackslash{} ((((c).shock = 1) -> Reasoning.Clinic.Hypotensive ((c).vitals)) /\textbackslash{} (((c).vitals).systolic = (v).systolic))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{related\_admitted}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals)}.\par
+\noindent Statement: \texttt{Related (v) ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{related\_preserved}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (s : Reasoning.Clinic.Chart) (t : Reasoning.Clinic.Chart)}.\par
+\noindent Statement: \texttt{(Related (v) (s) -> (Reasoning.Clinic.Justified (s) (t) -> Related (v) (t)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \subsection*{\texttt{grade\_correct}}
 \noindent Kind: \texttt{theorem}.\par
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat)}.\par
-\noindent Statement: \texttt{(Reasoning.Clinic.Consistent (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r)))}.\par
-\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Statement: \texttt{(Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \subsection*{\texttt{Grade}}
 \noindent Kind: \texttt{reasoner}.\par
 \noindent Logic: \texttt{Reasoning.Clinic.Findings}.\par
@@ -93,12 +109,15 @@
 \noindent Verifier: \texttt{Scale}.\par
 \noindent Claim: \texttt{initial invariant, discharged by grade\_admitted}.\par
 \noindent Claim: \texttt{terminates, discharged by grade\_pending}.\par
+\noindent Claim: \texttt{observation invariant Related, discharged by related\_admitted and related\_preserved}.\par
 \noindent Claim: \texttt{answer correct, its check erased, discharged by grade\_correct}.\par
 \noindent Execution: \texttt{executable through its verifier}.\par
 \noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \noindent Obligation (reasoner Grade initial invariant): \texttt{forall (v : Reasoning.Clinic.Vitals), Reasoning.Clinic.Consistent ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)); stated exactly by grade\_admitted}.\par
 \noindent Obligation (reasoner Grade fuel bound): \texttt{forall (v : Reasoning.Clinic.Vitals), (Reasoning.Clinic.Pending ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)) < 11); stated exactly by grade\_pending}.\par
-\noindent Obligation (reasoner Grade answer correctness): \texttt{forall (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (\_\_v : Nat), (Reasoning.Clinic.Consistent (chart) -> ((Option.some ((chart).level) = Option.some (\_\_v)) -> Graded (v) (\_\_v))); stated exactly by grade\_correct}.\par
+\noindent Obligation (reasoner Grade observation invariant initial): \texttt{forall (v : Reasoning.Clinic.Vitals), Related (v) ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)); stated exactly by related\_admitted}.\par
+\noindent Obligation (reasoner Grade observation invariant preservation): \texttt{forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), (Related (v) (\_\_s) -> (Reasoning.Clinic.Justified (\_\_s) (\_\_t) -> Related (v) (\_\_t))); stated exactly by related\_preserved}.\par
+\noindent Obligation (reasoner Grade answer correctness): \texttt{forall (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (\_\_v : Nat), (Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (\_\_v)) -> Graded (v) (\_\_v))); stated exactly by grade\_correct}.\par
 \noindent Elaborates to: \texttt{inductive Grade.Step with Fever(), Tachycardia(), Tachypnea(), Leukocytosis(), Sirs(), Sepsis(), Shock(), Escalate()}.\par
 \noindent Elaborates to: \texttt{structure Grade.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
 \noindent Elaborates to: \texttt{Grade.observe (v : Reasoning.Clinic.Vitals) : Reasoning.Clinic.Chart := (\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)}.\par
@@ -126,7 +145,8 @@
 \noindent Generates theorem (replay sound template): \texttt{Grade.replay\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_acc : Except (ReasoningFailure) (Reasoning.Clinic.Chart)) (\_\_step : Grade.Step), ((LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Grade.observe (v)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Grade.observe (v)) (Grade.replay (\_\_acc) (\_\_step))))}.\par
 \noindent Generates theorem (term template): \texttt{Grade.derivation : forall (v : Reasoning.Clinic.Vitals) (\_\_trace : List (Grade.Step)), (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Grade.observe (v)) (Grade.follow (v) (\_\_trace)))}.\par
 \noindent Generates theorem (term template): \texttt{Grade.follow\_invariant : forall (v : Reasoning.Clinic.Vitals) (\_\_trace : List (Grade.Step)) (\_\_s : Reasoning.Clinic.Chart), ((Grade.follow (v) (\_\_trace) = Except.ok (\_\_s)) -> Reasoning.Clinic.Consistent (\_\_s))}.\par
-\noindent Generates theorem (term template): \texttt{Grade.accept\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), (Reasoning.Clinic.Consistent (\_\_s) -> ((Grade.accept (v) (\_\_s) = Option.some (\_\_v)) -> Graded (v) (\_\_v)))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.follow\_relation : forall (v : Reasoning.Clinic.Vitals) (\_\_trace : List (Grade.Step)) (\_\_s : Reasoning.Clinic.Chart), ((Grade.follow (v) (\_\_trace) = Except.ok (\_\_s)) -> Related (v) (\_\_s))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.accept\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), (Related (v) (\_\_s) -> ((Grade.accept (v) (\_\_s) = Option.some (\_\_v)) -> Graded (v) (\_\_v)))}.\par
 \noindent Generates theorem (next sound template): \texttt{Grade.next\_sound : forall (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> Reasoning.Clinic.Justified (\_\_s) (\_\_t))}.\par
 \noindent Generates theorem (term template): \texttt{Grade.next\_preserves : forall (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (Reasoning.Clinic.Consistent (\_\_s) -> Reasoning.Clinic.Consistent (\_\_t)))}.\par
 \noindent Generates theorem (next progress template): \texttt{Grade.next\_progress : forall (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (Reasoning.Clinic.Consistent (\_\_s) -> (Reasoning.Clinic.Pending (\_\_t) < Reasoning.Clinic.Pending (\_\_s))))}.\par
@@ -141,16 +161,46 @@
 \noindent Generates theorem (unfold template): \texttt{Grade.iterations\_bounded : forall (v : Reasoning.Clinic.Vitals), ((((Grade.run (v)).1).ledger).iterations <= 11)}.\par
 \noindent Generates theorem (unfold template): \texttt{Grade.firings\_bounded : forall (v : Reasoning.Clinic.Vitals), ((((Grade.run (v)).1).ledger).firings <= 11)}.\par
 \noindent Generates theorem (unfold template): \texttt{Grade.saturate\_invariant : forall (v : Reasoning.Clinic.Vitals), Reasoning.Clinic.Consistent ((Grade.saturate (v)).1)}.\par
-\noindent Generates theorem (run invariant template): \texttt{Grade.run\_invariant : forall (v : Reasoning.Clinic.Vitals), Reasoning.Clinic.Consistent (((Grade.run (v)).1).state)}.\par
+\noindent Generates theorem (term template): \texttt{Grade.next\_preserves\_relation : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (Related (v) (\_\_s) -> Related (v) (\_\_t)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.saturate\_relation : forall (v : Reasoning.Clinic.Vitals), Related (v) ((Grade.saturate (v)).1)}.\par
+\noindent Generates theorem (run invariant template): \texttt{Grade.run\_relation : forall (v : Reasoning.Clinic.Vitals), Related (v) (((Grade.run (v)).1).state)}.\par
 \noindent Generates theorem (unfold template): \texttt{Grade.saturates : forall (v : Reasoning.Clinic.Vitals), ((Grade.saturate (v)).2 = true)}.\par
 \noindent Generates theorem (conclude accept template): \texttt{Grade.conclude\_accept : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Grade.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> (Grade.accept (v) (\_\_s) = Option.some (\_\_v)))}.\par
-\noindent Generates theorem (conclude sound template): \texttt{Grade.conclude\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), (Reasoning.Clinic.Consistent (\_\_s) -> ((Grade.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Grade.conclude\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), (Related (v) (\_\_s) -> ((Grade.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
 \noindent Generates theorem (verdict forward template): \texttt{Grade.verdict\_sound : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), ((Grade.verdict (v) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
 \noindent Generates theorem (explained forward template): \texttt{Grade.explained : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), (forall (\_\_trace : List (Grade.Step)), ((Grade (v) = Except.ok ((\_\_v, \_\_trace))) -> ((Grade.answer (v) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Graded (v) (\_\_v)))))}.\par
+\subsection*{\texttt{Capped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(r <= 3)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cappedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble (r) (3))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{capped\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (r : Nat)}.\par
+\noindent Statement: \texttt{((cappedCheck (v) (r) = true) -> Capped (v) (r))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Ceiling}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{v : Reasoning.Clinic.Vitals}.\par
+\noindent Candidate: \texttt{r : Nat}.\par
+\noindent Specification: \texttt{Capped}.\par
+\noindent Check: \texttt{cappedCheck}.\par
+\noindent Soundness: \texttt{capped\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (verifier Ceiling sound): \texttt{forall (v : Reasoning.Clinic.Vitals) (r : Nat), ((cappedCheck (v) (r) = true) -> Capped (v) (r)); stated exactly by capped\_sound}.\par
+\noindent Generates theorem (term template): \texttt{Ceiling.sound : (LexLeanReasoning.Sound ((cappedCheck)) ((Capped)))}.\par
 \subsection*{\texttt{cap\_correct}}
 \noindent Kind: \texttt{theorem}.\par
 \noindent Parameters: \texttt{(v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat)}.\par
-\noindent Statement: \texttt{((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (r)) -> Graded (v) (r))}.\par
+\noindent Statement: \texttt{((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (r)) -> Capped (v) (r))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \subsection*{\texttt{Cap}}
 \noindent Kind: \texttt{reasoner}.\par
@@ -159,11 +209,11 @@
 \noindent Rules in priority order: \texttt{Reasoning.Clinic.Fever, Reasoning.Clinic.Tachycardia, Reasoning.Clinic.Tachypnea, Reasoning.Clinic.Leukocytosis, Reasoning.Clinic.Sirs, Reasoning.Clinic.Sepsis, Reasoning.Clinic.Shock, Reasoning.Clinic.Escalate}.\par
 \noindent Strategy: \texttt{forward, at most 11 iterations}.\par
 \noindent Answer: \texttt{chart |-> Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) : Option (Nat)}.\par
-\noindent Verifier: \texttt{Scale}.\par
+\noindent Verifier: \texttt{Ceiling}.\par
 \noindent Claim: \texttt{answer correct, its check erased, discharged by cap\_correct}.\par
 \noindent Execution: \texttt{executable through its verifier}.\par
 \noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
-\noindent Obligation (reasoner Cap answer correctness): \texttt{forall (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (\_\_v)) -> Graded (v) (\_\_v)); stated exactly by cap\_correct}.\par
+\noindent Obligation (reasoner Cap answer correctness): \texttt{forall (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (\_\_v)) -> Capped (v) (\_\_v)); stated exactly by cap\_correct}.\par
 \noindent Elaborates to: \texttt{inductive Cap.Step with Fever(), Tachycardia(), Tachypnea(), Leukocytosis(), Sirs(), Sepsis(), Shock(), Escalate()}.\par
 \noindent Elaborates to: \texttt{structure Cap.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
 \noindent Elaborates to: \texttt{Cap.observe (v : Reasoning.Clinic.Vitals) : Reasoning.Clinic.Chart := (\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : Reasoning.Clinic.Chart)}.\par
@@ -190,7 +240,7 @@
 \noindent Generates theorem (replay sound template): \texttt{Cap.replay\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_acc : Except (ReasoningFailure) (Reasoning.Clinic.Chart)) (\_\_step : Cap.Step), ((LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Cap.observe (v)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Cap.observe (v)) (Cap.replay (\_\_acc) (\_\_step))))}.\par
 \noindent Generates theorem (term template): \texttt{Cap.derivation : forall (v : Reasoning.Clinic.Vitals) (\_\_trace : List (Cap.Step)), (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Cap.observe (v)) (Cap.follow (v) (\_\_trace)))}.\par
 \noindent Generates theorem (term template): \texttt{Cap.follow\_invariant : forall (v : Reasoning.Clinic.Vitals) (\_\_trace : List (Cap.Step)) (\_\_s : Reasoning.Clinic.Chart), (Reasoning.Clinic.Consistent (Cap.observe (v)) -> ((Cap.follow (v) (\_\_trace) = Except.ok (\_\_s)) -> Reasoning.Clinic.Consistent (\_\_s)))}.\par
-\noindent Generates theorem (term template): \texttt{Cap.accept\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Cap.accept (v) (\_\_s) = Option.some (\_\_v)) -> Graded (v) (\_\_v))}.\par
+\noindent Generates theorem (term template): \texttt{Cap.accept\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Cap.accept (v) (\_\_s) = Option.some (\_\_v)) -> Capped (v) (\_\_v))}.\par
 \noindent Generates theorem (next sound template): \texttt{Cap.next\_sound : forall (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Cap.next (\_\_s) = Option.some (\_\_t)) -> Reasoning.Clinic.Justified (\_\_s) (\_\_t))}.\par
 \noindent Generates theorem (term template): \texttt{Cap.next\_preserves : forall (\_\_s : Reasoning.Clinic.Chart) (\_\_t : Reasoning.Clinic.Chart), ((Cap.next (\_\_s) = Option.some (\_\_t)) -> (Reasoning.Clinic.Consistent (\_\_s) -> Reasoning.Clinic.Consistent (\_\_t)))}.\par
 \noindent Generates theorem (step none template): \texttt{Cap.step\_none : forall (\_\_r : Cap.Run), ((Cap.step (\_\_r) = Option.none) -> (Cap.next ((\_\_r).state) = Option.none))}.\par
@@ -205,9 +255,9 @@
 \noindent Generates theorem (unfold template): \texttt{Cap.firings\_bounded : forall (v : Reasoning.Clinic.Vitals), ((((Cap.run (v)).1).ledger).firings <= 11)}.\par
 \noindent Generates theorem (unfold template): \texttt{Cap.saturate\_invariant : forall (v : Reasoning.Clinic.Vitals), (Reasoning.Clinic.Consistent (Cap.observe (v)) -> Reasoning.Clinic.Consistent ((Cap.saturate (v)).1))}.\par
 \noindent Generates theorem (conclude accept template): \texttt{Cap.conclude\_accept : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Cap.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> (Cap.accept (v) (\_\_s) = Option.some (\_\_v)))}.\par
-\noindent Generates theorem (conclude sound template): \texttt{Cap.conclude\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Cap.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> Graded (v) (\_\_v))}.\par
-\noindent Generates theorem (verdict forward template): \texttt{Cap.verdict\_sound : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), ((Cap.verdict (v) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
-\noindent Generates theorem (explained forward template): \texttt{Cap.explained : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), (forall (\_\_trace : List (Cap.Step)), ((Cap (v) = Except.ok ((\_\_v, \_\_trace))) -> ((Cap.answer (v) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Graded (v) (\_\_v)))))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Cap.conclude\_sound : forall (v : Reasoning.Clinic.Vitals) (\_\_s : Reasoning.Clinic.Chart) (\_\_v : Nat), ((Cap.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> Capped (v) (\_\_v))}.\par
+\noindent Generates theorem (verdict forward template): \texttt{Cap.verdict\_sound : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), ((Cap.verdict (v) = Except.ok (\_\_v)) -> Capped (v) (\_\_v)))}.\par
+\noindent Generates theorem (explained forward template): \texttt{Cap.explained : forall (v : Reasoning.Clinic.Vitals), (forall (\_\_v : Nat), (forall (\_\_trace : List (Cap.Step)), ((Cap (v) = Except.ok ((\_\_v, \_\_trace))) -> ((Cap.answer (v) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Capped (v) (\_\_v)))))}.\par
 \subsection*{\texttt{triageLevel}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat)}.\par

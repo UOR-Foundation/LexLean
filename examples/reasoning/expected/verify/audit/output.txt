@@ -326,6 +326,8 @@
 'Reasoning.Main.Cap.step_trace' does not depend on any axioms
 'Reasoning.Main.Cap.verdict' does not depend on any axioms
 'Reasoning.Main.Cap.verdict_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Capped' does not depend on any axioms
+'Reasoning.Main.Ceiling.sound' depends on axioms: [propext]
 'Reasoning.Main.GatewayEvidence.gateway_safe' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.GatewayModel' does not depend on any axioms
 'Reasoning.Main.GatewayTriage' does not depend on any axioms
@@ -334,13 +336,13 @@
 'Reasoning.Main.Grade.Run' does not depend on any axioms
 'Reasoning.Main.Grade.Step' does not depend on any axioms
 'Reasoning.Main.Grade.accept' does not depend on any axioms
-'Reasoning.Main.Grade.accept_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.accept_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.account' does not depend on any axioms
 'Reasoning.Main.Grade.answer' does not depend on any axioms
 'Reasoning.Main.Grade.attempts' does not depend on any axioms
 'Reasoning.Main.Grade.conclude' does not depend on any axioms
 'Reasoning.Main.Grade.conclude_accept' does not depend on any axioms
-'Reasoning.Main.Grade.conclude_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.Grade.conclude_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.extract' does not depend on any axioms
@@ -350,9 +352,11 @@
 'Reasoning.Main.Grade.firings_bounded' does not depend on any axioms
 'Reasoning.Main.Grade.follow' does not depend on any axioms
 'Reasoning.Main.Grade.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.iterations_bounded' does not depend on any axioms
 'Reasoning.Main.Grade.next' does not depend on any axioms
 'Reasoning.Main.Grade.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.next_preserves_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.next_progress' depends on axioms: [propext, Quot.sound]
 'Reasoning.Main.Grade.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.observe' does not depend on any axioms
@@ -360,12 +364,13 @@
 'Reasoning.Main.Grade.replay_fire' does not depend on any axioms
 'Reasoning.Main.Grade.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.run' does not depend on any axioms
-'Reasoning.Main.Grade.run_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.run_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.run_state' does not depend on any axioms
 'Reasoning.Main.Grade.run_trace' does not depend on any axioms
 'Reasoning.Main.Grade.saturate' does not depend on any axioms
 'Reasoning.Main.Grade.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.Grade.saturate_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Grade.select' does not depend on any axioms
 'Reasoning.Main.Grade.start' does not depend on any axioms
@@ -379,8 +384,11 @@
 'Reasoning.Main.Grade.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.Graded' does not depend on any axioms
 'Reasoning.Main.Guaranteed' does not depend on any axioms
-'Reasoning.Main.Scale.sound' depends on axioms: [propext]
+'Reasoning.Main.Related' does not depend on any axioms
+'Reasoning.Main.Scale.sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.cap_correct' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.cappedCheck' does not depend on any axioms
+'Reasoning.Main.capped_sound' depends on axioms: [propext]
 'Reasoning.Main.doseLevel' does not depend on any axioms
 'Reasoning.Main.dose_exhausted' does not depend on any axioms
 'Reasoning.Main.dose_exhausted_ledger' does not depend on any axioms
@@ -391,13 +399,13 @@
 'Reasoning.Main.gateway_safe' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.gradeLevel' does not depend on any axioms
 'Reasoning.Main.grade_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
-'Reasoning.Main.grade_correct' depends on axioms: [propext, Quot.sound]
+'Reasoning.Main.grade_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.grade_ledger' does not depend on any axioms
 'Reasoning.Main.grade_pending' depends on axioms: [propext, Quot.sound]
 'Reasoning.Main.grade_shock' does not depend on any axioms
 'Reasoning.Main.grade_well_ledger' does not depend on any axioms
 'Reasoning.Main.gradedCheck' does not depend on any axioms
-'Reasoning.Main.graded_sound' depends on axioms: [propext]
+'Reasoning.Main.graded_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.planLeft' depends on axioms: [propext]
 'Reasoning.Main.plan_found' depends on axioms: [propext]
 'Reasoning.Main.plan_frontier' depends on axioms: [propext]
@@ -408,6 +416,8 @@
 'Reasoning.Main.refund_ledger' does not depend on any axioms
 'Reasoning.Main.refund_unsolved' does not depend on any axioms
 'Reasoning.Main.refund_unsolved_ledger' does not depend on any axioms
+'Reasoning.Main.related_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Main.related_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Main.review_exhausted' does not depend on any axioms
 'Reasoning.Main.review_ledger' does not depend on any axioms
 'Reasoning.Main.review_rejected' does not depend on any axioms
@@ -432,6 +442,7 @@
 'Reasoning.Main.triage_shock' does not depend on any axioms
 'Reasoning.Main.triage_well' does not depend on any axioms
 'Reasoning.Main.triage_well_ledger' does not depend on any axioms
+'Reasoning.Planner.Anywhere.sound' depends on axioms: [propext]
 'Reasoning.Planner.EmptyB.apply' does not depend on any axioms
 'Reasoning.Planner.EmptyB.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.EmptyB.conclusion' does not depend on any axioms
@@ -441,6 +452,8 @@
 'Reasoning.Planner.FillA.conclusion' does not depend on any axioms
 'Reasoning.Planner.FillA.guard' does not depend on any axioms
 'Reasoning.Planner.Fits' does not depend on any axioms
+'Reasoning.Planner.Held' does not depend on any axioms
+'Reasoning.Planner.Inside.sound' depends on axioms: [propext]
 'Reasoning.Planner.Measured.sound' depends on axioms: [propext]
 'Reasoning.Planner.Measures' does not depend on any axioms
 'Reasoning.Planner.Moves' does not depend on any axioms
@@ -485,26 +498,182 @@
 'Reasoning.Planner.Plan.search_ok' depends on axioms: [propext]
 'Reasoning.Planner.Plan.search_peak' depends on axioms: [propext]
 'Reasoning.Planner.Plan.search_step' depends on axioms: [propext]
-'Reasoning.Planner.Plan.search_verify_count' depends on axioms: [propext]
+'Reasoning.Planner.Plan.search_verify_growth' depends on axioms: [propext]
 'Reasoning.Planner.Plan.start' depends on axioms: [propext]
 'Reasoning.Planner.Plan.successors' does not depend on any axioms
 'Reasoning.Planner.Plan.successors_ok' does not depend on any axioms
 'Reasoning.Planner.Plan.verdict' depends on axioms: [propext]
 'Reasoning.Planner.Plan.verdict_sound' depends on axioms: [propext]
 'Reasoning.Planner.Plan.verifications_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.EmptyB.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFit.EmptyB.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFit.FillA.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFit.FillA.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Ledger' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Node' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Pour.collect' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Pour.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Pour.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Search' does not depend on any axioms
+'Reasoning.Planner.PlanFit.Step' does not depend on any axioms
+'Reasoning.Planner.PlanFit.accept' does not depend on any axioms
+'Reasoning.Planner.PlanFit.accept_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.PlanFit.answer' does not depend on any axioms
+'Reasoning.Planner.PlanFit.attempts' does not depend on any axioms
+'Reasoning.Planner.PlanFit.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.expansions_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.extend' does not depend on any axioms
+'Reasoning.Planner.PlanFit.extract' does not depend on any axioms
+'Reasoning.Planner.PlanFit.failure' does not depend on any axioms
+'Reasoning.Planner.PlanFit.fire' does not depend on any axioms
+'Reasoning.Planner.PlanFit.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.follow' does not depend on any axioms
+'Reasoning.Planner.PlanFit.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.fresh' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.fresh_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.frontier_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.iterations_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.observe' does not depend on any axioms
+'Reasoning.Planner.PlanFit.replay' does not depend on any axioms
+'Reasoning.Planner.PlanFit.replay_fire' does not depend on any axioms
+'Reasoning.Planner.PlanFit.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.run' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.searchStep' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_count' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_expanded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_peak' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_step' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.search_verify_growth' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.start' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFit.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFit.verdict' depends on axioms: [propext]
+'Reasoning.Planner.PlanFit.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFit.verifications_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.EmptyB.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.EmptyB.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.FillA.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.FillA.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Ledger' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Node' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Pour.collect' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Pour.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Pour.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Search' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.Step' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.accept' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.accept_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.PlanFitR.answer' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.attempts' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.expansions_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.extend' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.extract' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.failure' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.fire' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.follow' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.fresh' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.fresh_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.frontier_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.iterations_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.observe' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.replay' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.replay_fire' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.run' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.searchStep' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_count' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_expanded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_peak' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_step' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.search_verify_growth' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.start' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitR.verdict' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitR.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitR.verifications_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.EmptyB.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.EmptyB.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.FillA.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.FillA.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Ledger' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Node' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Pour.collect' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Pour.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Pour.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Search' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.Step' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.accept' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.accept_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.PlanFitU.answer' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.attempts' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitU.expansions_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.explained' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.PlanFitU.extend' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.extract' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.failure' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.fire' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitU.follow' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitU.fresh' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.fresh_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.frontier_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.iterations_bounded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.observe' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.replay' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.replay_fire' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.PlanFitU.run' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.searchStep' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_count' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_expanded' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_ok' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_peak' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_step' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.search_verify_growth' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.start' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.successors' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.successors_ok' does not depend on any axioms
+'Reasoning.Planner.PlanFitU.verdict' depends on axioms: [propext]
+'Reasoning.Planner.PlanFitU.verdict_sound' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.PlanFitU.verifications_bounded' depends on axioms: [propext]
 'Reasoning.Planner.Pour.apply' does not depend on any axioms
 'Reasoning.Planner.Pour.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.Pour.candidates' does not depend on any axioms
 'Reasoning.Planner.Pour.conclusion' does not depend on any axioms
 'Reasoning.Planner.Pour.guard' does not depend on any axioms
 'Reasoning.Planner.Pouring.preserves' does not depend on any axioms
+'Reasoning.Planner.Whole' does not depend on any axioms
+'Reasoning.Planner.Within' does not depend on any axioms
 'Reasoning.Planner.empty_jugs_fit' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.emptyb_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.fits_kept' does not depend on any axioms
+'Reasoning.Planner.held_initial' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.held_preserved' does not depend on any axioms
 'Reasoning.Planner.measuresCheck' does not depend on any axioms
 'Reasoning.Planner.measures_sound' depends on axioms: [propext]
+'Reasoning.Planner.plan_fit_correct' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.plan_held_correct' depends on axioms: [propext, Quot.sound]
+'Reasoning.Planner.plan_whole_correct' depends on axioms: [propext, Quot.sound]
 'Reasoning.Planner.pour_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Reasoning.Planner.wholeCheck' does not depend on any axioms
+'Reasoning.Planner.whole_sound' depends on axioms: [propext]
+'Reasoning.Planner.withinCheck' does not depend on any axioms
+'Reasoning.Planner.within_sound' depends on axioms: [propext]
 'Reasoning.Screening.Dose' does not depend on any axioms
 'Reasoning.Screening.Dose.Ledger' does not depend on any axioms
 'Reasoning.Screening.Dose.Step' does not depend on any axioms
@@ -568,7 +737,7 @@
 'Reasoning.Screening.Screen.search_ok' does not depend on any axioms
 'Reasoning.Screening.Screen.search_peak' does not depend on any axioms
 'Reasoning.Screening.Screen.search_step' does not depend on any axioms
-'Reasoning.Screening.Screen.search_verify_count' does not depend on any axioms
+'Reasoning.Screening.Screen.search_verify_growth' does not depend on any axioms
 'Reasoning.Screening.Screen.start' does not depend on any axioms
 'Reasoning.Screening.Screen.successors' does not depend on any axioms
 'Reasoning.Screening.Screen.successors_ok' does not depend on any axioms

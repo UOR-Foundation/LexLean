@@ -3,7 +3,7 @@ Feature: reasoning
   Language-1.2 reasoning machines: logics, inference rules, verifiers, reasoners, bounded search, termination evidence, traces, and their production realization (§17.12).
 
   @RS-01 @build
-  Scenario: Language 1.2 logic, inference_rule, verifier, and reasoner declarations, the forward, search, and generate_and_verify strategies, the initial_invariant, terminates, and answer_correct claims, and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member, strategy, or claim outside the closed schema, such as an opaque oracle, a prompt, an unregistered strategy, or an unregistered claim, which fail with LLT4001.
+  Scenario: Language 1.2 logic, inference_rule, verifier, and reasoner declarations, the forward, search, and generate_and_verify strategies, the initial_invariant, terminates, observation_invariant, and answer_correct claims, and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member, strategy, or claim outside the closed schema, such as an opaque oracle, a prompt, an unregistered strategy, or an unregistered claim, which fail with LLT4001.
     Given a language-1.2 module with every reasoning construct
     When it is linked under language 1.2 and again under language 1.1, and with an opaque member, an unregistered strategy, or an unregistered claim added
     Then language 1.2 links it and its snapshot validates against the closed schemas
@@ -59,7 +59,7 @@ Feature: reasoning
     And a mutated runtime lemma statement is refused by Lean
 
   @RS-09 @build
-  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, or on every state satisfying the logic's invariant, which erases the check, and otherwise fails with LLT4012; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
+  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping its guard; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
     Given executable code using rules and reasoners
     When it calls a conclusion or an unverified answer directly, with and without an answer correctness claim, and replays forged and genuine traces
     Then a direct conclusion or unverified answer fails with LLT4012 unless the answer is proved correct
@@ -80,10 +80,10 @@ Feature: reasoning
     And each root's report records its reasoning resources and extraction succeeds for rust-core and rust-std
 
   @RS-12 @build
-  Scenario: The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage, Review, Grade, and the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose), and a calculus transcription of each produces the oracle's verdict on every fixture argument, Triage's explained answer and account too, as the kernel decides, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps.
+  Scenario: The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage and Grade, the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose) and of Review, which the example states by theorem, and a calculus transcription of each produces the oracle's verdict on every fixture argument as the kernel decides, the explained answer and the six-counter ledger of its run too for Triage, Plan, Screen, and Dose, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps.
     Given the compiler project's reasoning oracles and transcriptions
     When the transcriptions are evaluated, compared with the oracle, and rendered to Rust
-    Then every outcome equals the oracle's as the kernel decides and the packages equal their generator
+    Then every outcome equals the oracle's, with the run's ledger where the transcription accounts it, as the kernel decides and the packages equal their generator
     And every transcription charges at least the ledger's guard evaluations and firings in steps
 
   @RS-13 @build

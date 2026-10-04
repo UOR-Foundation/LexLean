@@ -1050,6 +1050,16 @@ pub enum ReasoningClaim {
     /// The ranking of the observed state is below the fuel, so a forward
     /// reasoner whose every rule decreases the ranking saturates.
     Terminates { theorem: MemberRef },
+    /// A predicate relating the observation to every state a run reaches:
+    /// it holds of the observed state, and is preserved by the logic's
+    /// relation, so it holds of the final state of every run. Under it an
+    /// answer may be claimed correct on the states it holds of, whatever the
+    /// specification says about the observation.
+    ObservationInvariant {
+        predicate: MemberRef,
+        initial: MemberRef,
+        preserved: MemberRef,
+    },
     /// The answer term is correct on every state: whatever it extracts meets
     /// the verifier's specification, so the verifier's check is erased and
     /// the unverified answer may be used (the reasoning analogue of an

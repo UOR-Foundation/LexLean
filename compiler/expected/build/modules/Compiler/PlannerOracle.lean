@@ -896,7 +896,7 @@ by
         rfl
       · cases llE
         rfl
-public theorem Plan.search_verify_count (target : Nat) (__r : Compiler.PlannerOracle.Plan.Search) (__q : Compiler.PlannerOracle.Plan.Search) : ((Compiler.PlannerOracle.Plan.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications = (((__r).ledger).verifications + 1))) :=
+public theorem Plan.search_verify_growth (target : Nat) (__r : Compiler.PlannerOracle.Plan.Search) (__q : Compiler.PlannerOracle.Plan.Search) : ((Compiler.PlannerOracle.Plan.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications <= (((__r).ledger).verifications + 1))) :=
 by
   intro llE
   dsimp only [Compiler.PlannerOracle.Plan.searchStep] at llE
@@ -906,9 +906,9 @@ by
     · cases llE
     · split at llE
       · cases llE
-        rfl
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
       · cases llE
-        rfl
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
 public theorem Plan.search_expanded (target : Nat) (__r : Compiler.PlannerOracle.Plan.Search) (__q : Compiler.PlannerOracle.Plan.Search) : ((Compiler.PlannerOracle.Plan.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
 by
   intro llE
@@ -919,9 +919,9 @@ by
     · cases llE
     · split at llE
       · cases llE
-        exact Nat.le_succ _
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
       · cases llE
-        exact Nat.le_refl _
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
 public theorem Plan.search_ok (target : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.Plan.Node) => (Compiler.PlannerOracle.Plan.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.Plan.Node) => Compiler.PlannerOracle.Plan.accept (target) ((__n).state))) (((Compiler.PlannerOracle.Plan.run (target)).1).frontier) (((Compiler.PlannerOracle.Plan.run (target)).1).found)) :=
 by
   dsimp only [Compiler.PlannerOracle.Plan.run]
@@ -933,7 +933,7 @@ by
 public theorem Plan.verifications_bounded (target : Nat) : ((((Compiler.PlannerOracle.Plan.run (target)).1).ledger).verifications <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
 by
   dsimp only [Compiler.PlannerOracle.Plan.run]
-  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Compiler.PlannerOracle.Plan.Search) => Compiler.PlannerOracle.Plan.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.Plan.Search) => ((__r).ledger).verifications)) (Compiler.PlannerOracle.Plan.search_verify_count (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.Plan.start (target)) rfl)
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.Plan.Search) => Compiler.PlannerOracle.Plan.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.Plan.Search) => ((__r).ledger).verifications)) (Compiler.PlannerOracle.Plan.search_verify_growth (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.Plan.start (target)) rfl)
 public theorem Plan.expansions_bounded (target : Nat) : ((((Compiler.PlannerOracle.Plan.run (target)).1).ledger).expansions <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
 by
   dsimp only [Compiler.PlannerOracle.Plan.run]
@@ -965,5 +965,734 @@ by
   | ok llP =>
     cases llE
     exact And.right (Compiler.PlannerOracle.Plan.explained _ llP.1 llP.2 llHP)
+
+@[expose, reducible] public def Within (_target : Nat) (r : Nat) : Prop := (r <= 4)
+
+@[expose] public def withinCheck (_target : Nat) (r : Nat) : Bool := (Nat.ble (r) (4))
+
+public theorem within_sound (target : Nat) (r : Nat) : ((withinCheck (target) (r) = true) -> Within (target) (r)) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Within, withinCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem Inside.sound : (LexLeanReasoning.Sound ((Compiler.PlannerOracle.withinCheck)) ((Compiler.PlannerOracle.Within))) :=
+  Compiler.PlannerOracle.within_sound
+
+@[expose, reducible] public def Whole (_target : Nat) (r : Nat) : Prop := (0 <= r)
+
+@[expose] public def wholeCheck (_target : Nat) (r : Nat) : Bool := (Nat.ble (0) (r))
+
+public theorem whole_sound (target : Nat) (r : Nat) : ((wholeCheck (target) (r) = true) -> Whole (target) (r)) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Whole, wholeCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem Anywhere.sound : (LexLeanReasoning.Sound ((Compiler.PlannerOracle.wholeCheck)) ((Compiler.PlannerOracle.Whole))) :=
+  Compiler.PlannerOracle.whole_sound
+
+public theorem plan_fit_correct (target : Nat) (s : (Prod (Nat) (Nat))) (v : Nat) : (Fits (s) -> ((Option.some ((s).1) = Option.some (v)) -> Within (target) (v))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Fits, Within, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+@[expose, reducible] public def Held (_target : Nat) (s : (Prod (Nat) (Nat))) : Prop := Fits (s)
+
+public theorem held_initial (target : Nat) : Held (target) ((0, 0)) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Fits, Held, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem held_preserved (target : Nat) (s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat))) : (Held (target) (s) -> (Moves (s) (t) -> Held (target) (t))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Fits, Held, Moves, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem plan_held_correct (target : Nat) (s : (Prod (Nat) (Nat))) (v : Nat) : (Held (target) (s) -> ((Option.some ((s).1) = Option.some (v)) -> Within (target) (v))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Fits, Held, Within, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem plan_whole_correct (target : Nat) (s : (Prod (Nat) (Nat))) (v : Nat) : ((Option.some ((s).1) = Option.some (v)) -> Whole (target) (v)) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Whole, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public inductive PlanFit.Step where
+  | FillA
+  | EmptyB
+  | Pour (_ : Nat)
+public structure PlanFit.Ledger where
+  iterations : Nat
+  attempts : Nat
+  firings : Nat
+  expansions : Nat
+  verifications : Nat
+  frontier : Nat
+@[expose] public def PlanFit.observe (_target : Nat) : (Prod (Nat) (Nat)) := (0, 0)
+@[expose] public def PlanFit.fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFit.Step) : Option ((Prod (Nat) (Nat))) := (match __step with | Compiler.PlannerOracle.PlanFit.Step.FillA => Compiler.PlannerOracle.FillA.apply (__s) | Compiler.PlannerOracle.PlanFit.Step.EmptyB => Compiler.PlannerOracle.EmptyB.apply (__s) | Compiler.PlannerOracle.PlanFit.Step.Pour __b => Compiler.PlannerOracle.Pour.apply (__s) (__b))
+@[expose] public def PlanFit.replay (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFit.Step) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (match __acc with | Except.error __e => Except.error (__e) | Except.ok __s => (match Compiler.PlannerOracle.PlanFit.fire (__s) (__step) with | Option.none => Except.error (((true, true) : Prod Bool Bool)) | Option.some __t => Except.ok (__t)))
+@[expose] public def PlanFit.follow (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFit.Step)) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Compiler.PlannerOracle.PlanFit.replay)) (Except.ok (Compiler.PlannerOracle.PlanFit.observe (target))) (__trace) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))))
+@[expose] public def PlanFit.extract (jugs : (Prod (Nat) (Nat))) : Option (Nat) := Option.some ((jugs).1)
+@[expose] public def PlanFit.accept (_target : Nat) (__s : (Prod (Nat) (Nat))) : Option (Nat) := Compiler.PlannerOracle.PlanFit.extract (__s)
+@[expose] public def PlanFit.answer (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFit.Step)) : Option (Nat) := (match Compiler.PlannerOracle.PlanFit.follow (target) (__trace) with | Except.ok __s => Compiler.PlannerOracle.PlanFit.accept (target) (__s) | Except.error _ => Option.none)
+public structure PlanFit.Node where
+  state : (Prod (Nat) (Nat))
+  trace : List (Compiler.PlannerOracle.PlanFit.Step)
+public structure PlanFit.Search where
+  frontier : List (Compiler.PlannerOracle.PlanFit.Node)
+  visited : List ((Prod (Nat) (Nat)))
+  found : Option ((Prod (Nat) (Compiler.PlannerOracle.PlanFit.Node)))
+  truncated : Bool
+  ledger : Compiler.PlannerOracle.PlanFit.Ledger
+@[expose] public def PlanFit.FillA.successors (__node : Compiler.PlannerOracle.PlanFit.Node) : List (Compiler.PlannerOracle.PlanFit.Node) := (match Compiler.PlannerOracle.PlanFit.fire ((__node).state) (Compiler.PlannerOracle.PlanFit.Step.FillA) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFit.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFit.Step.FillA :: ([] : List (Compiler.PlannerOracle.PlanFit.Step)))) : List (Compiler.PlannerOracle.PlanFit.Step)) } : Compiler.PlannerOracle.PlanFit.Node) :: ([] : List (Compiler.PlannerOracle.PlanFit.Node))))
+@[expose] public def PlanFit.EmptyB.successors (__node : Compiler.PlannerOracle.PlanFit.Node) : List (Compiler.PlannerOracle.PlanFit.Node) := (match Compiler.PlannerOracle.PlanFit.fire ((__node).state) (Compiler.PlannerOracle.PlanFit.Step.EmptyB) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFit.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFit.Step.EmptyB :: ([] : List (Compiler.PlannerOracle.PlanFit.Step)))) : List (Compiler.PlannerOracle.PlanFit.Step)) } : Compiler.PlannerOracle.PlanFit.Node) :: ([] : List (Compiler.PlannerOracle.PlanFit.Node))))
+@[expose] public def PlanFit.Pour.collect (__node : Compiler.PlannerOracle.PlanFit.Node) (__acc : List (Compiler.PlannerOracle.PlanFit.Node)) (__b : Nat) : List (Compiler.PlannerOracle.PlanFit.Node) := (match Compiler.PlannerOracle.PlanFit.fire ((__node).state) (Compiler.PlannerOracle.PlanFit.Step.Pour (__b)) with | Option.none => __acc | Option.some __t => (LexLeanRuntime.append (__acc) ((({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFit.Step.Pour (__b) :: ([] : List (Compiler.PlannerOracle.PlanFit.Step)))) : List (Compiler.PlannerOracle.PlanFit.Step)) } : Compiler.PlannerOracle.PlanFit.Node) :: ([] : List (Compiler.PlannerOracle.PlanFit.Node)))) : List (Compiler.PlannerOracle.PlanFit.Node)))
+@[expose] public def PlanFit.Pour.successors (__node : Compiler.PlannerOracle.PlanFit.Node) : List (Compiler.PlannerOracle.PlanFit.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFit.Node)) (__b : Nat) => Compiler.PlannerOracle.PlanFit.Pour.collect (__node) (__acc) (__b))) (([] : List (Compiler.PlannerOracle.PlanFit.Node))) (Compiler.PlannerOracle.Pour.candidates ((__node).state)) : List (Compiler.PlannerOracle.PlanFit.Node))
+@[expose] public def PlanFit.successors (__node : Compiler.PlannerOracle.PlanFit.Node) : List (Compiler.PlannerOracle.PlanFit.Node) := (LexLeanRuntime.append (Compiler.PlannerOracle.PlanFit.FillA.successors (__node)) ((LexLeanRuntime.append (Compiler.PlannerOracle.PlanFit.EmptyB.successors (__node)) (Compiler.PlannerOracle.PlanFit.Pour.successors (__node)) : List (Compiler.PlannerOracle.PlanFit.Node))) : List (Compiler.PlannerOracle.PlanFit.Node))
+@[expose] public def PlanFit.fresh (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFit.Node)) : (Prod (List (Compiler.PlannerOracle.PlanFit.Node)) (List ((Prod (Nat) (Nat))))) := (LexLeanCollections.listFold ((fun (__acc : (Prod (List (Compiler.PlannerOracle.PlanFit.Node)) (List ((Prod (Nat) (Nat)))))) (__n : Compiler.PlannerOracle.PlanFit.Node) => (if (LexLeanCollections.setContains ((__acc).2) ((__n).state) : Bool) then __acc else ((LexLeanRuntime.append ((__acc).1) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFit.Node)))) : List (Compiler.PlannerOracle.PlanFit.Node)), (LexLeanCollections.setInsert ((__acc).2) ((__n).state) : List ((Prod (Nat) (Nat)))))))) ((([] : List (Compiler.PlannerOracle.PlanFit.Node)), __visited)) (__nodes) : (Prod (List (Compiler.PlannerOracle.PlanFit.Node)) (List ((Prod (Nat) (Nat))))))
+@[expose] public def PlanFit.start (target : Nat) : Compiler.PlannerOracle.PlanFit.Search := (let __first : List (Compiler.PlannerOracle.PlanFit.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFit.Node)) (__n : Compiler.PlannerOracle.PlanFit.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFit.Node)))) : List (Compiler.PlannerOracle.PlanFit.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFit.Node))) ((({ state := Compiler.PlannerOracle.PlanFit.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFit.Step)) } : Compiler.PlannerOracle.PlanFit.Node) :: ([] : List (Compiler.PlannerOracle.PlanFit.Node)))) : List (Compiler.PlannerOracle.PlanFit.Node)); ({ frontier := __first, visited := (LexLeanCollections.setInsert (([] : List ((Prod (Nat) (Nat))))) (Compiler.PlannerOracle.PlanFit.observe (target)) : List ((Prod (Nat) (Nat)))), found := Option.none, truncated := (Nat.blt ((target + target)) (1)), ledger := ({ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := (LexLeanRuntime.length (__first) : Nat) } : Compiler.PlannerOracle.PlanFit.Ledger) } : Compiler.PlannerOracle.PlanFit.Search))
+@[expose] public def PlanFit.attempts (__s : (Prod (Nat) (Nat))) : Nat := (1 + (1 + (LexLeanRuntime.length (Compiler.PlannerOracle.Pour.candidates (__s)) : Nat)))
+@[expose] public def PlanFit.searchStep (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) : Option (Compiler.PlannerOracle.PlanFit.Search) := (match (__r).found with | Option.some _ => Option.none | Option.none => (match (__r).frontier with | List.nil => Option.none | List.cons __node __rest => (match Compiler.PlannerOracle.PlanFit.accept (target) ((__node).state) with | Option.some __v => Option.some (({ frontier := __rest, visited := (__r).visited, found := Option.some ((__v, __node)), truncated := (__r).truncated, ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := ((__r).ledger).attempts, firings := ((__r).ledger).firings, expansions := ((__r).ledger).expansions, verifications := ((__r).ledger).verifications, frontier := ((__r).ledger).frontier } : Compiler.PlannerOracle.PlanFit.Ledger) } : Compiler.PlannerOracle.PlanFit.Search)) | Option.none => (let __successors : List (Compiler.PlannerOracle.PlanFit.Node) := Compiler.PlannerOracle.PlanFit.successors (__node); (let __fresh : (Prod (List (Compiler.PlannerOracle.PlanFit.Node)) (List ((Prod (Nat) (Nat))))) := Compiler.PlannerOracle.PlanFit.fresh ((__r).visited) (__successors); (let __ordered : List (Compiler.PlannerOracle.PlanFit.Node) := (LexLeanRuntime.append (__rest) ((__fresh).1) : List (Compiler.PlannerOracle.PlanFit.Node)); (let __next : List (Compiler.PlannerOracle.PlanFit.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFit.Node)) (__n : Compiler.PlannerOracle.PlanFit.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFit.Node)))) : List (Compiler.PlannerOracle.PlanFit.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFit.Node))) (__ordered) : List (Compiler.PlannerOracle.PlanFit.Node)); Option.some (({ frontier := __next, visited := (__fresh).2, found := Option.none, truncated := ((__r).truncated || (Nat.blt ((target + target)) ((LexLeanRuntime.length (__ordered) : Nat)))), ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := (((__r).ledger).attempts + Compiler.PlannerOracle.PlanFit.attempts ((__node).state)), firings := (((__r).ledger).firings + (LexLeanRuntime.length (__successors) : Nat)), expansions := (((__r).ledger).expansions + 1), verifications := ((__r).ledger).verifications, frontier := (if (Nat.blt (((__r).ledger).frontier) ((LexLeanRuntime.length (__next) : Nat))) then (LexLeanRuntime.length (__next) : Nat) else ((__r).ledger).frontier) } : Compiler.PlannerOracle.PlanFit.Ledger) } : Compiler.PlannerOracle.PlanFit.Search)))))))))
+@[expose] public def PlanFit.run (target : Nat) : (Prod (Compiler.PlannerOracle.PlanFit.Search) (Bool)) := (LexLeanCollections.iterateUntil ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) : (Prod (Compiler.PlannerOracle.PlanFit.Search) (Bool)))
+@[expose] public def PlanFit.failure (__saturated : Bool) (__truncated : Bool) : (Prod Bool Bool) := (if (__saturated && (!__truncated)) then ((false, true) : Prod Bool Bool) else ((false, false) : Prod Bool Bool))
+@[expose] public def PlanFit (target : Nat) : Except ((Prod Bool Bool)) ((Prod (Nat) (List (Compiler.PlannerOracle.PlanFit.Step)))) := (let __final : (Prod (Compiler.PlannerOracle.PlanFit.Search) (Bool)) := Compiler.PlannerOracle.PlanFit.run (target); (match ((__final).1).found with | Option.some __hit => Except.ok (((__hit).1, ((__hit).2).trace)) | Option.none => Except.error (Compiler.PlannerOracle.PlanFit.failure ((__final).2) (((__final).1).truncated))))
+@[expose] public def PlanFit.verdict (target : Nat) : Except ((Prod Bool Bool)) (Nat) := (match Compiler.PlannerOracle.PlanFit (target) with | Except.ok __p => Except.ok ((__p).1) | Except.error __e => Except.error (__e))
+public theorem PlanFit.fire_sound (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFit.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFit.fire (__s) (__step) = Option.some (__t)) -> Compiler.PlannerOracle.Moves (__s) (__t)) :=
+by
+  cases __step with
+  | FillA =>
+    exact Compiler.PlannerOracle.FillA.apply_sound __s __t
+  | EmptyB =>
+    exact Compiler.PlannerOracle.EmptyB.apply_sound __s __t
+  | Pour __b =>
+    exact Compiler.PlannerOracle.Pour.apply_sound __s __b __t
+public theorem PlanFit.replay_fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFit.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFit.fire (__s) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFit.replay (Except.ok (__s)) (__step) = Except.ok (__t))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.replay]
+  rw [llE]
+public theorem PlanFit.replay_sound (target : Nat) (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFit.Step) : ((LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFit.observe (target)) (__acc)) -> (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFit.observe (target)) (Compiler.PlannerOracle.PlanFit.replay (__acc) (__step)))) :=
+by
+  intro llH llT llE
+  cases __acc with
+  | error _ => cases llE
+  | ok llS =>
+    dsimp only [Compiler.PlannerOracle.PlanFit.replay] at llE
+    split at llE
+    · cases llE
+    · cases llE
+      exact LexLeanReasoning.Star.tail _ llS _ (llH llS rfl) (Compiler.PlannerOracle.PlanFit.fire_sound llS __step _ ‹_›)
+public theorem PlanFit.derivation (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFit.Step)) : (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFit.observe (target)) (Compiler.PlannerOracle.PlanFit.follow (target) (__trace))) :=
+  (LexLeanReasoning.foldInvariant ((Compiler.PlannerOracle.PlanFit.replay)) (fun (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) => (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFit.observe (target)) (__acc))) (Compiler.PlannerOracle.PlanFit.replay_sound (target)) (__trace) (Except.ok (Compiler.PlannerOracle.PlanFit.observe (target))) (LexLeanReasoning.reachesStart ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFit.observe (target))))
+public theorem PlanFit.follow_invariant (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFit.Step)) (__s : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFit.follow (target) (__trace) = Except.ok (__s)) -> Compiler.PlannerOracle.Fits (__s)) :=
+  (fun llE => (LexLeanReasoning.starPreserves ((Compiler.PlannerOracle.Moves)) ((Compiler.PlannerOracle.Fits)) Compiler.PlannerOracle.Pouring.preserves (Compiler.PlannerOracle.PlanFit.observe (target)) (__s) (Compiler.PlannerOracle.PlanFit.derivation (target) (__trace) (__s) llE) (Compiler.PlannerOracle.empty_jugs_fit (target))))
+public theorem PlanFit.accept_sound (target : Nat) (__s : (Prod (Nat) (Nat))) (__v : Nat) : (Compiler.PlannerOracle.Fits (__s) -> ((Compiler.PlannerOracle.PlanFit.accept (target) (__s) = Option.some (__v)) -> Compiler.PlannerOracle.Within (target) (__v))) :=
+  (fun llJ llE => (Compiler.PlannerOracle.plan_fit_correct (target) (__s) (__v) llJ llE))
+public theorem PlanFit.extend (target : Nat) (__node : Compiler.PlannerOracle.PlanFit.Node) (__step : Compiler.PlannerOracle.PlanFit.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFit.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> ((Compiler.PlannerOracle.PlanFit.fire ((__node).state) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFit.follow (target) ((LexLeanRuntime.append ((__node).trace) ((__step :: ([] : List (Compiler.PlannerOracle.PlanFit.Step)))) : List (Compiler.PlannerOracle.PlanFit.Step))) = Except.ok (__t)))) :=
+by
+  intro llH llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.follow]
+  rw [LexLeanReasoning.foldSnoc]
+  dsimp only [Compiler.PlannerOracle.PlanFit.follow] at llH
+  rw [llH]
+  exact Compiler.PlannerOracle.PlanFit.replay_fire _ __step __t llE
+public theorem PlanFit.FillA.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFit.Node) : ((Compiler.PlannerOracle.PlanFit.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFit.FillA.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFit.FillA.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFit.extend _ __node _ _ llH ‹_›)
+public theorem PlanFit.EmptyB.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFit.Node) : ((Compiler.PlannerOracle.PlanFit.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFit.EmptyB.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFit.EmptyB.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFit.extend _ __node _ _ llH ‹_›)
+public theorem PlanFit.Pour.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFit.Node) : ((Compiler.PlannerOracle.PlanFit.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFit.Pour.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFit.Pour.successors]
+  exact LexLeanReasoning.foldInvariant _ (LexLeanReasoning.All (fun (llN : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.follow _ llN.trace = Except.ok llN.state))
+    (fun llA llB llP => by
+      dsimp only [Compiler.PlannerOracle.PlanFit.Pour.collect]
+      split
+      · exact llP
+      · exact LexLeanReasoning.allAppend _ _ _ llP (LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFit.extend _ __node _ _ llH ‹_›)))
+    _ _ LexLeanReasoning.All.nil
+public theorem PlanFit.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFit.Node) : ((Compiler.PlannerOracle.PlanFit.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFit.successors (__node)))) :=
+  (fun llH => (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFit.FillA.successors_ok (target) (__node) llH) (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFit.EmptyB.successors_ok (target) (__node) llH) (Compiler.PlannerOracle.PlanFit.Pour.successors_ok (target) (__node) llH))))
+public theorem PlanFit.fresh_ok (target : Nat) (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFit.Node)) : ((LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (__nodes)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((Compiler.PlannerOracle.PlanFit.fresh (__visited) (__nodes)).1))) :=
+  (LexLeanReasoning.freshAll ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (__n).state)) (fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state))) (__visited) (__nodes))
+public theorem PlanFit.search_step (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) (__q : Compiler.PlannerOracle.PlanFit.Search) : ((Compiler.PlannerOracle.PlanFit.searchStep (target) (__r) = Option.some (__q)) -> ((LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.accept (target) ((__n).state))) ((__r).frontier) ((__r).found)) -> (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.accept (target) ((__n).state))) ((__q).frontier) ((__q).found)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFit.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · rename_i llNode llRest llFr
+      have llAll := And.left llH
+      rw [llFr] at llAll
+      have llNodeOk := LexLeanReasoning.allHead _ llNode llRest llAll
+      have llRestOk := LexLeanReasoning.allTail _ llNode llRest llAll
+      split at llE
+      · rename_i llV llAcc
+        cases llE
+        exact And.intro llRestOk (And.intro llNodeOk llAcc)
+      · cases llE
+        exact And.intro (LexLeanReasoning.capAll _ _ _ (LexLeanReasoning.allAppend _ _ _ llRestOk (Compiler.PlannerOracle.PlanFit.fresh_ok _ _ _ (Compiler.PlannerOracle.PlanFit.successors_ok _ llNode llNodeOk)))) True.intro
+public theorem PlanFit.search_peak (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) (__q : Compiler.PlannerOracle.PlanFit.Search) : ((Compiler.PlannerOracle.PlanFit.searchStep (target) (__r) = Option.some (__q)) -> ((((__r).ledger).frontier <= (target + target)) -> (((__q).ledger).frontier <= (target + target)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFit.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        exact llH
+      · cases llE
+        exact LexLeanReasoning.peakBound _ _ _ llH (LexLeanReasoning.capBound _ _)
+public theorem PlanFit.search_count (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) (__q : Compiler.PlannerOracle.PlanFit.Search) : ((Compiler.PlannerOracle.PlanFit.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).iterations = (((__r).ledger).iterations + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        rfl
+      · cases llE
+        rfl
+public theorem PlanFit.search_verify_growth (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) (__q : Compiler.PlannerOracle.PlanFit.Search) : ((Compiler.PlannerOracle.PlanFit.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications <= (((__r).ledger).verifications + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFit.search_expanded (target : Nat) (__r : Compiler.PlannerOracle.PlanFit.Search) (__q : Compiler.PlannerOracle.PlanFit.Search) : ((Compiler.PlannerOracle.PlanFit.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFit.search_ok (target : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.accept (target) ((__n).state))) (((Compiler.PlannerOracle.PlanFit.run (target)).1).frontier) (((Compiler.PlannerOracle.PlanFit.run (target)).1).found)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFit.run]
+  exact (LexLeanReasoning.iterateUntilInvariant ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) (fun (__r : Compiler.PlannerOracle.PlanFit.Search) => (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.accept (target) ((__n).state))) ((__r).frontier) ((__r).found))) (Compiler.PlannerOracle.PlanFit.search_step (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) (LexLeanReasoning.searchStart ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => Compiler.PlannerOracle.PlanFit.accept (target) ((__n).state))) _ (LexLeanReasoning.capAll ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((target + target)) _ (LexLeanReasoning.allSingle ((fun (__n : Compiler.PlannerOracle.PlanFit.Node) => (Compiler.PlannerOracle.PlanFit.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (({ state := Compiler.PlannerOracle.PlanFit.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFit.Step)) } : Compiler.PlannerOracle.PlanFit.Node)) rfl))))
+public theorem PlanFit.frontier_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFit.run (target)).1).ledger).frontier <= (target + target)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFit.run]
+  exact (LexLeanReasoning.iterateUntilBound ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => ((__r).ledger).frontier)) ((target + target)) (Compiler.PlannerOracle.PlanFit.search_peak (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) (LexLeanReasoning.capBound ((target + target)) _))
+public theorem PlanFit.verifications_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFit.run (target)).1).ledger).verifications <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFit.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => ((__r).ledger).verifications)) (Compiler.PlannerOracle.PlanFit.search_verify_growth (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) rfl)
+public theorem PlanFit.expansions_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFit.run (target)).1).ledger).expansions <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFit.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => ((__r).ledger).expansions)) (Compiler.PlannerOracle.PlanFit.search_expanded (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) rfl)
+public theorem PlanFit.iterations_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFit.run (target)).1).ledger).iterations <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFit.run]
+  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => Compiler.PlannerOracle.PlanFit.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFit.Search) => ((__r).ledger).iterations)) (Compiler.PlannerOracle.PlanFit.search_count (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFit.start (target)) rfl)
+public theorem PlanFit.explained (target : Nat) : (forall (__v : Nat), (forall (__trace : List (Compiler.PlannerOracle.PlanFit.Step)), ((Compiler.PlannerOracle.PlanFit (target) = Except.ok ((__v, __trace))) -> ((Compiler.PlannerOracle.PlanFit.answer (target) (__trace) = Option.some (__v)) /\ Compiler.PlannerOracle.Within (target) (__v))))) :=
+by
+  intro llV llT llE
+  have llSearch := Compiler.PlannerOracle.PlanFit.search_ok target
+  dsimp only [Compiler.PlannerOracle.PlanFit] at llE
+  generalize llRun : Compiler.PlannerOracle.PlanFit.run target = llR at llE llSearch
+  split at llE
+  · rename_i llHit llF
+    cases llE
+    have llOk := And.right llSearch
+    rw [llF] at llOk
+    exact And.intro (by dsimp only [Compiler.PlannerOracle.PlanFit.answer]; rw [And.left llOk]; exact And.right llOk) (Compiler.PlannerOracle.PlanFit.accept_sound _ _ _ (Compiler.PlannerOracle.PlanFit.follow_invariant target _ _ (And.left llOk)) (And.right llOk))
+  · cases llE
+public theorem PlanFit.verdict_sound (target : Nat) : (forall (__v : Nat), ((Compiler.PlannerOracle.PlanFit.verdict (target) = Except.ok (__v)) -> Compiler.PlannerOracle.Within (target) (__v))) :=
+by
+  intro llV llE
+  dsimp only [Compiler.PlannerOracle.PlanFit.verdict] at llE
+  generalize llHP : Compiler.PlannerOracle.PlanFit target = llR at llE
+  cases llR with
+  | error _ => cases llE
+  | ok llP =>
+    cases llE
+    exact And.right (Compiler.PlannerOracle.PlanFit.explained _ llP.1 llP.2 llHP)
+
+public inductive PlanFitR.Step where
+  | FillA
+  | EmptyB
+  | Pour (_ : Nat)
+public structure PlanFitR.Ledger where
+  iterations : Nat
+  attempts : Nat
+  firings : Nat
+  expansions : Nat
+  verifications : Nat
+  frontier : Nat
+@[expose] public def PlanFitR.observe (_target : Nat) : (Prod (Nat) (Nat)) := (0, 0)
+@[expose] public def PlanFitR.fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitR.Step) : Option ((Prod (Nat) (Nat))) := (match __step with | Compiler.PlannerOracle.PlanFitR.Step.FillA => Compiler.PlannerOracle.FillA.apply (__s) | Compiler.PlannerOracle.PlanFitR.Step.EmptyB => Compiler.PlannerOracle.EmptyB.apply (__s) | Compiler.PlannerOracle.PlanFitR.Step.Pour __b => Compiler.PlannerOracle.Pour.apply (__s) (__b))
+@[expose] public def PlanFitR.replay (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFitR.Step) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (match __acc with | Except.error __e => Except.error (__e) | Except.ok __s => (match Compiler.PlannerOracle.PlanFitR.fire (__s) (__step) with | Option.none => Except.error (((true, true) : Prod Bool Bool)) | Option.some __t => Except.ok (__t)))
+@[expose] public def PlanFitR.follow (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Compiler.PlannerOracle.PlanFitR.replay)) (Except.ok (Compiler.PlannerOracle.PlanFitR.observe (target))) (__trace) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))))
+@[expose] public def PlanFitR.extract (jugs : (Prod (Nat) (Nat))) : Option (Nat) := Option.some ((jugs).1)
+@[expose] public def PlanFitR.accept (_target : Nat) (__s : (Prod (Nat) (Nat))) : Option (Nat) := Compiler.PlannerOracle.PlanFitR.extract (__s)
+@[expose] public def PlanFitR.answer (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)) : Option (Nat) := (match Compiler.PlannerOracle.PlanFitR.follow (target) (__trace) with | Except.ok __s => Compiler.PlannerOracle.PlanFitR.accept (target) (__s) | Except.error _ => Option.none)
+public structure PlanFitR.Node where
+  state : (Prod (Nat) (Nat))
+  trace : List (Compiler.PlannerOracle.PlanFitR.Step)
+public structure PlanFitR.Search where
+  frontier : List (Compiler.PlannerOracle.PlanFitR.Node)
+  visited : List ((Prod (Nat) (Nat)))
+  found : Option ((Prod (Nat) (Compiler.PlannerOracle.PlanFitR.Node)))
+  truncated : Bool
+  ledger : Compiler.PlannerOracle.PlanFitR.Ledger
+@[expose] public def PlanFitR.FillA.successors (__node : Compiler.PlannerOracle.PlanFitR.Node) : List (Compiler.PlannerOracle.PlanFitR.Node) := (match Compiler.PlannerOracle.PlanFitR.fire ((__node).state) (Compiler.PlannerOracle.PlanFitR.Step.FillA) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFitR.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitR.Step.FillA :: ([] : List (Compiler.PlannerOracle.PlanFitR.Step)))) : List (Compiler.PlannerOracle.PlanFitR.Step)) } : Compiler.PlannerOracle.PlanFitR.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node))))
+@[expose] public def PlanFitR.EmptyB.successors (__node : Compiler.PlannerOracle.PlanFitR.Node) : List (Compiler.PlannerOracle.PlanFitR.Node) := (match Compiler.PlannerOracle.PlanFitR.fire ((__node).state) (Compiler.PlannerOracle.PlanFitR.Step.EmptyB) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFitR.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitR.Step.EmptyB :: ([] : List (Compiler.PlannerOracle.PlanFitR.Step)))) : List (Compiler.PlannerOracle.PlanFitR.Step)) } : Compiler.PlannerOracle.PlanFitR.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node))))
+@[expose] public def PlanFitR.Pour.collect (__node : Compiler.PlannerOracle.PlanFitR.Node) (__acc : List (Compiler.PlannerOracle.PlanFitR.Node)) (__b : Nat) : List (Compiler.PlannerOracle.PlanFitR.Node) := (match Compiler.PlannerOracle.PlanFitR.fire ((__node).state) (Compiler.PlannerOracle.PlanFitR.Step.Pour (__b)) with | Option.none => __acc | Option.some __t => (LexLeanRuntime.append (__acc) ((({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitR.Step.Pour (__b) :: ([] : List (Compiler.PlannerOracle.PlanFitR.Step)))) : List (Compiler.PlannerOracle.PlanFitR.Step)) } : Compiler.PlannerOracle.PlanFitR.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node)))) : List (Compiler.PlannerOracle.PlanFitR.Node)))
+@[expose] public def PlanFitR.Pour.successors (__node : Compiler.PlannerOracle.PlanFitR.Node) : List (Compiler.PlannerOracle.PlanFitR.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitR.Node)) (__b : Nat) => Compiler.PlannerOracle.PlanFitR.Pour.collect (__node) (__acc) (__b))) (([] : List (Compiler.PlannerOracle.PlanFitR.Node))) (Compiler.PlannerOracle.Pour.candidates ((__node).state)) : List (Compiler.PlannerOracle.PlanFitR.Node))
+@[expose] public def PlanFitR.successors (__node : Compiler.PlannerOracle.PlanFitR.Node) : List (Compiler.PlannerOracle.PlanFitR.Node) := (LexLeanRuntime.append (Compiler.PlannerOracle.PlanFitR.FillA.successors (__node)) ((LexLeanRuntime.append (Compiler.PlannerOracle.PlanFitR.EmptyB.successors (__node)) (Compiler.PlannerOracle.PlanFitR.Pour.successors (__node)) : List (Compiler.PlannerOracle.PlanFitR.Node))) : List (Compiler.PlannerOracle.PlanFitR.Node))
+@[expose] public def PlanFitR.fresh (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFitR.Node)) : (Prod (List (Compiler.PlannerOracle.PlanFitR.Node)) (List ((Prod (Nat) (Nat))))) := (LexLeanCollections.listFold ((fun (__acc : (Prod (List (Compiler.PlannerOracle.PlanFitR.Node)) (List ((Prod (Nat) (Nat)))))) (__n : Compiler.PlannerOracle.PlanFitR.Node) => (if (LexLeanCollections.setContains ((__acc).2) ((__n).state) : Bool) then __acc else ((LexLeanRuntime.append ((__acc).1) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node)))) : List (Compiler.PlannerOracle.PlanFitR.Node)), (LexLeanCollections.setInsert ((__acc).2) ((__n).state) : List ((Prod (Nat) (Nat)))))))) ((([] : List (Compiler.PlannerOracle.PlanFitR.Node)), __visited)) (__nodes) : (Prod (List (Compiler.PlannerOracle.PlanFitR.Node)) (List ((Prod (Nat) (Nat))))))
+@[expose] public def PlanFitR.start (target : Nat) : Compiler.PlannerOracle.PlanFitR.Search := (let __first : List (Compiler.PlannerOracle.PlanFitR.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitR.Node)) (__n : Compiler.PlannerOracle.PlanFitR.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node)))) : List (Compiler.PlannerOracle.PlanFitR.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFitR.Node))) ((({ state := Compiler.PlannerOracle.PlanFitR.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFitR.Step)) } : Compiler.PlannerOracle.PlanFitR.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node)))) : List (Compiler.PlannerOracle.PlanFitR.Node)); ({ frontier := __first, visited := (LexLeanCollections.setInsert (([] : List ((Prod (Nat) (Nat))))) (Compiler.PlannerOracle.PlanFitR.observe (target)) : List ((Prod (Nat) (Nat)))), found := Option.none, truncated := (Nat.blt ((target + target)) (1)), ledger := ({ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := (LexLeanRuntime.length (__first) : Nat) } : Compiler.PlannerOracle.PlanFitR.Ledger) } : Compiler.PlannerOracle.PlanFitR.Search))
+@[expose] public def PlanFitR.attempts (__s : (Prod (Nat) (Nat))) : Nat := (1 + (1 + (LexLeanRuntime.length (Compiler.PlannerOracle.Pour.candidates (__s)) : Nat)))
+@[expose] public def PlanFitR.searchStep (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) : Option (Compiler.PlannerOracle.PlanFitR.Search) := (match (__r).found with | Option.some _ => Option.none | Option.none => (match (__r).frontier with | List.nil => Option.none | List.cons __node __rest => (match Compiler.PlannerOracle.PlanFitR.accept (target) ((__node).state) with | Option.some __v => Option.some (({ frontier := __rest, visited := (__r).visited, found := Option.some ((__v, __node)), truncated := (__r).truncated, ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := ((__r).ledger).attempts, firings := ((__r).ledger).firings, expansions := ((__r).ledger).expansions, verifications := ((__r).ledger).verifications, frontier := ((__r).ledger).frontier } : Compiler.PlannerOracle.PlanFitR.Ledger) } : Compiler.PlannerOracle.PlanFitR.Search)) | Option.none => (let __successors : List (Compiler.PlannerOracle.PlanFitR.Node) := Compiler.PlannerOracle.PlanFitR.successors (__node); (let __fresh : (Prod (List (Compiler.PlannerOracle.PlanFitR.Node)) (List ((Prod (Nat) (Nat))))) := Compiler.PlannerOracle.PlanFitR.fresh ((__r).visited) (__successors); (let __ordered : List (Compiler.PlannerOracle.PlanFitR.Node) := (LexLeanRuntime.append (__rest) ((__fresh).1) : List (Compiler.PlannerOracle.PlanFitR.Node)); (let __next : List (Compiler.PlannerOracle.PlanFitR.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitR.Node)) (__n : Compiler.PlannerOracle.PlanFitR.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitR.Node)))) : List (Compiler.PlannerOracle.PlanFitR.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFitR.Node))) (__ordered) : List (Compiler.PlannerOracle.PlanFitR.Node)); Option.some (({ frontier := __next, visited := (__fresh).2, found := Option.none, truncated := ((__r).truncated || (Nat.blt ((target + target)) ((LexLeanRuntime.length (__ordered) : Nat)))), ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := (((__r).ledger).attempts + Compiler.PlannerOracle.PlanFitR.attempts ((__node).state)), firings := (((__r).ledger).firings + (LexLeanRuntime.length (__successors) : Nat)), expansions := (((__r).ledger).expansions + 1), verifications := ((__r).ledger).verifications, frontier := (if (Nat.blt (((__r).ledger).frontier) ((LexLeanRuntime.length (__next) : Nat))) then (LexLeanRuntime.length (__next) : Nat) else ((__r).ledger).frontier) } : Compiler.PlannerOracle.PlanFitR.Ledger) } : Compiler.PlannerOracle.PlanFitR.Search)))))))))
+@[expose] public def PlanFitR.run (target : Nat) : (Prod (Compiler.PlannerOracle.PlanFitR.Search) (Bool)) := (LexLeanCollections.iterateUntil ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) : (Prod (Compiler.PlannerOracle.PlanFitR.Search) (Bool)))
+@[expose] public def PlanFitR.failure (__saturated : Bool) (__truncated : Bool) : (Prod Bool Bool) := (if (__saturated && (!__truncated)) then ((false, true) : Prod Bool Bool) else ((false, false) : Prod Bool Bool))
+@[expose] public def PlanFitR (target : Nat) : Except ((Prod Bool Bool)) ((Prod (Nat) (List (Compiler.PlannerOracle.PlanFitR.Step)))) := (let __final : (Prod (Compiler.PlannerOracle.PlanFitR.Search) (Bool)) := Compiler.PlannerOracle.PlanFitR.run (target); (match ((__final).1).found with | Option.some __hit => Except.ok (((__hit).1, ((__hit).2).trace)) | Option.none => Except.error (Compiler.PlannerOracle.PlanFitR.failure ((__final).2) (((__final).1).truncated))))
+@[expose] public def PlanFitR.verdict (target : Nat) : Except ((Prod Bool Bool)) (Nat) := (match Compiler.PlannerOracle.PlanFitR (target) with | Except.ok __p => Except.ok ((__p).1) | Except.error __e => Except.error (__e))
+public theorem PlanFitR.fire_sound (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitR.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitR.fire (__s) (__step) = Option.some (__t)) -> Compiler.PlannerOracle.Moves (__s) (__t)) :=
+by
+  cases __step with
+  | FillA =>
+    exact Compiler.PlannerOracle.FillA.apply_sound __s __t
+  | EmptyB =>
+    exact Compiler.PlannerOracle.EmptyB.apply_sound __s __t
+  | Pour __b =>
+    exact Compiler.PlannerOracle.Pour.apply_sound __s __b __t
+public theorem PlanFitR.replay_fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitR.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitR.fire (__s) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFitR.replay (Except.ok (__s)) (__step) = Except.ok (__t))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.replay]
+  rw [llE]
+public theorem PlanFitR.replay_sound (target : Nat) (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFitR.Step) : ((LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitR.observe (target)) (__acc)) -> (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitR.observe (target)) (Compiler.PlannerOracle.PlanFitR.replay (__acc) (__step)))) :=
+by
+  intro llH llT llE
+  cases __acc with
+  | error _ => cases llE
+  | ok llS =>
+    dsimp only [Compiler.PlannerOracle.PlanFitR.replay] at llE
+    split at llE
+    · cases llE
+    · cases llE
+      exact LexLeanReasoning.Star.tail _ llS _ (llH llS rfl) (Compiler.PlannerOracle.PlanFitR.fire_sound llS __step _ ‹_›)
+public theorem PlanFitR.derivation (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)) : (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitR.observe (target)) (Compiler.PlannerOracle.PlanFitR.follow (target) (__trace))) :=
+  (LexLeanReasoning.foldInvariant ((Compiler.PlannerOracle.PlanFitR.replay)) (fun (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) => (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitR.observe (target)) (__acc))) (Compiler.PlannerOracle.PlanFitR.replay_sound (target)) (__trace) (Except.ok (Compiler.PlannerOracle.PlanFitR.observe (target))) (LexLeanReasoning.reachesStart ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitR.observe (target))))
+public theorem PlanFitR.follow_invariant (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)) (__s : (Prod (Nat) (Nat))) : (Compiler.PlannerOracle.Fits (Compiler.PlannerOracle.PlanFitR.observe (target)) -> ((Compiler.PlannerOracle.PlanFitR.follow (target) (__trace) = Except.ok (__s)) -> Compiler.PlannerOracle.Fits (__s))) :=
+  (fun llI llE => (LexLeanReasoning.starPreserves ((Compiler.PlannerOracle.Moves)) ((Compiler.PlannerOracle.Fits)) Compiler.PlannerOracle.Pouring.preserves (Compiler.PlannerOracle.PlanFitR.observe (target)) (__s) (Compiler.PlannerOracle.PlanFitR.derivation (target) (__trace) (__s) llE) llI))
+public theorem PlanFitR.follow_relation (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)) (__s : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitR.follow (target) (__trace) = Except.ok (__s)) -> Compiler.PlannerOracle.Held (target) (__s)) :=
+  (fun llE => (LexLeanReasoning.starPreserves ((Compiler.PlannerOracle.Moves)) (fun (__s : (Prod (Nat) (Nat))) => Compiler.PlannerOracle.Held (target) (__s)) (Compiler.PlannerOracle.held_preserved (target)) (Compiler.PlannerOracle.PlanFitR.observe (target)) (__s) (Compiler.PlannerOracle.PlanFitR.derivation (target) (__trace) (__s) llE) (Compiler.PlannerOracle.held_initial (target))))
+public theorem PlanFitR.accept_sound (target : Nat) (__s : (Prod (Nat) (Nat))) (__v : Nat) : (Compiler.PlannerOracle.Held (target) (__s) -> ((Compiler.PlannerOracle.PlanFitR.accept (target) (__s) = Option.some (__v)) -> Compiler.PlannerOracle.Within (target) (__v))) :=
+  (fun llJ llE => (Compiler.PlannerOracle.plan_held_correct (target) (__s) (__v) llJ llE))
+public theorem PlanFitR.extend (target : Nat) (__node : Compiler.PlannerOracle.PlanFitR.Node) (__step : Compiler.PlannerOracle.PlanFitR.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitR.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> ((Compiler.PlannerOracle.PlanFitR.fire ((__node).state) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFitR.follow (target) ((LexLeanRuntime.append ((__node).trace) ((__step :: ([] : List (Compiler.PlannerOracle.PlanFitR.Step)))) : List (Compiler.PlannerOracle.PlanFitR.Step))) = Except.ok (__t)))) :=
+by
+  intro llH llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.follow]
+  rw [LexLeanReasoning.foldSnoc]
+  dsimp only [Compiler.PlannerOracle.PlanFitR.follow] at llH
+  rw [llH]
+  exact Compiler.PlannerOracle.PlanFitR.replay_fire _ __step __t llE
+public theorem PlanFitR.FillA.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitR.Node) : ((Compiler.PlannerOracle.PlanFitR.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitR.FillA.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitR.FillA.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitR.extend _ __node _ _ llH ‹_›)
+public theorem PlanFitR.EmptyB.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitR.Node) : ((Compiler.PlannerOracle.PlanFitR.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitR.EmptyB.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitR.EmptyB.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitR.extend _ __node _ _ llH ‹_›)
+public theorem PlanFitR.Pour.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitR.Node) : ((Compiler.PlannerOracle.PlanFitR.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitR.Pour.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitR.Pour.successors]
+  exact LexLeanReasoning.foldInvariant _ (LexLeanReasoning.All (fun (llN : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.follow _ llN.trace = Except.ok llN.state))
+    (fun llA llB llP => by
+      dsimp only [Compiler.PlannerOracle.PlanFitR.Pour.collect]
+      split
+      · exact llP
+      · exact LexLeanReasoning.allAppend _ _ _ llP (LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitR.extend _ __node _ _ llH ‹_›)))
+    _ _ LexLeanReasoning.All.nil
+public theorem PlanFitR.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitR.Node) : ((Compiler.PlannerOracle.PlanFitR.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitR.successors (__node)))) :=
+  (fun llH => (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFitR.FillA.successors_ok (target) (__node) llH) (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFitR.EmptyB.successors_ok (target) (__node) llH) (Compiler.PlannerOracle.PlanFitR.Pour.successors_ok (target) (__node) llH))))
+public theorem PlanFitR.fresh_ok (target : Nat) (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFitR.Node)) : ((LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (__nodes)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((Compiler.PlannerOracle.PlanFitR.fresh (__visited) (__nodes)).1))) :=
+  (LexLeanReasoning.freshAll ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (__n).state)) (fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state))) (__visited) (__nodes))
+public theorem PlanFitR.search_step (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) (__q : Compiler.PlannerOracle.PlanFitR.Search) : ((Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r) = Option.some (__q)) -> ((LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.accept (target) ((__n).state))) ((__r).frontier) ((__r).found)) -> (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.accept (target) ((__n).state))) ((__q).frontier) ((__q).found)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFitR.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · rename_i llNode llRest llFr
+      have llAll := And.left llH
+      rw [llFr] at llAll
+      have llNodeOk := LexLeanReasoning.allHead _ llNode llRest llAll
+      have llRestOk := LexLeanReasoning.allTail _ llNode llRest llAll
+      split at llE
+      · rename_i llV llAcc
+        cases llE
+        exact And.intro llRestOk (And.intro llNodeOk llAcc)
+      · cases llE
+        exact And.intro (LexLeanReasoning.capAll _ _ _ (LexLeanReasoning.allAppend _ _ _ llRestOk (Compiler.PlannerOracle.PlanFitR.fresh_ok _ _ _ (Compiler.PlannerOracle.PlanFitR.successors_ok _ llNode llNodeOk)))) True.intro
+public theorem PlanFitR.search_peak (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) (__q : Compiler.PlannerOracle.PlanFitR.Search) : ((Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r) = Option.some (__q)) -> ((((__r).ledger).frontier <= (target + target)) -> (((__q).ledger).frontier <= (target + target)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFitR.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        exact llH
+      · cases llE
+        exact LexLeanReasoning.peakBound _ _ _ llH (LexLeanReasoning.capBound _ _)
+public theorem PlanFitR.search_count (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) (__q : Compiler.PlannerOracle.PlanFitR.Search) : ((Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).iterations = (((__r).ledger).iterations + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        rfl
+      · cases llE
+        rfl
+public theorem PlanFitR.search_verify_growth (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) (__q : Compiler.PlannerOracle.PlanFitR.Search) : ((Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications <= (((__r).ledger).verifications + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFitR.search_expanded (target : Nat) (__r : Compiler.PlannerOracle.PlanFitR.Search) (__q : Compiler.PlannerOracle.PlanFitR.Search) : ((Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFitR.search_ok (target : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.accept (target) ((__n).state))) (((Compiler.PlannerOracle.PlanFitR.run (target)).1).frontier) (((Compiler.PlannerOracle.PlanFitR.run (target)).1).found)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitR.run]
+  exact (LexLeanReasoning.iterateUntilInvariant ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) (fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.accept (target) ((__n).state))) ((__r).frontier) ((__r).found))) (Compiler.PlannerOracle.PlanFitR.search_step (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) (LexLeanReasoning.searchStart ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => Compiler.PlannerOracle.PlanFitR.accept (target) ((__n).state))) _ (LexLeanReasoning.capAll ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((target + target)) _ (LexLeanReasoning.allSingle ((fun (__n : Compiler.PlannerOracle.PlanFitR.Node) => (Compiler.PlannerOracle.PlanFitR.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (({ state := Compiler.PlannerOracle.PlanFitR.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFitR.Step)) } : Compiler.PlannerOracle.PlanFitR.Node)) rfl))))
+public theorem PlanFitR.frontier_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitR.run (target)).1).ledger).frontier <= (target + target)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitR.run]
+  exact (LexLeanReasoning.iterateUntilBound ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => ((__r).ledger).frontier)) ((target + target)) (Compiler.PlannerOracle.PlanFitR.search_peak (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) (LexLeanReasoning.capBound ((target + target)) _))
+public theorem PlanFitR.verifications_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitR.run (target)).1).ledger).verifications <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitR.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => ((__r).ledger).verifications)) (Compiler.PlannerOracle.PlanFitR.search_verify_growth (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) rfl)
+public theorem PlanFitR.expansions_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitR.run (target)).1).ledger).expansions <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitR.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => ((__r).ledger).expansions)) (Compiler.PlannerOracle.PlanFitR.search_expanded (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) rfl)
+public theorem PlanFitR.iterations_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitR.run (target)).1).ledger).iterations <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitR.run]
+  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => Compiler.PlannerOracle.PlanFitR.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitR.Search) => ((__r).ledger).iterations)) (Compiler.PlannerOracle.PlanFitR.search_count (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitR.start (target)) rfl)
+public theorem PlanFitR.explained (target : Nat) : (forall (__v : Nat), (forall (__trace : List (Compiler.PlannerOracle.PlanFitR.Step)), ((Compiler.PlannerOracle.PlanFitR (target) = Except.ok ((__v, __trace))) -> ((Compiler.PlannerOracle.PlanFitR.answer (target) (__trace) = Option.some (__v)) /\ Compiler.PlannerOracle.Within (target) (__v))))) :=
+by
+  intro llV llT llE
+  have llSearch := Compiler.PlannerOracle.PlanFitR.search_ok target
+  dsimp only [Compiler.PlannerOracle.PlanFitR] at llE
+  generalize llRun : Compiler.PlannerOracle.PlanFitR.run target = llR at llE llSearch
+  split at llE
+  · rename_i llHit llF
+    cases llE
+    have llOk := And.right llSearch
+    rw [llF] at llOk
+    exact And.intro (by dsimp only [Compiler.PlannerOracle.PlanFitR.answer]; rw [And.left llOk]; exact And.right llOk) (Compiler.PlannerOracle.PlanFitR.accept_sound _ _ _ (Compiler.PlannerOracle.PlanFitR.follow_relation target _ _ (And.left llOk)) (And.right llOk))
+  · cases llE
+public theorem PlanFitR.verdict_sound (target : Nat) : (forall (__v : Nat), ((Compiler.PlannerOracle.PlanFitR.verdict (target) = Except.ok (__v)) -> Compiler.PlannerOracle.Within (target) (__v))) :=
+by
+  intro llV llE
+  dsimp only [Compiler.PlannerOracle.PlanFitR.verdict] at llE
+  generalize llHP : Compiler.PlannerOracle.PlanFitR target = llR at llE
+  cases llR with
+  | error _ => cases llE
+  | ok llP =>
+    cases llE
+    exact And.right (Compiler.PlannerOracle.PlanFitR.explained _ llP.1 llP.2 llHP)
+
+public inductive PlanFitU.Step where
+  | FillA
+  | EmptyB
+  | Pour (_ : Nat)
+public structure PlanFitU.Ledger where
+  iterations : Nat
+  attempts : Nat
+  firings : Nat
+  expansions : Nat
+  verifications : Nat
+  frontier : Nat
+@[expose] public def PlanFitU.observe (_target : Nat) : (Prod (Nat) (Nat)) := (0, 0)
+@[expose] public def PlanFitU.fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitU.Step) : Option ((Prod (Nat) (Nat))) := (match __step with | Compiler.PlannerOracle.PlanFitU.Step.FillA => Compiler.PlannerOracle.FillA.apply (__s) | Compiler.PlannerOracle.PlanFitU.Step.EmptyB => Compiler.PlannerOracle.EmptyB.apply (__s) | Compiler.PlannerOracle.PlanFitU.Step.Pour __b => Compiler.PlannerOracle.Pour.apply (__s) (__b))
+@[expose] public def PlanFitU.replay (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFitU.Step) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (match __acc with | Except.error __e => Except.error (__e) | Except.ok __s => (match Compiler.PlannerOracle.PlanFitU.fire (__s) (__step) with | Option.none => Except.error (((true, true) : Prod Bool Bool)) | Option.some __t => Except.ok (__t)))
+@[expose] public def PlanFitU.follow (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitU.Step)) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Compiler.PlannerOracle.PlanFitU.replay)) (Except.ok (Compiler.PlannerOracle.PlanFitU.observe (target))) (__trace) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))))
+@[expose] public def PlanFitU.extract (jugs : (Prod (Nat) (Nat))) : Option (Nat) := Option.some ((jugs).1)
+@[expose] public def PlanFitU.accept (_target : Nat) (__s : (Prod (Nat) (Nat))) : Option (Nat) := Compiler.PlannerOracle.PlanFitU.extract (__s)
+@[expose] public def PlanFitU.answer (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitU.Step)) : Option (Nat) := (match Compiler.PlannerOracle.PlanFitU.follow (target) (__trace) with | Except.ok __s => Compiler.PlannerOracle.PlanFitU.accept (target) (__s) | Except.error _ => Option.none)
+public structure PlanFitU.Node where
+  state : (Prod (Nat) (Nat))
+  trace : List (Compiler.PlannerOracle.PlanFitU.Step)
+public structure PlanFitU.Search where
+  frontier : List (Compiler.PlannerOracle.PlanFitU.Node)
+  visited : List ((Prod (Nat) (Nat)))
+  found : Option ((Prod (Nat) (Compiler.PlannerOracle.PlanFitU.Node)))
+  truncated : Bool
+  ledger : Compiler.PlannerOracle.PlanFitU.Ledger
+@[expose] public def PlanFitU.FillA.successors (__node : Compiler.PlannerOracle.PlanFitU.Node) : List (Compiler.PlannerOracle.PlanFitU.Node) := (match Compiler.PlannerOracle.PlanFitU.fire ((__node).state) (Compiler.PlannerOracle.PlanFitU.Step.FillA) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFitU.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitU.Step.FillA :: ([] : List (Compiler.PlannerOracle.PlanFitU.Step)))) : List (Compiler.PlannerOracle.PlanFitU.Step)) } : Compiler.PlannerOracle.PlanFitU.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node))))
+@[expose] public def PlanFitU.EmptyB.successors (__node : Compiler.PlannerOracle.PlanFitU.Node) : List (Compiler.PlannerOracle.PlanFitU.Node) := (match Compiler.PlannerOracle.PlanFitU.fire ((__node).state) (Compiler.PlannerOracle.PlanFitU.Step.EmptyB) with | Option.none => ([] : List (Compiler.PlannerOracle.PlanFitU.Node)) | Option.some __t => (({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitU.Step.EmptyB :: ([] : List (Compiler.PlannerOracle.PlanFitU.Step)))) : List (Compiler.PlannerOracle.PlanFitU.Step)) } : Compiler.PlannerOracle.PlanFitU.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node))))
+@[expose] public def PlanFitU.Pour.collect (__node : Compiler.PlannerOracle.PlanFitU.Node) (__acc : List (Compiler.PlannerOracle.PlanFitU.Node)) (__b : Nat) : List (Compiler.PlannerOracle.PlanFitU.Node) := (match Compiler.PlannerOracle.PlanFitU.fire ((__node).state) (Compiler.PlannerOracle.PlanFitU.Step.Pour (__b)) with | Option.none => __acc | Option.some __t => (LexLeanRuntime.append (__acc) ((({ state := __t, trace := (LexLeanRuntime.append ((__node).trace) ((Compiler.PlannerOracle.PlanFitU.Step.Pour (__b) :: ([] : List (Compiler.PlannerOracle.PlanFitU.Step)))) : List (Compiler.PlannerOracle.PlanFitU.Step)) } : Compiler.PlannerOracle.PlanFitU.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node)))) : List (Compiler.PlannerOracle.PlanFitU.Node)))
+@[expose] public def PlanFitU.Pour.successors (__node : Compiler.PlannerOracle.PlanFitU.Node) : List (Compiler.PlannerOracle.PlanFitU.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitU.Node)) (__b : Nat) => Compiler.PlannerOracle.PlanFitU.Pour.collect (__node) (__acc) (__b))) (([] : List (Compiler.PlannerOracle.PlanFitU.Node))) (Compiler.PlannerOracle.Pour.candidates ((__node).state)) : List (Compiler.PlannerOracle.PlanFitU.Node))
+@[expose] public def PlanFitU.successors (__node : Compiler.PlannerOracle.PlanFitU.Node) : List (Compiler.PlannerOracle.PlanFitU.Node) := (LexLeanRuntime.append (Compiler.PlannerOracle.PlanFitU.FillA.successors (__node)) ((LexLeanRuntime.append (Compiler.PlannerOracle.PlanFitU.EmptyB.successors (__node)) (Compiler.PlannerOracle.PlanFitU.Pour.successors (__node)) : List (Compiler.PlannerOracle.PlanFitU.Node))) : List (Compiler.PlannerOracle.PlanFitU.Node))
+@[expose] public def PlanFitU.fresh (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFitU.Node)) : (Prod (List (Compiler.PlannerOracle.PlanFitU.Node)) (List ((Prod (Nat) (Nat))))) := (LexLeanCollections.listFold ((fun (__acc : (Prod (List (Compiler.PlannerOracle.PlanFitU.Node)) (List ((Prod (Nat) (Nat)))))) (__n : Compiler.PlannerOracle.PlanFitU.Node) => (if (LexLeanCollections.setContains ((__acc).2) ((__n).state) : Bool) then __acc else ((LexLeanRuntime.append ((__acc).1) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node)))) : List (Compiler.PlannerOracle.PlanFitU.Node)), (LexLeanCollections.setInsert ((__acc).2) ((__n).state) : List ((Prod (Nat) (Nat)))))))) ((([] : List (Compiler.PlannerOracle.PlanFitU.Node)), __visited)) (__nodes) : (Prod (List (Compiler.PlannerOracle.PlanFitU.Node)) (List ((Prod (Nat) (Nat))))))
+@[expose] public def PlanFitU.start (target : Nat) : Compiler.PlannerOracle.PlanFitU.Search := (let __first : List (Compiler.PlannerOracle.PlanFitU.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitU.Node)) (__n : Compiler.PlannerOracle.PlanFitU.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node)))) : List (Compiler.PlannerOracle.PlanFitU.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFitU.Node))) ((({ state := Compiler.PlannerOracle.PlanFitU.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFitU.Step)) } : Compiler.PlannerOracle.PlanFitU.Node) :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node)))) : List (Compiler.PlannerOracle.PlanFitU.Node)); ({ frontier := __first, visited := (LexLeanCollections.setInsert (([] : List ((Prod (Nat) (Nat))))) (Compiler.PlannerOracle.PlanFitU.observe (target)) : List ((Prod (Nat) (Nat)))), found := Option.none, truncated := (Nat.blt ((target + target)) (1)), ledger := ({ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := (LexLeanRuntime.length (__first) : Nat) } : Compiler.PlannerOracle.PlanFitU.Ledger) } : Compiler.PlannerOracle.PlanFitU.Search))
+@[expose] public def PlanFitU.attempts (__s : (Prod (Nat) (Nat))) : Nat := (1 + (1 + (LexLeanRuntime.length (Compiler.PlannerOracle.Pour.candidates (__s)) : Nat)))
+@[expose] public def PlanFitU.searchStep (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) : Option (Compiler.PlannerOracle.PlanFitU.Search) := (match (__r).found with | Option.some _ => Option.none | Option.none => (match (__r).frontier with | List.nil => Option.none | List.cons __node __rest => (match Compiler.PlannerOracle.PlanFitU.accept (target) ((__node).state) with | Option.some __v => Option.some (({ frontier := __rest, visited := (__r).visited, found := Option.some ((__v, __node)), truncated := (__r).truncated, ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := ((__r).ledger).attempts, firings := ((__r).ledger).firings, expansions := ((__r).ledger).expansions, verifications := ((__r).ledger).verifications, frontier := ((__r).ledger).frontier } : Compiler.PlannerOracle.PlanFitU.Ledger) } : Compiler.PlannerOracle.PlanFitU.Search)) | Option.none => (let __successors : List (Compiler.PlannerOracle.PlanFitU.Node) := Compiler.PlannerOracle.PlanFitU.successors (__node); (let __fresh : (Prod (List (Compiler.PlannerOracle.PlanFitU.Node)) (List ((Prod (Nat) (Nat))))) := Compiler.PlannerOracle.PlanFitU.fresh ((__r).visited) (__successors); (let __ordered : List (Compiler.PlannerOracle.PlanFitU.Node) := (LexLeanRuntime.append (__rest) ((__fresh).1) : List (Compiler.PlannerOracle.PlanFitU.Node)); (let __next : List (Compiler.PlannerOracle.PlanFitU.Node) := (LexLeanCollections.listFold ((fun (__acc : List (Compiler.PlannerOracle.PlanFitU.Node)) (__n : Compiler.PlannerOracle.PlanFitU.Node) => (if (Nat.blt ((LexLeanRuntime.length (__acc) : Nat)) ((target + target))) then (LexLeanRuntime.append (__acc) ((__n :: ([] : List (Compiler.PlannerOracle.PlanFitU.Node)))) : List (Compiler.PlannerOracle.PlanFitU.Node)) else __acc))) (([] : List (Compiler.PlannerOracle.PlanFitU.Node))) (__ordered) : List (Compiler.PlannerOracle.PlanFitU.Node)); Option.some (({ frontier := __next, visited := (__fresh).2, found := Option.none, truncated := ((__r).truncated || (Nat.blt ((target + target)) ((LexLeanRuntime.length (__ordered) : Nat)))), ledger := ({ iterations := (((__r).ledger).iterations + 1), attempts := (((__r).ledger).attempts + Compiler.PlannerOracle.PlanFitU.attempts ((__node).state)), firings := (((__r).ledger).firings + (LexLeanRuntime.length (__successors) : Nat)), expansions := (((__r).ledger).expansions + 1), verifications := ((__r).ledger).verifications, frontier := (if (Nat.blt (((__r).ledger).frontier) ((LexLeanRuntime.length (__next) : Nat))) then (LexLeanRuntime.length (__next) : Nat) else ((__r).ledger).frontier) } : Compiler.PlannerOracle.PlanFitU.Ledger) } : Compiler.PlannerOracle.PlanFitU.Search)))))))))
+@[expose] public def PlanFitU.run (target : Nat) : (Prod (Compiler.PlannerOracle.PlanFitU.Search) (Bool)) := (LexLeanCollections.iterateUntil ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) : (Prod (Compiler.PlannerOracle.PlanFitU.Search) (Bool)))
+@[expose] public def PlanFitU.failure (__saturated : Bool) (__truncated : Bool) : (Prod Bool Bool) := (if (__saturated && (!__truncated)) then ((false, true) : Prod Bool Bool) else ((false, false) : Prod Bool Bool))
+@[expose] public def PlanFitU (target : Nat) : Except ((Prod Bool Bool)) ((Prod (Nat) (List (Compiler.PlannerOracle.PlanFitU.Step)))) := (let __final : (Prod (Compiler.PlannerOracle.PlanFitU.Search) (Bool)) := Compiler.PlannerOracle.PlanFitU.run (target); (match ((__final).1).found with | Option.some __hit => Except.ok (((__hit).1, ((__hit).2).trace)) | Option.none => Except.error (Compiler.PlannerOracle.PlanFitU.failure ((__final).2) (((__final).1).truncated))))
+@[expose] public def PlanFitU.verdict (target : Nat) : Except ((Prod Bool Bool)) (Nat) := (match Compiler.PlannerOracle.PlanFitU (target) with | Except.ok __p => Except.ok ((__p).1) | Except.error __e => Except.error (__e))
+public theorem PlanFitU.fire_sound (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitU.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitU.fire (__s) (__step) = Option.some (__t)) -> Compiler.PlannerOracle.Moves (__s) (__t)) :=
+by
+  cases __step with
+  | FillA =>
+    exact Compiler.PlannerOracle.FillA.apply_sound __s __t
+  | EmptyB =>
+    exact Compiler.PlannerOracle.EmptyB.apply_sound __s __t
+  | Pour __b =>
+    exact Compiler.PlannerOracle.Pour.apply_sound __s __b __t
+public theorem PlanFitU.replay_fire (__s : (Prod (Nat) (Nat))) (__step : Compiler.PlannerOracle.PlanFitU.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitU.fire (__s) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFitU.replay (Except.ok (__s)) (__step) = Except.ok (__t))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.replay]
+  rw [llE]
+public theorem PlanFitU.replay_sound (target : Nat) (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) (__step : Compiler.PlannerOracle.PlanFitU.Step) : ((LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitU.observe (target)) (__acc)) -> (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitU.observe (target)) (Compiler.PlannerOracle.PlanFitU.replay (__acc) (__step)))) :=
+by
+  intro llH llT llE
+  cases __acc with
+  | error _ => cases llE
+  | ok llS =>
+    dsimp only [Compiler.PlannerOracle.PlanFitU.replay] at llE
+    split at llE
+    · cases llE
+    · cases llE
+      exact LexLeanReasoning.Star.tail _ llS _ (llH llS rfl) (Compiler.PlannerOracle.PlanFitU.fire_sound llS __step _ ‹_›)
+public theorem PlanFitU.derivation (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitU.Step)) : (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitU.observe (target)) (Compiler.PlannerOracle.PlanFitU.follow (target) (__trace))) :=
+  (LexLeanReasoning.foldInvariant ((Compiler.PlannerOracle.PlanFitU.replay)) (fun (__acc : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat)))) => (LexLeanReasoning.Reaches ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitU.observe (target)) (__acc))) (Compiler.PlannerOracle.PlanFitU.replay_sound (target)) (__trace) (Except.ok (Compiler.PlannerOracle.PlanFitU.observe (target))) (LexLeanReasoning.reachesStart ((Compiler.PlannerOracle.Moves)) (Compiler.PlannerOracle.PlanFitU.observe (target))))
+public theorem PlanFitU.follow_invariant (target : Nat) (__trace : List (Compiler.PlannerOracle.PlanFitU.Step)) (__s : (Prod (Nat) (Nat))) : (Compiler.PlannerOracle.Fits (Compiler.PlannerOracle.PlanFitU.observe (target)) -> ((Compiler.PlannerOracle.PlanFitU.follow (target) (__trace) = Except.ok (__s)) -> Compiler.PlannerOracle.Fits (__s))) :=
+  (fun llI llE => (LexLeanReasoning.starPreserves ((Compiler.PlannerOracle.Moves)) ((Compiler.PlannerOracle.Fits)) Compiler.PlannerOracle.Pouring.preserves (Compiler.PlannerOracle.PlanFitU.observe (target)) (__s) (Compiler.PlannerOracle.PlanFitU.derivation (target) (__trace) (__s) llE) llI))
+public theorem PlanFitU.accept_sound (target : Nat) (__s : (Prod (Nat) (Nat))) (__v : Nat) : ((Compiler.PlannerOracle.PlanFitU.accept (target) (__s) = Option.some (__v)) -> Compiler.PlannerOracle.Whole (target) (__v)) :=
+  (fun llE => (Compiler.PlannerOracle.plan_whole_correct (target) (__s) (__v) llE))
+public theorem PlanFitU.extend (target : Nat) (__node : Compiler.PlannerOracle.PlanFitU.Node) (__step : Compiler.PlannerOracle.PlanFitU.Step) (__t : (Prod (Nat) (Nat))) : ((Compiler.PlannerOracle.PlanFitU.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> ((Compiler.PlannerOracle.PlanFitU.fire ((__node).state) (__step) = Option.some (__t)) -> (Compiler.PlannerOracle.PlanFitU.follow (target) ((LexLeanRuntime.append ((__node).trace) ((__step :: ([] : List (Compiler.PlannerOracle.PlanFitU.Step)))) : List (Compiler.PlannerOracle.PlanFitU.Step))) = Except.ok (__t)))) :=
+by
+  intro llH llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.follow]
+  rw [LexLeanReasoning.foldSnoc]
+  dsimp only [Compiler.PlannerOracle.PlanFitU.follow] at llH
+  rw [llH]
+  exact Compiler.PlannerOracle.PlanFitU.replay_fire _ __step __t llE
+public theorem PlanFitU.FillA.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitU.Node) : ((Compiler.PlannerOracle.PlanFitU.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitU.FillA.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitU.FillA.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitU.extend _ __node _ _ llH ‹_›)
+public theorem PlanFitU.EmptyB.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitU.Node) : ((Compiler.PlannerOracle.PlanFitU.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitU.EmptyB.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitU.EmptyB.successors]
+  split
+  · exact LexLeanReasoning.All.nil
+  · exact LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitU.extend _ __node _ _ llH ‹_›)
+public theorem PlanFitU.Pour.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitU.Node) : ((Compiler.PlannerOracle.PlanFitU.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitU.Pour.successors (__node)))) :=
+by
+  intro llH
+  dsimp only [Compiler.PlannerOracle.PlanFitU.Pour.successors]
+  exact LexLeanReasoning.foldInvariant _ (LexLeanReasoning.All (fun (llN : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.follow _ llN.trace = Except.ok llN.state))
+    (fun llA llB llP => by
+      dsimp only [Compiler.PlannerOracle.PlanFitU.Pour.collect]
+      split
+      · exact llP
+      · exact LexLeanReasoning.allAppend _ _ _ llP (LexLeanReasoning.allSingle _ _ (Compiler.PlannerOracle.PlanFitU.extend _ __node _ _ llH ‹_›)))
+    _ _ LexLeanReasoning.All.nil
+public theorem PlanFitU.successors_ok (target : Nat) (__node : Compiler.PlannerOracle.PlanFitU.Node) : ((Compiler.PlannerOracle.PlanFitU.follow (target) ((__node).trace) = Except.ok ((__node).state)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (Compiler.PlannerOracle.PlanFitU.successors (__node)))) :=
+  (fun llH => (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFitU.FillA.successors_ok (target) (__node) llH) (LexLeanReasoning.allAppend _ _ _ (Compiler.PlannerOracle.PlanFitU.EmptyB.successors_ok (target) (__node) llH) (Compiler.PlannerOracle.PlanFitU.Pour.successors_ok (target) (__node) llH))))
+public theorem PlanFitU.fresh_ok (target : Nat) (__visited : List ((Prod (Nat) (Nat)))) (__nodes : List (Compiler.PlannerOracle.PlanFitU.Node)) : ((LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (__nodes)) -> (LexLeanReasoning.All ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((Compiler.PlannerOracle.PlanFitU.fresh (__visited) (__nodes)).1))) :=
+  (LexLeanReasoning.freshAll ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (__n).state)) (fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state))) (__visited) (__nodes))
+public theorem PlanFitU.search_step (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) (__q : Compiler.PlannerOracle.PlanFitU.Search) : ((Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r) = Option.some (__q)) -> ((LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.accept (target) ((__n).state))) ((__r).frontier) ((__r).found)) -> (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.accept (target) ((__n).state))) ((__q).frontier) ((__q).found)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFitU.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · rename_i llNode llRest llFr
+      have llAll := And.left llH
+      rw [llFr] at llAll
+      have llNodeOk := LexLeanReasoning.allHead _ llNode llRest llAll
+      have llRestOk := LexLeanReasoning.allTail _ llNode llRest llAll
+      split at llE
+      · rename_i llV llAcc
+        cases llE
+        exact And.intro llRestOk (And.intro llNodeOk llAcc)
+      · cases llE
+        exact And.intro (LexLeanReasoning.capAll _ _ _ (LexLeanReasoning.allAppend _ _ _ llRestOk (Compiler.PlannerOracle.PlanFitU.fresh_ok _ _ _ (Compiler.PlannerOracle.PlanFitU.successors_ok _ llNode llNodeOk)))) True.intro
+public theorem PlanFitU.search_peak (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) (__q : Compiler.PlannerOracle.PlanFitU.Search) : ((Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r) = Option.some (__q)) -> ((((__r).ledger).frontier <= (target + target)) -> (((__q).ledger).frontier <= (target + target)))) :=
+by
+  intro llE llH
+  dsimp only [Compiler.PlannerOracle.PlanFitU.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        exact llH
+      · cases llE
+        exact LexLeanReasoning.peakBound _ _ _ llH (LexLeanReasoning.capBound _ _)
+public theorem PlanFitU.search_count (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) (__q : Compiler.PlannerOracle.PlanFitU.Search) : ((Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).iterations = (((__r).ledger).iterations + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        rfl
+      · cases llE
+        rfl
+public theorem PlanFitU.search_verify_growth (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) (__q : Compiler.PlannerOracle.PlanFitU.Search) : ((Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).verifications <= (((__r).ledger).verifications + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFitU.search_expanded (target : Nat) (__r : Compiler.PlannerOracle.PlanFitU.Search) (__q : Compiler.PlannerOracle.PlanFitU.Search) : ((Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r) = Option.some (__q)) -> (((__q).ledger).expansions <= (((__r).ledger).expansions + 1))) :=
+by
+  intro llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.searchStep] at llE
+  split at llE
+  · cases llE
+  · split at llE
+    · cases llE
+    · split at llE
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+      · cases llE
+        first | exact Nat.le_refl _ | exact Nat.le_succ _
+public theorem PlanFitU.search_ok (target : Nat) : (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.accept (target) ((__n).state))) (((Compiler.PlannerOracle.PlanFitU.run (target)).1).frontier) (((Compiler.PlannerOracle.PlanFitU.run (target)).1).found)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitU.run]
+  exact (LexLeanReasoning.iterateUntilInvariant ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) (fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => (LexLeanReasoning.SearchOk ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.accept (target) ((__n).state))) ((__r).frontier) ((__r).found))) (Compiler.PlannerOracle.PlanFitU.search_step (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) (LexLeanReasoning.searchStart ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => Compiler.PlannerOracle.PlanFitU.accept (target) ((__n).state))) _ (LexLeanReasoning.capAll ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) ((target + target)) _ (LexLeanReasoning.allSingle ((fun (__n : Compiler.PlannerOracle.PlanFitU.Node) => (Compiler.PlannerOracle.PlanFitU.follow (target) ((__n).trace) = Except.ok ((__n).state)))) (({ state := Compiler.PlannerOracle.PlanFitU.observe (target), trace := ([] : List (Compiler.PlannerOracle.PlanFitU.Step)) } : Compiler.PlannerOracle.PlanFitU.Node)) rfl))))
+public theorem PlanFitU.frontier_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitU.run (target)).1).ledger).frontier <= (target + target)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitU.run]
+  exact (LexLeanReasoning.iterateUntilBound ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => ((__r).ledger).frontier)) ((target + target)) (Compiler.PlannerOracle.PlanFitU.search_peak (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) (LexLeanReasoning.capBound ((target + target)) _))
+public theorem PlanFitU.verifications_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitU.run (target)).1).ledger).verifications <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitU.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => ((__r).ledger).verifications)) (Compiler.PlannerOracle.PlanFitU.search_verify_growth (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) rfl)
+public theorem PlanFitU.expansions_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitU.run (target)).1).ledger).expansions <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitU.run]
+  exact (LexLeanReasoning.iterateUntilGrowth ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => ((__r).ledger).expansions)) (Compiler.PlannerOracle.PlanFitU.search_expanded (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) rfl)
+public theorem PlanFitU.iterations_bounded (target : Nat) : ((((Compiler.PlannerOracle.PlanFitU.run (target)).1).ledger).iterations <= (LexLeanRuntime.multiply (target) (8) : Nat)) :=
+by
+  dsimp only [Compiler.PlannerOracle.PlanFitU.run]
+  exact (LexLeanReasoning.iterateUntilCount ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => Compiler.PlannerOracle.PlanFitU.searchStep (target) (__r))) ((fun (__r : Compiler.PlannerOracle.PlanFitU.Search) => ((__r).ledger).iterations)) (Compiler.PlannerOracle.PlanFitU.search_count (target)) ((LexLeanRuntime.multiply (target) (8) : Nat)) (Compiler.PlannerOracle.PlanFitU.start (target)) rfl)
+public theorem PlanFitU.explained (target : Nat) : (forall (__v : Nat), (forall (__trace : List (Compiler.PlannerOracle.PlanFitU.Step)), ((Compiler.PlannerOracle.PlanFitU (target) = Except.ok ((__v, __trace))) -> ((Compiler.PlannerOracle.PlanFitU.answer (target) (__trace) = Option.some (__v)) /\ Compiler.PlannerOracle.Whole (target) (__v))))) :=
+by
+  intro llV llT llE
+  have llSearch := Compiler.PlannerOracle.PlanFitU.search_ok target
+  dsimp only [Compiler.PlannerOracle.PlanFitU] at llE
+  generalize llRun : Compiler.PlannerOracle.PlanFitU.run target = llR at llE llSearch
+  split at llE
+  · rename_i llHit llF
+    cases llE
+    have llOk := And.right llSearch
+    rw [llF] at llOk
+    exact And.intro (by dsimp only [Compiler.PlannerOracle.PlanFitU.answer]; rw [And.left llOk]; exact And.right llOk) (Compiler.PlannerOracle.PlanFitU.accept_sound _ _ _ (And.right llOk))
+  · cases llE
+public theorem PlanFitU.verdict_sound (target : Nat) : (forall (__v : Nat), ((Compiler.PlannerOracle.PlanFitU.verdict (target) = Except.ok (__v)) -> Compiler.PlannerOracle.Whole (target) (__v))) :=
+by
+  intro llV llE
+  dsimp only [Compiler.PlannerOracle.PlanFitU.verdict] at llE
+  generalize llHP : Compiler.PlannerOracle.PlanFitU target = llR at llE
+  cases llR with
+  | error _ => cases llE
+  | ok llP =>
+    cases llE
+    exact And.right (Compiler.PlannerOracle.PlanFitU.explained _ llP.1 llP.2 llHP)
 
 end Compiler.PlannerOracle

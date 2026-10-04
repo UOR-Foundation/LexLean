@@ -754,14 +754,14 @@ public theorem GatewayEvidence.gateway_safe : LexLeanModels.SatisfiesTotal ((Rea
 
 @[expose] public def GatewayModel (__input : Reasoning.Clinic.Vitals) : Except ((Prod Bool Bool)) (Nat) := Reasoning.Main.GatewayTriage (__input)
 
-@[expose, reducible] public def Graded (_v : Reasoning.Clinic.Vitals) (r : Nat) : Prop := (r <= 3)
+@[expose, reducible] public def Graded (v : Reasoning.Clinic.Vitals) (r : Nat) : Prop := ((r <= 3) /\ ((r = 3) -> Reasoning.Clinic.Hypotensive (v)))
 
-@[expose] public def gradedCheck (_v : Reasoning.Clinic.Vitals) (r : Nat) : Bool := (Nat.ble (r) (3))
+@[expose] public def gradedCheck (v : Reasoning.Clinic.Vitals) (r : Nat) : Bool := ((Nat.ble (r) (3)) && ((!(Nat.beq (r) (3))) || Reasoning.Clinic.hypotensive (v)))
 
 public theorem graded_sound (v : Reasoning.Clinic.Vitals) (r : Nat) : ((gradedCheck (v) (r) = true) -> Graded (v) (r)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Graded, gradedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Reasoning.Clinic.Hypotensive, Reasoning.Clinic.hypotensive, Graded, gradedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem Scale.sound : (LexLeanReasoning.Sound ((Reasoning.Main.gradedCheck)) ((Reasoning.Main.Graded))) :=
@@ -773,10 +773,24 @@ public theorem grade_admitted (v : Reasoning.Clinic.Vitals) : Reasoning.Clinic.C
 public theorem grade_pending (v : Reasoning.Clinic.Vitals) : (Reasoning.Clinic.Pending (({ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 } : Reasoning.Clinic.Chart)) < 11) := by
   exact Reasoning.Clinic.admitted_pending (v)
 
-public theorem grade_correct (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat) : (Reasoning.Clinic.Consistent (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r))) := by
+@[expose, reducible] public def Related (v : Reasoning.Clinic.Vitals) (c : Reasoning.Clinic.Chart) : Prop := (Reasoning.Clinic.Consistent (c) /\ (Reasoning.Clinic.Warranted (c) /\ ((((c).shock = 1) -> Reasoning.Clinic.Hypotensive ((c).vitals)) /\ (((c).vitals).systolic = (v).systolic))))
+
+public theorem related_admitted (v : Reasoning.Clinic.Vitals) : Related (v) (({ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 } : Reasoning.Clinic.Chart)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Reasoning.Clinic.Consistent, Graded, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Reasoning.Clinic.Consistent, Reasoning.Clinic.Hypotensive, Reasoning.Clinic.Warranted, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem related_preserved (v : Reasoning.Clinic.Vitals) (s : Reasoning.Clinic.Chart) (t : Reasoning.Clinic.Chart) : (Related (v) (s) -> (Reasoning.Clinic.Justified (s) (t) -> Related (v) (t))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Reasoning.Clinic.Consistent, Reasoning.Clinic.Febrile, Reasoning.Clinic.Hypotensive, Reasoning.Clinic.Justified, Reasoning.Clinic.Leukocytic, Reasoning.Clinic.Tachycardic, Reasoning.Clinic.Tachypneic, Reasoning.Clinic.Warranted, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem grade_correct (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat) : (Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r))) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Reasoning.Clinic.Consistent, Reasoning.Clinic.Hypotensive, Reasoning.Clinic.Warranted, Graded, Related, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public inductive Grade.Step where
@@ -875,7 +889,9 @@ public theorem Grade.derivation (v : Reasoning.Clinic.Vitals) (__trace : List (R
   (LexLeanReasoning.foldInvariant ((Reasoning.Main.Grade.replay)) (fun (__acc : Except ((Prod Bool Bool)) (Reasoning.Clinic.Chart)) => (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Reasoning.Main.Grade.observe (v)) (__acc))) (Reasoning.Main.Grade.replay_sound (v)) (__trace) (Except.ok (Reasoning.Main.Grade.observe (v))) (LexLeanReasoning.reachesStart ((Reasoning.Clinic.Justified)) (Reasoning.Main.Grade.observe (v))))
 public theorem Grade.follow_invariant (v : Reasoning.Clinic.Vitals) (__trace : List (Reasoning.Main.Grade.Step)) (__s : Reasoning.Clinic.Chart) : ((Reasoning.Main.Grade.follow (v) (__trace) = Except.ok (__s)) -> Reasoning.Clinic.Consistent (__s)) :=
   (fun llE => (LexLeanReasoning.starPreserves ((Reasoning.Clinic.Justified)) ((Reasoning.Clinic.Consistent)) Reasoning.Clinic.Findings.preserves (Reasoning.Main.Grade.observe (v)) (__s) (Reasoning.Main.Grade.derivation (v) (__trace) (__s) llE) (Reasoning.Main.grade_admitted (v))))
-public theorem Grade.accept_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : (Reasoning.Clinic.Consistent (__s) -> ((Reasoning.Main.Grade.accept (v) (__s) = Option.some (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
+public theorem Grade.follow_relation (v : Reasoning.Clinic.Vitals) (__trace : List (Reasoning.Main.Grade.Step)) (__s : Reasoning.Clinic.Chart) : ((Reasoning.Main.Grade.follow (v) (__trace) = Except.ok (__s)) -> Reasoning.Main.Related (v) (__s)) :=
+  (fun llE => (LexLeanReasoning.starPreserves ((Reasoning.Clinic.Justified)) (fun (__s : Reasoning.Clinic.Chart) => Reasoning.Main.Related (v) (__s)) (Reasoning.Main.related_preserved (v)) (Reasoning.Main.Grade.observe (v)) (__s) (Reasoning.Main.Grade.derivation (v) (__trace) (__s) llE) (Reasoning.Main.related_admitted (v))))
+public theorem Grade.accept_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : (Reasoning.Main.Related (v) (__s) -> ((Reasoning.Main.Grade.accept (v) (__s) = Option.some (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
   (fun llJ llE => (Reasoning.Main.grade_correct (v) (__s) (__v) llJ llE))
 public theorem Grade.next_sound (__s : Reasoning.Clinic.Chart) (__t : Reasoning.Clinic.Chart) : ((Reasoning.Main.Grade.next (__s) = Option.some (__t)) -> Reasoning.Clinic.Justified (__s) (__t)) :=
 by
@@ -979,10 +995,16 @@ public theorem Grade.saturate_invariant (v : Reasoning.Clinic.Vitals) : Reasonin
 by
   dsimp only [Reasoning.Main.Grade.saturate]
   exact (LexLeanReasoning.iterateUntilInvariant ((Reasoning.Main.Grade.next)) ((Reasoning.Clinic.Consistent)) Reasoning.Main.Grade.next_preserves (11) (Reasoning.Main.Grade.observe (v)) (Reasoning.Main.grade_admitted (v)))
-public theorem Grade.run_invariant (v : Reasoning.Clinic.Vitals) : Reasoning.Clinic.Consistent (((Reasoning.Main.Grade.run (v)).1).state) :=
+public theorem Grade.next_preserves_relation (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__t : Reasoning.Clinic.Chart) : ((Reasoning.Main.Grade.next (__s) = Option.some (__t)) -> (Reasoning.Main.Related (v) (__s) -> Reasoning.Main.Related (v) (__t))) :=
+  (fun llE llH => (Reasoning.Main.related_preserved (v) (__s) (__t) llH (Reasoning.Main.Grade.next_sound (__s) (__t) llE)))
+public theorem Grade.saturate_relation (v : Reasoning.Clinic.Vitals) : Reasoning.Main.Related (v) ((Reasoning.Main.Grade.saturate (v)).1) :=
+by
+  dsimp only [Reasoning.Main.Grade.saturate]
+  exact (LexLeanReasoning.iterateUntilInvariant ((Reasoning.Main.Grade.next)) (fun (__s : Reasoning.Clinic.Chart) => Reasoning.Main.Related (v) (__s)) (Reasoning.Main.Grade.next_preserves_relation (v)) (11) (Reasoning.Main.Grade.observe (v)) (Reasoning.Main.related_admitted (v)))
+public theorem Grade.run_relation (v : Reasoning.Clinic.Vitals) : Reasoning.Main.Related (v) (((Reasoning.Main.Grade.run (v)).1).state) :=
 by
   rw [And.left (Reasoning.Main.Grade.run_state v)]
-  exact Reasoning.Main.Grade.saturate_invariant v
+  exact Reasoning.Main.Grade.saturate_relation v
 public theorem Grade.saturates (v : Reasoning.Clinic.Vitals) : ((Reasoning.Main.Grade.saturate (v)).2 = true) :=
 by
   dsimp only [Reasoning.Main.Grade.saturate]
@@ -997,7 +1019,7 @@ by
   · split at llE
     · cases llE
     · cases llE
-public theorem Grade.conclude_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : (Reasoning.Clinic.Consistent (__s) -> ((Reasoning.Main.Grade.conclude (v) (__s) = Except.ok (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
+public theorem Grade.conclude_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : (Reasoning.Main.Related (v) (__s) -> ((Reasoning.Main.Grade.conclude (v) (__s) = Except.ok (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
 by
   intro llJ llE
   dsimp only [Reasoning.Main.Grade.conclude] at llE
@@ -1010,7 +1032,7 @@ by
 public theorem Grade.verdict_sound (v : Reasoning.Clinic.Vitals) : (forall (__v : Nat), ((Reasoning.Main.Grade.verdict (v) = Except.ok (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
 by
   intro llV llE
-  have llJ := Reasoning.Main.Grade.saturate_invariant v
+  have llJ := Reasoning.Main.Grade.saturate_relation v
   dsimp only [Reasoning.Main.Grade.verdict] at llE
   generalize llRun : Reasoning.Main.Grade.saturate v = llR at llE llJ
   split at llE
@@ -1020,7 +1042,7 @@ public theorem Grade.explained (v : Reasoning.Clinic.Vitals) : (forall (__v : Na
 by
   intro llV llT llE
   have llTrace := Reasoning.Main.Grade.run_trace v
-  have llJ := Reasoning.Main.Grade.run_invariant v
+  have llJ := Reasoning.Main.Grade.run_relation v
   dsimp only [Reasoning.Main.Grade] at llE
   generalize llRun : Reasoning.Main.Grade.run v = llR at llE llTrace llJ
   split at llE
@@ -1031,10 +1053,23 @@ by
     · cases llE
   · cases llE
 
-public theorem cap_correct (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat) : ((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (r)) -> Graded (v) (r)) := by
+@[expose, reducible] public def Capped (_v : Reasoning.Clinic.Vitals) (r : Nat) : Prop := (r <= 3)
+
+@[expose] public def cappedCheck (_v : Reasoning.Clinic.Vitals) (r : Nat) : Bool := (Nat.ble (r) (3))
+
+public theorem capped_sound (v : Reasoning.Clinic.Vitals) (r : Nat) : ((cappedCheck (v) (r) = true) -> Capped (v) (r)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Graded, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, cappedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  all_goals omega
+
+public theorem Ceiling.sound : (LexLeanReasoning.Sound ((Reasoning.Main.cappedCheck)) ((Reasoning.Main.Capped))) :=
+  Reasoning.Main.capped_sound
+
+public theorem cap_correct (v : Reasoning.Clinic.Vitals) (chart : Reasoning.Clinic.Chart) (r : Nat) : ((Option.some ((LexLeanRuntime.subtract (3) ((LexLeanRuntime.subtract (3) ((chart).level) : Nat)) : Nat)) = Option.some (r)) -> Capped (v) (r)) := by
+  intros
+  subst_vars
+  try set_option linter.unusedSimpArgs false in simp only [Capped, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public inductive Cap.Step where
@@ -1114,7 +1149,7 @@ public theorem Cap.derivation (v : Reasoning.Clinic.Vitals) (__trace : List (Rea
   (LexLeanReasoning.foldInvariant ((Reasoning.Main.Cap.replay)) (fun (__acc : Except ((Prod Bool Bool)) (Reasoning.Clinic.Chart)) => (LexLeanReasoning.Reaches ((Reasoning.Clinic.Justified)) (Reasoning.Main.Cap.observe (v)) (__acc))) (Reasoning.Main.Cap.replay_sound (v)) (__trace) (Except.ok (Reasoning.Main.Cap.observe (v))) (LexLeanReasoning.reachesStart ((Reasoning.Clinic.Justified)) (Reasoning.Main.Cap.observe (v))))
 public theorem Cap.follow_invariant (v : Reasoning.Clinic.Vitals) (__trace : List (Reasoning.Main.Cap.Step)) (__s : Reasoning.Clinic.Chart) : (Reasoning.Clinic.Consistent (Reasoning.Main.Cap.observe (v)) -> ((Reasoning.Main.Cap.follow (v) (__trace) = Except.ok (__s)) -> Reasoning.Clinic.Consistent (__s))) :=
   (fun llI llE => (LexLeanReasoning.starPreserves ((Reasoning.Clinic.Justified)) ((Reasoning.Clinic.Consistent)) Reasoning.Clinic.Findings.preserves (Reasoning.Main.Cap.observe (v)) (__s) (Reasoning.Main.Cap.derivation (v) (__trace) (__s) llE) llI))
-public theorem Cap.accept_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : ((Reasoning.Main.Cap.accept (v) (__s) = Option.some (__v)) -> Reasoning.Main.Graded (v) (__v)) :=
+public theorem Cap.accept_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : ((Reasoning.Main.Cap.accept (v) (__s) = Option.some (__v)) -> Reasoning.Main.Capped (v) (__v)) :=
   (fun llE => (Reasoning.Main.cap_correct (v) (__s) (__v) llE))
 public theorem Cap.next_sound (__s : Reasoning.Clinic.Chart) (__t : Reasoning.Clinic.Chart) : ((Reasoning.Main.Cap.next (__s) = Option.some (__t)) -> Reasoning.Clinic.Justified (__s) (__t)) :=
 by
@@ -1221,7 +1256,7 @@ by
   · split at llE
     · cases llE
     · cases llE
-public theorem Cap.conclude_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : ((Reasoning.Main.Cap.conclude (v) (__s) = Except.ok (__v)) -> Reasoning.Main.Graded (v) (__v)) :=
+public theorem Cap.conclude_sound (v : Reasoning.Clinic.Vitals) (__s : Reasoning.Clinic.Chart) (__v : Nat) : ((Reasoning.Main.Cap.conclude (v) (__s) = Except.ok (__v)) -> Reasoning.Main.Capped (v) (__v)) :=
 by
   intro llE
   dsimp only [Reasoning.Main.Cap.conclude] at llE
@@ -1231,7 +1266,7 @@ by
   · split at llE
     · cases llE
     · cases llE
-public theorem Cap.verdict_sound (v : Reasoning.Clinic.Vitals) : (forall (__v : Nat), ((Reasoning.Main.Cap.verdict (v) = Except.ok (__v)) -> Reasoning.Main.Graded (v) (__v))) :=
+public theorem Cap.verdict_sound (v : Reasoning.Clinic.Vitals) : (forall (__v : Nat), ((Reasoning.Main.Cap.verdict (v) = Except.ok (__v)) -> Reasoning.Main.Capped (v) (__v))) :=
 by
   intro llV llE
   dsimp only [Reasoning.Main.Cap.verdict] at llE
@@ -1239,7 +1274,7 @@ by
   split at llE
   · exact Reasoning.Main.Cap.conclude_sound _ _ _ llE
   · cases llE
-public theorem Cap.explained (v : Reasoning.Clinic.Vitals) : (forall (__v : Nat), (forall (__trace : List (Reasoning.Main.Cap.Step)), ((Reasoning.Main.Cap (v) = Except.ok ((__v, __trace))) -> ((Reasoning.Main.Cap.answer (v) (__trace) = Option.some (__v)) /\ Reasoning.Main.Graded (v) (__v))))) :=
+public theorem Cap.explained (v : Reasoning.Clinic.Vitals) : (forall (__v : Nat), (forall (__trace : List (Reasoning.Main.Cap.Step)), ((Reasoning.Main.Cap (v) = Except.ok ((__v, __trace))) -> ((Reasoning.Main.Cap.answer (v) (__trace) = Option.some (__v)) /\ Reasoning.Main.Capped (v) (__v))))) :=
 by
   intro llV llT llE
   have llTrace := Reasoning.Main.Cap.run_trace v

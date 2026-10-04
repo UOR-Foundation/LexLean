@@ -452,7 +452,12 @@ fn rs_01() {
         assert!(declarations.contains(kind), "module schema lacks `{kind}`");
     }
     let strategies = strings(&["forward", "generate_and_verify", "search"]);
-    let claims = strings(&["answer_correct", "initial_invariant", "terminates"]);
+    let claims = strings(&[
+        "answer_correct",
+        "initial_invariant",
+        "observation_invariant",
+        "terminates",
+    ]);
     assert_eq!(schema_kinds(&module, "reasoningStrategy"), strategies);
     assert_eq!(schema_kinds(&module, "reasoningClaim"), claims);
     assert!(schema_kinds(&module, "type").contains("reasoning_failure"));
@@ -821,8 +826,8 @@ fn rs_04() {
         }
     }
     assert_eq!(
-        reasoners, 9,
-        "Triage, Review, Spend, Refund, Plan, Dose, Screen, Grade, Cap"
+        reasoners, 12,
+        "Triage, Review, Spend, Refund, Plan, PlanFit, PlanFitR, PlanFitU, Dose, Screen, Grade, Cap"
     );
     // Only the existing primitives: every operation the language-1.2 term
     // schema admits, none of them a reasoning primitive.
@@ -1104,6 +1109,22 @@ fn rs_07() {
                 "claims-duplicate",
                 "claims are not strictly sorted by kind, each at most once",
             ),
+            (
+                "observation-unsorted",
+                "claims are not strictly sorted by kind, each at most once",
+            ),
+            (
+                "observation-invariant-signature",
+                "observation invariant `Sound` must take (Nat, Memo) to Prop, but takes (Memo) to Prop",
+            ),
+            (
+                "observation-initial-inexact",
+                "observation invariant initial: `related_initial` does not state exactly the generated obligation",
+            ),
+            (
+                "observation-preserved-inexact",
+                "observation invariant preservation: `related_preserved` does not state exactly the generated obligation",
+            ),
         ],
     );
     if let Some(fixture) = reasoning_backed("RS-07") {
@@ -1372,6 +1393,12 @@ fn rs_09() {
                 "extract-bypass-reasoner",
                 "executable `Echo` reaches the unverified answer of a reasoner `Clinic.extract`",
             ),
+            // An answer proved correct only under an invariant is
+            // unconstrained outside it, so its `extract` stays guarded.
+            (
+                "extract-bypass-invariant",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.extract`",
+            ),
         ],
     );
     negatives(
@@ -1427,15 +1454,31 @@ fn rs_09() {
         "LLT4012",
         "reaches the unverified answer of a reasoner",
     );
+    // Only an answer correct on every state is read without its verifier:
+    // `Cap`'s is, and `Grade`'s, correct only for a chart that relates to its
+    // patient, is not, so a chart that does not (a level of 99) would be
+    // answered unchecked.
     extended(
         "Main",
         vec![direct(
             "capped",
-            json!({"name": "Grade.extract"}),
+            json!({"name": "Cap.extract"}),
             &option_nat,
         )],
     )
     .check_ok();
+    refused(
+        &extended(
+            "Main",
+            vec![direct(
+                "forgedGrade",
+                json!({"name": "Grade.extract"}),
+                &option_nat,
+            )],
+        ),
+        "LLT4012",
+        "executable `forgedGrade` reaches the unverified answer of a reasoner `Grade.extract`",
+    );
     // The proved answer's check is erased; every other reasoner's runs.
     let project = P::copy_example(EXAMPLE);
     let snapshot = snapshot(&project);
@@ -1446,12 +1489,13 @@ fn rs_09() {
     );
     assert_eq!(
         grade.obligations().len(),
-        3,
-        "invariant, fuel bound, correctness"
+        5,
+        "initial invariant, fuel bound, observation invariant (initial and preserved), correctness"
     );
-    // Grade's answer reads the chart's level, which is on the scale only
-    // because the logic's invariant says so: its correctness is stated
-    // under that invariant, discharged by the run's invariant theorem.
+    // Grade's answer reads the chart's level, which is on the scale, and
+    // at 3 only for a hypotensive patient, because every chart a run reaches
+    // relates to the patient: its correctness is stated under that
+    // observation invariant, discharged by the run's relation theorem.
     let correctness = grade
         .obligations()
         .iter()
@@ -1460,7 +1504,12 @@ fn rs_09() {
     assert_eq!(correctness["statement"]["kind"], "implies");
     assert_eq!(
         correctness["statement"]["premise"]["function"],
-        json!({"module": "Clinic", "name": "Consistent"})
+        json!({"name": "Related"})
+    );
+    assert_eq!(
+        correctness["statement"]["premise"]["arguments"][0],
+        json!({"kind": "var", "name": "v"}),
+        "the premise relates the observation, not the state alone"
     );
     let templates = |declaration: &lexlean::SnapshotElaboration| -> BTreeSet<String> {
         declaration
@@ -1483,6 +1532,41 @@ fn rs_09() {
     assert!(!templates(cap).contains("run_invariant"));
     assert_eq!(calls(&derived(cap, "Cap.accept")["body"]), ["Cap.extract"]);
     assert!(!templates(elaboration(&snapshot, "Clinic", "Triage")).contains("run_invariant"));
+    // A search claims its answer correct in all three forms, and its check
+    // is erased too: under the logic's invariant, under an observation
+    // invariant, and on every state.
+    let planner = |name: &str| elaboration(&snapshot, "Planner", name);
+    for (name, premise) in [
+        ("PlanFit", Some("Fits")),
+        ("PlanFitR", Some("Held")),
+        ("PlanFitU", None),
+    ] {
+        let fit = planner(name);
+        let correctness = fit
+            .obligations()
+            .iter()
+            .find(|obligation| {
+                obligation["role"] == format!("reasoner `{name}` answer correctness")
+            })
+            .unwrap_or_else(|| panic!("{name}'s answer correctness"));
+        match premise {
+            Some(predicate) => assert_eq!(
+                correctness["statement"]["premise"]["function"],
+                json!({"name": predicate}),
+                "{name}"
+            ),
+            None => assert_eq!(correctness["statement"]["premise"]["kind"], "eq", "{name}"),
+        }
+        assert_eq!(
+            calls(&derived(fit, &format!("{name}.accept"))["body"]),
+            [format!("{name}.extract")],
+            "{name}'s check is erased"
+        );
+        assert!(
+            templates(fit).contains("search_growth"),
+            "{name} bounds its verifications whether or not the check runs"
+        );
+    }
     // Formal code, a statement and not a run, may name what executable code
     // may not.
     extended(
@@ -1533,6 +1617,7 @@ fn rs_09() {
             "forged-trace",
             "false-answer-correct",
             "false-invariant-answer-correct",
+            "false-observation-answer-correct",
         ],
     );
 }
@@ -1652,17 +1737,13 @@ fn nested_type(fields: usize, base: &Json) -> Json {
     )
 }
 
-/// A reasoner over a state of `fields` natural numbers with `rules` rules,
-/// each concluding a whole new state, half of them binding a tuple drawn from
-/// a list of candidates: the shapes that stress what linking charges for an
-/// elaboration, which is larger than its source by the weight of the types
-/// and terms it copies.
-#[allow(clippy::too_many_lines)]
 /// A copy of the example whose `Budget` module states a reasoner over
 /// `copies` rules, each used at a type of `size` nested products: every use
 /// copies its type arguments into each declaration that mentions the rule,
-/// and the charge covers that.
-fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
+/// and the charge covers that. With `phantom`, its verifier is a copy of the
+/// example's with a type parameter that nothing mentions, used at the same
+/// large type: its type arguments are copied too, and so are charged.
+fn wide_type_arguments(copies: usize, size: usize, search: bool, phantom: bool) -> P {
     let project = P::copy_example(EXAMPLE);
     let mut data = module_data(&project, "Budget");
     let declarations = declarations_mut(&mut data);
@@ -1674,10 +1755,16 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
             .clone()
     };
     let nat = json!({"kind": "nat"});
-    let mut wide = nat.clone();
-    for _ in 1..size {
-        wide = json!({"kind": "product", "left": nat, "right": wide});
+    // Balanced, so that a type of any size stays within the JSON nesting
+    // limit the compiler reads under.
+    fn balanced(leaves: usize, leaf: &Json) -> Json {
+        if leaves <= 1 {
+            return leaf.clone();
+        }
+        json!({"kind": "product", "left": balanced(leaves / 2, leaf),
+            "right": balanced(leaves - leaves / 2, leaf)})
     }
+    let wide = balanced(size, &nat);
     let state = json!({"kind": "product", "left": wide, "right": nat});
     let at = |ty: &Json| vec![ty.clone()];
     let mut added = Vec::new();
@@ -1695,6 +1782,53 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
         added.extend([sound, progress, rule]);
         uses.push(json!({"member": {"name": renamed("Tick")}, "type_arguments": at(&wide)}));
     }
+    if phantom {
+        // `Empty`, `emptyCheck`, `empty_sound`, and `Drained` again, over a
+        // parameter `Q` that none of them mentions.
+        fn qualify(value: &mut Json) {
+            match value {
+                Json::Object(object) => {
+                    let named = |object: &serde_json::Map<String, Json>| {
+                        matches!(
+                            object
+                                .get("function")
+                                .and_then(|member| member["name"].as_str()),
+                            Some("Empty" | "emptyCheck")
+                        )
+                    };
+                    if object.get("kind") == Some(&json!("call")) && named(object) {
+                        let name = object["function"]["name"]
+                            .as_str()
+                            .expect("a name")
+                            .to_owned();
+                        object["function"]["name"] = json!(format!("{name}Q"));
+                        object.insert(
+                            "type_arguments".to_owned(),
+                            json!([{"kind": "parameter", "name": "T"}, {"kind": "parameter", "name": "Q"}]),
+                        );
+                    }
+                    object.values_mut().for_each(qualify);
+                }
+                Json::Array(items) => items.iter_mut().for_each(qualify),
+                _ => {}
+            }
+        }
+        for name in ["Empty", "emptyCheck", "empty_sound", "Drained"] {
+            let mut copy = original(name);
+            copy["name"] = json!(format!("{name}Q"));
+            copy["type_parameters"] = json!(["T", "Q"]);
+            qualify(&mut copy);
+            if name == "Drained" {
+                copy["specification"] = json!({"name": "EmptyQ"});
+                copy["check"] = json!({"name": "emptyCheckQ"});
+                copy["sound"] = json!({"name": "empty_soundQ"});
+            }
+            if name == "empty_sound" {
+                copy["proof"]["definitions"] = json!([{"name": "EmptyQ"}, {"name": "emptyCheckQ"}]);
+            }
+            added.push(copy);
+        }
+    }
     let mut reasoner = original("Spend");
     reasoner["name"] = json!("Wide");
     reasoner
@@ -1704,6 +1838,10 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
     reasoner["observation"]["type"] = state.clone();
     reasoner["logic"]["type_arguments"] = json!(at(&wide));
     reasoner["verifier"]["type_arguments"] = json!([state]);
+    if phantom {
+        reasoner["verifier"] =
+            json!({"member": {"name": "DrainedQ"}, "type_arguments": [state, wide]});
+    }
     reasoner["rules"] = Json::Array(uses);
     reasoner["claims"] = json!([]);
     if search {
@@ -1717,6 +1855,12 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool) -> P {
     project
 }
 
+/// A reasoner over a state of `fields` natural numbers with `rules` rules,
+/// each concluding a whole new state, half of them binding a tuple drawn from
+/// a list of candidates: the shapes that stress what linking charges for an
+/// elaboration, which is larger than its source by the weight of the types
+/// and terms it copies.
+#[allow(clippy::too_many_lines)]
 fn wide_reasoner(strategy: &str, rules: usize, fields: usize, width: usize) -> P {
     let project = P::negative("reasoning-forged-trace");
     let nat = json!({"kind": "nat"});
@@ -1911,9 +2055,11 @@ fn rs_10() {
         wide_reasoner(strategy, rules, fields, width).check_ok();
     }
     // Large type arguments at every rule use are charged too.
-    for search in [false, true] {
-        wide_type_arguments(40, 100, search).check_ok();
+    for (search, phantom) in [(false, false), (true, false), (false, true), (true, true)] {
+        wide_type_arguments(if phantom { 2 } else { 40 }, 100, search, phantom).check_ok();
     }
+    // A verifier's own type arguments, which no rule mentions, are charged.
+    wide_type_arguments(2, 1200, false, true).check_ok();
     // An elaboration is charged, not only its source.
     let with = P::negative("reasoning-forged-trace");
     let mut data = module_data(&with, "Main");
@@ -2208,7 +2354,8 @@ fn normalized(mut declarations: Json, from: &str, to: &str) -> Json {
     declarations
 }
 
-/// Transcriptions that disagree with their oracles: `Plan` for target 5
+/// Transcriptions that disagree with their oracles: `Plan` for target 2
+/// trying the pour candidates in the other order, `Plan` for target 5
 /// with its visited-state check removed (so it never saturates and answers
 /// exhausted where the oracle's search is unsolved), and `Dose` for weight
 /// 120 with a budget of four candidates (so it rejects where the oracle
@@ -2275,7 +2422,25 @@ fn planted_transcriptions() -> Vec<crate::calculus::Case> {
         }
     }
     widen(&mut dose.fixture.program.functions[at].body);
-    vec![rerun(plan), rerun(dose)]
+    // A search that tries the jugs' candidates in the other order reaches
+    // the same answer in another number of iterations.
+    let mut reversed = named("reasoning-plan-2");
+    let at = crate::calculus::reasoning::function_index("plan", "pour_candidates");
+    fn swapped(expression: &mut lexlean::calculus::Expr) {
+        use lexlean::calculus::Expr;
+        match expression {
+            Expr::Value {
+                value: Value::Nat { value },
+                ..
+            } if value == "1" || value == "3" => {
+                *value = if value == "1" { "3" } else { "1" }.to_owned();
+            }
+            Expr::Build { operands, .. } => operands.iter_mut().for_each(swapped),
+            _ => {}
+        }
+    }
+    swapped(&mut reversed.fixture.program.functions[at].body);
+    vec![rerun(plan), rerun(dose), rerun(reversed)]
 }
 
 /// The messages with which pinned Lean refuses a copy of the compiler
@@ -2316,7 +2481,8 @@ fn rs_12() {
             .clone()
     };
     // Each oracle states exactly the declarations of the reasoners it
-    // names: the whole of an example module, or the reasoner and what it
+    // names, as structured data after `normalized` (key-ordered definition
+    // lists, the oracle's module name for the example's), not as bytes: the whole of an example module, or the reasoner and what it
     // is declared with, over the clinical module's oracle.
     for spec in reasoning::ORACLES {
         let committed = declarations(&read(&format!("compiler/src/{}.lex.tex", spec.module)));
@@ -2419,14 +2585,17 @@ fn rs_12() {
         ]
     );
     // Each production reasoner has a transcription whose oracle is that
-    // reasoner's own verdict.
+    // reasoner's own verdict, or its explained answer.
     for reasoner in ["Triage", "Grade", "Plan", "Dose", "Screen", "Spend"] {
         let verdict = format!("\"name\":\"{reasoner}.verdict\"");
+        let explained = format!("\"name\":\"{reasoner}\"");
         assert!(
-            cases.iter().any(|case| case
-                .oracle
-                .as_ref()
-                .is_some_and(|oracle| oracle.to_string().contains(&verdict))),
+            cases
+                .iter()
+                .any(|case| case.oracle.as_ref().is_some_and(|oracle| {
+                    let text = oracle.to_string();
+                    text.contains(&verdict) || text.contains(&explained)
+                })),
             "a transcription of {reasoner}"
         );
     }
@@ -2491,9 +2660,55 @@ fn rs_12() {
             fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
             "{id}Agrees is stated"
         );
-        let Outcome::Value { value, steps } = &case.fixture.expected else {
+        let Outcome::Value {
+            value: answered,
+            steps,
+        } = &case.fixture.expected
+        else {
             panic!("{} returns a value", case.fixture.name)
         };
+        // A search and a generation answer the explained verdict with the
+        // ledger of the run: the verdict is compared here without its steps,
+        // and the ledger with the one the example states for the same run.
+        let explained = ["reasoning-plan-", "reasoning-screen-", "reasoning-dose-"]
+            .iter()
+            .any(|prefix| case.fixture.name.starts_with(prefix));
+        let value = if explained {
+            let Value::Pair { left, right } = answered else {
+                panic!("{} answers a verdict and a ledger", case.fixture.name)
+            };
+            let mut chain = Vec::new();
+            let mut node = right.as_ref();
+            while let Value::Pair { left, right } = node {
+                chain.push(count(left));
+                node = right;
+            }
+            chain.push(count(node));
+            assert_eq!(
+                Some(chain),
+                ledger_of(&case.fixture.name).map(Vec::from),
+                "{} accounts the ledger the example states",
+                case.fixture.name
+            );
+            match left.as_ref() {
+                Value::Ok { value } => {
+                    let Value::Pair { left, right } = value.as_ref() else {
+                        panic!("an answer with its steps")
+                    };
+                    let Value::List { items } = right.as_ref() else {
+                        panic!("steps")
+                    };
+                    assert!(!items.is_empty(), "an answer names the steps that reach it");
+                    Value::Ok {
+                        value: left.clone(),
+                    }
+                }
+                other => other.clone(),
+            }
+        } else {
+            answered.clone()
+        };
+        let value = &value;
         let expected = match case.fixture.name.as_str() {
             "reasoning-triage-shock" | "reasoning-grade-shock" => Some(level(3)),
             "reasoning-triage-well" | "reasoning-grade-well" => Some(level(0)),
@@ -2519,13 +2734,13 @@ fn rs_12() {
                 "{} charges its search: {steps} steps for {floor} guard evaluations and firings",
                 case.fixture.name
             );
-            // The check is falsifiable: the same value from a transcription
+            // The floor is falsifiable: the same answer from a transcription
             // that searches nothing is charged fewer steps than the ledger.
             if floor > 0 {
                 let mut constant = case.fixture.program.clone();
                 constant.functions[0].body = lexlean::calculus::Expr::Value {
                     ty: constant.functions[0].result.clone(),
-                    value: value.clone(),
+                    value: answered.clone(),
                 };
                 let Outcome::Value {
                     value: reached,
@@ -2539,7 +2754,7 @@ fn rs_12() {
                 else {
                     panic!("the constant transcription returns")
                 };
-                assert_eq!(&reached, value);
+                assert_eq!(&reached, answered);
                 assert!(
                     constant_steps < floor,
                     "{}: an uncharged search is detected ({constant_steps} < {floor})",
@@ -2662,8 +2877,9 @@ fn rs_12() {
         // compute other verdicts than their oracles, and Lean refuses them.
         let planted = planted_verification();
         for (run, oracle) in [
-            ("reasoningPlan5Run", "PlannerOracle.Plan.verdict 5"),
-            ("reasoningDose120Run", "ScreeningOracle.Dose.verdict 120"),
+            ("reasoningPlan5Run", "PlannerOracle.Plan 5"),
+            ("reasoningDose120Run", "ScreeningOracle.Dose 120"),
+            ("reasoningPlan2Run", "PlannerOracle.Plan 2"),
         ] {
             assert!(
                 planted

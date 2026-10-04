@@ -88,6 +88,9 @@ pub const ORACLES: [OracleSpec; 5] = [
             "grade_admitted",
             "grade_pending",
             "grade_correct",
+            "Related",
+            "related_admitted",
+            "related_preserved",
             "Grade",
         ]),
         import: Some(("Clinic", ORACLE)),
@@ -932,10 +935,71 @@ fn nat_verdict(
     )
 }
 
-/// The verdict of `Plan` for `target`: the jugs, or why none.
-fn plan_verdict(target: u64) -> Json {
-    encode_result(
-        oracle_in(PLANNER, "Plan.verdict", Vec::new(), vec![lx::nat(target)]),
+/// The six counters of a ledger term, as the value of a chain of pairs.
+fn ledger_value(ledger: &Json) -> Json {
+    let counters: Vec<Json> = [
+        "iterations",
+        "attempts",
+        "firings",
+        "expansions",
+        "verifications",
+        "frontier",
+    ]
+    .iter()
+    .map(|counter| lx::value("nat", vec![lx::project(ledger.clone(), counter)]))
+    .collect();
+    let mut counters = counters;
+    let last = counters.pop().expect("six counters");
+    counters
+        .into_iter()
+        .rev()
+        .fold(last, |tail, counter| lx::value("pair", vec![counter, tail]))
+}
+
+/// The explained answer of reasoner `reasoner` of oracle `module` on `input`
+/// and the ledger of its run `run` (a term of the run's ledger), as the value
+/// a transcription answers: `(answer, steps)` or why none, and the ledger.
+/// `answer` encodes the found answer, and `steps` is the encoder of the
+/// reasoner's steps.
+fn explained_oracle(
+    module: &str,
+    reasoner: &str,
+    input: u64,
+    steps: &str,
+    answer: impl FnOnce(Json) -> Json,
+    ledger: Json,
+) -> Json {
+    lx::value(
+        "pair",
+        vec![
+            encode_result(
+                oracle_in(module, reasoner, Vec::new(), vec![lx::nat(input)]),
+                |found| {
+                    lx::value(
+                        "pair",
+                        vec![
+                            answer(lx::first(found.clone())),
+                            lx::value(
+                                "list",
+                                vec![lx::call(lx::member(steps), vec![lx::second(found)])],
+                            ),
+                        ],
+                    )
+                },
+            ),
+            ledger_value(&ledger),
+        ],
+    )
+}
+
+/// `Plan` for `target`: the jugs and the steps that reach them, or why none,
+/// and the ledger of its search.
+fn plan_explained(target: u64) -> Json {
+    explained_oracle(
+        PLANNER,
+        "Plan",
+        target,
+        "encodePlanSteps",
         |jugs| {
             lx::value(
                 "pair",
@@ -945,6 +1009,50 @@ fn plan_verdict(target: u64) -> Json {
                 ],
             )
         },
+        lx::project(
+            lx::first(oracle_in(
+                PLANNER,
+                "Plan.run",
+                Vec::new(),
+                vec![lx::nat(target)],
+            )),
+            "ledger",
+        ),
+    )
+}
+
+/// `Screen` for `weight`.
+fn screen_explained(weight: u64) -> Json {
+    explained_oracle(
+        SCREENING,
+        "Screen",
+        weight,
+        "encodeScreenSteps",
+        |dose| lx::value("nat", vec![dose]),
+        lx::project(
+            lx::first(oracle_in(
+                SCREENING,
+                "Screen.run",
+                Vec::new(),
+                vec![lx::nat(weight)],
+            )),
+            "ledger",
+        ),
+    )
+}
+
+/// `Dose` for `weight`.
+fn dose_explained(weight: u64) -> Json {
+    explained_oracle(
+        SCREENING,
+        "Dose",
+        weight,
+        "encodeDoseSteps",
+        |dose| lx::value("nat", vec![dose]),
+        lx::project(
+            oracle_in(SCREENING, "Dose.run", Vec::new(), vec![lx::nat(weight)]),
+            "ledger",
+        ),
     )
 }
 
@@ -1127,28 +1235,13 @@ pub fn cases() -> Vec<Case> {
                 vec![lx::pair(lx::nat(2), lx::nat(2))],
             ),
         ),
-        engines::plan_case(2, plan_verdict(2)),
-        engines::plan_case(5, plan_verdict(5)),
-        engines::screen_case(
-            60,
-            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(60)]),
-        ),
-        engines::screen_case(
-            100,
-            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(100)]),
-        ),
-        engines::screen_case(
-            0,
-            nat_verdict(SCREENING, "Screen", Vec::new(), vec![lx::nat(0)]),
-        ),
-        engines::dose_case(
-            60,
-            nat_verdict(SCREENING, "Dose", Vec::new(), vec![lx::nat(60)]),
-        ),
-        engines::dose_case(
-            120,
-            nat_verdict(SCREENING, "Dose", Vec::new(), vec![lx::nat(120)]),
-        ),
+        engines::plan_case(2, plan_explained(2)),
+        engines::plan_case(5, plan_explained(5)),
+        engines::screen_case(60, screen_explained(60)),
+        engines::screen_case(100, screen_explained(100)),
+        engines::screen_case(0, screen_explained(0)),
+        engines::dose_case(60, dose_explained(60)),
+        engines::dose_case(120, dose_explained(120)),
         reasoning_case(
             "reasoning-triage-traced",
             true,
@@ -1250,7 +1343,7 @@ pub fn encoders() -> Vec<Json> {
             lx::matching(
                 lx::var("steps"),
                 vec![
-                    lx::branch(lx::member("List.nil"), Vec::new(), lx::nil(value_t)),
+                    lx::branch(lx::member("List.nil"), Vec::new(), lx::nil(value_t.clone())),
                     lx::branch(
                         lx::member("List.cons"),
                         vec!["step".to_owned(), "rest".to_owned()],
@@ -1263,7 +1356,85 @@ pub fn encoders() -> Vec<Json> {
             ),
         ),
     );
-    vec![encode_failure, encode_step, encode_steps]
+    let mut out = vec![encode_failure, encode_step, encode_steps];
+    // The steps of the searches and of the generate-and-verify reasoner:
+    // each constructor, with the natural number it carries, if any.
+    for (encoder, module, step, constructors) in [
+        (
+            "encodePlanSteps",
+            PLANNER,
+            "Plan.Step",
+            &[("FillA", false), ("EmptyB", false), ("Pour", true)][..],
+        ),
+        (
+            "encodeScreenSteps",
+            SCREENING,
+            "Screen.Step",
+            &[("Propose", true)][..],
+        ),
+        (
+            "encodeDoseSteps",
+            SCREENING,
+            "Dose.Step",
+            &[("candidate", true)][..],
+        ),
+    ] {
+        let step_t = lexlean::calculus::term::named(module, step);
+        let one = format!("{encoder}One");
+        out.push(lx::definition(
+            &one,
+            vec![lx::parameter("step", step_t.clone())],
+            value_t.clone(),
+            lx::matching(
+                lx::var("step"),
+                constructors
+                    .iter()
+                    .enumerate()
+                    .map(|(index, (name, carries))| {
+                        let (binders, fields) = if *carries {
+                            (
+                                vec!["carried".to_owned()],
+                                lx::cons(
+                                    lx::value("nat", vec![lx::var("carried")]),
+                                    lx::nil(value_t.clone()),
+                                ),
+                            )
+                        } else {
+                            (Vec::new(), lx::nil(value_t.clone()))
+                        };
+                        lx::branch(
+                            lexlean::calculus::term::member(module, &format!("{step}.{name}")),
+                            binders,
+                            lx::value("adt", vec![lx::nat(index as u64), fields]),
+                        )
+                    })
+                    .collect(),
+            ),
+        ));
+        out.push(lx::recursive(
+            "steps",
+            lx::definition(
+                encoder,
+                vec![lx::parameter("steps", lx::list_t(step_t))],
+                lx::list_t(value_t.clone()),
+                lx::matching(
+                    lx::var("steps"),
+                    vec![
+                        lx::branch(lx::member("List.nil"), Vec::new(), lx::nil(value_t.clone())),
+                        lx::branch(
+                            lx::member("List.cons"),
+                            vec!["step".to_owned(), "rest".to_owned()],
+                            lx::cons(
+                                lx::call(lx::member(&one), vec![lx::var("step")]),
+                                lx::call(lx::member(encoder), vec![lx::var("rest")]),
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ));
+    }
+    out
 }
 
 /// `declarations` with every reference to module `from` made to module `to`,

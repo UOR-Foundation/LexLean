@@ -475,9 +475,11 @@ versions, and the entries below say what each tag does and does not claim.
     `generate_and_verify` (a generator's candidates checked in order within a
     mandatory budget). Logics, rules, verifiers, and reasoners may be
     generic. Claims `initial_invariant`, `terminates` (forward only, from a
-    ranking, progress on every rule, and an exact fuel bound), and
-    `answer_correct` (the answer term correct on every state, or on every
-    state satisfying the invariant, which erases the check).
+    ranking, progress on every rule, and an exact fuel bound),
+    `observation_invariant` (a predicate of the observation and a state kept
+    by every step), and `answer_correct` (the answer term correct on every
+    state, or on every state satisfying the invariant or the observation
+    invariant, which erases the check).
   - Verdicts are the verifier-accepted (or proved-correct) answer or one of
     `exhausted`, `unsolved`, `rejected`, `invalid_step`; a forward reasoner
     answers only from a saturated state. Traces are `E.Step` data, evidence
@@ -500,11 +502,26 @@ versions, and the entries below say what each tag does and does not claim.
     rust-core and rust-std packages, in the new `ReasoningFixtures` module;
     GNAF requests over forward-chaining plans, each plan tied to the
     oracle's `Triage` on the request's domain.
-  - `answer_correct` also admits a theorem stating the answer correct under
-    the logic's invariant (`forall x s v, J s -> a = some v -> Spec x v`),
-    which the generated run theorem `E.run_invariant` discharges for every
-    reached state; a declaration named like, or below, a namespace the
-    generated Lean refers to (`LexLeanReasoning.Star`) is refused (`LLT4001`).
+  - `answer_correct` names a theorem of one of three exact statements: the
+    answer correct on every state (`forall x s v, a = some v -> Spec x v`),
+    on every state satisfying the logic's invariant (`forall x s v, J s -> a
+    = some v -> Spec x v`, which needs the `initial_invariant` claim and
+    whose premise the generated run theorem `E.run_invariant` discharges),
+    or on every state a new `observation_invariant` claim holds of
+    (`forall x s v, Rl x s -> a = some v -> Spec x v`, where `Rl : (I, S) ->
+    prop` holds of the observed state and is kept by the logic's relation,
+    so `Spec` may depend on the observation: `Grade` answers a chart's level,
+    at most 3 and 3 only for a hypotensive patient). The check of a reasoner
+    that claims any form is erased in its own verdict, but only an answer
+    correct on every state may be read from `E.extract` by executable code
+    (`LLT4012` otherwise).
+  - A declaration named like, or below, any namespace the generated Lean
+    refers to (`LexLeanReasoning.Star`, but also `Nat.x` or `List.y`) is
+    refused in language 1.2 (`LLT4001`): the reservation is not limited to
+    reasoning modules.
+  - The elaboration charge of a reasoner covers the type arguments of every
+    use of its logic, rules, and verifier; it remains a fitted bound checked
+    after elaboration, not a proof.
   - Generated bounds also state a forward run's firings and a search's
     verifications and expansions at most the fuel (`E.firings_bounded`,
     `E.verifications_bounded`, `E.expansions_bounded`), recorded in the

@@ -453,13 +453,13 @@
 'Compiler.GradeOracle.Grade.Run' does not depend on any axioms
 'Compiler.GradeOracle.Grade.Step' does not depend on any axioms
 'Compiler.GradeOracle.Grade.accept' does not depend on any axioms
-'Compiler.GradeOracle.Grade.accept_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.GradeOracle.Grade.accept_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.account' does not depend on any axioms
 'Compiler.GradeOracle.Grade.answer' does not depend on any axioms
 'Compiler.GradeOracle.Grade.attempts' does not depend on any axioms
 'Compiler.GradeOracle.Grade.conclude' does not depend on any axioms
 'Compiler.GradeOracle.Grade.conclude_accept' does not depend on any axioms
-'Compiler.GradeOracle.Grade.conclude_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.GradeOracle.Grade.conclude_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.extract' does not depend on any axioms
@@ -469,9 +469,11 @@
 'Compiler.GradeOracle.Grade.firings_bounded' does not depend on any axioms
 'Compiler.GradeOracle.Grade.follow' does not depend on any axioms
 'Compiler.GradeOracle.Grade.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.Grade.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.iterations_bounded' does not depend on any axioms
 'Compiler.GradeOracle.Grade.next' does not depend on any axioms
 'Compiler.GradeOracle.Grade.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.Grade.next_preserves_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.next_progress' depends on axioms: [propext, Quot.sound]
 'Compiler.GradeOracle.Grade.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.observe' does not depend on any axioms
@@ -479,12 +481,13 @@
 'Compiler.GradeOracle.Grade.replay_fire' does not depend on any axioms
 'Compiler.GradeOracle.Grade.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.run' does not depend on any axioms
-'Compiler.GradeOracle.Grade.run_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.Grade.run_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.run_state' does not depend on any axioms
 'Compiler.GradeOracle.Grade.run_trace' does not depend on any axioms
 'Compiler.GradeOracle.Grade.saturate' does not depend on any axioms
 'Compiler.GradeOracle.Grade.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.Grade.saturate_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Grade.select' does not depend on any axioms
 'Compiler.GradeOracle.Grade.start' does not depend on any axioms
@@ -497,13 +500,17 @@
 'Compiler.GradeOracle.Grade.verdict' does not depend on any axioms
 'Compiler.GradeOracle.Grade.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.Graded' does not depend on any axioms
-'Compiler.GradeOracle.Scale.sound' depends on axioms: [propext]
+'Compiler.GradeOracle.Related' does not depend on any axioms
+'Compiler.GradeOracle.Scale.sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.grade_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
-'Compiler.GradeOracle.grade_correct' depends on axioms: [propext, Quot.sound]
+'Compiler.GradeOracle.grade_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.GradeOracle.grade_pending' depends on axioms: [propext, Quot.sound]
 'Compiler.GradeOracle.gradedCheck' does not depend on any axioms
-'Compiler.GradeOracle.graded_sound' depends on axioms: [propext]
+'Compiler.GradeOracle.graded_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.related_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.GradeOracle.related_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.Main.emptyProgram' does not depend on any axioms
+'Compiler.PlannerOracle.Anywhere.sound' depends on axioms: [propext]
 'Compiler.PlannerOracle.EmptyB.apply' does not depend on any axioms
 'Compiler.PlannerOracle.EmptyB.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.EmptyB.conclusion' does not depend on any axioms
@@ -513,6 +520,8 @@
 'Compiler.PlannerOracle.FillA.conclusion' does not depend on any axioms
 'Compiler.PlannerOracle.FillA.guard' does not depend on any axioms
 'Compiler.PlannerOracle.Fits' does not depend on any axioms
+'Compiler.PlannerOracle.Held' does not depend on any axioms
+'Compiler.PlannerOracle.Inside.sound' depends on axioms: [propext]
 'Compiler.PlannerOracle.Measured.sound' depends on axioms: [propext]
 'Compiler.PlannerOracle.Measures' does not depend on any axioms
 'Compiler.PlannerOracle.Moves' does not depend on any axioms
@@ -557,27 +566,189 @@
 'Compiler.PlannerOracle.Plan.search_ok' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.search_peak' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.search_step' depends on axioms: [propext]
-'Compiler.PlannerOracle.Plan.search_verify_count' depends on axioms: [propext]
+'Compiler.PlannerOracle.Plan.search_verify_growth' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.start' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.successors' does not depend on any axioms
 'Compiler.PlannerOracle.Plan.successors_ok' does not depend on any axioms
 'Compiler.PlannerOracle.Plan.verdict' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.verdict_sound' depends on axioms: [propext]
 'Compiler.PlannerOracle.Plan.verifications_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.EmptyB.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.EmptyB.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.FillA.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.FillA.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Ledger' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Node' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Pour.collect' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Pour.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Pour.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Search' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.Step' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.accept' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.accept_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.answer' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.attempts' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.expansions_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.extend' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.extract' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.failure' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.follow' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.fresh' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.fresh_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.frontier_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.iterations_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.observe' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.replay' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.replay_fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.run' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.searchStep' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_count' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_expanded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_peak' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_step' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.search_verify_growth' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.start' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFit.verdict' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFit.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFit.verifications_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.EmptyB.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.EmptyB.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.FillA.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.FillA.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Ledger' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Node' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Pour.collect' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Pour.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Pour.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Search' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.Step' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.accept' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.accept_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.answer' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.attempts' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.expansions_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.extend' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.extract' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.failure' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.follow' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.fresh' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.fresh_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.frontier_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.iterations_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.observe' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.replay' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.replay_fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.run' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.searchStep' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_count' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_expanded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_peak' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_step' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.search_verify_growth' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.start' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitR.verdict' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitR.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitR.verifications_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.EmptyB.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.EmptyB.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.FillA.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.FillA.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Ledger' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Node' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Pour.collect' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Pour.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Pour.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Search' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.Step' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.accept' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.accept_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.answer' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.attempts' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.expansions_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.explained' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.extend' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.extract' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.failure' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.follow' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.fresh' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.fresh_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.frontier_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.iterations_bounded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.observe' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.replay' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.replay_fire' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.run' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.searchStep' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_count' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_expanded' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_ok' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_peak' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_step' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.search_verify_growth' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.start' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.successors' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.successors_ok' does not depend on any axioms
+'Compiler.PlannerOracle.PlanFitU.verdict' depends on axioms: [propext]
+'Compiler.PlannerOracle.PlanFitU.verdict_sound' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.PlanFitU.verifications_bounded' depends on axioms: [propext]
 'Compiler.PlannerOracle.Pour.apply' does not depend on any axioms
 'Compiler.PlannerOracle.Pour.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.Pour.candidates' does not depend on any axioms
 'Compiler.PlannerOracle.Pour.conclusion' does not depend on any axioms
 'Compiler.PlannerOracle.Pour.guard' does not depend on any axioms
 'Compiler.PlannerOracle.Pouring.preserves' does not depend on any axioms
+'Compiler.PlannerOracle.Whole' does not depend on any axioms
+'Compiler.PlannerOracle.Within' does not depend on any axioms
 'Compiler.PlannerOracle.empty_jugs_fit' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.emptyb_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.fits_kept' does not depend on any axioms
+'Compiler.PlannerOracle.held_initial' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.held_preserved' does not depend on any axioms
 'Compiler.PlannerOracle.measuresCheck' does not depend on any axioms
 'Compiler.PlannerOracle.measures_sound' depends on axioms: [propext]
+'Compiler.PlannerOracle.plan_fit_correct' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.plan_held_correct' depends on axioms: [propext, Quot.sound]
+'Compiler.PlannerOracle.plan_whole_correct' depends on axioms: [propext, Quot.sound]
 'Compiler.PlannerOracle.pour_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Compiler.PlannerOracle.wholeCheck' does not depend on any axioms
+'Compiler.PlannerOracle.whole_sound' depends on axioms: [propext]
+'Compiler.PlannerOracle.withinCheck' does not depend on any axioms
+'Compiler.PlannerOracle.within_sound' depends on axioms: [propext]
+'Compiler.ReasoningFixtures.encodeDoseSteps' does not depend on any axioms
+'Compiler.ReasoningFixtures.encodeDoseStepsOne' does not depend on any axioms
 'Compiler.ReasoningFixtures.encodeFailure' does not depend on any axioms
+'Compiler.ReasoningFixtures.encodePlanSteps' does not depend on any axioms
+'Compiler.ReasoningFixtures.encodePlanStepsOne' does not depend on any axioms
+'Compiler.ReasoningFixtures.encodeScreenSteps' does not depend on any axioms
+'Compiler.ReasoningFixtures.encodeScreenStepsOne' does not depend on any axioms
 'Compiler.ReasoningFixtures.encodeTriageStep' does not depend on any axioms
 'Compiler.ReasoningFixtures.encodeTriageSteps' does not depend on any axioms
 'Compiler.ReasoningFixtures.reasoningDose120Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -892,7 +1063,7 @@
 'Compiler.ScreeningOracle.Screen.search_ok' does not depend on any axioms
 'Compiler.ScreeningOracle.Screen.search_peak' does not depend on any axioms
 'Compiler.ScreeningOracle.Screen.search_step' does not depend on any axioms
-'Compiler.ScreeningOracle.Screen.search_verify_count' does not depend on any axioms
+'Compiler.ScreeningOracle.Screen.search_verify_growth' does not depend on any axioms
 'Compiler.ScreeningOracle.Screen.start' does not depend on any axioms
 'Compiler.ScreeningOracle.Screen.successors' does not depend on any axioms
 'Compiler.ScreeningOracle.Screen.successors_ok' does not depend on any axioms

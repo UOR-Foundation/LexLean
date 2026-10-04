@@ -66,6 +66,25 @@ fn list_of(element: &Ty, items: Vec<Expr>) -> Expr {
         build(Shape::Cons, list_t(element.clone()), vec![head, tail])
     })
 }
+/// The six counters of a ledger as a chain of pairs.
+fn ledger_chain_t() -> Ty {
+    (1..6).fold(Ty::Nat, |tail, _| pair_t(Ty::Nat, tail))
+}
+fn ledger_chain(counters: Vec<Expr>) -> Expr {
+    let mut counters = counters;
+    let last = counters.pop().expect("six counters");
+    counters
+        .into_iter()
+        .enumerate()
+        .rev()
+        .fold(last, |tail, (index, counter)| {
+            pair_of(
+                &(index + 1..6).fold(Ty::Nat, |tail, _| pair_t(Ty::Nat, tail)),
+                counter,
+                tail,
+            )
+        })
+}
 fn verdict_t(ok: Ty) -> Ty {
     res_t(ok, failure_t())
 }
@@ -460,6 +479,90 @@ impl Searching {
     fn hit(&self) -> Ty {
         pair_t(self.answer.clone(), self.node.clone())
     }
+    /// The ledger of a run: its six counters, as the elaboration states them.
+    fn ledger(&self) -> Ty {
+        adt(3)
+    }
+    fn ledger_at(&self) -> u64 {
+        self.found_at() + 2
+    }
+    /// The counter `index` of the ledger of search `search`.
+    fn counter(&self, search: Expr, index: u64) -> Expr {
+        field(field(search, self.ledger_at()), index)
+    }
+    /// A ledger from its counters.
+    fn ledger_of(&self, counters: [Expr; 6]) -> Expr {
+        construct(0, &self.ledger(), counters.into())
+    }
+    /// The ledger of `search` with the counters `changed` replaced.
+    fn changed(&self, search: &Expr, changed: [Option<Expr>; 6]) -> Expr {
+        let counters: Vec<Expr> = changed
+            .into_iter()
+            .enumerate()
+            .map(|(index, new)| new.unwrap_or_else(|| self.counter(search.clone(), index as u64)))
+            .collect();
+        self.ledger_of(
+            counters
+                .try_into()
+                .unwrap_or_else(|_| panic!("six counters")),
+        )
+    }
+    /// What the transcription answers: the explained verdict, and the ledger
+    /// of the run as a chain of six pairs.
+    fn entry_type(&self) -> Ty {
+        pair_t(
+            res_t(
+                pair_t(self.answer.clone(), list_t(self.step.clone())),
+                failure_t(),
+            ),
+            ledger_chain_t(),
+        )
+    }
+    /// The entry's body, over variable `fin`: the finished search and
+    /// whether it saturated.
+    fn explained(&self, fin: u64) -> Expr {
+        let explained_t = res_t(
+            pair_t(self.answer.clone(), list_t(self.step.clone())),
+            failure_t(),
+        );
+        let finished = || first(v(fin));
+        let counters = (0..6)
+            .map(|index| self.counter(finished(), index))
+            .collect();
+        pair_of(
+            &self.entry_type(),
+            matching(
+                explained_t.clone(),
+                field(finished(), self.found_at()),
+                vec![
+                    arm(
+                        Shape::Some,
+                        vec![fin + 1],
+                        build(
+                            Shape::Ok,
+                            explained_t.clone(),
+                            vec![pair_of(
+                                &pair_t(self.answer.clone(), list_t(self.step.clone())),
+                                first(v(fin + 1)),
+                                field(second(v(fin + 1)), 1),
+                            )],
+                        ),
+                    ),
+                    arm(
+                        Shape::None,
+                        Vec::new(),
+                        build(
+                            Shape::Error,
+                            explained_t,
+                            vec![self
+                                .failure(second(v(fin)), field(finished(), self.truncated_at()))],
+                        ),
+                    ),
+                ],
+            ),
+            ledger_chain(counters),
+        )
+    }
     /// The ADTs: the steps, the nodes, and the search.
     fn adts(&self, steps: Vec<Vec<Ty>>) -> Vec<Vec<Vec<Ty>>> {
         let mut search = vec![self.nodes.clone()];
@@ -468,10 +571,12 @@ impl Searching {
         }
         search.push(opt_t(self.hit()));
         search.push(Ty::Bool);
+        search.push(self.ledger());
         vec![
             steps,
             vec![vec![self.state.clone(), list_t(self.step.clone())]],
             vec![search],
+            vec![vec![Ty::Nat; 6]],
         ]
     }
     fn node_of(&self, state: Expr, trace: Expr) -> Expr {
@@ -487,11 +592,13 @@ impl Searching {
         visited: Option<Expr>,
         found: Expr,
         truncated: Expr,
+        ledger: Expr,
     ) -> Expr {
         let mut fields = vec![frontier];
         fields.extend(visited);
         fields.push(found);
         fields.push(truncated);
+        fields.push(ledger);
         construct(0, &self.search, fields)
     }
     /// The index of the `found` field.
@@ -529,7 +636,7 @@ impl Searching {
     }
 }
 
-const PLAN: [&str; 26] = [
+const PLAN: [&str; 27] = [
     "verdict",
     "fill_guard",
     "fill_concl",
@@ -556,6 +663,7 @@ const PLAN: [&str; 26] = [
     "cap_step",
     "start",
     "search_step",
+    "attempts",
 ];
 
 /// `Plan.verdict`: breadth-first search with deduplication over two jugs,
@@ -598,10 +706,11 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
         )
     };
     let functions = vec![
-        // verdict: the search under its fuel; the found state, or why none.
+        // Plan: the search under its fuel, answering the found state and the
+        // steps that reach it, or why none, with the run's ledger.
         function(
             vec![Ty::Nat],
-            verdict_t(jugs.clone()),
+            s.entry_type(),
             let_in(
                 1,
                 pair_t(search.clone(), Ty::Bool),
@@ -613,21 +722,7 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
                         call(id("start"), vec![v(0)]),
                     ],
                 ),
-                matching(
-                    verdict_t(jugs.clone()),
-                    field(first(v(1)), s.found_at()),
-                    vec![
-                        arm(Shape::Some, vec![2], ok(&jugs, first(v(2)))),
-                        arm(
-                            Shape::None,
-                            Vec::new(),
-                            error(
-                                &jugs,
-                                s.failure(second(v(1)), field(first(v(1)), s.truncated_at())),
-                            ),
-                        ),
-                    ],
-                ),
+                s.explained(1),
             ),
         ),
         // FillA: fill the first jug.
@@ -879,7 +974,8 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
                         )),
                         none(&s.hit()),
                         lt(v(1), nat(1)),
-                    ),
+                    s.ledger_of([nat(0), nat(0), nat(0), nat(0), nat(0), length(v(2))]),
+),
                 ),
             ),
         ),
@@ -921,7 +1017,8 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
                                                             pair_of(&s.hit(), v(5), v(3)),
                                                         ),
                                                         field(v(1), s.truncated_at()),
-                                                    ),
+                                                    s.changed(&v(1), [Some(plus(s.counter(v(1), 0), nat(1))), None, None, None, Some(plus(s.counter(v(1), 4), nat(1))), None]),
+),
                                                 ),
                                             ),
                                             arm(
@@ -972,7 +1069,8 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
                                                                                 length(v(8)),
                                                                             ),
                                                                         ),
-                                                                    ),
+                                                                    s.changed(&v(1), [Some(plus(s.counter(v(1), 0), nat(1))), Some(plus(s.counter(v(1), 1), call(id("attempts"), vec![field(v(3), 0)]))), Some(plus(s.counter(v(1), 2), length(v(6)))), Some(plus(s.counter(v(1), 3), nat(1))), Some(plus(s.counter(v(1), 4), nat(1))), Some(cond(lt(s.counter(v(1), 5), length(v(9))), length(v(9)), s.counter(v(1), 5)))]),
+),
                                                                 ),
                                                             ),
                                                         ),
@@ -986,6 +1084,17 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
                         ),
                     ),
                 ],
+            ),
+        ),
+        // attempts: the guard evaluations an expansion of a state makes, one
+        // for each rule without a binding and one for each candidate of a
+        // rule with one.
+        function(
+            vec![jugs.clone()],
+            Ty::Nat,
+            plus(
+                nat(1),
+                plus(nat(1), length(call(id("pour_candidates"), vec![v(0)]))),
             ),
         ),
     ];
@@ -1008,7 +1117,7 @@ pub fn plan_case(target: u64, oracle: Json) -> Case {
     )
 }
 
-const SCREEN: [&str; 16] = [
+const SCREEN: [&str; 17] = [
     "verdict",
     "propose_guard",
     "propose_concl",
@@ -1025,6 +1134,7 @@ const SCREEN: [&str; 16] = [
     "cap_step",
     "start",
     "search_step",
+    "attempts",
 ];
 
 /// `Dose.candidates`: the dose model's proposals for a weight, through its
@@ -1077,7 +1187,7 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
     let functions = vec![
         function(
             vec![Ty::Nat],
-            verdict_t(Ty::Nat),
+            s.entry_type(),
             let_in(
                 1,
                 pair_t(search.clone(), Ty::Bool),
@@ -1089,21 +1199,7 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
                         call(id("start"), vec![v(0)]),
                     ],
                 ),
-                matching(
-                    verdict_t(Ty::Nat),
-                    field(first(v(1)), s.found_at()),
-                    vec![
-                        arm(Shape::Some, vec![2], ok(&Ty::Nat, first(v(2)))),
-                        arm(
-                            Shape::None,
-                            Vec::new(),
-                            error(
-                                &Ty::Nat,
-                                s.failure(second(v(1)), field(first(v(1)), s.truncated_at())),
-                            ),
-                        ),
-                    ],
-                ),
+                s.explained(1),
             ),
         ),
         // Propose d: nothing proposed yet, and a positive dose.
@@ -1228,7 +1324,13 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
                         ),
                     ],
                 ),
-                s.search_of(v(1), None, none(&s.hit()), lt(nat(3), nat(1))),
+                s.search_of(
+                    v(1),
+                    None,
+                    none(&s.hit()),
+                    lt(nat(3), nat(1)),
+                    s.ledger_of([nat(0), nat(0), nat(0), nat(0), nat(0), length(v(1))]),
+                ),
             ),
         ),
         // search_step: depth first, so the successors precede the rest of
@@ -1269,6 +1371,23 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
                                                             pair_of(&s.hit(), v(5), v(3)),
                                                         ),
                                                         field(v(1), s.truncated_at()),
+                                                        s.changed(
+                                                            &v(1),
+                                                            [
+                                                                Some(plus(
+                                                                    s.counter(v(1), 0),
+                                                                    nat(1),
+                                                                )),
+                                                                None,
+                                                                None,
+                                                                None,
+                                                                Some(plus(
+                                                                    s.counter(v(1), 4),
+                                                                    nat(1),
+                                                                )),
+                                                                None,
+                                                            ],
+                                                        ),
                                                     ),
                                                 ),
                                             ),
@@ -1310,6 +1429,48 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
                                                                         ),
                                                                         lt(nat(3), length(v(7))),
                                                                     ),
+                                                                    s.changed(
+                                                                        &v(1),
+                                                                        [
+                                                                            Some(plus(
+                                                                                s.counter(v(1), 0),
+                                                                                nat(1),
+                                                                            )),
+                                                                            Some(plus(
+                                                                                s.counter(v(1), 1),
+                                                                                call(
+                                                                                    id("attempts"),
+                                                                                    vec![field(
+                                                                                        v(3),
+                                                                                        0,
+                                                                                    )],
+                                                                                ),
+                                                                            )),
+                                                                            Some(plus(
+                                                                                s.counter(v(1), 2),
+                                                                                length(v(6)),
+                                                                            )),
+                                                                            Some(plus(
+                                                                                s.counter(v(1), 3),
+                                                                                nat(1),
+                                                                            )),
+                                                                            Some(plus(
+                                                                                s.counter(v(1), 4),
+                                                                                nat(1),
+                                                                            )),
+                                                                            Some(cond(
+                                                                                lt(
+                                                                                    s.counter(
+                                                                                        v(1),
+                                                                                        5,
+                                                                                    ),
+                                                                                    length(v(8)),
+                                                                                ),
+                                                                                length(v(8)),
+                                                                                s.counter(v(1), 5),
+                                                                            )),
+                                                                        ],
+                                                                    ),
                                                                 ),
                                                             ),
                                                         ),
@@ -1324,6 +1485,11 @@ pub fn screen_case(weight: u64, oracle: Json) -> Case {
                     ),
                 ],
             ),
+        ),
+        function(
+            vec![pick.clone()],
+            Ty::Nat,
+            length(call(id("propose_candidates"), vec![v(0)])),
         ),
     ];
     engine_case(
@@ -1351,21 +1517,28 @@ const DOSE: [&str; 6] = [
     "failure",
 ];
 
-/// `Dose.verdict`: generate and verify the dose model's proposals, checking
-/// at most three, left to right.
+/// `Dose`: generate and verify the dose model's proposals, checking at most
+/// three, left to right; it answers the accepted dose and the one step that
+/// names it, or why none, with the run's ledger.
 pub fn dose_case(weight: u64, oracle: Json) -> Case {
     let plan = Plan { names: &DOSE };
     let id = |name: &str| plan.id(name);
-    // found, truncated, verifications.
+    // found, truncated, and the ledger of the run.
     let trial = adt(0);
+    let ledger = adt(1);
+    let step = adt(2);
     let fold = plan.lib(0);
-    let trial_of = |found: Expr, truncated: Expr, verified: Expr| {
-        construct(0, &trial, vec![found, truncated, verified])
+    let trial_of = |found: Expr, truncated: Expr, counters: Expr| {
+        construct(0, &trial, vec![found, truncated, counters])
     };
+    let counters = |values: [Expr; 6]| construct(0, &ledger, values.into());
+    let counter = |trial: Expr, index: u64| field(field(trial, 2), index);
+    let explained_t = res_t(pair_t(Ty::Nat, list_t(step.clone())), failure_t());
+    let entry_t = pair_t(explained_t.clone(), ledger_chain_t());
     let functions = vec![
         function(
             vec![Ty::Nat],
-            verdict_t(Ty::Nat),
+            entry_t.clone(),
             let_in(
                 1,
                 trial.clone(),
@@ -1373,21 +1546,45 @@ pub fn dose_case(weight: u64, oracle: Json) -> Case {
                     fold,
                     vec![
                         closure(id("attempt"), vec![v(0)]),
-                        trial_of(none(&Ty::Nat), super::boolean(false), nat(0)),
+                        trial_of(
+                            none(&Ty::Nat),
+                            super::boolean(false),
+                            counters([nat(0), nat(0), nat(0), nat(0), nat(0), nat(0)]),
+                        ),
                         call(id("dose_candidates"), vec![v(0)]),
                     ],
                 ),
-                matching(
-                    verdict_t(Ty::Nat),
-                    field(v(1), 0),
-                    vec![
-                        arm(Shape::Some, vec![2], ok(&Ty::Nat, v(2))),
-                        arm(
-                            Shape::None,
-                            Vec::new(),
-                            error(&Ty::Nat, call(id("failure"), vec![v(1)])),
-                        ),
-                    ],
+                pair_of(
+                    &entry_t,
+                    matching(
+                        explained_t.clone(),
+                        field(v(1), 0),
+                        vec![
+                            arm(
+                                Shape::Some,
+                                vec![2],
+                                build(
+                                    Shape::Ok,
+                                    explained_t.clone(),
+                                    vec![pair_of(
+                                        &pair_t(Ty::Nat, list_t(step.clone())),
+                                        v(2),
+                                        singleton(&step, construct(0, &step, vec![v(2)])),
+                                    )],
+                                ),
+                            ),
+                            arm(
+                                Shape::None,
+                                Vec::new(),
+                                build(
+                                    Shape::Error,
+                                    explained_t.clone(),
+                                    vec![call(id("failure"), vec![v(1)])],
+                                ),
+                            ),
+                        ],
+                    ),
+                    ledger_chain((0..6).map(|index| counter(v(1), index)).collect()),
                 ),
             ),
         ),
@@ -1404,7 +1601,8 @@ pub fn dose_case(weight: u64, oracle: Json) -> Case {
             ),
         ),
         // attempt: check the next candidate while fewer than the budget
-        // have been checked, else record the cut.
+        // have been checked, counting the iteration, the guard evaluation,
+        // and the verification; else record the cut.
         function(
             vec![Ty::Nat, trial.clone(), Ty::Nat],
             trial.clone(),
@@ -1417,11 +1615,18 @@ pub fn dose_case(weight: u64, oracle: Json) -> Case {
                         Shape::None,
                         Vec::new(),
                         cond(
-                            lt(field(v(1), 2), nat(3)),
+                            lt(counter(v(1), 4), nat(3)),
                             trial_of(
                                 call(id("verify"), vec![v(0), v(2)]),
                                 field(v(1), 1),
-                                plus(field(v(1), 2), nat(1)),
+                                counters([
+                                    plus(counter(v(1), 0), nat(1)),
+                                    plus(counter(v(1), 1), nat(1)),
+                                    counter(v(1), 2),
+                                    counter(v(1), 3),
+                                    plus(counter(v(1), 4), nat(1)),
+                                    counter(v(1), 5),
+                                ]),
                             ),
                             trial_of(none(&Ty::Nat), super::boolean(true), field(v(1), 2)),
                         ),
@@ -1439,7 +1644,7 @@ pub fn dose_case(weight: u64, oracle: Json) -> Case {
                 field(v(0), 1),
                 failure(false, false),
                 cond(
-                    eq(field(v(0), 2), nat(0)),
+                    eq(counter(v(0), 4), nat(0)),
                     failure(false, true),
                     failure(true, false),
                 ),
@@ -1448,7 +1653,11 @@ pub fn dose_case(weight: u64, oracle: Json) -> Case {
     ];
     engine_case(
         &format!("reasoning-dose-{weight}"),
-        vec![vec![vec![opt_t(Ty::Nat), Ty::Bool, Ty::Nat]]],
+        vec![
+            vec![vec![opt_t(Ty::Nat), Ty::Bool, ledger.clone()]],
+            vec![vec![Ty::Nat; 6]],
+            vec![vec![Ty::Nat]],
+        ],
         &plan,
         functions,
         vec![(Template::ListFold, vec![Ty::Nat, trial])],
