@@ -84,10 +84,17 @@ fn large_byte_declaration_project(varied: bool) -> (P, Vec<String>) {
              "fields":[{"name":"request", "type":{"kind":"bytes"}},
                        {"name":"response", "type":{"kind":"bytes"}}]},
             {"kind":"structure", "name":"ByteCorpus", "type_parameters":[], "parameters":[],
-             "fields":[{"name":"vectors", "type":{"kind":"list", "element":named("ByteVector")}}]},
-            {"kind":"definition", "name":"byteCorpus", "parameters":[], "result":named("ByteCorpus"),
+             "fields":[{"name":"before", "type":{"kind":"nat"}},
+                       {"name":"vectors", "type":{"kind":"list", "element":named("ByteVector")}},
+                       {"name":"after", "type":{"kind":"nat"}}]},
+            {"kind":"definition", "name":"byteCorpus", "parameters":[
+                {"name":"llb0", "type":{"kind":"nat"}},
+                {"name":"llb255", "type":{"kind":"nat"}}
+             ], "result":named("ByteCorpus"),
              "body":{"kind":"record", "type":member("ByteCorpus"), "type_arguments":[],
-                     "fields":[{"field":"vectors", "value":vectors}]}},
+                     "fields":[{"field":"before", "value":{"kind":"var", "name":"llb0"}},
+                               {"field":"vectors", "value":vectors},
+                               {"field":"after", "value":{"kind":"var", "name":"llb255"}}]}},
         ],
     });
     project.write("src/Main.lex.tex", &format!(
@@ -141,30 +148,44 @@ fn verify_large_byte_declaration(varied: bool) {
     );
     let rendered = support::rendered(&project);
     let generated = support::lean_text(&rendered, "Main");
-    let emitted: Vec<_> = generated
-        .split("ByteArray.mk #[")
-        .skip(1)
-        .map(|tail| {
-            let literal = tail.split_once(']').expect("closed generated array").0;
-            if literal.is_empty() {
-                return String::new();
+    let octet = |value: &str| {
+        value
+            .strip_prefix("_root_.UInt8.ofNat (nat_lit ")
+            .and_then(|value| value.strip_suffix(')'))
+            .expect("explicit generated UInt8 construction")
+            .parse::<u8>()
+            .expect("exact generated UInt8 literal")
+    };
+    let mut remaining = generated.as_str();
+    let mut emitted = Vec::new();
+    while let Some((prefix, tail)) = remaining.split_once("_root_.ByteArray.mk #[") {
+        let mut bindings = std::collections::BTreeMap::new();
+        if let Some(start) = prefix.rfind("(let llb") {
+            for binding in prefix[start + 1..]
+                .split("; ")
+                .filter(|part| !part.is_empty())
+            {
+                let (name, value) = binding
+                    .strip_prefix("let ")
+                    .and_then(|binding| binding.split_once(" : _root_.UInt8 := "))
+                    .expect("closed typed local octet binding");
+                assert!(bindings.insert(name, octet(value)).is_none());
             }
+        }
+        let (literal, rest) = tail.split_once(']').expect("closed generated array");
+        emitted.push(if literal.is_empty() {
+            String::new()
+        } else {
             literal
                 .split(", ")
                 .map(|value| {
-                    format!(
-                        "{:02x}",
-                        value
-                            .strip_prefix("UInt8.ofNat (nat_lit ")
-                            .and_then(|value| value.strip_suffix(')'))
-                            .expect("explicit generated UInt8 construction")
-                            .parse::<u8>()
-                            .expect("exact generated UInt8 literal")
-                    )
+                    let value = bindings.get(value).copied().unwrap_or_else(|| octet(value));
+                    format!("{value:02x}")
                 })
                 .collect::<String>()
-        })
-        .collect();
+        });
+        remaining = rest;
+    }
     assert_eq!(
         emitted, expected,
         "the actual generated declaration retains every byte in order"

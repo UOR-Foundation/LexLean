@@ -20,8 +20,12 @@ fn verify_language(language: &str) {
         Vec::new(),
         (0..=255).collect::<Vec<u8>>(),
         vec![0, 255, 128, 0],
+        vec![0, 0, 0],
+        vec![0, 0, 0, 0],
+        (0..=255).cycle().take(1024).collect::<Vec<u8>>(),
+        vec![255, 0, 255, 0, 255, 0, 255, 0],
     ];
-    let declarations = vectors
+    let mut declarations = vectors
         .iter()
         .enumerate()
         .map(|(index, bytes)| {
@@ -29,10 +33,31 @@ fn verify_language(language: &str) {
                 .iter()
                 .map(|byte| format!("{byte:02x}"))
                 .collect::<String>();
-            json!({"kind":"definition", "name":format!("literal{index}"), "parameters":[],
-            "result":{"kind":"bytes"}, "axioms":[], "body":{"kind":"bytes", "hex":hex}})
+            json!({"kind":"definition", "name":format!("literal{index}"), "parameters":[
+                {"name":"llb0", "type":{"kind":"nat"}},
+                {"name":"llb255", "type":{"kind":"nat"}},
+                {"name":"UInt8", "type":{"kind":"nat"}},
+                {"name":"ByteArray", "type":{"kind":"nat"}}],
+            "result":{"kind":"named", "member":{"name":"ObservedBytes"}, "arguments":[]},
+            "axioms":[], "body":{"kind":"record", "type":{"name":"ObservedBytes"}, "type_arguments":[],
+                "fields":[
+                    {"field":"before", "value":{"kind":"var", "name":"llb0"}},
+                    {"field":"value", "value":{"kind":"bytes", "hex":hex}},
+                    {"field":"after", "value":{"kind":"var", "name":"llb255"}},
+                    {"field":"typeName", "value":{"kind":"var", "name":"UInt8"}},
+                    {"field":"arrayName", "value":{"kind":"var", "name":"ByteArray"}}
+                ]}})
         })
         .collect::<Vec<_>>();
+    declarations.insert(
+        0,
+        json!({"kind":"structure", "name":"ObservedBytes", "parameters":[], "type_parameters":[],
+        "fields":[{"name":"before", "type":{"kind":"nat"}},
+                  {"name":"value", "type":{"kind":"bytes"}},
+                  {"name":"after", "type":{"kind":"nat"}},
+                  {"name":"typeName", "type":{"kind":"nat"}},
+                  {"name":"arrayName", "type":{"kind":"nat"}}]}),
+    );
     let module = json!({"spec":"lexlean/semantic-module/1", "declarations":declarations});
     project.write("src/Main.lex.tex", &format!(
         "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@{language}.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{module}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
@@ -50,7 +75,10 @@ fn verify_language(language: &str) {
     // These are observation commands only. The values come exclusively from
     // the generated definitions; expected values are independently encoded.
     let probes = (0..vectors.len())
-        .map(|index| format!("#eval LexLeanExample.Main.literal{index}.toList.map UInt8.toNat\n"))
+        .map(|index| {
+            let call = format!("(LexLeanExample.Main.literal{index} 42 99 123 456)");
+            format!("#eval {call}.before\n#eval {call}.value.toList.map UInt8.toNat\n#eval {call}.after\n#eval {call}.typeName\n#eval {call}.arrayName\n")
+        })
         .collect::<String>();
     let directory = tempfile::tempdir().expect("byte observation directory");
     let path = directory.path().join("ByteObservation.lean");
@@ -75,7 +103,7 @@ fn verify_language(language: &str) {
     );
     let expected = vectors
         .iter()
-        .map(|bytes| format!("{bytes:?}\n"))
+        .map(|bytes| format!("42\n{bytes:?}\n99\n123\n456\n"))
         .collect::<String>();
     let observed = String::from_utf8(output.stdout).expect("UTF-8 observation");
     assert_eq!(

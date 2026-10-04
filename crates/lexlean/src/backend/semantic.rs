@@ -453,23 +453,49 @@ impl Render<'_> {
             } => format!("({value} : {representation:?})"),
             SemanticTerm::String { value } => string_literal(value),
             SemanticTerm::Bytes { hex } => {
-                let values = hex
+                let bytes = hex
                     .as_bytes()
                     .chunks_exact(2)
                     .map(|pair| {
                         let pair = core::str::from_utf8(pair).expect("validated byte literal");
                         u8::from_str_radix(pair, 16).expect("validated byte literal")
                     })
+                    .collect::<Vec<_>>();
+                let mut counts = [0_usize; 256];
+                for value in &bytes {
+                    counts[usize::from(*value)] += 1;
+                }
+                let shared = self.explicit_byte_literals && counts.iter().any(|count| *count >= 4);
+                let values = bytes
+                    .iter()
                     .map(|value| {
-                        if self.explicit_byte_literals {
-                            format!("UInt8.ofNat (nat_lit {value})")
+                        if shared && counts[usize::from(*value)] >= 4 {
+                            format!("llb{value}")
+                        } else if self.explicit_byte_literals {
+                            format!("_root_.UInt8.ofNat (nat_lit {value})")
                         } else {
                             value.to_string()
                         }
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("ByteArray.mk #[{values}]")
+                if shared {
+                    // The literal is closed: these local bindings cannot capture
+                    // source variables or add runtime array operations.
+                    let bindings = counts
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, count)| **count >= 4)
+                        .map(|(value, _)| {
+                            format!("let llb{value} : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit {value}); ")
+                        })
+                        .collect::<String>();
+                    format!("({bindings}_root_.ByteArray.mk #[{values}])")
+                } else if self.explicit_byte_literals {
+                    format!("_root_.ByteArray.mk #[{values}]")
+                } else {
+                    format!("ByteArray.mk #[{values}]")
+                }
             }
             SemanticTerm::Primitive {
                 operation,
@@ -1314,6 +1340,36 @@ pub fn render_latex(
 #[cfg(test)]
 mod comment_tests {
     #[test]
+    fn repeated_byte_literals_share_only_closed_typed_octets() {
+        let render = super::Render {
+            prefix: "ByteFixture",
+            explicit_byte_literals: true,
+        };
+        assert_eq!(
+            render.term(&crate::ir::semantic::SemanticTerm::Bytes {
+                hex: "ff00ff00ff00ff00".to_owned(),
+            }),
+            "(let llb0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let llb255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[llb255, llb0, llb255, llb0, llb255, llb0, llb255, llb0])"
+        );
+        assert_eq!(
+            render.term(&crate::ir::semantic::SemanticTerm::Bytes {
+                hex: "000000".to_owned(),
+            }),
+            "_root_.ByteArray.mk #[_root_.UInt8.ofNat (nat_lit 0), _root_.UInt8.ofNat (nat_lit 0), _root_.UInt8.ofNat (nat_lit 0)]"
+        );
+        let document = super::Render {
+            prefix: "ByteFixture",
+            explicit_byte_literals: false,
+        };
+        assert_eq!(
+            document.term(&crate::ir::semantic::SemanticTerm::Bytes {
+                hex: "ff00ff00ff00ff00".to_owned(),
+            }),
+            "ByteArray.mk #[255, 0, 255, 0, 255, 0, 255, 0]"
+        );
+    }
+
+    #[test]
     fn byte_literals_use_explicit_u8_construction() {
         let render = super::Render {
             prefix: "ByteFixture",
@@ -1327,12 +1383,12 @@ mod comment_tests {
             let hex = values.iter().map(|value| format!("{value:02x}")).collect();
             let expected = values
                 .iter()
-                .map(|value| format!("UInt8.ofNat (nat_lit {value})"))
+                .map(|value| format!("_root_.UInt8.ofNat (nat_lit {value})"))
                 .collect::<Vec<_>>()
                 .join(", ");
             assert_eq!(
                 render.term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
-                format!("ByteArray.mk #[{expected}]")
+                format!("_root_.ByteArray.mk #[{expected}]")
             );
             let document = super::Render {
                 prefix: "ByteFixture",

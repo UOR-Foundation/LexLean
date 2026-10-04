@@ -2399,10 +2399,16 @@ source/IR limits, kernel replay, and exact axiom policies remain unchanged.
 Exhausting a finite Lean budget still fails verification; the budgets do not
 assert that every resource-bounded source can be verified on every host.
 
-Semantic Lean backend revision 10 emits byte-array elements as explicit
-`UInt8.ofNat (nat_lit n)` applications, where `n` is the decoded byte in
+Semantic Lean backend revision 11 emits byte-array elements as explicit
+`_root_.UInt8.ofNat (nat_lit n)` applications, where `n` is the decoded byte in
 0..255. This avoids overloaded numeral elaboration without changing byte
-values, order, or empty arrays. Canonical LaTeX retains its decimal rendering.
+values, order, or empty arrays. Within each closed literal, octets occurring
+at least four times share explicitly typed local bindings in ascending octet
+order. The entire expression is parenthesized; no array operation is added.
+Literals without such repetitions retain direct element construction.
+The `UInt8` type and `ByteArray.mk` constructor are also root-qualified, so
+source binders cannot capture backend constants.
+Canonical LaTeX retains its decimal rendering.
 The revision changes the 1.1 and 1.2 compiler-semantics identities; existing
 locks require explicit regeneration. Language 1.0 artifacts remain unchanged.
 
