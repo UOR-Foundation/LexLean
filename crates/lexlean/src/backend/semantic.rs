@@ -772,17 +772,43 @@ impl Render<'_> {
             } => format!("({value} : {representation:?})"),
             SemanticTerm::String { value } => string_literal(value),
             SemanticTerm::Bytes { hex } => {
-                let values = hex
+                let bytes = hex
                     .as_bytes()
                     .chunks_exact(2)
                     .map(|pair| {
                         let pair = core::str::from_utf8(pair).expect("validated byte literal");
                         u8::from_str_radix(pair, 16).expect("validated byte literal")
                     })
-                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>();
+                let mut counts = [0_usize; 256];
+                for value in &bytes {
+                    counts[usize::from(*value)] += 1;
+                }
+                let shared = !self.document && counts.iter().any(|count| *count >= 4);
+                let values = bytes
+                    .iter()
+                    .map(|value| {
+                        if shared && counts[usize::from(*value)] >= 4 {
+                            format!("llb{value}")
+                        } else if !self.document {
+                            format!("_root_.UInt8.ofNat (nat_lit {value})")
+                        } else {
+                            value.to_string()
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("ByteArray.mk #[{values}]")
+                if shared {
+                    // Closed literals cannot capture surrounding source binders.
+                    let bindings = counts.iter().enumerate().filter(|(_, count)| **count >= 4)
+                        .map(|(value, _)| format!("let llb{value} : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit {value}); "))
+                        .collect::<String>();
+                    format!("({bindings}_root_.ByteArray.mk #[{values}])")
+                } else if !self.document {
+                    format!("_root_.ByteArray.mk #[{values}]")
+                } else {
+                    format!("ByteArray.mk #[{values}]")
+                }
             }
             SemanticTerm::Primitive {
                 operation,
@@ -3278,6 +3304,61 @@ mod declaration_span_tests {
 
 #[cfg(test)]
 mod comment_tests {
+    fn render(document: bool) -> super::Render<'static> {
+        super::Render {
+            prefix: "ByteFixture",
+            hypotheses: Default::default(),
+            runtime: false,
+            document,
+            qualify: None,
+        }
+    }
+
+    #[test]
+    fn byte_literals_use_explicit_u8_construction() {
+        for values in [
+            Vec::new(),
+            (0..=255).collect::<Vec<u8>>(),
+            vec![0, 255, 128, 0],
+        ] {
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let expected = values
+                .iter()
+                .map(|value| format!("_root_.UInt8.ofNat (nat_lit {value})"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                render(false).term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("_root_.ByteArray.mk #[{expected}]")
+            );
+            let hex = values.iter().map(|value| format!("{value:02x}")).collect();
+            let decimal = values
+                .iter()
+                .map(u8::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                render(true).term(&crate::ir::semantic::SemanticTerm::Bytes { hex }),
+                format!("ByteArray.mk #[{decimal}]")
+            );
+        }
+    }
+
+    #[test]
+    fn repeated_byte_literals_share_only_closed_typed_octets() {
+        let repeated = crate::ir::semantic::SemanticTerm::Bytes {
+            hex: "ff00ff00ff00ff00".to_owned(),
+        };
+        assert_eq!(render(false).term(&repeated),
+            "(let llb0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let llb255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[llb255, llb0, llb255, llb0, llb255, llb0, llb255, llb0])");
+        assert_eq!(render(false).term(&crate::ir::semantic::SemanticTerm::Bytes { hex: "000000".to_owned() }),
+            "_root_.ByteArray.mk #[_root_.UInt8.ofNat (nat_lit 0), _root_.UInt8.ofNat (nat_lit 0), _root_.UInt8.ofNat (nat_lit 0)]");
+        assert_eq!(
+            render(true).term(&repeated),
+            "ByteArray.mk #[255, 0, 255, 0, 255, 0, 255, 0]"
+        );
+    }
+
     #[test]
     fn string_literals_use_the_pinned_lean_escape_grammar() {
         for code in (0..=0x1f).chain(0x7f..=0x9f) {
