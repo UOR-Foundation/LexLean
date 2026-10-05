@@ -41,11 +41,15 @@ fn linked_json(project: &P) -> serde_json::Value {
 /// declaration. Small scalar fixtures do not exercise the compiler work that
 /// caused a real consumer's complete acceptance corpus to exhaust Lean's
 /// default per-command heartbeat budget.
-fn large_byte_declaration_project(varied: bool) -> (P, Vec<String>) {
+fn large_byte_declaration_project(varied: bool, language: &str) -> (P, Vec<String>) {
     use serde_json::json;
 
     let project = P::example();
-    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.1\"");
+    project.edit(
+        "lexlean.toml",
+        "language = \"1.0\"",
+        &format!("language = {language:?}"),
+    );
     let member = |name: &str| json!({"name": name});
     let named = |name: &str| json!({"kind":"named", "member":member(name), "arguments":[]});
     let bytes = |length: usize| {
@@ -78,7 +82,7 @@ fn large_byte_declaration_project(varied: bool) -> (P, Vec<String>) {
         vectors = json!({"kind":"cons", "head":row, "tail":vectors});
     }
     let module = json!({
-        "spec":"lexlean/semantic-module/1",
+        "spec":if language == "1.1" {"lexlean/semantic-module/1"} else {"lexlean/semantic-module/2"},
         "declarations":[
             {"kind":"structure", "name":"ByteVector", "type_parameters":[], "parameters":[],
              "fields":[{"name":"request", "type":{"kind":"bytes"}},
@@ -98,7 +102,7 @@ fn large_byte_declaration_project(varied: bool) -> (P, Vec<String>) {
         ],
     });
     project.write("src/Main.lex.tex", &format!(
-        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.1.0}}\n\\title{{Natural number addition}}\n\n\\begin{{semanticmodule}}\n\\semanticdata{{{module}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@{language}.0}}\n\\title{{Natural number addition}}\n\n\\begin{{semanticmodule}}\n\\semanticdata{{{module}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
     ));
     project.relock();
     let expected = lengths
@@ -129,8 +133,8 @@ fn collect_byte_literals(value: &serde_json::Value, actual: &mut Vec<String>) {
     }
 }
 
-fn verify_large_byte_declaration(varied: bool) {
-    let (project, expected) = large_byte_declaration_project(varied);
+fn verify_large_byte_declaration(varied: bool, language: &str) {
+    let (project, expected) = large_byte_declaration_project(varied, language);
     let first = project
         .engine()
         .snapshot(lexlean::CheckRequest {
@@ -1127,8 +1131,10 @@ pub(crate) fn run(id: &str) {
             bytes::verify();
             strings::verify();
             names::verify();
-            verify_large_byte_declaration(false);
-            verify_large_byte_declaration(true);
+            for language in ["1.1", "1.2"] {
+                verify_large_byte_declaration(false, language);
+                verify_large_byte_declaration(true, language);
+            }
             let project = support::semantic_project();
             let built = project.build_ok();
             let root = project.build_dir(&built.build_id.expect("build id"));

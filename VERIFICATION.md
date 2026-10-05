@@ -15,7 +15,6 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `test` | `cargo test --workspace --all-features --exclude repo-conformance` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI) and the model crate's own tests. `repo-conformance` is excluded here and owned solely by `bdd`, so each conformance test and each Lean process behind it runs once per `vv` rather than twice |
 | `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: the complete conformance suite — all 291 conformance tests, including the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) — plus the register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test. Sole owner of that suite: `test` above excludes it |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
-| `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: the complete conformance suite — all 291 conformance tests, including the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) — plus the register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test. Sole owner of that suite: `test` above excludes it |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
@@ -149,6 +148,13 @@ The private detail field is an explicitly documented unreleased native
 struct-literal source change; it does not alter the diagnostic wire schema.
 
 ### semantic elaboration budgets can fail
+
+The typed-octet integration runs this complete nested corpus under language
+1.1 and 1.2, each with repeated and varied bytes. The complete SM-19 case
+passes in 127.92 seconds after the extension; all six semantic-backend unit
+owners also pass. The retained log SHA-256 is
+`06ecd37c4974ed997c8f6e647a7a3b7632e5cb15c00a83a38f29e64e6485b657`.
+This targeted execution is not complete V&V or package/downstream acceptance.
 
 The `SM-19` regression generates one nested record/list declaration containing
 twenty byte literals, including 4,096-, 4,097-, and 8,192-byte values. It keeps

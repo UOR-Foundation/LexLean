@@ -2465,9 +2465,10 @@ assert that every resource-bounded source can be verified on every host.
 Semantic byte literals lower each octet through `_root_.UInt8.ofNat (nat_lit n)`.
 Within a closed literal, values appearing at least four times share ascending
 typed local bindings. The literal's local scope cannot capture source binders;
-root-qualified constructors preserve names under shadowing. Byte values and
-order, source/snapshot identities, and canonical LaTeX decimal spelling remain
-unchanged. These rules apply to both language 1.1 and 1.2, including model and
+root-qualified constructors preserve names under shadowing. Literal byte values,
+order and canonical LaTeX decimal spelling remain unchanged. Compiler-bound
+source, snapshot, build and verification identities regenerate with the backend
+revision. These rules apply to both language 1.1 and 1.2, including model and
 well-founded definition lowering.
 
 ### 17.12 Language 1.2 and the compatibility/migration contract
