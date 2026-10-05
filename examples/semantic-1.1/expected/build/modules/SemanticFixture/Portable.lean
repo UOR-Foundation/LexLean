@@ -320,7 +320,7 @@ public structure PortableContainers where
 
 @[expose] public def formatInt64 (value : Int64) : String := (LexLeanRuntime.formatDecimal (value) : String)
 
-@[expose] public def byteFixture : ByteArray := ByteArray.mk #[170, 187, 127, 255]
+@[expose] public def byteFixture : ByteArray := _root_.ByteArray.mk #[_root_.UInt8.ofNat (nat_lit 170), _root_.UInt8.ofNat (nat_lit 187), _root_.UInt8.ofNat (nat_lit 127), _root_.UInt8.ofNat (nat_lit 255)]
 
 @[expose] public def encodeUtf8 (value : String) : ByteArray := (LexLeanRuntime.utf8Encode (value) : ByteArray)
 
