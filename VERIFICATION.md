@@ -4,6 +4,32 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 
 ## The acceptance gate
 
+### Reviewed Prism compiler checkpoint — 6 October 2026
+
+The combined tree through `efd4ca7c` passed the original complete `just vv`
+and subsequent `cargo xtask check-package` in pinned `670b191a` tooling.
+Execution used the frozen dirty tree at `b0a349ed`; independent review matched
+all 5,924 input paths and hashes to the committed combined tree. Intermediate
+commits are not individually qualified by this run.
+
+- Original conformance: 291 passed, none filtered or skipped; all other
+  original VV recipes, example verification, golden readback and two-root
+  reproducibility passed.
+- Atlas: 173 source modules, 866 build files, 695 normalized verification
+  records; all 107 added census leaves are directly imported. Original
+  statements and axiom policies remain unchanged. Twenty-two original proofs
+  additionally observe the already-allowed `Quot.sound`.
+- MD-02 executes generated artifact values through pinned Lean and rejects a
+  successfully compiled byte-corruption counterexample.
+- Input inventory SHA-256:
+  `3f22b75833eac06c49d27ce9368afd22b56a56d7257df3634ccbf80c3950eee3`.
+- Complete gate log SHA-256:
+  `582375a144a94a234b4962ce0f982598e7083dbd262942d1aaec38743cdadd99`.
+
+Earlier failed/interrupted attempts remain failures. This is actual local
+full-gate/package evidence, not hosted CI, a release, or installed Prism SDK
+qualification. This documentation was added after execution.
+
 `just vv` runs, in the normative order (SPEC.md §9.2):
 
 | Recipe | Command | Rules it enforces |
