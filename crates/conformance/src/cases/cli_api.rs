@@ -88,6 +88,54 @@ pub(crate) fn run(id: &str) {
         // overwriting, and the skeleton locks, checks, and verifies with
         // its lock left current.
         "CL-02" => {
+            let lifecycle = tempfile::tempdir().expect("tempdir");
+            let lifecycle_root = camino::Utf8Path::from_path(lifecycle.path()).expect("utf8");
+            let (exit, _, stderr) = support::cli_in(
+                lifecycle_root,
+                &[
+                    "init",
+                    ".",
+                    "--name",
+                    "lifecycle",
+                    "--module-prefix",
+                    "Lifecycle",
+                    "--language",
+                    "1.1",
+                ],
+            );
+            assert_eq!(exit, 0, "explicit language-1.1 lifecycle init: {stderr}");
+            let initialized = lexlean::project::Project::load(&lifecycle_root.join("lexlean.toml"))
+                .expect("the requested lifecycle configuration loads");
+            assert_eq!(initialized.config.name, "lifecycle");
+            assert_eq!(initialized.config.language, "1.1");
+            for args in [
+                ["lock"].as_slice(),
+                &["check", "--all"],
+                &["build", "--all"],
+                &["fmt", "--check", "--all"],
+            ] {
+                let (exit, _, stderr) = support::cli_in(lifecycle_root, args);
+                assert_eq!(
+                    exit, 0,
+                    "complete language-1.1 lifecycle {args:?}: {stderr}"
+                );
+            }
+            assert!(lifecycle_root.join(".lexlean/build").is_dir());
+            assert!(
+                std::fs::read_dir(lifecycle_root.join(".lexlean/build"))
+                    .expect("published build tree")
+                    .next()
+                    .expect("at least one actual published build")
+                    .expect("read published build")
+                    .file_type()
+                    .expect("published build type")
+                    .is_dir(),
+                "the successful lifecycle must publish an actual build-ID directory"
+            );
+            let (exit, _, stderr) = support::cli_in(lifecycle_root, &["clean"]);
+            assert_eq!(exit, 0, "complete language-1.1 lifecycle clean: {stderr}");
+            assert!(!lifecycle_root.join(".lexlean/build").exists());
+
             let target = tempfile::tempdir().expect("tempdir");
             let target_path = camino::Utf8Path::from_path(target.path()).expect("utf8");
             let (exit, stdout, stderr) = support::cli_in(
@@ -522,6 +570,91 @@ pub(crate) fn run(id: &str) {
         // §23.7, §20.6: exact stream, color, and path discipline in both
         // modes.
         "CL-12" => {
+            for language in ["1.0", "1.1", "1.99"] {
+                for format in ["human", "json"] {
+                    let project = if language == "1.1" {
+                        P::semantic_example()
+                    } else {
+                        P::example()
+                    };
+                    if language == "1.99" {
+                        project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.99\"");
+                    }
+                    let (exit, stdout, stderr) =
+                        project.cli(&["--diagnostic-format", format, "check"]);
+                    let expected = if language == "1.99" { 2 } else { 0 };
+                    assert_eq!(
+                        exit, expected,
+                        "version/format matrix {language}/{format}: {stderr}"
+                    );
+                    if format == "json" {
+                        assert!(stderr.is_empty());
+                        let value: serde_json::Value =
+                            serde_json::from_str(&stdout).expect("one JSON object");
+                        assert_eq!(value["command"], "check");
+                        assert_eq!(value["exit_code"], expected);
+                        assert_eq!(value["success"], expected == 0);
+                        if expected != 0 {
+                            assert_eq!(value["diagnostics"][0]["code"], "LLC0103");
+                        }
+                    } else if expected != 0 {
+                        assert!(stderr.contains("LLC0103"));
+                    }
+                }
+            }
+            for color in ["auto", "always", "never"] {
+                for format in ["human", "json"] {
+                    let project = P::semantic_example();
+                    project.edit("lexlean.toml", "language = \"1.1\"", "language = \"9.9\"");
+                    let (exit, stdout, stderr) =
+                        project.cli(&["--color", color, "--diagnostic-format", format, "check"]);
+                    assert_eq!(exit, 2, "color/format matrix {color}/{format}: {stderr}");
+                    if format == "json" {
+                        assert!(stderr.is_empty() && !stdout.contains('\u{1b}'));
+                        let value: serde_json::Value =
+                            serde_json::from_str(&stdout).expect("one JSON object");
+                        assert_eq!(value["command"], "check");
+                        assert_eq!(value["exit_code"], 2);
+                        assert_eq!(value["diagnostics"][0]["code"], "LLC0103");
+                    } else {
+                        assert!(stdout.is_empty() && stderr.contains("LLC0103"));
+                        assert_eq!(stderr.contains('\u{1b}'), color == "always");
+                    }
+                }
+            }
+            let drift = P::semantic_example();
+            drift.check_ok();
+            let (exit, _, stderr) = drift.cli(&["lock", "--check"]);
+            assert_eq!(exit, 0, "valid multi-module baseline: {stderr}");
+            drift.edit(
+                "src/Main.lex.tex",
+                "\\begin{lexlean}{Main}",
+                "\\begin{lexlean}{Main}\n\\invalidMacro{tampered}",
+            );
+            for format in ["human", "json"] {
+                let (exit, stdout, stderr) = drift.cli(&["--diagnostic-format", format, "check"]);
+                assert_eq!(
+                    exit, 1,
+                    "unknown macro refuses after valid baseline: {stderr}"
+                );
+                if format == "json" {
+                    assert!(stderr.is_empty());
+                    let value: serde_json::Value =
+                        serde_json::from_str(&stdout).expect("one JSON object");
+                    assert_eq!(value["success"], false);
+                    assert_eq!(value["exit_code"], 1);
+                    assert!(!value["diagnostics"]
+                        .as_array()
+                        .expect("diagnostics")
+                        .is_empty());
+                } else {
+                    assert!(
+                        stdout.is_empty() && stderr.contains("error["),
+                        "human unknown-macro refusal: stdout={stdout:?}, stderr={stderr:?}"
+                    );
+                }
+            }
+
             let failing = P::example();
             failing.edit("src/Main.lex.tex", "natural number", "banana number");
             let (exit, stdout, stderr) = failing.cli(&["--diagnostic-format", "json", "check"]);

@@ -30,6 +30,22 @@ Earlier failed/interrupted attempts remain failures. This is actual local
 full-gate/package evidence, not hosted CI, a release, or installed Prism SDK
 qualification. This documentation was added after execution.
 
+### Legacy configuration/CLI coverage replacement — 6 October 2026
+
+Independent review maps all 29 valid executable obligations from the removed
+six-file `tests/e2e` suite to existing conformance owners. CF-07/10/16/17 and
+CL-02/12 now additionally execute malformed/unsupported lock refusals, digest
+drift and non-repair, real 1.0-to-1.1 migration, the explicit 1.1 lifecycle and
+complete version/diagnostic/color combinations. Positive projects are valid
+for their declared language; no unsupported-language success is fabricated.
+
+All six complete owners passed in pinned `670b191a` tooling: six passed,
+285 explicitly filtered, 11.77 seconds; their inputs remained unchanged.
+Log SHA-256:
+`5f1c74ff75a331fc878713ea303950525fc842ce145b587ccb7419a94f4f27d1`.
+This selected-owner run qualifies the coverage replacement only. It is not
+a new 291-case/full-VV, downstream compiler or installed SDK qualification.
+
 `just vv` runs, in the normative order (SPEC.md §9.2):
 
 | Recipe | Command | Rules it enforces |

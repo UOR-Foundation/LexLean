@@ -525,6 +525,53 @@ pub(crate) fn run(id: &str) {
             let (exit, _, _) = project.cli(&["lock", "--check"]);
             assert_eq!(exit, 0, "restored bytes pass");
 
+            let unsupported = P::example();
+            let unsupported_bytes = bytes.replacen(
+                "spec = \"lexlean/lock/1\"",
+                "spec = \"lexlean/lock/999\"",
+                1,
+            );
+            assert_ne!(unsupported_bytes, bytes);
+            unsupported.write("lexlean.lock", &unsupported_bytes);
+            let (exit, _, stderr) = unsupported.cli(&["--color", "never", "check"]);
+            assert_eq!(exit, 2, "unsupported lock schema is refused: {stderr}");
+            assert!(stderr.contains("LLC0103"), "{stderr}");
+            assert_eq!(unsupported.read("lexlean.lock"), unsupported_bytes);
+
+            let config_digest = bytes
+                .lines()
+                .find(|line| line.starts_with("project_config_sha256 = "))
+                .expect("required configuration digest");
+            for replacement in [
+                String::new(),
+                "project_config_sha256 = \"xyz\"\n".to_owned(),
+            ] {
+                let original_line = format!("{config_digest}\n");
+                let changed = bytes.replacen(&original_line, &replacement, 1);
+                assert_ne!(
+                    changed, bytes,
+                    "the malformed-lock vector must change bytes"
+                );
+                let error = lexlean::api::parse_lock_bytes("lexlean.lock", changed.as_bytes())
+                    .expect_err("missing or malformed configuration digest is not a lock");
+                assert!(error
+                    .iter()
+                    .any(|diagnostic| diagnostic.code.as_str() == "LLC0102"));
+                let malformed = P::example();
+                malformed.write("lexlean.lock", &changed);
+                lock_check_fails_with(&malformed, "LLC0102");
+                for args in [["lock", "--check"].as_slice(), &["check"]] {
+                    let (exit, _, stderr) = malformed.cli(args);
+                    assert_eq!(exit, 2, "malformed configuration digest {args:?}: {stderr}");
+                    assert!(stderr.contains("LLC0102"));
+                }
+                assert_eq!(
+                    malformed.read("lexlean.lock"),
+                    changed,
+                    "failure never repairs a lock"
+                );
+            }
+
             // The configuration must be in canonical serialization for
             // `lock --check` (§10.1); the semantics are unchanged, so
             // `check` still succeeds and the lock is still current.
@@ -764,6 +811,59 @@ pub(crate) fn run(id: &str) {
         }
         // §11.1: any drift fails lock checking; nothing silently refreshes.
         "CF-10" => {
+            for semantic in [false, true] {
+                let example = || {
+                    if semantic {
+                        P::semantic_example()
+                    } else {
+                        P::example()
+                    }
+                };
+                let clean = example();
+                let (exit, _, stderr) = clean.cli(&["lock", "--check"]);
+                assert_eq!(exit, 0, "clean lock: {stderr}");
+
+                let drift = example();
+                let before = drift.read("lexlean.lock");
+                drift.edit(
+                    "lexlean.toml",
+                    "max_scope_depth = 1024",
+                    "max_scope_depth = 512",
+                );
+                let (exit, _, stderr) = drift.cli(&["lock", "--check"]);
+                assert_eq!(exit, 2, "configuration drift: {stderr}");
+                assert!(stderr.contains("LLC0102"));
+                assert_eq!(drift.read("lexlean.lock"), before);
+
+                let missing = example();
+                std::fs::remove_file(missing.root.join("lexlean.lock")).expect("remove owned lock");
+                let (exit, _, stderr) = missing.cli(&["lock", "--check"]);
+                assert_eq!(exit, 2, "missing lock: {stderr}");
+                assert!(stderr.contains("LLC0102"));
+                assert!(!missing.root.join("lexlean.lock").exists());
+
+                let tampered = example();
+                let original = tampered.read("lexlean.lock");
+                let line = original
+                    .lines()
+                    .find(|line| line.starts_with("tree_sha256 = \""))
+                    .expect("actual locked package tree digest");
+                let offset = "tree_sha256 = \"".len();
+                let mut mutated = line.as_bytes().to_vec();
+                mutated[offset] = if mutated[offset] == b'0' { b'1' } else { b'0' };
+                let changed =
+                    original.replacen(line, &String::from_utf8(mutated).expect("ASCII"), 1);
+                assert_ne!(
+                    changed, original,
+                    "the tree-digest bit flip must change bytes"
+                );
+                tampered.write("lexlean.lock", &changed);
+                lock_check_fails_with(&tampered, "LLC0102");
+                let (exit, _, stderr) = tampered.cli(&["lock", "--check"]);
+                assert_eq!(exit, 2, "tampered package tree digest: {stderr}");
+                assert!(stderr.contains("LLC0102"));
+                assert_eq!(tampered.read("lexlean.lock"), changed);
+            }
             // The §28.2 sequence fixture: lock, edit the configuration, then
             // `lock --check` fails with LLC0102 (tests/fixtures/configuration-lock/cf-10).
             let observed = crate::fixtures::check(
@@ -1012,6 +1112,51 @@ pub(crate) fn run(id: &str) {
                 .all(|package| package.version == "1.0.0"));
             example.check_ok();
 
+            let migration = P::example();
+            migration.check_ok();
+            migration.build_ok();
+            for args in [["check"].as_slice(), &["build"]] {
+                let (exit, _, stderr) = migration.cli(args);
+                assert_eq!(exit, 0, "pre-migration CLI {args:?}: {stderr}");
+            }
+            migration.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.1\"");
+            migration.edit("src/Main.lex.tex", "@1.0.0", "@1.1.0");
+            let (exit, _, stderr) = migration.cli(&["lock"]);
+            assert_eq!(exit, 0, "explicit language migration: {stderr}");
+            let migrated = lexlean::api::parse_lock_bytes(
+                "lexlean.lock",
+                migration.read("lexlean.lock").as_bytes(),
+            )
+            .expect("migrated lock parses");
+            assert!(migration
+                .read("lexlean.lock")
+                .starts_with("spec = \"lexlean/lock/1\"\n"));
+            assert_eq!(migrated.language, "1.1");
+            assert_eq!(
+                migrated.compiler_semantics,
+                lexlean::compiler_semantics_id_for("1.1")
+            );
+            migration.check_ok();
+            migration.build_ok();
+            for args in [["check"].as_slice(), &["build"]] {
+                let (exit, _, stderr) = migration.cli(args);
+                assert_eq!(exit, 0, "post-migration CLI {args:?}: {stderr}");
+            }
+            for project in [P::example(), P::semantic_example(), migration] {
+                for args in [
+                    ["lock", "--check"].as_slice(),
+                    &["fmt", "--check"],
+                    &["check"],
+                    &["explain", "LLC0103"],
+                ] {
+                    let (exit, _, stderr) = project.cli(args);
+                    assert_eq!(
+                        exit, 0,
+                        "complete language/command matrix {args:?}: {stderr}"
+                    );
+                }
+            }
+
             let changed = String::from_utf8(bytes).expect("utf8 lock").replacen(
                 "language = \"1.1\"",
                 "language = \"1.0\"",
@@ -1083,8 +1228,22 @@ pub(crate) fn run(id: &str) {
             // 3. Every unsupported or malformed spelling fails with LLC0103
             // naming the exact spelling: versions are matched exactly, never
             // parsed, trimmed, or padded.
+            let oversized = format!("1.{}", "9".repeat(8192));
+            assert_eq!(oversized.len(), 8194);
             for spelling in [
-                "1.3", "2.0", "1.2.0", "01.2", " 1.2", "1.2 ", "1", "1.", "v1.2", "",
+                "1.3",
+                "2.0",
+                "1.2.0",
+                "01.2",
+                " 1.2",
+                "1.2 ",
+                "1",
+                "1.",
+                "v1.2",
+                "",
+                "0.9",
+                "beta-v0.4",
+                oversized.as_str(),
             ] {
                 let unsupported = P::example();
                 unsupported.edit(
@@ -1103,6 +1262,14 @@ pub(crate) fn run(id: &str) {
                         .any(|d| d.message == format!("unsupported language version `{spelling}`")),
                     "the diagnostic names `{spelling}` exactly: {error}"
                 );
+                if spelling == "1.3" {
+                    let (exit, _, stderr) = unsupported.cli(&["check"]);
+                    assert_eq!(exit, 2);
+                    assert!(
+                        stderr.contains("LLC0103"),
+                        "actual CLI version refusal: {stderr}"
+                    );
+                }
             }
         }
         "CF-18" => {
