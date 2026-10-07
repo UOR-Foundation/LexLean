@@ -19,7 +19,8 @@ use crate::error::LexLeanError;
 use super::entry::Entry;
 use super::ledger::Ledger;
 use super::signature::hex_decode;
-use super::SIGNATURE_ALGORITHM;
+use super::timestamp;
+use super::{SIGNATURE_ALGORITHM, TIMESTAMP_ARTIFACT};
 
 /// One of the five checks, with its own outcome.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -227,7 +228,7 @@ pub fn inclusion_error(reason: impl Into<String>) -> LexLeanError {
 /// Returns [`LLG1002`](crate::code) when the entry's fields cannot even be read.
 /// A *failed check* is not an error: the verdict is the product, and a refusal
 /// would throw away the reason the entry failed.
-pub fn verify_entry(entry: &Entry, _ledger: Option<&Ledger>) -> Result<Verdict, LexLeanError> {
+pub fn verify_entry(entry: &Entry, ledger: Option<&Ledger>) -> Result<Verdict, LexLeanError> {
     let mut checks = Vec::with_capacity(5);
 
     // Step 1: the content digest recomputed from the entry's own fields.
@@ -274,6 +275,161 @@ pub fn verify_entry(entry: &Entry, _ledger: Option<&Ledger>) -> Result<Verdict, 
         ));
     }
 
+    // Step 3: the external timestamp over the detached signature bytes.
+    match &entry.timestamp {
+        None => checks.push(Check::fail(
+            3,
+            "RFC 3161 timestamp over the detached signature",
+            "the entry carries no timestamp, so its existence at a stated time is unestablished"
+                .to_owned(),
+        )),
+        Some(anchor) => {
+            if anchor.artifact != TIMESTAMP_ARTIFACT {
+                checks.push(Check::fail(
+                    3,
+                    "RFC 3161 timestamp over the detached signature",
+                    format!(
+                        "the entry timestamps its `{}` rather than its signature",
+                        anchor.artifact
+                    ),
+                ));
+            } else {
+                match anchor.verify(entry.signature.timestamplable_bytes()) {
+                    Ok(()) => checks.push(Check::pass(
+                        3,
+                        "RFC 3161 timestamp over the detached signature",
+                        format!("{} UTC by {}", anchor.gen_time, anchor.tsa),
+                    )),
+                    Err(error) => {
+                        let diagnostic = error.diagnostics.first();
+                        checks.push(Check::fail_with_code(
+                            3,
+                            "RFC 3161 timestamp over the detached signature",
+                            diagnostic.map_or_else(
+                                || "the token did not verify".to_owned(),
+                                |d| d.message.clone(),
+                            ),
+                            diagnostic.map_or_else(|| crate::code!("LLG1005"), |d| d.code),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 4: the inclusion proof, over the leaf bytes with the proof omitted.
+    let leaf = entry.leaf_bytes();
+    match &entry.inclusion {
+        None => checks.push(Check::fail(
+            4,
+            "RFC 6962 inclusion proof from the entry's leaf hash",
+            "the entry carries no inclusion proof, so its place in the log is unestablished"
+                .to_owned(),
+        )),
+        Some(inclusion) => match super::merkle::verify_inclusion(&leaf, inclusion) {
+            Ok(()) => checks.push(Check::pass(
+                4,
+                "RFC 6962 inclusion proof from the entry's leaf hash",
+                format!(
+                    "leaf {} of {}, root sha256:{}",
+                    inclusion.leaf_index, inclusion.tree_size, inclusion.root_hash
+                ),
+            )),
+            Err(failure) => checks.push(Check::fail(
+                4,
+                "RFC 6962 inclusion proof from the entry's leaf hash",
+                failure.as_str().to_owned(),
+            )),
+        },
+    }
+
+    // Step 5: the entry's leaf under the published head.
+    match (ledger, &entry.inclusion) {
+        (None, _) => checks.push(Check::fail(
+            5,
+            "entry is a leaf of the published tree head",
+            "no published tree head was supplied with the entry".to_owned(),
+        )),
+        (Some(_), None) => checks.push(Check::fail(
+            5,
+            "entry is a leaf of the published tree head",
+            "the entry has no leaf to place".to_owned(),
+        )),
+        (Some(ledger), Some(inclusion)) => {
+            let matched = ledger.heads().iter().find(|head| {
+                head.tree_size == inclusion.tree_size && head.root_hash == inclusion.root_hash
+            });
+            match matched {
+                Some(head) => {
+                    // The head's own proof must carry it forward from the
+                    // previous head, or the head was published without the log
+                    // being append-only.
+                    let consistent = match ledger.heads().iter().position(|other| {
+                        other.tree_size == head.tree_size && other.root_hash == head.root_hash
+                    }) {
+                        Some(0) | None => true,
+                        Some(position) => {
+                            let previous = &ledger.heads()[position - 1];
+                            match super::merkle::verify_consistency(
+                                &previous.root_hash,
+                                previous.tree_size,
+                                &head.root_hash,
+                                head.tree_size,
+                                &head.consistency_proof,
+                            ) {
+                                Ok(()) => true,
+                                Err(failure) => {
+                                    checks.push(Check::fail(
+                                        5,
+                                        "entry is a leaf of the published tree head",
+                                        format!(
+                                            "the head at size {} is not a continuation of the head at size {}: {}",
+                                            head.tree_size,
+                                            previous.tree_size,
+                                            failure.as_str()
+                                        ),
+                                    ));
+                                    return Ok(Verdict {
+                                        title: entry.title.clone(),
+                                        checks,
+                                    });
+                                }
+                            }
+                        }
+                    };
+                    let present = ledger
+                        .leaf_at(usize::try_from(inclusion.leaf_index).unwrap_or(usize::MAX))
+                        .is_some_and(|stored| stored == leaf.as_slice());
+                    if consistent && present {
+                        checks.push(Check::pass(
+                            5,
+                            "entry is a leaf of the published tree head",
+                            format!(
+                                "leaf {} is stored under the head of {} leaves",
+                                inclusion.leaf_index, inclusion.tree_size
+                            ),
+                        ));
+                    } else {
+                        checks.push(Check::fail(
+                            5,
+                            "entry is a leaf of the published tree head",
+                            "the head exists but the log does not hold this leaf at that index"
+                                .to_owned(),
+                        ));
+                    }
+                }
+                None => checks.push(Check::fail(
+                    5,
+                    "entry is a leaf of the published tree head",
+                    format!(
+                        "no published head of size {} with root sha256:{}",
+                        inclusion.tree_size, inclusion.root_hash
+                    ),
+                )),
+            }
+        }
+    }
+
     Ok(Verdict {
         title: entry.title.clone(),
         checks,
@@ -285,7 +441,25 @@ pub fn verify_entry(entry: &Entry, _ledger: Option<&Ledger>) -> Result<Verdict, 
 /// # Errors
 /// Returns [`LLG1008`](crate::code) naming the first pair that does not carry
 /// forward, which is what a forked or rewritten log looks like.
-pub fn verify_heads(_ledger: &Ledger) -> Result<(), LexLeanError> {
+pub fn verify_heads(ledger: &Ledger) -> Result<(), LexLeanError> {
+    for pair in ledger.heads().windows(2) {
+        let (previous, head) = (&pair[0], &pair[1]);
+        super::merkle::verify_consistency(
+            &previous.root_hash,
+            previous.tree_size,
+            &head.root_hash,
+            head.tree_size,
+            &head.consistency_proof,
+        )
+        .map_err(|failure| {
+            consistency_error(format!(
+                "the head at size {} is not a continuation of the head at size {}: {}",
+                head.tree_size,
+                previous.tree_size,
+                failure.as_str()
+            ))
+        })?;
+    }
     Ok(())
 }
 
@@ -307,3 +481,37 @@ pub fn digest_from_hex(text: &str) -> Result<[u8; 32], LexLeanError> {
     Ok(out)
 }
 
+/// Re-run §33.4 on an entry's timestamp, for a caller that wants the chain
+/// check separately from the token check.
+///
+/// # Errors
+/// Returns [`LLG1006`](crate::code) when the entry has no timestamp or the chain
+/// does not verify.
+pub fn verify_timestamp_chain(entry: &Entry) -> Result<(), LexLeanError> {
+    let anchor = entry.timestamp.as_ref().ok_or_else(|| {
+        crate::error::LexLeanError::from_diagnostic(Diagnostic::new(
+            crate::code!("LLG1006"),
+            "the entry carries no timestamp to check",
+        ))
+    })?;
+    let parsed = anchor
+        .parsed()
+        .map_err(|error| timestamp::chain_error(error.diagnostics[0].message.clone()))?;
+    let expected = timestamp::digest_for_algorithm(
+        &parsed.info.hash_algorithm,
+        entry.signature.timestamplable_bytes(),
+    )
+    .ok_or_else(|| timestamp::chain_error("the imprint names an unadmitted digest"))?;
+    if expected != parsed.info.hashed_message {
+        return Err(timestamp::chain_error(
+            "the token's imprint names another artifact",
+        ));
+    }
+    timestamp::verify_token(
+        &parsed,
+        entry.signature.timestamplable_bytes(),
+        &anchor.tsa_certificate,
+        &anchor.tsa_root,
+    )
+    .map_err(timestamp::TokenFailure::into_error)
+}

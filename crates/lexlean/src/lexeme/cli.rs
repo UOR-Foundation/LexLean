@@ -23,8 +23,9 @@ use crate::lexeme::canonical;
 use crate::lexeme::entry::Entry;
 use crate::lexeme::ledger::Ledger;
 use crate::lexeme::signature;
+use crate::lexeme::timestamp::{self, Timestamp};
 use crate::lexeme::verify::{self, Verdict};
-use crate::lexeme::DEFAULT_TSA_URL;
+use crate::lexeme::{DEFAULT_TSA_URL, TIMESTAMP_ARTIFACT};
 
 /// What one lexeme command produced, returned to the CLI for rendering.
 #[derive(Debug, Default)]
@@ -400,8 +401,118 @@ fn sign(
 }
 
 /// `lexeme stamp`.
-fn stamp(_arguments: &LexemeStampArgs) -> Result<LexemeOutcome, LexLeanError> {
-    Err(usage("stamp is deprecated in favor of PIRTM receipts (ADR 0000)"))
+fn stamp(arguments: &LexemeStampArgs) -> Result<LexemeOutcome, LexLeanError> {
+    let path = &arguments.entry;
+    let mut entry = read_entry(path)?;
+
+    if let Some(request) = &arguments.request {
+        let parsed = entry.signature.timestamplable_bytes().to_vec();
+        let digest = timestamp::digest_for_algorithm(timestamp::preferred_digest_oid(), &parsed)
+            .ok_or_else(|| ledger_failure("the preferred digest algorithm is unavailable"))?;
+        let der = timestamp::build_timestamp_request(&digest, timestamp::preferred_digest_oid())
+            .map_err(ledger_failure)?;
+        std::fs::write(request, &der)
+            .map_err(|error| ledger_failure(format!("{}: {error}", request.as_str())))?;
+        let query = crate::artifact::canonical_json::Json::object(vec![
+            (
+                "spec",
+                crate::artifact::canonical_json::Json::Str("lexlean/tsa-query/1".to_owned()),
+            ),
+            (
+                "tsa",
+                crate::artifact::canonical_json::Json::Str(arguments.tsa.clone()),
+            ),
+            (
+                "artifact",
+                crate::artifact::canonical_json::Json::Str(TIMESTAMP_ARTIFACT.to_owned()),
+            ),
+            (
+                "hash_algorithm",
+                crate::artifact::canonical_json::Json::Str(
+                    timestamp::preferred_digest_oid().to_owned(),
+                ),
+            ),
+            (
+                "hashed_message",
+                crate::artifact::canonical_json::Json::Str(signature::hex_lower(&digest)),
+            ),
+        ]);
+        let sidecar = request.with_extension("tsq.json");
+        write_json(&sidecar, &query)?;
+        return Ok(LexemeOutcome {
+            artifacts: vec![request.to_string(), sidecar.to_string()],
+            summary: format!(
+                "wrote an RFC 3161 request over sha256:{} of the {} bytes of the detached signature; obtain the token from {} and attach it with --tsr\n",
+                signature::hex_lower(&digest),
+                parsed.len(),
+                arguments.tsa
+            ),
+            ..LexemeOutcome::default()
+        });
+    }
+
+    let (Some(tsr), Some(certificate), Some(root)) = (
+        arguments.tsr.as_ref(),
+        arguments.certificate.as_ref(),
+        arguments.root.as_ref(),
+    ) else {
+        return Err(usage(
+            "stamp needs either --request to build an RFC 3161 request, or --tsr with --certificate and --root to attach a token",
+        ));
+    };
+    let mut anchor = Timestamp {
+        tsa: arguments.tsa.clone(),
+        gen_time: String::new(),
+        artifact: TIMESTAMP_ARTIFACT.to_owned(),
+        tsr_der: std::fs::read(tsr)
+            .map_err(|error| ledger_failure(format!("{}: {error}", tsr.as_str())))?,
+        tsa_certificate: std::fs::read(certificate)
+            .map_err(|error| ledger_failure(format!("{}: {error}", certificate.as_str())))?,
+        tsa_root: std::fs::read(root)
+            .map_err(|error| ledger_failure(format!("{}: {error}", root.as_str())))?,
+    };
+    // Check the token before recording it: an entry that carries a token which
+    // does not verify is worse than one that carries none, because it looks
+    // timed.
+    //
+    // The code is carried over rather than restated as `LLG1005`. Prefixing the
+    // reason is right, because a token that does not verify before it is
+    // recorded is the fact being reported, but restating the code would report
+    // an untrusted chain and a missing verifier as a malformed token, and those
+    // three are registered apart.
+    anchor.verify(&parsed_signature(&entry)?).map_err(|error| {
+        let Some(first) = error.diagnostics.first() else {
+            return ledger_failure("the token does not verify before it is recorded");
+        };
+        LexLeanError::from_diagnostic(Diagnostic::new(
+            first.code,
+            format!(
+                "the token does not verify before it is recorded: {}",
+                first.message
+            ),
+        ))
+    })?;
+    anchor.gen_time = anchor
+        .tst_info()
+        .map_err(|error| {
+            LexLeanError::from_diagnostic(Diagnostic::new(
+                crate::code!("LLG1005"),
+                error.diagnostics[0].message.clone(),
+            ))
+        })?
+        .gen_time;
+    entry.with_timestamp(anchor.clone());
+    let out = arguments.out.as_ref().unwrap_or(path);
+    write_json(out, &entry.to_json())?;
+    Ok(LexemeOutcome {
+        artifacts: vec![out.to_string()],
+        summary: format!(
+            "recorded an RFC 3161 anchor at {} by {}\n",
+            anchor.gen_time, anchor.tsa
+        ),
+        payload: Some(entry.to_json()),
+        ..LexemeOutcome::default()
+    })
 }
 
 /// The signature bytes an entry's token must cover.
@@ -440,9 +551,18 @@ fn append(
         artifacts: vec![out.to_string(), ledger_path.to_string()],
         summary: format!(
             "appended leaf {} of {}; root sha256:{}\n",
-            0,
-            0,
-             "-".to_owned()  
+            appended
+                .inclusion
+                .as_ref()
+                .map_or(0, |inclusion| inclusion.leaf_index),
+            appended
+                .inclusion
+                .as_ref()
+                .map_or(0, |inclusion| inclusion.tree_size),
+            appended
+                .inclusion
+                .as_ref()
+                .map_or_else(|| "-".to_owned(), |inclusion| inclusion.root_hash.to_hex())
         ),
         payload: Some(appended.to_json()),
         ..LexemeOutcome::default()
@@ -547,8 +667,14 @@ fn bootstrap(
         summary: format!(
             "bootstrapped `{}` as leaf 0 of {}; root sha256:{}\n",
             arguments.title,
-            0,
-             "-".to_owned()  
+            appended
+                .inclusion
+                .as_ref()
+                .map_or(0, |inclusion| inclusion.tree_size),
+            appended
+                .inclusion
+                .as_ref()
+                .map_or_else(|| "-".to_owned(), |inclusion| inclusion.root_hash.to_hex())
         ),
         payload: Some(appended.to_json()),
         ..LexemeOutcome::default()

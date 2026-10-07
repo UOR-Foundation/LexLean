@@ -17,7 +17,7 @@ The definitive status of all features and subsystems is maintained in the canoni
 2. **Formal Theorem Closure**: Integrated `TheoremRegister` structurally into the `uorc-core` crate mapping exact Lean 4 mathematical statements to executable logic gates.
 3. **Lean 4 Proof Integration**: Implemented Phase Mirror governance theorems covering Bounded Iteration and Zeno Damping inside `lean/ADR`.
 4. **Axiom Ledger**: All "Proof Debts" (unproven constraints) are explicitly tracked in `docs/PIRTM-axiom-ledger.md` instead of hidden within `sorry` blocks.
-5. **Zero-Drift CI Validation**: `sedona_spine_ci.yml` strictly enforces toolchain pinning (`leanprover/lean4:v4.33.0-rc2`), prevents `sorry` leaks, and mandates reproducible builds via the `just vv` acceptance boundary.
+5. **Zero-Drift CI Validation**: `sedona_spine_ci.yml` strictly enforces toolchain pinning (`leanprover/lean4:v4.32.1`), prevents `sorry` leaks, and mandates reproducible builds via the `just vv` acceptance boundary.
 
 ## What it does
 

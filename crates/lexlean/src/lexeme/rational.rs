@@ -509,7 +509,7 @@ mod kani_tests {
         if let Ok(r) = Rational::new(n, d) {
             let (rn, rd) = r.to_pair();
             assert!(rd > 0, "denominator must be positive");
-            
+
             // Should also not panic and correctly handle signs
             if n > 0 && d > 0 {
                 assert!(rn > 0);

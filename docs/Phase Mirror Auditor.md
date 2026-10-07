@@ -45,7 +45,7 @@ When working on this repository, you must:
 
 **Build & Toolchain**
 - `lakefile.toml` at repo root with `srcDir = "lean"`
-- `lean-toolchain` pins `leanprover/lean4:v4.33.0-rc2`
+- `lean-toolchain` pins `leanprover/lean4:v4.32.1`
 - `lake-manifest.json` has `"fixedToolchain": true`
 - CI verifies `lean --version` matches `lean-toolchain` before building
 
