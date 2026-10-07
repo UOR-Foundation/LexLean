@@ -20,6 +20,7 @@ use crate::artifact::content_id::Sha256Digest;
 
 use super::canonical::{self, CanonicalSource, Declaration};
 use super::signature::Signature;
+use super::timestamp::Timestamp;
 use super::{CANONICALIZATION, CANONICAL_DOMAIN, ENTRY_SPEC};
 
 /// One hashed source and the digest of its §33.1 canonical form.
@@ -113,6 +114,10 @@ pub struct Entry {
     pub toolchain: String,
     /// The detached Ed25519 signature over [`Self::content_digest`].
     pub signature: Signature,
+    /// The external time anchor, when one was obtained.
+    pub timestamp: Option<Timestamp>,
+    /// The §33.5 inclusion proof, filled in when the entry is appended.
+    pub inclusion: Option<Inclusion>,
     /// The optional §34 stratification layer.
     ///
     /// Every field of it is derived from the fields already above, so it is
@@ -172,6 +177,8 @@ impl Entry {
             content_digest,
             toolchain: toolchain.to_owned(),
             signature: Signature::unsigned(),
+            timestamp: None,
+            inclusion: None,
             pirtm: None,
         })
     }
@@ -225,6 +232,16 @@ impl Entry {
         self.signature = signature;
     }
 
+    /// Attach the external time anchor.
+    pub fn with_timestamp(&mut self, timestamp: Timestamp) {
+        self.timestamp = Some(timestamp);
+    }
+
+    /// Attach the inclusion proof produced by appending the entry.
+    pub fn with_inclusion(&mut self, inclusion: Inclusion) {
+        self.inclusion = Some(inclusion);
+    }
+
     /// Attach the §34 stratification layer.
     pub fn with_pirtm(&mut self, layer: crate::lexeme::pirtm::PirtmLayer) {
         self.pirtm = Some(layer);
@@ -254,6 +271,12 @@ impl Entry {
             ("toolchain", Json::Str(self.toolchain.clone())),
             ("signature", self.signature.to_json()),
         ];
+        if let Some(timestamp) = &self.timestamp {
+            object.push(("timestamp", timestamp.to_json()));
+        }
+        if let Some(inclusion) = &self.inclusion {
+            object.push(("inclusion", inclusion.to_json()));
+        }
         if let Some(layer) = &self.pirtm {
             object.push(("pirtm", layer.to_json()));
         }
@@ -279,6 +302,7 @@ impl Entry {
     #[must_use]
     pub fn leaf_bytes(&self) -> Vec<u8> {
         let mut stripped = self.clone();
+        stripped.inclusion = None;
         stripped.pirtm = None;
         stripped.leaf_text().into_bytes()
     }
@@ -436,6 +460,45 @@ impl Entry {
                 .ok_or_else(|| entry_error("`signature` is absent"))?,
         )?;
 
+        let timestamp = match object.get("timestamp") {
+            Some(value) => Some(super::timestamp::Timestamp::from_json(value)?),
+            None => None,
+        };
+
+        let inclusion = match object.get("inclusion") {
+            Some(value) => {
+                let Json::Obj(inclusion) = value else {
+                    return Err(entry_error("an inclusion is not a JSON object"));
+                };
+                let hex_digest = |key: &str| -> Result<Sha256Digest, crate::error::LexLeanError> {
+                    match inclusion.get(key) {
+                        Some(Json::Str(text)) => Sha256Digest::from_hex(text)
+                            .map_err(|reason| entry_error(format!("inclusion `{key}`: {reason}"))),
+                        _ => Err(entry_error(format!("inclusion `{key}` is absent"))),
+                    }
+                };
+                let audit_path = match inclusion.get("audit_path") {
+                    Some(Json::Arr(items)) => items
+                        .iter()
+                        .map(|item| match item {
+                            Json::Str(text) => Sha256Digest::from_hex(text).map_err(|reason| {
+                                entry_error(format!("an audit path element: {reason}"))
+                            }),
+                            _ => Err(entry_error("an audit path element is not a string")),
+                        })
+                        .collect::<Result<Vec<Sha256Digest>, crate::error::LexLeanError>>()?,
+                    _ => return Err(entry_error("an inclusion has no audit path")),
+                };
+                Some(Inclusion {
+                    leaf_index: unsigned_at(inclusion, "leaf_index")?,
+                    tree_size: unsigned_at(inclusion, "tree_size")?,
+                    audit_path,
+                    root_hash: hex_digest("root_hash")?,
+                })
+            }
+            None => None,
+        };
+
         Ok(Self {
             spec: string("spec")?,
             title: string("title")?,
@@ -445,6 +508,8 @@ impl Entry {
             content_digest: digest("content_digest")?,
             toolchain: string("toolchain")?,
             signature,
+            timestamp,
+            inclusion,
             // Propagated rather than re-wrapped in LLG1002: the layer's own
             // refusals already carry the specific code the registry lists for
             // them, and wrapping would replace it with the generic entry code.

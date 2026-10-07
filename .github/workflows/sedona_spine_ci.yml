@@ -19,8 +19,8 @@ jobs:
             exit 1
           fi
           TOOLCHAIN=$(cat lean-toolchain | tr -d '[:space:]')
-          if [ "$TOOLCHAIN" != "leanprover/lean4:v4.33.0-rc2" ]; then
-            echo "Error: lean-toolchain must pin to leanprover/lean4:v4.33.0-rc2"
+          if [ "$TOOLCHAIN" != "leanprover/lean4:v4.32.1" ]; then
+            echo "Error: lean-toolchain must pin to leanprover/lean4:v4.32.1"
             exit 1
           fi
 
