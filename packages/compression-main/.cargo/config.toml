@@ -1,3 +1,0 @@
-[alias]
-xtask = "run --package xtask --"
-vv = "run --package xtask -- validate"

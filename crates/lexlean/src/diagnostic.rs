@@ -30,7 +30,7 @@ impl DiagnosticCode {
         assert!(
             matches!(
                 bytes[2],
-                b'C' | b'L' | b'P' | b'R' | b'T' | b'F' | b'B' | b'V' | b'S' | b'G' | b'I'
+                b'C' | b'L' | b'P' | b'R' | b'T' | b'F' | b'B' | b'V' | b'S' | b'I'
             ),
             "unknown diagnostic range letter"
         );
@@ -68,19 +68,7 @@ impl DiagnosticCode {
             "LLB6004" | "LLV7001" | "LLV7007" | "LLV7008" | "LLV7009" | "LLV7010" => {
                 ErrorClass::Environment
             }
-            // §33.1 rejects a source that is not lexable, which is a statement
-            // about the Lean document rather than about the ledger record
-            // surrounding it. §33.3 places the signing device outside the
-            // program, because an absent token is an environment fact and not
-            // a malformed document.
-            "LLG1001" => ErrorClass::Language,
-            "LLG1004" => ErrorClass::Environment,
             _ => match self.0.as_bytes()[2] {
-                // The ledger's remaining codes are refusals of a document or a
-                // directory the caller supplied, which is the CLI and
-                // configuration shape: the caller named something that is not
-                // a valid ledger record.
-                b'G' => ErrorClass::CliOrConfiguration,
                 b'C' => ErrorClass::CliOrConfiguration,
                 b'S' => ErrorClass::SecurityOrLimit,
                 b'I' => ErrorClass::Internal,

@@ -214,39 +214,6 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `LN-11` | `build` | The generated-source audit tokenizes and rejects prose-bearing or forbidden Lean tokens before verification. |
 | `LN-12` | `build` | Generated file paths and module names exactly mirror the configured module prefix and source module. |
 
-## lexeme
-
-| ID | Level | Statement |
-| --- | --- | --- |
-| `LG-01` | `build` | Canonicalization discards comments and layout and orders declarations by fully qualified name, so two sources differing only in those respects have one canonical form and one content digest. |
-| `LG-02` | `build` | The canonical form is the §21.1 frame encoding under the `lexlean-lexeme-v1` domain, so the same source hashes identically in two distinct build directories and across two runs. |
-| `LG-03` | `build` | The content-hash record names the source paths, the canonicalization identifier, the toolchain, and the sorted declaration names, and every one of those fields changes the digest when changed. |
-| `LG-04` | `build` | An entry carries a detached Ed25519 signature over its 32-byte content digest, and verification refuses a digest altered by one bit or a signature checked against a public key other than the one recorded. |
-| `LG-05` | `build` | A hardware-bound key records its device, slot, algorithm, and pin policy, and signing fails when the device is absent rather than falling back to a software key. |
-| `LG-06` | `build` | An entry's RFC 3161 token is parsed for its `TSTInfo`, and verification refuses a token whose message imprint names another algorithm, another digest, or another artifact. |
-| `LG-07` | `build` | The token's signature verifies under the certificate the entry carries, that certificate verifies under the pinned TSA root in the same entry, and the root's validity interval contains the token's `genTime`. |
-| `LG-08` | `build` | Leaf and internal hashes use the RFC 6962 domain separation `0x00` and `0x01`, so a leaf digest is never an internal node digest and the tree admits no second preimage through the structure. |
-| `LG-09` | `build` | Appending an entry returns the new tree size, the appended leaf index, and an O(log n) audit path, and the stored head of every prefix equals the root recomputed from that prefix's entries. |
-| `LG-10` | `build` | An inclusion proof is accepted exactly when the recomputed root equals the published root, and is refused for a wrong-length path, a reordered path, or an index at or beyond the tree size. |
-| `LG-11` | `build` | Two published tree heads verify as consistent exactly when the consistency proof from the smaller size recomputes the larger root from the smaller root, so a forked history is detectable from the heads alone. |
-| `LG-12` | `build` | `lexlean lexeme verify` reports canonical hash, signature, timestamp, and inclusion separately and emits a verdict asserting only existence at a stated time, authorship by a stated key, and integrity since. |
-| `LG-13` | `build` | Every entry is validated against `schemas/lexeme-entry.schema.json` before it is appended, and an entry failing validation is refused with a registered diagnostic code. |
-| `LG-14` | `build` | Re-verifying a committed ledger directory reproduces every verdict and every published root without network access. |
-| `LG-15` | `build` | The browser verifier and the CLI reach the same verdict for every entry of the committed corpus, checked by running both against the recorded roots. |
-| `LG-16` | `build` | The first ledger entry is the ledger's own Lean specification, its artifacts carry the digests of the CLI and the browser verifier, and its entry is signed, timestamped, and included like any other. |
-| `LP-01` | `build` | The snapaddr is the SHA-256 of the §34.1 frame encoding under `lexlean-pirtm-v1` and is recomputable from the entry's own fields. |
-| `LP-02` | `build` | The prime index is the least prime not below the atom count, is itself prime, and a lexeme with no declarations is refused. |
-| `LP-03` | `build` | Two sources differing only in comments, layout, and declaration order have one snapaddr, and changing any atom body changes it. |
-| `LP-04` | `build` | The reference adjacency matrix is the non-negative integer matrix of whole-token references over each atom's body proper in canonical atom order, and is recomputable from the canonical form. |
-| `LP-05` | `build` | Each contraction factor is the exact rational `1/(1+t)` for its atom's body proper token count, with numerator one. |
-| `LP-06` | `build` | The norm is the maximum absolute column sum of `A·diag(λ)` computed in exact rationals and reported as a reduced pair, and no float appears in a receipt. |
-| `LP-07` | `build` | A receipt is accepted exactly when the norm is below one, a norm of exactly one is refused, and a refusal states the exact value. |
-| `LP-08` | `build` | The receipt hash is LexLean's own domain-separated hash over the named frames, and an entry states that it is not the PIRTM `seal_hash`. |
-| `LP-09` | `build` | The theorem anchor must name an atom of the stratum, so an anchor naming an absent declaration is refused. |
-| `LP-10` | `build` | The Zeno-Finton gain is the exact rational `2^(-index)`, strictly decreasing, positive at every finite index, and never zero. |
-| `LP-11` | `build` | The Zeno-Finton signal never satisfies a §33.4 check, never appears in the §33.6 verdict, and an entry carrying only it is untimestamped. |
-| `LP-12` | `build` | Dropping every §34 field leaves every §33 check and the §33.6 verdict bit-identical, and an entry omitting the layer is a valid §33 entry. |
-
 ## lexical-closure
 
 | ID | Level | Statement |
@@ -446,7 +413,6 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `VR-17` | `build` | Lean workspace configuration and manifest hashes must match the lock and all dependencies must be locally available. |
 | `VR-18` | `build` | Check and build results never claim verified or kernel-checked status. |
 | `VR-19` | `build` | The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. |
-| `VR-20` | `build` | The verification resource profile is operational: the width the host selects bounds how many proof processes overlap and reaches no identity, and a project verified at the conservative width and at a wider profile publishes byte-identical evidence under one attestation ID. |
 
 ## Cited authorities
 

@@ -23,14 +23,12 @@ lexlean = { version = "0.3.0", path = "crates/lexlean" }
 
 camino = "1.2"
 clap = { version = "4.5", features = ["derive"] }
-ed25519-dalek = { version = "2.2", default-features = false, features = ["std"] }
 fs4 = { version = "0.13", features = ["sync"] }
 proptest = "1.6"
 same-file = "1.0"
 semver = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha1 = "0.10"
 sha2 = "0.10"
 tempfile = "3"
 thiserror = "2"

@@ -15,25 +15,6 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
-- Documentation: `Inventorship.md` is removed and `Compliance.md` is rewritten
-  as a non-normative gap register. Both were outside the SPEC.md §7 layout and
-  were read by no audit. `Inventorship.md`'s normative content — the RFC 6962
-  ledger, inclusion and consistency proofs, detached authorship, external time,
-  browser/CLI parity, and the Lean specification of the Merkle construction —
-  is SPEC.md §33, registered as `LG-01`..`LG-16`, with `LG-16` being the
-  ledger's own specification as its first entry. What it added beyond that was
-  unregistered legal-use claims, which R1 does not admit and §1 does not
-  authorize. `Compliance.md` now maps a compliance-evidence design onto the
-  registered model semantics (`MD-05`..`MD-08`, `GL-*`, `LG-*`), enumerates the
-  capabilities such a design claims and this specification does not authorize,
-  and records four corrections: that Rule 902 authenticates but does not
-  establish reliability, that a qualified person's certification is still
-  required, that an inclusion proof carries no time without a signed head and a
-  consistency proof and needs second-preimage rather than collision resistance,
-  and that an unqualified RFC 3161 timestamp is not a qualified electronic
-  timestamp under Regulation (EU) 910/2014. No gate, crate, or conformance row
-  changed.
-
 - Language 1.2 (SPEC.md §17.12): a strict extension of language 1.1 selected
   by `language = "1.2"`, with builtin packages at `1.2.0`, the lock schema
   `lexlean/lock/2`, the semantic-module schema `lexlean/semantic-module/2`,
