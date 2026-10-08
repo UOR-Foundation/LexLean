@@ -2471,9 +2471,9 @@ impl Engine<'_> {
         )
     }
 
-    fn cap(&self, list: SemanticTerm) -> SemanticTerm {
+    fn cap(&self, bound: &SemanticTerm, list: SemanticTerm) -> SemanticTerm {
         let node = self.node_type();
-        let bound = self.frontier.clone().unwrap_or_else(|| nat(0));
+        let bound = bound.clone();
         list_fold(
             lambda(
                 vec![("__acc", list_type(node.clone())), ("__n", node.clone())],
@@ -2982,8 +2982,8 @@ fn check_reasoner(
         axioms,
     };
     elaborate_common(&engine, &mut lowering);
-    if engine.frontier.is_some() {
-        elaborate_search(&engine, &mut lowering);
+    if let Some(frontier) = &engine.frontier {
+        elaborate_search(&engine, frontier, &mut lowering);
     } else {
         elaborate_forward(&engine, &mut lowering);
     }
@@ -5220,7 +5220,7 @@ fn explained_theorem(engine: &Engine<'_>, lowering: &mut Lowering, proof: Proof)
 /// depth-first, until a verified answer is found, the frontier empties, or
 /// the fuel is spent.
 #[allow(clippy::too_many_lines)]
-fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
+fn elaborate_search(engine: &Engine<'_>, frontier: &SemanticTerm, lowering: &mut Lowering) {
     let s = engine.state.clone();
     let step = engine.step_type();
     let x = engine.x;
@@ -5229,7 +5229,7 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
     let visited_type = SemanticType::Set {
         element: Box::new(s.clone()),
     };
-    let frontier_bound = engine.frontier.clone().unwrap_or_else(|| nat(1));
+    let frontier_bound = frontier.clone();
     let r = engine.answer.clone();
     let hit = product(r.clone(), node.clone());
     let ledger = engine.ledger_type();
@@ -5453,7 +5453,7 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
         let_in(
             "__first",
             nodes.clone(),
-            engine.cap(single(&node, root)),
+            engine.cap(&frontier_bound, single(&node, root)),
             search_record(
                 var("__first"),
                 engine.deduplicate.then(|| {
@@ -5536,7 +5536,7 @@ fn elaborate_search(engine: &Engine<'_>, lowering: &mut Lowering) {
                 let_in(
                     "__next",
                     nodes.clone(),
-                    engine.cap(var("__ordered")),
+                    engine.cap(&frontier_bound, var("__ordered")),
                     some_of(
                         &search,
                         search_record(
