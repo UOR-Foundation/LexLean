@@ -915,7 +915,7 @@ repo-conformance --test conformance -- conformance_sp_11`. Expected: a root's
 package prints another outcome than the interpreter.
 
 ```text
-thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2411:5:
+thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2518:5:
 root_3_core run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 root_3_std run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 ```
@@ -939,9 +939,9 @@ Expected: the certificate generator, which decides which parameters carry
 lowering before any theorem is written.
 
 ```text
-thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:1355:40:
+thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:1456:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
-thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:1355:40:
+thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:1456:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
 error[LLI9001]: phase preservation: a parameter carries §17.12's invariant but the root has no entry
 ```
@@ -1016,12 +1016,15 @@ Lean's verdict on the certificate otherwise. The two fixtures are one project
 (a function of 100 parameters called by the root, with a lake overlay that
 gives certificate A a heartbeat budget of one): with the default limit the
 module is 56 680 bytes and the outcome is a rejected certificate; with
-`max_file_bytes` at the least its certificates are estimated to fit,
-90 302, the module is more than a quarter of it and the outcome is a limit.
+`max_file_bytes` at 131 072, above the estimate of its certificates (90 302)
+and below four times its module (226 720), the module is more than a quarter
+of it and the outcome is a limit; `conformance_sp_02` asserts the two
+inequalities, so a change of the estimate or of the certificate reports that
+the fixture no longer lies between them, not a changed hash.
 
 ```text
 certificate-heartbeat-rejected: error[LLV7013]: certificate A: `LexLeanPreserve.C8fe….R0` was rejected in `__prog` of root `Production.Main.total`: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (1) has been reached
-certificate-resource-exhausted: error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C8fe….R0` (maximum number of heartbeats): the generated module is 56680 bytes, at least a quarter of max_file_bytes 90302, and is beyond what the machine checks
+certificate-resource-exhausted: error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C8fe….R0` (maximum number of heartbeats): the generated module is 56680 bytes, at least a quarter of max_file_bytes 131072, and is beyond what the machine checks
 ```
 
 Rejections of certificates A, B, and E carry the declaration, the root, and
@@ -1060,9 +1063,9 @@ the constant, a fraction of 0 (nothing is heavy) and a huge one (everything
 is):
 
 ```text
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2463:73:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2465:73:
 a limit
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2460:9:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2462:9:
 assertion failed: resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none()
 ```
 
@@ -1199,7 +1202,7 @@ changed from function 18 to 0 (and its symbol from `f18` to `f0`). Command:
 Expected: the record disagrees with certificate E, which states function 18.
 
 ```text
-thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:824:25:
+thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:897:25:
 assertion `left == right` failed: production-coverage R0 rust-std: E states the function the record names
   left: {18}
  right: {0}
@@ -1220,7 +1223,7 @@ the third.
 ```text
 gate failed: RP-07: `SP-02`'s statement differs between the table and the register:
 gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/RustBase.lean` that the file does not state byte for byte: `/-- Rust convergence: some fuel gives the outcome, which is never`
-thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:642:13:
+thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:715:13:
 assertion `left == right` failed: SPEC.md lists exactly the roots the suite exempts
 ```
 
@@ -1240,6 +1243,105 @@ Coverage.Boundary.groveRoot: no sampled `g` could be made to break its invariant
 ```
 
 Removed: the function was restored.
+
+### no name of the source can capture a name the generator binds, or fail the audit
+
+At `96088be` a root `r(hrep: nat)` was rejected as a certificate E
+(`LLV7016`: the parameter was captured by the hypothesis), as were `ro`, and,
+for a root with a set parameter (a boundary entry), `h`, `hr`, `hc`; and a
+parameter named `kernel`, `prefix`, `notation`, `infix`, `elab`, `macro`,
+`syntax`, or `extern` failed the token audit of its certificate with
+`LLI9001`, an internal error. Every name the composition binds now begins
+with two underscores (`__e_hrep`, `__e_ro`, `__e_hr`, `__e_hc`, `__e_h`,
+`__e_n`), which no semantic name does; the audit reads a quoted name as data,
+and the generator quotes a name spelled like a forbidden token. The suite's
+`names` project has five roots: parameters named `hrep ro h hr hc n f x P`,
+a root with set parameters named `h hr` and others named `hc ro hrep`, the
+eight words as parameters, and a structure with fields `macro` and `syntax`
+and a local `elab`; each certificate E is asserted in full, every binder of
+it is checked, the staged workspace passes the audit, and the project
+verifies under the pinned Lean.
+
+Planted: the proof lambda of E named `h` as before. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_09`. Expected: the
+binder check refuses.
+
+```text
+thread 'conformance_sp_09' (5944) panicked at crates/conformance/src/cases/preservation.rs:361:9:
+names: `LexLeanPreserve.Cf98777d97dc3c4f7e91e905af21e1e07.R1.Compose.RustStd` binds `h`, which a parameter of that name would capture
+```
+
+Planted: the audit's reading of a quoted name removed (`code_only` no longer
+skips `«…»`). Expected: the audit refuses the user's `kernel` as a forbidden
+token, as before.
+
+```text
+the workspace stages: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: the certificate `LexLeanPreserve.Cf98777d97dc3c4f7e91e905af21e1e07.R2`: the forbidden token `kernel`", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
+```
+
+Removed: both were restored. The unit test of `production::preserve` shows
+the other direction: the audit still refuses a bare `prefix` binder, `macro`
+as a command, `implemented_by`, `sorry`, and `Lean.ofReduceBool`, and takes
+the same words quoted.
+
+### a match of thousands of arms cannot overflow the stack
+
+`Aligner::m` recursed once per arm, and a derivation nested as deeply as the
+match, written and dropped recursively: with `max_file_bytes = 33554432` a
+9000-arm match made `lexlean verify` die with `fatal runtime error: stack
+overflow` (the debug build at 2000). The arms are now derived by a loop, and
+a derivation is written and dropped with a stack of its own (a unit test
+writes and drops one 300 000 levels deep on a 256 KiB stack). `conformance_sp_08`
+aligns a match of 9000 arms, and then under a limit of 1 MiB, on the 2 MiB
+stack of a thread. Planted: the previous `rust_cert.rs`.
+
+```text
+thread '<unknown>' (28415) has overflowed its stack
+fatal runtime error: stack overflow, aborting
+```
+
+Removed: the file was restored.
+
+### certificates A and E are generated under the limit
+
+At `96088be` the estimate (nodes only) was below certificate A for a string
+literal of 100 000 characters (0.01), an enumeration of 2000 constructors
+(0.05), and a match nested 25 deep (0.26), and `lexlean verify` generated a
+certificate A of 297 MB for 4000 constructors before refusing it. The
+estimate now counts literals (9 bytes a byte of string, 4 a hex digit, 6 a
+digit), and the square of the arms of each match (33 bytes a pair), and every
+certificate is generated under `max_file_bytes`: the proof of each term, each
+match arm, the encoders, each function, and the boundary are checked as they
+are built. A match arm was also written by wrapping the whole arm again for
+each preceding arm, which is cubic in the arms in time; it is written once.
+`conformance_sp_02` certifies sixteen more stress families (literals,
+enumerations of many constructors, nested matches, wide instances, long
+names), requires the estimate not to be below A or E on all but the family of
+long names, which the program does not carry, and regenerates A and E of every
+family under half their size, requiring `LLS8002`.
+
+Planted: the byte budget removed from certificate A (`within` never refuses).
+Expected: A is regenerated under half its size and accepted.
+
+```text
+thread '<unnamed>' (28544) panicked at crates/conformance/src/cases/preservation.rs:129:13:
+assertion `left == right` failed: doubling let chain 4: Production.Main.r: certificate A under half its size
+  left: "accepted"
+```
+
+Planted: the cost of a pair of arms made 0; the cost of a byte of a string
+literal made 0. Expected: the families that exercise them show an estimate
+below A.
+
+```text
+enumeration of one field 200: the estimate 399942 is below certificate A (901308) or E (37398)
+string literal 2000: the estimate 8702 is below certificate A (13470) or E (1304)
+```
+
+Removed: all three were restored. The estimate remains a calibration: it
+counts what a lowered program states, and not the names of its fields and
+constructors, so the SPEC states the guarantee as the budget and not as the
+estimate.
 
 ### the cost of certification is fixed, not proportional to the roots
 

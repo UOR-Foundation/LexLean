@@ -81,6 +81,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                 root.report,
                 &lowered,
                 &module,
+                limits.max_file_bytes,
             )
             .unwrap_or_else(|diagnostic| {
                 panic!(
@@ -131,6 +132,7 @@ pub fn certificates(project: &P) -> Vec<Certified> {
                         &module_b,
                         &module_e,
                         fallible,
+                        limits.max_file_bytes,
                     )
                     .unwrap_or_else(|diagnostic| {
                         panic!(
@@ -157,6 +159,110 @@ pub fn certificates(project: &P) -> Vec<Certified> {
             }
         })
         .collect()
+}
+
+/// Regenerate certificates A and E of every root of `project` under half
+/// their size, and report, for each root, the codes the generator refused A
+/// with and E with (in each target): `LLS8002` when generation stops at the
+/// limit it was given, which is what bounds its work for any program.
+///
+/// # Panics
+///
+/// Panics when a root fails to lower.
+#[must_use]
+pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<String>)> {
+    let checked = support::checked_project(project);
+    let modules = linked_modules(&checked);
+    let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+    let limits = support::limits(project);
+    let code = |result: Result<Certificate, lexlean::diagnostic::Diagnostic>| match result {
+        Ok(_) => "accepted".to_owned(),
+        Err(diagnostic) => diagnostic.code.as_str().to_owned(),
+    };
+    roots(&checked)
+        .expect("the eligibility reports")
+        .iter()
+        .enumerate()
+        .map(|(index, root)| {
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .unwrap_or_else(|diagnostic| {
+                    panic!("{}: lowering failed: {diagnostic:?}", root.report.root)
+                });
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            let held = &certified[index];
+            let a = code(certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                held.certificate.text.len() as u64 / 2,
+            ));
+            let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
+                .expect("a valid program")[lowered.entry() as usize];
+            let e = held
+                .composed
+                .iter()
+                .map(|(target, composed)| {
+                    let module_b = module_for(&module, target).expect("a Rust target");
+                    let module_e =
+                        module_for(&format!("{module}.Compose"), target).expect("a target");
+                    code(lexlean::production::certificate::certificate_e(
+                        &modules,
+                        &root.module,
+                        &root.name,
+                        &lowered,
+                        &module,
+                        &module_b,
+                        &module_e,
+                        fallible,
+                        composed.text.len() as u64 / 2,
+                    ))
+                })
+                .collect();
+            (root.report.root.clone(), a, e)
+        })
+        .collect()
+}
+
+/// The size of certificate B of every root of `project` in each of its
+/// targets, derived under `limit`, without certificates A and E: the
+/// lowering, the rendering, and the aligner, which are what a match with many
+/// arms strains.
+///
+/// # Errors
+///
+/// Returns the aligner's refusal.
+///
+/// # Panics
+///
+/// Panics when a root fails to lower or to render.
+pub fn aligned(project: &P, limit: u64) -> Result<Vec<usize>, String> {
+    let checked = support::checked_project(project);
+    let modules = linked_modules(&checked);
+    let limits = support::limits(project);
+    let mut sizes = Vec::new();
+    for (index, root) in roots(&checked)
+        .expect("the eligibility reports")
+        .iter()
+        .enumerate()
+    {
+        let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+            .unwrap_or_else(|diagnostic| panic!("lowering failed: {diagnostic:?}"));
+        for row in &root.report.targets {
+            let profile = Profile::named(&row.target).expect("a Rust profile");
+            let krate = lower(&lowered.program, profile).expect("a rendering");
+            let module = module_for(&format!("LexLeanPreserve.Aligned.R{index}"), &row.target)
+                .expect("a Rust target");
+            sizes.push(
+                certificate_b(&lowered.program, &krate, &module, limit)?
+                    .text
+                    .len(),
+            );
+        }
+    }
+    Ok(sizes)
 }
 
 /// The staged workspace of `project`'s certificates.
@@ -459,7 +565,7 @@ impl CompositionMutation {
 /// The byte offset of the end of each `RepresentableL [..]` hypothesis of
 /// `text`: where a conjunct can be appended to it.
 fn hypothesis_ends(text: &str) -> Vec<usize> {
-    let mark = "(hrep : LexLeanPreservation.Rust.RepresentableL [";
+    let mark = "(__e_hrep : LexLeanPreservation.Rust.RepresentableL [";
     text.match_indices(mark)
         .filter_map(|(at, found)| {
             let mut depth = 1_usize;
@@ -1457,6 +1563,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             roots[root].report,
             &lowered,
             &module,
+            UNBOUNDED,
         )
         .expect("the certificate is generated from the source");
         let path = directory.join(format!("P{index}.lean"));

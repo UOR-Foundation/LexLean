@@ -428,6 +428,15 @@ pub struct Measure {
     /// Field reads, constructors built, and the binders of arms, counted once
     /// each with the arm.
     pub shapes: u64,
+    /// The bytes the literals of the program take in a certificate: nine for
+    /// each byte of a string (a control character is spelled with six), four
+    /// for each hexadecimal digit of a bytes literal, six for each digit of a
+    /// number.
+    pub literal_bytes: u64,
+    /// The sum over matches of the square of their arms: a match on `C`
+    /// constructors states, for each arm, the arms it follows, so its proof
+    /// grows with `C` squared.
+    pub arm_pairs: u64,
 }
 
 impl Measure {
@@ -435,6 +444,8 @@ impl Measure {
         self.types = self.types.saturating_add(other.types);
         self.exprs = self.exprs.saturating_add(other.exprs);
         self.shapes = self.shapes.saturating_add(other.shapes);
+        self.literal_bytes = self.literal_bytes.saturating_add(other.literal_bytes);
+        self.arm_pairs = self.arm_pairs.saturating_add(other.arm_pairs);
     }
 }
 
@@ -448,6 +459,11 @@ pub const CERTIFICATE_BYTES_PER_EXPR_NODE: u64 = 300;
 
 /// The bytes a shape node costs a certificate, measured the same way.
 pub const CERTIFICATE_BYTES_PER_SHAPE_NODE: u64 = 300;
+
+/// The bytes a pair of arms of one match costs a certificate, at one and a
+/// half times the most measured (a match on 200 constructors takes 22 bytes
+/// for each pair).
+pub const CERTIFICATE_BYTES_PER_ARM_PAIR: u64 = 33;
 
 /// What a certificate costs besides its nodes: its imports, its encoders,
 /// and the statement of its root.
@@ -473,14 +489,19 @@ pub fn certificate_estimate(measure: &Measure) -> u64 {
                 .shapes
                 .saturating_mul(CERTIFICATE_BYTES_PER_SHAPE_NODE),
         )
+        .saturating_add(
+            measure
+                .arm_pairs
+                .saturating_mul(CERTIFICATE_BYTES_PER_ARM_PAIR),
+        )
+        .saturating_add(measure.literal_bytes)
         .saturating_add(CERTIFICATE_BASE_BYTES)
 }
 
 fn measure_type(ty: &Ty) -> Measure {
     let mut out = Measure {
         types: 1,
-        exprs: 0,
-        shapes: 0,
+        ..Measure::default()
     };
     match ty {
         Ty::Unit
@@ -513,9 +534,8 @@ fn measure_type(ty: &Ty) -> Measure {
 
 fn measure_expr(expr: &Expr) -> Measure {
     let mut out = Measure {
-        types: 0,
         exprs: 1,
-        shapes: 0,
+        ..Measure::default()
     };
     let each = |out: &mut Measure, operands: &[Expr]| {
         for operand in operands {
@@ -523,7 +543,10 @@ fn measure_expr(expr: &Expr) -> Measure {
         }
     };
     match expr {
-        Expr::Value { ty, value: _ } => out.add(measure_type(ty)),
+        Expr::Value { ty, value } => {
+            out.add(measure_type(ty));
+            out.literal_bytes = out.literal_bytes.saturating_add(literal_bytes(value));
+        }
         Expr::Var { name: _ } => {}
         Expr::Let {
             name: _,
@@ -551,6 +574,9 @@ fn measure_expr(expr: &Expr) -> Measure {
         } => {
             out.add(measure_type(ty));
             out.add(measure_expr(scrutinee));
+            out.arm_pairs = out
+                .arm_pairs
+                .saturating_add((arms.len() as u64).saturating_mul(arms.len() as u64));
             for arm in arms {
                 out.exprs = out.exprs.saturating_add(1);
                 out.shapes = out.shapes.saturating_add(1 + arm.binders.len() as u64);
@@ -589,6 +615,45 @@ fn measure_expr(expr: &Expr) -> Measure {
         }
     }
     out
+}
+
+/// The bytes a literal takes in a certificate (see [`Measure::literal_bytes`]).
+fn literal_bytes(value: &Value) -> u64 {
+    let digits = |text: &String| (text.len() as u64).saturating_mul(6);
+    match value {
+        Value::String { value } => (value.len() as u64).saturating_mul(9),
+        Value::Bytes { hex } => (hex.len() as u64).saturating_mul(4),
+        Value::Nat { value }
+        | Value::Int { value }
+        | Value::U8 { value }
+        | Value::U16 { value }
+        | Value::U32 { value }
+        | Value::U64 { value }
+        | Value::I8 { value }
+        | Value::I16 { value }
+        | Value::I32 { value }
+        | Value::I64 { value } => digits(value),
+        Value::Some { value } | Value::Ok { value } | Value::Error { value } => {
+            literal_bytes(value)
+        }
+        Value::Pair { left, right } => literal_bytes(left).saturating_add(literal_bytes(right)),
+        Value::List { items } => items
+            .iter()
+            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
+        Value::Adt {
+            constructor: _,
+            fields,
+        } => fields
+            .iter()
+            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
+        Value::Closure {
+            function: _,
+            captures,
+        } => captures
+            .iter()
+            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
+        Value::Unit | Value::Bool { value: _ } | Value::Ordering { value: _ } | Value::None => 0,
+    }
 }
 
 fn measure_function(function: &Function) -> Measure {

@@ -2,8 +2,9 @@
 # Passes every invocation to the pinned lake except `lake env lean` on a
 # certificate A, whose module first gets a heartbeat budget of one: the
 # pinned Lean then gives up with "maximum number of heartbeats". The project's
-# max_file_bytes is the least that its certificates are estimated to fit and
-# the module is more than a quarter of it, so that is the module's weight,
+# max_file_bytes is above the estimate of its certificates and below four
+# times the module (conformance_sp_02 asserts both), so that is the module's
+# weight,
 # reported as an exhausted resource (LLS8002) and not as a rejected
 # certificate (LLV7013) or drift in the environment (SPEC.md 17.17).
 real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"

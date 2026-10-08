@@ -39,7 +39,7 @@ use super::eligibility::BUILTIN_OWNERS;
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
-use crate::backend::semantic::{hypothesis, identifier, string_literal};
+use crate::backend::semantic::{hypothesis, identifier as semantic_identifier, string_literal};
 use crate::calculus::library::Template;
 use crate::calculus::{
     Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value,
@@ -181,6 +181,18 @@ pub fn root_signature(
     Source { modules }
         .signature(module, name, &[])
         .map_err(internal)
+}
+
+/// A generation failure: the limit the certificate was generated under
+/// (`LLS8002`), or an inconsistency inside LexLean (`LLI9001`).
+fn failure(reason: String) -> Diagnostic {
+    match reason.strip_prefix(super::lower::LIMIT) {
+        Some(limit) => Diagnostic::new(
+            code!("LLS8002"),
+            format!("max_file_bytes exceeded in phase certificates: {limit}"),
+        ),
+        None => internal(reason),
+    }
 }
 
 fn internal(reason: impl std::fmt::Display) -> Diagnostic {
@@ -383,6 +395,9 @@ struct Gen<'a> {
     /// Lean accepts structural recursion through a nested occurrence only
     /// when the container gets its own auxiliary function.
     nested: BTreeMap<String, Nested>,
+    /// The bytes a certificate may take, `max_file_bytes`: generation stops
+    /// with a limit as soon as a part it has built is beyond it.
+    limit: u64,
 }
 
 /// A container type that occurs nested in a recursive group of document
@@ -414,12 +429,14 @@ pub fn certificate_e(
     module_b: &str,
     module: &str,
     fallible: bool,
+    max_bytes: u64,
 ) -> Result<Certificate, Diagnostic> {
-    let mut generator = generator(modules, lowered);
-    generator.nest().map_err(internal)?;
+    let mut generator = generator(modules, lowered, max_bytes);
+    generator.nest().map_err(failure)?;
     let text = generator
         .compose(root_module, root_name, module_a, module_b, module, fallible)
-        .map_err(internal)?;
+        .map_err(failure)?;
+    generator.within(text.len()).map_err(failure)?;
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
@@ -465,6 +482,7 @@ fn qualify(text: &str, module_a: &str) -> String {
 fn generator<'a>(
     modules: &'a BTreeMap<String, super::eligibility::LinkedModule<'a>>,
     lowered: &'a Lowered,
+    limit: u64,
 ) -> Gen<'a> {
     let source = Source { modules };
     let mut instances = BTreeMap::new();
@@ -534,6 +552,7 @@ fn generator<'a>(
         subjects: BTreeMap::new(),
         found: BTreeMap::new(),
         nested: BTreeMap::new(),
+        limit,
     }
 }
 
@@ -550,12 +569,14 @@ pub fn certificate(
     report: &RootReport,
     lowered: &Lowered,
     module: &str,
+    max_bytes: u64,
 ) -> Result<Certificate, Diagnostic> {
-    let mut generator = generator(modules, lowered);
-    generator.nest().map_err(internal)?;
+    let mut generator = generator(modules, lowered, max_bytes);
+    generator.nest().map_err(failure)?;
     let text = generator
         .module(root_module, root_name, report, module)
-        .map_err(internal)?;
+        .map_err(failure)?;
+    generator.within(text.len()).map_err(failure)?;
     let mut imports: Vec<String> = modules
         .values()
         .map(|linked| linked.lean_module.to_owned())
@@ -568,6 +589,24 @@ pub fn certificate(
         text,
         imports,
     })
+}
+
+/// The Lean spelling of a semantic name in a certificate: the backend's, and
+/// in addition quoted when a segment is spelled like a token the token audit
+/// forbids (`kernel`, `extern`), so that a user's name is an identifier to the
+/// audit as it is to Lean, whatever it is.
+fn identifier(name: &str) -> String {
+    semantic_identifier(name)
+        .split('.')
+        .map(|segment| {
+            if super::preserve::FORBIDDEN_TOKENS.contains(&segment) {
+                format!("«{segment}»")
+            } else {
+                segment.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(".")
 }
 
 // --- Rendering the target program -------------------------------------------
@@ -2633,8 +2672,30 @@ impl Gen<'_> {
         Ok(built(operands(proofs), &lib("construct_adt"), "true"))
     }
 
-    #[allow(clippy::too_many_lines)]
+    /// Refuse a part of a certificate of `len` bytes when it is larger than
+    /// the certificate may be.
+    fn within(&self, len: usize) -> Result<(), String> {
+        if len as u64 > self.limit {
+            return Err(format!(
+                "{}a part of the certificate is {len} bytes, beyond the {} bytes of max_file_bytes",
+                super::lower::LIMIT,
+                self.limit
+            ));
+        }
+        Ok(())
+    }
+
+    /// The proof of a term, refused as soon as it is larger than the
+    /// certificate may be: a proof contains those of its subterms, so no
+    /// part of a certificate that passes this is beyond the limit.
     fn prove(&mut self, term: &SemanticTerm, ctx: &Ctx) -> Result<Proof, String> {
+        let proof = self.prove_term(term, ctx)?;
+        self.within(proof.proof.len())?;
+        Ok(proof)
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn prove_term(&mut self, term: &SemanticTerm, ctx: &Ctx) -> Result<Proof, String> {
         let site = ctx.site.clone();
         let value = || Proof {
             proof: lib("conv_value"),
@@ -3250,10 +3311,13 @@ impl Gen<'_> {
                 | Constructor::Ok
                 | Constructor::Error
                 | Constructor::Document { ty: _, index: _ } => {
-                    let mut arm = format!("({} rfl rfl {})", lib("convA_hit"), body.proof);
-                    for _ in 0..position {
-                        arm = format!("({} rfl {arm})", lib("convA_miss"));
-                    }
+                    // The arm after `position` misses, written once and not
+                    // by wrapping the whole arm again for each miss.
+                    let miss = format!("({} rfl ", lib("convA_miss"));
+                    self.within(miss.len().saturating_mul(position))?;
+                    let mut arm = miss.repeat(position);
+                    arm.push_str(&format!("({} rfl rfl {})", lib("convA_hit"), body.proof));
+                    arm.push_str(&")".repeat(position));
                     arm
                 }
             };
@@ -3261,6 +3325,7 @@ impl Gen<'_> {
                 Some(name) => proof_arms.push_str(&format!(" | {pattern}, {name} => {arm}")),
                 None => proof_arms.push_str(&format!(" | {pattern} => {arm}")),
             }
+            self.within(proof_arms.len())?;
         }
         let scrutinee_src = self.src(scrutinee, ctx)?;
         let fits_at = |gen: &Self, discriminant: &str| {
@@ -5267,9 +5332,11 @@ impl<'a> Gen<'a> {
             render_program(self.program)?
         ));
         out.push_str(&self.encoders()?);
+        self.within(out.len())?;
         self.found.clear();
         for component in components(&graph) {
             out.push_str(&self.component(&component, &graph)?);
+            self.within(out.len())?;
         }
         // The root: function 0, run on its encoded arguments.
         let root_lean = self.source.lean_name(
@@ -5333,6 +5400,7 @@ impl<'a> Gen<'a> {
         ));
         let parameter_types: Vec<SemanticType> = locals.iter().map(|(_, ty)| ty.clone()).collect();
         out.push_str(&self.boundary(&signature, &signature.names, &parameter_types)?);
+        self.within(out.len())?;
         out.push_str(&format!("end {name}\n"));
         Ok(out)
     }
@@ -7371,7 +7439,7 @@ impl Gen<'_> {
             // root's observation as `some` when §17.12's invariants hold,
             // and `none` when one fails.
             Some((entry, _)) => out.push_str(&format!(
-                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (hrep : {} [{}]) : ∃ ro, {} {module_b}.krate ({} {entry}) [{}] ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) ro) :=\n  match {} (fun n => {module_b}.root n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨ro, hr, hc⟩ => ⟨ro, hc, fun h => {module_a}.entry_accepts{applied} h ▸ hr, fun h => {module_a}.entry_refuses{applied} h ▸ hr⟩\n\n",
+                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {module_b}.krate ({} {entry}) [{}] __e_ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) __e_ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) __e_ro) :=\n  match {} (fun __e_n => {module_b}.root __e_n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨__e_ro, __e_hr, __e_hc⟩ => ⟨__e_ro, __e_hc, fun __e_h => {module_a}.entry_accepts{applied} __e_h ▸ __e_hr, fun __e_h => {module_a}.entry_refuses{applied} __e_h ▸ __e_hr⟩\n\n",
                 binders.join(" "),
                 lib("Rust.RepresentableL"),
                 arguments.join(", "),
@@ -7387,7 +7455,7 @@ impl Gen<'_> {
                 lib("Rust.rel_ne_stuck"),
             )),
             None => out.push_str(&format!(
-                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (hrep : {} [{}]) : ∃ ro, {} {fallible} ({module_a}.denote{applied}) ro ∧ {} {module_b}.krate ({} 0) [{}] ro :=\n  {} (fun n => {module_b}.root n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
+                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {fallible} ({module_a}.denote{applied}) __e_ro ∧ {} {module_b}.krate ({} 0) [{}] __e_ro :=\n  {} (fun __e_n => {module_b}.root __e_n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
                 binders.join(" "),
                 lib("Rust.RepresentableL"),
                 arguments.join(", "),

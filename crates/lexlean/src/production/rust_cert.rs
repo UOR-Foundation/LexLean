@@ -173,8 +173,25 @@ fn sub(derivation: Rule) -> Premise {
     Premise::Rule(derivation)
 }
 
+/// A derivation is dropped without recursion, for the reason it is written
+/// without it.
+impl Drop for Rule {
+    fn drop(&mut self) {
+        let mut pending: Vec<Premise> = std::mem::take(&mut self.premises);
+        while let Some(premise) = pending.pop() {
+            match premise {
+                Premise::Rule(mut inner) => {
+                    pending.append(&mut std::mem::take(&mut inner.premises))
+                }
+                Premise::Decided => {}
+            }
+        }
+    }
+}
+
 impl Rule {
-    fn write(&self, out: &mut String) {
+    /// The rule and the opening of its text: `(Corr.name (n := v) …`.
+    fn open(&self, out: &mut String) {
         out.push_str("(Corr.");
         out.push_str(self.name);
         for (name, value) in &self.named {
@@ -184,14 +201,31 @@ impl Rule {
             out.push_str(value);
             out.push(')');
         }
-        for premise in &self.premises {
+    }
+
+    /// The text of the rule and everything below it. A derivation nests as
+    /// deeply as a match has arms, so it is walked with a stack of its own.
+    fn write(&self, out: &mut String) {
+        self.open(out);
+        let mut stack: Vec<(&Rule, usize)> = vec![(self, 0)];
+        while let Some(&(rule, next)) = stack.last() {
+            let Some(premise) = rule.premises.get(next) else {
+                out.push(')');
+                stack.pop();
+                continue;
+            };
+            if let Some(top) = stack.last_mut() {
+                top.1 += 1;
+            }
             out.push(' ');
             match premise {
-                Premise::Rule(inner) => inner.write(out),
+                Premise::Rule(inner) => {
+                    inner.open(out);
+                    stack.push((inner, 0));
+                }
                 Premise::Decided => out.push_str("rfl"),
             }
         }
-        out.push(')');
     }
 
     fn text(&self) -> String {
@@ -1756,10 +1790,39 @@ impl<'a> Aligner<'a> {
         tau: &Ty,
         rarms: &[(Pat, Block)],
     ) -> Result<(Rule, Vec<u64>), String> {
-        let Some(((pattern, block), rest)) = rarms.split_first() else {
-            return Ok((rule("mNil", vec![], vec![]), Vec::new()));
-        };
-        let (rest_d, mut idx) = self.mg(g, fl, st, view, arms, fm, tau, rest)?;
+        // The arms are derived last to first, each wrapped around the
+        // derivation of those after it; a loop and not a recursion, because
+        // a match has as many arms as its source states, which a configured
+        // limit allows to be as many as the stack could not hold.
+        let mut derivation = rule("mNil", vec![], vec![]);
+        let mut indices = Vec::with_capacity(rarms.len());
+        for (pattern, block) in rarms.iter().rev() {
+            self.refused()?;
+            let (next, index) =
+                self.m_arm(g, fl, st, view, arms, fm, tau, pattern, block, derivation)?;
+            derivation = self.within_budget(next)?;
+            indices.push(index);
+        }
+        indices.reverse();
+        Ok((derivation, indices))
+    }
+
+    /// One arm of `.m`: its derivation wrapped around `rest_d`, the
+    /// derivation of the arms after it, and the index of its source arm.
+    #[allow(clippy::too_many_arguments)]
+    fn m_arm(
+        &mut self,
+        g: &Ctx,
+        fl: bool,
+        st: &Ty,
+        view: bool,
+        arms: &[Arm],
+        fm: bool,
+        tau: &Ty,
+        pattern: &Pat,
+        block: &Block,
+        rest_d: Rule,
+    ) -> Result<(Rule, u64), String> {
         let (shape, inner) = arm_outer(st, view, pattern)?;
         let j = arms
             .iter()
@@ -1814,7 +1877,6 @@ impl<'a> Aligner<'a> {
         let direct = direct_patterns(&inner, &loads)?;
         let inner_ctx = param_ctx(g, &arm.binders, &types, &direct)?;
         let body_d = self.bg(&inner_ctx, fl, fm, &arm.body, tau, &lets, &tail)?;
-        idx.insert(0, j as u64);
         Ok((
             rule(
                 "mCons",
@@ -1827,7 +1889,7 @@ impl<'a> Aligner<'a> {
                 ],
                 vec![sub(rest_d), Decided, Decided, Decided, sub(body_d)],
             ),
-            idx,
+            j as u64,
         ))
     }
 
@@ -2260,5 +2322,26 @@ mod tests {
         assert!(top
             .text()
             .starts_with("(Corr.fieldRead (ts := [.nat, .nat]) (Corr.mCons"));
+    }
+
+    /// A derivation as deep as a match has arms is written and dropped
+    /// without recursion, on the small stack of a test thread.
+    #[test]
+    fn a_deep_derivation_is_written_and_dropped() {
+        let deep = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(|| {
+                let mut derivation = rule("mNil", vec![], vec![]);
+                for _ in 0..300_000 {
+                    derivation = rule("mCons", vec![], vec![sub(derivation), Decided]);
+                }
+                let size = derivation.size;
+                let text = derivation.text();
+                (size, text.len())
+            })
+            .expect("a thread")
+            .join()
+            .expect("no stack overflow");
+        assert_eq!(deep.0, deep.1);
     }
 }

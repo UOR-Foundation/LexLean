@@ -796,6 +796,7 @@ pub fn run(
                 root.report,
                 &lowered,
                 &module,
+                limits.max_file_bytes,
             )
             .map_err(fail)?;
             // Certificate B: the root's crate in each of its targets
@@ -857,6 +858,7 @@ pub fn run(
                     &module_b,
                     &module_e,
                     fallible,
+                    limits.max_file_bytes,
                 )
                 .map_err(fail)?;
                 renderings.push(CertifiedRendering {

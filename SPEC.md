@@ -4028,38 +4028,54 @@ representable arguments are certificate E's domain. The module also defines
 definition is instantiated at: a definition `g_k<T> = g_{k+1}<(T, T)>` chained
 16 deep has a type of 2^16 nodes, and the certificates repeat every type
 node in the program literal, the encoders, the crate term, and the
-statements. The lowering therefore charges every type node and every
-expression node to `max_ir_nodes` as it builds them, and, once the program
-is built, refuses a root whose certificates A and E are estimated to exceed
-`max_file_bytes`. The estimate is linear in what the program repeats: 70 bytes
-for each type node, 300 for each expression node, 300 for each field read,
-constructor built, or arm binder, and 8 KiB. It is a calibration, one and a
-half times the largest certificate A or E measured on the three example
-corpora and on families of programs that grow one dimension at a time (let
-chains, call chains, many parameters, enumerations, wide structures, record
-copies, a generic chain), and `conformance_sp_02` requires it never to be
-below A or E on any of them; it is not a proof that no program exceeds it, so
-each generated certificate is checked against `max_file_bytes` again before
-it is staged. Certificate B is not estimated. The rendering of a field read
-prints the record's whole pattern, and a derivation repeats the types and
-patterns of the nodes around the node it derives, so the crate and certificate
-B grow with the square of a record's arity or of the depth of a nesting (a
-record of 800 fields copied field by field has 640 000 pattern entries in 800
-reads, and a certificate B of 13 MB from 2400 program nodes), which no count of
-nodes bounds. The lowering therefore also counts the pattern entries of the
-field reads, each at the arity of the record the expression read is stated to
-have and at that of the widest record where the program does not state it, and
-refuses a root whose entries, at 16 bytes each (the least measured is 22),
-would take more than `max_file_bytes` of certificate B: the crate is built
-after this, so a program that large is never rendered. Below that floor
-certificate B is generated under `max_file_bytes`: its terms and each
-derivation are counted as they are built, and generation stops with `LLS8002`
-at about the limit (within one function's derivation) rather than at the size
-the certificate would have had. Certificates are generated, for every root,
-right after lowering and before the toolchain is touched, so every refusal
-above is `LLS8002` before any Lean work. Types are not shared between the generated declarations, so
-the certificates of a program grow with the tree size of its types, and the
-limits bound it; the chain above verifies 12 deep and is refused from 13.
+statements. Two things bound them, an early refusal and a guarantee.
+
+The early refusal is an estimate. The lowering charges every type node and
+every expression node to `max_ir_nodes` as it builds them, and, once the
+program is built, refuses a root whose certificates A and E are estimated to
+exceed `max_file_bytes`: 70 bytes for each type node, 300 for each expression
+node and each shape node (a field read, a constructor built, an arm binder),
+33 for each pair of arms of one match (a match on `C` constructors states
+each arm after the others, so its proof grows with `C` squared), 9 for each
+byte of a string literal, 4 for each digit of a bytes literal and 6 for each
+digit of a number, and 8 KiB. It is a calibration, at one and a half times
+the largest certificate A or E measured on the three example corpora and on
+families of programs that grow one dimension at a time (let chains, call
+chains, many parameters, enumerations of many constructors, matches nested
+under one another, wide structures, record copies, long literals, a generic
+chain, generic instances at a wide structure), and `conformance_sp_02`
+requires it never to be below A or E on any of them. It is not a bound on
+every program: the names of fields and constructors are not in a lowered
+program and the estimate does not count them, so a structure with long field
+names has larger certificates than it says (the family of such structures is
+exempt from the comparison and held to the guarantee). Certificate B is not
+estimated. The rendering of a field read prints the record's whole pattern,
+and a derivation repeats the types and patterns of the nodes around the node
+it derives, so the crate and certificate B grow with the square of a record's
+arity or of the depth of a nesting (a record of 800 fields copied field by
+field has 640 000 pattern entries in 800 reads, and a certificate B of 13 MB
+from 2400 program nodes). The lowering therefore also counts the pattern
+entries of the field reads, each at the arity of the record the expression
+read is stated to have and at that of the widest record where the program
+does not state it, and refuses a root whose entries, at 16 bytes each (the
+least measured is 22), would take more than `max_file_bytes` of certificate
+B: the crate is built after this, so a program that large is never rendered.
+
+The guarantee is the byte budget. Every certificate is generated under
+`max_file_bytes`: the proof of each term of certificate A, each match arm,
+the encoders, each function, and the boundary, the terms and derivations of
+certificate B, and certificate E are counted as they are built, and generation stops with
+`LLS8002` as soon as a part is beyond the limit, so that no program makes the
+generator produce, or the stage after it hold, much more than the limit (one
+part past it: a function's derivation, or a term's proof). Certificates are
+generated, for every root, right after lowering and before the toolchain is
+touched, so every refusal is `LLS8002` before any Lean work. A derivation is
+built, written, and dropped without recursion in the number of a match's arms,
+so a limit that allows thousands of arms cannot overflow the stack
+(`conformance_sp_08` derives 9000 on a 2 MiB stack). Types are not shared
+between the generated declarations, so the certificates of a program grow
+with the tree size of its types, and the limits bound it; the chain above
+verifies 12 deep and is refused from 13.
 
 **Proof.** The proof follows the source term construct by construct through
 the library's compatibility lemmas. A recursive definition's relation is
@@ -4502,7 +4518,7 @@ statement, the module `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or
 `.Compose.RustStd`, which imports both and proves
 
 ```lean
-theorem root (x₁ … xₙ) (hrep : RepresentableL [enc x₁, …, enc xₙ]) :
+theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :
     ∃ ro, RealizesFn F (denote x₁ … xₙ) ro ∧
       RCI krate (fnIdent 0) [enc x₁, …, enc xₙ] ro
 ```
@@ -4517,13 +4533,13 @@ root with a boundary entry, the function invoked is the entry and the
 theorem is
 
 ```lean
-theorem root (x₁ … xₙ) (hrep : RepresentableL [enc x₁, …, enc xₙ]) :
+theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :
     ∃ ro, RCI krate (fnIdent e) [enc x₁, …, enc xₙ] ro ∧
       (accepts x₁ … xₙ → RealizesFn F (someObs (denote x₁ … xₙ)) ro) ∧
       (¬ accepts x₁ … xₙ → RealizesFn F (Obs.value Value.none) ro)
 ```
 
-so the rendered entry realizes the encoded source result as `some` for
+The names the composition binds itself (`__e_hrep`, the witness `__e_ro`, and the lambdas and pattern variables of its proof) begin with two underscores, which no semantic name does, so no parameter of the root, whatever its name, can capture one; `conformance_sp_09` checks every binder of every composition. So the rendered entry realizes the encoded source result as `some` for
 arguments that satisfy §17.12's invariants and refuses every other with
 `none`. `RepresentableL` restricts the theorem to the arguments a Rust caller
 can pass: a natural number is a `u64` and an integer an `i64`, wherever it
@@ -7038,14 +7054,14 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GN-07` | `gnaf` | The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true. | §17.15, §27.4 |
 | `GN-08` | `gnaf` | The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator. | §17.15, §27.4 |
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
-| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched, certificates A and E by an estimate that is never below their size on the corpora and on families of programs that grow one dimension at a time, and certificate B by a floor on the entries its field reads print, which the lowering refuses before the Rust crate is built, and by being generated under the limit, which stops it at the limit. | §17.17 |
+| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by an estimate of certificates A and E that is never below their size on the corpora and on families of programs that grow one dimension at a time, and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; and in every case by generating each certificate under the limit, which stops it at the limit. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; the lowered program and each target's crate the certificates are about are published and bound by that record, which also states the function each crate is invoked through and agrees with certificate E and the crate; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication; and a pinned Lean that gives up on a certificate by heartbeats or recursion depth is reported as that rejection unless the module is at least a quarter of max_file_bytes, in which case, as when it is killed or out of memory, it is an exhausted resource, LLS8002. | §17.17, §22.8, §22.9 |
 | `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
 | `SP-08` | `preservation` | Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused. | §17.16, §17.17 |
-| `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, or its boundary entry when it has one, invoked on the encoded source arguments, realizes certificate A's observation of the source, as `some` when the arguments satisfy the invariants §17.12 states of them and as `none` otherwise; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, and verification fails with LLV7016 on a rejected composition. | §17.17 |
+| `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, or its boundary entry when it has one, invoked on the encoded source arguments, realizes certificate A's observation of the source, as `some` when the arguments satisfy the invariants §17.12 states of them and as `none` otherwise; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, verification fails with LLV7016 on a rejected composition, and a root verifies whatever its parameters are named, including the names the composition binds for itself and the tokens the certificate audit forbids. | §17.17 |
 | `SP-10` | `preservation` | A production root whose parameters can hold a map, set, or graph, directly or inside options, results, products, lists, document types, and recursive groups of them, is lowered with a generated entry function that calls the root only when the generated validators of each such parameter accept it and returns none otherwise; certificate A proves each validator decides exactly the proposition §17.12 states of its type and the entry's two outcomes; a validator is called only by the entry and by validators, so no proof-only invariant becomes a runtime check, and a validator called from inside the program is refused by the lowering; and a validator dropped from the entry, one weakened to admit an equal key, and a rendering whose entry drops a validator are each refused by Lean at the relation they change; a lowering whose entry skips a validated parameter is refused by the generator, which judges the validated parameters from the source types alone, and the differentials break each validated parameter's invariant in turn, which the interpreter, Lean, the declared machine, and rustc each refuse with none. | §17.12, §17.17 |
 | `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |

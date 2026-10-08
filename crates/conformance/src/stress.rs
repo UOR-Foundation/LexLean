@@ -220,7 +220,11 @@ fn enumeration(constructors: usize, fields: usize) -> Vec<Value> {
         .map(|index| {
             json!({
                 "binders": (0..fields).map(|field| format!("b{index}_{field}")).collect::<Vec<_>>(),
-                "body": add(var(&format!("b{index}_0")), literal(index as u64)),
+                "body": if fields == 0 {
+                    literal(index as u64)
+                } else {
+                    add(var(&format!("b{index}_0")), literal(index as u64))
+                },
                 "constructor": {"name": format!("E.c{index}")},
             })
         })
@@ -340,6 +344,147 @@ fn subtraction_chain(count: usize) -> Vec<Value> {
     )]
 }
 
+/// A root returning one literal of `length` characters (control characters,
+/// which a certificate spells with six).
+fn string_literal(length: usize) -> Vec<Value> {
+    vec![root(
+        "r",
+        vec![parameter("n", nat())],
+        json!({"kind": "string"}),
+        json!({"kind": "string", "value": "\u{1}".repeat(length)}),
+        &["allocation"],
+        &["rust-std"],
+    )]
+}
+
+/// A root returning one bytes literal of `length` bytes.
+fn bytes_literal(length: usize) -> Vec<Value> {
+    vec![root(
+        "r",
+        vec![parameter("n", nat())],
+        json!({"kind": "bytes"}),
+        json!({"kind": "bytes", "hex": "ab".repeat(length)}),
+        &["allocation"],
+        &["rust-std"],
+    )]
+}
+
+/// `depth` matches nested in the node arm of one another, each on its own
+/// parameter and binding `fields` fields.
+fn nested_match(depth: usize, fields: usize) -> Vec<Value> {
+    let tree = json!({
+        "constructors": [
+            {"fields": [], "name": "leaf"},
+            {"fields": vec![nat(); fields], "name": "node"},
+        ],
+        "kind": "inductive",
+        "name": "T",
+        "parameters": [],
+        "type_parameters": [],
+    });
+    let mut body = literal(0);
+    for level in (0..depth).rev() {
+        let binders: Vec<String> = (0..fields)
+            .map(|field| format!("b{level}_{field}"))
+            .collect();
+        let inner = if level + 1 == depth {
+            var(&format!("b{level}_0"))
+        } else {
+            body
+        };
+        body = json!({
+            "kind": "match",
+            "scrutinee": var(&format!("t{level}")),
+            "branches": [
+                {"binders": [], "body": literal(0), "constructor": {"name": "T.leaf"}},
+                {"binders": binders, "body": inner, "constructor": {"name": "T.node"}},
+            ],
+        });
+    }
+    vec![
+        tree,
+        root(
+            "r",
+            (0..depth)
+                .map(|level| parameter(&format!("t{level}"), named("T")))
+                .collect(),
+            nat(),
+            body,
+            &[],
+            &BOTH,
+        ),
+    ]
+}
+
+/// The identity at `T`, passed down `depth` generic definitions and
+/// instantiated at a structure of `fields` fields.
+fn wide_instances(depth: usize, fields: usize) -> Vec<Value> {
+    let t = json!({"kind": "parameter", "name": "T"});
+    let mut declarations = vec![structure(fields)];
+    for level in (0..depth).rev() {
+        let body = if level + 1 == depth {
+            var("x")
+        } else {
+            json!({
+                "arguments": [var("x")],
+                "function": {"name": format!("i{}", level + 1)},
+                "kind": "call",
+                "type_arguments": [t.clone()],
+            })
+        };
+        declarations.push(json!({
+            "body": body,
+            "executable": true,
+            "kind": "definition",
+            "name": format!("i{level}"),
+            "parameters": [parameter("x", t.clone())],
+            "result": t.clone(),
+            "type_parameters": ["T"],
+        }));
+    }
+    declarations.push(root(
+        "r",
+        vec![parameter("s", named("S"))],
+        named("S"),
+        json!({"arguments": [var("s")], "function": {"name": "i0"}, "kind": "call", "type_arguments": [named("S")]}),
+        &[],
+        &["rust-std"],
+    ));
+    declarations
+}
+
+/// A structure whose `fields` fields have names of `length` characters, all
+/// read by the root.
+fn long_names(fields: usize, length: usize) -> Vec<Value> {
+    let name = |index: usize| format!("{}{index:03}", "f".repeat(length - 3));
+    let record = json!({
+        "fields": (0..fields).map(|index| parameter(&name(index), nat())).collect::<Vec<_>>(),
+        "kind": "structure",
+        "name": "S",
+        "parameters": [],
+        "type_parameters": [],
+    });
+    let mut body: Option<Value> = None;
+    for index in 0..fields {
+        let projection = json!({"field": name(index), "kind": "project", "value": var("s")});
+        body = Some(match body {
+            Some(sum) => add(sum, projection),
+            None => projection,
+        });
+    }
+    vec![
+        record,
+        root(
+            "r",
+            vec![parameter("s", named("S"))],
+            nat(),
+            body.unwrap_or_else(|| literal(0)),
+            &["overflow"],
+            &BOTH,
+        ),
+    ]
+}
+
 /// Every stress family at the sizes the estimate is checked on, with a name.
 #[must_use]
 pub fn families() -> Vec<(String, P)> {
@@ -388,8 +533,118 @@ pub fn families() -> Vec<(String, P)> {
             many_parameters(count, 2),
         );
     }
+    for length in [2_000, 20_000] {
+        push(format!("string literal {length}"), string_literal(length));
+    }
+    push("bytes literal 10000".to_owned(), bytes_literal(10_000));
+    for constructors in [60, 200] {
+        push(
+            format!("enumeration of one field {constructors}"),
+            enumeration(constructors, 1),
+        );
+    }
+    push(
+        "enumeration of three fields 100".to_owned(),
+        enumeration(100, 3),
+    );
+    for (depth, fields) in [(12, 3), (20, 30)] {
+        push(
+            format!("nested match {depth} of {fields}"),
+            nested_match(depth, fields),
+        );
+    }
+    push(
+        "wide instances 20 of 100".to_owned(),
+        wide_instances(20, 100),
+    );
+    push("long names 20 of 100".to_owned(), long_names(20, 100));
     for depth in [6, 9, 10, 11] {
         push(format!("generic chain {depth}"), generic_chain(depth));
     }
     out
+}
+
+/// Roots whose parameters, fields, and locals are spelled like the names the
+/// generator binds in certificate E (`hrep`, `ro`, `h`, `hr`, `hc`, `n`) and
+/// like the tokens the certificate audit forbids (`kernel`, `prefix`,
+/// `macro`, ...). They are valid programs and must verify.
+#[must_use]
+pub fn names() -> P {
+    let sum = |names: &[&str]| -> Value {
+        let mut out = var(names[0]);
+        for name in &names[1..] {
+            out = add(out, var(name));
+        }
+        out
+    };
+    let plain = ["hrep", "ro", "h", "hr", "hc", "n", "f", "x", "P"];
+    let words = [
+        "kernel", "prefix", "notation", "infix", "elab", "macro", "syntax", "extern",
+    ];
+    let set = json!({"element": nat(), "kind": "set"});
+    let size = |name: &str| json!({"arguments": [var(name)], "kind": "primitive", "operation": "set_size", "result": nat()});
+    let words_record = json!({
+        "fields": [parameter("macro", nat()), parameter("syntax", nat())],
+        "kind": "structure",
+        "name": "Words",
+        "parameters": [],
+        "type_parameters": [],
+    });
+    let declarations = vec![
+        root(
+            "plain",
+            plain.iter().map(|name| parameter(name, nat())).collect(),
+            nat(),
+            sum(&plain),
+            &["overflow"],
+            &BOTH,
+        ),
+        root(
+            "entered",
+            vec![
+                parameter("h", set.clone()),
+                parameter("hr", set),
+                parameter("hc", nat()),
+                parameter("ro", nat()),
+                parameter("hrep", nat()),
+            ],
+            nat(),
+            add(
+                add(add(size("h"), size("hr")), var("hc")),
+                add(var("ro"), var("hrep")),
+            ),
+            &["allocation", "overflow"],
+            &["rust-std"],
+        ),
+        root(
+            "words",
+            words.iter().map(|name| parameter(name, nat())).collect(),
+            nat(),
+            sum(&words),
+            &["overflow"],
+            &BOTH,
+        ),
+        words_record,
+        root(
+            "fielded",
+            vec![parameter("w", named("Words"))],
+            nat(),
+            json!({
+                "binder": {"name": "elab", "type": nat()},
+                "body": add(var("elab"), json!({"field": "syntax", "kind": "project", "value": var("w")})),
+                "kind": "let",
+                "value": json!({"field": "macro", "kind": "project", "value": var("w")}),
+            }),
+            &["overflow"],
+            &BOTH,
+        ),
+    ];
+    project(&declarations)
+}
+
+/// A root matching a value of an enumeration of `constructors` constructors
+/// without fields, one arm each, under limits lifted far enough for it.
+#[must_use]
+pub fn wide_match(constructors: usize) -> P {
+    project(&enumeration(constructors, 0))
 }

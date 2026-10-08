@@ -110,6 +110,10 @@ fn assert_targeted(plant: &preservation::Planted) {
     );
 }
 
+/// The families whose certificates grow with names the program does not
+/// carry.
+const NAMES_NOT_COUNTED: &str = "long names";
+
 /// Certify every stress family, assert that the estimate is never below
 /// certificate A or E and that the floor from field reads is never above
 /// certificate B, and that certificate B stops at the limit it is given.
@@ -117,7 +121,21 @@ fn assert_targeted(plant: &preservation::Planted) {
 fn stress_estimates() -> u64 {
     let mut quadratic = 0_u64;
     for (family, project) in crate::stress::families() {
-        for entry in preservation::certificates(&project) {
+        let certified = preservation::certificates(&project);
+        // However large a program makes its certificates, generation stops
+        // at the limit it is given: A and E regenerated under half their
+        // size are refused with `LLS8002`.
+        for (root, a, e) in preservation::halved(&project, &certified) {
+            assert_eq!(
+                a, "LLS8002",
+                "{family}: {root}: certificate A under half its size"
+            );
+            assert!(
+                e.iter().all(|code| code == "LLS8002"),
+                "{family}: {root}: certificate E under half its size: {e:?}"
+            );
+        }
+        for entry in certified {
             assert_floor(&family, &entry);
             let estimate = estimate_of(&entry);
             let a = entry.certificate.text.len() as u64;
@@ -127,8 +145,13 @@ fn stress_estimates() -> u64 {
                 .map(|(_, certificate)| certificate.text.len() as u64)
                 .max()
                 .unwrap_or(0);
+            // The estimate counts what the program states: its types,
+            // expressions, shapes, literals, and the arms of its matches.
+            // The names of fields and constructors are not in a program, so
+            // a family that lengthens them is held to the limit on
+            // generation alone.
             assert!(
-                estimate >= a.max(e),
+                estimate >= a.max(e) || family.starts_with(NAMES_NOT_COUNTED),
                 "{family}: the estimate {estimate} is below certificate A ({a}) or E ({e})"
             );
             for (target, certificate) in &entry.renderings {
@@ -212,6 +235,29 @@ fn groups(text: &str) -> Option<Vec<&str>> {
     (depth == 0 && out.join(" ") == text).then_some(out)
 }
 
+/// The names bound by the lambdas, existentials, and patterns of a
+/// composition's text after its parameters: `fun a b =>`, `∃ a,`, and
+/// `⟨a, b⟩ =>`.
+fn generated_binders(text: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut take = |from: &'static str, to: &'static str, split: &'static [char]| {
+        for (at, _) in text.match_indices(from) {
+            let tail = &text[at + from.len()..];
+            if let Some(end) = tail.find(to) {
+                out.extend(
+                    tail[..end]
+                        .split(|c: char| c == ' ' || split.contains(&c))
+                        .filter(|word| !word.is_empty()),
+                );
+            }
+        }
+    };
+    take("fun ", " =>", &[]);
+    take("∃ ", ",", &[]);
+    take("| ⟨", "⟩ =>", &[',']);
+    out
+}
+
 /// The statement of certificate E, in full. The binders are exactly the
 /// root's parameters, then one hypothesis, that the encodings of the
 /// arguments are representable; the conclusion is the one §17.17 states for
@@ -237,7 +283,7 @@ fn assert_statement(
     );
     let rest = &composed.text[at + "theorem root ".len()..];
     let (head, _) = rest
-        .split_once(" : ∃ ro, ")
+        .split_once(" : ∃ __e_ro, ")
         .unwrap_or_else(|| panic!("{name}: `{}`: no conclusion", composed.module));
     let binders = groups(head).unwrap_or_else(|| {
         panic!(
@@ -264,7 +310,7 @@ fn assert_statement(
         })
         .collect();
     let list = hypothesis
-        .strip_prefix("(hrep : LexLeanPreservation.Rust.RepresentableL [")
+        .strip_prefix("(__e_hrep : LexLeanPreservation.Rust.RepresentableL [")
         .and_then(|rest| rest.strip_suffix("])"))
         .unwrap_or_else(|| panic!("{name}: `{}`: hypothesis {hypothesis}", composed.module));
     // The encodings, one for each parameter, each applied to its name.
@@ -300,14 +346,24 @@ fn assert_statement(
     let encoded = encodings.join(", ");
     let conclusion = if entry.entry == 0 {
         format!(
-            "∃ ro, LexLeanPreservation.Rust.RealizesFn {fallible} ({a}.denote{applied}) ro ∧ LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent 0) [{encoded}] ro"
+            "∃ __e_ro, LexLeanPreservation.Rust.RealizesFn {fallible} ({a}.denote{applied}) __e_ro ∧ LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent 0) [{encoded}] __e_ro"
         )
     } else {
         format!(
-            "∃ ro, LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent {}) [{encoded}] ro ∧\n    ({a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.someObs ({a}.denote{applied})) ro) ∧\n    (¬ {a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none) ro)",
+            "∃ __e_ro, LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent {}) [{encoded}] __e_ro ∧\n    ({a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.someObs ({a}.denote{applied})) __e_ro) ∧\n    (¬ {a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none) __e_ro)",
             entry.entry
         )
     };
+    // No name the generator binds can be a name the source spells: every
+    // binder of the composition other than the root's own parameters begins
+    // with two underscores, which no semantic name does.
+    for binder in generated_binders(rest) {
+        assert!(
+            binder == "_" || binder.starts_with("__"),
+            "{name}: `{}` binds `{binder}`, which a parameter of that name would capture",
+            composed.module
+        );
+    }
     let statement = format!("{head} : {conclusion} :=\n");
     assert!(
         rest.starts_with(&statement),
@@ -532,6 +588,23 @@ pub fn run(id: &str) {
             // lowering refuses by their floor on B; a sum of the 500 fields
             // of a record has 250 000, below that floor and above the limit
             // in its derivation, which stops when it passes the limit.
+            // The fixture `certificate-resource-exhausted` is the project of
+            // `certificate-heartbeat-rejected` with a limit its certificates
+            // are estimated to fit and its module is a quarter of or more:
+            // a change of the estimate or of the certificate that took it
+            // out of between is reported here, not as a changed hash.
+            let between = P::negative("certificate-resource-exhausted");
+            let limit = support::limits(&between).max_file_bytes;
+            for entry in preservation::certificates(&between) {
+                let estimate = estimate_of(&entry);
+                let module = entry.certificate.text.len() as u64;
+                assert!(
+                    estimate <= limit && limit <= module.saturating_mul(4),
+                    "certificate-resource-exhausted: {}: its limit {limit} must lie between the estimate {estimate} and four times its module, {}",
+                    entry.root,
+                    module * 4
+                );
+            }
             for fixture in ["certificate-size-limit", "certificate-generation-limit"] {
                 let case =
                     crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
@@ -1082,6 +1155,33 @@ pub fn run(id: &str) {
         }
         // §17.17: certificate B.
         "SP-08" => {
+            // A match has as many arms as its source states, and a limit may
+            // allow thousands: the aligner derives 9000 of them, and writes
+            // and drops the derivation, on the 2 MiB stack of a thread, so
+            // it cannot depend on the depth of the match; and a limit below
+            // the size stops it.
+            let sizes = std::thread::Builder::new()
+                .stack_size(2 << 20)
+                .spawn(|| {
+                    let project = crate::stress::wide_match(9000);
+                    let sizes = preservation::aligned(&project, 64 << 20).expect("B within 64 MiB");
+                    let refused = preservation::aligned(&project, 1 << 20)
+                        .expect_err("B beyond 1 MiB is refused");
+                    (sizes, refused)
+                })
+                .expect("a thread")
+                .join()
+                .expect("a match of 9000 arms does not overflow the stack");
+            assert!(
+                sizes.0.iter().all(|size| *size > 9000 * 100),
+                "{:?}",
+                sizes.0
+            );
+            assert!(
+                sizes.1.starts_with(lexlean::production::lower::LIMIT),
+                "{}",
+                sizes.1
+            );
             use repo_model::correspondence as corr;
             let read = |path: &str| {
                 std::fs::read_to_string(repo_root().join(path).as_std_path()).expect("a source")
@@ -1350,6 +1450,7 @@ pub fn run(id: &str) {
                             root.report,
                             lowered,
                             "LexLeanPreserve.Probe",
+                            u64::MAX,
                         )
                     };
                     generate(&lowered).expect("the lowering's own boundary is accepted");
@@ -1582,6 +1683,19 @@ pub fn run(id: &str) {
         }
         // §17.17: certificate E.
         "SP-09" => {
+            // Roots whose parameters are spelled like the names the
+            // composition binds and like forbidden tokens are valid
+            // programs: their certificates E are stated in full, bind no
+            // name a parameter could capture, and pass the token audit.
+            let names = crate::stress::names();
+            let named = preservation::certificates(&names);
+            let _staged = preservation::staged(&names, &named);
+            for entry in &named {
+                for ((_, composed), (_, rendering)) in entry.composed.iter().zip(&entry.renderings)
+                {
+                    assert_statement("names", entry, rendering, composed);
+                }
+            }
             for (name, project) in certified_projects() {
                 for entry in preservation::certificates(&project) {
                     let targets: Vec<&String> =
@@ -1629,6 +1743,7 @@ pub fn run(id: &str) {
             if !support::lean_backed("SP-09") {
                 return;
             }
+            support::verify_ok(&names);
             let mut at_bounds = 0;
             for (name, report) in reports() {
                 // Each certificate E is applied, in Lean, to arguments a

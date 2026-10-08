@@ -297,8 +297,8 @@ pub const ALLOWED_OPTIONS: [&str; 5] = [
     "linter.unusedSimpArgs",
 ];
 
-/// `text` without its comments and string literals, so prose and data
-/// never read as tokens.
+/// `text` without its comments, string literals, and quoted names, so
+/// prose and data never read as tokens.
 fn code_only(text: &str) -> String {
     let mut out = String::new();
     let mut chars = text.chars().peekable();
@@ -327,6 +327,17 @@ fn code_only(text: &str) -> String {
                         break;
                     }
                 }
+            }
+            // A quoted name is an identifier whatever its spelling, so a
+            // user's name that is also a keyword, which the generator quotes,
+            // is data like a string.
+            '«' => {
+                for skipped in chars.by_ref() {
+                    if skipped == '»' {
+                        break;
+                    }
+                }
+                out.push_str(" «» ");
             }
             '"' => {
                 let mut escaped = false;
@@ -889,4 +900,40 @@ pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
         .last()
         .and_then(|line| line.split_whitespace().nth(1))
         .map(str::to_owned)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use super::audit_tokens;
+
+    fn audited(text: &str) -> Result<(), String> {
+        audit_tokens(text, &BTreeSet::new())
+    }
+
+    /// A user's name spelled like a forbidden keyword is an identifier when
+    /// the generator quotes it, as it does, and the audit still refuses the
+    /// keyword itself, in a command, an attribute, or a binder.
+    #[test]
+    fn a_quoted_name_is_data_and_a_keyword_is_refused() {
+        for word in ["kernel", "prefix", "macro", "syntax", "extern", "notation"] {
+            assert!(
+                audited(&format!("def f («{word}» : Nat) : Nat := «{word}»\n")).is_ok(),
+                "{word} quoted"
+            );
+            assert!(
+                audited(&format!("def f ({word} : Nat) : Nat := {word}\n")).is_err(),
+                "{word} bare"
+            );
+            assert!(
+                audited(&format!("{word} foo := 1\n")).is_err(),
+                "{word} as a command"
+            );
+        }
+        assert!(audited("@[implemented_by f] def g := 1\n").is_err());
+        assert!(audited("theorem t : True := sorry\n").is_err());
+        assert!(audited("def «sorry» := 1\n").is_ok());
+        assert!(audited("def x := Lean.ofReduceBool\n").is_err());
+    }
 }

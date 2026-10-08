@@ -133,6 +133,18 @@ versions, and the entries below say what each tag does and does not claim.
   `certificate-resource-exhausted`): a wrong certificate whose proof makes
   `isDefEq` loop is not a limit. Rejections of certificates A, B, and E name
   the declaration, the root, and the bounded first error.
+- Every certificate is generated under `max_file_bytes` (the proof of each
+  term, each match arm, the encoders, each function, the boundary), so no
+  program makes the generator build more than the limit allows; the early
+  estimate also counts literals and the pairs of arms of a match and is held
+  to more stress families, but is a calibration and not the guarantee. A
+  match of thousands of arms cannot overflow the stack (the aligner derives
+  arms in a loop and a derivation is written and dropped iteratively).
+- A root verifies whatever its parameters are named: the names certificate E
+  binds begin with two underscores, which no semantic name does, and the
+  certificate token audit reads quoted names as data (the generator quotes a
+  name spelled like a forbidden token) while still refusing the tokens
+  themselves.
 - Certificate E is stated, in full, for representable arguments, and Lean
   applies it to arguments of the differential, some at the bounds of `u64`
   and `i64`, so a hypothesis that cannot be met or used fails; the planted
