@@ -146,12 +146,13 @@ fn stress_estimates() -> u64 {
                         &entry.program,
                         &krate,
                         &certificate.module,
-                        size / 4,
+                        size / 2,
                     )
                     .expect_err("a certificate beyond its limit is refused");
                     assert!(
-                        refused.starts_with(lexlean::production::lower::LIMIT),
-                        "{family}: {refused}"
+                        refused.starts_with(lexlean::production::lower::LIMIT)
+                            && refused.contains("the derivation of a function is at least"),
+                        "{family}: certificate B was refused when finished, not while derived: {refused}"
                     );
                 }
             }

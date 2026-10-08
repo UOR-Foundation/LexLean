@@ -915,7 +915,7 @@ repo-conformance --test conformance -- conformance_sp_11`. Expected: a root's
 package prints another outcome than the interpreter.
 
 ```text
-thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2112:5:
+thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2411:5:
 root_3_core run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 root_3_std run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
 ```
@@ -939,9 +939,9 @@ Expected: the certificate generator, which decides which parameters carry
 lowering before any theorem is written.
 
 ```text
-thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:999:40:
+thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:1355:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
-thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:999:40:
+thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:1355:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
 error[LLI9001]: phase preservation: a parameter carries §17.12's invariant but the root has no entry
 ```
@@ -981,27 +981,51 @@ every declaration the library states to be registered in `library.toml`.
 `lexlean verify` of a project whose root instantiates the generic chain
 `g_k<T> = g_{k+1}<(T, T)>` (§17.17 *Limits*) before the limits existed used
 gigabytes and failed with a rejected certificate A (`LLV7013`, a heartbeat
-timeout) at 17 deep. Now the lowering charges its nodes and the certificates
-they imply, before the toolchain is touched:
+timeout) at 17 deep. Now the lowering counts the types and expressions the
+certificates repeat and refuses, before the toolchain is touched, what the
+estimate says cannot fit (70 bytes a type node, 300 an expression or shape
+node, 8 KiB; one and a half times the largest A or E measured on the corpora
+and the stress families):
 
 ```text
-chain 10 deep: verified 1 module; attestation f9602577624e931f0beacc692fac32f0bd001706fa8926b92ebd4eba82c959a7
-chain 11 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 6574992 bytes (16417 program nodes)
-chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 209742592 bytes (524336 program nodes)
+chain 12 deep: verified 1 module in 3 min 9 s; attestation c16e1d4702a91d59ce0a4d299b1d49bad7eb6df9025679d47a87c2767bc457ca
+chain 13 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 4614992 bytes (65575 program nodes)
+chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificates are estimated at 36731922 bytes (524336 program nodes)
 ```
 
-A pinned Lean that dies while checking a certificate is `LLS8002` too. The
-negative fixture `certificate-resource-exhausted` (a lake overlay gives
-certificate A a heartbeat budget of one) exits 4 with nothing published:
+The estimate is 2.2 times certificate A on this family (the first estimate,
+400 bytes a node, was 12 times, and refused the chain from 11 deep though its
+certificates were 0.5 MB). Certificate B cannot be estimated that way: the
+rendering of a field read prints the whole pattern of its record, so B grows
+with the square of the arity, and with the depth of a nesting. Two negative
+fixtures reach it before the toolchain:
 
 ```text
-error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0` (maximum number of heartbeats): the generated module is within max_file_bytes 4194304 but beyond what the machine checks, and the project's types are too large for it
+certificate-size-limit (a record of 800 fields copied field by field): error[LLS8002]: root `Production.Main.copy`: max_file_bytes exceeded in phase lowering: configured 4194304, its field reads print 640000 record entries, which take its certificate B at least 10240000 bytes
+certificate-generation-limit (the sum of the 500 fields of a record): error[LLS8002]: root `Production.Main.total`: max_file_bytes exceeded in phase certificates: certificate B of its rust-core rendering: the derivation of a function is at least 5285359 bytes, beyond the 4194304 bytes of max_file_bytes
 ```
 
-The unit tests of `lexlean::verify` classify a heartbeat message, an
-out-of-memory message, and a kill by signal as limits and a type mismatch as
-not. Rejections of certificates A, B, and E now carry the declaration, the
-root, and the bounded first error, as the fixtures' expected output records:
+At 800 fields the generator used to build a 13 MB certificate B from 2400
+program nodes, 3 times `max_file_bytes`, before the check after generation
+refused it; the estimate gave 0.97 MB.
+
+A pinned Lean that dies, or runs out of memory, while checking a certificate
+is `LLS8002`; one that exhausts a heartbeat or recursion budget is `LLS8002`
+only when the module is at least a quarter of `max_file_bytes`, and is
+Lean's verdict on the certificate otherwise. The two fixtures are one project
+(a function of 100 parameters called by the root, with a lake overlay that
+gives certificate A a heartbeat budget of one): with the default limit the
+module is 56 680 bytes and the outcome is a rejected certificate; with
+`max_file_bytes` at the least its certificates are estimated to fit,
+90 302, the module is more than a quarter of it and the outcome is a limit.
+
+```text
+certificate-heartbeat-rejected: error[LLV7013]: certificate A: `LexLeanPreserve.C8fe….R0` was rejected in `__prog` of root `Production.Main.total`: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (1) has been reached
+certificate-resource-exhausted: error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C8fe….R0` (maximum number of heartbeats): the generated module is 56680 bytes, at least a quarter of max_file_bytes 90302, and is beyond what the machine checks
+```
+
+Rejections of certificates A, B, and E carry the declaration, the root, and
+the bounded first error, as the fixtures' expected output records:
 
 ```text
 error[LLV7015]: certificate B: `LexLeanPreserve.C….R2.RustCore` was rejected in `fun2` of root `Production.Main.quadruple`: error: Application type mismatch: The argument
@@ -1012,22 +1036,67 @@ but is expected to have type
   RustSemantics.itemFallible RustSyntax.Item.natSub = true
 ```
 
-### the certificate estimate is checked against what is generated
+### a wrong certificate is not reported as a limit
 
-Planted: `CERTIFICATE_BYTES_PER_NODE` in
-`crates/lexlean/src/production/lower.rs` lowered from 400 to 50, so that the
-lowering charges a program far less than its certificates cost. Command:
-`cargo test -p repo-conformance --test conformance -- conformance_sp_02`.
-Expected: the coverage example's generated certificate is larger than the
-estimate and the check refuses.
+At `eea3db0` any heartbeat or recursion message ended in `LLS8002`. The
+overflow plant on `Coverage.Prims.fixedMiddle` (a lowering defect: the
+certificate is generated from the source and the program is mutated after)
+makes Lean give up on its heartbeats, and `lexlean verify` would have blamed
+the project's types. Planted: the quarter-of-the-limit test of
+`resource_death` removed (`HEAVY_FRACTION` made so large that every module is
+heavy, which is the old behaviour). Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_02`. Expected: the suite, which asks the
+product's classifier about every rejection it plants in A and E, refuses.
 
 ```text
-Coverage.Boundary.groveRoot: the estimate 36942 is below the 85745 bytes generated
+thread 'conformance_sp_02' (25505) panicked at crates/conformance/src/cases/preservation.rs:70:5:
+Coverage.Prims.fixedMiddle Overflow: a rejected certificate of 4776 bytes is reported as an exhausted resource:
+/tmp/lexlean-plant-mx1DoX/src/LexLeanPreserve/Planted/P7.lean:29:0: error: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
 ```
 
-Removed: the constant was restored; every example's estimate is above what
-is generated, so a program that passes the limit before generation cannot
-exceed it after.
+Removed: the constant was restored. The unit test of `lexlean::verify` for a
+heartbeat verdict on a small and on a heavy module fails under each plant of
+the constant, a fraction of 0 (nothing is heavy) and a huge one (everything
+is):
+
+```text
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2463:73:
+a limit
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2460:9:
+assertion failed: resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none()
+```
+
+### the estimate and the floor are checked against what is generated
+
+Planted: the cost of a type node in `lower.rs` lowered from 70 to 20.
+Command: `cargo test -p repo-conformance --test conformance --
+conformance_sp_02`. Expected: the stress families (the corpora alone stayed
+under the lowered estimate) show a certificate A larger than the estimate.
+
+```text
+generic chain 9: the estimate 104272 is below certificate A (137767) or E (1280)
+```
+
+Planted: the floor under certificate B raised from 16 to 100 bytes a record
+entry. Expected: a certificate B smaller than its floor.
+
+```text
+record copy 25 Production.Main.r (rust-core): the floor 62500 is above certificate B, 24733 bytes
+```
+
+Planted: the check of a derivation against the limit removed from
+`within_budget` in `rust_cert.rs`. The final check of the finished
+certificate still refuses it, at its whole size, and the suite, which asks
+that certificate B stop while it is derived, refuses.
+
+```text
+record copy 100: certificate B was refused when finished, not while derived: limit: the certificate is 245088 bytes, beyond the 122544 bytes of max_file_bytes
+```
+
+Removed: all three were restored. The size a rule records is the length of
+the text it prints (a unit test of `rust_cert`), and `conformance_sp_02`
+requires that no stress family has an estimate below A or E, that the record
+copies have a B beyond the estimate, and that the floor is never above any B.
 
 ### the unreached-overflow list is checked both ways
 
@@ -1057,19 +1126,31 @@ rust-core: the infallible item op_nat_add overflows on [Nat 1, Nat 1844674407370
 Removed: the skip was restored; the machine's `abort` allowance is pinned to
 the fallible items only.
 
-### certificate E quantifies over representable arguments only
+### certificate E is stated in full and cannot be vacuous
 
-Planted: the `hrep` binder of certificate E renamed in
-`crates/lexlean/src/production/certificate.rs`. Command: `cargo test -p
-repo-conformance --test conformance -- conformance_sp_09`. Expected: the
-audit that the composed theorem is stated for representable arguments only
-refuses.
+Planted: `∧ False` added to the `hrep` hypothesis of both statements of
+certificate E in `crates/lexlean/src/production/certificate.rs` (with and
+without an entry). The proof never uses `hrep`, so Lean accepts the module,
+and at `eea3db0` `conformance_sp_09` passed. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_09`. Expected: the suite
+asserts the whole binder list, the one hypothesis, and the conclusion by
+equality, and refuses.
 
 ```text
-production: `LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0.Compose.RustCore` quantifies over every argument
+production: `LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R0.Compose.RustCore`: hypothesis (hrep : LexLeanPreservation.Rust.RepresentableL [(LexLeanTarget.TargetSyntax.Value.u32 left), (LexLeanTarget.TargetSyntax.Value.u32 right)] ∧ False)
 ```
 
-Removed: the binder was restored.
+Removed: the generator was restored. Independently of that equality, Lean
+applies every certificate E to arguments of the differential, one that breaks
+an invariant and ones at `u64::MAX` and the bounds of `i64`, proving the
+hypothesis by unfolding it, and `conformance_sp_09` plants the same
+`RepresentableL .. ∧ False` in every root's E and requires Lean to refuse the
+planted module at a witness, not at `root`. An argument that is not
+representable cannot be witnessed, as the check on a hand-written module
+shows (`root 18446744073709551616 (by simp [RepresentableL, Representable])`
+leaves `⊢ False`). `conformance_sp_09` also requires, as before, that each of
+the other two compositions (the other result shape, another function) is
+refused at `root`.
 
 ### the mutation checks name the declaration
 
@@ -1108,6 +1189,57 @@ LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0: the record binds the publi
 ```
 
 Removed: the digest was restored; the program digest is bound the same way.
+
+### the record names the function each crate is invoked through
+
+Planted: the entry of the root `Coverage.Boundary.groveRoot` in the committed
+record `examples/production-coverage/expected/verify/preserve/preservation.json`
+changed from function 18 to 0 (and its symbol from `f18` to `f0`). Command:
+`cargo test -p repo-conformance --test conformance -- conformance_sp_05`.
+Expected: the record disagrees with certificate E, which states function 18.
+
+```text
+thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:824:25:
+assertion `left == right` failed: production-coverage R0 rust-std: E states the function the record names
+  left: {18}
+ right: {0}
+```
+
+Removed: the record was restored. `conformance_sp_11` reads the entry of each
+root and target from the same committed records and asserts it equals the
+lowering's before it builds the package that exports it.
+
+### the register, the vocabulary, and the exempt roots are held to the text
+
+Planted: a word added to `SP-02`'s statement in `model/ids.toml` only; a
+character changed in `SPEC.md`'s quotation of `RCI`; a root removed from the
+specification's list of roots whose overflow no input reaches. Commands:
+`cargo xtask validate-spec-links` for the first two, `conformance_sp_03` for
+the third.
+
+```text
+gate failed: RP-07: `SP-02`'s statement differs between the table and the register:
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/RustBase.lean` that the file does not state byte for byte: `/-- Rust convergence: some fuel gives the outcome, which is never`
+thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:642:13:
+assertion `left == right` failed: SPEC.md lists exactly the roots the suite exempts
+```
+
+Removed: all three were restored. The specification states that of 49
+certified roots 34 declare an overflow, 15 reach it, and 19 rest on the
+kernel proof alone for the overflow arm, and names the 19; the test computes
+the counts and compares the list.
+
+### a validated parameter that cannot be broken fails the sampling
+
+Planted: `invalidate` in `crates/conformance/src/differential.rs` made to find
+nothing. At `eea3db0` the parameter was left out of the differential without a
+word. Command: `conformance_sp_03`. Expected: the sampling fails.
+
+```text
+Coverage.Boundary.groveRoot: no sampled `g` could be made to break its invariant in 64 tries
+```
+
+Removed: the function was restored.
 
 ### the cost of certification is fixed, not proportional to the roots
 
@@ -1156,7 +1288,7 @@ refuses what it admits.
 ```text
 (1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
 expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
-(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:421:13:
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:424:13:
 /home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
 (2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:666:18:
 a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
