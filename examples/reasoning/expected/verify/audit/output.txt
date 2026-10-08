@@ -663,7 +663,7 @@
 'Reasoning.Planner.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.fits_kept' does not depend on any axioms
 'Reasoning.Planner.held_initial' depends on axioms: [propext, Classical.choice, Quot.sound]
-'Reasoning.Planner.held_preserved' does not depend on any axioms
+'Reasoning.Planner.held_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Reasoning.Planner.measuresCheck' does not depend on any axioms
 'Reasoning.Planner.measures_sound' depends on axioms: [propext]
 'Reasoning.Planner.plan_fit_correct' depends on axioms: [propext, Quot.sound]

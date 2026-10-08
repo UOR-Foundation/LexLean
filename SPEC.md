@@ -3329,13 +3329,24 @@ and the axiom audit read only the elaboration.
    reasoner with no answer, a search whose frontier emptied, and a generator
    that proposed nothing are `unsolved`; an answer the check refused is
    `rejected`. Executable code that reaches a rule's `N.conclusion`, or a
-   reasoner's `E.extract`, other than through the reasoner's own
-   elaboration, is `LLT4012` unless the answer is claimed correct on every
-   state (the first form of rule 7): an answer proved only under an
-   invariant is unconstrained on the states outside it, which direct code
-   may reach, so its `E.extract` stays guarded. It is `LLT4012` whether it is
-   called, applied, folded, iterated, bound to a name, or mentioned in a
-   lambda, a branch, a rule's guard, an observation, or a generator.
+   reasoner's unverified answer, other than through the reasoner's own
+   elaboration, is `LLT4012`, whether it is called, applied, folded,
+   iterated, bound to a name, or mentioned in a lambda, a branch, a rule's
+   guard, an observation, or a generator. The members that read an answer
+   from a state or a search their caller supplies are guarded: `E.extract`
+   of every reasoner that does not claim its answer correct on every state
+   (the first form of rule 7); and, of a reasoner whose claim erased the
+   check but holds only under the invariant or the observation invariant
+   (the second and third forms), also `E.accept`, which is then `E.extract`,
+   `E.conclude` of a forward reasoner, and `E.searchStep` of a search,
+   which accepts the nodes of a frontier it is given. An answer proved only
+   under an invariant is unconstrained on the states outside it, which
+   direct code may supply. The remaining members start from the observation
+   (`E.answer`, `E.start`, `E.verdict`, `E.run`, `E x`) or yield no answer
+   (states, steps, counts, the node successors), so they stay reachable;
+   where the check was erased by the first form every state's answer is
+   proved, and where no claim erased it `E.accept`, `E.conclude`, and
+   `E.searchStep` run the verifier's check, so none of those is guarded.
 10. **The `reasoning_failure` type.** Its four nullary constructors
     `ReasoningFailure.exhausted`, `.unsolved`, `.rejected`, and
     `.invalid_step` are ordinary data, lowered to the pairs of `Prod Bool
@@ -6726,7 +6737,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RS-06` | `reasoning` | A search reasoner explores states breadth-first or depth-first under explicit natural-number fuel and frontier bounds, with optional deduplication over an ordered state type, and accepts only a state whose answer its verifier's check accepts, and a generate-and-verify reasoner checks at most its budget of its generator's candidates in order and answers the first its verifier accepts; a missing or non-natural bound or budget, a literal zero frontier, or deduplication over an unordered state fails with LLT4011, and a search or generation cut short by a bound yields exhausted and never unsolved. | §17.12 |
 | `RS-07` | `reasoning` | A terminates claim requires a ranking, a statement-exact progress theorem on every rule, an initial-invariant claim when progress assumes the invariant, and a statement-exact fuel-bound theorem, and generates a kernel-checked theorem that the forward reasoner saturates within its fuel; a claim without that evidence fails with LLT4011, and a false progress theorem for a rule that undoes another is refused by verification with LLV7002. | §17.12, §22.6 |
 | `RS-08` | `reasoning` | Each logic, rule, verifier, and reasoner generates fixed-template theorems over its elaboration, among them guarded-application soundness, trace replay, derivation, invariant preservation, iteration, frontier, and verification bounds, saturation, and answer soundness, whose proofs apply only the emitted, axiom-free LexLeanReasoning runtime and the declaration's own theorems; every runtime lemma and every template is used by the committed example and accepted by pinned Lean, and a mutated runtime lemma statement is refused by Lean. | §17.12, §22.6 |
-| `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping its guard; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
+| `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping the guard of every member that reads an answer from a state or a search its caller supplies (extract, accept, conclude, and searchStep); a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
 | `RS-10` | `reasoning` | Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified. | §17.12, §21.4 |
 | `RS-11` | `reasoning` | Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds or budget, rule order, ledger counters, and the theorems bounding them, and the example's rust-core and rust-std reasoning roots extract through Lean. | §17.13, §17.14, §22.10 |
 | `RS-12` | `reasoning` | The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage and Grade, the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose) and of Review, which the example states by theorem, and a calculus transcription of each produces the oracle's verdict on every fixture argument as the kernel decides, the explained answer and the six-counter ledger of its run too for Triage, Plan, Screen, and Dose, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps. | §17.14, §17.16 |

@@ -59,7 +59,7 @@ Feature: reasoning
     And a mutated runtime lemma statement is refused by Lean
 
   @RS-09 @build
-  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping its guard; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
+  Scenario: Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping the guard of every member that reads an answer from a state or a search its caller supplies (extract, accept, conclude, and searchStep); a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does.
     Given executable code using rules and reasoners
     When it calls a conclusion or an unverified answer directly, with and without an answer correctness claim, and replays forged and genuine traces
     Then a direct conclusion or unverified answer fails with LLT4012 unless the answer is proved correct

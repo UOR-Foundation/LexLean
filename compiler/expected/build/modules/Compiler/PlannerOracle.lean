@@ -998,7 +998,7 @@ public theorem plan_fit_correct (target : Nat) (s : (Prod (Nat) (Nat))) (v : Nat
   try set_option linter.unusedSimpArgs false in simp only [Fits, Within, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
-@[expose, reducible] public def Held (_target : Nat) (s : (Prod (Nat) (Nat))) : Prop := Fits (s)
+@[expose, reducible] public def Held (target : Nat) (s : (Prod (Nat) (Nat))) : Prop := (Fits (s) /\ (((s).1 = target) -> (target <= 4)))
 
 public theorem held_initial (target : Nat) : Held (target) ((0, 0)) := by
   intros

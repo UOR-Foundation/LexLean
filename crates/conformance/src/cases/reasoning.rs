@@ -1399,6 +1399,43 @@ fn rs_09() {
                 "extract-bypass-invariant",
                 "executable `forged` reaches the unverified answer of a reasoner `Clinic.extract`",
             ),
+            // So do the members that read an answer from a state or a
+            // search the caller supplies once the check is erased: `accept`
+            // and `conclude` of a forward reasoner, `accept` and
+            // `searchStep` of a search, by a call, a function value, or an
+            // alias, under either conditional form.
+            (
+                "accept-bypass-invariant",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.accept`",
+            ),
+            (
+                "accept-bypass-ref",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.accept`",
+            ),
+            (
+                "accept-bypass-alias",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.accept`",
+            ),
+            (
+                "accept-bypass-observation",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.accept`",
+            ),
+            (
+                "conclude-bypass-invariant",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.conclude`",
+            ),
+            (
+                "conclude-bypass-observation",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.conclude`",
+            ),
+            (
+                "search-accept-bypass-invariant",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.accept`",
+            ),
+            (
+                "search-step-bypass-invariant",
+                "executable `forged` reaches the unverified answer of a reasoner `Clinic.searchStep`",
+            ),
         ],
     );
     negatives(
@@ -1479,6 +1516,74 @@ fn rs_09() {
         "LLT4012",
         "executable `forgedGrade` reaches the unverified answer of a reasoner `Grade.extract`",
     );
+    // Every member that reads an answer from a state or a search its caller
+    // supplies is behind the same boundary where the check was erased by a
+    // conditional proof (`Grade`, `PlanFit`, `PlanFitR`), and in front of it
+    // where the answer is correct on every state (`Cap`, `PlanFitU`) or the
+    // check runs (`Plan`).
+    let named = |module: &str, name: &str| json!({"kind": "named", "member": {"module": module, "name": name}, "arguments": []});
+    let vitals = named("Clinic", "Vitals");
+    let jugs = json!({"kind": "product", "left": nat, "right": nat});
+    let failing = json!({"kind": "result", "ok": nat, "error": {"kind": "reasoning_failure"}});
+    let reading = |reasoner: &str, member: &str, module: Option<&str>| {
+        let (parameters, result) = match (reasoner, member) {
+            ("Grade" | "Cap", "accept") => {
+                (vec![("v", &vitals), ("c", &chart)], option_nat.clone())
+            }
+            ("Grade" | "Cap", _) => (vec![("v", &vitals), ("c", &chart)], failing.clone()),
+            ("Plan", "accept") => (
+                vec![("v", &nat), ("c", &jugs)],
+                json!({"kind": "option", "value": jugs}),
+            ),
+            (_, "accept") => (vec![("v", &nat), ("c", &jugs)], option_nat.clone()),
+            _ => {
+                let search = named("Planner", &format!("{reasoner}.Search"));
+                let result = json!({"kind": "option", "value": search});
+                return json!({"kind": "definition", "name": "forgedRead", "executable": true,
+                           "parameters": [{"name": "v", "type": nat}, {"name": "c", "type": search}],
+                           "result": result,
+                           "body": {"kind": "call",
+                                    "function": {"module": module, "name": format!("{reasoner}.{member}")},
+                                    "arguments": [{"kind": "var", "name": "v"}, {"kind": "var", "name": "c"}]}});
+            }
+        };
+        let function = match module {
+            Some(module) => json!({"module": module, "name": format!("{reasoner}.{member}")}),
+            None => json!({"name": format!("{reasoner}.{member}")}),
+        };
+        json!({"kind": "definition", "name": "forgedRead", "executable": true,
+                   "parameters": parameters.iter().map(|(n, t)| json!({"name": n, "type": t})).collect::<Vec<_>>(),
+                   "result": result,
+                   "body": {"kind": "call", "function": function,
+                            "arguments": parameters.iter().map(|(n, _)| json!({"kind": "var", "name": n})).collect::<Vec<_>>()}})
+    };
+    for (reasoner, member, module) in [
+        ("Grade", "accept", None),
+        ("Grade", "conclude", None),
+        ("PlanFit", "accept", Some("Planner")),
+        ("PlanFit", "searchStep", Some("Planner")),
+        ("PlanFitR", "accept", Some("Planner")),
+        ("PlanFitR", "searchStep", Some("Planner")),
+    ] {
+        refused(
+            &extended("Main", vec![reading(reasoner, member, module)]),
+            "LLT4012",
+            &format!(
+                "executable `forgedRead` reaches the unverified answer of a reasoner `{}{reasoner}.{member}`",
+                module.map(|module| format!("{module}::")).unwrap_or_default()
+            ),
+        );
+    }
+    for (reasoner, member, module) in [
+        ("Cap", "accept", None),
+        ("Cap", "conclude", None),
+        ("PlanFitU", "accept", Some("Planner")),
+        ("PlanFitU", "searchStep", Some("Planner")),
+        ("Plan", "accept", Some("Planner")),
+        ("Plan", "searchStep", Some("Planner")),
+    ] {
+        extended("Main", vec![reading(reasoner, member, module)]).check_ok();
+    }
     // The proved answer's check is erased; every other reasoner's runs.
     let project = P::copy_example(EXAMPLE);
     let snapshot = snapshot(&project);
@@ -1737,6 +1842,186 @@ fn nested_type(fields: usize, base: &Json) -> Json {
     )
 }
 
+/// A type of `leaves` leaves, balanced so that a type of any size stays
+/// within the JSON nesting limit the compiler reads under.
+fn balanced(leaves: usize, leaf: &Json) -> Json {
+    if leaves <= 1 {
+        return leaf.clone();
+    }
+    json!({"kind": "product", "left": balanced(leaves / 2, leaf),
+        "right": balanced(leaves - leaves / 2, leaf)})
+}
+
+/// Every reference to a declaration of `ours` (but not of `rules`) in `value`
+/// gains `extra` among its type arguments, and every name of `ours` is
+/// renamed with a trailing `Q`, so a copy of a module stands beside it.
+fn widen(value: &mut Json, ours: &BTreeSet<String>, rules: &BTreeSet<String>, extra: &Json) {
+    match value {
+        Json::Object(map) => {
+            let widened = |name: Option<String>| {
+                name.is_some_and(|name| ours.contains(&name) && !rules.contains(&name))
+            };
+            let named = |map: &serde_json::Map<String, Json>, key: &str| {
+                map.get(key)
+                    .and_then(|reference| reference.get("name"))
+                    .and_then(Json::as_str)
+                    .map(str::to_owned)
+            };
+            let gain = |map: &mut serde_json::Map<String, Json>| {
+                let arguments = map
+                    .entry("type_arguments")
+                    .or_insert_with(|| json!([]))
+                    .as_array_mut()
+                    .expect("type arguments");
+                arguments.push(extra.clone());
+            };
+            if map.get("kind") == Some(&json!("call")) && widened(named(map, "function")) {
+                gain(map);
+            }
+            if map.contains_key("type_arguments") && widened(named(map, "member")) {
+                gain(map);
+            }
+            map.values_mut()
+                .for_each(|value| widen(value, ours, rules, extra));
+            let renamed = map
+                .get("name")
+                .and_then(Json::as_str)
+                .filter(|name| {
+                    ours.contains(*name)
+                        && map.get("kind") != Some(&json!("var"))
+                        && !map.contains_key("type")
+                })
+                .map(|name| format!("{name}Q"));
+            if let Some(name) = renamed {
+                map.insert("name".to_owned(), json!(name));
+            }
+        }
+        Json::Array(items) => items
+            .iter_mut()
+            .for_each(|value| widen(value, ours, rules, extra)),
+        _ => {}
+    }
+}
+
+/// A copy of the example's `Budget` module in which every declaration but the
+/// reasoners gains a type parameter nothing mentions, and its rules, their
+/// theorems, and the reasoner use everything else at a type of `size` leaves:
+/// each rule's use of its logic copies that type into the rule's soundness
+/// and progress statements, so the rule's charge has to cover it.
+fn wide_rule_logic(size: usize) -> P {
+    let project = P::copy_example(EXAMPLE);
+    let mut data = module_data(&project, "Budget");
+    let nat = json!({"kind": "nat"});
+    let big = balanced(size, &nat);
+    let phantom = json!({"kind": "parameter", "name": "Q0"});
+    let rules: BTreeSet<String> = [
+        "Tick",
+        "Burn",
+        "tick_sound",
+        "tick_progress",
+        "burn_sound",
+        "burn_progress",
+    ]
+    .map(str::to_owned)
+    .into();
+    let originals: Vec<Json> = declarations_mut(&mut data)
+        .iter()
+        .filter(|declaration| declaration["name"] != "Refund")
+        .cloned()
+        .collect();
+    let ours: BTreeSet<String> = originals
+        .iter()
+        .filter(|declaration| declaration["name"] != "Spend")
+        .map(|declaration| declaration["name"].as_str().expect("a name").to_owned())
+        .collect();
+    let mut copies = Vec::new();
+    for mut declaration in originals {
+        let name = declaration["name"].as_str().expect("a name").to_owned();
+        let concrete = declaration["kind"] == "reasoner" || rules.contains(&name);
+        widen(
+            &mut declaration,
+            &ours,
+            &rules,
+            if concrete { &big } else { &phantom },
+        );
+        if declaration["kind"] == "reasoner" {
+            declaration["name"] = json!(format!("{name}Q"));
+            declaration["claims"] = json!([]);
+        } else if !concrete {
+            let mut parameters = declaration["type_parameters"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default();
+            parameters.push(json!("Q0"));
+            declaration["type_parameters"] = Json::Array(parameters);
+        }
+        copies.push(declaration);
+    }
+    declarations_mut(&mut data).extend(copies);
+    write_module_data(&project, "Budget", &data);
+    project
+}
+
+/// A copy of the example's `Screening` module whose generate-and-verify
+/// reasoner `Dose` has a verifier with a type parameter nothing mentions,
+/// used at a type of `size` leaves: the reasoner's own use of its verifier
+/// copies that type into its declarations, so its charge has to cover it.
+fn wide_generator(size: usize) -> P {
+    let project = P::copy_example(EXAMPLE);
+    let mut data = module_data(&project, "Screening");
+    let nat = json!({"kind": "nat"});
+    let big = balanced(size, &nat);
+    let names = ["Safe", "safeCheck", "safe_sound"];
+    let original = |data: &mut Json, name: &str| declaration_mut(data, name).clone();
+    fn requalify(value: &mut Json, names: &[&str]) {
+        match value {
+            Json::Object(map) => {
+                if let Some(name) = map
+                    .get("function")
+                    .and_then(|function| function["name"].as_str())
+                    .filter(|name| names.contains(name))
+                    .map(str::to_owned)
+                {
+                    map["function"]["name"] = json!(format!("{name}Q"));
+                    map.insert(
+                        "type_arguments".to_owned(),
+                        json!([{"kind": "parameter", "name": "Q0"}]),
+                    );
+                }
+                if let Some(Json::Array(definitions)) = map.get_mut("definitions") {
+                    for definition in definitions {
+                        let name = definition["name"].as_str().expect("a name").to_owned();
+                        definition["name"] = json!(format!("{name}Q"));
+                    }
+                }
+                map.values_mut().for_each(|value| requalify(value, names));
+            }
+            Json::Array(items) => items.iter_mut().for_each(|value| requalify(value, names)),
+            _ => {}
+        }
+    }
+    let mut added = Vec::new();
+    for name in ["Safe", "safeCheck", "safe_sound", "SafeDose"] {
+        let mut copy = original(&mut data, name);
+        copy["name"] = json!(format!("{name}Q"));
+        copy["type_parameters"] = json!(["Q0"]);
+        requalify(&mut copy, &names);
+        if name == "SafeDose" {
+            copy["specification"] = json!({"name": "SafeQ"});
+            copy["check"] = json!({"name": "safeCheckQ"});
+            copy["sound"] = json!({"name": "safe_soundQ"});
+        }
+        added.push(copy);
+    }
+    let mut dose = original(&mut data, "Dose");
+    dose["name"] = json!("DoseQ");
+    dose["verifier"] = json!({"member": {"name": "SafeDoseQ"}, "type_arguments": [big]});
+    added.push(dose);
+    declarations_mut(&mut data).extend(added);
+    write_module_data(&project, "Screening", &data);
+    project
+}
+
 /// A copy of the example whose `Budget` module states a reasoner over
 /// `copies` rules, each used at a type of `size` nested products: every use
 /// copies its type arguments into each declaration that mentions the rule,
@@ -1756,15 +2041,6 @@ fn wide_type_arguments(copies: usize, size: usize, search: bool, phantom: bool) 
             .clone()
     };
     let nat = json!({"kind": "nat"});
-    // Balanced, so that a type of any size stays within the JSON nesting
-    // limit the compiler reads under.
-    fn balanced(leaves: usize, leaf: &Json) -> Json {
-        if leaves <= 1 {
-            return leaf.clone();
-        }
-        json!({"kind": "product", "left": balanced(leaves / 2, leaf),
-            "right": balanced(leaves - leaves / 2, leaf)})
-    }
     // With `phantom` the rules, the logic, and the state stay small and only
     // the phantom argument is large, so nothing but the verifier's own type
     // arguments carries the size.
@@ -2065,6 +2341,11 @@ fn rs_10() {
     }
     // A verifier's own type arguments, which no rule mentions, are charged.
     wide_type_arguments(2, 1200, false, true).check_ok();
+    // A rule over a logic used at a large type, and a generate-and-verify
+    // reasoner whose verifier has a parameter nothing mentions at a large
+    // type, are charged for the copies of those type arguments too.
+    wide_rule_logic(1200).check_ok();
+    wide_generator(1200).check_ok();
     // An elaboration is charged, not only its source.
     let with = P::negative("reasoning-forged-trace");
     let mut data = module_data(&with, "Main");

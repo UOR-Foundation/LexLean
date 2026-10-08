@@ -513,8 +513,10 @@ versions, and the entries below say what each tag does and does not claim.
     so `Spec` may depend on the observation: `Grade` answers a chart's level,
     at most 3 and 3 only for a hypotensive patient). The check of a reasoner
     that claims any form is erased in its own verdict, but only an answer
-    correct on every state may be read from `E.extract` by executable code
-    (`LLT4012` otherwise).
+    correct on every state may be read by executable code without its
+    verifier: under an invariant, `E.extract`, `E.accept`, and `E.conclude`
+    (forward) or `E.searchStep` (search) are `LLT4012`, because each reads
+    an answer from a state or search the caller supplies.
   - A declaration named like, or below, any namespace the generated Lean
     refers to (`LexLeanReasoning.Star`, but also `Nat.x` or `List.y`) is
     refused in language 1.2 (`LLT4001`): the reservation is not limited to

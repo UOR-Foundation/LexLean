@@ -2987,14 +2987,32 @@ fn check_reasoner(
     } else {
         elaborate_forward(&engine, &mut lowering);
     }
-    // Only an answer correct on every state, whatever it extracts from, may
-    // be used without its verifier: one proved under an invariant is
-    // unconstrained outside it.
-    if engine.answer_correct.is_none() || engine.answer_premise.is_some() {
-        env.reasoning.guarded.insert(
-            engine.own_name("extract"),
-            "the unverified answer of a reasoner",
-        );
+    // Only an answer correct on every state may be used without its
+    // verifier: one proved under an invariant is unconstrained on the states
+    // outside it, which direct code may supply. Every member that takes a
+    // state or a search from its caller and returns an answer read from it
+    // is such a use: the extraction itself, and where an answer claim erased
+    // the check, the acceptance that is now the extraction (`accept`), the
+    // forward conclusion of a state (`conclude`), and the search step over a
+    // frontier (`searchStep`). Every other member starts from the observation
+    // (`answer`, `verdict`, `run`, the reasoner itself) or yields no answer.
+    let erased_conditionally = engine.answer_correct.is_some() && engine.answer_premise.is_some();
+    let mut unverified = vec!["extract"];
+    if erased_conditionally {
+        unverified.push("accept");
+        unverified.push(if engine.frontier.is_some() {
+            "searchStep"
+        } else {
+            "conclude"
+        });
+    }
+    if engine.answer_correct.is_none() || erased_conditionally {
+        for member in unverified {
+            env.reasoning.guarded.insert(
+                engine.own_name(member),
+                "the unverified answer of a reasoner",
+            );
+        }
     }
     generalize(name, type_parameters, &mut lowering);
     within(&format!("reasoner `{name}`"), bound, &lowering)?;
@@ -3991,14 +4009,15 @@ fn elaborate_common(engine: &Engine<'_>, lowering: &mut Lowering) {
             ],
         )),
     ));
-    if let (Some(invariant_ref), Some(holds_start)) =
-        (at.invariant_ref(), at.invariant(start.clone()))
-    {
+    if let (Some(invariant_ref), Some(holds_start), Some(conclusion)) = (
+        at.invariant_ref(),
+        at.invariant(start.clone()),
+        at.invariant(var("__s")),
+    ) {
         let followed = eq(
             engine.call_own("follow", vec![var(x), var("__trace")]),
             ok_of(&s, var("__s")),
         );
-        let conclusion = at.invariant(var("__s")).unwrap_or_else(|| boolean(true));
         let preserved = |initial: ProofTerm| {
             lemma(
                 Lemma::StarPreserves,
@@ -4938,6 +4957,8 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
         // logic's invariant is: kept by every step, so true of the final
         // state of every run.
         let own_arguments = parameter_types(engine.type_parameters);
+        let related =
+            |state: SemanticTerm| call(&claim.predicate, &own_arguments, vec![var(x), state]);
         lowering.theorems.push(theorem(
             &engine.own_name("next_preserves_relation"),
             &[],
@@ -4948,10 +4969,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
             ],
             term(implies(
                 next_some.clone(),
-                implies(
-                    engine.related(var("__s")).unwrap_or_else(|| boolean(true)),
-                    engine.related(var("__t")).unwrap_or_else(|| boolean(true)),
-                ),
+                implies(related(var("__s")), related(var("__t"))),
             )),
             by_term(assume(
                 &["llE", "llH"],
@@ -4985,11 +5003,7 @@ fn elaborate_forward(engine: &Engine<'_>, lowering: &mut Lowering) {
                         Lemma::IterateUntilInvariant,
                         vec![
                             given(function_ref(&engine.own("next"), &[])),
-                            predicate(
-                                "__s",
-                                &s,
-                                term(engine.related(var("__s")).unwrap_or_else(|| boolean(true))),
-                            ),
+                            predicate("__s", &s, term(related(var("__s")))),
                             cite(
                                 &engine.own("next_preserves_relation"),
                                 &[],

@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 231] = [
+            let prescribed: [(&str, &str); 239] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -413,6 +413,14 @@ pub(crate) fn run(id: &str) {
                 ("reasoning-observation-preserved-inexact", "LLT4010"),
                 ("reasoning-observation-unsorted", "LLT4010"),
                 ("reasoning-extract-bypass-invariant", "LLT4012"),
+                ("reasoning-accept-bypass-invariant", "LLT4012"),
+                ("reasoning-accept-bypass-ref", "LLT4012"),
+                ("reasoning-accept-bypass-alias", "LLT4012"),
+                ("reasoning-accept-bypass-observation", "LLT4012"),
+                ("reasoning-conclude-bypass-invariant", "LLT4012"),
+                ("reasoning-conclude-bypass-observation", "LLT4012"),
+                ("reasoning-search-accept-bypass-invariant", "LLT4012"),
+                ("reasoning-search-step-bypass-invariant", "LLT4012"),
                 ("reasoning-false-observation-answer-correct", "LLV7002"),
             ];
             let negative_root = root.join("tests/negative");

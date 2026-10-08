@@ -242,7 +242,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(target : Nat) (s : (Prod (Nat) (Nat)))}.\par
 \noindent Type: \texttt{Prop}.\par
-\noindent Definition: \texttt{Fits (s)}.\par
+\noindent Definition: \texttt{(Fits (s) /\textbackslash{} (((s).1 = target) -> (target <= 4)))}.\par
 \noindent Axiom policy: \texttt{none}.\par
 \subsection*{\texttt{held\_initial}}
 \noindent Kind: \texttt{theorem}.\par
@@ -253,7 +253,7 @@
 \noindent Kind: \texttt{theorem}.\par
 \noindent Parameters: \texttt{(target : Nat) (s : (Prod (Nat) (Nat))) (t : (Prod (Nat) (Nat)))}.\par
 \noindent Statement: \texttt{(Held (target) (s) -> (Moves (s) (t) -> Held (target) (t)))}.\par
-\noindent Axiom policy: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
 \subsection*{\texttt{plan\_held\_correct}}
 \noindent Kind: \texttt{theorem}.\par
 \noindent Parameters: \texttt{(target : Nat) (s : (Prod (Nat) (Nat))) (v : Nat)}.\par

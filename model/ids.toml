@@ -1800,7 +1800,7 @@ statement = "Each logic, rule, verifier, and reasoner generates fixed-template t
 id = "RS-09"
 level = "build"
 suite = "reasoning"
-statement = "Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping its guard; a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does."
+statement = "Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping the guard of every member that reads an answer from a state or a search its caller supplies (extract, accept, conclude, and searchStep); a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does."
 
 [[id]]
 id = "RS-10"

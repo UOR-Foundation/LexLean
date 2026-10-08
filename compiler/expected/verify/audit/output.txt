@@ -731,7 +731,7 @@
 'Compiler.PlannerOracle.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.fits_kept' does not depend on any axioms
 'Compiler.PlannerOracle.held_initial' depends on axioms: [propext, Classical.choice, Quot.sound]
-'Compiler.PlannerOracle.held_preserved' does not depend on any axioms
+'Compiler.PlannerOracle.held_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Compiler.PlannerOracle.measuresCheck' does not depend on any axioms
 'Compiler.PlannerOracle.measures_sound' depends on axioms: [propext]
 'Compiler.PlannerOracle.plan_fit_correct' depends on axioms: [propext, Quot.sound]

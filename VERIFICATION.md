@@ -2534,7 +2534,7 @@ Removed: the refusal was restored; `conformance_rs_09` passes.
 Planted: `E.accept` always ran the verifier's check (`match &None::<MemberRef>` for the claim in `elaborate_common`), so an `answer_correct` claim erased nothing. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: a check proved unnecessary still runs, so the claim states a runtime effect it does not have.
 
 ```text
-thread 'conformance_rs_09' (16575) panicked at crates/conformance/src/cases/reasoning.rs:1486:5:
+thread 'conformance_rs_09' (16575) panicked at crates/conformance/src/cases/reasoning.rs:1591:5:
 assertion `left == right` failed
   left: ["gradedCheck", "Grade.extract"]
  right: ["Grade.extract"]
@@ -2572,7 +2572,7 @@ Removed: the call was restored; `conformance_rs_04` passes.
 Planted: the eligibility report omitted every root's `reasoning` rows (`if false && !root.reasoning.is_empty()` in `production/mod.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_11`. Expected: a production root whose search resources are unreported.
 
 ```text
-thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:2175:32:
+thread 'conformance_rs_11' (8812) panicked at crates/conformance/src/cases/reasoning.rs:2456:32:
 Reasoning.Main.triageLevel records its reasoning
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.73s
 ```
@@ -2584,7 +2584,7 @@ Removed: the rows were restored; `conformance_rs_11` passes.
 Planted: the traced transcription of `Triage` counted no guard evaluation per step (`nat(0)` for the step's attempts in `calculus/reasoning.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_12`. Expected: a transcription whose account charges firings it never searched for.
 
 ```text
-thread 'conformance_rs_12' (9480) panicked at crates/conformance/src/cases/reasoning.rs:2814:5:
+thread 'conformance_rs_12' (9480) panicked at crates/conformance/src/cases/reasoning.rs:3095:5:
 every firing follows a guard evaluation
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 0.17s
 ```
@@ -2785,6 +2785,21 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out
 
 Removed: the guard was restored; `conformance_rs_09` passes.
 
+### reasoning members that read an answer from the caller's state stay guarded
+
+Planted, one at a time in `reasoning.rs`: only `E.extract` guarded where an answer is proved correct under an invariant (the acceptance `E.accept`, which is then the extraction, left reachable: `if erased_conditionally {` for `if false {`), and then the search step `E.searchStep` and the forward `E.conclude` left reachable (the member pushed in their place replaced by one nothing names). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_09`. Expected: `tests/negative/reasoning-accept-bypass-invariant`, `-accept-bypass-ref`, `-accept-bypass-alias`, `-accept-bypass-observation`, `-search-accept-bypass-invariant` (the first plant), and `reasoning-conclude-bypass-invariant`, `-conclude-bypass-observation`, `-search-step-bypass-invariant` (the second), each an executable definition reading an answer from a state or search its caller supplies, link, and so do the `forgedRead` definitions over the example's `Grade`, `PlanFit`, and `PlanFitR`. Each unplanted fixture is refused with `LLT4012`; `Cap`, `PlanFitU`, and `Plan` (whose check runs) stay reachable, which the case also requires.
+
+```text
+BG (accept left reachable): thread 'conformance_rs_09' (5900) panicked at crates/conformance/src/support.rs:462:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 1.27s
+BS (searchStep and conclude left reachable): thread 'conformance_rs_09' (6203) panicked at crates/conformance/src/support.rs:462:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out; finished in 1.52s
+```
+
+Removed: the members were guarded again; `conformance_rs_09` passes. Before this record the example's `Grade.accept` and `Grade.conclude` linked from executable code and returned the chart's level, 99 for a chart no run reaches, with the check erased.
+
 ### reasoning observation invariants are held to their exact obligations
 
 Planted: the initial obligation of an `observation_invariant` claim (`Rl x (observe x)`) was no longer required to match the theorem the claim names. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_07`. Expected: `tests/negative/reasoning-observation-initial-inexact` is refused with `LLT4010`; with the plant it links. The preservation obligation, the predicate's signature, and the claim order have their own negatives in the same case (`reasoning-observation-preserved-inexact`, `-invariant-signature`, `-unsorted`), and `reasoning-false-observation-answer-correct` states the conditional answer falsely and is refused by pinned Lean (`LLV7002`).
@@ -2808,6 +2823,17 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 303 filtered out
 ```
 
 An earlier form of the shape, whose rules shared the large type, passed with the plant (the rules' own charge covered it) and so could not catch it; the shape now keeps rules, logic, and state small. Removed: the terms were restored; `conformance_rs_10` passes.
+
+### reasoning elaboration charge covers a rule's logic uses and a generator's verifier
+
+Planted, one at a time in `reasoning.rs`: the type arguments of an inference rule's own use of its logic no longer counted in the rule's charge (`.chain(&at.type_arguments)` removed from `rule_types`), and the type arguments of a generate-and-verify reasoner's verifier no longer counted in its charge (the term `16u64.saturating_mul(verifier_at.type_arguments ...)` multiplied by zero). Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_10`. Expected: a copy of `Budget` whose declarations gain a parameter nothing mentions and whose rules and reasoner use the rest at a type of 1200 leaves elaborates a rule beyond its charge, and a copy of `Screening` whose `Dose` has a verifier over such a parameter at 1200 leaves elaborates the reasoner beyond its charge; both link unplanted.
+
+```text
+PE: check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: internal: inference rule `TickQ` elaborated to 14531 nodes, beyond the 604 it was charged", ...
+PF: check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: internal: reasoner `DoseQ` elaborated to 17185 nodes, beyond the 2740 it was charged", ...
+```
+
+Removed: the terms were restored and the planted build was cleaned (`cargo clean -p lexlean`); `conformance_rs_10` passes.
 
 ### reasoning transcriptions keep the order a search expands and tries in
 
@@ -2834,7 +2860,7 @@ The transcript was captured by printing the message the case requires; the print
 Planted, one at a time, then `cargo test -p repo-conformance --test conformance -- conformance_rs_12` (and `conformance_rs_13`): the `Spend` transcription's entry replaced by the constant it answers (same value, no search); then, inside the Lean-backed half of `conformance_rs_12`, a `Plan` transcription whose visited-state check is removed (it never saturates, so it answers exhausted where the oracle is unsolved) and a `Dose` transcription that checks four candidates for a budget of three (it rejects where the oracle exhausts), each stated against its oracle in a copy of the compiler project; and in `gnaf/reasoning.rs` the goal-directed plan answering level 2 for two findings without an infection. Expected: the steps check refuses the first (a transcription charges at least the ledger's guard evaluations and firings), pinned Lean refuses the next two, and the plan fixture's levels refuse the last.
 
 ```text
-FL: thread 'conformance_rs_12' (3262) panicked at crates/conformance/src/cases/reasoning.rs:2737:13:
+FL: thread 'conformance_rs_12' (3262) panicked at crates/conformance/src/cases/reasoning.rs:3018:13:
 reasoning-spend-2 charges its search: 2 steps for 12 guard evaluations and firings
 Lean (Plan without the visited check): Lean rejected `Compiler.ReasoningFixtures` (error): Tactic `rfl` failed: The left-hand side
   reasoningPlan5Run
@@ -2852,7 +2878,7 @@ is not definitionally equal to the right-hand side
     | Except.ok found => (TargetSyntax.Value.nat found).ok
     | Except.error failure => (encodeFailure failure).error)
     401
-GN: thread 'conformance_rs_13' (3483) panicked at crates/conformance/src/cases/reasoning.rs:3002:9:
+GN: thread 'conformance_rs_13' (3483) panicked at crates/conformance/src/cases/reasoning.rs:3283:9:
 assertion `left == right` failed: reasoning-gnaf-goal computes Triage's levels
   left: Pair { left: Nat { value: "3" }, right: Pair { left: Nat { value: "0" }, right: Pair { left: Nat { value: "2" }, right: Pair { left: Nat { value: "2" }, right: Nat { value: "0" } } } } }
  right: Pair { left: Nat { value: "3" }, right: Pair { left: Nat { value: "0" }, right: Pair { left: Nat { value: "2" }, right: Pair { left: Nat { value: "1" }, right: Nat { value: "0" } } } } }
