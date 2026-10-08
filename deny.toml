@@ -22,15 +22,7 @@ version = 2
 # A dependency arriving under a licence not below fails this gate. That is the
 # point: it is a decision a reviewer makes at the time, not one a pre-granted
 # allowance made for them in advance.
-#
-# `BSD-3-Clause` was added when the Ed25519 authorship chain of §33.3 landed,
-# not in advance of it. `ed25519-dalek` arrives with `curve25519-dalek` and
-# `subtle`, all three under BSD-3-Clause. It is permissive and OSI-approved, and
-# its one obligation the others lack --- retaining the notice in binary
-# distributions --- is already met by this repository's own `LICENSE-MIT` and
-# `LICENSE-APACHE`. No copyleft and no source-disclosure obligation entered the
-# graph to obtain it.
-allow = ["Apache-2.0", "MIT", "Unicode-3.0", "BSD-3-Clause"]
+allow = ["Apache-2.0", "MIT", "Unicode-3.0"]
 confidence-threshold = 0.93
 
 [bans]

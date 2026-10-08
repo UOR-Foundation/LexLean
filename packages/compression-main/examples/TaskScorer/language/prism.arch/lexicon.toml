@@ -1,5 +1,0 @@
-spec = "lexlean/lexicon/1"
-package = "prism.arch"
-version = "1.0.0"
-language = "1.1"
-imports = ["lexlean.core@1.1.0", "lexlean.std.bool@1.1.0", "lexlean.std.nat@1.1.0"]

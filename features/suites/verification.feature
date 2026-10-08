@@ -139,12 +139,3 @@ Feature: verification
     Then every native source module has exactly one generated Lean module
     And public imports stay within Init and the generated graph and the only backend-support import is Lean
     And no independently authored Atlas Lean source remains
-
-  @VR-20 @build
-  Scenario: The verification resource profile is operational: the width the host selects bounds how many proof processes overlap and reaches no identity, and a project verified at the conservative width and at a wider profile publishes byte-identical evidence under one attestation ID.
-    Given the verification resource profile of an unset, spaced, zero, negative, non-numeric, and over-ceiling width variable
-    Then every unusable value selects the conservative width of 1 and an over-ceiling value is clamped to the ceiling of 64
-    And the committed multi-module semantic-1.1 project verified against the pinned Lean 4.32.1 toolchain
-    When it is verified once at the conservative width and once at a wider profile
-    Then both runs publish the same attestation ID, the same process records byte for byte, and the same observed axiom sets
-    And the wider profile batched more than one proof process at a time

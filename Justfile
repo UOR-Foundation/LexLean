@@ -26,13 +26,8 @@ spec-links:
 lint:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-# The ordinary test phase: the shipped library's own unit, property,
-# integration and CLI tests. `repo-conformance` is excluded here and run
-# exactly once by `bdd` below, which owns the complete conformance suite.
-# Running it in both phases executed all 290 conformance tests — and every
-# Lean process behind them — twice per `vv`.
 test:
-    cargo test --workspace --all-features --exclude repo-conformance
+    cargo test --workspace --all-features
 
 # A feature only its author has built is a feature that does not work: every
 # optional feature compiles, with its tests.
@@ -40,9 +35,7 @@ features:
     cargo check --workspace --all-features --all-targets
 
 # R3: every capability begins as a Gherkin scenario, and every scenario has a
-# test named `conformance_<id>` (§27.8). The sole owner of the complete
-# `repo-conformance` suite: `test` above excludes it precisely so that each
-# conformance test, and each Lean process it runs, executes once per `vv`.
+# test named `conformance_<id>` (§27.8).
 bdd:
     cargo test -p repo-conformance
 

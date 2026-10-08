@@ -23,7 +23,6 @@
 pub mod axiom;
 pub mod child;
 pub mod leanchecker;
-pub mod profile;
 pub mod source_audit;
 pub mod toolchain;
 pub mod workspace;
@@ -46,7 +45,6 @@ use crate::lock::Lock;
 use crate::project::Project;
 use crate::source::coverage::Origin;
 use crate::verify::child::{run as run_child, ChildHome, ChildRecord, ChildSpec, Normalizer};
-use crate::verify::profile::ResourceProfile;
 use crate::verify::toolchain::Toolchain;
 
 /// The outcome of a successful verification.
@@ -711,15 +709,16 @@ fn require_silent(
     Ok(())
 }
 
-/// Run one deterministic batch of independent verification processes.
-///
-/// Results are returned in `items` order, never in completion order. That is
-/// the property §22.11 rests on: a wider profile lets more processes finish
-/// first, and the canonical record order, the `audit/output.txt` byte
-/// sequence, and therefore the attestation ID must not notice.
-///
-/// All workers are joined before an error is returned so no child can outlive
-/// a failed verification or write into a staging tree after it is discarded.
+/// Proof processes run one at a time. A single Atlas environment approaches
+/// the memory available on the normative GitHub runner; overlapping two made
+/// the hosted runner lose its control-plane heartbeat while swapping. Lean is
+/// still free to use its own internal parallelism, while this fixed outer
+/// width makes the verifier's peak resident set bounded and reproducible.
+const PROCESS_WIDTH: usize = 1;
+
+/// Run one deterministic batch of independent verification processes. All
+/// workers are joined before an error is returned so no child can outlive a
+/// failed verification or write into a staging tree after it is discarded.
 fn run_process_batch<T, F>(items: &[usize], job: F) -> Result<Vec<T>, Diagnostic>
 where
     T: Send,
@@ -754,11 +753,6 @@ pub fn run(
     build: &mut RenderedBuild,
 ) -> Result<VerifyOutcome, LexLeanError> {
     let limits = project.config.limits;
-
-    // §22.11: the operational resource profile is selected once per run and
-    // read nowhere else. It bounds how many proof processes overlap; it is
-    // absent from every ID this function goes on to compute.
-    let profile = ResourceProfile::from_environment();
 
     // Stage 4: toolchain preflight (§22.2).
     let mut toolchain: Toolchain = toolchain::preflight(&limits).map_err(fail)?;
@@ -1051,7 +1045,7 @@ pub fn run(
         if ready.is_empty() {
             return Err(fail(internal("module order did not converge")));
         }
-        for batch in ready.chunks(profile.width()) {
+        for batch in ready.chunks(PROCESS_WIDTH) {
             for &module_index in batch {
                 let module_path = build.modules[module_index].lean_module.replace('.', "/");
                 let olean = olean_root.join(format!("{module_path}.olean"));
@@ -1157,7 +1151,7 @@ pub fn run(
             .lean_module
             .cmp(&build.modules[*b].lean_module)
     });
-    for batch in sorted_modules.chunks(profile.width()) {
+    for batch in sorted_modules.chunks(PROCESS_WIDTH) {
         let records = run_process_batch(batch, |module_index| {
             let module_name = &build.modules[module_index].lean_module;
             leanchecker::replay_module(
@@ -1200,7 +1194,7 @@ pub fn run(
         write_staged(staging.path(), &source_relative, audit.text.as_bytes())?;
     }
     let audit_indices: Vec<usize> = (0..audit_modules.len()).collect();
-    for batch in audit_indices.chunks(profile.width()) {
+    for batch in audit_indices.chunks(PROCESS_WIDTH) {
         let records = run_process_batch(batch, |audit_index| {
             let audit = &audit_modules[audit_index];
             let source_relative = format!("audit/{}.lean", audit.name);
