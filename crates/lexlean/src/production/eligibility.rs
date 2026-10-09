@@ -2805,11 +2805,25 @@ pub fn analyse_module(
     if roots.is_empty() {
         return Ok(None);
     }
-    Ok(Some(ModuleReport {
+    let mut report = ModuleReport {
         module: module.to_owned(),
         roots,
-        bytes: budget.used.saturating_sub(written_before),
-    }))
+        bytes: 0,
+    };
+    // The roots were charged as they were built, which bounds the memory the
+    // analysis takes; what the project writes is the whole file, and that
+    // one length, the length of `to_file_bytes`, is what `check`, `build`, and
+    // the written report all answer to, so the limit is crossed at the same
+    // byte by each.
+    report.bytes = u64::try_from(report.to_file_bytes().len()).unwrap_or(u64::MAX);
+    let total = written_before.saturating_add(report.bytes);
+    if total > max_report_bytes {
+        return Err(AnalysisError::Limit(format!(
+            "the production-eligibility reports of the project are {total} bytes once module `{module}` has written its {}, beyond the {max_report_bytes} bytes of max_total_source_bytes",
+            report.bytes
+        )));
+    }
+    Ok(Some(report))
 }
 
 #[cfg(test)]

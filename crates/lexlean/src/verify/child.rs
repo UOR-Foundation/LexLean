@@ -14,6 +14,7 @@ use crate::artifact::content_id::Sha256Digest;
 use crate::code;
 use crate::config::Limits;
 use crate::diagnostic::Diagnostic;
+use crate::verify::lifeline;
 
 /// The §22.7 normalizer: ordered longest-prefix replacements.
 #[derive(Debug, Clone, Default)]
@@ -303,42 +304,47 @@ pub fn resolve_on_path(name: &str) -> Result<Utf8PathBuf, Diagnostic> {
 /// until nothing of the group is left running, so that a timeout ends the
 /// work and not only the process that was waited for.
 ///
-/// The group is signalled by the platform's own `kill` (`taskkill` on
-/// windows), which this crate may use where it may not call the system
-/// directly (`forbid(unsafe_code)`); where that tool is missing the child alone
-/// is killed.
-fn stop(child: &mut std::process::Child) {
+/// The group is signalled directly (`rustix`, no `kill` executable and no
+/// `PATH`), and a failure is returned and reported, never swallowed: a
+/// timeout that could not end the processes says so.
+fn stop(child: &mut std::process::Child) -> Result<(), String> {
     let id = child.id();
     #[cfg(unix)]
     {
-        let group = format!("-{id}");
-        let signal = |name: &str| -> bool {
-            resolve_on_path("kill").is_ok_and(|kill| {
-                Command::new(kill.as_std_path())
-                    .args([name, "--", &group])
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .status()
-                    .is_ok_and(|status| status.success())
-            })
+        use rustix::io::Errno;
+        use rustix::process::{kill_process_group, test_kill_process_group, Pid, Signal};
+        let Some(group) = i32::try_from(id).ok().and_then(Pid::from_raw) else {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(format!("process {id} has no usable group number"));
         };
-        let _ = signal("-KILL");
+        let signalled = kill_process_group(group, Signal::KILL);
         let _ = child.kill();
         let _ = child.wait();
-        // `kill -0` succeeds while any process of the group exists; a zombie
-        // that nothing has reaped yet is a process of it, so the wait is
-        // bounded.
+        // No such group means nothing of it was left to signal.
+        if let Err(errno) = signalled {
+            if errno != Errno::SRCH {
+                return Err(format!(
+                    "the process group {id} could not be signalled: {}",
+                    std::io::Error::from(errno)
+                ));
+            }
+        }
+        // The group exists while any process of it does; a zombie that
+        // nothing has reaped yet is one, so the wait is bounded.
         for _ in 0..200 {
-            if !signal("-0") {
-                break;
+            if test_kill_process_group(group) == Err(Errno::SRCH) {
+                return Ok(());
             }
             std::thread::sleep(Duration::from_millis(10));
         }
+        Err(format!(
+            "processes of group {id} still existed 2000 ms after SIGKILL"
+        ))
     }
     #[cfg(windows)]
     {
-        let _ = Command::new("taskkill")
+        let ended = Command::new("taskkill")
             .args(["/PID", &id.to_string(), "/T", "/F"])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -346,6 +352,17 @@ fn stop(child: &mut std::process::Child) {
             .status();
         let _ = child.kill();
         let _ = child.wait();
+        ended
+            .map(|_| ())
+            .map_err(|io_error| format!("taskkill could not be run: {io_error}"))
+    }
+}
+
+/// How a diagnostic reports that the children could not be ended.
+fn left_running(outcome: Result<(), String>) -> String {
+    match outcome {
+        Ok(()) => String::new(),
+        Err(reason) => format!("; the processes it started may still be running: {reason}"),
     }
 }
 
@@ -400,10 +417,10 @@ pub fn run(
         use std::os::unix::process::CommandExt;
         command.process_group(0);
     }
-    let mut child = command.spawn().map_err(|io_error| {
+    let (mut child, tracked) = lifeline::spawn(&mut command).map_err(|reason| {
         Diagnostic::new(
             code!("LLV7001"),
-            format!("{}: cannot start `{}`: {io_error}", spec.tool, spec.program),
+            format!("{}: `{}`: {reason}", spec.tool, spec.program),
         )
     })?;
     let cap = limits.max_child_output_bytes;
@@ -412,10 +429,14 @@ pub fn run(
     let read_limit = cap.saturating_add(1);
     let (Some(mut stdout_pipe), Some(mut stderr_pipe)) = (child.stdout.take(), child.stderr.take())
     else {
-        stop(&mut child);
+        let ended = stop(&mut child);
         return Err(Diagnostic::new(
             code!("LLI9001"),
-            format!("{}: the child pipes were not attached", spec.tool),
+            format!(
+                "{}: the child pipes were not attached{}",
+                spec.tool,
+                left_running(ended)
+            ),
         ));
     };
     let stdout_reader = std::thread::spawn(move || {
@@ -437,33 +458,42 @@ pub fn run(
     let started = Instant::now();
     let timeout = Duration::from_millis(limits.child_timeout_ms);
     let deadline = started.checked_add(timeout);
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break status,
-            Ok(None) => {
-                let now = Instant::now();
-                if deadline.is_none_or(|deadline| now >= deadline) {
-                    stop(&mut child);
-                    let elapsed_ms = now.saturating_duration_since(started).as_millis();
-                    return Err(Diagnostic::new(
+    let status = {
+        // Registered for as long as the child may be running.
+        let _tracked = tracked;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status,
+                Ok(None) => {
+                    let now = Instant::now();
+                    if deadline.is_none_or(|deadline| now >= deadline) {
+                        let ended = stop(&mut child);
+                        let elapsed_ms = now.saturating_duration_since(started).as_millis();
+                        return Err(Diagnostic::new(
                         code!("LLS8002"),
                         format!(
-                            "child_timeout_ms exceeded by `{}` in phase {}: configured {}, observed {} ms",
+                            "child_timeout_ms exceeded by `{}` in phase {}: configured {}, observed {} ms{}",
                             spec.tool,
                             spec.module.as_deref().unwrap_or("verify"),
                             limits.child_timeout_ms,
-                            elapsed_ms
+                            elapsed_ms,
+                            left_running(ended)
+                        ),
+                    ));
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Err(io_error) => {
+                    let ended = stop(&mut child);
+                    return Err(Diagnostic::new(
+                        code!("LLV7001"),
+                        format!(
+                            "waiting for {}: {io_error}{}",
+                            spec.program,
+                            left_running(ended)
                         ),
                     ));
                 }
-                std::thread::sleep(Duration::from_millis(10));
-            }
-            Err(io_error) => {
-                stop(&mut child);
-                return Err(Diagnostic::new(
-                    code!("LLV7001"),
-                    format!("waiting for {}: {io_error}", spec.program),
-                ));
             }
         }
     };
@@ -548,6 +578,18 @@ mod timeout_tests {
             .collect()
     }
 
+    /// A group that could not be ended is reported as such, in the words of
+    /// the timeout diagnostic, and an ended one adds nothing to it.
+    #[test]
+    fn a_group_that_could_not_be_ended_is_reported() {
+        assert_eq!(super::left_running(Ok(())), "");
+        let text = super::left_running(Err("EPERM".to_owned()));
+        assert!(
+            text.contains("may still be running") && text.contains("EPERM"),
+            "{text}"
+        );
+    }
+
     /// A child that starts a long-running grandchild, as `lake` starts `lean`,
     /// and outlives the timeout: after the timeout is reported neither is
     /// running (the grandchild used to be orphaned, to run at full speed and
@@ -596,12 +638,19 @@ mod timeout_tests {
         let left = running(&sleeping);
         // Do not leave it behind if the assertion is about to fail.
         for line in &left {
-            if let Some(pid) = line.split(':').next() {
-                let _ = std::process::Command::new("kill")
-                    .args(["-KILL", pid])
-                    .status();
+            if let Some(pid) = line
+                .split(':')
+                .next()
+                .and_then(|pid| pid.parse::<i32>().ok())
+                .and_then(rustix::process::Pid::from_raw)
+            {
+                let _ = rustix::process::kill_process(pid, rustix::process::Signal::KILL);
             }
         }
+        assert!(
+            !error.message.contains("may still be running"),
+            "the group was ended, so the report does not say otherwise: {error:?}"
+        );
         assert!(left.is_empty(), "a timeout left running: {left:?}");
     }
 }

@@ -368,6 +368,15 @@ fn id_rest(c: char) -> bool {
         || sub_script(c)
 }
 
+/// Where a run of ASCII digits that starts at `from` ends.
+fn digits_only(chars: &[char], from: usize) -> usize {
+    let mut end = from;
+    while chars.get(end).is_some_and(char::is_ascii_digit) {
+        end += 1;
+    }
+    end
+}
+
 /// The lexemes of Lean source, as Lean's tokenizer reads it: comments (nested
 /// block comments, doc comments) dropped; string literals, raw strings
 /// `r#"…"#`, and character literals read as data; names as `isIdFirst` and
@@ -495,52 +504,83 @@ pub fn lex(text: &str) -> Result<Vec<Lexeme>, String> {
             });
             continue;
         }
-        // Numbers, by Lean's rules: `0x`, `0b`, and `0o` take the digits of
-        // their radix, a decimal takes a fraction and an exponent, and the
-        // token ends where they do, so what follows is another token
-        // (`1e10axiom` is a number and the keyword `axiom`).
+        // Numbers, as the pinned Lean's `numberFnAux` reads them (Lean/Parser/
+        // Basic.lean): `0x`, `0b`, and `0o` take at least one digit of their
+        // radix, a decimal takes a fraction and an exponent, a `_` may stand
+        // between digits (a run of them is one separator), and the token ends
+        // where they do, so what follows is another token (`1e10axiom` and
+        // `1_0axiom` are a number and the keyword `axiom`). Where Lean would
+        // refuse the text (`1_` and then a non-digit, `1e`, `1.foo`) the
+        // text is refused too.
         if c.is_ascii_digit() {
-            let radix = if c == '0' {
-                match at_char(at + 1) {
-                    Some('x' | 'X') => 16,
-                    Some('b' | 'B') => 2,
-                    Some('o' | 'O') => 8,
-                    _ => 10,
+            let digits = |from: usize, radix: u32, needed: bool| -> Result<usize, String> {
+                let (mut end, mut needed) = (from, needed);
+                loop {
+                    match at_char(end) {
+                        Some('_') => needed = true,
+                        Some(d) if d.is_digit(radix) => needed = false,
+                        _ if needed => {
+                            return Err(
+                                "a number has a digit separator or a radix prefix with no digit after it"
+                                    .to_owned(),
+                            )
+                        }
+                        _ => return Ok(end),
+                    }
+                    end += 1;
                 }
-            } else {
-                10
             };
-            if radix == 10 {
-                while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
-                    at += 1;
-                }
-                if at_char(at) == Some('.') && at_char(at + 1).is_some_and(|d| d.is_ascii_digit()) {
-                    at += 1;
-                    while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
-                        at += 1;
-                    }
-                }
-                if matches!(at_char(at), Some('e' | 'E')) {
-                    let mut end = at + 1;
-                    if matches!(at_char(end), Some('+' | '-')) {
-                        end += 1;
-                    }
-                    if !at_char(end).is_some_and(|d| d.is_ascii_digit()) {
-                        return Err("a scientific literal has no exponent digits".to_owned());
-                    }
-                    while at_char(end).is_some_and(|d| d.is_ascii_digit()) {
-                        end += 1;
-                    }
-                    at = end;
+            let radix = match (c, at_char(at + 1)) {
+                ('0', Some('x' | 'X')) => 16,
+                ('0', Some('b' | 'B')) => 2,
+                ('0', Some('o' | 'O')) => 8,
+                _ => 10,
+            };
+            if radix != 10 {
+                at = digits(at + 2, radix, true)?;
+            } else if c != '0' && at > 0 && chars[at - 1] == '.' {
+                // After `.` the digits are a field index (`p.1.2`), which is
+                // the digits and nothing more. Where the number reading
+                // would go on (`_`, an exponent) the two readings end the
+                // token in different places, and which one Lean takes
+                // depends on the parse: refused rather than guessed.
+                at = digits_only(&chars, at);
+                if matches!(at_char(at), Some('_' | 'e' | 'E')) {
+                    return Err(
+                        "a field index is followed by what could continue a number".to_owned()
+                    );
                 }
             } else {
-                at += 2;
-                let digits = at;
-                while at_char(at).is_some_and(|d| d.is_digit(radix)) {
-                    at += 1;
-                }
-                if at == digits {
-                    return Err("a number has no digits after its radix prefix".to_owned());
+                at = digits(at + 1, 10, false)?;
+                let range = at_char(at) == Some('.') && at_char(at + 1) == Some('.');
+                if !range && matches!(at_char(at), Some('.' | 'e' | 'E')) {
+                    let mut bare_dot = false;
+                    if at_char(at) == Some('.') {
+                        at += 1;
+                        if at_char(at).is_some_and(|d| d.is_ascii_digit()) {
+                            at = digits(at, 10, false)?;
+                        } else {
+                            bare_dot = true;
+                        }
+                    }
+                    match at_char(at) {
+                        Some('e' | 'E') => {
+                            let mut end = at + 1;
+                            if matches!(at_char(end), Some('+' | '-')) {
+                                end += 1;
+                            }
+                            if !at_char(end).is_some_and(|d| d.is_ascii_digit()) {
+                                return Err(
+                                    "a scientific literal has no exponent digits".to_owned()
+                                );
+                            }
+                            at = digits(end, 10, false)?;
+                        }
+                        Some(d) if bare_dot && (id_first(d) || d == '\u{ab}') => {
+                            return Err("an identifier follows a decimal point".to_owned());
+                        }
+                        _ => {}
+                    }
                 }
             }
             out.push(here);
@@ -1362,6 +1402,30 @@ mod tests {
             "def x := 1e\n",
             "def x := 1e+\n",
             "def x := 0x\n",
+            // `_` separates digits, and Lean reads the number to its end:
+            // the keyword after it is a keyword (the differential against the
+            // pinned Lean is in `conformance_sp_09`).
+            "def x := 1_0axiom bad : False\n",
+            "def x := 0b1_0axiom bad : False\n",
+            "def x := 0o7_7axiom bad : False\n",
+            "def x := 0x1_Fsorry\n",
+            "def x := 1_000e5axiom bad : False\n",
+            "def x := 1.5_0axiom bad : False\n",
+            "def x := 0_0axiom bad : False\n",
+            "def x := 1__0axiom bad : False\n",
+            "def x := 1.e5axiom bad : False\n",
+            "def x := 1.5e+3axiom bad : False\n",
+            "def x := 1.5E-3axiom bad : False\n",
+            "def x := 1.axiom bad : False\n",
+            // Text Lean refuses, or reads one way or the other depending on
+            // the parse, is refused.
+            "def x := 1_\n",
+            "def x := 1_ + 1\n",
+            "def x := 0x_\n",
+            "def x := 1.foo\n",
+            "def x := 1._5\n",
+            "def x := p.1_0axiom bad : False\n",
+            "def x := p.1e5axiom bad : False\n",
             // A command is read by its longest known token, so the rest of
             // the word may be a name or a keyword: every command is refused.
             "#evalIO.println \"pwned\"\n",
@@ -1382,6 +1446,8 @@ mod tests {
             "def f := fun x => x.1.2 + Nat.succ' 1\n",
             "def s := \"\\u00e9\"\n",
             "def x := [1e10, 1E-3, 1.5e+3, 0xFF, 0b101, 0o17, 1e10 + 2, 0b101e]\n",
+            "def x := [1_000, 0b1_0, 0o7_7, 0x1_F, 1_000e5, 1.5_0, 0_0, 1.e5, 1., 1.5E-3]\n",
+            "def x := [1..2, 1.0, 0.5, p.1.val, p.2.1, p.10.2 + 1]\n",
         ] {
             assert!(audited(text).is_ok(), "{text:?}: {:?}", audited(text));
         }

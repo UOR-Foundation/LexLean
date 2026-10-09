@@ -2589,12 +2589,16 @@ either backend runs; they do not defer to what Lean would accept.
     (`«native_decide»`), as do the certificates and the audit module that
     prints its axioms (`#print axioms Production.Main.«native_decide»`).
     A module is a namespace of the project that Lean searches before the root
-    from every module of it, so a module named like a namespace the generated
-    code writes qualified (`Nat`, `List`, `Option`, `Bool`, `String`, ..., the
-    runtime classes `Appendable`, `Key`, ..., and the roots this compiler
-    ships) would capture it (`module Nat` with a function `blt`: `Function
-    expected at Nat.blt`, also in the modules that import it): `LLT4001`,
-    fixture `module-name-lean-namespace`; `conformance_sp_09` reads the
+    from every module of it, and so is every prefix of a dotted module name
+    (`Sub.Nat` declares in `Prefix.Sub.Nat`, which Lean searches from
+    `Prefix.Sub.Other`), so a module any segment of whose name is spelled like a
+    namespace the generated code writes qualified (`Nat`, `List`, `Option`,
+    `Bool`, `String`, ..., the runtime classes `Appendable`, `Key`, ..., and the
+    roots this compiler ships) would capture it (`module Nat` with a function
+    `blt`: `Function expected at Nat.blt`, also in the modules that import it;
+    `Sub.Nat` the same in `Sub.Other`): `LLT4001`, fixtures
+    `module-name-lean-namespace`, `module-name-dotted-last`, and
+    `module-name-dotted-first`; `conformance_sp_09` reads the
     namespaces the corpora's generated modules write qualified off them and
     requires that each is refused. A constructor or a field is spelled like no
     member Lean declares for the type (`rec`, `recOn`, `casesOn`, `noConfusion`,
@@ -2604,8 +2608,17 @@ either backend runs; they do not defer to what Lean would accept.
     declared`): `LLT4001`, fixture `member-generated-name`, and the set is the
     one the pinned Lean declares for sample inductives and structures, which
     `conformance_df_12` lists. A parameter named like a nullary constructor of
-    its own type (`zero : nat`, `none`, `red`) is valid; the module silences
-    Lean's `linter.constructorNameAsVariable`, which reports it. The
+    its own type (`zero : nat`, `none`, `red`) is valid, the backend writing
+    the constructors qualified; the module silences Lean's
+    `linter.constructorNameAsVariable`, which reports it. A pattern binder is
+    not a parameter: Lean reads a bare name in a pattern as the constructor it
+    resolves to, so a binder `none` in the branch `Option.some` of an `option
+    (option nat)` matches only `some none` (`Missing cases`). The constructors
+    Lean resolves without a namespace are `none`, `some`, `isTrue`, `isFalse`,
+    `true`, and `false` (read off the pinned Lean by `conformance_df_12`), and a
+    pattern binder of any of these names is `LLT4001` at `check`, fixture
+    `binder-pattern-constructor-name`; every other binder named like a
+    constructor (`zero`, `red`, `nil`) is a variable in a pattern too. The
     language-1.1 contract is frozen and does not carry this rule.
 11. **Source maps.** In a `lexlean/semantic-module/2` module every
     declaration is its own mapping node in both artifacts, relating its
@@ -4158,7 +4171,11 @@ member, dropped without recursion), and the report counts toward
 rule 2, the rule for artifact declarations): the analysis totals the bytes of
 the reports of all the modules of the project together, root by root, as it
 builds them (a module's report counts with those of the modules before it), stops
-a single closure as soon as its members alone pass the limit, and a project
+a single closure as soon as its members alone pass the limit, then measures the
+module's report as it will be written (the length of the file, the one function
+`check` and `build` both answer to, so that they pass and refuse the same limits:
+`conformance_sp_02` finds the smallest limit each passes at, which is the sum of
+the lengths of the written reports), and a project
 whose reports pass it is `LLS8002` from `check` (fixtures
 `eligibility-report-limit`, a chain of 100 roots under a limit of 4 194 304, and
 `eligibility-reports-total-limit`, three modules of 60 roots each, which fit
@@ -4193,8 +4210,22 @@ process, and its exhaustion is `LLS8002`. Each child process (`lake`, which
 starts `lean`, and the PDF provider: every child of `verify` is started the
 same way) leads a process group of its own, and on a
 timeout the whole group is killed and awaited, so no `lean` is left running at
-full speed and growing after the limit has been reported; where the platform
-has no process groups the tree is killed with `taskkill`. A match on 180 constructors verifies
+full speed and growing after the limit has been reported. The group is
+signalled directly by the compiler (no `kill` executable and no `PATH` are
+involved, so a host without one, such as the shipped image, ends the work all
+the same), and a group that could not be signalled, or that is still there two
+seconds after `SIGKILL`, is stated in the diagnostic (`the processes it
+started may still be running: …`), never passed over. A child in a group of its
+own is not reached by the terminal's Ctrl-C, nor by the `SIGTERM` that
+`timeout(1)` or a service manager sends to the compiler alone, so the compiler
+watches for `SIGINT`, `SIGTERM`, and `SIGHUP` from the first child on, kills
+every live child group when one arrives, and then lets the signal end the
+process as it would have (the exit status is the signal's); `conformance` runs
+the real `lexlean` and sends it each, while a child is running, and requires
+that nothing the child started is left (`SIGKILL` cannot be caught by any
+process, so a compiler killed that way leaves its children). Where the
+platform has no process groups the tree is killed with `taskkill`, and the
+console delivers Ctrl-C to the children. A match on 180 constructors verifies
 (`conformance_sp_02`), and so does one on 300, whose certificate B alone takes
 3 minutes and a half; the reference machine reaches the 300 seconds between 300
 and 400 constructors, where `lexlean verify` of a match on 400 ends with

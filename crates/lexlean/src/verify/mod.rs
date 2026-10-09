@@ -23,6 +23,7 @@
 pub mod axiom;
 pub mod child;
 pub mod leanchecker;
+mod lifeline;
 pub mod source_audit;
 pub mod toolchain;
 pub mod workspace;

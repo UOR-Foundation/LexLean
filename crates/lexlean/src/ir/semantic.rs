@@ -2674,6 +2674,19 @@ pub fn is_reserved_module_name(name: &str) -> bool {
         || name == crate::config::SHIPPED_TARGET_ROOT
 }
 
+/// The first segment of a dotted module name that is reserved, when any.
+///
+/// Every segment is a namespace of the project: module `Sub.Nat` declares
+/// `Prefix.Sub.Nat.blt`, and Lean searches the enclosing namespaces of
+/// `Prefix.Sub.Other`, which include `Prefix.Sub`, before the root, so
+/// `Nat.blt` written there means that declaration. Checking the whole name
+/// only would leave every module below a directory open to the capture.
+#[must_use]
+pub fn reserved_module_segment(name: &str) -> Option<&str> {
+    name.split('.')
+        .find(|segment| is_reserved_module_name(segment))
+}
+
 /// The names the backend writes without qualification (see
 /// [`is_backend_bare_name`]).
 pub const BACKEND_BARE_NAMES: [&str; 33] = [
@@ -3286,6 +3299,17 @@ pub(crate) const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 7] = [
     "Prod",
     "Result",
 ];
+
+/// The constructors that Lean resolves from the root namespace, read off the
+/// pinned Lean by `conformance_sp_09` (every constructor of `Init` whose last
+/// component names a constructor when written bare): in a pattern such a name
+/// is the constructor, whatever the binder meant, so `Option.some none` over
+/// an `option (option nat)` matches only `some none` and Lean reports the
+/// other cases missing. `true` and `false` are among
+/// [`BACKEND_BARE_NAMES`] already. A parameter, a `let`, or a lambda
+/// parameter of these names is a variable and stays valid: the backend writes
+/// the constructors qualified (`Option.none`).
+pub const PATTERN_CONSTRUCTOR_NAMES: [&str; 4] = ["isFalse", "isTrue", "none", "some"];
 
 /// The members Lean declares for a type besides those of its constructors
 /// and fields: `T.rec`, `T.recOn`, `T.casesOn`, `T.noConfusion`, `T.ctorIdx`,
@@ -6006,6 +6030,12 @@ fn check_term(
                 let mut branch_locals = locals.clone();
                 for binder in &branch.binders {
                     check_binder(binder, "pattern binder", env)?;
+                    if env.language_1_2 && PATTERN_CONSTRUCTOR_NAMES.contains(&binder.as_str()) {
+                        return Err(format!(
+                            "pattern binder `{binder}` is spelled like a constructor Lean resolves without a namespace, and a bare name in a pattern is read as that constructor, not as a variable: match branch `{}` would not match what it says",
+                            branch.constructor.name
+                        ));
+                    }
                     if !branch_locals.insert(binder.clone()) {
                         return Err(format!("duplicate or shadowed pattern binder `{binder}`"));
                     }

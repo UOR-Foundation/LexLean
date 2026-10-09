@@ -30,8 +30,20 @@ toml = { workspace = true }
 unicode-normalization = { workspace = true }
 walkdir = { workspace = true }
 
+# Process groups are a unix notion. `rustix` signals a group without calling
+# the system directly (this crate forbids unsafe code) and without a `kill`
+# executable from the host; `signal-hook` turns SIGINT/SIGTERM/SIGHUP into an
+# ordinary thread that ends the children before the process is, because a
+# child in a group of its own no longer receives the terminal's Ctrl-C.
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
+signal-hook = { workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true }
 
 [lints]
 workspace = true

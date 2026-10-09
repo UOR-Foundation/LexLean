@@ -329,8 +329,9 @@ pub fn render_build(
         if let Some(report) = &checked_module.production {
             let production_path = format!("production/{module_path}.eligibility.json");
             let production_bytes = report.to_file_bytes();
-            // The analysis refuses a report it can tell would be beyond the
-            // limit before it builds it; this is the report as written. Like
+            // The analysis refuses a report beyond the limit by the same
+            // length, that of `to_file_bytes`, so `check` and `build` cross
+            // the limit at the same byte; this is the report as written. Like
             // an artifact declaration, it materializes bytes beyond the
             // sources, and counts toward `max_total_source_bytes` (§17.12
             // rule 2).

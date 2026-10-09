@@ -1,0 +1,38 @@
+//! Helpers shared by the process-group tests: the process table, read the
+//! way an operator would, and a script that starts a long-running child.
+
+use std::path::Path;
+
+/// The processes that are running and whose command line holds `marker`.
+/// A zombie is not running: nothing is left of it to end.
+pub fn running(marker: &str) -> Vec<(i32, String)> {
+    std::fs::read_dir("/proc")
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|entry| {
+            let pid = entry.file_name().to_str()?.parse::<i32>().ok()?;
+            let command = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
+            let command = String::from_utf8_lossy(&command).replace('\0', " ");
+            let status = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+            let zombie = status.rsplit(") ").next()?.starts_with('Z');
+            (command.contains(marker) && !zombie).then_some((pid, command))
+        })
+        .collect()
+}
+
+/// End what a failed assertion would otherwise leave behind.
+pub fn end_all(left: &[(i32, String)]) {
+    for (pid, _) in left {
+        if let Some(pid) = rustix::process::Pid::from_raw(*pid) {
+            let _ = rustix::process::kill_process(pid, rustix::process::Signal::KILL);
+        }
+    }
+}
+
+/// An executable script.
+pub fn script(path: &Path, body: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::write(path, body).expect("write");
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+}

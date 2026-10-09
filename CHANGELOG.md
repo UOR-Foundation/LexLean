@@ -169,26 +169,41 @@ versions, and the entries below say what each tag does and does not claim.
   `lean` it had started running at full speed with a growing resident set,
   which with the budgets lifted for a wide match nothing ended; every child of
   `verify` now leads a process group of its own, killed and awaited as a whole
-  on a timeout (a test starts a grandchild and asserts none is left).
+  on a timeout (a test starts a grandchild and asserts none is left). The
+  group is signalled directly (`rustix`, no `kill` executable on `PATH`, which
+  the shipped image does not have), a group that cannot be ended is said so in
+  the diagnostic, and an interrupt (`SIGINT`, `SIGTERM`, `SIGHUP`, watched with
+  `signal-hook`) ends the live groups before it ends `lexlean`, because a child
+  in a group of its own no longer receives the terminal's Ctrl-C; a test sends
+  each to the real binary. `SIGKILL` cannot be caught, and leaves the children.
 - The lower bound on certificate A counts a type as the certificate prints
   it: a pair nested 120 deep was `120 * 121 / 2` type nodes and a bound 1.5
   times the certificate, and the programs that are refused when they fit are
   now sought among nested pairs, options, lists, results, and records, one
   function and twenty, and random combinations of seven dimensions.
 - Names of a project that Lean resolves to something else, refused at `check`:
-  a module named like a namespace the generated code writes qualified (`Nat`
-  with a function `blt`), a constructor or field named like a member Lean
+  a module, or any segment of a dotted module name, named like a namespace the
+  generated code writes qualified (`Nat` with a function `blt`; `Sub.Nat` in
+  `Sub.Other`), a pattern binder named `none`, `some`, `isTrue`, or `isFalse`
+  (a bare name in a pattern is the constructor), a constructor or field named like a member Lean
   declares for the type (`rec`, `casesOn`, `noConfusion`, `ctorIdx`, ... read
   off the pinned Lean), a `module_prefix` that begins with a root this compiler
   ships (`LexLeanPreserve`, `LexLeanPreservation`, `LexLeanRuntime`, ...), and a
   module with a production root under the prefix `LexLeanTarget`; a parameter
-  named like a nullary constructor of its own type (`zero`, `red`) is valid, and
-  the module silences the linter that reported it.
-- The token audit reads a number as Lean does (`1e10axiom` is a number and a
-  keyword) and refuses every `#` command, since Lean reads the longest command
-  token it knows and the rest as a name (`#evalIO`).
+  named like a nullary constructor of its own type (`zero`, `red`, and `none`
+  or `some` of a parameter) is valid, and the module silences the linter that
+  reported it.
+- The token audit reads a number as the pinned Lean's `numberFnAux` does
+  (`1e10axiom`, `1_0axiom`, `0b1_0axiom`, `1.e5axiom` are a number and a
+  keyword; `1_`, `1.foo`, and a field index followed by `_` or an exponent are
+  refused where Lean refuses them or reads them by the parse), checked against
+  the pinned Lean on a generated set of prefixes by `conformance_sp_09`, and
+  refuses every `#` command, since Lean reads the longest command token it
+  knows and the rest as a name (`#evalIO`).
 - The eligibility reports of all the modules of a project count together
-  toward `max_total_source_bytes` (it was per module).
+  toward `max_total_source_bytes` (it was per module), and `check` and `build`
+  measure them with one function (the length of the written file), so they
+  pass and refuse the same limits (they differed by about 128 bytes a module).
 - A root verifies whatever its names are, with no name a user can write
   capturing a name a generated file uses. Every reference a certificate makes to
   a global is written from the root (`_root_.LexLeanPreservation.conv_var`),

@@ -110,6 +110,178 @@ fn assert_targeted(plant: &preservation::Planted) {
     );
 }
 
+/// The reports of a project are measured by one function: `check` and `build`
+/// cross `max_total_source_bytes` at the same byte, and that byte is the sum of
+/// the lengths of the report files `build` writes. The fixture is three
+/// modules whose reports together are a little over 4.4 million bytes; the
+/// two commands used to disagree over the last 400 of them, because the
+/// analysis counted the roots of a module and not the module around them.
+fn check_and_build_agree_on_the_report_budget() {
+    use lexlean::{BuildRequest, CheckRequest, Selection};
+    let sum_of_reports = |project: &P| -> u64 {
+        walkdir::WalkDir::new(project.root.join(".lexlean/build").as_std_path())
+            .into_iter()
+            .flatten()
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .ends_with(".eligibility.json")
+            })
+            .map(|entry| entry.metadata().expect("metadata").len())
+            .sum()
+    };
+    let measured = P::negative("eligibility-reports-total-limit");
+    let at = |project: &P, limit: u64| {
+        let text = project.read("lexlean.toml");
+        let line = text
+            .lines()
+            .find(|line| line.starts_with("max_total_source_bytes = "))
+            .expect("the limit is configured")
+            .to_owned();
+        project.write(
+            "lexlean.toml",
+            &text.replacen(&line, &format!("max_total_source_bytes = {limit}"), 1),
+        );
+        project.relock();
+    };
+    at(&measured, 16_777_216);
+    measured.build_ok();
+    let written = sum_of_reports(&measured);
+    assert!(
+        (4_000_000..8_000_000).contains(&written),
+        "the fixture's reports are of the size the limits below assume: {written}"
+    );
+    // Around that byte: `check` used to pass from 384 bytes below it (128 a
+    // module), where `build` refused. Every limit below it is refused by both
+    // and it, and one above, is passed by both.
+    fn succeeds(project: &P, build: bool) -> bool {
+        let selection = Selection::Entrypoints;
+        if build {
+            project.engine().build(BuildRequest { selection }).is_ok()
+        } else {
+            project.engine().check(CheckRequest { selection }).is_ok()
+        }
+    }
+    let project = P::negative("eligibility-reports-total-limit");
+    for (limit, passes) in [
+        (written - 1024, false),
+        (written - 384, false),
+        (written - 128, false),
+        (written - 1, false),
+        (written, true),
+        (written + 1, true),
+    ] {
+        at(&project, limit);
+        for build in [false, true] {
+            assert_eq!(
+                succeeds(&project, build),
+                passes,
+                "{} at max_total_source_bytes {limit} ({written} written)",
+                if build { "build" } else { "check" }
+            );
+        }
+    }
+}
+
+/// The lexer of the certificate audit reads a number to the byte the pinned
+/// Lean reads it to. Each prefix of a generated set (radix prefixes and digit
+/// runs with `_` separators, fractions, bare dots, exponents, signs, ranges,
+/// field indices) is followed by `axiom bad : False`, and the pinned Lean says
+/// whether the axiom was declared, that is whether the keyword began a token
+/// where the number ended. The audit must agree wherever it reads the text,
+/// except that a word right after a `.` is a field name to Lean and the
+/// keyword to the audit (more is refused, nothing is missed), and where it
+/// refuses the text (as Lean does for `1_` or `1.foo`) it refuses text that
+/// is wrong or that Lean reads by the parse.
+fn numbers_are_read_as_lean_reads_them() {
+    use lexlean::production::preserve::{lex, LexemeKind};
+    let project = P::copy_example("production");
+    let loaded = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
+    let toolchain =
+        lexlean::verify::toolchain::preflight(&loaded.config.limits).expect("the pinned toolchain");
+    let bases = [
+        "1", "0", "12", "0x", "0b", "0o", "0x1", "0X1", "0b1", "0B1", "0o7", "0O7", "p.1", "p.12",
+    ];
+    let tails = [
+        "", "_", "_0", "_1", "0_", "1_", "__0", "0__0", "_0_", ".", ".5", ".e5", ".E5", ".5e5",
+        ".5e", ".5_0", ".5_", "._5", ".foo", "e5", "E5", "e-5", "E+5", "e+", "e", "e_5", "e5_0",
+        "e5_", "_0e5", "_0.5", "_0.e5", "..", "..1", "...", "F", "f", "a", "x", "b1", "o7", "e5.",
+        ".1", ".1.2", "_0.1",
+    ];
+    let mut cases: Vec<String> = Vec::new();
+    for base in bases {
+        for tail in tails {
+            cases.push(format!("{base}{tail}"));
+        }
+    }
+    cases.sort();
+    cases.dedup();
+    let mut source = String::new();
+    for (index, case) in cases.iter().enumerate() {
+        source.push_str(&format!(
+            "def x{index} := {case}axiom bad{index} : False\n#check @bad{index}\n"
+        ));
+    }
+    let _guard = support::env_lock();
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("Numbers.lean");
+    std::fs::write(&path, &source).expect("write");
+    let output = std::process::Command::new(toolchain.lean.path.as_std_path())
+        .arg("-DmaxErrors=0")
+        .arg(&path)
+        .current_dir(directory.path())
+        .env("LEAN_PATH", "")
+        .output()
+        .expect("lean runs");
+    let said = String::from_utf8_lossy(&output.stdout).into_owned()
+        + &String::from_utf8_lossy(&output.stderr);
+    let (mut agreed, mut refused, mut declared, mut conservative) =
+        (0_usize, 0_usize, 0_usize, 0_usize);
+    let mut differ: Vec<String> = Vec::new();
+    for (index, case) in cases.iter().enumerate() {
+        let lean_declared = said
+            .lines()
+            .any(|line| line == format!("bad{index} : False"));
+        let text = format!("def x := {case}axiom bad : False\n");
+        match lex(&text) {
+            Err(_) => refused += 1,
+            Ok(lexemes) => {
+                let keyword = lexemes.iter().any(|lexeme| {
+                    matches!(&lexeme.kind, LexemeKind::Ident(segments)
+                        if segments.len() == 1 && segments[0].text == "axiom" && !segments[0].quoted)
+                });
+                if keyword == lean_declared {
+                    agreed += 1;
+                    declared += usize::from(keyword);
+                } else if keyword && case.ends_with('.') {
+                    // `1e5.axiom` is a number and the field `axiom` of it,
+                    // a name and not the keyword; the audit reads the word
+                    // after any `.` as the word, which refuses more than
+                    // Lean reads and misses nothing.
+                    conservative += 1;
+                } else {
+                    differ.push(format!(
+                        "`{case}`: the audit reads the keyword {keyword}, Lean declares it {lean_declared}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        differ.is_empty(),
+        "the audit reads numbers differently from the pinned Lean:\n{}\n{said}",
+        differ.join("\n")
+    );
+    // Neither side is vacuous: the set holds numbers that end before the
+    // keyword and numbers that swallow it, and the audit reads most of it.
+    assert!(
+        declared > 100 && agreed > declared + 50 && refused * 4 < cases.len() * 3,
+        "{} prefixes: {agreed} agreed ({declared} declare the axiom), {conservative} read the field after a dot as the keyword, {refused} refused",
+        cases.len()
+    );
+}
+
 /// Certify every stress family, assert that the lower bound the lowering
 /// refuses on is never above the largest certificate and the floor from
 /// field reads never above certificate B, that every certificate stops at
@@ -888,6 +1060,7 @@ pub fn run(id: &str) {
         }
         // §17.17: certificate A.
         "SP-02" => {
+            check_and_build_agree_on_the_report_budget();
             for (name, project) in certified_projects() {
                 let certified = preservation::certificates(&project);
                 assert!(!certified.is_empty(), "{name} declares production roots");
@@ -2216,6 +2389,7 @@ pub fn run(id: &str) {
             if !support::lean_backed("SP-09") {
                 return;
             }
+            numbers_are_read_as_lean_reads_them();
             support::verify_ok(&names);
             // Declarations spelled like the words the generated-Lean audit
             // forbids verify as well: the audit module names them quoted.

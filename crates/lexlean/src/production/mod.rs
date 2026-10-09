@@ -432,9 +432,9 @@ pub struct RootReport {
 pub struct ModuleReport {
     pub module: String,
     pub roots: Vec<RootReport>,
-    /// The bytes the roots take in the report as the analysis measured them,
-    /// which count toward `max_total_source_bytes` with those of the other
-    /// modules' reports.
+    /// The length of `to_file_bytes`: the report as written, which counts
+    /// toward `max_total_source_bytes` with those of the other modules'
+    /// reports. The analysis, `check`, and `build` all use this one length.
     pub bytes: u64,
 }
 

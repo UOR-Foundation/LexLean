@@ -526,7 +526,7 @@ call of the wrong arity. Command: `cargo test -p repo-conformance --test
 conformance -- conformance_sm_25 conformance_df_14`.
 
 ```text
-thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1040:13:
+thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1042:13:
 assertion failed: combinators.contains("mapList (Input) (Output) (transform) (tail)")
 thread 'conformance_sm_25' panicked at crates/conformance/src/cases/semantic_ir.rs:1684:17:
 missing "HigherOrder.Combinators.mapList (Nat) (Nat) ((fun (value : Nat) => (value + offset))) (values)" in:
@@ -544,7 +544,7 @@ conformance -- conformance_df_15`. The executable `evaluator` that returns a
 `Visitor` of closures is no longer refused for returning a function.
 
 ```text
-thread 'conformance_df_15' panicked at crates/conformance/src/cases/declarations.rs:1154:17:
+thread 'conformance_df_15' panicked at crates/conformance/src/cases/declarations.rs:1156:17:
 expected "escaping closure: executable definition `evaluator` returns a value of type Combinators.Visitor, which holds a function", got LLT4001: phase link: escaping closure in executable definition `evaluator`: a lambda may only be passed directly to an executable function parameter or applied
 ```
 
@@ -561,7 +561,7 @@ declaration never mentions. Command: `cargo test -p repo-conformance --test
 conformance -- conformance_sm_08 conformance_df_14`.
 
 ```text
-thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1067:17:
+thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1069:17:
 missing "public def keepNat (_Phantom : Type) (value : Nat) : Nat := value\n" in:
 thread 'conformance_sm_08' panicked at crates/conformance/src/cases/semantic_ir.rs:572:17:
 missing "public def constantTrue (_ignored : Nat) : Bool := true" in:
@@ -939,9 +939,9 @@ Expected: the certificate generator, which decides which parameters carry
 lowering before any theorem is written.
 
 ```text
-thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:1854:40:
+thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:2027:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
-thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:1854:40:
+thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:2027:40:
 the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
 error[LLI9001]: phase preservation: a parameter carries §17.12's invariant but the root has no entry
 ```
@@ -1091,9 +1091,9 @@ the constant, a fraction of 0 (nothing is heavy) and a huge one (everything
 is):
 
 ```text
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2520:73:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2521:73:
 a limit
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2517:9:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2518:9:
 assertion failed: resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none()
 ```
 
@@ -1255,7 +1255,7 @@ changed from function 18 to 0 (and its symbol from `f18` to `f0`). Command:
 Expected: the record disagrees with certificate E, which states function 18.
 
 ```text
-thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:1295:25:
+thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:1468:25:
 assertion `left == right` failed: production-coverage R0 rust-std: E states the function the record names
   left: {18}
  right: {0}
@@ -1276,7 +1276,7 @@ the third.
 ```text
 gate failed: RP-07: `SP-02`'s statement differs between the table and the register:
 gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/RustBase.lean` that the file does not state byte for byte: `/-- Rust convergence: some fuel gives the outcome, which is never`
-thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:1113:13:
+thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:1286:13:
 assertion `left == right` failed: SPEC.md lists exactly the roots the suite exempts
 ```
 
@@ -1320,7 +1320,7 @@ repo-conformance --test conformance -- conformance_sp_09`. Expected: the
 binder check refuses.
 
 ```text
-thread 'conformance_sp_09' (5944) panicked at crates/conformance/src/cases/preservation.rs:718:9:
+thread 'conformance_sp_09' (5944) panicked at crates/conformance/src/cases/preservation.rs:890:9:
 names: `LexLeanPreserve.Cf98777d97dc3c4f7e91e905af21e1e07.R1.Compose.RustStd` binds `h`, which a parameter of that name would capture
 ```
 
@@ -1393,7 +1393,7 @@ still write `Bool.true`, as the reasoning above holds for them.)
 Planted: `true` written bare again. Expected: the check of bare words refuses.
 
 ```text
-thread 'conformance_sp_09' (22628) panicked at crates/conformance/src/cases/preservation.rs:452:5:
+thread 'conformance_sp_09' (22628) panicked at crates/conformance/src/cases/preservation.rs:624:5:
 LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R0: bare words a parameter could shadow: {"true (in ` : UInt32) : Bool :=   ((true && (true && tr`)", "true (in ` :=   ((true && (true && true)) && true)  th`)", "true (in `) : Bool :=   ((true && (true && true)) && t`)", "true (in `ue && (true && tr
 ```
 
@@ -1711,7 +1711,7 @@ Planted: the character literal branch of `lex` disabled. Command: `cargo test
 -p lexlean --lib production::preserve`. Expected: the first probe passes.
 
 ```text
-thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (17823) panicked at crates/lexlean/src/production/preserve.rs:1372:13:
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (17823) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
 "def c1 := '\"'\ntheorem t3 : False := sorry\ndef c2 := '\"'\n"
 ```
 
@@ -1726,8 +1726,9 @@ budgets of a wide match were lifted, Lean's heartbeats ended such a process by
 themselves; with them at 0 nothing did, and SPEC.md §17.17 said the timeout
 bounds every Lean process. Every child of `verify` now leads a process group of
 its own (`CommandExt::process_group`, safe Rust), and on a timeout (or any
-other failure of waiting) the whole group is killed with the platform's `kill`
-(`taskkill /T` on windows) and awaited. The unit test starts a script that
+other failure of waiting) the whole group is killed and awaited (first with the
+platform's `kill`, which a host may not have: the section on interrupts below
+replaces it with a direct signal; `taskkill /T` on windows). The unit test starts a script that
 starts a long-running grandchild and outlives the timeout, then reads the
 process table:
 
@@ -1740,7 +1741,7 @@ Command: `cargo test -p lexlean --lib timeout_tests`. Expected: the
 grandchild is still running.
 
 ```text
-thread 'verify::child::timeout_tests::a_timeout_ends_what_the_child_started' (13145) panicked at crates/lexlean/src/verify/child.rs:605:9:
+thread 'verify::child::timeout_tests::a_timeout_ends_what_the_child_started' (13145) panicked at crates/lexlean/src/verify/child.rs:654:9:
 a timeout left running: ["13149: sleep 1000.13144 "]
 ```
 
@@ -1888,7 +1889,7 @@ Planted: the exponent not scanned. Command: `cargo test -p lexlean --lib
 production::preserve`. Expected: the first probe passes the audit.
 
 ```text
-thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32386) panicked at crates/lexlean/src/production/preserve.rs:1372:13:
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32386) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
 "def x : Float := 1e10axiom bad : False\ntheorem t : False := bad\n"
 ```
 
@@ -1897,7 +1898,7 @@ exact match, in effect). Expected: `1e10#evalIO.println "pwn2"` and the rest
 pass.
 
 ```text
-thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32444) panicked at crates/lexlean/src/production/preserve.rs:1372:13:
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32444) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
 "def x := 1e10#evalIO.println \"pwn2\"\n"
 ```
 
@@ -1946,7 +1947,7 @@ Planted: the byte budget removed from certificate A (`within` never refuses).
 Expected: A is regenerated under half its size and accepted.
 
 ```text
-thread '<unnamed>' (28544) panicked at crates/conformance/src/cases/preservation.rs:191:13:
+thread '<unnamed>' (28544) panicked at crates/conformance/src/cases/preservation.rs:363:13:
 assertion `left == right` failed: doubling let chain 4: Production.Main.r: certificate A under half its size
   left: "accepted"
 ```
@@ -1970,6 +1971,186 @@ Scope note: the relaxation of named-root extraction that admits `Init`
 definitions exported as axioms (NE-03) shares this change because the
 certificates need it; it is recorded in `CHANGELOG.md` and is not part of the
 semantic-preservation claim.
+
+### an interrupt ends the children, and a group is ended without `kill`
+
+A child leads a process group of its own so that a timeout can end what it
+started. That took it out of the group the terminal signals: a Ctrl-C (or the
+`SIGTERM` of `timeout 600 lexlean verify`) ended `lexlean` and left the `lake`
+and the `lean` it had started running at full speed. `child::run` now starts a
+thread, once, that waits for `SIGINT`, `SIGTERM`, and `SIGHUP` (`signal-hook`,
+Apache-2.0 OR MIT, with `libc` and `signal-hook-registry`, which `cargo deny`
+accepts under the licences already allowed); the thread kills every live child
+group, and lets the signal end the process, so the exit status is the
+signal's. A child is registered under the lock the thread takes, so a signal
+between the spawn and the registration still ends it. `SIGKILL` cannot be
+caught and leaves the children; SPEC.md says so.
+The code is `crates/lexlean/src/verify/lifeline.rs`, a module of its own with
+item-level `cfg`: an inline `#[cfg(unix)] mod` makes `conformance_rp_12` treat every
+test after it in the file as cfg-hidden (it did, on the first full run).
+
+The group was signalled by a `kill` executable found on `PATH`, and where there
+was none (the shipped `debian:bookworm-slim` image has no `procps`) only `lake`
+was killed and the failure dropped. It is now `rustix::process::kill_process_group`
+(a safe wrapper; the crate still forbids unsafe code), and a group that could
+not be signalled, or that is still there two seconds after `SIGKILL`, is said in
+the diagnostic: `the processes it started may still be running: …`.
+
+`crates/lexlean/tests/interrupt.rs` runs the real `lexlean lock --allow-network`
+with a `git` on `PATH` that starts a `sleep` and never finishes, waits until
+the `sleep` runs, sends `lexlean` `SIGINT` and, in a second run, `SIGTERM`,
+and requires that `lexlean` ended by the signal itself and that no `sleep` is
+left. `crates/lexlean/tests/stop_without_kill.rs` sets `PATH` to a directory
+holding only `sleep` (and requires that `kill` cannot be resolved there) and
+requires that a timeout ends the grandchild.
+
+Planted: the handler does not signal the live groups. Command: `cargo test -p
+lexlean --test interrupt`. Expected: the `sleep` is left running after
+`SIGINT`.
+
+```text
+thread 'an_interrupt_leaves_no_child_running' (28288) panicked at crates/lexlean/tests/interrupt.rs:134:5:
+SIGINT left running: [(28294, "sleep 1000.28287 ")]
+```
+
+Planted: `stop` does not signal the group (only the child is killed and awaited).
+Command: `cargo test -p lexlean --test stop_without_kill`. Expected: the
+grandchild survives and the diagnostic says so, rather than saying nothing.
+
+```text
+thread 'a_timeout_ends_the_group_on_a_host_without_kill' (28375) panicked at crates/lexlean/tests/stop_without_kill.rs:59:5:
+the group was ended, so the report does not claim otherwise: Diagnostic { code: DiagnosticCode("LLS8002"), message: "child_timeout_ms exceeded by `lake` in phase Probe: configured 700, observed 702 ms; the processes it started may still be running: processes of group 28377 still existed 2000 ms after SIGKILL"
+```
+
+Removed: both were restored.
+
+### a module is a namespace at every segment
+
+Module `Sub.Nat` with a function `blt`, imported by `Sub.Other`, was accepted by
+`check` and refused by `verify`: `Nat.blt` in `Sub.Other` resolved to
+`Prefix.Sub.Nat.blt` (`Application type mismatch`). Lean searches the enclosing
+namespaces of `Prefix.Sub.Other`, which include `Prefix.Sub`, and every segment
+of a module name is a namespace of the project. Linking now tests every segment
+of a dotted name against the reserved set (`reserved_module_segment`); the
+fixtures `module-name-dotted-last` (`Sub.Nat`) and `module-name-dotted-first`
+(`Nat.Sub`) are `LLT4001`, and the existing `module-name-lean-namespace` message
+names the segment.
+
+Planted: `reserved_module_segment` tests the whole name only. Command: `lexlean
+check` in each of the fixtures `module-name-dotted-last` and
+`module-name-dotted-first`. Expected: both are accepted.
+
+```text
+checked 2 modules (source 4bd59b5867512b66e98b35dd74d27eef50e6bc850c897d5af4d530678c0d3cc4, semantic e904a4a2e026042bc708e7b8129258d69ae2763c697b71f3d11cebfbb1a76c05)
+checked 2 modules (source c584273f917668a46189fa9c29cbfbe55135d7951b24fd93bacee8b9622ea2fc, semantic 24d36bc5a7c86fae8260eb6c958736b683fda227531b8ae77e5fd43ef62cedde)
+```
+
+Removed: the segment check was restored; both are `LLT4001`.
+
+### a pattern binder is read as the constructor it is spelled like
+
+A binder `none` in the branch `Option.some` of an `option (option nat)` was
+generated as `Option.some none`, which Lean reads as the constructor, so the
+match was not exhaustive (`Missing cases`) after `check` had accepted it. Read off
+the pinned Lean by `conformance_df_12` (every constructor of `Init` whose last
+component, written bare, resolves to a constructor), the names are `false`,
+`true`, `isFalse`, `isTrue`, `none`, `some`: the first two were refused as
+built-in names already, and the rest are `PATTERN_CONSTRUCTOR_NAMES`, refused as
+pattern binders only (`LLT4001`, fixture `binder-pattern-constructor-name`). A
+parameter of these names is a variable and stays valid (the backend writes the
+constructors qualified); a pattern binder `zero`, `nil`, or `cons` is a
+variable, and the case verifies a module of them with the real Lean.
+SPEC.md and CHANGELOG.md said that a parameter named like a nullary
+constructor of its own type is valid, which is true of parameters; they now say
+what holds of pattern binders.
+
+Planted: the refusal of pattern binders removed. Command: `lexlean check`, then
+`lexlean verify`, in the fixture `binder-pattern-constructor-name`. Expected:
+`check` accepts it and Lean rejects it, the state before.
+
+```text
+checked 1 module (source 69a1b8dbb8e3e72bcaf6ce3e8c77a5363bb269a8dfca623c8b95786311caf795, semantic 71742264c7601d60fb55f1c9008080c221571a48031f15e3847dee19c77b7977)
+error[LLV7002]: Lean rejected `LanguageTwelve.Main` (error): Missing cases:
+(some (some _))
+```
+
+Removed: the refusal was restored (`LLT4001`, `pattern binder `none` is spelled
+like a constructor Lean resolves without a namespace`).
+
+### the lexer reads a number as Lean's `numberFnAux` does
+
+Lean 4.32.1 reads `_` between and after digits (`takeDigitsFn`), a bare dot
+followed by an exponent (`1.e5`), and nothing but digits after a `.` that follows
+a term (`p.1.2`, `fieldIdxFn`); the lexer read `1_0axiom` as `1` and the name
+`_0axiom`, so the audit accepted `def x := 1_0axiom bad : False` and Lean
+declared the axiom. The number branch follows the pinned source line for line
+(`Lean/Parser/Basic.lean`: `decimalNumberFn`, `parseOptDot`, `parseOptExp`,
+`binNumberFn`, `octalNumberFn`, `hexNumberFn`; there are no hexadecimal floats
+in 4.32.1, `0x1.8` is `0x1`, `.`, `8`). Where Lean refuses the text (`1_` and a
+non-digit, `1.foo`, `1e`) the audit refuses it, and a field index followed by
+`_` or an exponent, which the token reads differently by the parse, is refused
+rather than guessed. `conformance_sp_09` writes 611 prefixes (radix
+prefixes, digit runs with separators, fractions, bare dots, exponents, signs,
+ranges, field indices) followed by `axiom bad : False`, has the pinned Lean say
+which declare the axiom, and requires the audit to agree on every text it reads.
+
+The first run of the differential failed on fourteen prefixes (`1e5.`,
+`0x1.`, `p.1.`, ...) followed by `axiom`: Lean reads the number and the field
+`axiom` of it, a name, where the audit reads the keyword. That is a text the
+audit refuses and Lean accepts, which misses nothing, and the test now counts
+those prefixes (a word right after a `.`) apart; every other prefix agrees.
+
+Planted: a `_` ends the number. Command: `cargo test -p lexlean --lib
+production::preserve`. Expected: `1_0axiom` passes the audit.
+
+```text
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (27826) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
+"def x := 1_0axiom bad : False\n"
+```
+
+The same plant, against the pinned Lean. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_09`. Expected: the audit misses the axiom
+that Lean declares.
+
+```text
+thread 'conformance_sp_09' (27961) panicked at crates/conformance/src/cases/preservation.rs:271:5:
+the audit reads numbers differently from the pinned Lean:
+`0.5_`: the audit reads the keyword false, Lean declares it true
+`0.5_0`: the audit reads the keyword false, Lean declares it true
+`00_`: the audit reads the keyword false, Lean declares it true
+`00__0`: the audit reads the keyword false, Lean declares it true
+```
+
+Removed: the lexer was restored; `conformance_sp_09` passes (840 s).
+
+### the eligibility reports are measured by one function
+
+`check` passed the fixture `eligibility-reports-total-limit` from a limit of 4 422 588
+and `build` from 4 422 972: the analysis counted the roots of a module and not
+the module around them (128 bytes a module). The analysis now measures the
+report as `to_file_bytes`, the one function the written file, `build`, and
+`check` answer to. `conformance_sp_02` builds the fixture, sums the lengths of
+the report files written (the limit at which both pass), and requires `check`
+and `build` to refuse 1024, 384, 128, and 1 byte below it and to accept it and
+one byte above.
+
+Planted: the report's bytes are the roots' (`budget.used - written_before`, the
+old accounting). Command: `cargo test -p repo-conformance --test conformance --
+conformance_sp_02`. Expected: the two commands disagree at the limits the
+reviewer found.
+
+```text
+thread 'conformance_sp_02' (27712) panicked at crates/conformance/src/cases/preservation.rs:177:13:
+assertion `left == right` failed: check at max_total_source_bytes 4422588 (4422972 written)
+  left: true
+ right: false
+```
+
+Removed: the measure was restored. The same test leaves `crates/conformance/tests`
+without `zz_scratch.rs`, the scratch probe that `cee5c34` committed by mistake: it
+asserted nothing and ran every stress family on every `cargo test`. The two
+functions it called, `measure_program` and `record_slots`, were public before it
+(`assert_bounds` uses them) and stay so.
 
 ### CL-11 covers every registered code's class
 
@@ -2001,7 +2182,7 @@ refuses what it admits.
 ```text
 (1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
 expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
-(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:434:13:
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:437:13:
 /home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
 (2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:667:18:
 a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")

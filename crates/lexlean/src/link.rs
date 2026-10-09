@@ -515,16 +515,16 @@ fn check_project_inline(
         // searches before the root from every module of it, so one named
         // like a namespace the generated code writes qualified would capture
         // those names (§17.12 rule 10).
-        if project.config.language == crate::LANGUAGE_1_2
-            && crate::ir::semantic::is_reserved_module_name(module_name)
-        {
-            return Err(err(vec![Diagnostic::new(
-                code!("LLT4001"),
-                format!(
-                    "phase link: module name `{module_name}` is spelled like a Lean namespace the generated code writes qualified, or a root this compiler ships, and would capture its names in every module of the project"
-                ),
-            )
-            .with_span(crate::Span::whole_file(&load.path))]));
+        if project.config.language == crate::LANGUAGE_1_2 {
+            if let Some(segment) = crate::ir::semantic::reserved_module_segment(module_name) {
+                return Err(err(vec![Diagnostic::new(
+                    code!("LLT4001"),
+                    format!(
+                        "phase link: module name `{module_name}` has the segment `{segment}`, which is spelled like a Lean namespace the generated code writes qualified, or a root this compiler ships, and would capture its names in every module of the project"
+                    ),
+                )
+                .with_span(crate::Span::whole_file(&load.path))]));
+            }
         }
         let mut budget = Budget::new(
             limits.max_token_lattice_edges,

@@ -960,8 +960,10 @@ pub(crate) fn run(id: &str) {
                 )
                 .check_ok();
             }
+            pattern_binders_named_like_constructors_are_refused();
             if support::lean_backed("DF-12") {
                 lean_generated_members_are_refused();
+                lean_root_constructors_are_the_refused_pattern_binders();
             }
         }
         // §17.12: structural recursion and induction over a recursive
@@ -1556,6 +1558,103 @@ features = []
 [render]
 math = "(seq (token mathbb) (group (token blackboard-n)))"
 "#;
+
+/// A pattern binder is read as the constructor it is spelled like when Lean
+/// resolves that spelling without a namespace, and as a variable otherwise:
+/// the first are refused at `check` (a binder `none` in the branch
+/// `Option.some` of an `option (option nat)` made Lean report `Missing cases`
+/// only when verified), the others are not.
+fn pattern_binders_named_like_constructors_are_refused() {
+    for name in lexlean::ir::semantic::PATTERN_CONSTRUCTOR_NAMES {
+        let project = P::negative("binder-pattern-constructor-name");
+        project.edit("src/Main.lex.tex", "\"none\"", &format!("\"{name}\""));
+        project.relock();
+        let error = project.check_fails_with("LLT4001");
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("pattern binder `{name}`")),
+            "{error}"
+        );
+    }
+    // The constructors of the matched types, spelled as binders, are
+    // variables (`zero`, `nil`, `cons`, `none` as a parameter).
+    let project = P::negative("binder-pattern-constructor-name");
+    project.write("src/Main.lex.tex", POSITIVE_PATTERN_BINDERS);
+    project.relock();
+    project.check_ok();
+}
+
+/// A module whose pattern binders and parameters are spelled like
+/// constructors Lean does not resolve bare, and whose parameter is spelled
+/// `none`: all variables.
+const POSITIVE_PATTERN_BINDERS: &str = r#"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["zero"],"body":{"kind":"var","name":"zero"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"n"}},"executable":true,"kind":"definition","name":"pred","parameters":[{"name":"n","type":{"kind":"nat"}}],"recursive_argument":"n","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"List.nil"}},{"binders":["nil","cons"],"body":{"kind":"var","name":"nil"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"first","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"kind":"nat"}},{"body":{"kind":"var","name":"none"},"executable":true,"kind":"definition","name":"keep","parameters":[{"name":"none","type":{"kind":"nat"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+\end{semanticmodule}
+\end{lexlean}
+"#;
+
+/// The constructors the pinned Lean resolves without a namespace, from the
+/// root, are exactly the refused pattern binders (with `true` and `false`,
+/// refused as built-in names): every constructor of `Init` whose last
+/// component, written bare, resolves to a constructor.
+fn lean_root_constructors_are_the_refused_pattern_binders() {
+    let project = P::copy_example("production");
+    let loaded = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
+    let toolchain =
+        lexlean::verify::toolchain::preflight(&loaded.config.limits).expect("the pinned toolchain");
+    let source = "import Lean
+#eval show Lean.Meta.MetaM Unit from do
+  let env ← Lean.getEnv
+  let mut seen : Std.HashSet String := {}
+  let mut hits : Array String := #[]
+  for (n, ci) in env.constants.toList do
+    if let .ctorInfo _ := ci then
+      let .str _ last := n | continue
+      if seen.contains last then continue
+      seen := seen.insert last
+      let r ← Lean.resolveGlobalName (Lean.Name.mkSimple last)
+      for (rn, fields) in r do
+        if fields.isEmpty then
+          if let some (.ctorInfo _) := env.find? rn then
+            let m := (env.getModuleIdxFor? rn).map (fun i => env.header.moduleNames[i.toNat]!)
+            if m.any (fun m => m.getRoot == `Init) then hits := hits.push last
+  IO.println s!\"ROOT {hits.qsort (· < ·)}\"
+";
+    let output = {
+        let _guard = support::env_lock();
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("Roots.lean");
+        std::fs::write(&path, source).expect("write");
+        std::process::Command::new(toolchain.lean.path.as_std_path())
+            .arg(&path)
+            .current_dir(directory.path())
+            .output()
+            .expect("lean runs")
+    };
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    let line = text
+        .lines()
+        .find_map(|line| line.strip_prefix("ROOT #["))
+        .unwrap_or_else(|| panic!("the query answered: {text} {:?}", output.stderr));
+    let mut found: Vec<&str> = line.trim_end_matches(']').split(", ").collect();
+    found.sort_unstable();
+    let mut refused: Vec<&str> = lexlean::ir::semantic::PATTERN_CONSTRUCTOR_NAMES.to_vec();
+    refused.extend(["false", "true"]);
+    refused.sort_unstable();
+    assert_eq!(
+        found, refused,
+        "the constructors Lean resolves bare are the pattern binders linking refuses"
+    );
+    // A pattern binder that is a variable verifies with the real Lean.
+    let project = P::negative("binder-pattern-constructor-name");
+    project.write("src/Main.lex.tex", POSITIVE_PATTERN_BINDERS);
+    project.relock();
+    support::verify_ok(&project);
+}
 
 /// The members Lean declares for a type besides the user's constructors and
 /// fields are all among those linking refuses: sample inductives (recursive,
