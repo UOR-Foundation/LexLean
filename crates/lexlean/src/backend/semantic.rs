@@ -48,7 +48,9 @@ pub(crate) fn hypothesis(index: usize) -> String {
 pub(crate) fn identifier(name: &str) -> String {
     name.split('.')
         .map(|segment| {
-            if super::lean_tokens::is_reserved(segment) {
+            if super::lean_tokens::is_reserved(segment)
+                || crate::verify::source_audit::forbids_segment(segment)
+            {
                 format!("«{segment}»")
             } else {
                 segment.to_owned()

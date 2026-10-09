@@ -29,13 +29,13 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
 
 mutual
 def __fits_1 : ∀ (n : Nat), Bool
-  | (Nat.zero) => (true && (true && true))
-  | (Nat.succ k) => (true && ((true && true) && (__fits_2 (k))))
+  | (Nat.zero) => (Bool.true && (Bool.true && Bool.true))
+  | (Nat.succ k) => (Bool.true && ((Bool.true && Bool.true) && (__fits_2 (k))))
 termination_by structural n => n
 
 def __fits_2 : ∀ (n : Nat), Bool
-  | (Nat.zero) => (true && (true && true))
-  | (Nat.succ k) => (true && ((true && true) && (__fits_1 (k))))
+  | (Nat.zero) => (Bool.true && (Bool.true && Bool.true))
+  | (Nat.succ k) => (Bool.true && ((Bool.true && Bool.true) && (__fits_1 (k))))
 termination_by structural n => n
 
 end
@@ -54,14 +54,14 @@ termination_by structural n => n
 end
 
 def __fits_0 (n : Nat) : Bool :=
-  ((true && true) && (__fits_1 (n)))
+  ((Bool.true && Bool.true) && (__fits_1 (n)))
 
 attribute [local irreducible] Coverage.Types.isOdd in
 theorem __rel_0 (n : Nat) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__rel_1 (n)))
 
 def denote (n : Nat) : LexLeanPreservation.Obs :=
-  cond (__fits_0 n) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 n) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n)))) LexLeanPreservation.Obs.overflow
 
 theorem root (n : Nat) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 n)

@@ -398,6 +398,9 @@ struct Gen<'a> {
     /// The bytes a certificate may take, `max_file_bytes`: generation stops
     /// with a limit as soon as a part it has built is beyond it.
     limit: u64,
+    /// The module being generated, which its declarations are written under
+    /// by their full names wherever a parameter's name could shadow them.
+    module: String,
 }
 
 /// A container type that occurs nested in a recursive group of document
@@ -553,6 +556,7 @@ fn generator<'a>(
         found: BTreeMap::new(),
         nested: BTreeMap::new(),
         limit,
+        module: String::new(),
     }
 }
 
@@ -590,6 +594,10 @@ pub fn certificate(
         imports,
     })
 }
+
+/// `true` as a certificate writes it where a source name could be in scope: a
+/// parameter may be named `true`, which would capture the bare word.
+const TRUE: &str = "Bool.true";
 
 /// The Lean spelling of a semantic name in a certificate: the backend's, and
 /// in addition quoted when a segment is spelled like a token the token audit
@@ -1099,7 +1107,7 @@ fn operands(proofs: Vec<Proof>) -> Proof {
     proofs.into_iter().rev().fold(
         Proof {
             proof: lib("convL_nil"),
-            fits: "true".to_owned(),
+            fits: TRUE.to_owned(),
         },
         |rest, head| Proof {
             proof: format!("({} {} {})", lib("convL_cons"), head.proof, rest.proof),
@@ -1210,7 +1218,9 @@ impl Gen<'_> {
     fn member(&self, member: &MemberRef, site: &Site) -> Result<String, String> {
         // A violation is the pair of Booleans it lowers to (§17.12 rule 9).
         match crate::backend::semantic::violation_pattern(member) {
-            Some(pair) => return Ok(pair.to_owned()),
+            Some(pair) => {
+                return Ok(pair.replace("true", TRUE).replace("false", "Bool.false"));
+            }
             None => {}
         }
         if member.module.is_none() {
@@ -1470,7 +1480,7 @@ impl Gen<'_> {
                     self.ty(&result)?
                 )
             }
-            SemanticTerm::Bool { value } => value.to_string(),
+            SemanticTerm::Bool { value } => if *value { TRUE } else { "Bool.false" }.to_owned(),
             SemanticTerm::Unit => "()".to_owned(),
             SemanticTerm::Nil { element } => format!(
                 "([] : List {})",
@@ -2436,7 +2446,7 @@ impl Gen<'_> {
                     relation: companion.relation.clone(),
                     proof: Proof {
                         proof: format!("({} rfl)", lib("conv_var")),
-                        fits: "true".to_owned(),
+                        fits: TRUE.to_owned(),
                     },
                 }))
             }
@@ -2472,7 +2482,7 @@ impl Gen<'_> {
                     encoded.push(self.encoded_local(&local)?);
                     proofs.push(Proof {
                         proof: format!("({} rfl)", lib("conv_var")),
-                        fits: "true".to_owned(),
+                        fits: TRUE.to_owned(),
                     });
                 }
                 let captured = operands(proofs);
@@ -2506,7 +2516,7 @@ impl Gen<'_> {
                     relation: format!("fun{typed} => __rel_{index} {applied}"),
                     proof: Proof {
                         proof: format!("({} {})", lib("conv_closure"), lib("convL_nil")),
-                        fits: "true".to_owned(),
+                        fits: TRUE.to_owned(),
                     },
                 }))
             }
@@ -2616,7 +2626,7 @@ impl Gen<'_> {
     fn conv_var() -> Proof {
         Proof {
             proof: format!("({} rfl)", lib("conv_var")),
-            fits: "true".to_owned(),
+            fits: TRUE.to_owned(),
         }
     }
 
@@ -2627,29 +2637,29 @@ impl Gen<'_> {
     /// The constructor lemma and fits of building `constructor`.
     fn construct_lemma(&self, constructor: &Constructor, whole: &str) -> (String, String) {
         match constructor {
-            Constructor::Bool(true) => (lib("construct_true"), "true".to_owned()),
-            Constructor::Bool(false) => (lib("construct_false"), "true".to_owned()),
-            Constructor::Zero => (lib("construct_zero"), "true".to_owned()),
+            Constructor::Bool(true) => (lib("construct_true"), TRUE.to_owned()),
+            Constructor::Bool(false) => (lib("construct_false"), TRUE.to_owned()),
+            Constructor::Zero => (lib("construct_zero"), TRUE.to_owned()),
             Constructor::Succ => (
                 lib("construct_succ"),
                 format!("(Nat.blt {whole} {NAT_BOUND})"),
             ),
-            Constructor::Nil => (lib("construct_nil"), "true".to_owned()),
-            Constructor::Cons => (lib("construct_cons"), "true".to_owned()),
-            Constructor::OptionNone => (lib("construct_none"), "true".to_owned()),
-            Constructor::OptionSome => (lib("construct_some"), "true".to_owned()),
-            Constructor::Ok => (lib("construct_ok"), "true".to_owned()),
-            Constructor::Error => (lib("construct_error"), "true".to_owned()),
-            Constructor::Violation(_, _) => (lib("construct_pair"), "true".to_owned()),
-            Constructor::Document { ty: _, index: _ } => (lib("construct_adt"), "true".to_owned()),
+            Constructor::Nil => (lib("construct_nil"), TRUE.to_owned()),
+            Constructor::Cons => (lib("construct_cons"), TRUE.to_owned()),
+            Constructor::OptionNone => (lib("construct_none"), TRUE.to_owned()),
+            Constructor::OptionSome => (lib("construct_some"), TRUE.to_owned()),
+            Constructor::Ok => (lib("construct_ok"), TRUE.to_owned()),
+            Constructor::Error => (lib("construct_error"), TRUE.to_owned()),
+            Constructor::Violation(_, _) => (lib("construct_pair"), TRUE.to_owned()),
+            Constructor::Document { ty: _, index: _ } => (lib("construct_adt"), TRUE.to_owned()),
         }
     }
 
     /// A literal list built as a cons chain.
     fn cons_chain(items: Vec<Proof>) -> Proof {
         items.into_iter().rev().fold(
-            built(operands(Vec::new()), &lib("construct_nil"), "true"),
-            |tail, head| built(operands(vec![head, tail]), &lib("construct_cons"), "true"),
+            built(operands(Vec::new()), &lib("construct_nil"), TRUE),
+            |tail, head| built(operands(vec![head, tail]), &lib("construct_cons"), TRUE),
         )
     }
 
@@ -2669,7 +2679,7 @@ impl Gen<'_> {
                 .ok_or_else(|| format!("field `{field}` is not assigned"))?;
             proofs.push(self.prove(value, ctx)?);
         }
-        Ok(built(operands(proofs), &lib("construct_adt"), "true"))
+        Ok(built(operands(proofs), &lib("construct_adt"), TRUE))
     }
 
     /// Refuse a part of a certificate of `len` bytes when it is larger than
@@ -2699,7 +2709,7 @@ impl Gen<'_> {
         let site = ctx.site.clone();
         let value = || Proof {
             proof: lib("conv_value"),
-            fits: "true".to_owned(),
+            fits: TRUE.to_owned(),
         };
         Ok(match term {
             SemanticTerm::Var { name: _ } => Self::conv_var(),
@@ -2722,16 +2732,16 @@ impl Gen<'_> {
                 } else {
                     "construct_false"
                 }),
-                "true",
+                TRUE,
             ),
-            SemanticTerm::Unit => built(operands(Vec::new()), &lib("construct_unit"), "true"),
+            SemanticTerm::Unit => built(operands(Vec::new()), &lib("construct_unit"), TRUE),
             SemanticTerm::Nil { element: _ } => {
-                built(operands(Vec::new()), &lib("construct_nil"), "true")
+                built(operands(Vec::new()), &lib("construct_nil"), TRUE)
             }
             SemanticTerm::Cons { head, tail } => {
                 let head = self.prove(head, ctx)?;
                 let tail = self.prove(tail, ctx)?;
-                built(operands(vec![head, tail]), &lib("construct_cons"), "true")
+                built(operands(vec![head, tail]), &lib("construct_cons"), TRUE)
             }
             SemanticTerm::Record {
                 r#type: _,
@@ -2762,7 +2772,7 @@ impl Gen<'_> {
                                 } else {
                                     "construct_false"
                                 }),
-                                "true",
+                                TRUE,
                             )
                         };
                         vec![boolean(first), boolean(second)]
@@ -2791,7 +2801,7 @@ impl Gen<'_> {
                 let index = self.instance_index(&module, &resolved.name, &[])?;
                 Proof {
                     proof: format!("({} {} __rel_{index})", lib("conv_call"), lib("convL_nil")),
-                    fits: and("true", &format!("__fits_{index}")),
+                    fits: and(TRUE, &format!("__fits_{index}")),
                 }
             }
             SemanticTerm::Project { value, field: _ } => {
@@ -2866,7 +2876,7 @@ impl Gen<'_> {
             SemanticTerm::And { left, right } => {
                 let condition = self.prove(left, ctx)?;
                 let then_branch = self.prove(right, ctx)?;
-                let else_branch = built(operands(Vec::new()), &lib("construct_false"), "true");
+                let else_branch = built(operands(Vec::new()), &lib("construct_false"), TRUE);
                 let (left, right) = (self.src(left, ctx)?, self.src(right, ctx)?);
                 Proof {
                     proof: format!(
@@ -2890,7 +2900,7 @@ impl Gen<'_> {
             }
             SemanticTerm::Or { left, right } => {
                 let condition = self.prove(left, ctx)?;
-                let then_branch = built(operands(Vec::new()), &lib("construct_true"), "true");
+                let then_branch = built(operands(Vec::new()), &lib("construct_true"), TRUE);
                 let else_branch = self.prove(right, ctx)?;
                 let (left, right) = (self.src(left, ctx)?, self.src(right, ctx)?);
                 Proof {
@@ -2923,7 +2933,7 @@ impl Gen<'_> {
                         lib("prim_boolNot"),
                         self.src(value, ctx)?
                     ),
-                    fits: and(&list.fits, "true"),
+                    fits: and(&list.fits, TRUE),
                 }
             }
             SemanticTerm::Let {
@@ -2954,7 +2964,7 @@ impl Gen<'_> {
             }
             SemanticTerm::Pair { left, right } => {
                 let list = operands(vec![self.prove(left, ctx)?, self.prove(right, ctx)?]);
-                built(list, &lib("construct_pair"), "true")
+                built(list, &lib("construct_pair"), TRUE)
             }
             SemanticTerm::First { value } => {
                 let inner = self.prove(value, ctx)?;
@@ -2982,7 +2992,7 @@ impl Gen<'_> {
                 let mut items = Vec::new();
                 for SemanticMapEntry { key, value } in entries {
                     let list = operands(vec![self.prove(key, ctx)?, self.prove(value, ctx)?]);
-                    items.push(built(list, &lib("construct_pair"), "true"));
+                    items.push(built(list, &lib("construct_pair"), TRUE));
                 }
                 Self::cons_chain(items)
             }
@@ -3025,7 +3035,7 @@ impl Gen<'_> {
                     }
                     let source = self.prove(source, ctx)?;
                     let list = operands(vec![source, Self::cons_chain(targets)]);
-                    items.push(built(list, &lib("construct_pair"), "true"));
+                    items.push(built(list, &lib("construct_pair"), TRUE));
                 }
                 Self::cons_chain(items)
             }
@@ -3078,7 +3088,7 @@ impl Gen<'_> {
                 self.src(left, ctx)?,
                 self.src(right, ctx)?
             ),
-            fits: and(&list.fits, "true"),
+            fits: and(&list.fits, TRUE),
         })
     }
 
@@ -3190,7 +3200,7 @@ impl Gen<'_> {
             .collect::<Result<Vec<_>, _>>()?;
         let whole = self.src(whole, ctx)?;
         let fits = match rule.width {
-            Width::Exact => "true".to_owned(),
+            Width::Exact => TRUE.to_owned(),
             Width::Nat => format!("(Nat.blt {whole} {NAT_BOUND})"),
             Width::Int => format!("({} {whole})", lib("intFits")),
             Width::Predicate(name) => format!("({} {})", lib(name), sources.join(" ")),
@@ -3437,7 +3447,7 @@ impl Gen<'_> {
                 (
                     Proof {
                         proof: format!("({} {})", lib("conv_closure"), lib("convL_nil")),
-                        fits: "true".to_owned(),
+                        fits: TRUE.to_owned(),
                     },
                     format!("__rel_{index}"),
                     format!("__fits_{index}"),
@@ -5309,6 +5319,7 @@ impl<'a> Gen<'a> {
         name: &str,
     ) -> Result<String, String> {
         let graph = self.collect()?;
+        self.module = name.to_owned();
         let mut out = String::new();
         for module in LIBRARY_MODULES {
             out.push_str(&format!("import {module}\n"));
@@ -5379,7 +5390,7 @@ impl<'a> Gen<'a> {
         // computes it, so an input on which the program overflows is not an
         // evaluation of the source's own, possibly unbounded, value.
         out.push_str(&format!(
-            "def denote {} : {} :=\n  cond ({}) ({} ({})) {}\n\n",
+            "def denote {} : {} :=\n  _root_.cond ({}) ({} ({})) {}\n\n",
             signature.fits_binders.join(" "),
             lib("Obs"),
             signature.fits_applied,
@@ -5789,7 +5800,7 @@ impl<'a> Gen<'a> {
                                     .map(|(pattern, _)| pattern.clone())
                                     .collect();
                                 fits_equations.push_str(&format!(
-                                    "  | {} => (true && {})\n",
+                                    "  | {} => (Bool.true && {})\n",
                                     fits_patterns.join(", "),
                                     proof.fits
                                 ));
@@ -6090,7 +6101,7 @@ impl<'a> Gen<'a> {
 /// before it.
 fn clause(binders: usize, function: &str) -> String {
     format!(
-        "(fun{} h => by simp only [{function}, h])",
+        "(fun{} __h => by simp only [{function}, __h])",
         " _".repeat(binders)
     )
 }
@@ -6098,7 +6109,7 @@ fn clause(binders: usize, function: &str) -> String {
 /// A clause of the pair key order: the order's instances unfold in the
 /// hypothesis and the goal alike before the hypothesis rewrites.
 fn pair_clause(compare: &str) -> String {
-    format!("(fun _ _ h => by simp only [{compare}] at h ⊢; simp only [h])")
+    format!("(fun _ _ __h => by simp only [{compare}] at __h ⊢; simp only [__h])")
 }
 
 /// The Lean type of an integer literal's representation.
@@ -6417,7 +6428,7 @@ impl Gen<'_> {
                         value(1)?,
                         value(2)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::MapRemove => {
@@ -6438,7 +6449,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::MapLookup => {
@@ -6462,7 +6473,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::MapContains => {
@@ -6484,7 +6495,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::MapKeys | Template::MapValues => {
@@ -6527,7 +6538,7 @@ impl Gen<'_> {
                         at(&["tk", "tw"]),
                         value(0)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::MapFold => {
@@ -6603,7 +6614,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::SetUnion => {
@@ -6624,7 +6635,7 @@ impl Gen<'_> {
                         value(1)?,
                         value(0)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::SetIntersection | Template::SetDifference => {
@@ -6669,7 +6680,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::SetFold | Template::ListFold => {
@@ -6792,7 +6803,7 @@ impl Gen<'_> {
                         value(0)?,
                         value(1)?
                     ),
-                    "true".to_owned(),
+                    TRUE.to_owned(),
                 )
             }
             Template::GraphReachable | Template::GraphTopological => {
@@ -6834,7 +6845,7 @@ impl Gen<'_> {
                         let contains = format!("{coll}.containsElement");
                         (
                             format!(
-                                "({} {common} {} (fun _ => rfl) {} {} {graph} {successors} (fun _ => rfl) (⟨{}, {}, {}, (fun _ _ _ _ h => by simp only [{topological}, h] <;> rfl), {}⟩ : {} {successors} {contains} {remove} ({topological} {graph})) {head}{} {})",
+                                "({} {common} {} (fun _ => rfl) {} {} {graph} {successors} (fun _ => rfl) (⟨{}, {}, {}, (fun _ _ _ _ __h => by simp only [{topological}, __h] <;> rfl), {}⟩ : {} {successors} {contains} {remove} ({topological} {graph})) {head}{} {})",
                                 lib("tpl_graphTopological"),
                                 self.option_bundle(&SemanticType::Option {
                                     value: Box::new(nodes.clone()),
@@ -7408,6 +7419,10 @@ impl Gen<'_> {
         name: &str,
         fallible: bool,
     ) -> Result<String, String> {
+        let fallible = match fallible {
+            true => TRUE,
+            false => "Bool.false",
+        };
         let sem = format!("{module_b}.program {module_b}.krate {module_b}.flags");
         let mut out = format!(
             "import {module_a}\nimport {module_b}\nimport LexLeanPreservation.Compose\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option linter.unusedVariables false\nnamespace {name}\n\n"
@@ -8047,10 +8062,10 @@ impl Gen<'_> {
                 format!("def __valid_{k} : {lean} -> Bool{valid}\n\n"),
                 format!("def __inv_{k} : {lean} -> Prop{inv}\n\n"),
                 format!(
-                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = true ↔ __inv_{k} __v{viff}\n\n"
+                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = Bool.true ↔ __inv_{k} __v{viff}\n\n"
                 ),
                 format!(
-                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel true ({value}.bool (__valid_{k} __v))){vrel}\n\n"
+                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel Bool.true ({value}.bool (__valid_{k} __v))){vrel}\n\n"
                 ),
             ],
             corollary: String::new(),
@@ -8073,8 +8088,8 @@ impl Gen<'_> {
                 self.document_stated(k, ty, fields, recursive)
             }
             (Validation::Trivial, false) => Ok(statements(
-                " :=\n  fun _ => true",
-                " :=\n  fun _ => True",
+                " :=\n  fun _ => Bool.true",
+                " :=\n  fun _ => _root_.True",
                 &format!(" :=\n  fun __v => {p}.validTrue_inv __v"),
                 &format!(" :=\n  {p}.tpl_validTrue {enc} rfl"),
             )),
@@ -8142,14 +8157,14 @@ impl Gen<'_> {
             (Validation::List { element: e }, true) => {
                 let mut stated = statements(
                     &format!(
-                        "\n  | [] => true\n  | __x0 :: __x1 => if __valid_{e} __x0 then __valid_{k} __x1 else false"
+                        "\n  | [] => Bool.true\n  | __x0 :: __x1 => if __valid_{e} __x0 then __valid_{k} __x1 else Bool.false"
                     ),
-                    &format!("\n  | [] => True\n  | __x0 :: __x1 => __inv_{e} __x0 ∧ __inv_{k} __x1"),
+                    &format!("\n  | [] => _root_.True\n  | __x0 :: __x1 => __inv_{e} __x0 ∧ __inv_{k} __x1"),
                     &format!(
                         "\n  | [] => {unfold} {p}.trueIff\n  | __x0 :: __x1 => {unfold} {p}.condAnd_iff (__viff_{e} __x0) (__viff_{k} __x1)"
                     ),
                     &format!(
-                        "\n  | [] => {unfold_valid} {hit_true}\n  | __x0 :: __x1 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_miss rfl ({p}.convA_hit rfl rfl ({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then __valid_{k} __x1 else false)) (__valid_{e} __x0) ({}) (fun _ => {}) {falsity}))))) rfl",
+                        "\n  | [] => {unfold_valid} {hit_true}\n  | __x0 :: __x1 => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_miss rfl ({p}.convA_hit rfl rfl ({p}.conv_cond (fun _ => Bool.true) (fun __c => {value}.bool (if __c then __valid_{k} __x1 else Bool.false)) (__valid_{e} __x0) ({}) (fun _ => {}) {falsity}))))) rfl",
                         call(e, &var, "__x0"),
                         call(&k, &var, "__x1")
                     ),
@@ -8161,8 +8176,8 @@ impl Gen<'_> {
             }
             (Validation::Option { value: v }, true) => {
                 let mut stated = statements(
-                    &format!("\n  | none => true\n  | some __x0 => __valid_{v} __x0"),
-                    &format!("\n  | none => True\n  | some __x0 => __inv_{v} __x0"),
+                    &format!("\n  | none => Bool.true\n  | some __x0 => __valid_{v} __x0"),
+                    &format!("\n  | none => _root_.True\n  | some __x0 => __inv_{v} __x0"),
                     &format!(
                         "\n  | none => {unfold} {p}.trueIff\n  | some __x0 => {unfold} __viff_{v} __x0"
                     ),
@@ -8179,14 +8194,14 @@ impl Gen<'_> {
             (Validation::Pair { left: a, right: b }, true) => {
                 let mut stated = statements(
                     &format!(
-                        "\n  | (__x0, __x1) => if __valid_{a} __x0 then __valid_{b} __x1 else false"
+                        "\n  | (__x0, __x1) => if __valid_{a} __x0 then __valid_{b} __x1 else Bool.false"
                     ),
                     &format!("\n  | (__x0, __x1) => __inv_{a} __x0 ∧ __inv_{b} __x1"),
                     &format!(
                         "\n  | (__x0, __x1) => {unfold} {p}.condAnd_iff (__viff_{a} __x0) (__viff_{b} __x1)"
                     ),
                     &format!(
-                        "\n  | (__x0, __x1) => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then __valid_{b} __x1 else false)) (__valid_{a} __x0) ({}) (fun _ => {}) {falsity})) rfl",
+                        "\n  | (__x0, __x1) => {unfold_valid} {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_cond (fun _ => Bool.true) (fun __c => {value}.bool (if __c then __valid_{b} __x1 else Bool.false)) (__valid_{a} __x0) ({}) (fun _ => {}) {falsity})) rfl",
                         call(a, &format!("({p}.conv_first {var})"), "__x0"),
                         call(b, &format!("({p}.conv_second {var})"), "__x1")
                     ),
@@ -8249,8 +8264,8 @@ impl Gen<'_> {
         // `terms` from position `at` on.
         let chain = |terms: &[(String, Option<u64>)]| -> [String; 4] {
             let mut out = [
-                "true".to_owned(),
-                "True".to_owned(),
+                TRUE.to_owned(),
+                "_root_.True".to_owned(),
                 format!("{p}.trueIff"),
                 format!("{p}.conv_build {p}.convL_nil {p}.construct_true"),
             ];
@@ -8259,11 +8274,11 @@ impl Gen<'_> {
                     Some(c) => {
                         let [valid, inv, viff, vrel] = out;
                         out = [
-                            format!("(if __valid_{c} {term} then {valid} else false)"),
+                            format!("(if __valid_{c} {term} then {valid} else Bool.false)"),
                             format!("(__inv_{c} {term} ∧ {inv})"),
                             format!("({p}.condAnd_iff (__viff_{c} {term}) {viff})"),
                             format!(
-                                "({p}.conv_cond (fun _ => true) (fun __c => {value}.bool (if __c then {valid} else false)) (__valid_{c} {term}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {term})) (fun _ => {vrel}) {falsity})"
+                                "({p}.conv_cond (fun _ => Bool.true) (fun __c => {value}.bool (if __c then {valid} else Bool.false)) (__valid_{c} {term}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {term})) (fun _ => {vrel}) {falsity})"
                             ),
                         ];
                     }
@@ -8291,10 +8306,10 @@ impl Gen<'_> {
                 format!("def __valid_{k} : {lean} -> Bool\n"),
                 format!("def __inv_{k} : {lean} -> Prop\n"),
                 format!(
-                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = true ↔ __inv_{k} __v\n"
+                    "theorem __viff_{k} : ∀ (__v : {lean}), __valid_{k} __v = Bool.true ↔ __inv_{k} __v\n"
                 ),
                 format!(
-                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel true ({value}.bool (__valid_{k} __v)))\n"
+                    "theorem __vrel_{k} : ∀ (__v : {lean}), {p}.FunRel __prog {k} [({enc} __v)] ({p}.Rel Bool.true ({value}.bool (__valid_{k} __v)))\n"
                 ),
             ];
             for (position, ((constructor, types), checks)) in shape
@@ -8365,10 +8380,10 @@ impl Gen<'_> {
                 format!("def __valid_{k} (__s : {lean}) : Bool :=\n  {valid}\n\n"),
                 format!("def __inv_{k} (__s : {lean}) : Prop :=\n  {inv}\n\n"),
                 format!(
-                    "theorem __viff_{k} : ∀ (__s : {lean}), __valid_{k} __s = true ↔ __inv_{k} __s :=\n  fun __s => {viff}\n\n"
+                    "theorem __viff_{k} : ∀ (__s : {lean}), __valid_{k} __s = Bool.true ↔ __inv_{k} __s :=\n  fun __s => {viff}\n\n"
                 ),
                 format!(
-                    "theorem __vrel_{k} : ∀ (__s : {lean}), {p}.FunRel __prog {k} [({enc} __s)] ({p}.Rel true ({value}.bool (__valid_{k} __s))) :=\n  fun __s => {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_hit rfl rfl {vrel}))) rfl\n\n"
+                    "theorem __vrel_{k} : ∀ (__s : {lean}), {p}.FunRel __prog {k} [({enc} __s)] ({p}.Rel Bool.true ({value}.bool (__valid_{k} __s))) :=\n  fun __s => {p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({p}.conv_match {var} ({p}.convA_hit rfl rfl {vrel}))) rfl\n\n"
                 ),
             ],
             corollary: String::new(),
@@ -8387,6 +8402,7 @@ impl Gen<'_> {
         names: &[String],
     ) -> Result<String, String> {
         let p = LIBRARY;
+        let module = &self.module;
         let value = format!("{SYNTAX}.Value");
         if validators.len() != names.len() {
             return Err("the entry validates a parameter list of another length".to_owned());
@@ -8396,7 +8412,7 @@ impl Gen<'_> {
         let var = format!("({p}.conv_var rfl)");
         let mut fits = signature.fits_applied.clone();
         let mut outcome = format!("({value}.some {})", signature.value);
-        let mut accepts = "True".to_owned();
+        let mut accepts = "_root_.True".to_owned();
         let arguments = names.iter().fold(format!("{p}.convL_nil"), |rest, _| {
             format!("({p}.convL_cons {var} {rest})")
         });
@@ -8408,9 +8424,9 @@ impl Gen<'_> {
             match validator {
                 Some(c) => {
                     proof = format!(
-                        "{p}.conv_cond (fun __c => if __c then {fits} else true) (fun __c => if __c then {outcome} else {value}.none) (__valid_{c} {name}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {name})) (fun _ => {p}.Conv.fits_eq ({proof}) (by simp)) (fun _ => {p}.conv_build {p}.convL_nil {p}.construct_none)"
+                        "{p}.conv_cond (fun __c => if __c then {fits} else Bool.true) (fun __c => if __c then {outcome} else {value}.none) (__valid_{c} {name}) ({p}.conv_call ({p}.convL_cons {var} {p}.convL_nil) (__vrel_{c} {name})) (fun _ => {p}.Conv.fits_eq ({proof}) (by simp)) (fun _ => {p}.conv_build {p}.convL_nil {p}.construct_none)"
                     );
-                    fits = format!("(if __valid_{c} {name} then {fits} else true)");
+                    fits = format!("(if __valid_{c} {name} then {fits} else Bool.true)");
                     outcome = format!("(if __valid_{c} {name} then {outcome} else {value}.none)");
                     accepts = format!("(__inv_{c} {name} ∧ {accepts})");
                     checked_names.push((*c, name.clone()));
@@ -8436,19 +8452,19 @@ impl Gen<'_> {
             ));
         }
         refusal.push_str(&format!(
-            "exact absurd ⟨{}, trivial⟩ __h\n",
+            "exact _root_.absurd ⟨{}, _root_.trivial⟩ __h\n",
             witnesses.join(", ")
         ));
         Ok(format!(
             "def entryFits {binders} : Bool :=\n  {fits}\n\n\
              def entryValue {binders} : {value} :=\n  {outcome}\n\n\
              /-- The entry's observation. -/\n\
-             def denoteEntry {binders} : {p}.Obs :=\n  cond (entryFits {applied}) ({p}.Obs.value (entryValue {applied})) {p}.Obs.overflow\n\n\
+             def denoteEntry {binders} : {p}.Obs :=\n  _root_.cond ({module}.entryFits {applied}) ({p}.Obs.value ({module}.entryValue {applied})) {p}.Obs.overflow\n\n\
              /-- §17.12's invariants of the validated parameters. -/\n\
              def accepts {binders} : Prop :=\n  {accepts}\n\n\
-             theorem entry {binders} : {p}.RunConv __prog {entry} {} (denoteEntry {applied}) :=\n  {p}.run_of_funRel ({p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({proof})) (by simp [entryFits]))\n\n\
-             theorem entry_accepts {binders} (__h : accepts {applied}) : denoteEntry {applied} = {p}.someObs (denote {applied}) := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue denote\n  simp only [if_true{uses}]\n  cases {} <;> rfl\n\n\
-             theorem entry_refuses {binders} (__h : ¬ accepts {applied}) : denoteEntry {applied} = {p}.Obs.value {value}.none := by\n  unfold accepts at __h\n  unfold denoteEntry entryFits entryValue\n{refusal}\n",
+             theorem entry {binders} : {p}.RunConv __prog {entry} {} ({module}.denoteEntry {applied}) :=\n  {p}.run_of_funRel ({p}.FunRel.fits_eq ({p}.funRel_intro rfl rfl ({proof})) (by simp [{module}.entryFits]))\n\n\
+             theorem entry_accepts {binders} (__h : {module}.accepts {applied}) : {module}.denoteEntry {applied} = {p}.someObs ({module}.denote {applied}) := by\n  unfold {module}.accepts at __h\n  unfold {module}.denoteEntry {module}.entryFits {module}.entryValue {module}.denote\n  simp only [_root_.if_true{uses}]\n  cases {} <;> rfl\n\n\
+             theorem entry_refuses {binders} (__h : ¬ {module}.accepts {applied}) : {module}.denoteEntry {applied} = {p}.Obs.value {value}.none := by\n  unfold {module}.accepts at __h\n  unfold {module}.denoteEntry {module}.entryFits {module}.entryValue\n{refusal}\n",
             signature.arguments,
             signature.fits_applied,
         ))

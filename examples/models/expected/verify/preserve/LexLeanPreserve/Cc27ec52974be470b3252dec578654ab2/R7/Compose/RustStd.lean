@@ -8,7 +8,7 @@ namespace LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.Compose.RustStd
 
 /-- The rendering of the root, invoked on the encoded arguments, realizes
 the encoded source result. -/
-theorem root (x : Nat) (__e_hrep : LexLeanPreservation.Rust.RepresentableL [(LexLeanTarget.TargetSyntax.Value.nat x)]) : ∃ __e_ro, LexLeanPreservation.Rust.RealizesFn false (LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.denote x) __e_ro ∧ LexLeanPreservation.Rust.RCI LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.RustStd.krate (LexLeanPreservation.Rust.fnIdent 0) [(LexLeanTarget.TargetSyntax.Value.nat x)] __e_ro :=
+theorem root (x : Nat) (__e_hrep : LexLeanPreservation.Rust.RepresentableL [(LexLeanTarget.TargetSyntax.Value.nat x)]) : ∃ __e_ro, LexLeanPreservation.Rust.RealizesFn Bool.false (LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.denote x) __e_ro ∧ LexLeanPreservation.Rust.RCI LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.RustStd.krate (LexLeanPreservation.Rust.fnIdent 0) [(LexLeanTarget.TargetSyntax.Value.nat x)] __e_ro :=
   LexLeanPreservation.Rust.compose (fun __e_n => LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.RustStd.root __e_n 0) rfl (LexLeanPreservation.Rust.wtl_cons (LexLeanPreservation.Rust.wt_nat x) LexLeanPreservation.Rust.wtl_nil) rfl rfl (LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.root x) (LexLeanPreservation.Rust.rel_ne_stuck _ _)
 
 end LexLeanPreserve.Cc27ec52974be470b3252dec578654ab2.R7.Compose.RustStd

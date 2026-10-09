@@ -30,8 +30,8 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
       body := (.«match» .bool (.var 0) [(.arm .zero [] (.build .false .bool [])), (.arm .succ [1] (.call 2 [(.var 1)]))]) }] }
 
 def __fits_1 : ∀ (transform : (Nat -> Bool)) (__ff_0 : Nat -> Bool) (values : (List Nat)), Bool
-  | transform, __ff_0, (List.nil) => (true && (true && true))
-  | transform, __ff_0, (List.cons head tail) => (true && (((true && ((true && true) && (__ff_0 (head)))) && (((true && (true && true)) && (__fits_1 (transform) (__ff_0) (tail))) && true)) && true))
+  | transform, __ff_0, (List.nil) => (Bool.true && (Bool.true && Bool.true))
+  | transform, __ff_0, (List.cons head tail) => (Bool.true && (((Bool.true && ((Bool.true && Bool.true) && (__ff_0 (head)))) && (((Bool.true && (Bool.true && Bool.true)) && (__fits_1 (transform) (__ff_0) (tail))) && Bool.true)) && Bool.true))
 
 theorem __rel_1 : ∀ (transform : (Nat -> Bool)) (__ff_0 : Nat -> Bool) (__fi_0 : Nat) (__fc_0 : List LexLeanTarget.TargetSyntax.Value) (__fh_0 : ∀ (__p0 : Nat), LexLeanPreservation.FunRel __prog __fi_0 (LexLeanTarget.TargetSemantics.LexLeanRuntime.append __fc_0 [(LexLeanTarget.TargetSyntax.Value.nat __p0)]) (LexLeanPreservation.Rel (__ff_0 __p0) (LexLeanTarget.TargetSyntax.Value.bool (transform __p0)))) (values : (List Nat)), LexLeanPreservation.FunRel __prog 1 [(LexLeanTarget.TargetSyntax.Value.closure __fi_0 __fc_0), ((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.nat) values)] (LexLeanPreservation.Rel (__fits_1 transform __ff_0 values) ((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.bool) (Coverage.Types.mapList Nat Bool transform values)))
   | transform, __ff_0, __fi_0, __fc_0, __fh_0, (List.nil) => by rw [__fits_1.eq_def]; exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_match (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convA_hit rfl rfl (LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_nil)))
@@ -39,13 +39,13 @@ theorem __rel_1 : ∀ (transform : (Nat -> Bool)) (__ff_0 : Nat -> Bool) (__fi_0
 
 mutual
 def __fits_2 : ∀ (n : Nat), Bool
-  | (Nat.zero) => (true && (true && true))
-  | (Nat.succ k) => (true && ((true && true) && (__fits_3 (k))))
+  | (Nat.zero) => (Bool.true && (Bool.true && Bool.true))
+  | (Nat.succ k) => (Bool.true && ((Bool.true && Bool.true) && (__fits_3 (k))))
 termination_by structural n => n
 
 def __fits_3 : ∀ (n : Nat), Bool
-  | (Nat.zero) => (true && (true && true))
-  | (Nat.succ k) => (true && ((true && true) && (__fits_2 (k))))
+  | (Nat.zero) => (Bool.true && (Bool.true && Bool.true))
+  | (Nat.succ k) => (Bool.true && ((Bool.true && Bool.true) && (__fits_2 (k))))
 termination_by structural n => n
 
 end
@@ -64,14 +64,14 @@ termination_by structural n => n
 end
 
 def __fits_0 (values : (List Nat)) : Bool :=
-  ((true && (true && true)) && (__fits_1 ((Coverage.Types.isEven)) (fun (__p0 : Nat) => __fits_2 __p0) (values)))
+  ((Bool.true && (Bool.true && Bool.true)) && (__fits_1 ((Coverage.Types.isEven)) (fun (__p0 : Nat) => __fits_2 __p0) (values)))
 
 attribute [local irreducible] Coverage.Types.mapList in
 theorem __rel_0 (values : (List Nat)) : LexLeanPreservation.FunRel __prog 0 [((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.nat) values)] (LexLeanPreservation.Rel (__fits_0 values) ((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.bool) (Coverage.Main.mapped values))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_closure LexLeanPreservation.convL_nil) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (__rel_1 ((Coverage.Types.isEven)) (fun (__p0 : Nat) => __fits_2 __p0) (2) ([]) (fun (__p0 : Nat) => __rel_2 __p0) (values)))
 
 def denote (values : (List Nat)) : LexLeanPreservation.Obs :=
-  cond (__fits_0 values) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.bool) (Coverage.Main.mapped values)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 values) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.bool) (Coverage.Main.mapped values)))) LexLeanPreservation.Obs.overflow
 
 theorem root (values : (List Nat)) : LexLeanPreservation.RunConv __prog 0 [((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.nat) values)] (LexLeanPreservation.Rel (__fits_0 values) ((LexLeanPreservation.encList LexLeanTarget.TargetSyntax.Value.bool) (Coverage.Main.mapped values))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 values)

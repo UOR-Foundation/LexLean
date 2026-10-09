@@ -51,19 +51,19 @@ def __L_0 : LexLeanPreservation.ListEnc (Coverage.Syntax.Stmt) :=
 
 mutual
 def __fits_1 : ∀ (expression : (Coverage.Syntax.Expr)), Bool
-  | (Coverage.Syntax.Expr.literal value) => (true && true)
-  | (Coverage.Syntax.Expr.plus left right) => (true && ((((((true && true) && (__fits_1 (left))) && (((true && true) && (__fits_1 (right))) && true)) && (Nat.blt ((Coverage.Recur.exprSize (left)) + (Coverage.Recur.exprSize (right))) 18446744073709551616)) && (true && true)) && (Nat.blt (((Coverage.Recur.exprSize (left)) + (Coverage.Recur.exprSize (right))) + (1 : Nat)) 18446744073709551616)))
-  | (Coverage.Syntax.Expr.block statements result) => (true && ((((true && true) && (__fits_2 (statements))) && (((true && true) && (__fits_1 (result))) && true)) && (Nat.blt ((Coverage.Recur.statementsSize (statements)) + (Coverage.Recur.exprSize (result))) 18446744073709551616)))
+  | (Coverage.Syntax.Expr.literal value) => (Bool.true && Bool.true)
+  | (Coverage.Syntax.Expr.plus left right) => (Bool.true && ((((((Bool.true && Bool.true) && (__fits_1 (left))) && (((Bool.true && Bool.true) && (__fits_1 (right))) && Bool.true)) && (Nat.blt ((Coverage.Recur.exprSize (left)) + (Coverage.Recur.exprSize (right))) 18446744073709551616)) && (Bool.true && Bool.true)) && (Nat.blt (((Coverage.Recur.exprSize (left)) + (Coverage.Recur.exprSize (right))) + (1 : Nat)) 18446744073709551616)))
+  | (Coverage.Syntax.Expr.block statements result) => (Bool.true && ((((Bool.true && Bool.true) && (__fits_2 (statements))) && (((Bool.true && Bool.true) && (__fits_1 (result))) && Bool.true)) && (Nat.blt ((Coverage.Recur.statementsSize (statements)) + (Coverage.Recur.exprSize (result))) 18446744073709551616)))
 termination_by structural expression => expression
 
 def __fits_2 : ∀ (statements : (List (Coverage.Syntax.Stmt))), Bool
-  | (List.nil) => (true && true)
-  | (List.cons head tail) => (true && ((((true && true) && (__fits_3 (head))) && (((true && true) && (__fits_2 (tail))) && true)) && (Nat.blt ((Coverage.Recur.statementSize (head)) + (Coverage.Recur.statementsSize (tail))) 18446744073709551616)))
+  | (List.nil) => (Bool.true && Bool.true)
+  | (List.cons head tail) => (Bool.true && ((((Bool.true && Bool.true) && (__fits_3 (head))) && (((Bool.true && Bool.true) && (__fits_2 (tail))) && Bool.true)) && (Nat.blt ((Coverage.Recur.statementSize (head)) + (Coverage.Recur.statementsSize (tail))) 18446744073709551616)))
 termination_by structural statements => statements
 
 def __fits_3 : ∀ (statement : (Coverage.Syntax.Stmt)), Bool
-  | (Coverage.Syntax.Stmt.assign target value) => (true && ((((true && true) && (__fits_1 (value))) && (true && true)) && (Nat.blt ((Coverage.Recur.exprSize (value)) + (1 : Nat)) 18446744073709551616)))
-  | (Coverage.Syntax.Stmt.sequence first second) => (true && ((((true && true) && (__fits_3 (first))) && (((true && true) && (__fits_3 (second))) && true)) && (Nat.blt ((Coverage.Recur.statementSize (first)) + (Coverage.Recur.statementSize (second))) 18446744073709551616)))
+  | (Coverage.Syntax.Stmt.assign target value) => (Bool.true && ((((Bool.true && Bool.true) && (__fits_1 (value))) && (Bool.true && Bool.true)) && (Nat.blt ((Coverage.Recur.exprSize (value)) + (1 : Nat)) 18446744073709551616)))
+  | (Coverage.Syntax.Stmt.sequence first second) => (Bool.true && ((((Bool.true && Bool.true) && (__fits_3 (first))) && (((Bool.true && Bool.true) && (__fits_3 (second))) && Bool.true)) && (Nat.blt ((Coverage.Recur.statementSize (first)) + (Coverage.Recur.statementSize (second))) 18446744073709551616)))
 termination_by structural statement => statement
 
 end
@@ -88,14 +88,14 @@ termination_by structural statement => statement
 end
 
 def __fits_0 (e : (Coverage.Syntax.Expr)) : Bool :=
-  ((true && true) && (__fits_1 (e)))
+  ((Bool.true && Bool.true) && (__fits_1 (e)))
 
 attribute [local irreducible] Coverage.Recur.exprSize in
 theorem __rel_0 (e : (Coverage.Syntax.Expr)) : LexLeanPreservation.FunRel __prog 0 [(__enc_0 e)] (LexLeanPreservation.Rel (__fits_0 e) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.syntaxTotal e))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__rel_1 (e)))
 
 def denote (e : (Coverage.Syntax.Expr)) : LexLeanPreservation.Obs :=
-  cond (__fits_0 e) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.syntaxTotal e)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 e) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.syntaxTotal e)))) LexLeanPreservation.Obs.overflow
 
 theorem root (e : (Coverage.Syntax.Expr)) : LexLeanPreservation.RunConv __prog 0 [(__enc_0 e)] (LexLeanPreservation.Rel (__fits_0 e) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.syntaxTotal e))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 e)

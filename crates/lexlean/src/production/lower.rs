@@ -383,14 +383,16 @@ pub fn lower_root(
     };
     audit_boundary(&lowered).map_err(internal)?;
     // The certificates are generated as text from the program; refuse before
-    // generating them when they would not fit the largest file the project
-    // allows, rather than let the generator and the pinned Lean discover it.
-    let estimate = certificate_estimate(&measure_program(&lowered.program));
-    if estimate > limits.max_file_bytes {
+    // generating them when a lower bound on the largest already exceeds the
+    // largest file the project allows. A program whose certificates fit is
+    // never refused here: what the bound does not see, the generation under
+    // the same limit stops.
+    let lower_bound = certificate_lower_bound(&measure_program(&lowered.program));
+    if lower_bound > limits.max_file_bytes {
         return Err(Diagnostic::new(
             code!("LLS8002"),
             format!(
-                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, its certificates are estimated at {estimate} bytes ({} program nodes)",
+                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, the largest of its certificates is at least {lower_bound} bytes ({} program nodes)",
                 report.root,
                 limits.max_file_bytes,
                 program_nodes(&lowered.program)
@@ -428,10 +430,10 @@ pub struct Measure {
     /// Field reads, constructors built, and the binders of arms, counted once
     /// each with the arm.
     pub shapes: u64,
-    /// The bytes the literals of the program take in a certificate: nine for
-    /// each byte of a string (a control character is spelled with six), four
-    /// for each hexadecimal digit of a bytes literal, six for each digit of a
-    /// number.
+    /// The bytes the literals of the program take in a certificate, at the
+    /// least: three for each byte of a string (certificate B repeats it as
+    /// many), two for each hexadecimal digit of a bytes literal, one for
+    /// each digit of a number.
     pub literal_bytes: u64,
     /// The sum over matches of the square of their arms: a match on `C`
     /// constructors states, for each arm, the arms it follows, so its proof
@@ -449,33 +451,36 @@ impl Measure {
     }
 }
 
-/// The bytes a type node costs a certificate, measured against the largest
-/// certificate of every corpus and stress family (`SP-02`) and multiplied by
-/// one and a half so that the estimate is not the measurement.
-pub const CERTIFICATE_BYTES_PER_TYPE_NODE: u64 = 70;
+/// The bytes a type node costs the largest certificate of a program, at the
+/// least: half of the most that the corpora and stress families allow
+/// without the bound passing the size of their largest certificate
+/// (`conformance_sp_02` asserts that it never does).
+pub const CERTIFICATE_BYTES_PER_TYPE_NODE: u64 = 16;
 
-/// The bytes an expression node costs a certificate, measured the same way.
-pub const CERTIFICATE_BYTES_PER_EXPR_NODE: u64 = 300;
+/// The same for an expression node.
+pub const CERTIFICATE_BYTES_PER_EXPR_NODE: u64 = 20;
 
-/// The bytes a shape node costs a certificate, measured the same way.
-pub const CERTIFICATE_BYTES_PER_SHAPE_NODE: u64 = 300;
+/// The same for a shape node.
+pub const CERTIFICATE_BYTES_PER_SHAPE_NODE: u64 = 25;
 
-/// The bytes a pair of arms of one match costs a certificate, at one and a
-/// half times the most measured (a match on 200 constructors takes 22 bytes
-/// for each pair).
-pub const CERTIFICATE_BYTES_PER_ARM_PAIR: u64 = 33;
+/// The same for a pair of arms of one match (a match on 200 constructors
+/// takes 22 bytes for each pair of its certificate A).
+pub const CERTIFICATE_BYTES_PER_ARM_PAIR: u64 = 11;
 
-/// What a certificate costs besides its nodes: its imports, its encoders,
-/// and the statement of its root.
-pub const CERTIFICATE_BASE_BYTES: u64 = 8192;
+/// What a certificate costs besides its nodes, at the least: its imports and
+/// the statement of its root.
+pub const CERTIFICATE_BASE_BYTES: u64 = 1000;
 
-/// The bytes the certificates A and E of a program with `measure` are
-/// estimated to take, the larger of them. Certificate B is not estimated: the
-/// derivation of a node repeats the types and patterns of the nodes around
-/// it, so its size is not a function of the counts, and it is built under the
-/// limit instead (`rust_cert::certificate_b`).
+/// A lower bound on the largest of a program's certificates A, B, and E, in
+/// bytes, from what the program states: its types, expressions, shapes,
+/// literals, and the pairs of arms of its matches. It is a calibration,
+/// at half of the greatest bound the corpora and stress families allow, and
+/// it is used to refuse early and only to refuse early: a root is refused
+/// when even this much exceeds `max_file_bytes`, and a root whose
+/// certificates fit is never refused by it. The generation under
+/// `max_file_bytes` is what bounds every program.
 #[must_use]
-pub fn certificate_estimate(measure: &Measure) -> u64 {
+pub fn certificate_lower_bound(measure: &Measure) -> u64 {
     measure
         .types
         .saturating_mul(CERTIFICATE_BYTES_PER_TYPE_NODE)
@@ -619,10 +624,10 @@ fn measure_expr(expr: &Expr) -> Measure {
 
 /// The bytes a literal takes in a certificate (see [`Measure::literal_bytes`]).
 fn literal_bytes(value: &Value) -> u64 {
-    let digits = |text: &String| (text.len() as u64).saturating_mul(6);
+    let digits = |text: &String| text.len() as u64;
     match value {
-        Value::String { value } => (value.len() as u64).saturating_mul(9),
-        Value::Bytes { hex } => (hex.len() as u64).saturating_mul(4),
+        Value::String { value } => (value.len() as u64).saturating_mul(3),
+        Value::Bytes { hex } => (hex.len() as u64).saturating_mul(2),
         Value::Nat { value }
         | Value::Int { value }
         | Value::U8 { value }

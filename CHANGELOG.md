@@ -112,14 +112,17 @@ versions, and the entries below say what each tag does and does not claim.
   vocabulary SPEC.md quotes is held byte-equal to the library's by
   `validate-spec-links`, and every library declaration must be registered.
 - Limits (SPEC.md §17.17 *Limits*). A root whose lowered program exceeds
-  `max_ir_nodes`, or whose certificates A and E are estimated to exceed
-  `max_file_bytes` (70 bytes for each type node, 300 for each expression
-  node and each shape node, 8 KiB; a calibration at one and a half times the
-  largest measured on the corpora and on stress families, never below any of
-  them in `conformance_sp_02`), or whose field reads print so many record
-  entries that certificate B would exceed it, is refused with `LLS8002`
-  before the toolchain is touched; certificate B, whose derivations grow with
-  the square of a record's arity and cannot be estimated from node counts, is
+  `max_ir_nodes`, or whose largest certificate is certain to exceed
+  `max_file_bytes` (a lower bound from what the program states: 16 bytes for
+  each type node, 20 for each expression node, 25 for each shape node, 11
+  for each pair of arms of a match, 3 for each byte of a string, and 1000;
+  calibrated at half of the most the corpora and stress families allow,
+  never above their largest certificate in `conformance_sp_02`, so a program
+  whose certificates fit is not refused by it), or whose field reads print so
+  many record entries that certificate B would exceed it, is refused with
+  `LLS8002` before the toolchain is touched; certificate B, whose derivations
+  grow with the square of a record's arity and cannot be bounded from node
+  counts, is
   generated under `max_file_bytes` and stops at it. Certificates are now
   generated right after lowering for that reason. Negative fixtures
   `lowering-size-limit`, `certificate-size-limit` (a record of 800 fields
@@ -136,15 +139,19 @@ versions, and the entries below say what each tag does and does not claim.
 - Every certificate is generated under `max_file_bytes` (the proof of each
   term, each match arm, the encoders, each function, the boundary), so no
   program makes the generator build more than the limit allows; the early
-  estimate also counts literals and the pairs of arms of a match and is held
-  to more stress families, but is a calibration and not the guarantee. A
+  refusal is a lower bound, not the guarantee. A
   match of thousands of arms cannot overflow the stack (the aligner derives
   arms in a loop and a derivation is written and dropped iteratively).
 - A root verifies whatever its parameters are named: the names certificate E
   binds begin with two underscores, which no semantic name does, and the
-  certificate token audit reads quoted names as data (the generator quotes a
-  name spelled like a forbidden token) while still refusing the tokens
-  themselves.
+  certificate token audit reads a quoted name as the name it is, forbidden
+  constants and attributes included (the generator quotes a name spelled like
+  a forbidden token, and the backend one spelled like a word the generated-Lean
+  audit forbids, such as `native_decide`), while an unclosed quotation, string,
+  or comment is refused; the words a certificate writes bare, which a parameter
+  could shadow (`true`, `cond`, `absurd`, `denote`, `accepts`, ...), are
+  written by their full names, and `conformance_sp_09` checks that no bare
+  word of a certificate is anything but syntax.
 - Certificate E is stated, in full, for representable arguments, and Lean
   applies it to arguments of the differential, some at the bounds of `u64`
   and `i64`, so a hypothesis that cannot be met or used fails; the planted

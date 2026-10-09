@@ -42,12 +42,12 @@ def __L_0 : LexLeanPreservation.ListEnc (Coverage.Syntax.Rose Nat) :=
 
 mutual
 def __fits_1 : ∀ (rose : (Coverage.Syntax.Rose Nat)), Bool
-  | (Coverage.Syntax.Rose.node label children) => (true && ((true && (((true && true) && (__fits_2 (children))) && true)) && (Nat.blt ((1 : Nat) + (Coverage.Recur.forestSize Nat (children))) 18446744073709551616)))
+  | (Coverage.Syntax.Rose.node label children) => (Bool.true && ((Bool.true && (((Bool.true && Bool.true) && (__fits_2 (children))) && Bool.true)) && (Nat.blt ((1 : Nat) + (Coverage.Recur.forestSize Nat (children))) 18446744073709551616)))
 termination_by structural rose => rose
 
 def __fits_2 : ∀ (forest : (List (Coverage.Syntax.Rose Nat))), Bool
-  | (List.nil) => (true && true)
-  | (List.cons head tail) => (true && ((((true && true) && (__fits_1 (head))) && (((true && true) && (__fits_2 (tail))) && true)) && (Nat.blt ((Coverage.Recur.roseSize Nat (head)) + (Coverage.Recur.forestSize Nat (tail))) 18446744073709551616)))
+  | (List.nil) => (Bool.true && Bool.true)
+  | (List.cons head tail) => (Bool.true && ((((Bool.true && Bool.true) && (__fits_1 (head))) && (((Bool.true && Bool.true) && (__fits_2 (tail))) && Bool.true)) && (Nat.blt ((Coverage.Recur.roseSize Nat (head)) + (Coverage.Recur.forestSize Nat (tail))) 18446744073709551616)))
 termination_by structural forest => forest
 
 end
@@ -65,14 +65,14 @@ termination_by structural forest => forest
 end
 
 def __fits_0 (n : Nat) : Bool :=
-  ((((true && (((((true && ((true && true) && true)) && true) && ((true && true) && true)) && true) && true)) && true) && true) && (__fits_1 ((Coverage.Syntax.Rose.node (n) (((Coverage.Syntax.Rose.node ((1 : Nat)) (([] : List (Coverage.Syntax.Rose Nat))) : (Coverage.Syntax.Rose Nat)) :: ([] : List (Coverage.Syntax.Rose Nat)))) : (Coverage.Syntax.Rose Nat)))))
+  ((((Bool.true && (((((Bool.true && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && Bool.true) && (__fits_1 ((Coverage.Syntax.Rose.node (n) (((Coverage.Syntax.Rose.node ((1 : Nat)) (([] : List (Coverage.Syntax.Rose Nat))) : (Coverage.Syntax.Rose Nat)) :: ([] : List (Coverage.Syntax.Rose Nat)))) : (Coverage.Syntax.Rose Nat)))))
 
 attribute [local irreducible] Coverage.Recur.roseSize in
 theorem __rel_0 (n : Nat) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.roseTotal n))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_nil) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_adt) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_nil) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_cons) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_adt) LexLeanPreservation.convL_nil) (__rel_1 ((Coverage.Syntax.Rose.node (n) (((Coverage.Syntax.Rose.node ((1 : Nat)) (([] : List (Coverage.Syntax.Rose Nat))) : (Coverage.Syntax.Rose Nat)) :: ([] : List (Coverage.Syntax.Rose Nat)))) : (Coverage.Syntax.Rose Nat)))))
 
 def denote (n : Nat) : LexLeanPreservation.Obs :=
-  cond (__fits_0 n) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.roseTotal n)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 n) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.roseTotal n)))) LexLeanPreservation.Obs.overflow
 
 theorem root (n : Nat) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.RecRoots.roseTotal n))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 n)

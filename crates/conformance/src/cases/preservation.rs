@@ -110,16 +110,20 @@ fn assert_targeted(plant: &preservation::Planted) {
     );
 }
 
-/// The families whose certificates grow with names the program does not
-/// carry.
-const NAMES_NOT_COUNTED: &str = "long names";
-
-/// Certify every stress family, assert that the estimate is never below
-/// certificate A or E and that the floor from field reads is never above
-/// certificate B, and that certificate B stops at the limit it is given.
-/// Returns how far certificate B went beyond the estimate at most.
+/// Certify every stress family, assert that the lower bound the lowering
+/// refuses on is never above the largest certificate and the floor from
+/// field reads never above certificate B, that every certificate stops at
+/// the limit it is given, and that programs whose certificates fit the
+/// default limits are not refused. Returns how far certificate B went
+/// beyond A and E at most.
 fn stress_estimates() -> u64 {
     let mut quadratic = 0_u64;
+    // Valid programs whose certificates fit the default limits are not
+    // refused: `certificates` panics on a refusal.
+    for (family, project) in crate::stress::fitting() {
+        let certified = preservation::certificates(&project);
+        assert!(!certified.is_empty(), "{family} certifies");
+    }
     for (family, project) in crate::stress::families() {
         let certified = preservation::certificates(&project);
         // However large a program makes its certificates, generation stops
@@ -137,7 +141,7 @@ fn stress_estimates() -> u64 {
         }
         for entry in certified {
             assert_floor(&family, &entry);
-            let estimate = estimate_of(&entry);
+            let bound = bound_of(&entry);
             let a = entry.certificate.text.len() as u64;
             let e = entry
                 .composed
@@ -145,18 +149,23 @@ fn stress_estimates() -> u64 {
                 .map(|(_, certificate)| certificate.text.len() as u64)
                 .max()
                 .unwrap_or(0);
-            // The estimate counts what the program states: its types,
-            // expressions, shapes, literals, and the arms of its matches.
-            // The names of fields and constructors are not in a program, so
-            // a family that lengthens them is held to the limit on
-            // generation alone.
+            let b = entry
+                .renderings
+                .iter()
+                .map(|(_, certificate)| certificate.text.len() as u64)
+                .max()
+                .unwrap_or(0);
+            // The bound counts what the program states: its types,
+            // expressions, shapes, literals, and the arms of its matches. It
+            // is below the largest certificate, so that refusing on it never
+            // refuses a program whose certificates fit.
             assert!(
-                estimate >= a.max(e) || family.starts_with(NAMES_NOT_COUNTED),
-                "{family}: the estimate {estimate} is below certificate A ({a}) or E ({e})"
+                bound <= a.max(b).max(e),
+                "{family}: the lower bound {bound} is above certificate A ({a}), B ({b}), and E ({e})"
             );
             for (target, certificate) in &entry.renderings {
                 let size = certificate.text.len() as u64;
-                quadratic = quadratic.max(size.saturating_sub(estimate));
+                quadratic = quadratic.max(size.saturating_sub(a.max(e)));
                 // Certificate B stops at the limit it is given, at
                 // the size it would have had or below it.
                 if family.starts_with("record copy 100") {
@@ -199,12 +208,157 @@ fn assert_floor(label: &str, entry: &preservation::Certified) {
     }
 }
 
-/// The estimate the lowering charges against `max_file_bytes` before it
-/// generates anything, for a certified root's program.
-fn estimate_of(entry: &preservation::Certified) -> u64 {
-    lexlean::production::lower::certificate_estimate(&lexlean::production::lower::measure_program(
-        &entry.program,
-    ))
+/// The lower bound the lowering refuses on against `max_file_bytes` before
+/// it generates anything, for a certified root's program.
+fn bound_of(entry: &preservation::Certified) -> u64 {
+    lexlean::production::lower::certificate_lower_bound(
+        &lexlean::production::lower::measure_program(&entry.program),
+    )
+}
+
+/// The words of Lean's syntax and tactics, and nothing else, that a
+/// certificate writes bare: the words that are not names of anything a
+/// parameter could shadow. Every other bare word of a certificate is a
+/// global or a definition, which `assert_no_bare_globals` refuses.
+const SYNTAX_WORDS: [&str; 39] = [
+    "_",
+    "all_goals",
+    "at",
+    "attribute",
+    "autoImplicit",
+    "by",
+    "cases",
+    "decreasing_by",
+    "def",
+    "else",
+    "exact",
+    "fun",
+    "generalizing",
+    "have",
+    "if",
+    "import",
+    "in",
+    "irreducible",
+    "local",
+    "match",
+    "maxRecDepth",
+    "namespace",
+    "end",
+    "of",
+    "open",
+    "rw",
+    "set_option",
+    "simp",
+    "structural",
+    "subst_vars",
+    "termination_by",
+    "then",
+    "theorem",
+    "unfold",
+    "with",
+    "let",
+    "only",
+    "first",
+    "mutual",
+];
+
+/// A certificate refers to globals, and to the definitions it states, only by
+/// their full names or by names beginning with two underscores, never by a
+/// bare word that a parameter of the root could be named: a bare word of the
+/// text is Lean syntax or tactic, the name of a type the backend emits bare
+/// (which linking refuses as a binder), a named argument of a library
+/// theorem, or one of the source's own names.
+fn assert_no_bare_globals(what: &str, text: &str, user: &BTreeSet<String>) {
+    let code = lexlean::production::preserve::code_only(text).expect("a certificate audits");
+    let mut word = String::new();
+    let mut bare: BTreeSet<String> = BTreeSet::new();
+    let characters: Vec<char> = code.chars().chain(std::iter::once(' ')).collect();
+    for (at, character) in characters.iter().enumerate() {
+        if character.is_alphanumeric() || matches!(character, '_' | '\'' | '.' | '\u{e000}') {
+            word.push(*character);
+            continue;
+        }
+        let candidate = word.replace('\u{e000}', "");
+        let named_argument = characters[at..].iter().take(4).collect::<String>() == " := ";
+        // The name a declaration states is its own, not a reference.
+        let before: String = characters[..at.saturating_sub(word.chars().count())]
+            .iter()
+            .rev()
+            .take(16)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect();
+        let line_start = characters[..at]
+            .iter()
+            .rposition(|c| *c == '\n')
+            .map_or(0, |newline| newline + 1);
+        // A constructor in a pattern is not a reference either.
+        let pattern = before.ends_with("| ");
+        // `(generalizing := false)` is an option of the match.
+        let declared = pattern
+            || before.ends_with("generalizing := ")
+            || before.ends_with("def ")
+            || before.ends_with("theorem ")
+            || characters[line_start..].iter().take(10).collect::<String>() == "set_option";
+        if !candidate.is_empty()
+            && !candidate.contains('.')
+            && !candidate.starts_with("__")
+            && !candidate
+                .chars()
+                .next()
+                .is_some_and(|first| first.is_ascii_digit())
+            && !named_argument
+            && !declared
+            && !user.contains(&candidate)
+            && !SYNTAX_WORDS.contains(&candidate.as_str())
+            && !lexlean::ir::semantic::is_backend_bare_name(&candidate)
+        {
+            let context: String = characters[at.saturating_sub(candidate.chars().count() + 25)
+                ..(at + 15).min(characters.len())]
+                .iter()
+                .collect();
+            bare.insert(format!("{candidate} (in `{}`)", context.replace('\n', " ")));
+        }
+        word.clear();
+    }
+    assert!(
+        bare.is_empty(),
+        "{what}: bare words a parameter could shadow: {bare:?}"
+    );
+}
+
+/// The strings of a project's sources that are not keys: the names a user
+/// chose.
+fn user_names(project: &P) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    for entry in walkdir::WalkDir::new(project.root.join("src").as_std_path())
+        .into_iter()
+        .flatten()
+    {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let text = std::fs::read_to_string(entry.path()).expect("a source");
+        let parts: Vec<&str> = text.split('"').collect();
+        // Odd parts are the strings of the JSON; one followed by a colon is a
+        // key.
+        for (at, part) in parts.iter().enumerate().skip(1).step_by(2) {
+            let key = parts.get(at + 1).is_some_and(|next| next.starts_with(':'));
+            // The value of a `kind` or an `operation` is the source's
+            // vocabulary, not a name a user chose.
+            let vocabulary = parts.get(at - 1).is_some_and(|before| {
+                before.ends_with(':')
+                    && (parts
+                        .get(at - 2)
+                        .is_some_and(|k| *k == "kind" || *k == "operation" || *k == "spec"))
+            });
+            if !key && !vocabulary {
+                out.insert((*part).to_owned());
+            }
+        }
+    }
+    out
 }
 
 /// The parenthesized groups of `text`, which must be nothing else but groups
@@ -339,8 +493,13 @@ fn assert_statement(
             composed.module
         );
     }
-    let fallible = lexlean::calculus::rust::fallible_functions(&entry.program)
-        .expect("a valid program")[entry.entry as usize];
+    let fallible = if lexlean::calculus::rust::fallible_functions(&entry.program)
+        .expect("a valid program")[entry.entry as usize]
+    {
+        "Bool.true"
+    } else {
+        "Bool.false"
+    };
     let applied: String = names.iter().map(|local| format!(" {local}")).collect();
     let (a, b) = (&entry.certificate.module, &rendering.module);
     let encoded = encodings.join(", ");
@@ -545,10 +704,10 @@ pub fn run(id: &str) {
                         "{}: the certificate states the root theorem",
                         entry.root
                     );
-                    // On the corpora no certificate is above the estimate,
-                    // certificate B included.
+                    // On the corpora the bound is below the largest
+                    // certificate.
                     assert_floor(name, entry);
-                    let estimate = estimate_of(entry);
+                    let bound = bound_of(entry);
                     let biggest = std::iter::once(&entry.certificate)
                         .chain(entry.renderings.iter().map(|(_, b)| b))
                         .chain(entry.composed.iter().map(|(_, e)| e))
@@ -556,20 +715,20 @@ pub fn run(id: &str) {
                         .max()
                         .unwrap_or(0);
                     assert!(
-                        estimate >= biggest,
-                        "{}: the estimate {estimate} is below the {biggest} bytes generated",
+                        bound <= biggest,
+                        "{}: the lower bound {bound} is above the {biggest} bytes generated",
                         entry.root
                     );
                 }
             }
-            // The estimate is a bound on certificates A and E over the
-            // stress families too: programs that grow one dimension at a
-            // time (let chains, call chains, many parameters, enumerations,
-            // wide structures, record copies, a generic chain). Certificate
-            // B is not estimated, because its derivations repeat the
-            // patterns around a node and grow with the square of a record's
-            // arity: it is bounded by the limit it is generated under, which
-            // the family of record copies reaches.
+            // The lower bound holds over the stress families too: programs
+            // that grow one dimension at a time (let chains, call chains,
+            // many parameters, enumerations, nested matches, wide
+            // structures, record copies, literals, a generic chain).
+            // Certificate B is not bounded from the counts, because its
+            // derivations repeat the patterns around a node and grow with
+            // the square of a record's arity: it is bounded by the limit it
+            // is generated under, which the family of record copies reaches.
             // Certifying a family's deepest program recurses deeply, as the
             // differential's interpreter does.
             let quadratic = std::thread::Builder::new()
@@ -579,8 +738,8 @@ pub fn run(id: &str) {
                 .join()
                 .expect("the stress families certify");
             assert!(
-                quadratic > 0,
-                "the record-copy family has a certificate B beyond the estimate, which is what B's own limit is for"
+                quadratic > 100_000,
+                "the record-copy family has a certificate B far beyond A and E, which is what B's own limit is for"
             );
             // Two negative fixtures reach the limits of certificate B before
             // the toolchain. A record of 800 fields copied field by field
@@ -589,18 +748,24 @@ pub fn run(id: &str) {
             // of a record has 250 000, below that floor and above the limit
             // in its derivation, which stops when it passes the limit.
             // The fixture `certificate-resource-exhausted` is the project of
-            // `certificate-heartbeat-rejected` with a limit its certificates
-            // are estimated to fit and its module is a quarter of or more:
-            // a change of the estimate or of the certificate that took it
-            // out of between is reported here, not as a changed hash.
+            // `certificate-heartbeat-rejected` with a limit that holds its
+            // largest certificate, so that generation passes, and that its
+            // module is a quarter of or more: a change of a certificate that
+            // took the limit out of between is reported here, not as a
+            // changed hash.
             let between = P::negative("certificate-resource-exhausted");
             let limit = support::limits(&between).max_file_bytes;
             for entry in preservation::certificates(&between) {
-                let estimate = estimate_of(&entry);
                 let module = entry.certificate.text.len() as u64;
+                let largest = std::iter::once(&entry.certificate)
+                    .chain(entry.renderings.iter().map(|(_, b)| b))
+                    .chain(entry.composed.iter().map(|(_, e)| e))
+                    .map(|certificate| certificate.text.len() as u64)
+                    .max()
+                    .unwrap_or(0);
                 assert!(
-                    estimate <= limit && limit <= module.saturating_mul(4),
-                    "certificate-resource-exhausted: {}: its limit {limit} must lie between the estimate {estimate} and four times its module, {}",
+                    largest <= limit && limit <= module.saturating_mul(4),
+                    "certificate-resource-exhausted: {}: its limit {limit} must lie between its largest certificate, {largest}, and four times its module, {}",
                     entry.root,
                     module * 4
                 );
@@ -616,7 +781,7 @@ pub fn run(id: &str) {
             // would exceed the project's limits is refused before anything is
             // generated from it: a generic chain `g_k<T> = g_{k+1}<(T, T)>`
             // 16 deep has a type of 2^16 nodes (its certificates are
-            // estimated at fifty times the limit), and `lexlean verify`
+            // at least twice the limit), and `lexlean verify`
             // refuses it with `LLS8002` without starting Lean.
             let case =
                 crate::fixtures::load_case(&repo_root().join("tests/negative/lowering-size-limit"))
@@ -1697,7 +1862,13 @@ pub fn run(id: &str) {
                 }
             }
             for (name, project) in certified_projects() {
+                let users = user_names(&project);
                 for entry in preservation::certificates(&project) {
+                    assert_no_bare_globals(
+                        &entry.certificate.module,
+                        &entry.certificate.text,
+                        &users,
+                    );
                     let targets: Vec<&String> =
                         entry.composed.iter().map(|(target, _)| target).collect();
                     assert_eq!(
@@ -1727,6 +1898,7 @@ pub fn run(id: &str) {
                         // representable, and the conclusion is the two
                         // statements of §17.17 and nothing else.
                         assert_statement(name, &entry, rendering, composed);
+                        assert_no_bare_globals(&composed.module, &composed.text, &users);
                         for mutation in preservation::CompositionMutation::ALL {
                             let places = mutation.places(&composed.text);
                             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);

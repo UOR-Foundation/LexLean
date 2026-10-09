@@ -542,10 +542,10 @@ impl CompositionMutation {
         let at = *self.marks(text).get(nth)?;
         Some(match self {
             Self::Fallibility => {
-                let (word, other) = if text[at..].starts_with("true ") {
-                    ("true", "false")
+                let (word, other) = if text[at..].starts_with("Bool.true ") {
+                    ("Bool.true", "Bool.false")
                 } else {
-                    ("false", "true")
+                    ("Bool.false", "Bool.true")
                 };
                 format!("{}{}{}", &text[..at], other, &text[at + word.len()..])
             }

@@ -54,14 +54,22 @@ fn root(
 }
 
 fn project(declarations: &[Value]) -> P {
+    project_limited(declarations, true)
+}
+
+/// The project of `declarations` with the limits lifted or, when `lifted` is
+/// false, as the default configuration states them.
+fn project_limited(declarations: &[Value], lifted: bool) -> P {
     let project = P::negative("lowering-size-limit");
     let toml = project.read("lexlean.toml");
-    project.write(
-        "lexlean.toml",
-        &toml
-            .replace("max_file_bytes = 4194304", "max_file_bytes = 4000000000")
-            .replace("max_ir_nodes = 2000000", "max_ir_nodes = 2000000000"),
-    );
+    if lifted {
+        project.write(
+            "lexlean.toml",
+            &toml
+                .replace("max_file_bytes = 4194304", "max_file_bytes = 4000000000")
+                .replace("max_ir_nodes = 2000000", "max_ir_nodes = 2000000000"),
+        );
+    }
     let data = json!({"declarations": declarations, "spec": "lexlean/semantic-module/2"});
     project.write(
         "src/Main.lex.tex",
@@ -590,7 +598,45 @@ pub fn names() -> P {
         "parameters": [],
         "type_parameters": [],
     });
+    // The words the certificates write bare and the definitions they state
+    // under the names they have: a parameter of such a name must not capture
+    // them.
+    let globals = [
+        "cond",
+        "denote",
+        "accepts",
+        "entry",
+        "entryFits",
+        "entryValue",
+        "denoteEntry",
+        "root",
+        "fits",
+        "true",
+        "false",
+        "absurd",
+        "if_true",
+        "trivial",
+        "native_decide",
+    ];
+    let mut entered_globals = vec![parameter("pset", set.clone())];
+    entered_globals.extend(globals.iter().map(|name| parameter(name, nat())));
     let declarations = vec![
+        root(
+            "globals",
+            globals.iter().map(|name| parameter(name, nat())).collect(),
+            nat(),
+            sum(&globals),
+            &["overflow"],
+            &BOTH,
+        ),
+        root(
+            "entered_globals",
+            entered_globals,
+            nat(),
+            add(size("pset"), sum(&globals)),
+            &["allocation", "overflow"],
+            &["rust-std"],
+        ),
         root(
             "plain",
             plain.iter().map(|name| parameter(name, nat())).collect(),
@@ -647,4 +693,33 @@ pub fn names() -> P {
 #[must_use]
 pub fn wide_match(constructors: usize) -> P {
     project(&enumeration(constructors, 0))
+}
+
+/// Programs that are valid and whose certificates fit under the default
+/// limits, with the default limits: none may be refused. A match on 440
+/// constructors (certificate A of 3.7 MB of the 4 MiB) and a string literal
+/// of 450 000 characters (certificate B of 1.4 MB).
+#[must_use]
+pub fn fitting() -> Vec<(String, P)> {
+    let ascii = json!({"kind": "string", "value": "a".repeat(450_000)});
+    vec![
+        (
+            "enumeration of 440 constructors".to_owned(),
+            project_limited(&enumeration(440, 0), false),
+        ),
+        (
+            "string literal of 450000 characters".to_owned(),
+            project_limited(
+                &[root(
+                    "r",
+                    vec![parameter("n", nat())],
+                    json!({"kind": "string"}),
+                    ascii,
+                    &["allocation"],
+                    &["rust-std"],
+                )],
+                false,
+            ),
+        ),
+    ]
 }

@@ -34,33 +34,33 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
       body := (.cond (.call 3 [(.var 0)]) (.build .some (.option .nat) [(.call 0 [(.var 0), (.var 1)])]) (.build .none (.option .nat) [])) }] }
 
 def __fits_2 (bonus : Nat) (acc : Nat) (key : Nat) (value : Nat) : Bool :=
-  ((((true && (true && true)) && (Nat.blt (acc + key) 18446744073709551616)) && (((true && (true && true)) && (Nat.blt (value + bonus) 18446744073709551616)) && true)) && (Nat.blt ((acc + key) + (value + bonus)) 18446744073709551616))
+  ((((Bool.true && (Bool.true && Bool.true)) && (Nat.blt (acc + key) 18446744073709551616)) && (((Bool.true && (Bool.true && Bool.true)) && (Nat.blt (value + bonus) 18446744073709551616)) && Bool.true)) && (Nat.blt ((acc + key) + (value + bonus)) 18446744073709551616))
 
 theorem __rel_2 (bonus : Nat) (acc : Nat) (key : Nat) (value : Nat) : LexLeanPreservation.FunRel __prog 2 [(LexLeanTarget.TargetSyntax.Value.nat bonus), (LexLeanTarget.TargetSyntax.Value.nat acc), (LexLeanTarget.TargetSyntax.Value.nat key), (LexLeanTarget.TargetSyntax.Value.nat value)] (LexLeanPreservation.Rel (__fits_2 bonus acc key value) (LexLeanTarget.TargetSyntax.Value.nat (((acc + key) + (value + bonus))))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natAdd acc key)) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natAdd value bonus)) LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natAdd (acc + key) (value + bonus)))
 
 def __fits_0 (m : (List (Prod Nat Nat))) (bonus : Nat) : Bool :=
-  (((true && true) && (true && (true && true))) && (LexLeanPreservation.foldFits (fun __st __e => (fun (__p0 : Nat) (__p1 : Nat) (__p2 : Nat) => __fits_2 (bonus) __p0 __p1 __p2) __st __e.1 __e.2) (fun __st __e => ((fun (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus)))) __st __e.1 __e.2) ((0 : Nat)) (m)))
+  (((Bool.true && Bool.true) && (Bool.true && (Bool.true && Bool.true))) && (LexLeanPreservation.foldFits (fun __st __e => (fun (__p0 : Nat) (__p1 : Nat) (__p2 : Nat) => __fits_2 (bonus) __p0 __p1 __p2) __st __e.1 __e.2) (fun __st __e => ((fun (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus)))) __st __e.1 __e.2) ((0 : Nat)) (m)))
 
 theorem __rel_0 (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.FunRel __prog 0 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) m), (LexLeanTarget.TargetSyntax.Value.nat bonus)] (LexLeanPreservation.Rel (__fits_0 m bonus) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_closure (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil))) (LexLeanPreservation.tpl_mapFold (ek := LexLeanTarget.TargetSyntax.Value.nat) (ev := LexLeanTarget.TargetSyntax.Value.nat) (es := LexLeanTarget.TargetSyntax.Value.nat) (LexLeanPreservation.listEnc (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) (fun _ => rfl) ((fun (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus)))) (fun (__p0 : Nat) (__p1 : Nat) (__p2 : Nat) => __fits_2 (bonus) __p0 __p1 __p2) 2 [(LexLeanTarget.TargetSyntax.Value.nat bonus)] (fun (__p0 : Nat) (__p1 : Nat) (__p2 : Nat) => __rel_2 (bonus) __p0 __p1 __p2) (p := __prog) (fi := 1) (tk := .nat) (tw := .nat) (ts := .nat) rfl ((0 : Nat)) (m)))
 
 def denote (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.Obs :=
-  cond (__fits_0 m bonus) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 m bonus) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus)))) LexLeanPreservation.Obs.overflow
 
 theorem root (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.RunConv __prog 0 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) m), (LexLeanTarget.TargetSyntax.Value.nat bonus)] (LexLeanPreservation.Rel (__fits_0 m bonus) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 m bonus)
 
 def __valid_4 : Nat -> Bool :=
-  fun _ => true
+  fun _ => Bool.true
 
 def __inv_4 : Nat -> Prop :=
-  fun _ => True
+  fun _ => _root_.True
 
-theorem __viff_4 : ∀ (__v : Nat), __valid_4 __v = true ↔ __inv_4 __v :=
+theorem __viff_4 : ∀ (__v : Nat), __valid_4 __v = Bool.true ↔ __inv_4 __v :=
   fun __v => LexLeanPreservation.validTrue_inv __v
 
-theorem __vrel_4 : ∀ (__v : Nat), LexLeanPreservation.FunRel __prog 4 [(LexLeanTarget.TargetSyntax.Value.nat __v)] (LexLeanPreservation.Rel true (LexLeanTarget.TargetSyntax.Value.bool (__valid_4 __v))) :=
+theorem __vrel_4 : ∀ (__v : Nat), LexLeanPreservation.FunRel __prog 4 [(LexLeanTarget.TargetSyntax.Value.nat __v)] (LexLeanPreservation.Rel Bool.true (LexLeanTarget.TargetSyntax.Value.bool (__valid_4 __v))) :=
   LexLeanPreservation.tpl_validTrue LexLeanTarget.TargetSyntax.Value.nat rfl
 
 def __valid_3 : (List (Prod Nat Nat)) -> Bool :=
@@ -69,40 +69,40 @@ def __valid_3 : (List (Prod Nat Nat)) -> Bool :=
 def __inv_3 : (List (Prod Nat Nat)) -> Prop :=
   LexLeanPreservation.InvMap (Coverage.Colls.LexLeanCollections.Key.compare : Nat -> Nat -> Ordering) __inv_4
 
-theorem __viff_3 : ∀ (__v : (List (Prod Nat Nat))), __valid_3 __v = true ↔ __inv_3 __v :=
+theorem __viff_3 : ∀ (__v : (List (Prod Nat Nat))), __valid_3 __v = Bool.true ↔ __inv_3 __v :=
   LexLeanPreservation.ascMap_inv (Coverage.Colls.LexLeanCollections.Key.compare : Nat -> Nat -> Ordering) __valid_4 __inv_4 __viff_4
 
-theorem __vrel_3 : ∀ (__v : (List (Prod Nat Nat))), LexLeanPreservation.FunRel __prog 3 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) __v)] (LexLeanPreservation.Rel true (LexLeanTarget.TargetSyntax.Value.bool (__valid_3 __v))) :=
+theorem __vrel_3 : ∀ (__v : (List (Prod Nat Nat))), LexLeanPreservation.FunRel __prog 3 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) __v)] (LexLeanPreservation.Rel Bool.true (LexLeanTarget.TargetSyntax.Value.bool (__valid_3 __v))) :=
   LexLeanPreservation.tpl_validMap (LexLeanPreservation.keySpec_nat (Coverage.Colls.LexLeanCollections.Key.compare : Nat -> Nat -> Ordering) (fun _ _ => rfl)) __valid_4 (LexLeanPreservation.listEnc (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) (fun _ => rfl) __vrel_4 rfl
 
 def entryFits (m : (List (Prod Nat Nat))) (bonus : Nat) : Bool :=
-  (if __valid_3 m then __fits_0 m bonus else true)
+  (if __valid_3 m then __fits_0 m bonus else Bool.true)
 
 def entryValue (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanTarget.TargetSyntax.Value :=
   (if __valid_3 m then (LexLeanTarget.TargetSyntax.Value.some (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus))) else LexLeanTarget.TargetSyntax.Value.none)
 
 /-- The entry's observation. -/
 def denoteEntry (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.Obs :=
-  cond (entryFits m bonus) (LexLeanPreservation.Obs.value (entryValue m bonus)) LexLeanPreservation.Obs.overflow
+  _root_.cond (LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryFits m bonus) (LexLeanPreservation.Obs.value (LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryValue m bonus)) LexLeanPreservation.Obs.overflow
 
 /-- §17.12's invariants of the validated parameters. -/
 def accepts (m : (List (Prod Nat Nat))) (bonus : Nat) : Prop :=
-  (__inv_3 m ∧ True)
+  (__inv_3 m ∧ _root_.True)
 
-theorem entry (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.RunConv __prog 5 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) m), (LexLeanTarget.TargetSyntax.Value.nat bonus)] (denoteEntry m bonus) :=
-  LexLeanPreservation.run_of_funRel (LexLeanPreservation.FunRel.fits_eq (LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_cond (fun __c => if __c then __fits_0 m bonus else true) (fun __c => if __c then (LexLeanTarget.TargetSyntax.Value.some (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus))) else LexLeanTarget.TargetSyntax.Value.none) (__valid_3 m) (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__vrel_3 m)) (fun _ => LexLeanPreservation.Conv.fits_eq (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (__rel_0 m bonus)) LexLeanPreservation.convL_nil) LexLeanPreservation.construct_some) (by simp)) (fun _ => LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_none))) (by simp [entryFits]))
+theorem entry (m : (List (Prod Nat Nat))) (bonus : Nat) : LexLeanPreservation.RunConv __prog 5 [((LexLeanPreservation.encList (LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat)) m), (LexLeanTarget.TargetSyntax.Value.nat bonus)] (LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denoteEntry m bonus) :=
+  LexLeanPreservation.run_of_funRel (LexLeanPreservation.FunRel.fits_eq (LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_cond (fun __c => if __c then __fits_0 m bonus else Bool.true) (fun __c => if __c then (LexLeanTarget.TargetSyntax.Value.some (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Colls.mapFolding m bonus))) else LexLeanTarget.TargetSyntax.Value.none) (__valid_3 m) (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__vrel_3 m)) (fun _ => LexLeanPreservation.Conv.fits_eq (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) (__rel_0 m bonus)) LexLeanPreservation.convL_nil) LexLeanPreservation.construct_some) (by simp)) (fun _ => LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_none))) (by simp [LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryFits]))
 
-theorem entry_accepts (m : (List (Prod Nat Nat))) (bonus : Nat) (__h : accepts m bonus) : denoteEntry m bonus = LexLeanPreservation.someObs (denote m bonus) := by
-  unfold accepts at __h
-  unfold denoteEntry entryFits entryValue denote
-  simp only [if_true, (__viff_3 m).mpr __h.1]
+theorem entry_accepts (m : (List (Prod Nat Nat))) (bonus : Nat) (__h : LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.accepts m bonus) : LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denoteEntry m bonus = LexLeanPreservation.someObs (LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denote m bonus) := by
+  unfold LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.accepts at __h
+  unfold LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denoteEntry LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryFits LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryValue LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denote
+  simp only [_root_.if_true, (__viff_3 m).mpr __h.1]
   cases __fits_0 m bonus <;> rfl
 
-theorem entry_refuses (m : (List (Prod Nat Nat))) (bonus : Nat) (__h : ¬ accepts m bonus) : denoteEntry m bonus = LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none := by
-  unfold accepts at __h
-  unfold denoteEntry entryFits entryValue
+theorem entry_refuses (m : (List (Prod Nat Nat))) (bonus : Nat) (__h : ¬ LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.accepts m bonus) : LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denoteEntry m bonus = LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none := by
+  unfold LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.accepts at __h
+  unfold LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.denoteEntry LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryFits LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2.entryValue
   cases __c0 : __valid_3 m
   · simp
-  · exact absurd ⟨(__viff_3 m).mp __c0, trivial⟩ __h
+  · exact _root_.absurd ⟨(__viff_3 m).mp __c0, _root_.trivial⟩ __h
 
 end LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R2

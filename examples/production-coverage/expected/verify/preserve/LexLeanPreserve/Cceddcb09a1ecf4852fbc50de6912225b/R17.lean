@@ -24,13 +24,13 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
       body := (.build .pair (.pair .bool .nat) [(.second (.var 0)), (.first (.var 0))]) }] }
 
 def __fits_0 (p : (Prod Nat Bool)) : Bool :=
-  ((true && (true && true)) && true)
+  ((Bool.true && (Bool.true && Bool.true)) && Bool.true)
 
 theorem __rel_0 (p : (Prod Nat Bool)) : LexLeanPreservation.FunRel __prog 0 [((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.bool) p)] (LexLeanPreservation.Rel (__fits_0 p) ((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.bool LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.pairs p))) :=
   LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_second (LexLeanPreservation.conv_var rfl)) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_first (LexLeanPreservation.conv_var rfl)) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_pair)
 
 def denote (p : (Prod Nat Bool)) : LexLeanPreservation.Obs :=
-  cond (__fits_0 p) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.bool LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.pairs p)))) LexLeanPreservation.Obs.overflow
+  _root_.cond (__fits_0 p) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.bool LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.pairs p)))) LexLeanPreservation.Obs.overflow
 
 theorem root (p : (Prod Nat Bool)) : LexLeanPreservation.RunConv __prog 0 [((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.bool) p)] (LexLeanPreservation.Rel (__fits_0 p) ((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.bool LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.pairs p))) :=
   LexLeanPreservation.run_of_funRel (__rel_0 p)

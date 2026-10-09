@@ -297,12 +297,28 @@ pub const ALLOWED_OPTIONS: [&str; 5] = [
     "linter.unusedSimpArgs",
 ];
 
-/// `text` without its comments, string literals, and quoted names, so
-/// prose and data never read as tokens.
-fn code_only(text: &str) -> String {
+/// Marks a quoted name in the text [`code_only`] returns: the quoted name is
+/// the same name as the unquoted one, so it is kept and read as such, except
+/// that a keyword spelling is an identifier when it is quoted.
+const QUOTED: char = '\u{e000}';
+
+/// `text` without its comments and string literals, so prose and data never
+/// read as tokens, and with each quoted name `«x»` kept as `x` behind
+/// [`QUOTED`]. A quoted name inside an attribute list is kept plain, since
+/// an attribute is read by its name whether or not it is quoted.
+///
+/// # Errors
+///
+/// Returns the reason when a comment, a string, or a quoted name is not
+/// closed, or a quoted name is not made of letters, digits, `_`, `.`, and `'`:
+/// text that hides the rest of the file from the audit is refused.
+pub fn code_only(text: &str) -> Result<String, String> {
     let mut out = String::new();
     let mut chars = text.chars().peekable();
     let mut depth = 0usize;
+    // The bracket depth inside `@[ ... ]`.
+    let mut attribute = 0usize;
+    let mut previous = ' ';
     while let Some(character) = chars.next() {
         if depth > 0 {
             if character == '/' && chars.peek() == Some(&'-') {
@@ -328,34 +344,66 @@ fn code_only(text: &str) -> String {
                     }
                 }
             }
-            // A quoted name is an identifier whatever its spelling, so a
-            // user's name that is also a keyword, which the generator quotes,
-            // is data like a string.
-            '«' => {
-                for skipped in chars.by_ref() {
-                    if skipped == '»' {
+            '\u{ab}' => {
+                let mut name = String::new();
+                let mut closed = false;
+                for next in chars.by_ref() {
+                    if next == '\u{bb}' {
+                        closed = true;
                         break;
                     }
+                    name.push(next);
                 }
-                out.push_str(" «» ");
+                if !closed {
+                    return Err("a quoted name is not closed".to_owned());
+                }
+                if name.is_empty()
+                    || !name
+                        .chars()
+                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '\''))
+                {
+                    return Err(format!("the quoted name `{name}` is not a name"));
+                }
+                if attribute == 0 {
+                    out.push(QUOTED);
+                }
+                out.push_str(&name);
             }
             '"' => {
                 let mut escaped = false;
+                let mut closed = false;
                 for skipped in chars.by_ref() {
                     if escaped {
                         escaped = false;
                     } else if skipped == '\\' {
                         escaped = true;
                     } else if skipped == '"' {
+                        closed = true;
                         break;
                     }
                 }
+                if !closed {
+                    return Err("a string is not closed".to_owned());
+                }
                 out.push_str(" \"\" ");
             }
-            other => out.push(other),
+            other => {
+                if previous == '@' && other == '[' {
+                    attribute = 1;
+                } else if attribute > 0 && other == '[' {
+                    attribute += 1;
+                } else if attribute > 0 && other == ']' {
+                    attribute -= 1;
+                }
+                out.push(other);
+            }
         }
+        previous = character;
     }
-    out
+    if depth > 0 {
+        return Err("a comment is not closed".to_owned());
+    }
+    Ok(out)
 }
 
 /// Check one library module or certificate: no forbidden token, only
@@ -365,21 +413,25 @@ fn code_only(text: &str) -> String {
 ///
 /// Returns the first violation.
 pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String> {
-    let code = code_only(text);
+    let code = code_only(text)?;
     let tokens: Vec<&str> = code
         .split(|character: char| {
             !(character.is_alphanumeric()
-                || matches!(character, '_' | '\'' | '.' | '#' | '!' | '?'))
+                || matches!(character, '_' | '\'' | '.' | '#' | '!' | '?' | QUOTED))
         })
         .filter(|token| !token.is_empty())
         .collect();
     for (index, token) in tokens.iter().enumerate() {
-        if FORBIDDEN_TOKENS.contains(token) {
-            return Err(format!("the forbidden token `{token}`"));
+        // A quoted name is the same name as the unquoted one; it is only not
+        // a keyword.
+        let name = token.replace(QUOTED, "");
+        let quoted_whole = token.starts_with(QUOTED) && !token.contains('.');
+        if !quoted_whole && FORBIDDEN_TOKENS.contains(&name.as_str()) {
+            return Err(format!("the forbidden token `{name}`"));
         }
-        for segment in token.split('.') {
+        for segment in name.split('.') {
             if FORBIDDEN_CONSTANTS.contains(&segment) {
-                return Err(format!("the forbidden constant `{segment}` (in `{token}`)"));
+                return Err(format!("the forbidden constant `{segment}` (in `{name}`)"));
             }
         }
         if *token == "set_option" {
@@ -933,7 +985,31 @@ mod tests {
         }
         assert!(audited("@[implemented_by f] def g := 1\n").is_err());
         assert!(audited("theorem t : True := sorry\n").is_err());
-        assert!(audited("def «sorry» := 1\n").is_ok());
         assert!(audited("def x := Lean.ofReduceBool\n").is_err());
+    }
+
+    /// Quoting a name does not change which name it is: a quoted forbidden
+    /// constant, attribute, or namespace is still the forbidden one, and text
+    /// that would hide the rest of the file from the audit is refused.
+    #[test]
+    fn a_quoted_forbidden_name_is_still_forbidden() {
+        for text in [
+            "def x := Lean.«ofReduceBool»\n",
+            "theorem z : False := «sorryAx» False true\n",
+            "@[«implemented_by» g] def h := 1\n",
+            "@[«extern» \"c\"] def h := 1\n",
+            "def x := «Lean».«ofReduceNat»\n",
+            "@[«macro» foo] def h := 1\n",
+            "@[simp, «implemented_by» g] def h := 1\n",
+            "def x := «a\ntheorem t : False := sorry\n",
+            "def «» := 1\n",
+            "def «a b» := 1\n",
+            "def s := \"unclosed\ntheorem t : False := sorry\n",
+            "/- unclosed\ntheorem t : False := sorry\n",
+        ] {
+            assert!(audited(text).is_err(), "{text}");
+        }
+        assert!(audited("def «sorry» := 1\n").is_ok());
+        assert!(audited("def f («kernel» : Nat) := «kernel» + 1\n").is_ok());
     }
 }

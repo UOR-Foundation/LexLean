@@ -2625,6 +2625,13 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
 /// Lean names the backend emits unqualified: built-in types and their
 /// constructor owners, the propositional connectives its proofs name, and the
 /// runtime namespaces. A binder spelled like one would capture it.
+/// Whether the backend emits `name` unqualified, so that a binder of that
+/// spelling would capture it and linking refuses it.
+#[must_use]
+pub fn is_backend_bare_name(name: &str) -> bool {
+    BACKEND_BARE_NAMES.contains(&name)
+}
+
 const BACKEND_BARE_NAMES: [&str; 31] = [
     "And",
     "Bool",
