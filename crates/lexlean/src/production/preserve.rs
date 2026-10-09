@@ -289,162 +289,443 @@ const FORBIDDEN_CONSTANTS: [&str; 3] = ["ofReduceBool", "ofReduceNat", "sorryAx"
 
 /// The options a library module or certificate may set: none weakens
 /// what the kernel checks.
-pub const ALLOWED_OPTIONS: [&str; 5] = [
+pub const ALLOWED_OPTIONS: [&str; 6] = [
     "autoImplicit",
     "maxRecDepth",
     "maxHeartbeats",
+    "synthInstance.maxHeartbeats",
     "linter.unusedVariables",
     "linter.unusedSimpArgs",
 ];
 
-/// Marks a quoted name in the text [`code_only`] returns: the quoted name is
-/// the same name as the unquoted one, so it is kept and read as such, except
-/// that a keyword spelling is an identifier when it is quoted.
-const QUOTED: char = '\u{e000}';
+/// One component of a Lean name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Segment {
+    /// The component, without its quotation.
+    pub text: String,
+    /// Whether it was written `«…»`.
+    pub quoted: bool,
+}
 
-/// `text` without its comments and string literals, so prose and data never
-/// read as tokens, and with each quoted name `«x»` kept as `x` behind
-/// [`QUOTED`]. A quoted name inside an attribute list is kept plain, since
-/// an attribute is read by its name whether or not it is quoted.
+/// What a lexeme of Lean source is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LexemeKind {
+    /// A name: its components, joined by `.`.
+    Ident(Vec<Segment>),
+    /// A numeric literal.
+    Number,
+    /// A string, raw string, or character literal, whose content is data.
+    Literal,
+    /// `#` and the identifier after it: a command.
+    Command(String),
+    /// Any other character.
+    Symbol(char),
+}
+
+/// A lexeme and where it stands.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Lexeme {
+    /// What it is.
+    pub kind: LexemeKind,
+    /// The line it is on, from 0.
+    pub line: usize,
+    /// Whether nothing but whitespace and comments precede it on its line.
+    pub first_on_line: bool,
+    /// Where it starts, in characters of the text.
+    pub start: usize,
+}
+
+/// `c` is a letter-like character that Lean reads as part of an identifier
+/// (`Lean.isLetterLike`): Greek but for `λ`, `Π`, `Σ`, Coptic, polytonic
+/// Greek, the letterlike symbols, and the script and fraktur capitals.
+fn letter_like(c: char) -> bool {
+    let n = c as u32;
+    (0x3b1..=0x3c9).contains(&n) && n != 0x3bb
+        || (0x391..=0x3a9).contains(&n) && n != 0x3a0 && n != 0x3a3
+        || (0x3ca..=0x3fb).contains(&n)
+        || (0x1f00..=0x1ffe).contains(&n)
+        || (0x2100..=0x214f).contains(&n)
+        || (0x1d49c..=0x1d59f).contains(&n)
+}
+
+fn sub_script(c: char) -> bool {
+    let n = c as u32;
+    (0x2080..=0x2089).contains(&n)
+        || (0x2090..=0x209c).contains(&n)
+        || (0x1d62..=0x1d6a).contains(&n)
+}
+
+/// Lean's `isIdFirst`.
+fn id_first(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_' || letter_like(c)
+}
+
+/// Lean's `isIdRest`.
+fn id_rest(c: char) -> bool {
+    c.is_ascii_alphanumeric()
+        || matches!(c, '_' | '\'' | '!' | '?')
+        || letter_like(c)
+        || sub_script(c)
+}
+
+/// The lexemes of Lean source, as Lean's tokenizer reads it: comments (nested
+/// block comments, doc comments) dropped; string literals, raw strings
+/// `r#"…"#`, and character literals read as data; names as `isIdFirst` and
+/// `isIdRest` bound them, with `«…»` components and `.` joining a component
+/// only to one that follows; a number as its own lexeme (`0sorry` is `0` and
+/// `sorry`); and `sorry.1` or `sorryλ` as `sorry` and what follows.
 ///
 /// # Errors
 ///
-/// Returns the reason when a comment, a string, or a quoted name is not
-/// closed, or a quoted name is not made of letters, digits, `_`, `.`, and `'`:
-/// text that hides the rest of the file from the audit is refused.
-pub fn code_only(text: &str) -> Result<String, String> {
-    let mut out = String::new();
-    let mut chars = text.chars().peekable();
-    let mut depth = 0usize;
-    // The bracket depth inside `@[ ... ]`.
-    let mut attribute = 0usize;
-    let mut previous = ' ';
-    while let Some(character) = chars.next() {
-        if depth > 0 {
-            if character == '/' && chars.peek() == Some(&'-') {
-                chars.next();
-                depth += 1;
-            } else if character == '-' && chars.peek() == Some(&'/') {
-                chars.next();
-                depth -= 1;
+/// Fails closed: returns the reason when a comment, string, raw string,
+/// character literal, or quoted name is not closed or is not what it should
+/// be, when an interpolated string (whose braces hold code) is met, or when a
+/// control character stands in the text.
+#[allow(clippy::too_many_lines)]
+pub fn lex(text: &str) -> Result<Vec<Lexeme>, String> {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out: Vec<Lexeme> = Vec::new();
+    let mut at = 0usize;
+    let mut line = 0usize;
+    let mut first_on_line = true;
+    let at_char = |at: usize| chars.get(at).copied();
+    while let Some(c) = at_char(at) {
+        match c {
+            '\n' => {
+                line += 1;
+                first_on_line = true;
+                at += 1;
+                continue;
+            }
+            ' ' | '\t' | '\r' => {
+                at += 1;
+                continue;
+            }
+            _ => {}
+        }
+        if c.is_control() {
+            return Err(format!(
+                "a control character U+{:04X} in the text",
+                c as u32
+            ));
+        }
+        // Comments.
+        if c == '-' && at_char(at + 1) == Some('-') {
+            while at_char(at).is_some_and(|d| d != '\n') {
+                at += 1;
             }
             continue;
         }
-        match character {
-            '/' if chars.peek() == Some(&'-') => {
-                chars.next();
-                depth = 1;
-                out.push(' ');
-            }
-            '-' if chars.peek() == Some(&'-') => {
-                for skipped in chars.by_ref() {
-                    if skipped == '\n' {
-                        out.push('\n');
-                        break;
+        if c == '/' && at_char(at + 1) == Some('-') {
+            let mut depth = 1usize;
+            at += 2;
+            while depth > 0 {
+                match (at_char(at), at_char(at + 1)) {
+                    (None, _) => return Err("a comment is not closed".to_owned()),
+                    (Some('/'), Some('-')) => {
+                        depth += 1;
+                        at += 2;
                     }
-                }
-            }
-            '\u{ab}' => {
-                let mut name = String::new();
-                let mut closed = false;
-                for next in chars.by_ref() {
-                    if next == '\u{bb}' {
-                        closed = true;
-                        break;
+                    (Some('-'), Some('/')) => {
+                        depth -= 1;
+                        at += 2;
                     }
-                    name.push(next);
-                }
-                if !closed {
-                    return Err("a quoted name is not closed".to_owned());
-                }
-                if name.is_empty()
-                    || !name
-                        .chars()
-                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '\''))
-                {
-                    return Err(format!("the quoted name `{name}` is not a name"));
-                }
-                if attribute == 0 {
-                    out.push(QUOTED);
-                }
-                out.push_str(&name);
-            }
-            '"' => {
-                let mut escaped = false;
-                let mut closed = false;
-                for skipped in chars.by_ref() {
-                    if escaped {
-                        escaped = false;
-                    } else if skipped == '\\' {
-                        escaped = true;
-                    } else if skipped == '"' {
-                        closed = true;
-                        break;
+                    (Some('\n'), _) => {
+                        line += 1;
+                        at += 1;
                     }
+                    _ => at += 1,
                 }
-                if !closed {
-                    return Err("a string is not closed".to_owned());
-                }
-                out.push_str(" \"\" ");
             }
-            other => {
-                if previous == '@' && other == '[' {
-                    attribute = 1;
-                } else if attribute > 0 && other == '[' {
-                    attribute += 1;
-                } else if attribute > 0 && other == ']' {
-                    attribute -= 1;
-                }
-                out.push(other);
-            }
+            continue;
         }
-        previous = character;
-    }
-    if depth > 0 {
-        return Err("a comment is not closed".to_owned());
+        let here = Lexeme {
+            kind: LexemeKind::Number,
+            line,
+            first_on_line,
+            start: at,
+        };
+        first_on_line = false;
+        // Strings.
+        if c == '"' {
+            at += 1;
+            loop {
+                match at_char(at) {
+                    None => return Err("a string is not closed".to_owned()),
+                    Some('\\') => at += 2,
+                    Some('"') => {
+                        at += 1;
+                        break;
+                    }
+                    Some('\n') => {
+                        line += 1;
+                        at += 1;
+                    }
+                    Some(_) => at += 1,
+                }
+            }
+            out.push(Lexeme {
+                kind: LexemeKind::Literal,
+                ..here
+            });
+            continue;
+        }
+        // Character literals.
+        if c == '\'' {
+            let mut end = at + 1;
+            match at_char(end) {
+                Some('\\') => {
+                    end += 2;
+                    match at_char(end - 1) {
+                        Some('x') => end += 2,
+                        Some('u') => end += 4,
+                        _ => {}
+                    }
+                }
+                Some(d) if d != '\'' && d != '\n' => end += 1,
+                _ => return Err("a character literal is not closed".to_owned()),
+            }
+            if at_char(end) != Some('\'') {
+                return Err("a character literal is not closed".to_owned());
+            }
+            at = end + 1;
+            out.push(Lexeme {
+                kind: LexemeKind::Literal,
+                ..here
+            });
+            continue;
+        }
+        // Numbers.
+        if c.is_ascii_digit() {
+            if c == '0' && matches!(at_char(at + 1), Some('x' | 'X' | 'b' | 'B' | 'o' | 'O')) {
+                at += 2;
+                while at_char(at).is_some_and(|d| d.is_ascii_hexdigit()) {
+                    at += 1;
+                }
+            } else {
+                while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
+                    at += 1;
+                }
+                if at_char(at) == Some('.') && at_char(at + 1).is_some_and(|d| d.is_ascii_digit()) {
+                    at += 1;
+                    while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
+                        at += 1;
+                    }
+                }
+            }
+            out.push(here);
+            continue;
+        }
+        // Commands.
+        if c == '#' && at_char(at + 1).is_some_and(id_first) {
+            let mut end = at + 1;
+            while at_char(end).is_some_and(id_rest) {
+                end += 1;
+            }
+            out.push(Lexeme {
+                kind: LexemeKind::Command(chars[at..end].iter().collect()),
+                ..here
+            });
+            at = end;
+            continue;
+        }
+        // Names.
+        if id_first(c) || c == '\u{ab}' {
+            let mut segments = Vec::new();
+            loop {
+                if at_char(at) == Some('\u{ab}') {
+                    let mut name = String::new();
+                    at += 1;
+                    loop {
+                        match at_char(at) {
+                            None | Some('\n') => {
+                                return Err("a quoted name is not closed".to_owned())
+                            }
+                            Some('\u{bb}') => {
+                                at += 1;
+                                break;
+                            }
+                            Some(d) => {
+                                name.push(d);
+                                at += 1;
+                            }
+                        }
+                    }
+                    if name.is_empty() || !name.chars().all(|d| id_rest(d) || d == '.') {
+                        return Err(format!("the quoted name `{name}` is not a name"));
+                    }
+                    segments.push(Segment {
+                        text: name,
+                        quoted: true,
+                    });
+                } else {
+                    let start = at;
+                    at += 1;
+                    while at_char(at).is_some_and(id_rest) {
+                        at += 1;
+                    }
+                    segments.push(Segment {
+                        text: chars[start..at].iter().collect(),
+                        quoted: false,
+                    });
+                }
+                if at_char(at) == Some('.')
+                    && at_char(at + 1).is_some_and(|d| id_first(d) || d == '\u{ab}')
+                {
+                    at += 1;
+                    continue;
+                }
+                break;
+            }
+            // `r"…"` and `r#"…"#` are raw strings; `s!"…"` interpolates code.
+            if let [only] = segments.as_slice() {
+                if !only.quoted && only.text == "r" {
+                    let mut hashes = 0usize;
+                    while at_char(at + hashes) == Some('#') {
+                        hashes += 1;
+                    }
+                    if at_char(at + hashes) == Some('"') {
+                        at += hashes + 1;
+                        loop {
+                            match at_char(at) {
+                                None => return Err("a raw string is not closed".to_owned()),
+                                Some('"')
+                                    if (0..hashes).all(|k| at_char(at + 1 + k) == Some('#')) =>
+                                {
+                                    at += 1 + hashes;
+                                    break;
+                                }
+                                Some('\n') => {
+                                    line += 1;
+                                    at += 1;
+                                }
+                                Some(_) => at += 1,
+                            }
+                        }
+                        out.push(Lexeme {
+                            kind: LexemeKind::Literal,
+                            ..here
+                        });
+                        continue;
+                    }
+                }
+                if !only.quoted && only.text.ends_with('!') && at_char(at) == Some('"') {
+                    return Err("an interpolated string holds code".to_owned());
+                }
+            }
+            out.push(Lexeme {
+                kind: LexemeKind::Ident(segments),
+                ..here
+            });
+            continue;
+        }
+        at += 1;
+        out.push(Lexeme {
+            kind: LexemeKind::Symbol(c),
+            ..here
+        });
     }
     Ok(out)
 }
 
+/// The single unquoted word a lexeme is, if it is one.
+fn word(lexeme: &Lexeme) -> Option<&str> {
+    match &lexeme.kind {
+        LexemeKind::Ident(segments) => match segments.as_slice() {
+            [only] if !only.quoted => Some(only.text.as_str()),
+            _ => None,
+        },
+        LexemeKind::Number
+        | LexemeKind::Literal
+        | LexemeKind::Command(_)
+        | LexemeKind::Symbol(_) => None,
+    }
+}
+
+/// The dotted name a lexeme is, if it is a name.
+fn dotted(lexeme: Option<&Lexeme>) -> Option<String> {
+    match &lexeme?.kind {
+        LexemeKind::Ident(segments) => Some(
+            segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect::<Vec<_>>()
+                .join("."),
+        ),
+        LexemeKind::Number
+        | LexemeKind::Literal
+        | LexemeKind::Command(_)
+        | LexemeKind::Symbol(_) => None,
+    }
+}
+
 /// Check one library module or certificate: no forbidden token, only
-/// allowed options, and imports only of `imports`.
+/// allowed options, and imports only of `imports`. The text is read as Lean
+/// reads it ([`lex`]): a forbidden constant is refused whether or not its
+/// components are quoted, a forbidden keyword unless it is a quoted name
+/// outside an attribute list (where it is a name, not a keyword), and text
+/// that cannot be classified is refused.
 ///
 /// # Errors
 ///
 /// Returns the first violation.
 pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String> {
-    let code = code_only(text)?;
-    let tokens: Vec<&str> = code
-        .split(|character: char| {
-            !(character.is_alphanumeric()
-                || matches!(character, '_' | '\'' | '.' | '#' | '!' | '?' | QUOTED))
-        })
-        .filter(|token| !token.is_empty())
-        .collect();
-    for (index, token) in tokens.iter().enumerate() {
-        // A quoted name is the same name as the unquoted one; it is only not
-        // a keyword.
-        let name = token.replace(QUOTED, "");
-        let quoted_whole = token.starts_with(QUOTED) && !token.contains('.');
-        if !quoted_whole && FORBIDDEN_TOKENS.contains(&name.as_str()) {
-            return Err(format!("the forbidden token `{name}`"));
-        }
-        for segment in name.split('.') {
-            if FORBIDDEN_CONSTANTS.contains(&segment) {
-                return Err(format!("the forbidden constant `{segment}` (in `{name}`)"));
+    let lexemes = lex(text)?;
+    // The bracket depth inside `@[ … ]` and `attribute [ … ]`.
+    let mut attribute = 0usize;
+    // `@` or `attribute` has been read, and `[` opens the list.
+    let mut pending = false;
+    for (index, lexeme) in lexemes.iter().enumerate() {
+        let next = lexemes.get(index + 1);
+        let opens = matches!(next.map(|n| &n.kind), Some(LexemeKind::Symbol('[')));
+        match &lexeme.kind {
+            LexemeKind::Ident(segments) => {
+                for segment in segments {
+                    if FORBIDDEN_CONSTANTS.contains(&segment.text.as_str()) {
+                        return Err(format!(
+                            "the forbidden constant `{}` (in `{}`)",
+                            segment.text,
+                            dotted(Some(lexeme)).unwrap_or_default()
+                        ));
+                    }
+                }
+                if let [only] = segments.as_slice() {
+                    if FORBIDDEN_TOKENS.contains(&only.text.as_str())
+                        && (!only.quoted || attribute > 0)
+                    {
+                        return Err(format!("the forbidden token `{}`", only.text));
+                    }
+                }
+                match word(lexeme) {
+                    Some("attribute") if opens => pending = true,
+                    Some("set_option") => {
+                        let option = dotted(next).unwrap_or_default();
+                        if !ALLOWED_OPTIONS.contains(&option.as_str()) {
+                            return Err(format!("the option `{option}` is not allowed"));
+                        }
+                    }
+                    Some("import") => {
+                        let module = dotted(next).unwrap_or_default();
+                        if !imports.contains(&module) {
+                            return Err(format!("the import of `{module}` is not allowed"));
+                        }
+                    }
+                    Some(_) | None => {}
+                }
             }
-        }
-        if *token == "set_option" {
-            let option = tokens.get(index + 1).copied().unwrap_or_default();
-            if !ALLOWED_OPTIONS.contains(&option) {
-                return Err(format!("the option `{option}` is not allowed"));
+            LexemeKind::Command(command) => {
+                if FORBIDDEN_TOKENS.contains(&command.as_str()) {
+                    return Err(format!("the forbidden token `{command}`"));
+                }
             }
-        }
-        if *token == "import" {
-            let module = tokens.get(index + 1).copied().unwrap_or_default();
-            if !imports.contains(module) {
-                return Err(format!("the import of `{module}` is not allowed"));
+            LexemeKind::Symbol('@') if opens => pending = true,
+            LexemeKind::Symbol('[') if pending => {
+                pending = false;
+                attribute = 1;
             }
+            LexemeKind::Symbol('[') if attribute > 0 => attribute += 1,
+            LexemeKind::Symbol(']') if attribute > 0 => attribute -= 1,
+            LexemeKind::Number | LexemeKind::Literal | LexemeKind::Symbol(_) => {}
         }
     }
     Ok(())
@@ -1011,5 +1292,55 @@ mod tests {
         }
         assert!(audited("def «sorry» := 1\n").is_ok());
         assert!(audited("def f («kernel» : Nat) := «kernel» + 1\n").is_ok());
+    }
+
+    /// The text is read as Lean reads it: what a different reading would hide
+    /// from the audit is read, and what cannot be classified is refused.
+    #[test]
+    fn the_text_is_read_as_lean_reads_it() {
+        for text in [
+            // A character literal holding a quote opens no string.
+            "def c1 := '\"'\ntheorem t3 : False := sorry\ndef c2 := '\"'\n",
+            // A raw string ends at its quote, whatever precedes it.
+            "def s := r\"\\\"\ntheorem t : False := sorry\ndef u := r\"\\\"\n",
+            "def s := r#\"a\"#\ntheorem t : False := sorry\n",
+            // A name is a name where Lean ends it.
+            "theorem t : False := sorry.1\n",
+            "theorem t : False := 0sorry\n",
+            "theorem t : False := sorry\u{3bb}x\n",
+            "theorem t : False := sorry\u{e9}\n",
+            "attribute [«implemented_by» g] h\n",
+            "attribute [simp, «extern» c] h\n",
+            // Code in an interpolated string, an unclosed literal, a control
+            // character: refused rather than guessed.
+            "def s := s!\"{sorry}\"\n",
+            "def c := 'ab'\ntheorem t : False := sorry\n",
+            "def c := '\n",
+            "def x := 1\u{0}theorem t : False := sorry\n",
+            "/- /- nested -/ theorem t : False := sorry\n",
+        ] {
+            assert!(audited(text).is_err(), "{text:?}");
+        }
+        for text in [
+            "def s := \"a -- b /- c «d \\\" 'e\"\n",
+            "def s := r\"a -- b\"\ndef t := r#\"a\"b\"#\n",
+            "def c := ['a', '\\n', '\\'', '\\x41', '\\u0041', '\"']\n",
+            "def x' := x'' + f' 1\n",
+            "/-- a doc comment: sorry -/ def f := 1\n/- nested /- sorry -/ sorry -/\n-- sorry\n",
+            "def «sorry» := 1\ndef x := sorry_ + sorryAlt + «sorry».1\n",
+            "def α₁ := β₂ + 0x1F + 1.5 + 2e3\n",
+            "def f := fun x => x.1.2 + Nat.succ' 1\n",
+            "def s := \"\\u00e9\"\n",
+        ] {
+            assert!(audited(text).is_ok(), "{text:?}: {:?}", audited(text));
+        }
+    }
+
+    /// Every module the library ships is read, and audited, by the same
+    /// lexer: the lexer follows Lean closely enough for the library's own
+    /// source.
+    #[test]
+    fn the_shipped_library_audits() {
+        super::workspace(&[], &[]).expect("the shipped environment audits");
     }
 }

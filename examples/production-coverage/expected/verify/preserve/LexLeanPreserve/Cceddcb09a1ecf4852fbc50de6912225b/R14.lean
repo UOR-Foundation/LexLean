@@ -18,7 +18,7 @@ set_option maxRecDepth 100000
 set_option linter.unusedVariables false
 namespace LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R14
 
-def __prog : LexLeanTarget.TargetSyntax.Program :=
+def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[.nat, .nat]] },
     { constructors := [[.nat, .nat]] },
     { constructors := [[.nat, .nat]] }], functions := [
@@ -29,38 +29,38 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
     { parameters := [0], types := [(.adt 1)], result := .nat,
       body := (.field (.var 0) 0) }] }
 
-def __enc_0 (__s : (Coverage.Types.Point)) : LexLeanTarget.TargetSyntax.Value :=
-  LexLeanTarget.TargetSyntax.Value.adt 0 [(LexLeanTarget.TargetSyntax.Value.nat (__s).x), (LexLeanTarget.TargetSyntax.Value.nat (__s).y)]
+def __enc_0 (__s : (Coverage.Types.Point)) : _root_.LexLeanTarget.TargetSyntax.Value :=
+  _root_.LexLeanTarget.TargetSyntax.Value.adt 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).x), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).y)]
 
-def __enc_1 (__s : (Coverage.Types.Box Nat)) : LexLeanTarget.TargetSyntax.Value :=
-  LexLeanTarget.TargetSyntax.Value.adt 0 [(LexLeanTarget.TargetSyntax.Value.nat (__s).content), (LexLeanTarget.TargetSyntax.Value.nat (__s).count)]
+def __enc_1 (__s : (Coverage.Types.Box Nat)) : _root_.LexLeanTarget.TargetSyntax.Value :=
+  _root_.LexLeanTarget.TargetSyntax.Value.adt 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).content), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).count)]
 
-def __enc_2 (__s : (Coverage.Types.Weights)) : LexLeanTarget.TargetSyntax.Value :=
-  LexLeanTarget.TargetSyntax.Value.adt 0 [(LexLeanTarget.TargetSyntax.Value.nat (__s).base), (LexLeanTarget.TargetSyntax.Value.nat (__s).scale)]
+def __enc_2 (__s : (Coverage.Types.Weights)) : _root_.LexLeanTarget.TargetSyntax.Value :=
+  _root_.LexLeanTarget.TargetSyntax.Value.adt 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).base), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).scale)]
 
 def __fits_1 : Bool :=
   ((Bool.true && (Bool.true && Bool.true)) && Bool.true)
 
-theorem __rel_1 : LexLeanPreservation.FunRel __prog 1 [] (LexLeanPreservation.Rel __fits_1 (__enc_2 Coverage.Types.defaultWeights)) :=
-  LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_adt)
+theorem __rel_1 : _root_.LexLeanPreservation.FunRel __prog 1 [] (_root_.LexLeanPreservation.Rel __fits_1 (__enc_2 Coverage.Types.defaultWeights)) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_adt)
 
 def __fits_2 (box : (Coverage.Types.Box Nat)) : Bool :=
   Bool.true
 
-theorem __rel_2 (box : (Coverage.Types.Box Nat)) : LexLeanPreservation.FunRel __prog 2 [(__enc_1 box)] (LexLeanPreservation.Rel (__fits_2 box) (LexLeanTarget.TargetSyntax.Value.nat (Coverage.Types.unbox Nat box))) :=
-  LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_field (LexLeanPreservation.conv_var rfl) rfl)
+theorem __rel_2 (box : (Coverage.Types.Box Nat)) : _root_.LexLeanPreservation.FunRel __prog 2 [(__enc_1 box)] (_root_.LexLeanPreservation.Rel (__fits_2 box) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Coverage.Types.unbox Nat box))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_field (_root_.LexLeanPreservation.conv_var rfl) rfl)
 
 def __fits_0 (a : Nat) (b : Nat) : Bool :=
   (((Bool.true && (Bool.true && Bool.true)) && Bool.true) && (let p : (Coverage.Types.Point) := ({ x := a, y := b } : (Coverage.Types.Point)); ((((Bool.true && ((Bool.true && __fits_1) && Bool.true)) && (Nat.blt ((p).x + (Coverage.Types.defaultWeights).scale) 18446744073709551616)) && (((((Bool.true && (Bool.true && Bool.true)) && Bool.true) && Bool.true) && (__fits_2 (({ content := (p).y, count := (1 : Nat) } : (Coverage.Types.Box Nat))))) && Bool.true)) && Bool.true)))
 
 attribute [local irreducible] Coverage.Types.unbox in
-theorem __rel_0 (a : Nat) (b : Nat) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat a), (LexLeanTarget.TargetSyntax.Value.nat b)] (LexLeanPreservation.Rel (__fits_0 a b) ((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b))) :=
-  LexLeanPreservation.funRel_intro rfl rfl (let p : (Coverage.Types.Point) := ({ x := a, y := b } : (Coverage.Types.Point)); LexLeanPreservation.conv_let (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_adt) (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_field (LexLeanPreservation.conv_var rfl) rfl) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_field (LexLeanPreservation.conv_call LexLeanPreservation.convL_nil __rel_1) rfl) LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natAdd (p).x (Coverage.Types.defaultWeights).scale)) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_field (LexLeanPreservation.conv_var rfl) rfl) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_adt) LexLeanPreservation.convL_nil) (__rel_2 (({ content := (p).y, count := (1 : Nat) } : (Coverage.Types.Box Nat))))) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_pair))
+theorem __rel_0 (a : Nat) (b : Nat) : _root_.LexLeanPreservation.FunRel __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat a), (_root_.LexLeanTarget.TargetSyntax.Value.nat b)] (_root_.LexLeanPreservation.Rel (__fits_0 a b) ((_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat _root_.LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (let p : (Coverage.Types.Point) := ({ x := a, y := b } : (Coverage.Types.Point)); _root_.LexLeanPreservation.conv_let (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_adt) (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_field (_root_.LexLeanPreservation.conv_var rfl) rfl) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_field (_root_.LexLeanPreservation.conv_call _root_.LexLeanPreservation.convL_nil __rel_1) rfl) _root_.LexLeanPreservation.convL_nil)) (_root_.LexLeanPreservation.prim_natAdd (p).x (Coverage.Types.defaultWeights).scale)) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_field (_root_.LexLeanPreservation.conv_var rfl) rfl) (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_adt) _root_.LexLeanPreservation.convL_nil) (__rel_2 (({ content := (p).y, count := (1 : Nat) } : (Coverage.Types.Box Nat))))) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair))
 
-def denote (a : Nat) (b : Nat) : LexLeanPreservation.Obs :=
-  _root_.cond (__fits_0 a b) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b)))) LexLeanPreservation.Obs.overflow
+def denote (a : Nat) (b : Nat) : _root_.LexLeanPreservation.Obs :=
+  _root_.cond (__fits_0 a b) (_root_.LexLeanPreservation.Obs.value (((_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat _root_.LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b)))) _root_.LexLeanPreservation.Obs.overflow
 
-theorem root (a : Nat) (b : Nat) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat a), (LexLeanTarget.TargetSyntax.Value.nat b)] (LexLeanPreservation.Rel (__fits_0 a b) ((LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b))) :=
-  LexLeanPreservation.run_of_funRel (__rel_0 a b)
+theorem root (a : Nat) (b : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat a), (_root_.LexLeanTarget.TargetSyntax.Value.nat b)] (_root_.LexLeanPreservation.Rel (__fits_0 a b) ((_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat _root_.LexLeanTarget.TargetSyntax.Value.nat) (Coverage.Main.records a b))) :=
+  _root_.LexLeanPreservation.run_of_funRel (__rel_0 a b)
 
 end LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R14

@@ -97,6 +97,20 @@ impl Json {
         Self::from_serde(&value)
     }
 
+    /// [`Self::parse`] without the parser's limit on nesting. The value
+    /// nests as deeply as the text does and is walked and dropped
+    /// recursively, so the caller reads and drops it on a stack sized for
+    /// the text (`production::lcnf::CompilerInput::to_file_bytes`).
+    pub(crate) fn parse_unbounded(bytes: &[u8]) -> Result<Self, String> {
+        check_duplicate_keys(bytes)?;
+        let mut reader = serde_json::Deserializer::from_slice(bytes);
+        reader.disable_recursion_limit();
+        let value: serde_json::Value = serde::Deserialize::deserialize(&mut reader)
+            .and_then(|value| reader.end().map(|()| value))
+            .map_err(|error| error.to_string())?;
+        Self::from_serde(&value)
+    }
+
     fn from_serde(value: &serde_json::Value) -> Result<Self, String> {
         match value {
             serde_json::Value::Null => Err("canonical JSON has no null".to_owned()),

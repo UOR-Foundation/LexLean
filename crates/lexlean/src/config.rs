@@ -264,6 +264,26 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(code!("LLC0101"), message).with_span(Span::whole_file(path))
 }
 
+/// Whether `root` is a module root a project may not take as the first
+/// segment of its `module_prefix`: the roots of the pinned toolchain's
+/// libraries (a module `Lean.Main` would be found beside `Lean.Elab`, and
+/// `leanchecker` replays against the toolchain's `Lean`), `IO`, a namespace
+/// of Lean's prelude that generated Lean refuses to name.
+#[must_use]
+pub fn is_reserved_module_root(root: &str) -> bool {
+    [
+        "Init",
+        "Std",
+        "Lean",
+        "Lake",
+        "LakeMain",
+        "LeanChecker",
+        "LeanIR",
+        "IO",
+    ]
+    .contains(&root)
+}
+
 /// Is `text` a project-relative path: nonempty, `/`-separated, no leading
 /// separator, no `.` or `..` segments, no backslash, no NUL?
 #[must_use]
@@ -388,6 +408,20 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
         diagnostics.push(config_error(
             path,
             format!("`{}` is not a valid module prefix", raw.module_prefix),
+        ));
+    }
+    if let Some(root) = raw
+        .module_prefix
+        .split('.')
+        .next()
+        .filter(|root| is_reserved_module_root(root))
+    {
+        diagnostics.push(config_error(
+            path,
+            format!(
+                "module_prefix `{}` begins with `{root}`, a module root of the pinned Lean toolchain, or the namespace `IO` of its prelude, which the modules of a project would share",
+                raw.module_prefix
+            ),
         ));
     }
     if raw.lean_toolchain != crate::LEAN_TOOLCHAIN {
@@ -987,5 +1021,39 @@ impl ProjectConfig {
     #[must_use]
     pub fn config_sha256(&self) -> Sha256Digest {
         Sha256Digest::of(self.canonical_toml().as_bytes())
+    }
+}
+
+#[cfg(test)]
+mod reserved_root_tests {
+    use super::is_reserved_module_root;
+
+    /// The first segment of a module prefix may not be a module root of the
+    /// pinned toolchain or `IO`; a project's own roots, including the ones
+    /// this repository's examples use, are free.
+    #[test]
+    fn a_toolchain_root_is_reserved_and_a_project_root_is_not() {
+        for reserved in [
+            "Init",
+            "Std",
+            "Lean",
+            "Lake",
+            "LakeMain",
+            "LeanChecker",
+            "LeanIR",
+            "IO",
+        ] {
+            assert!(is_reserved_module_root(reserved), "{reserved}");
+        }
+        for free in [
+            "Production",
+            "LexLeanExample",
+            "LexLeanTarget",
+            "Leanish",
+            "Initial",
+            "Nat",
+        ] {
+            assert!(!is_reserved_module_root(free), "{free}");
+        }
     }
 }

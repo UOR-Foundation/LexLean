@@ -786,6 +786,48 @@ pub(crate) fn run(id: &str) {
                 "RecursiveData",
                 "binder `RecursiveData` in `Outcome` is spelled like the module prefix `RecursiveData`",
             );
+            // A declaration spelled like a name the backend writes without
+            // qualification would be that name in every later signature of
+            // its module (`error: type expected, got (Int : Nat -> Nat)`), and
+            // quoting cannot help: linking refuses it, whatever it declares.
+            // A name that the generated-Lean audit forbids but nothing
+            // captures is not one of them.
+            for name in lexlean::ir::semantic::BACKEND_BARE_NAMES {
+                for kind in ["definition", "structure", "inductive"] {
+                    let declaration = match kind {
+                        "definition" => serde_json::json!({
+                            "body": {"kind": "add", "left": {"kind": "var", "name": "n"}, "right": {"kind": "nat", "value": "1"}},
+                            "executable": true, "kind": "definition", "name": name,
+                            "parameters": [{"name": "n", "type": {"kind": "nat"}}],
+                            "result": {"kind": "nat"},
+                        }),
+                        "structure" => serde_json::json!({
+                            "fields": [{"name": "f", "type": {"kind": "nat"}}],
+                            "kind": "structure", "name": name, "parameters": [], "type_parameters": [],
+                        }),
+                        _ => serde_json::json!({
+                            "constructors": [{"fields": [], "name": "k"}],
+                            "kind": "inductive", "name": name, "parameters": [], "type_parameters": [],
+                        }),
+                    };
+                    let copy = P::negative("declaration-lean-name");
+                    let data = serde_json::json!({"declarations": [declaration], "spec": "lexlean/semantic-module/2"});
+                    copy.write(
+                        "src/Main.lex.tex",
+                        &format!(
+                            "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{data}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+                        ),
+                    );
+                    let error = copy.check_fails_with("LLT4001");
+                    assert!(
+                        error
+                            .to_string()
+                            .contains(&format!("declaration name `{name}` is ")),
+                        "a {kind} named `{name}`: {error}"
+                    );
+                    copy.assert_no_backend_output();
+                }
+            }
             // A self-referential structure.
             mutate(
                 r#"{"name":"value","type":{"kind":"parameter","name":"Item"}}"#,

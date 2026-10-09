@@ -12,7 +12,7 @@ set_option maxRecDepth 100000
 set_option linter.unusedVariables false
 namespace LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R3
 
-def __prog : LexLeanTarget.TargetSyntax.Program :=
+def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
     { parameters := [0], types := [.nat], result := .nat,
       body := (.call 1 [(.var 0), (.value .nat (.nat 0))]) },
@@ -24,9 +24,9 @@ def __fits_1 (number : Nat) (steps : Nat) : Bool :=
 termination_by number
 decreasing_by all_goals first | (have __evidence := Production.Kernel.countdown_decreases (number) (steps) (__decrease0); subst_vars; exact __evidence)
 
-theorem __rel_1 (number : Nat) (steps : Nat) : LexLeanPreservation.FunRel __prog 1 [(LexLeanTarget.TargetSyntax.Value.nat number), (LexLeanTarget.TargetSyntax.Value.nat steps)] (LexLeanPreservation.Rel (__fits_1 number steps) (LexLeanTarget.TargetSyntax.Value.nat (Production.Kernel.countdown number steps))) := by
+theorem __rel_1 (number : Nat) (steps : Nat) : _root_.LexLeanPreservation.FunRel __prog 1 [(_root_.LexLeanTarget.TargetSyntax.Value.nat number), (_root_.LexLeanTarget.TargetSyntax.Value.nat steps)] (_root_.LexLeanPreservation.Rel (__fits_1 number steps) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Production.Kernel.countdown number steps))) := by
   rw [Production.Kernel.countdown.eq_def, __fits_1.eq_def]
-  exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_cond (fun (__b : Bool) => (match (generalizing := false) __decrease0 : __b with | true => Bool.true | false => ((((Bool.true && (Bool.true && Bool.true)) && Bool.true) && (((Bool.true && (Bool.true && Bool.true)) && (Nat.blt (steps + (1 : Nat)) 18446744073709551616)) && Bool.true)) && (__fits_1 ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat))))))) (fun (__b : Bool) => LexLeanTarget.TargetSyntax.Value.nat (match (generalizing := false) __decrease0 : __b with | true => steps | false => (Production.Kernel.countdown ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat)))))) (Nat.blt number (2 : Nat)) (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natLt number (2 : Nat))) (fun __decrease0 => (LexLeanPreservation.conv_var rfl)) (fun __decrease0 => (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natSub number (2 : Nat))) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) (LexLeanPreservation.prim_natAdd steps (1 : Nat))) LexLeanPreservation.convL_nil)) (__rel_1 ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat)))))))
+  exact _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_cond (fun (__b : Bool) => (match (generalizing := false) __decrease0 : __b with | true => Bool.true | false => ((((Bool.true && (Bool.true && Bool.true)) && Bool.true) && (((Bool.true && (Bool.true && Bool.true)) && (Nat.blt (steps + (1 : Nat)) 18446744073709551616)) && Bool.true)) && (__fits_1 ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat))))))) (fun (__b : Bool) => _root_.LexLeanTarget.TargetSyntax.Value.nat (match (generalizing := false) __decrease0 : __b with | true => steps | false => (Production.Kernel.countdown ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat)))))) (Nat.blt number (2 : Nat)) (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) (_root_.LexLeanPreservation.prim_natLt number (2 : Nat))) (fun __decrease0 => (_root_.LexLeanPreservation.conv_var rfl)) (fun __decrease0 => (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) (_root_.LexLeanPreservation.prim_natSub number (2 : Nat))) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) (_root_.LexLeanPreservation.prim_natAdd steps (1 : Nat))) _root_.LexLeanPreservation.convL_nil)) (__rel_1 ((Production.Kernel.LexLeanRuntime.subtract (number) ((2 : Nat)) : Nat)) ((steps + (1 : Nat)))))))
 termination_by number
 decreasing_by all_goals first | (have __evidence := Production.Kernel.countdown_decreases (number) (steps) (__decrease0); subst_vars; exact __evidence)
 
@@ -34,13 +34,13 @@ def __fits_0 (number : Nat) : Bool :=
   ((Bool.true && (Bool.true && Bool.true)) && (__fits_1 (number) ((0 : Nat))))
 
 attribute [local irreducible] Production.Kernel.countdown in
-theorem __rel_0 (number : Nat) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat number)] (LexLeanPreservation.Rel (__fits_0 number) (LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number))) :=
-  LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convL_cons LexLeanPreservation.conv_value LexLeanPreservation.convL_nil)) (__rel_1 (number) ((0 : Nat))))
+theorem __rel_0 (number : Nat) : _root_.LexLeanPreservation.FunRel __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat number)] (_root_.LexLeanPreservation.Rel (__fits_0 number) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) (__rel_1 (number) ((0 : Nat))))
 
-def denote (number : Nat) : LexLeanPreservation.Obs :=
-  _root_.cond (__fits_0 number) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number)))) LexLeanPreservation.Obs.overflow
+def denote (number : Nat) : _root_.LexLeanPreservation.Obs :=
+  _root_.cond (__fits_0 number) (_root_.LexLeanPreservation.Obs.value ((_root_.LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number)))) _root_.LexLeanPreservation.Obs.overflow
 
-theorem root (number : Nat) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat number)] (LexLeanPreservation.Rel (__fits_0 number) (LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number))) :=
-  LexLeanPreservation.run_of_funRel (__rel_0 number)
+theorem root (number : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat number)] (_root_.LexLeanPreservation.Rel (__fits_0 number) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Production.Main.halvings number))) :=
+  _root_.LexLeanPreservation.run_of_funRel (__rel_0 number)
 
 end LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R3

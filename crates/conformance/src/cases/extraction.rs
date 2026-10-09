@@ -248,7 +248,7 @@ fn probe_host(
                     declaration: format!("Probe.Main.{member}"),
                     construct: "declaration.definition".to_owned(),
                     type_arguments: Vec::new(),
-                    path: vec![roots[0].clone()],
+                    path: lexlean::production::CallPath::from_steps([roots[0].clone()]),
                 })
                 .collect(),
             types: std::collections::BTreeMap::new(),

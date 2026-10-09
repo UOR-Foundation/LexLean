@@ -2539,7 +2539,13 @@ pub fn audit_modules(
             let name = format!("{root}.{generated_module}");
             let mut text = format!("module\nimport {generated_module}\n");
             for declaration in &declarations {
-                text.push_str(&format!("#print axioms {declaration}\n"));
+                // A user's name may be spelled like a word the audit of
+                // generated Lean forbids (`native_decide`, `IO`); the module
+                // quotes it, so the audit module names it the same way.
+                text.push_str(&format!(
+                    "#print axioms {}\n",
+                    super::semantic::identifier(declaration)
+                ));
             }
             AuditModule {
                 name,
@@ -2549,4 +2555,43 @@ pub fn audit_modules(
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod audit_module_tests {
+    use super::audit_modules;
+    use crate::verify::source_audit::audit;
+
+    /// A declaration spelled like a word the audit of generated Lean forbids
+    /// is quoted in its module, so the audit module that prints its axioms
+    /// quotes it too, and passes the audit the module passes (it printed
+    /// `#print axioms Coverage.Main.native_decide`, which no audit accepts).
+    #[test]
+    fn the_audit_module_names_a_forbidden_looking_declaration_quoted() {
+        let modules = audit_modules(
+            "0123456789abcdef0123456789abcdef",
+            &[(
+                "Coverage.Main".to_owned(),
+                vec![
+                    "Coverage.Main.plain".to_owned(),
+                    "Coverage.Main.native_decide".to_owned(),
+                    "Coverage.Main.IO".to_owned(),
+                ],
+            )],
+        );
+        let text = &modules[0].text;
+        assert!(
+            text.contains("#print axioms Coverage.Main.plain\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("#print axioms Coverage.Main.«native_decide»\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("#print axioms Coverage.Main.«IO»\n"),
+            "{text}"
+        );
+        audit(text, true).expect("the audit accepts the audit module");
+    }
 }

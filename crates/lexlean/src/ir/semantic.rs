@@ -2622,17 +2622,22 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
     }
 }
 
-/// Lean names the backend emits unqualified: built-in types and their
-/// constructor owners, the propositional connectives its proofs name, and the
-/// runtime namespaces. A binder spelled like one would capture it.
-/// Whether the backend emits `name` unqualified, so that a binder of that
-/// spelling would capture it and linking refuses it.
+/// Whether the backend emits `name` unqualified, so that a binder or a
+/// declaration of that spelling would capture it and linking refuses it.
+///
+/// The names are the built-in types and their constructor owners, the
+/// Boolean literals, the propositional connectives and lemmas its proofs
+/// name, and the runtime namespaces. The Boolean literals are among them
+/// because the backend writes `true` and `false` bare, in terms, patterns,
+/// and statements: a parameter named `true` makes the literal a `Nat`.
 #[must_use]
 pub fn is_backend_bare_name(name: &str) -> bool {
     BACKEND_BARE_NAMES.contains(&name)
 }
 
-const BACKEND_BARE_NAMES: [&str; 31] = [
+/// The names the backend writes without qualification (see
+/// [`is_backend_bare_name`]).
+pub const BACKEND_BARE_NAMES: [&str; 33] = [
     "And",
     "Bool",
     "ByteArray",
@@ -2662,8 +2667,10 @@ const BACKEND_BARE_NAMES: [&str; 31] = [
     "and_congr",
     "congr",
     "decide",
+    "false",
     "id",
     "rfl",
+    "true",
 ];
 
 fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
@@ -3246,6 +3253,16 @@ fn check_declaration_name(name: &str, env: &Environment<'_>) -> Result<(), Strin
     if env.language_1_2 && BUILTIN_CONSTRUCTOR_OWNERS.contains(&name) {
         return Err(format!(
             "declaration name `{name}` is reserved for the built-in type whose constructors it would shadow"
+        ));
+    }
+    // A declaration is a name of the module's namespace, in which generated
+    // Lean writes the built-in names it uses without qualification: a
+    // function `Int` would be the `Int` of every later signature. No quoting
+    // helps, since it is the resolution and not the lexing that captures, so
+    // linking refuses the name (§17.12 rule 10).
+    if env.language_1_2 && BACKEND_BARE_NAMES.contains(&name) {
+        return Err(format!(
+            "declaration name `{name}` is spelled like the built-in Lean name `{name}` and would capture it in generated Lean"
         ));
     }
     Ok(())

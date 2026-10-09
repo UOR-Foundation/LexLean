@@ -2256,6 +2256,7 @@ pub fn certificate_b(
     let mut out = format!("import {SOUNDNESS_MODULE}\n");
     out.push_str("set_option autoImplicit false\n");
     out.push_str("set_option maxRecDepth 100000\n");
+    out.push_str(&super::lower::budget_options(program));
     out.push_str(&format!("namespace {module}\n"));
     out.push_str("open LexLeanTarget LexLeanPreservation.Rust\n\n");
     out.push_str(&format!(

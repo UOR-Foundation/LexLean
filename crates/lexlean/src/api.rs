@@ -328,6 +328,21 @@ pub fn render_build(
         if let Some(report) = &checked_module.production {
             let production_path = format!("production/{module_path}.eligibility.json");
             let production_bytes = report.to_file_bytes();
+            // The analysis refuses a report it can tell would be beyond the
+            // limit before it builds it; this is the report as written. Like
+            // an artifact declaration, it materializes bytes beyond the
+            // sources, and counts toward `max_total_source_bytes` (§17.12
+            // rule 2).
+            if production_bytes.len() as u64 > project.config.limits.max_total_source_bytes {
+                return Err(LexLeanError::from_diagnostic(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "max_total_source_bytes exceeded: configured {}, the production-eligibility report of module `{name}` is {} bytes",
+                        project.config.limits.max_total_source_bytes,
+                        production_bytes.len()
+                    ),
+                )));
+            }
             outputs.push(file_row(
                 "production-eligibility",
                 &production_path,

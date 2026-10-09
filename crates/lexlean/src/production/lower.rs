@@ -387,12 +387,13 @@ pub fn lower_root(
     // largest file the project allows. A program whose certificates fit is
     // never refused here: what the bound does not see, the generation under
     // the same limit stops.
-    let lower_bound = certificate_lower_bound(&measure_program(&lowered.program));
+    let (which, lower_bound) =
+        certificate_lower_bounds(&measure_program(&lowered.program)).greatest();
     if lower_bound > limits.max_file_bytes {
         return Err(Diagnostic::new(
             code!("LLS8002"),
             format!(
-                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, the largest of its certificates is at least {lower_bound} bytes ({} program nodes)",
+                "root `{}`: max_file_bytes exceeded in phase lowering: configured {}, its certificate {which} is at least {lower_bound} bytes ({} program nodes)",
                 report.root,
                 limits.max_file_bytes,
                 program_nodes(&lowered.program)
@@ -430,77 +431,156 @@ pub struct Measure {
     /// Field reads, constructors built, and the binders of arms, counted once
     /// each with the arm.
     pub shapes: u64,
-    /// The bytes the literals of the program take in a certificate, at the
-    /// least: three for each byte of a string (certificate B repeats it as
-    /// many), two for each hexadecimal digit of a bytes literal, one for
-    /// each digit of a number.
-    pub literal_bytes: u64,
+    /// The bytes of the strings of the program's literals.
+    pub string_bytes: u64,
+    /// The hexadecimal digits of the program's bytes literals.
+    pub hex_digits: u64,
+    /// The decimal digits of the program's numeric literals.
+    pub number_digits: u64,
     /// The sum over matches of the square of their arms: a match on `C`
     /// constructors states, for each arm, the arms it follows, so its proof
     /// grows with `C` squared.
     pub arm_pairs: u64,
+    /// The arms of the widest match.
+    pub widest_match: u64,
 }
 
 impl Measure {
     fn add(&mut self, other: Measure) {
+        self.widest_match = self.widest_match.max(other.widest_match);
         self.types = self.types.saturating_add(other.types);
         self.exprs = self.exprs.saturating_add(other.exprs);
         self.shapes = self.shapes.saturating_add(other.shapes);
-        self.literal_bytes = self.literal_bytes.saturating_add(other.literal_bytes);
+        self.string_bytes = self.string_bytes.saturating_add(other.string_bytes);
+        self.hex_digits = self.hex_digits.saturating_add(other.hex_digits);
+        self.number_digits = self.number_digits.saturating_add(other.number_digits);
         self.arm_pairs = self.arm_pairs.saturating_add(other.arm_pairs);
     }
 }
 
-/// The bytes a type node costs the largest certificate of a program, at the
-/// least: half of the most that the corpora and stress families allow
-/// without the bound passing the size of their largest certificate
-/// (`conformance_sp_02` asserts that it never does).
-pub const CERTIFICATE_BYTES_PER_TYPE_NODE: u64 = 16;
+/// The sixteenths of a byte each unit of a [`Measure`] costs a certificate,
+/// at the least. A certificate A, B, or E repeats different things of a
+/// program, so each has its own costs: A repeats types, expressions, and the
+/// pairs of arms of a match, B the expressions and shapes (it states each
+/// with the Rust it relates and the derivation) and the literals, E the shapes
+/// of the entry and the pairs. Each cost is half of the greatest for which the
+/// bound stays below that certificate for every root of the three example
+/// corpora, for the families of programs that grow one dimension at a time
+/// (let chains, call chains, many parameters, enumerations, nested matches,
+/// wide structures, record copies, long literals, a generic chain, generic
+/// instances, long names), and for programs that grow several at once
+/// (`conformance_sp_02` asserts the bound is never above its certificate on
+/// any of them, and that the largest scaling of each mixed shape whose
+/// certificates fit under the default limit is not refused).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Costs {
+    /// Bytes a certificate has whatever the program: imports and the
+    /// statement of the root.
+    pub base_bytes: u64,
+    /// Sixteenths of a byte for each type node.
+    pub type_node: u64,
+    /// For each expression node.
+    pub expr_node: u64,
+    /// For each shape node.
+    pub shape_node: u64,
+    /// For each pair of arms of one match.
+    pub arm_pair: u64,
+    /// For each byte of a string literal.
+    pub string_byte: u64,
+    /// For each hexadecimal digit of a bytes literal.
+    pub hex_digit: u64,
+}
 
-/// The same for an expression node.
-pub const CERTIFICATE_BYTES_PER_EXPR_NODE: u64 = 20;
+/// What certificate A costs at the least.
+pub const COSTS_A: Costs = Costs {
+    base_bytes: 1100,
+    type_node: 272,
+    expr_node: 76,
+    shape_node: 0,
+    arm_pair: 180,
+    string_byte: 8,
+    hex_digit: 19,
+};
 
-/// The same for a shape node.
-pub const CERTIFICATE_BYTES_PER_SHAPE_NODE: u64 = 25;
+/// What certificate B costs at the least.
+pub const COSTS_B: Costs = Costs {
+    base_bytes: 800,
+    type_node: 0,
+    expr_node: 1072,
+    shape_node: 89,
+    arm_pair: 0,
+    string_byte: 24,
+    hex_digit: 59,
+};
 
-/// The same for a pair of arms of one match (a match on 200 constructors
-/// takes 22 bytes for each pair of its certificate A).
-pub const CERTIFICATE_BYTES_PER_ARM_PAIR: u64 = 11;
+/// What certificate E costs at the least.
+pub const COSTS_E: Costs = Costs {
+    base_bytes: 690,
+    type_node: 0,
+    expr_node: 0,
+    shape_node: 25,
+    arm_pair: 2,
+    string_byte: 0,
+    hex_digit: 0,
+};
 
-/// What a certificate costs besides its nodes, at the least: its imports and
-/// the statement of its root.
-pub const CERTIFICATE_BASE_BYTES: u64 = 1000;
+impl Costs {
+    /// The bytes a certificate with these costs takes at the least for a
+    /// program of `measure`.
+    #[must_use]
+    pub fn bound(&self, measure: &Measure) -> u64 {
+        let sixteenths = measure
+            .types
+            .saturating_mul(self.type_node)
+            .saturating_add(measure.exprs.saturating_mul(self.expr_node))
+            .saturating_add(measure.shapes.saturating_mul(self.shape_node))
+            .saturating_add(measure.arm_pairs.saturating_mul(self.arm_pair))
+            .saturating_add(measure.string_bytes.saturating_mul(self.string_byte))
+            .saturating_add(measure.hex_digits.saturating_mul(self.hex_digit));
+        (sixteenths / 16).saturating_add(self.base_bytes)
+    }
+}
 
-/// A lower bound on the largest of a program's certificates A, B, and E, in
-/// bytes, from what the program states: its types, expressions, shapes,
-/// literals, and the pairs of arms of its matches. It is a calibration,
-/// at half of the greatest bound the corpora and stress families allow, and
-/// it is used to refuse early and only to refuse early: a root is refused
-/// when even this much exceeds `max_file_bytes`, and a root whose
-/// certificates fit is never refused by it. The generation under
+/// A lower bound on each of a program's certificates, in bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Bounds {
+    /// Certificate A.
+    pub a: u64,
+    /// Certificate B, of the larger of the targets.
+    pub b: u64,
+    /// Certificate E.
+    pub e: u64,
+}
+
+impl Bounds {
+    /// The certificate whose bound is greatest, with the bound: the lower
+    /// bound on the largest certificate. The certificates are large for
+    /// different reasons, so the sum of what they have in common says
+    /// nothing about the largest, and the greatest bound is the one that is
+    /// a bound on it.
+    #[must_use]
+    pub fn greatest(&self) -> (&'static str, u64) {
+        [("A", self.a), ("B", self.b), ("E", self.e)]
+            .into_iter()
+            .fold(
+                ("A", 0),
+                |best, next| if next.1 > best.1 { next } else { best },
+            )
+    }
+}
+
+/// A lower bound on each of a program's certificates, from what the program
+/// states. It is used to refuse early and only to refuse early: a root is
+/// refused when the greatest of the three exceeds `max_file_bytes`, and a
+/// root whose certificates fit is never refused by it. The generation under
 /// `max_file_bytes` is what bounds every program.
 #[must_use]
-pub fn certificate_lower_bound(measure: &Measure) -> u64 {
-    measure
-        .types
-        .saturating_mul(CERTIFICATE_BYTES_PER_TYPE_NODE)
-        .saturating_add(
-            measure
-                .exprs
-                .saturating_mul(CERTIFICATE_BYTES_PER_EXPR_NODE),
-        )
-        .saturating_add(
-            measure
-                .shapes
-                .saturating_mul(CERTIFICATE_BYTES_PER_SHAPE_NODE),
-        )
-        .saturating_add(
-            measure
-                .arm_pairs
-                .saturating_mul(CERTIFICATE_BYTES_PER_ARM_PAIR),
-        )
-        .saturating_add(measure.literal_bytes)
-        .saturating_add(CERTIFICATE_BASE_BYTES)
+pub fn certificate_lower_bounds(measure: &Measure) -> Bounds {
+    Bounds {
+        a: COSTS_A.bound(measure),
+        b: COSTS_B.bound(measure),
+        e: COSTS_E.bound(measure),
+    }
 }
 
 fn measure_type(ty: &Ty) -> Measure {
@@ -550,7 +630,7 @@ fn measure_expr(expr: &Expr) -> Measure {
     match expr {
         Expr::Value { ty, value } => {
             out.add(measure_type(ty));
-            out.literal_bytes = out.literal_bytes.saturating_add(literal_bytes(value));
+            out.add(measure_literal(value));
         }
         Expr::Var { name: _ } => {}
         Expr::Let {
@@ -582,6 +662,7 @@ fn measure_expr(expr: &Expr) -> Measure {
             out.arm_pairs = out
                 .arm_pairs
                 .saturating_add((arms.len() as u64).saturating_mul(arms.len() as u64));
+            out.widest_match = out.widest_match.max(arms.len() as u64);
             for arm in arms {
                 out.exprs = out.exprs.saturating_add(1);
                 out.shapes = out.shapes.saturating_add(1 + arm.binders.len() as u64);
@@ -622,12 +703,17 @@ fn measure_expr(expr: &Expr) -> Measure {
     out
 }
 
-/// The bytes a literal takes in a certificate (see [`Measure::literal_bytes`]).
-fn literal_bytes(value: &Value) -> u64 {
-    let digits = |text: &String| text.len() as u64;
+/// What the literal `value` is made of (see [`Measure`]).
+fn measure_literal(value: &Value) -> Measure {
+    let mut out = Measure::default();
+    let each = |out: &mut Measure, items: &[Value]| {
+        for item in items {
+            out.add(measure_literal(item));
+        }
+    };
     match value {
-        Value::String { value } => (value.len() as u64).saturating_mul(3),
-        Value::Bytes { hex } => (hex.len() as u64).saturating_mul(2),
+        Value::String { value } => out.string_bytes = value.len() as u64,
+        Value::Bytes { hex } => out.hex_digits = hex.len() as u64,
         Value::Nat { value }
         | Value::Int { value }
         | Value::U8 { value }
@@ -637,28 +723,26 @@ fn literal_bytes(value: &Value) -> u64 {
         | Value::I8 { value }
         | Value::I16 { value }
         | Value::I32 { value }
-        | Value::I64 { value } => digits(value),
+        | Value::I64 { value } => out.number_digits = value.len() as u64,
         Value::Some { value } | Value::Ok { value } | Value::Error { value } => {
-            literal_bytes(value)
+            out.add(measure_literal(value));
         }
-        Value::Pair { left, right } => literal_bytes(left).saturating_add(literal_bytes(right)),
-        Value::List { items } => items
-            .iter()
-            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
+        Value::Pair { left, right } => {
+            out.add(measure_literal(left));
+            out.add(measure_literal(right));
+        }
+        Value::List { items } => each(&mut out, items),
         Value::Adt {
             constructor: _,
             fields,
-        } => fields
-            .iter()
-            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
+        } => each(&mut out, fields),
         Value::Closure {
             function: _,
             captures,
-        } => captures
-            .iter()
-            .fold(0, |sum, item| u64::saturating_add(sum, literal_bytes(item))),
-        Value::Unit | Value::Bool { value: _ } | Value::Ordering { value: _ } | Value::None => 0,
+        } => each(&mut out, captures),
+        Value::Unit | Value::Bool { value: _ } | Value::Ordering { value: _ } | Value::None => {}
     }
+    out
 }
 
 fn measure_function(function: &Function) -> Measure {
@@ -692,6 +776,34 @@ pub fn measure_program(program: &Program) -> Measure {
         out.add(measure_type(ty));
     }
     out
+}
+
+/// The arms of a match above which the certificates of a program lift the
+/// pinned Lean's heartbeat budgets: 100 constructors are checked within the
+/// defaults (`maxHeartbeats` 200 000, `synthInstance.maxHeartbeats` 20 000),
+/// 130 as well, 160 exhaust the second, 200 the first.
+pub const UNBUDGETED_ARMS: u64 = 100;
+
+/// The `set_option` lines a certificate about `program` starts with, besides
+/// those every certificate has: none when its widest match has at most
+/// [`UNBUDGETED_ARMS`] arms, and otherwise the removal of both heartbeat
+/// budgets.
+///
+/// Certificate B states every arm of a match after the arms before it, and
+/// the pinned Lean spends allocations on that faster than any bound this
+/// project could state (a match on 200 constructors needs between 300 000 and
+/// 400 000 heartbeats, one on 300 needs more than 3 800 000, where the
+/// defaults are 200 000), and exhausting a budget in the middle of a proof
+/// ends as a type mismatch that blames a valid certificate. The budget that
+/// remains is the wall clock, `child_timeout_ms`, whose exhaustion is a
+/// registered limit (`LLS8002`) and not a verdict on the certificate.
+#[must_use]
+pub fn budget_options(program: &Program) -> String {
+    if measure_program(program).widest_match > UNBUDGETED_ARMS {
+        "set_option maxHeartbeats 0\nset_option synthInstance.maxHeartbeats 0\n".to_owned()
+    } else {
+        String::new()
+    }
 }
 
 /// The size of a program: the nodes of every type and expression in it.

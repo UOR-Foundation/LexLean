@@ -565,7 +565,7 @@ impl CompositionMutation {
 /// The byte offset of the end of each `RepresentableL [..]` hypothesis of
 /// `text`: where a conjunct can be appended to it.
 fn hypothesis_ends(text: &str) -> Vec<usize> {
-    let mark = "(__e_hrep : LexLeanPreservation.Rust.RepresentableL [";
+    let mark = "(__e_hrep : _root_.LexLeanPreservation.Rust.RepresentableL [";
     text.match_indices(mark)
         .filter_map(|(at, found)| {
             let mut depth = 1_usize;

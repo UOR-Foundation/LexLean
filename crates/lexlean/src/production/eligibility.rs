@@ -25,7 +25,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::{
-    registry, BoundaryRow, ClosureMember, Disposition, EffectRow, ModuleReport, Registry,
+    registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport, Registry,
     RootReport, TargetRow,
 };
 use crate::ir::semantic::{
@@ -83,6 +83,9 @@ pub enum AnalysisError {
     /// The embedded registry or a linking guarantee failed: a compiler
     /// defect, never a property of the source (`LLI9001`).
     Internal(String),
+    /// The report the analysis would write is beyond `max_total_source_bytes`
+    /// (`LLS8002`).
+    Limit(String),
 }
 
 /// A reason a root is not eligible.
@@ -836,7 +839,7 @@ enum Item {
 struct Walk<'a> {
     registry: &'static Registry,
     modules: &'a BTreeMap<String, LinkedModule<'a>>,
-    queue: VecDeque<(Item, Vec<String>)>,
+    queue: VecDeque<(Item, CallPath)>,
     members: BTreeMap<String, ClosureMember>,
     member_order: Vec<String>,
     types: BTreeMap<String, String>,
@@ -851,6 +854,10 @@ struct Walk<'a> {
     /// `(literal, representation, instance)` for width checks per target.
     literals: BTreeSet<(String, Representation, String)>,
     violations: Vec<Violation>,
+    /// The bytes the members walked so far take in the report, and the bytes
+    /// the report may still take: the walk stops when they pass them.
+    bytes: u64,
+    allowed: u64,
 }
 
 /// The context of one closure member being walked.
@@ -1138,13 +1145,12 @@ impl<'a> Walk<'a> {
     }
 
     fn enqueue(&mut self, item: Item, site: &Site<'_>) {
-        let mut path = self
+        let caller = self
             .members
             .get(site.instance)
             .map(|member| member.path.clone())
             .unwrap_or_default();
-        path.push(String::new());
-        self.queue.push_back((item, path));
+        self.queue.push_back((item, caller));
     }
 
     /// The declaration `name` of `module` as linking elaborated it: a
@@ -1881,7 +1887,7 @@ impl<'a> Walk<'a> {
     }
 
     /// Visit one queued closure member.
-    fn visit(&mut self, item: &Item, mut path: Vec<String>) {
+    fn visit(&mut self, item: &Item, caller: &CallPath) {
         let (module, name, type_arguments) = match item {
             Item::Definition {
                 module,
@@ -1908,10 +1914,7 @@ impl<'a> Walk<'a> {
         if self.members.contains_key(&instance) {
             return;
         }
-        match path.last_mut() {
-            Some(last) => last.clone_from(&instance),
-            None => path.push(instance.clone()),
-        }
+        let path = caller.extended(instance.clone());
         let depth = path.len();
         let declaration = self.declaration(&module, &name);
         let construct = match declaration {
@@ -2025,16 +2028,15 @@ impl<'a> Walk<'a> {
             Some(owner) => owner,
             None => construct,
         };
-        self.members.insert(
-            instance.clone(),
-            ClosureMember {
-                instance: instance.clone(),
-                declaration: declaration_name.clone(),
-                construct: construct.to_owned(),
-                type_arguments: argument_texts,
-                path,
-            },
-        );
+        let member = ClosureMember {
+            instance: instance.clone(),
+            declaration: declaration_name.clone(),
+            construct: construct.to_owned(),
+            type_arguments: argument_texts,
+            path,
+        };
+        self.bytes = self.bytes.saturating_add(member.json_bytes());
+        self.members.insert(instance.clone(), member);
         self.member_order.push(instance.clone());
         let empty = BTreeMap::new();
         let site = Site {
@@ -2404,6 +2406,24 @@ fn exceeds(value: &str, representation: Representation, bits: u32) -> bool {
 }
 
 /// Analyse one root against every target it names.
+/// The bytes the report of a module may take, and the bytes its roots have
+/// taken so far.
+struct ReportBudget {
+    limit: u64,
+    used: u64,
+}
+
+impl ReportBudget {
+    /// The refusal of a report that passes the limit at `root`.
+    fn exceeded(&self, module: &str, root: &str) -> String {
+        format!(
+            "the production-eligibility report of module `{module}` is beyond the {} bytes of max_total_source_bytes at root `{root}`: a member of a closure records its shortest call path, so a chain of calls takes the square of its length and roots that call one another the cube of their number",
+            self.limit
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn analyse_root(
     module: &str,
     name: &str,
@@ -2412,6 +2432,7 @@ fn analyse_root(
     result: &SemanticType,
     production: &SemanticProduction,
     modules: &BTreeMap<String, LinkedModule<'_>>,
+    budget: &ReportBudget,
 ) -> Result<RootReport, AnalysisError> {
     let registry = registry().map_err(AnalysisError::Internal)?;
     let mut walk = Walk {
@@ -2428,6 +2449,8 @@ fn analyse_root(
         allocation: BTreeSet::new(),
         literals: BTreeSet::new(),
         violations: Vec::new(),
+        bytes: 0,
+        allowed: budget.limit.saturating_sub(budget.used),
     };
     let root_ref = MemberRef {
         module: Some(module.to_owned()),
@@ -2495,14 +2518,22 @@ fn analyse_root(
             name: name.to_owned(),
             type_arguments: Vec::new(),
         },
-        Vec::new(),
+        CallPath::default(),
     ));
     loop {
         match walk.queue.pop_front() {
-            Some((item, path)) => walk.visit(&item, path),
+            Some((item, caller)) => {
+                walk.visit(&item, &caller);
+                if walk.bytes > walk.allowed {
+                    return Err(AnalysisError::Limit(
+                        budget.exceeded(module, &walk.owner(module).lean_name(&root_ref)),
+                    ));
+                }
+            }
             None => break,
         }
     }
+
     let mut targets = Vec::new();
     for target_id in &production.targets {
         // `check_declaration` admitted only registered targets in linking.
@@ -2568,10 +2599,10 @@ fn analyse_root(
         violations.sort();
         match violations.first() {
             Some(first) => {
-                let path = walk
-                    .members
-                    .get(&first.instance)
-                    .map_or_else(|| first.instance.clone(), |member| member.path.join(" -> "));
+                let path = walk.members.get(&first.instance).map_or_else(
+                    || first.instance.clone(),
+                    |member| member.path.steps().join(" -> "),
+                );
                 return Err(AnalysisError::Ineligible(format!(
                     "production root `{root}` is not eligible for target `{target_id}`: {} (in `{}`, reached by {path}; {} violation(s) in total)",
                     first.reason,
@@ -2625,12 +2656,17 @@ fn analyse_root(
 pub fn analyse_module(
     module: &str,
     modules: &BTreeMap<String, LinkedModule<'_>>,
+    max_report_bytes: u64,
 ) -> Result<Option<ModuleReport>, AnalysisError> {
     let linked = match modules.get(module) {
         Some(linked) => linked,
         None => return Ok(None),
     };
     let mut roots = Vec::new();
+    let mut budget = ReportBudget {
+        limit: max_report_bytes,
+        used: 0,
+    };
     for declaration in &linked.semantic.declarations {
         match declaration {
             SemanticDeclaration::Definition {
@@ -2645,15 +2681,27 @@ pub fn analyse_module(
                 mutual: _,
                 termination: _,
                 production: Some(production),
-            } => roots.push(analyse_root(
-                module,
-                name,
-                type_parameters,
-                parameters,
-                result,
-                production,
-                modules,
-            )?),
+            } => {
+                let root = analyse_root(
+                    module,
+                    name,
+                    type_parameters,
+                    parameters,
+                    result,
+                    production,
+                    modules,
+                    &budget,
+                )?;
+                // The bytes the root takes in the report, as written: the
+                // walk's own count is a lower bound that stops a single root
+                // early, and this is what the root costs.
+                let written = serde_json::to_vec(&root.to_value()).map_or(0, |bytes| bytes.len());
+                budget.used = budget.used.saturating_add(written as u64);
+                if budget.used > budget.limit {
+                    return Err(AnalysisError::Limit(budget.exceeded(module, &root.root)));
+                }
+                roots.push(root);
+            }
             SemanticDeclaration::Definition {
                 name: _,
                 type_parameters: _,
@@ -2779,10 +2827,12 @@ mod tests {
                 semantic: &semantic,
             },
         )]);
-        match analyse_module("Main", &modules) {
+        match analyse_module("Main", &modules, u64::MAX) {
             Ok(report) => panic!("the root is reported eligible: {report:?}"),
             Err(AnalysisError::Ineligible(reason)) => reason,
-            Err(AnalysisError::Internal(reason)) => panic!("internal failure: {reason}"),
+            Err(AnalysisError::Internal(reason) | AnalysisError::Limit(reason)) => {
+                panic!("internal failure: {reason}")
+            }
         }
     }
 

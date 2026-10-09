@@ -250,6 +250,35 @@ fn enumeration(constructors: usize, fields: usize) -> Vec<Value> {
     ]
 }
 
+/// `count` production roots, each calling the previous one: the closure of
+/// the root `k` holds the `k` roots before it.
+fn roots_chain(count: usize) -> Vec<Value> {
+    (0..count)
+        .map(|index| {
+            let callee = if index > 0 {
+                json!({"kind": "call", "function": {"name": format!("r{}", index - 1)}, "arguments": [var("x")]})
+            } else {
+                var("x")
+            };
+            root(
+                &format!("r{index}"),
+                vec![parameter("x", nat())],
+                nat(),
+                add(callee, literal(1)),
+                &["overflow"],
+                &BOTH,
+            )
+        })
+        .collect()
+}
+
+/// A chain of `count` production roots, each calling the previous one, under
+/// the default limits.
+#[must_use]
+pub fn roots_chain_default(count: usize) -> P {
+    project_limited(&roots_chain(count), false)
+}
+
 /// A function of `count` parameters that passes them all on, `depth` deep.
 fn many_parameters(count: usize, depth: usize) -> Vec<Value> {
     let arguments = |count: usize| {
@@ -575,9 +604,13 @@ pub fn families() -> Vec<(String, P)> {
 /// Roots whose parameters, fields, and locals are spelled like the names the
 /// generator binds in certificate E (`hrep`, `ro`, `h`, `hr`, `hc`, `n`) and
 /// like the tokens the certificate audit forbids (`kernel`, `prefix`,
-/// `macro`, ...). They are valid programs and must verify.
+/// `macro`, ...), and like each namespace `referenced` that the generated
+/// certificates begin a name with (the caller reads them off the
+/// certificates of the example corpora, so that a namespace a certificate
+/// comes to use is a name this project tries without anyone remembering to
+/// list it). They are valid programs and must verify.
 #[must_use]
-pub fn names() -> P {
+pub fn names(referenced: &[String]) -> P {
     let sum = |names: &[&str]| -> Value {
         let mut out = var(names[0]);
         for name in &names[1..] {
@@ -611,8 +644,6 @@ pub fn names() -> P {
         "denoteEntry",
         "root",
         "fits",
-        "true",
-        "false",
         "absurd",
         "if_true",
         "trivial",
@@ -620,7 +651,53 @@ pub fn names() -> P {
     ];
     let mut entered_globals = vec![parameter("pset", set.clone())];
     entered_globals.extend(globals.iter().map(|name| parameter(name, nat())));
+    // The namespaces of the shipped libraries and of the toolchain, besides
+    // those the certificates are seen to use: a parameter of any of these
+    // names is valid and must verify.
+    const SHIPPED: [&str; 17] = [
+        "Compose",
+        "Corr",
+        "IO",
+        "Init",
+        "Lake",
+        "Lean",
+        "LexLeanAudit",
+        "LexLeanCore",
+        "LexLeanError",
+        "LexLeanModels",
+        "LexLeanPreservation",
+        "LexLeanPreserve",
+        "LexLeanTarget",
+        "Rust",
+        "RustCore",
+        "RustStd",
+        "Std",
+    ];
+    let mut every: std::collections::BTreeSet<&str> = SHIPPED.into_iter().collect();
+    every.extend(referenced.iter().map(String::as_str));
+    let namespaces: Vec<&str> = every.into_iter().collect();
     let declarations = vec![
+        root(
+            "namespaces",
+            namespaces
+                .iter()
+                .map(|name| parameter(name, nat()))
+                .collect(),
+            nat(),
+            sum(&namespaces),
+            &["overflow"],
+            &BOTH,
+        ),
+        root(
+            "entered_namespaces",
+            std::iter::once(parameter("pset", set.clone()))
+                .chain(namespaces.iter().map(|name| parameter(name, nat())))
+                .collect(),
+            nat(),
+            add(size("pset"), sum(&namespaces)),
+            &["allocation", "overflow"],
+            &["rust-std"],
+        ),
         root(
             "globals",
             globals.iter().map(|name| parameter(name, nat())).collect(),
@@ -688,6 +765,67 @@ pub fn names() -> P {
     project(&declarations)
 }
 
+/// Declarations spelled like the words the audit of generated Lean forbids
+/// (`native_decide`, `IO`) or like tokens of a certificate (`extern`,
+/// `kernel`): a definition, a structure with fields, and an inductive with
+/// constructors of those names, reached from a root. The module quotes them,
+/// and so do the certificates and the audit module that prints their axioms
+/// (`#print axioms Production.Main.«native_decide»`). A parameter cannot share
+/// a module with a declaration of its name, so they are in [`names`] and these
+/// are here.
+#[must_use]
+pub fn declared_names() -> P {
+    let declarations = vec![
+        json!({
+            "body": add(var("x"), literal(1)),
+            "executable": true,
+            "kind": "definition",
+            "name": "native_decide",
+            "parameters": [parameter("x", nat())],
+            "result": nat(),
+        }),
+        json!({
+            "fields": [parameter("native_decide", nat()), parameter("kernel", nat())],
+            "kind": "structure",
+            "name": "IO",
+            "parameters": [],
+            "type_parameters": [],
+        }),
+        json!({
+            "constructors": [
+                {"fields": [], "name": "kernel"},
+                {"fields": [nat()], "name": "native_decide"},
+            ],
+            "kind": "inductive",
+            "name": "extern",
+            "parameters": [],
+            "type_parameters": [],
+        }),
+        root(
+            "declared",
+            vec![
+                parameter("io", named("IO")),
+                parameter("e", named("extern")),
+            ],
+            nat(),
+            add(
+                json!({"arguments": [json!({"field": "native_decide", "kind": "project", "value": var("io")})], "function": {"name": "native_decide"}, "kind": "call"}),
+                json!({
+                    "branches": [
+                        {"binders": [], "body": literal(0), "constructor": {"name": "extern.kernel"}},
+                        {"binders": ["k"], "body": var("k"), "constructor": {"name": "extern.native_decide"}},
+                    ],
+                    "kind": "match",
+                    "scrutinee": var("e"),
+                }),
+            ),
+            &["overflow"],
+            &BOTH,
+        ),
+    ];
+    project(&declarations)
+}
+
 /// A root matching a value of an enumeration of `constructors` constructors
 /// without fields, one arm each, under limits lifted far enough for it.
 #[must_use]
@@ -695,17 +833,232 @@ pub fn wide_match(constructors: usize) -> P {
     project(&enumeration(constructors, 0))
 }
 
+/// How much of each dimension a program of [`mixed`] has.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Shape {
+    /// Constructors of an enumeration matched on, without fields.
+    pub arms: usize,
+    /// Fields of a structure, all of which are read.
+    pub fields: usize,
+    /// Characters of a string literal.
+    pub chars: usize,
+    /// Links of a chain of `let`s (at most 100 when scaled: a semantic module
+    /// is JSON, which nests at most 128 levels).
+    pub lets: usize,
+    /// Bytes of a bytes literal.
+    pub bytes: usize,
+}
+
+impl Shape {
+    /// Every dimension multiplied by `numerator / 256`, at least one
+    /// where it was.
+    #[must_use]
+    pub fn scaled(self, numerator: usize) -> Shape {
+        let scale = |value: usize| {
+            if value == 0 {
+                0
+            } else {
+                (value * numerator / 256).max(1)
+            }
+        };
+        Shape {
+            arms: scale(self.arms),
+            fields: scale(self.fields),
+            chars: scale(self.chars),
+            lets: scale(self.lets).min(100),
+            bytes: scale(self.bytes),
+        }
+    }
+}
+
+/// One root that has all the dimensions of `shape` at once: it matches an
+/// enumeration, reads every field of a structure, and builds a pair of a
+/// string, a bytes literal and a number computed by a chain of `let`s. The
+/// certificates are large for different reasons (A for the match, B for the
+/// string and the fields), which the families of one dimension cannot show.
+fn mixed(shape: Shape) -> Vec<Value> {
+    let mut declarations: Vec<Value> = Vec::new();
+    let mut parameters: Vec<Value> = vec![parameter("n", nat())];
+    let mut parts: Vec<(Value, Value)> = Vec::new();
+    let mut allocates = false;
+    let mut targets: Vec<&str> = BOTH.to_vec();
+    if shape.arms > 0 {
+        let mut enumerated = enumeration(shape.arms, 0);
+        let matched = enumerated.pop().expect("the root");
+        declarations.extend(enumerated);
+        parameters.push(parameter("e", named("E")));
+        parts.push((matched["body"].clone(), nat()));
+    }
+    if shape.fields > 0 {
+        declarations.push(structure(shape.fields));
+        parameters.push(parameter("s", named("S")));
+        // A balanced sum: the semantic module is JSON, which nests at most
+        // 128 deep.
+        let mut level: Vec<Value> = (0..shape.fields)
+            .map(
+                |index| json!({"field": format!("f{index}"), "kind": "project", "value": var("s")}),
+            )
+            .collect();
+        while level.len() > 1 {
+            let mut next = Vec::with_capacity(level.len().div_ceil(2));
+            let mut items = level.into_iter();
+            while let Some(left) = items.next() {
+                next.push(match items.next() {
+                    Some(right) => add(left, right),
+                    None => left,
+                });
+            }
+            level = next;
+        }
+        parts.push((level.pop().unwrap_or_else(|| literal(0)), nat()));
+    }
+    if shape.lets > 0 {
+        let mut body = var(&format!("x{}", shape.lets));
+        for index in (1..=shape.lets).rev() {
+            let previous = if index == 1 {
+                "n".to_owned()
+            } else {
+                format!("x{}", index - 1)
+            };
+            body = json!({
+                "binder": {"name": format!("x{index}"), "type": nat()},
+                "body": body,
+                "kind": "let",
+                "value": add(var(&previous), literal(1)),
+            });
+        }
+        parts.push((body, nat()));
+    }
+    if shape.chars > 0 {
+        allocates = true;
+        targets = vec!["rust-std"];
+        parts.push((
+            json!({"kind": "string", "value": "a".repeat(shape.chars)}),
+            json!({"kind": "string"}),
+        ));
+    }
+    if shape.bytes > 0 {
+        allocates = true;
+        targets = vec!["rust-std"];
+        parts.push((
+            json!({"kind": "bytes", "hex": "ab".repeat(shape.bytes)}),
+            json!({"kind": "bytes"}),
+        ));
+    }
+    let (mut body, mut ty) = parts.pop().unwrap_or((literal(0), nat()));
+    while let Some((left, left_ty)) = parts.pop() {
+        body = json!({"kind": "pair", "left": left, "right": body});
+        ty = json!({"kind": "product", "left": left_ty, "right": ty});
+    }
+    let effects: &[&str] = if allocates {
+        &["allocation", "overflow"]
+    } else {
+        &["overflow"]
+    };
+    declarations.push(root("r", parameters, ty, body, effects, &targets));
+    declarations
+}
+
+/// The project of a program with all the dimensions of `shape`, with the
+/// limits lifted far enough for it.
+#[must_use]
+pub fn mixed_lifted(shape: Shape) -> P {
+    project(&mixed(shape))
+}
+
+/// The project of a program with all the dimensions of `shape`, under the
+/// default limits.
+#[must_use]
+pub fn mixed_default(shape: Shape) -> P {
+    project_limited(&mixed(shape), false)
+}
+
+/// The shapes whose scalings are searched for the largest that fits: each
+/// makes a different certificate the largest, and two of them make different
+/// certificates large at once (a wide match with a long string, a wide
+/// structure with a longer one), which a sum of what the certificates repeat
+/// takes for one certificate being that large. Their size at the full scale is
+/// about the limit or beyond it, so that the search ends near it.
+#[must_use]
+pub fn mixed_shapes() -> Vec<Shape> {
+    let shape = |arms, fields, chars, lets, bytes| Shape {
+        arms,
+        fields,
+        chars,
+        lets,
+        bytes,
+    };
+    vec![
+        shape(400, 0, 1_000_000, 0, 0),
+        shape(350, 0, 940_000, 0, 0),
+        shape(0, 800, 1_390_000, 0, 0),
+        shape(390, 100, 250_000, 50, 60_000),
+        shape(120, 300, 600_000, 90, 100_000),
+        shape(0, 0, 20_000, 100, 200_000),
+        shape(400, 20, 0, 100, 0),
+    ]
+}
+
+/// A root whose body is a chain of `count` nested `let`s, under the default
+/// limits: it nests `count` levels of JSON deeper than a plain term.
+#[must_use]
+pub fn let_chain_default(count: usize) -> P {
+    project_limited(&let_chain(count, false), false)
+}
+
+/// A root matching a value of an enumeration of `constructors` constructors
+/// without fields, one arm each, under the default limits.
+#[must_use]
+pub fn wide_match_default(constructors: usize) -> P {
+    project_limited(&enumeration(constructors, 0), false)
+}
+
+/// `count` shapes with each dimension drawn at random (some left out) from a
+/// fixed seed, so that the same ones are drawn on every run. They are for
+/// checking the bounds on programs nothing was calibrated on.
+#[must_use]
+pub fn random_shapes(count: usize, seed: u64) -> Vec<Shape> {
+    let mut state = seed;
+    let mut next = move |bound: usize| -> usize {
+        state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        // The high bits are the better ones.
+        ((state >> 33) as usize) % bound
+    };
+    (0..count)
+        .map(|_| {
+            let mut dimension = |bound: usize| {
+                if next(3) == 0 {
+                    0
+                } else {
+                    1 + next(bound)
+                }
+            };
+            Shape {
+                arms: dimension(250),
+                fields: dimension(250),
+                chars: dimension(200_000),
+                lets: dimension(100),
+                bytes: dimension(60_000),
+            }
+        })
+        .collect()
+}
+
 /// Programs that are valid and whose certificates fit under the default
-/// limits, with the default limits: none may be refused. A match on 440
-/// constructors (certificate A of 3.7 MB of the 4 MiB) and a string literal
-/// of 450 000 characters (certificate B of 1.4 MB).
+/// limits, with the default limits: none may be refused. A match on 420
+/// constructors (certificate A of 4.1 MB of the 4 MiB), a string literal of
+/// 450 000 characters (certificate B of 1.4 MB), and the largest scaling of
+/// each of [`mixed_shapes`] whose certificates all fit, which the caller
+/// finds by searching with [`mixed_lifted`].
 #[must_use]
 pub fn fitting() -> Vec<(String, P)> {
     let ascii = json!({"kind": "string", "value": "a".repeat(450_000)});
     vec![
         (
-            "enumeration of 440 constructors".to_owned(),
-            project_limited(&enumeration(440, 0), false),
+            "enumeration of 420 constructors".to_owned(),
+            project_limited(&enumeration(420, 0), false),
         ),
         (
             "string literal of 450000 characters".to_owned(),

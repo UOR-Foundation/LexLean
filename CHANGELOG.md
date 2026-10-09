@@ -112,46 +112,90 @@ versions, and the entries below say what each tag does and does not claim.
   vocabulary SPEC.md quotes is held byte-equal to the library's by
   `validate-spec-links`, and every library declaration must be registered.
 - Limits (SPEC.md §17.17 *Limits*). A root whose lowered program exceeds
-  `max_ir_nodes`, or whose largest certificate is certain to exceed
-  `max_file_bytes` (a lower bound from what the program states: 16 bytes for
-  each type node, 20 for each expression node, 25 for each shape node, 11
-  for each pair of arms of a match, 3 for each byte of a string, and 1000;
-  calibrated at half of the most the corpora and stress families allow,
-  never above their largest certificate in `conformance_sp_02`, so a program
-  whose certificates fit is not refused by it), or whose field reads print so
-  many record entries that certificate B would exceed it, is refused with
-  `LLS8002` before the toolchain is touched; certificate B, whose derivations
-  grow with the square of a record's arity and cannot be bounded from node
-  counts, is
-  generated under `max_file_bytes` and stops at it. Certificates are now
+  `max_ir_nodes`, or for which a lower bound on one of its certificates
+  exceeds `max_file_bytes`, or whose field reads print so many record entries
+  that certificate B would exceed it, is refused with `LLS8002` before the
+  toolchain is touched. The bound is per certificate (A from types,
+  expressions, and the pairs of arms of its matches; B from expressions,
+  shapes, and literals; E from shapes and pairs), the greatest of the three is
+  compared with the limit and not their sum, and each cost is half of the
+  greatest that stays below its certificate over the corpora, the stress
+  families, and programs that grow several dimensions at once; `conformance_sp_02`
+  checks it against the corpora, the families, random combinations none of
+  which it was fitted to, and the largest scaling of seven mixed shapes that
+  fits the default limit (not refused). Certificate B, whose derivations grow
+  with the square of a record's arity and cannot be bounded from node counts,
+  is generated under `max_file_bytes` and stops at it. Certificates are
   generated right after lowering for that reason. Negative fixtures
   `lowering-size-limit`, `certificate-size-limit` (a record of 800 fields
-  copied field by field), and `certificate-generation-limit` (a sum of the
-  500 fields of a record) cover them. A pinned Lean that is killed, runs out
-  of memory, or overflows its stack while checking a certificate is
-  `LLS8002`; one that exhausts its heartbeat or recursion budget is `LLS8002`
-  only when the module is at least a quarter of `max_file_bytes` and is
-  otherwise Lean's verdict on the certificate, `LLV7013`, `LLV7015`, or
-  `LLV7016` (fixtures `certificate-heartbeat-rejected` and
-  `certificate-resource-exhausted`): a wrong certificate whose proof makes
-  `isDefEq` loop is not a limit. Rejections of certificates A, B, and E name
-  the declaration, the root, and the bounded first error.
+  copied field by field), `certificate-generation-limit` (a sum of the 500
+  fields of a record), and `certificates-total-limit` cover them. The
+  programs, crates, and certificates of all the roots of a project count
+  toward `max_total_source_bytes` as they are generated, and so does the
+  eligibility report (§17.13), whose closure members each record a shortest
+  call path: a chain of 3000 calls took 638 MB, a chain of 1000 roots 9.5 GB
+  and 90 seconds, and 2000 exhausted a 16 GB host in `lexlean check`. A path is
+  now shared, and a chain of 2359 functions or 243 roots is the most a project
+  may have at the default limit (`LLS8002` from `check`, fixture
+  `eligibility-report-limit`). A pinned Lean that is killed, runs out of memory, or
+  overflows its stack while checking a certificate is `LLS8002`; one that
+  exhausts its heartbeat or recursion budget is `LLS8002` only when the module
+  is at least a quarter of `max_file_bytes` and is otherwise Lean's verdict
+  on the certificate, `LLV7013`, `LLV7015`, or `LLV7016` (fixtures
+  `certificate-heartbeat-rejected` and `certificate-resource-exhausted`): a
+  wrong certificate whose proof makes `isDefEq` loop is not a limit.
+  Rejections of certificates A, B, and E name the declaration, the root, and
+  the bounded first error.
 - Every certificate is generated under `max_file_bytes` (the proof of each
   term, each match arm, the encoders, each function, the boundary), so no
   program makes the generator build more than the limit allows; the early
   refusal is a lower bound, not the guarantee. A
   match of thousands of arms cannot overflow the stack (the aligner derives
   arms in a loop and a derivation is written and dropped iteratively).
-- A root verifies whatever its parameters are named: the names certificate E
-  binds begin with two underscores, which no semantic name does, and the
-  certificate token audit reads a quoted name as the name it is, forbidden
-  constants and attributes included (the generator quotes a name spelled like
-  a forbidden token, and the backend one spelled like a word the generated-Lean
-  audit forbids, such as `native_decide`), while an unclosed quotation, string,
-  or comment is refused; the words a certificate writes bare, which a parameter
-  could shadow (`true`, `cond`, `absurd`, `denote`, `accepts`, ...), are
-  written by their full names, and `conformance_sp_09` checks that no bare
-  word of a certificate is anything but syntax.
+- A match on many constructors verifies through `lexlean verify`. The
+  extraction record of a named root nests two levels of JSON for each arm, and
+  its reader refused it from about 60 arms (`LLV7011`, `recursion limit
+  exceeded`); it is now read without the limit, on a thread with a large
+  stack, as is the compiler input. The pinned Lean needs more than its default
+  heartbeats for a certificate B of a match on 160 or more arms (a type
+  mismatch that blamed a valid certificate), so a program whose widest match
+  has more than 100 arms sets both budgets to 0 and the wall clock,
+  `child_timeout_ms`, is the limit. A match on 180 constructors is verified by
+  `conformance_sp_02`, and one on 300 by hand; SPEC.md says where the machine
+  reaches the timeout. The earlier statement that a match on 440 constructors
+  verifies was false: its certificates are generated, and Lean does not check
+  certificate B within 15 minutes.
+- A root verifies whatever its names are, with no name a user can write
+  capturing a name a generated file uses. Every reference a certificate makes to
+  a global is written from the root (`_root_.LexLeanPreservation.conv_var`),
+  so that a parameter, however spelled, cannot turn the first segment of a
+  global into a field access of itself (a parameter named `LexLeanPreservation`,
+  `LexLeanTarget`, or `LexLeanPreserve` broke certificates A and E); the names
+  certificate E binds begin with two underscores, which no semantic name does;
+  the certificate token audit follows Lean's tokenizer (character literals,
+  raw strings, dotted and unicode names, `sorry.1`, attributes) and reads a
+  quoted name as the name it is, forbidden constants and attributes included
+  (the generator quotes a name spelled like a forbidden token, the backend and
+  the audit module one spelled like a word the generated-Lean audit forbids,
+  such as `native_decide` and `IO`, so a function, structure, inductive,
+  field, constructor, or parameter of that name verifies), and fails closed
+  on anything it cannot classify; `conformance_sp_09` verifies a project whose
+  parameters are spelled like every namespace the certificates of the corpora
+  begin a name with, and its gate reads the first component of every longer
+  name.
+- Language-1.2 declaration names (§17.12 rule 10). No declaration may be spelled
+  like a name the backend writes unqualified (`Int`, `String`, `Unit`,
+  `Except`, `ByteArray`, `Ordering`, `UInt8`..`UInt64`, `Int8`..`Int64`,
+  `true`, `false`, ...), and no binder may be named `true` or `false`: a
+  declaration `Int` was the `Int` of every later signature of its module and a
+  parameter `true` the `true` of every Boolean literal, and Lean reported
+  `LLV7002` for a program `check` had accepted. Linking now refuses them
+  (`LLT4001`, fixtures `declaration-lean-name` and `binder-bool-literal-name`).
+  A `module_prefix` whose first segment is a module root of the pinned
+  toolchain (`Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`,
+  `LeanIR`) or `IO` is refused by configuration (`LLC0101`, fixture
+  `module-prefix-reserved`) where it was `LLV7003` or `LLI9001` in the middle
+  of verification.
 - Certificate E is stated, in full, for representable arguments, and Lean
   applies it to arguments of the differential, some at the bounds of `u64`
   and `i64`, so a hypothesis that cannot be met or used fails; the planted

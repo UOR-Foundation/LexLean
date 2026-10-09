@@ -439,6 +439,7 @@ pub fn certificate_e(
     let text = generator
         .compose(root_module, root_name, module_a, module_b, module, fallible)
         .map_err(failure)?;
+    let text = from_the_root(&text).map_err(internal)?;
     generator.within(text.len()).map_err(failure)?;
     Ok(Certificate {
         module: module.to_owned(),
@@ -580,6 +581,7 @@ pub fn certificate(
     let text = generator
         .module(root_module, root_name, report, module)
         .map_err(failure)?;
+    let text = from_the_root(&text).map_err(internal)?;
     generator.within(text.len()).map_err(failure)?;
     let mut imports: Vec<String> = modules
         .values()
@@ -593,6 +595,59 @@ pub fn certificate(
         text,
         imports,
     })
+}
+
+/// The namespaces of the shipped library, the target, the certificates, and
+/// the runtime, which a certificate names from outside any scope of the
+/// source.
+const GLOBAL_ROOTS: [&str; 6] = [
+    "LexLeanPreservation",
+    "LexLeanTarget",
+    "LexLeanPreserve",
+    "LexLeanRuntime",
+    "LexLeanCollections",
+    "LexLeanAudit",
+];
+
+/// `text` with every reference to a name of [`GLOBAL_ROOTS`] written from the
+/// root, `_root_.LexLeanPreservation.conv_var`: a parameter named like a
+/// namespace would otherwise turn the first segment of such a name into a
+/// field access of itself. Declarations, `import`, `open`, `namespace`, and
+/// `end` lines are left as they are.
+fn from_the_root(text: &str) -> Result<String, String> {
+    use super::preserve::{lex, LexemeKind};
+    let lexemes = lex(text)?;
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len() + text.len() / 16);
+    let mut copied = 0usize;
+    let mut skipped_line = usize::MAX;
+    for lexeme in &lexemes {
+        let (opens, reaches) = match &lexeme.kind {
+            LexemeKind::Ident(segments) => (
+                segments.len() == 1
+                    && !segments[0].quoted
+                    && ["import", "open", "namespace", "end"].contains(&segments[0].text.as_str()),
+                segments.len() > 1
+                    && !segments[0].quoted
+                    && GLOBAL_ROOTS.contains(&segments[0].text.as_str()),
+            ),
+            LexemeKind::Number
+            | LexemeKind::Literal
+            | LexemeKind::Command(_)
+            | LexemeKind::Symbol(_) => (false, false),
+        };
+        if lexeme.first_on_line {
+            skipped_line = if opens { lexeme.line } else { usize::MAX };
+        }
+        let after_dot = lexeme.start > 0 && chars[lexeme.start - 1] == '.';
+        if reaches && !after_dot && lexeme.line != skipped_line {
+            out.extend(&chars[copied..lexeme.start]);
+            out.push_str("_root_.");
+            copied = lexeme.start;
+        }
+    }
+    out.extend(&chars[copied..chars.len()]);
+    Ok(out)
 }
 
 /// `true` as a certificate writes it where a source name could be in scope: a
@@ -5336,6 +5391,7 @@ impl<'a> Gen<'a> {
         }
         out.push_str("set_option autoImplicit false\n");
         out.push_str("set_option maxRecDepth 100000\n");
+        out.push_str(&super::lower::budget_options(self.program));
         out.push_str("set_option linter.unusedVariables false\n");
         out.push_str(&format!("namespace {name}\n\n"));
         out.push_str(&format!(

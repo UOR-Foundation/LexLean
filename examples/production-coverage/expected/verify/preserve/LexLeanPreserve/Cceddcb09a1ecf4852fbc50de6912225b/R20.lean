@@ -18,7 +18,7 @@ set_option maxRecDepth 100000
 set_option linter.unusedVariables false
 namespace LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R20
 
-def __prog : LexLeanTarget.TargetSyntax.Program :=
+def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
     { parameters := [0], types := [.nat], result := .bool,
       body := (.call 1 [(.var 0)]) },
@@ -41,14 +41,14 @@ termination_by structural n => n
 end
 
 mutual
-theorem __rel_1 : ∀ (n : Nat), LexLeanPreservation.FunRel __prog 1 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_1 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Types.isOdd n)))
-  | (Nat.zero) => by rw [__fits_1.eq_def]; exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_match (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convA_hit rfl rfl (LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_false)))
-  | (Nat.succ k) => by rw [__fits_1.eq_def]; exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_match (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convA_miss rfl (LexLeanPreservation.convA_hit rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__rel_2 (k))))))
+theorem __rel_1 : ∀ (n : Nat), _root_.LexLeanPreservation.FunRel __prog 1 [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)] (_root_.LexLeanPreservation.Rel (__fits_1 n) (_root_.LexLeanTarget.TargetSyntax.Value.bool (Coverage.Types.isOdd n)))
+  | (Nat.zero) => by rw [__fits_1.eq_def]; exact _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_match (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convA_hit rfl rfl (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_false)))
+  | (Nat.succ k) => by rw [__fits_1.eq_def]; exact _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_match (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convA_miss rfl (_root_.LexLeanPreservation.convA_hit rfl rfl (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (__rel_2 (k))))))
 termination_by structural n => n
 
-theorem __rel_2 : ∀ (n : Nat), LexLeanPreservation.FunRel __prog 2 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_2 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Types.isEven n)))
-  | (Nat.zero) => by rw [__fits_2.eq_def]; exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_match (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convA_hit rfl rfl (LexLeanPreservation.conv_build LexLeanPreservation.convL_nil LexLeanPreservation.construct_true)))
-  | (Nat.succ k) => by rw [__fits_2.eq_def]; exact LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_match (LexLeanPreservation.conv_var rfl) (LexLeanPreservation.convA_miss rfl (LexLeanPreservation.convA_hit rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__rel_1 (k))))))
+theorem __rel_2 : ∀ (n : Nat), _root_.LexLeanPreservation.FunRel __prog 2 [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)] (_root_.LexLeanPreservation.Rel (__fits_2 n) (_root_.LexLeanTarget.TargetSyntax.Value.bool (Coverage.Types.isEven n)))
+  | (Nat.zero) => by rw [__fits_2.eq_def]; exact _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_match (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convA_hit rfl rfl (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_true)))
+  | (Nat.succ k) => by rw [__fits_2.eq_def]; exact _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_match (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convA_miss rfl (_root_.LexLeanPreservation.convA_hit rfl rfl (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (__rel_1 (k))))))
 termination_by structural n => n
 
 end
@@ -57,13 +57,13 @@ def __fits_0 (n : Nat) : Bool :=
   ((Bool.true && Bool.true) && (__fits_1 (n)))
 
 attribute [local irreducible] Coverage.Types.isOdd in
-theorem __rel_0 (n : Nat) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
-  LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_call (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (__rel_1 (n)))
+theorem __rel_0 (n : Nat) : _root_.LexLeanPreservation.FunRel __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)] (_root_.LexLeanPreservation.Rel (__fits_0 n) (_root_.LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (__rel_1 (n)))
 
-def denote (n : Nat) : LexLeanPreservation.Obs :=
-  _root_.cond (__fits_0 n) (LexLeanPreservation.Obs.value ((LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n)))) LexLeanPreservation.Obs.overflow
+def denote (n : Nat) : _root_.LexLeanPreservation.Obs :=
+  _root_.cond (__fits_0 n) (_root_.LexLeanPreservation.Obs.value ((_root_.LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n)))) _root_.LexLeanPreservation.Obs.overflow
 
-theorem root (n : Nat) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.nat n)] (LexLeanPreservation.Rel (__fits_0 n) (LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
-  LexLeanPreservation.run_of_funRel (__rel_0 n)
+theorem root (n : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)] (_root_.LexLeanPreservation.Rel (__fits_0 n) (_root_.LexLeanTarget.TargetSyntax.Value.bool (Coverage.Main.parity n))) :=
+  _root_.LexLeanPreservation.run_of_funRel (__rel_0 n)
 
 end LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R20

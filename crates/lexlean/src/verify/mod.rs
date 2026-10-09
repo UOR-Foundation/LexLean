@@ -743,6 +743,35 @@ where
     Ok(values)
 }
 
+/// The bytes the production roots generate, counted toward
+/// `max_total_source_bytes` as they are generated.
+struct GeneratedBytes {
+    limit: u64,
+    used: u64,
+}
+
+impl GeneratedBytes {
+    fn new(limit: u64) -> Self {
+        Self { limit, used: 0 }
+    }
+
+    /// Count `bytes` generated for `root`, refusing as `LLS8002` when the
+    /// total passes the limit.
+    fn charge(&mut self, bytes: usize, root: &str, what: &str) -> Result<(), Diagnostic> {
+        self.used = self.used.saturating_add(bytes as u64);
+        if self.used > self.limit {
+            return Err(Diagnostic::new(
+                code!("LLS8002"),
+                format!(
+                    "max_total_source_bytes exceeded in phase certificates: configured {}, the programs, crates, and certificates generated so far are {} bytes once root `{root}` has generated {what}",
+                    self.limit, self.used
+                ),
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// Run the complete verification pipeline (§22.1) over a rendered build.
 /// The caller holds the project mutation lock for the whole run (§21.8).
 #[allow(clippy::too_many_lines)]
@@ -760,18 +789,30 @@ pub fn run(
     // would exceed the project's limits is refused here, as `LLS8002`, before
     // anything is generated from it (§17.17).
     let linked = crate::production::lower::linked_modules(checked);
+    // What the roots generate is held until it is written, and a chain of
+    // roots, each calling the one before, makes the closure of the last as
+    // large as the program: the texts of all the roots grow with the square of
+    // their number, each under `max_file_bytes` and none of them above it. The
+    // programs, the crates, and the certificates count toward
+    // `max_total_source_bytes`, once more beyond the sources they are made
+    // from (§17.12 rule 2), as they are made, so that such a chain is refused
+    // when it passes the limit and not when the memory is gone.
+    let mut budget = GeneratedBytes::new(limits.max_total_source_bytes);
     let mut lowered_roots = Vec::new();
     for root in crate::production::lower::roots(checked).map_err(fail)? {
-        lowered_roots.push(
-            crate::production::lower::lower_root(
-                &linked,
-                &root.module,
-                &root.name,
-                root.report,
-                &limits,
-            )
-            .map_err(fail)?,
-        );
+        let lowered = crate::production::lower::lower_root(
+            &linked,
+            &root.module,
+            &root.name,
+            root.report,
+            &limits,
+        )
+        .map_err(fail)?;
+        let program = lowered.program.to_file_bytes();
+        budget
+            .charge(program.len(), &root.report.root, "its lowered program")
+            .map_err(fail)?;
+        lowered_roots.push((lowered, program));
     }
     // The certificates are generated here too, from the lowered programs: A,
     // and B and E for each target the root is eligible for, each under
@@ -787,7 +828,7 @@ pub fn run(
         use crate::production::preserve::{CertifiedRendering, CertifiedRoot};
         use crate::production::rust_cert;
         for (index, root) in roots(checked).map_err(fail)?.iter().enumerate() {
-            let lowered = lowered_roots[index].clone();
+            let (lowered, program) = lowered_roots[index].clone();
             let module = format!("LexLeanPreserve.C{semantic_hex32}.R{index}");
             let generated = certificate(
                 &linked,
@@ -886,6 +927,20 @@ pub fn run(
                 )));
                 }
             }
+            for rendering in &renderings {
+                budget
+                    .charge(
+                        rendering.certificate.text.len()
+                            + rendering.composed.text.len()
+                            + rendering.crate_text.len(),
+                        &root.report.root,
+                        "its certificates B and E and its crates",
+                    )
+                    .map_err(fail)?;
+            }
+            budget
+                .charge(generated.text.len(), &root.report.root, "its certificate A")
+                .map_err(fail)?;
             certified.push(CertifiedRoot {
                 root: root.report.root.clone(),
                 targets: root
@@ -895,7 +950,7 @@ pub fn run(
                     .map(|row| row.target.clone())
                     .collect(),
                 certificate: generated,
-                program: lowered.program.to_file_bytes(),
+                program,
                 renderings,
             });
         }

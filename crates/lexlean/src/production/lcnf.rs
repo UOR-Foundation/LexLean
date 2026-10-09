@@ -782,10 +782,24 @@ impl CompilerInput {
     /// rejects, which would be an internal invariant failure.
     #[must_use]
     pub fn to_file_bytes(&self) -> Vec<u8> {
-        let text = serde_json::to_string(self).expect("compiler input serializes");
-        crate::artifact::canonical_json::Json::parse(text.as_bytes())
-            .expect("compiler input is JSON")
-            .to_file_bytes()
+        // The code of a match nests one level for each of its arms: the
+        // input is serialized, parsed without a limit on nesting, written,
+        // and dropped on a stack sized for it.
+        let work = || {
+            let text = serde_json::to_string(self).expect("compiler input serializes");
+            crate::artifact::canonical_json::Json::parse_unbounded(text.as_bytes())
+                .expect("compiler input is JSON")
+                .to_file_bytes()
+        };
+        std::thread::scope(|scope| {
+            match std::thread::Builder::new()
+                .stack_size(1 << 30)
+                .spawn_scoped(scope, work)
+            {
+                Ok(handle) => handle.join().expect("the compiler input serializes"),
+                Err(_) => work(),
+            }
+        })
     }
 
     /// The content identity: the SHA-256 of the canonical bytes.
@@ -1215,8 +1229,34 @@ fn stray_output(driver: &Driver, output: &str) -> Option<Rejection> {
 /// # Errors
 ///
 /// Returns the first drift or rejection found; nothing partial is produced.
-#[allow(clippy::too_many_lines)]
 pub fn compiler_input(
+    driver: &Driver,
+    output: &str,
+    roots: &[String],
+    modules: &[String],
+    reports: &[&ModuleReport],
+) -> Result<CompilerInput, Rejection> {
+    // Lean's code for a match nests one level for each of its arms, and the
+    // record, parsed without a depth limit, is walked recursively: it is read
+    // on a stack of its own, sized by the record, so no source can overflow
+    // the caller's.
+    let stack = output.len().saturating_mul(512).clamp(16 << 20, 4 << 30);
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(stack)
+            .spawn_scoped(scope, || {
+                compiler_input_nested(driver, output, roots, modules, reports)
+            })
+            .map_err(|error| {
+                Rejection::Rejected(format!("the extraction record cannot be read: {error}"))
+            })?
+            .join()
+            .map_err(|_| Rejection::Rejected("the extraction record cannot be read".to_owned()))?
+    })
+}
+
+#[allow(clippy::too_many_lines)]
+fn compiler_input_nested(
     driver: &Driver,
     output: &str,
     roots: &[String],
@@ -1228,9 +1268,15 @@ pub fn compiler_input(
         return Err(rejection);
     }
     let payload = output.trim_end_matches('\n');
-    let raw: RawExtraction = serde_json::from_str(payload).map_err(|error| {
-        Rejection::Rejected(format!("the extraction record is malformed: {error}"))
-    })?;
+    let raw: RawExtraction = {
+        let mut reader = serde_json::Deserializer::from_str(payload);
+        reader.disable_recursion_limit();
+        let parsed = serde::Deserialize::deserialize(&mut reader)
+            .and_then(|value| reader.end().map(|()| value));
+        parsed.map_err(|error: serde_json::Error| {
+            Rejection::Rejected(format!("the extraction record is malformed: {error}"))
+        })?
+    };
     if raw.spec != EXTRACTION_SPEC {
         return Err(Rejection::Rejected(format!(
             "the extraction record has spec `{}`",

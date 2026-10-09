@@ -123,6 +123,64 @@ fn stress_estimates() -> u64 {
     for (family, project) in crate::stress::fitting() {
         let certified = preservation::certificates(&project);
         assert!(!certified.is_empty(), "{family} certifies");
+        for entry in &certified {
+            assert_bounds(&family, entry);
+        }
+    }
+    // Programs that make different certificates large at once are not
+    // refused when they fit either. For each mixed shape, the largest scaling
+    // whose certificates are all under the default `max_file_bytes` is
+    // searched with the limits lifted and then certified under the default
+    // ones, so the program sits at the edge of what fits.
+    let limit = support::limits(&crate::stress::wide_match_default(2)).max_file_bytes;
+    for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+        let largest = |numerator: usize| -> u64 {
+            preservation::certificates(&crate::stress::mixed_lifted(shape.scaled(numerator)))
+                .iter()
+                .map(|entry| {
+                    std::iter::once(&entry.certificate)
+                        .chain(entry.renderings.iter().map(|(_, b)| b))
+                        .chain(entry.composed.iter().map(|(_, e)| e))
+                        .map(|certificate| certificate.text.len() as u64)
+                        .max()
+                        .unwrap_or(0)
+                })
+                .max()
+                .unwrap_or(0)
+        };
+        let (mut low, mut high) = (1_usize, 256_usize);
+        if largest(high) <= limit {
+            low = high;
+        } else {
+            while high - low > 1 {
+                let middle = (low + high) / 2;
+                if largest(middle) <= limit {
+                    low = middle;
+                } else {
+                    high = middle;
+                }
+            }
+        }
+        let size = largest(low);
+        assert!(
+            size <= limit && size * 10 >= limit * 6,
+            "mixed shape {index} ({shape:?}): the largest scaling that fits has certificates of {size} bytes, which is not near the limit {limit}"
+        );
+        let certified =
+            preservation::certificates(&crate::stress::mixed_default(shape.scaled(low)));
+        for entry in &certified {
+            assert_bounds(&format!("mixed shape {index} at {low}/256"), entry);
+        }
+    }
+    // Random shapes, none of them used to choose the costs of the bound,
+    // however they combine.
+    for (index, shape) in crate::stress::random_shapes(24, 0x5eed)
+        .into_iter()
+        .enumerate()
+    {
+        for entry in &preservation::certificates(&crate::stress::mixed_lifted(shape)) {
+            assert_bounds(&format!("random shape {index} {shape:?}"), entry);
+        }
     }
     for (family, project) in crate::stress::families() {
         let certified = preservation::certificates(&project);
@@ -141,7 +199,7 @@ fn stress_estimates() -> u64 {
         }
         for entry in certified {
             assert_floor(&family, &entry);
-            let bound = bound_of(&entry);
+            assert_bounds(&family, &entry);
             let a = entry.certificate.text.len() as u64;
             let e = entry
                 .composed
@@ -149,20 +207,6 @@ fn stress_estimates() -> u64 {
                 .map(|(_, certificate)| certificate.text.len() as u64)
                 .max()
                 .unwrap_or(0);
-            let b = entry
-                .renderings
-                .iter()
-                .map(|(_, certificate)| certificate.text.len() as u64)
-                .max()
-                .unwrap_or(0);
-            // The bound counts what the program states: its types,
-            // expressions, shapes, literals, and the arms of its matches. It
-            // is below the largest certificate, so that refusing on it never
-            // refuses a program whose certificates fit.
-            assert!(
-                bound <= a.max(b).max(e),
-                "{family}: the lower bound {bound} is above certificate A ({a}), B ({b}), and E ({e})"
-            );
             for (target, certificate) in &entry.renderings {
                 let size = certificate.text.len() as u64;
                 quadratic = quadratic.max(size.saturating_sub(a.max(e)));
@@ -208,19 +252,50 @@ fn assert_floor(label: &str, entry: &preservation::Certified) {
     }
 }
 
-/// The lower bound the lowering refuses on against `max_file_bytes` before
-/// it generates anything, for a certified root's program.
-fn bound_of(entry: &preservation::Certified) -> u64 {
-    lexlean::production::lower::certificate_lower_bound(
+/// The lower bound the lowering refuses on against `max_file_bytes` before it
+/// generates anything is, for each certificate, no more than that certificate
+/// (for B and E, no more than the smaller of the targets'), so that the
+/// greatest of the three is never above the largest certificate.
+fn assert_bounds(label: &str, entry: &preservation::Certified) {
+    let bounds = lexlean::production::lower::certificate_lower_bounds(
         &lexlean::production::lower::measure_program(&entry.program),
-    )
+    );
+    let a = entry.certificate.text.len() as u64;
+    let smallest = |texts: Vec<u64>| texts.into_iter().min().unwrap_or(u64::MAX);
+    let b = smallest(
+        entry
+            .renderings
+            .iter()
+            .map(|(_, certificate)| certificate.text.len() as u64)
+            .collect(),
+    );
+    let e = smallest(
+        entry
+            .composed
+            .iter()
+            .map(|(_, certificate)| certificate.text.len() as u64)
+            .collect(),
+    );
+    assert!(
+        bounds.a <= a && bounds.b <= b && bounds.e <= e,
+        "{label}: {}: the lower bounds {bounds:?} are above certificate A ({a}), B ({b}), or E ({e})",
+        entry.root
+    );
+    let (which, greatest) = bounds.greatest();
+    assert!(
+        greatest
+            <= a.max(if b == u64::MAX { 0 } else { b })
+                .max(if e == u64::MAX { 0 } else { e }),
+        "{label}: {}: the greatest bound is on certificate {which}: {greatest}",
+        entry.root
+    );
 }
 
 /// The words of Lean's syntax and tactics, and nothing else, that a
 /// certificate writes bare: the words that are not names of anything a
 /// parameter could shadow. Every other bare word of a certificate is a
 /// global or a definition, which `assert_no_bare_globals` refuses.
-const SYNTAX_WORDS: [&str; 39] = [
+const SYNTAX_WORDS: &[&str] = &[
     "_",
     "all_goals",
     "at",
@@ -268,70 +343,192 @@ const SYNTAX_WORDS: [&str; 39] = [
 /// text is Lean syntax or tactic, the name of a type the backend emits bare
 /// (which linking refuses as a binder), a named argument of a library
 /// theorem, or one of the source's own names.
-fn assert_no_bare_globals(what: &str, text: &str, user: &BTreeSet<String>) {
-    let code = lexlean::production::preserve::code_only(text).expect("a certificate audits");
-    let mut word = String::new();
+fn assert_no_bare_globals(what: &str, text: &str, user: &BTreeSet<String>, prefix_root: &str) {
+    use lexlean::production::preserve::{lex, LexemeKind};
+    let lexemes = lex(text).expect("a certificate lexes");
+    let name = |at: usize| -> Option<String> {
+        lexemes.get(at).and_then(|lexeme| match &lexeme.kind {
+            LexemeKind::Ident(segments) => Some(
+                segments
+                    .iter()
+                    .map(|segment| segment.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("."),
+            ),
+            LexemeKind::Number
+            | LexemeKind::Literal
+            | LexemeKind::Command(_)
+            | LexemeKind::Symbol(_) => None,
+        })
+    };
+    let symbol = |at: usize, wanted: char| {
+        lexemes
+            .get(at)
+            .is_some_and(|lexeme| lexeme.kind == LexemeKind::Symbol(wanted))
+    };
+    // The first word on each line, to recognize `set_option` lines.
+    let mut line_words: std::collections::BTreeMap<usize, String> = Default::default();
+    for (at, lexeme) in lexemes.iter().enumerate() {
+        if lexeme.first_on_line {
+            if let Some(word) = name(at) {
+                line_words.insert(lexeme.line, word);
+            }
+        }
+    }
     let mut bare: BTreeSet<String> = BTreeSet::new();
-    let characters: Vec<char> = code.chars().chain(std::iter::once(' ')).collect();
-    for (at, character) in characters.iter().enumerate() {
-        if character.is_alphanumeric() || matches!(character, '_' | '\'' | '.' | '\u{e000}') {
-            word.push(*character);
+    for (at, lexeme) in lexemes.iter().enumerate() {
+        let LexemeKind::Ident(segments) = &lexeme.kind else {
+            continue;
+        };
+        let first = segments[0].text.as_str();
+        // The module a line imports, opens, or names is not a reference.
+        let on_module_line = line_words
+            .get(&lexeme.line)
+            .is_some_and(|word| ["import", "open", "namespace", "end"].contains(&word.as_str()));
+        // `.fixed` and `x.1` name a constructor or a field of what the
+        // context says, never a global.
+        let after_dot = at >= 1 && symbol(at - 1, '.') && lexemes[at - 1].start + 1 == lexeme.start;
+        let option = line_words
+            .get(&lexeme.line)
+            .is_some_and(|word| word == "set_option");
+        if first.starts_with("__") || on_module_line || after_dot || option {
             continue;
         }
-        let candidate = word.replace('\u{e000}', "");
-        let named_argument = characters[at..].iter().take(4).collect::<String>() == " := ";
-        // The name a declaration states is its own, not a reference.
-        let before: String = characters[..at.saturating_sub(word.chars().count())]
-            .iter()
-            .rev()
-            .take(16)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
-        let line_start = characters[..at]
-            .iter()
-            .rposition(|c| *c == '\n')
-            .map_or(0, |newline| newline + 1);
-        // A constructor in a pattern is not a reference either.
-        let pattern = before.ends_with("| ");
-        // `(generalizing := false)` is an option of the match.
-        let declared = pattern
-            || before.ends_with("generalizing := ")
-            || before.ends_with("def ")
-            || before.ends_with("theorem ")
-            || characters[line_start..].iter().take(10).collect::<String>() == "set_option";
-        if !candidate.is_empty()
-            && !candidate.contains('.')
-            && !candidate.starts_with("__")
-            && !candidate
-                .chars()
-                .next()
-                .is_some_and(|first| first.is_ascii_digit())
-            && !named_argument
-            && !declared
-            && !user.contains(&candidate)
-            && !SYNTAX_WORDS.contains(&candidate.as_str())
-            && !lexlean::ir::semantic::is_backend_bare_name(&candidate)
-        {
-            let context: String = characters[at.saturating_sub(candidate.chars().count() + 25)
-                ..(at + 15).min(characters.len())]
-                .iter()
-                .collect();
-            bare.insert(format!("{candidate} (in `{}`)", context.replace('\n', " ")));
+        // A name of the source that begins a longer name is a local with a
+        // projection (`x.1`) or a reference into the module prefix. It is
+        // not a global that a local of that name has captured: those begin
+        // with a name of the library, which is no component of the source's
+        // own names, so a longer name whose second component is neither a
+        // number nor a name of the source is refused even when its first is
+        // one (a parameter named `LexLeanPreservation` makes
+        // `LexLeanPreservation.conv_var` a field of itself).
+        if user.contains(first) {
+            if segments.len() > 1
+                && first != prefix_root
+                && !segments[1].text.chars().all(|c| c.is_ascii_digit())
+                && !user.contains(segments[1].text.as_str())
+            {
+                bare.insert(format!(
+                    "{} (line {})",
+                    name(at).unwrap_or_default(),
+                    lexeme.line
+                ));
+            }
+            continue;
         }
-        word.clear();
+        // A name reaching into a namespace begins from the root, or in a
+        // namespace of the backend that linking keeps a binder from taking.
+        if segments.len() > 1 {
+            if first != "_root_" && !lexlean::ir::semantic::is_backend_bare_name(first) {
+                bare.insert(format!(
+                    "{} (line {})",
+                    name(at).unwrap_or_default(),
+                    lexeme.line
+                ));
+            }
+            continue;
+        }
+        let previous = at.checked_sub(1);
+        let declared = previous.and_then(&name).is_some_and(|before| {
+            before == "def" || before == "theorem" || before == "generalizing"
+        });
+        let pattern = previous.is_some_and(|before| symbol(before, '|'));
+        // `(ek := …)`, a named argument, and the option of `generalizing := false`.
+        let named = symbol(at + 1, ':') && symbol(at + 2, '=');
+        let after_assignment = at >= 2 && symbol(at - 1, '=') && symbol(at - 2, ':');
+        if declared
+            || pattern
+            || named
+            || (after_assignment
+                && at >= 3
+                && name(at - 3).is_some_and(|word| word == "generalizing"))
+            || SYNTAX_WORDS.contains(&first)
+            || lexlean::ir::semantic::is_backend_bare_name(first)
+        {
+            continue;
+        }
+        bare.insert(format!("{first} (line {})", lexeme.line));
     }
     assert!(
         bare.is_empty(),
-        "{what}: bare words a parameter could shadow: {bare:?}"
+        "{what}: names a parameter could shadow: {bare:?}"
     );
+}
+
+/// The namespaces a certificate begins names with: the first component of
+/// every longer name, after `_root_`, that is neither a local, a name of the
+/// source, nor a name the backend keeps a binder from taking. A parameter
+/// spelled like one would capture the names that begin with it unless the
+/// certificate writes them from the root.
+fn referenced_namespaces(text: &str, user: &BTreeSet<String>) -> BTreeSet<String> {
+    use lexlean::production::preserve::{lex, LexemeKind};
+    let lexemes = lex(text).expect("a certificate lexes");
+    let mut words: std::collections::BTreeMap<usize, String> = Default::default();
+    for lexeme in &lexemes {
+        if lexeme.first_on_line {
+            if let LexemeKind::Ident(segments) = &lexeme.kind {
+                words.insert(lexeme.line, segments[0].text.clone());
+            }
+        }
+    }
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = BTreeSet::new();
+    for lexeme in &lexemes {
+        let LexemeKind::Ident(segments) = &lexeme.kind else {
+            continue;
+        };
+        let skipped = words.get(&lexeme.line).is_some_and(|word| {
+            ["import", "open", "namespace", "end", "set_option"].contains(&word.as_str())
+        });
+        let after_dot = lexeme.start > 0 && chars[lexeme.start - 1] == '.';
+        if skipped || after_dot || segments.len() < 2 {
+            continue;
+        }
+        let first = if segments[0].text == "_root_" {
+            segments[1].text.as_str()
+        } else {
+            segments[0].text.as_str()
+        };
+        if first.starts_with("__")
+            || user.contains(first)
+            || lexlean::ir::semantic::is_backend_bare_name(first)
+        {
+            continue;
+        }
+        out.insert(first.to_owned());
+    }
+    out
+}
+
+/// The first component of a project's module prefix: the root of every
+/// reference to one of its declarations, which linking keeps a binder from
+/// being named.
+fn prefix_root(project: &P) -> String {
+    project
+        .read("lexlean.toml")
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("module_prefix = \"")
+                .and_then(|rest| rest.strip_suffix('"'))
+        })
+        .and_then(|prefix| prefix.split('.').next())
+        .expect("a module prefix")
+        .to_owned()
 }
 
 /// The strings of a project's sources that are not keys: the names a user
 /// chose.
 fn user_names(project: &P) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
+    // The module prefix is a name of the source: the root of its modules.
+    for line in project.read("lexlean.toml").lines() {
+        if let Some(prefix) = line
+            .strip_prefix("module_prefix = \"")
+            .and_then(|rest| rest.strip_suffix('"'))
+        {
+            out.insert(prefix.to_owned());
+        }
+    }
     for entry in walkdir::WalkDir::new(project.root.join("src").as_std_path())
         .into_iter()
         .flatten()
@@ -464,7 +661,7 @@ fn assert_statement(
         })
         .collect();
     let list = hypothesis
-        .strip_prefix("(__e_hrep : LexLeanPreservation.Rust.RepresentableL [")
+        .strip_prefix("(__e_hrep : _root_.LexLeanPreservation.Rust.RepresentableL [")
         .and_then(|rest| rest.strip_suffix("])"))
         .unwrap_or_else(|| panic!("{name}: `{}`: hypothesis {hypothesis}", composed.module));
     // The encodings, one for each parameter, each applied to its name.
@@ -503,13 +700,14 @@ fn assert_statement(
     let applied: String = names.iter().map(|local| format!(" {local}")).collect();
     let (a, b) = (&entry.certificate.module, &rendering.module);
     let encoded = encodings.join(", ");
+    let lib = "_root_.LexLeanPreservation";
     let conclusion = if entry.entry == 0 {
         format!(
-            "∃ __e_ro, LexLeanPreservation.Rust.RealizesFn {fallible} ({a}.denote{applied}) __e_ro ∧ LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent 0) [{encoded}] __e_ro"
+            "∃ __e_ro, {lib}.Rust.RealizesFn {fallible} (_root_.{a}.denote{applied}) __e_ro ∧ {lib}.Rust.RCI _root_.{b}.krate ({lib}.Rust.fnIdent 0) [{encoded}] __e_ro"
         )
     } else {
         format!(
-            "∃ __e_ro, LexLeanPreservation.Rust.RCI {b}.krate (LexLeanPreservation.Rust.fnIdent {}) [{encoded}] __e_ro ∧\n    ({a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.someObs ({a}.denote{applied})) __e_ro) ∧\n    (¬ {a}.accepts{applied} → LexLeanPreservation.Rust.RealizesFn {fallible} (LexLeanPreservation.Obs.value LexLeanTarget.TargetSyntax.Value.none) __e_ro)",
+            "∃ __e_ro, {lib}.Rust.RCI _root_.{b}.krate ({lib}.Rust.fnIdent {}) [{encoded}] __e_ro ∧\n    (_root_.{a}.accepts{applied} → {lib}.Rust.RealizesFn {fallible} ({lib}.someObs (_root_.{a}.denote{applied})) __e_ro) ∧\n    (¬ _root_.{a}.accepts{applied} → {lib}.Rust.RealizesFn {fallible} ({lib}.Obs.value _root_.LexLeanTarget.TargetSyntax.Value.none) __e_ro)",
             entry.entry
         )
     };
@@ -707,18 +905,7 @@ pub fn run(id: &str) {
                     // On the corpora the bound is below the largest
                     // certificate.
                     assert_floor(name, entry);
-                    let bound = bound_of(entry);
-                    let biggest = std::iter::once(&entry.certificate)
-                        .chain(entry.renderings.iter().map(|(_, b)| b))
-                        .chain(entry.composed.iter().map(|(_, e)| e))
-                        .map(|certificate| certificate.text.len() as u64)
-                        .max()
-                        .unwrap_or(0);
-                    assert!(
-                        bound <= biggest,
-                        "{}: the lower bound {bound} is above the {biggest} bytes generated",
-                        entry.root
-                    );
+                    assert_bounds(name, entry);
                 }
             }
             // The lower bound holds over the stress families too: programs
@@ -770,7 +957,11 @@ pub fn run(id: &str) {
                     module * 4
                 );
             }
-            for fixture in ["certificate-size-limit", "certificate-generation-limit"] {
+            for fixture in [
+                "certificate-size-limit",
+                "certificate-generation-limit",
+                "certificates-total-limit",
+            ] {
                 let case =
                     crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
                         .expect("the fixture loads");
@@ -788,9 +979,51 @@ pub fn run(id: &str) {
                     .expect("the fixture loads");
             let observed = crate::fixtures::observe(&case).expect("the fixture runs");
             assert_eq!(observed.codes, ["LLS8002"]);
+            // The pinned Lean's heartbeat budgets are lifted by the
+            // certificates A and B of a program whose widest match has more
+            // than 100 arms, and by no other: the budgets of a wrong
+            // certificate of a small program stay what they are, and a wrong
+            // certificate of a wide match ends at the wall clock.
+            for (arms, lifted) in [(100, false), (101, true)] {
+                for entry in preservation::certificates(&crate::stress::wide_match_default(arms)) {
+                    let texts = std::iter::once(&entry.certificate)
+                        .chain(entry.renderings.iter().map(|(_, b)| b));
+                    for certificate in texts {
+                        for option in [
+                            "set_option maxHeartbeats 0\n",
+                            "set_option synthInstance.maxHeartbeats 0\n",
+                        ] {
+                            assert_eq!(
+                                certificate.text.contains(option),
+                                lifted,
+                                "{arms} arms: `{}` and `{option}`",
+                                certificate.module
+                            );
+                        }
+                    }
+                }
+            }
+            // A semantic module is JSON, and the JSON of the front end nests
+            // at most 128 levels: a chain of 100 `let`s is read (a family
+            // above certifies it) and a chain of 130 is refused, as the
+            // module that is not valid JSON of this reader, before any limit
+            // of this section.
+            let deep = crate::stress::let_chain_default(130);
+            let error = deep.check_fails_with("LLT4001");
+            assert!(
+                error.to_string().contains("recursion limit exceeded"),
+                "{error}"
+            );
             if !support::lean_backed("SP-02") {
                 return;
             }
+            // A match on 180 constructors verifies through the whole pipeline
+            // (`lexlean verify`'s own path): the extraction record of its
+            // named root nests past 128 levels of JSON, certificate B is
+            // beyond the pinned Lean's default `synthInstance.maxHeartbeats`
+            // from 160 arms and `maxHeartbeats` from 200, and the certificates
+            // of a match above 100 arms lift both.
+            support::verify_ok(&crate::stress::wide_match_default(180));
             for (name, report) in reports() {
                 assert!(!report.certified.is_empty(), "{name}: certified roots");
             }
@@ -1852,9 +2085,56 @@ pub fn run(id: &str) {
             // composition binds and like forbidden tokens are valid
             // programs: their certificates E are stated in full, bind no
             // name a parameter could capture, and pass the token audit.
-            let names = crate::stress::names();
+            let mut referenced: BTreeSet<String> = BTreeSet::new();
+            for (_, project) in certified_projects() {
+                let users = user_names(&project);
+                for entry in preservation::certificates(&project) {
+                    referenced.extend(referenced_namespaces(&entry.certificate.text, &users));
+                    for (_, rendering) in &entry.renderings {
+                        referenced.extend(referenced_namespaces(&rendering.text, &users));
+                    }
+                    for (_, composed) in &entry.composed {
+                        referenced.extend(referenced_namespaces(&composed.text, &users));
+                    }
+                }
+            }
+            for namespace in [
+                "LexLeanPreservation",
+                "LexLeanTarget",
+                "LexLeanPreserve",
+                "Corr",
+            ] {
+                assert!(
+                    referenced.contains(namespace),
+                    "the certificates of the corpora begin names with `{namespace}`: {referenced:?}"
+                );
+            }
+            let referenced: Vec<String> = referenced.into_iter().collect();
+            let names = crate::stress::names(&referenced);
             let named = preservation::certificates(&names);
             let _staged = preservation::staged(&names, &named);
+            // The parameters are spelled like the namespaces of the library:
+            // every reference the certificates make to one is written from
+            // the root, which the gate sees because it reads the first
+            // component of a longer name even when a parameter has it.
+            let named_users = user_names(&names);
+            let named_root = prefix_root(&names);
+            for entry in &named {
+                assert_no_bare_globals(
+                    &entry.certificate.module,
+                    &entry.certificate.text,
+                    &named_users,
+                    &named_root,
+                );
+                for (_, composed) in &entry.composed {
+                    assert_no_bare_globals(
+                        &composed.module,
+                        &composed.text,
+                        &named_users,
+                        &named_root,
+                    );
+                }
+            }
             for entry in &named {
                 for ((_, composed), (_, rendering)) in entry.composed.iter().zip(&entry.renderings)
                 {
@@ -1863,11 +2143,13 @@ pub fn run(id: &str) {
             }
             for (name, project) in certified_projects() {
                 let users = user_names(&project);
+                let root = prefix_root(&project);
                 for entry in preservation::certificates(&project) {
                     assert_no_bare_globals(
                         &entry.certificate.module,
                         &entry.certificate.text,
                         &users,
+                        &root,
                     );
                     let targets: Vec<&String> =
                         entry.composed.iter().map(|(target, _)| target).collect();
@@ -1898,7 +2180,7 @@ pub fn run(id: &str) {
                         // representable, and the conclusion is the two
                         // statements of §17.17 and nothing else.
                         assert_statement(name, &entry, rendering, composed);
-                        assert_no_bare_globals(&composed.module, &composed.text, &users);
+                        assert_no_bare_globals(&composed.module, &composed.text, &users, &root);
                         for mutation in preservation::CompositionMutation::ALL {
                             let places = mutation.places(&composed.text);
                             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
@@ -1916,6 +2198,16 @@ pub fn run(id: &str) {
                 return;
             }
             support::verify_ok(&names);
+            // Declarations spelled like the words the generated-Lean audit
+            // forbids verify as well: the audit module names them quoted.
+            let declared = crate::stress::declared_names();
+            for entry in preservation::certificates(&declared) {
+                assert!(
+                    entry.certificate.text.contains("«native_decide»"),
+                    "certificate A quotes the declaration `native_decide`"
+                );
+            }
+            support::verify_ok(&declared);
             let mut at_bounds = 0;
             for (name, report) in reports() {
                 // Each certificate E is applied, in Lean, to arguments a

@@ -18,7 +18,7 @@ set_option maxRecDepth 100000
 set_option linter.unusedVariables false
 namespace LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R25
 
-def __prog : LexLeanTarget.TargetSyntax.Program :=
+def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
     { parameters := [0, 1], types := [.int, (.fixed .i8)], result := (.pair (.option (.fixed .u16)) (.option (.fixed .i64))),
       body := (.build .pair (.pair (.option (.fixed .u16)) (.option (.fixed .i64))) [(.prim (.convert .u16) [(.var 0)]), (.prim (.convert .i64) [(.var 1)])]) }] }
@@ -26,13 +26,13 @@ def __prog : LexLeanTarget.TargetSyntax.Program :=
 def __fits_0 (a : Int) (b : Int8) : Bool :=
   ((((Bool.true && Bool.true) && Bool.true) && (((Bool.true && Bool.true) && Bool.true) && Bool.true)) && Bool.true)
 
-theorem __rel_0 (a : Int) (b : Int8) : LexLeanPreservation.FunRel __prog 0 [(LexLeanTarget.TargetSyntax.Value.int a), (LexLeanTarget.TargetSyntax.Value.i8 b)] (LexLeanPreservation.Rel (__fits_0 a b) ((LexLeanPreservation.encPair (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.u16) (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b))) :=
-  LexLeanPreservation.funRel_intro rfl rfl (LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (LexLeanPreservation.prim_convert_int_u16 a)) (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_prim (LexLeanPreservation.convL_cons (LexLeanPreservation.conv_var rfl) LexLeanPreservation.convL_nil) (LexLeanPreservation.prim_convert_i8_i64 b)) LexLeanPreservation.convL_nil)) LexLeanPreservation.construct_pair)
+theorem __rel_0 (a : Int) (b : Int8) : _root_.LexLeanPreservation.FunRel __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.int a), (_root_.LexLeanTarget.TargetSyntax.Value.i8 b)] (_root_.LexLeanPreservation.Rel (__fits_0 a b) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u16) (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (_root_.LexLeanPreservation.prim_convert_int_u16 a)) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_prim (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (_root_.LexLeanPreservation.prim_convert_i8_i64 b)) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair)
 
-def denote (a : Int) (b : Int8) : LexLeanPreservation.Obs :=
-  _root_.cond (__fits_0 a b) (LexLeanPreservation.Obs.value (((LexLeanPreservation.encPair (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.u16) (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b)))) LexLeanPreservation.Obs.overflow
+def denote (a : Int) (b : Int8) : _root_.LexLeanPreservation.Obs :=
+  _root_.cond (__fits_0 a b) (_root_.LexLeanPreservation.Obs.value (((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u16) (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b)))) _root_.LexLeanPreservation.Obs.overflow
 
-theorem root (a : Int) (b : Int8) : LexLeanPreservation.RunConv __prog 0 [(LexLeanTarget.TargetSyntax.Value.int a), (LexLeanTarget.TargetSyntax.Value.i8 b)] (LexLeanPreservation.Rel (__fits_0 a b) ((LexLeanPreservation.encPair (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.u16) (LexLeanPreservation.encOption LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b))) :=
-  LexLeanPreservation.run_of_funRel (__rel_0 a b)
+theorem root (a : Int) (b : Int8) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.int a), (_root_.LexLeanTarget.TargetSyntax.Value.i8 b)] (_root_.LexLeanPreservation.Rel (__fits_0 a b) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u16) (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64)) (Coverage.Prims.conversions a b))) :=
+  _root_.LexLeanPreservation.run_of_funRel (__rel_0 a b)
 
 end LexLeanPreserve.Cceddcb09a1ecf4852fbc50de6912225b.R25
