@@ -2652,11 +2652,14 @@ fn analyse_root(
 /// # Errors
 ///
 /// Returns the first reason, in a deterministic order, that a root is not
-/// eligible for one of its targets.
+/// eligible for one of its targets, or that the reports of the project, with
+/// `written_before` bytes of those of the modules before this one, would pass
+/// `max_report_bytes`.
 pub fn analyse_module(
     module: &str,
     modules: &BTreeMap<String, LinkedModule<'_>>,
     max_report_bytes: u64,
+    written_before: u64,
 ) -> Result<Option<ModuleReport>, AnalysisError> {
     let linked = match modules.get(module) {
         Some(linked) => linked,
@@ -2665,7 +2668,7 @@ pub fn analyse_module(
     let mut roots = Vec::new();
     let mut budget = ReportBudget {
         limit: max_report_bytes,
-        used: 0,
+        used: written_before,
     };
     for declaration in &linked.semantic.declarations {
         match declaration {
@@ -2805,6 +2808,7 @@ pub fn analyse_module(
     Ok(Some(ModuleReport {
         module: module.to_owned(),
         roots,
+        bytes: budget.used.saturating_sub(written_before),
     }))
 }
 
@@ -2827,7 +2831,7 @@ mod tests {
                 semantic: &semantic,
             },
         )]);
-        match analyse_module("Main", &modules, u64::MAX) {
+        match analyse_module("Main", &modules, u64::MAX, 0) {
             Ok(report) => panic!("the root is reported eligible: {report:?}"),
             Err(AnalysisError::Ineligible(reason)) => reason,
             Err(AnalysisError::Internal(reason) | AnalysisError::Limit(reason)) => {

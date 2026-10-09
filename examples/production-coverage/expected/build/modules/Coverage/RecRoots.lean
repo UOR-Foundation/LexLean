@@ -5,6 +5,7 @@ public import Coverage.Syntax
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace Coverage.RecRoots
 
 @[expose] public def roseTotal (n : Nat) : Nat := Coverage.Recur.roseSize (Nat) (Coverage.Syntax.Rose.node (n) ((Coverage.Syntax.Rose.node (1) (([] : List (Coverage.Syntax.Rose (Nat)))) :: ([] : List (Coverage.Syntax.Rose (Nat))))))

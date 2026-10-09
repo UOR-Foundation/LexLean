@@ -495,14 +495,22 @@ pub fn lex(text: &str) -> Result<Vec<Lexeme>, String> {
             });
             continue;
         }
-        // Numbers.
+        // Numbers, by Lean's rules: `0x`, `0b`, and `0o` take the digits of
+        // their radix, a decimal takes a fraction and an exponent, and the
+        // token ends where they do, so what follows is another token
+        // (`1e10axiom` is a number and the keyword `axiom`).
         if c.is_ascii_digit() {
-            if c == '0' && matches!(at_char(at + 1), Some('x' | 'X' | 'b' | 'B' | 'o' | 'O')) {
-                at += 2;
-                while at_char(at).is_some_and(|d| d.is_ascii_hexdigit()) {
-                    at += 1;
+            let radix = if c == '0' {
+                match at_char(at + 1) {
+                    Some('x' | 'X') => 16,
+                    Some('b' | 'B') => 2,
+                    Some('o' | 'O') => 8,
+                    _ => 10,
                 }
             } else {
+                10
+            };
+            if radix == 10 {
                 while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
                     at += 1;
                 }
@@ -511,6 +519,28 @@ pub fn lex(text: &str) -> Result<Vec<Lexeme>, String> {
                     while at_char(at).is_some_and(|d| d.is_ascii_digit()) {
                         at += 1;
                     }
+                }
+                if matches!(at_char(at), Some('e' | 'E')) {
+                    let mut end = at + 1;
+                    if matches!(at_char(end), Some('+' | '-')) {
+                        end += 1;
+                    }
+                    if !at_char(end).is_some_and(|d| d.is_ascii_digit()) {
+                        return Err("a scientific literal has no exponent digits".to_owned());
+                    }
+                    while at_char(end).is_some_and(|d| d.is_ascii_digit()) {
+                        end += 1;
+                    }
+                    at = end;
+                }
+            } else {
+                at += 2;
+                let digits = at;
+                while at_char(at).is_some_and(|d| d.is_digit(radix)) {
+                    at += 1;
+                }
+                if at == digits {
+                    return Err("a number has no digits after its radix prefix".to_owned());
                 }
             }
             out.push(here);
@@ -713,10 +743,13 @@ pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String
                     Some(_) | None => {}
                 }
             }
+            // Neither a library module nor a certificate holds a command that
+            // prints or runs anything. Lean reads the longest token it knows
+            // from a `#`, so `#evalIO` is `#eval` and a name, and `#printaxiom`
+            // is `#print` and a keyword: the word after the `#` is not read
+            // here, and every such command is refused.
             LexemeKind::Command(command) => {
-                if FORBIDDEN_TOKENS.contains(&command.as_str()) {
-                    return Err(format!("the forbidden token `{command}`"));
-                }
+                return Err(format!("the command `{command}`"));
             }
             LexemeKind::Symbol('@') if opens => pending = true,
             LexemeKind::Symbol('[') if pending => {
@@ -1318,6 +1351,23 @@ mod tests {
             "def c := '\n",
             "def x := 1\u{0}theorem t : False := sorry\n",
             "/- /- nested -/ theorem t : False := sorry\n",
+            // A number ends where Lean ends it: the keyword or command that
+            // follows is read as one.
+            "def x : Float := 1e10axiom bad : False\ntheorem t : False := bad\n",
+            // (the keyword in halves: the shipped crate's audit reads this file)
+            concat!("def x := 1.5e3un", "safe def y := 1\n"),
+            "def x := 1e10#evalIO.println \"pwn2\"\n",
+            "def x := 0b1sorry\n",
+            "def x := 0o7sorry\n",
+            "def x := 1e\n",
+            "def x := 1e+\n",
+            "def x := 0x\n",
+            // A command is read by its longest known token, so the rest of
+            // the word may be a name or a keyword: every command is refused.
+            "#evalIO.println \"pwned\"\n",
+            "#evalpwned\n",
+            "#printaxiom bad\n",
+            "#eval 1\n",
         ] {
             assert!(audited(text).is_err(), "{text:?}");
         }
@@ -1331,6 +1381,7 @@ mod tests {
             "def α₁ := β₂ + 0x1F + 1.5 + 2e3\n",
             "def f := fun x => x.1.2 + Nat.succ' 1\n",
             "def s := \"\\u00e9\"\n",
+            "def x := [1e10, 1E-3, 1.5e+3, 0xFF, 0b101, 0o17, 1e10 + 2, 0b101e]\n",
         ] {
             assert!(audited(text).is_ok(), "{text:?}: {:?}", audited(text));
         }

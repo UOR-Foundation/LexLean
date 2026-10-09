@@ -443,11 +443,34 @@ pub struct Measure {
     pub arm_pairs: u64,
     /// The arms of the widest match.
     pub widest_match: u64,
+    /// The type nodes a certificate prints, at the least: those of every
+    /// parameter, result, and constructor field, and, for the types written at
+    /// the expressions of a function (a `Value`, `Let`, `Match`, or `Build`),
+    /// the nodes of the largest one, once. A certificate prints the type of
+    /// an expression where it needs it, not at every node, so a pair nested
+    /// `d` deep is `d` type nodes and not the `d^2 / 2` of its `d`
+    /// subterms; `types`, which charges `max_ir_nodes`, counts every one.
+    pub printed_types: u64,
+    /// The nodes of the largest type written at an expression of the function
+    /// being measured, until [`measure_function`] folds it into
+    /// `printed_types`.
+    pub widest_type: u64,
 }
 
 impl Measure {
+    /// Add the type written at an expression: every node counts toward
+    /// `types`, and the largest toward `printed_types` once for the function.
+    fn note_type(&mut self, ty: &Ty) {
+        let mut measured = measure_type(ty);
+        self.widest_type = self.widest_type.max(measured.printed_types);
+        measured.printed_types = 0;
+        self.add(measured);
+    }
+
     fn add(&mut self, other: Measure) {
         self.widest_match = self.widest_match.max(other.widest_match);
+        self.widest_type = self.widest_type.max(other.widest_type);
+        self.printed_types = self.printed_types.saturating_add(other.printed_types);
         self.types = self.types.saturating_add(other.types);
         self.exprs = self.exprs.saturating_add(other.exprs);
         self.shapes = self.shapes.saturating_add(other.shapes);
@@ -460,10 +483,10 @@ impl Measure {
 
 /// The sixteenths of a byte each unit of a [`Measure`] costs a certificate,
 /// at the least. A certificate A, B, or E repeats different things of a
-/// program, so each has its own costs: A repeats types, expressions, and the
-/// pairs of arms of a match, B the expressions and shapes (it states each
-/// with the Rust it relates and the derivation) and the literals, E the shapes
-/// of the entry and the pairs. Each cost is half of the greatest for which the
+/// program, so each has its own costs: A repeats the types it prints, expressions,
+/// and the pairs of arms of a match, B the expressions and shapes (it states each
+/// with the Rust it relates and the derivation) and the literals, E the pairs
+/// (its statements are about the entry, whatever else the program holds). Each cost is half of the greatest for which the
 /// bound stays below that certificate for every root of the three example
 /// corpora, for the families of programs that grow one dimension at a time
 /// (let chains, call chains, many parameters, enumerations, nested matches,
@@ -493,12 +516,12 @@ pub struct Costs {
 
 /// What certificate A costs at the least.
 pub const COSTS_A: Costs = Costs {
-    base_bytes: 1100,
-    type_node: 272,
-    expr_node: 76,
+    base_bytes: 1080,
+    type_node: 284,
+    expr_node: 176,
     shape_node: 0,
     arm_pair: 180,
-    string_byte: 8,
+    string_byte: 7,
     hex_digit: 19,
 };
 
@@ -509,7 +532,7 @@ pub const COSTS_B: Costs = Costs {
     expr_node: 1072,
     shape_node: 89,
     arm_pair: 0,
-    string_byte: 24,
+    string_byte: 23,
     hex_digit: 59,
 };
 
@@ -518,7 +541,7 @@ pub const COSTS_E: Costs = Costs {
     base_bytes: 690,
     type_node: 0,
     expr_node: 0,
-    shape_node: 25,
+    shape_node: 0,
     arm_pair: 2,
     string_byte: 0,
     hex_digit: 0,
@@ -530,7 +553,7 @@ impl Costs {
     #[must_use]
     pub fn bound(&self, measure: &Measure) -> u64 {
         let sixteenths = measure
-            .types
+            .printed_types
             .saturating_mul(self.type_node)
             .saturating_add(measure.exprs.saturating_mul(self.expr_node))
             .saturating_add(measure.shapes.saturating_mul(self.shape_node))
@@ -586,6 +609,7 @@ pub fn certificate_lower_bounds(measure: &Measure) -> Bounds {
 fn measure_type(ty: &Ty) -> Measure {
     let mut out = Measure {
         types: 1,
+        printed_types: 1,
         ..Measure::default()
     };
     match ty {
@@ -629,7 +653,7 @@ fn measure_expr(expr: &Expr) -> Measure {
     };
     match expr {
         Expr::Value { ty, value } => {
-            out.add(measure_type(ty));
+            out.note_type(ty);
             out.add(measure_literal(value));
         }
         Expr::Var { name: _ } => {}
@@ -639,7 +663,7 @@ fn measure_expr(expr: &Expr) -> Measure {
             bound,
             body,
         } => {
-            out.add(measure_type(ty));
+            out.note_type(ty);
             out.add(measure_expr(bound));
             out.add(measure_expr(body));
         }
@@ -657,7 +681,7 @@ fn measure_expr(expr: &Expr) -> Measure {
             scrutinee,
             arms,
         } => {
-            out.add(measure_type(ty));
+            out.note_type(ty);
             out.add(measure_expr(scrutinee));
             out.arm_pairs = out
                 .arm_pairs
@@ -675,7 +699,7 @@ fn measure_expr(expr: &Expr) -> Measure {
             operands,
         } => {
             out.shapes = out.shapes.saturating_add(1);
-            out.add(measure_type(ty));
+            out.note_type(ty);
             each(&mut out, operands);
         }
         Expr::Call {
@@ -752,6 +776,8 @@ fn measure_function(function: &Function) -> Measure {
     }
     out.add(measure_type(&function.result));
     out.add(measure_expr(&function.body));
+    out.printed_types = out.printed_types.saturating_add(out.widest_type);
+    out.widest_type = 0;
     out
 }
 

@@ -891,6 +891,78 @@ pub(crate) fn run(id: &str) {
                 !at_limit.contains("through module `Types`"),
                 "the exact charge of `Types` is admitted: {at_limit}"
             );
+            // A constructor or a field spelled like a member that Lean
+            // declares for every type is declared twice (`constant has
+            // already been declared 'T.rec'`): linking refuses it, for each
+            // such name and the numbered ones of nested and mutual types.
+            let member_project = |declaration: serde_json::Value, root: &str| {
+                let copy = P::negative("declaration-lean-name");
+                let data = serde_json::json!({"declarations": [declaration], "spec": "lexlean/semantic-module/2"});
+                let _ = root;
+                copy.write(
+                    "src/Main.lex.tex",
+                    &format!(
+                        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{data}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+                    ),
+                );
+                copy
+            };
+            let numbered = ["rec_1", "rec_2", "below_1", "brecOn_1"];
+            for name in lexlean::ir::semantic::LEAN_GENERATED_MEMBERS
+                .iter()
+                .copied()
+                .chain(numbered)
+            {
+                let constructor = member_project(
+                    serde_json::json!({
+                        "constructors": [{"fields": [], "name": name}, {"fields": [], "name": "other"}],
+                        "kind": "inductive", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "constructor",
+                );
+                // `mk` is the constructor of every structure and nothing
+                // special for an inductive.
+                if name == "mk" {
+                    constructor.check_ok();
+                } else {
+                    let error = constructor.check_fails_with("LLT4001");
+                    assert!(
+                        error.to_string().contains(&format!(
+                            "constructor name `{name}` is spelled like a member"
+                        )),
+                        "a constructor `{name}`: {error}"
+                    );
+                }
+                let field = member_project(
+                    serde_json::json!({
+                        "fields": [{"name": name, "type": {"kind": "nat"}}],
+                        "kind": "structure", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "field",
+                );
+                let error = field.check_fails_with("LLT4001");
+                assert!(
+                    error
+                        .to_string()
+                        .contains(&format!("field name `{name}` is spelled like a member")),
+                    "a field `{name}`: {error}"
+                );
+            }
+            // The names that are not members are free: `rec_`, `recur`,
+            // `mk` as a constructor, `toCtorIdx_`.
+            for name in ["rec_", "recur", "rec1", "casesOn_", "ctorIdx0", "below1"] {
+                member_project(
+                    serde_json::json!({
+                        "constructors": [{"fields": [], "name": name}],
+                        "kind": "inductive", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "constructor",
+                )
+                .check_ok();
+            }
+            if support::lean_backed("DF-12") {
+                lean_generated_members_are_refused();
+            }
         }
         // §17.12: structural recursion and induction over a recursive
         // inductive use exactly its direct recursive fields.
@@ -1484,3 +1556,92 @@ features = []
 [render]
 math = "(seq (token mathbb) (group (token blackboard-n)))"
 "#;
+
+/// The members Lean declares for a type besides the user's constructors and
+/// fields are all among those linking refuses: sample inductives (recursive,
+/// nested, mutual, higher-order, enumerations) and structures are declared
+/// in the pinned Lean, and the first-level names it holds under each are
+/// listed.
+fn lean_generated_members_are_refused() {
+    let project = P::copy_example("production");
+    let loaded = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
+    let toolchain =
+        lexlean::verify::toolchain::preflight(&loaded.config.limits).expect("the pinned toolchain");
+    let source = "import Lean
+open Lean Elab Command Meta
+inductive T1 | a | b (x : Nat)
+inductive T2 | a | b (n : Nat) (t : T2)
+inductive T3 (α : Type) | a | b (x : α) (t : T3 α) (l : List (T3 α))
+structure S1 where
+  x : Nat
+structure S2 (α : Type) where
+  x : α
+  y : List α
+mutual
+inductive M1 | a | b (m : M2)
+inductive M2 | c (m : M1) | d
+end
+inductive T4 | a (n : Nat) | b (f : Nat → T4)
+structure S3 where
+  x : Nat
+  h : x = x
+inductive E1 | a | b | c
+def generated (ts : List Name) : CoreM Unit := do
+  let env ← getEnv
+  for t in ts do
+    let mut names : Array String := #[]
+    for (n, _) in env.constants.toList do
+      if n.getPrefix == t then names := names.push n.getString!
+    IO.println s!\"{t}: {names.qsort (· < ·)}\"
+#eval generated [`T1, `T2, `T3, `S1, `S2, `M1, `M2, `T4, `S3, `E1]
+";
+    let _guard = support::env_lock();
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("Generated.lean");
+    std::fs::write(&path, source).expect("write");
+    let output = std::process::Command::new(toolchain.lean.path.as_std_path())
+        .arg(&path)
+        .current_dir(directory.path())
+        .output()
+        .expect("lean runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    // The user's own members of each sample.
+    let own: std::collections::BTreeMap<&str, &[&str]> = [
+        ("T1", &["a", "b"][..]),
+        ("T2", &["a", "b"][..]),
+        ("T3", &["a", "b"][..]),
+        ("S1", &["x"][..]),
+        ("S2", &["x", "y"][..]),
+        ("M1", &["a", "b"][..]),
+        ("M2", &["c", "d"][..]),
+        ("T4", &["a", "b"][..]),
+        ("S3", &["x", "h"][..]),
+        ("E1", &["a", "b", "c"][..]),
+    ]
+    .into_iter()
+    .collect();
+    let mut seen = 0;
+    for line in text.lines() {
+        let Some((type_name, names)) = line.split_once(": #[") else {
+            continue;
+        };
+        let names = names.trim_end_matches(']');
+        let user = own[type_name];
+        for name in names.split(", ") {
+            if user.contains(&name) || name.starts_with('_') {
+                continue;
+            }
+            let field = type_name.starts_with('S');
+            assert!(
+                lexlean::ir::semantic::is_lean_generated_member(name, true)
+                    || lexlean::ir::semantic::is_lean_generated_member(name, field),
+                "Lean declares `{type_name}.{name}`, which a constructor or field may still be named: {text}"
+            );
+            seen += 1;
+        }
+    }
+    assert!(
+        seen > 60,
+        "the samples are read ({seen} generated names): {text}"
+    );
+}

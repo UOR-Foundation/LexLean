@@ -2635,6 +2635,45 @@ pub fn is_backend_bare_name(name: &str) -> bool {
     BACKEND_BARE_NAMES.contains(&name)
 }
 
+/// Lean namespaces and runtime classes the backend's modules write qualified
+/// and that are not in [`BACKEND_BARE_NAMES`]: `Char.ofNat`,
+/// `Classical.choice`, `Ord.compare`, `Appendable.append`. `conformance_sp_09`
+/// reads them off the corpora's generated modules. A module named like one is a namespace of the project's own
+/// (`Prefix.Nat`), which Lean searches before the root from every module of
+/// the project, so its declarations capture `Nat.blt` (`error: Function
+/// expected at Nat.blt`) in it and in the modules that import it.
+pub const QUALIFIED_NAMESPACES: [&str; 19] = [
+    "Appendable",
+    "Char",
+    "Classical",
+    "Decimal",
+    "Eq",
+    "Exists",
+    "Fixed",
+    "Indexable",
+    "Key",
+    "Lean",
+    "Lengthable",
+    "Not",
+    "Or",
+    "Ord",
+    "Quotient",
+    "Sliceable",
+    "Std",
+    "Subtype",
+    "ToMathInt",
+];
+
+/// Whether a project's module of this name would capture a name that
+/// generated Lean writes qualified, or a root this compiler ships.
+#[must_use]
+pub fn is_reserved_module_name(name: &str) -> bool {
+    BACKEND_BARE_NAMES.contains(&name)
+        || QUALIFIED_NAMESPACES.contains(&name)
+        || crate::config::SHIPPED_ROOTS.contains(&name)
+        || name == crate::config::SHIPPED_TARGET_ROOT
+}
+
 /// The names the backend writes without qualification (see
 /// [`is_backend_bare_name`]).
 pub const BACKEND_BARE_NAMES: [&str; 33] = [
@@ -3247,6 +3286,63 @@ pub(crate) const BUILTIN_CONSTRUCTOR_OWNERS: [&str; 7] = [
     "Prod",
     "Result",
 ];
+
+/// The members Lean declares for a type besides those of its constructors
+/// and fields: `T.rec`, `T.recOn`, `T.casesOn`, `T.noConfusion`, `T.ctorIdx`,
+/// and the rest, read off the pinned Lean by `conformance_df_12` (it declares
+/// sample inductives, recursive, nested, mutual, enumerations, and structures,
+/// and lists what each holds beyond the user's members). A constructor or a
+/// field of such a name is declared twice (`error: constant has already been
+/// declared`), and `mk` is the constructor of every structure.
+pub const LEAN_GENERATED_MEMBERS: [&str; 12] = [
+    "below",
+    "brecOn",
+    "casesOn",
+    "ctorElim",
+    "ctorElimType",
+    "ctorIdx",
+    "mk",
+    "noConfusion",
+    "noConfusionType",
+    "rec",
+    "recOn",
+    "toCtorIdx",
+];
+
+/// Whether a constructor (`field` false) or field (`field` true) of this name
+/// is declared by Lean for the type it belongs to: the members of
+/// [`LEAN_GENERATED_MEMBERS`] (`mk` only for a field: an inductive may have a
+/// constructor `mk`), and the numbered `rec_1`, `below_1`, `brecOn_1` of nested
+/// and mutual types.
+#[must_use]
+pub fn is_lean_generated_member(name: &str, field: bool) -> bool {
+    if name == "mk" {
+        return field;
+    }
+    if LEAN_GENERATED_MEMBERS.contains(&name) {
+        return true;
+    }
+    name.rsplit_once('_').is_some_and(|(stem, number)| {
+        ["rec", "below", "brecOn"].contains(&stem)
+            && !number.is_empty()
+            && number.chars().all(|digit| digit.is_ascii_digit())
+    })
+}
+
+fn check_member_name(
+    name: &str,
+    what: &str,
+    field: bool,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    check_name(name, what)?;
+    if env.language_1_2 && is_lean_generated_member(name, field) {
+        return Err(format!(
+            "{what} name `{name}` is spelled like a member that Lean declares for every type (`rec`, `casesOn`, `noConfusion`, `ctorIdx`, ...) and would be declared twice"
+        ));
+    }
+    Ok(())
+}
 
 fn check_declaration_name(name: &str, env: &Environment<'_>) -> Result<(), String> {
     check_name(name, "declaration")?;
@@ -3961,7 +4057,7 @@ fn register_inductive_group(
         .collect();
     for row in rows {
         for constructor in row.constructors {
-            check_name(&constructor.name, "constructor")?;
+            check_member_name(&constructor.name, "constructor", false, env)?;
             let full = format!("{}.{}", row.name, constructor.name);
             if !generated_names.insert(full.clone()) {
                 return Err(format!("duplicate generated name `{full}`"));
@@ -8204,7 +8300,7 @@ impl SemanticModule {
                     }
                     let mut field_names = Vec::new();
                     for field in fields {
-                        check_name(&field.name, "field")?;
+                        check_member_name(&field.name, "field", true, &env)?;
                         check_type(&field.r#type, &env)?;
                         check_type_parameters(&field.r#type, &type_parameters)?;
                         if field_names.contains(&field.name) {
@@ -8304,7 +8400,7 @@ impl SemanticModule {
                     let mut rows = BTreeMap::new();
                     let mut constructor_types = BTreeMap::new();
                     for constructor in constructors {
-                        check_name(&constructor.name, "constructor")?;
+                        check_member_name(&constructor.name, "constructor", false, &env)?;
                         let full = format!("{name}.{}", constructor.name);
                         if !generated_names.insert(full.clone()) {
                             return Err(format!("duplicate generated name `{full}`").into());

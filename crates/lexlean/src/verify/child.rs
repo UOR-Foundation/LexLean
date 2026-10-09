@@ -298,6 +298,57 @@ pub fn resolve_on_path(name: &str) -> Result<Utf8PathBuf, Diagnostic> {
     ))
 }
 
+/// Stop a child and everything it started: the whole process group it leads
+/// (unix) or its process tree (windows), then the child itself, and wait
+/// until nothing of the group is left running, so that a timeout ends the
+/// work and not only the process that was waited for.
+///
+/// The group is signalled by the platform's own `kill` (`taskkill` on
+/// windows), which this crate may use where it may not call the system
+/// directly (`forbid(unsafe_code)`); where that tool is missing the child alone
+/// is killed.
+fn stop(child: &mut std::process::Child) {
+    let id = child.id();
+    #[cfg(unix)]
+    {
+        let group = format!("-{id}");
+        let signal = |name: &str| -> bool {
+            resolve_on_path("kill").is_ok_and(|kill| {
+                Command::new(kill.as_std_path())
+                    .args([name, "--", &group])
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .is_ok_and(|status| status.success())
+            })
+        };
+        let _ = signal("-KILL");
+        let _ = child.kill();
+        let _ = child.wait();
+        // `kill -0` succeeds while any process of the group exists; a zombie
+        // that nothing has reaped yet is a process of it, so the wait is
+        // bounded.
+        for _ in 0..200 {
+            if !signal("-0") {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+    #[cfg(windows)]
+    {
+        let _ = Command::new("taskkill")
+            .args(["/PID", &id.to_string(), "/T", "/F"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
 /// Run one child under the allow-list environment (§25.4), the timeout,
 /// and the output cap (§25.5). Every arithmetic step over the configured
 /// limits is checked; a limit failure is `LLS8002` naming the limit, the
@@ -341,6 +392,14 @@ pub fn run(
     for (key, value) in &spec.extra_env {
         command.env(key, value);
     }
+    // The child leads a process group of its own, so that what it starts
+    // (`lake` starts `lean`) can be stopped with it: a kill of the leader
+    // alone leaves the grandchild running with nothing to end it.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
     let mut child = command.spawn().map_err(|io_error| {
         Diagnostic::new(
             code!("LLV7001"),
@@ -353,8 +412,7 @@ pub fn run(
     let read_limit = cap.saturating_add(1);
     let (Some(mut stdout_pipe), Some(mut stderr_pipe)) = (child.stdout.take(), child.stderr.take())
     else {
-        let _ = child.kill();
-        let _ = child.wait();
+        stop(&mut child);
         return Err(Diagnostic::new(
             code!("LLI9001"),
             format!("{}: the child pipes were not attached", spec.tool),
@@ -385,8 +443,7 @@ pub fn run(
             Ok(None) => {
                 let now = Instant::now();
                 if deadline.is_none_or(|deadline| now >= deadline) {
-                    let _ = child.kill();
-                    let _ = child.wait();
+                    stop(&mut child);
                     let elapsed_ms = now.saturating_duration_since(started).as_millis();
                     return Err(Diagnostic::new(
                         code!("LLS8002"),
@@ -402,6 +459,7 @@ pub fn run(
                 std::thread::sleep(Duration::from_millis(10));
             }
             Err(io_error) => {
+                stop(&mut child);
                 return Err(Diagnostic::new(
                     code!("LLV7001"),
                     format!("waiting for {}: {io_error}", spec.program),
@@ -442,4 +500,108 @@ pub fn run(
         stderr: normalizer.normalize(&stderr_bytes),
         executable_sha256: spec.executable_sha256,
     })
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    #[cfg(unix)]
+    use super::{run, ChildHome, ChildSpec, Normalizer};
+    #[cfg(unix)]
+    use crate::artifact::content_id::Sha256Digest;
+    #[cfg(unix)]
+    use camino::Utf8Path;
+
+    #[cfg(unix)]
+    fn limits(timeout_ms: u64) -> crate::config::Limits {
+        crate::config::Limits {
+            max_file_bytes: 4_194_304,
+            max_total_source_bytes: 67_108_864,
+            max_primitive_atoms: 2_000_000,
+            max_token_lattice_edges: 4_000_000,
+            max_parse_states: 4_000_000,
+            max_ir_nodes: 2_000_000,
+            max_scope_depth: 1024,
+            max_import_depth: 128,
+            max_diagnostics: 256,
+            max_child_output_bytes: 16_777_216,
+            child_timeout_ms: timeout_ms,
+        }
+    }
+
+    /// The processes whose command line holds `marker`, from the process
+    /// table.
+    #[cfg(unix)]
+    fn running(marker: &str) -> Vec<String> {
+        std::fs::read_dir("/proc")
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|entry| {
+                let pid = entry.file_name().to_str()?.parse::<u32>().ok()?;
+                let command = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
+                let command = String::from_utf8_lossy(&command).replace('\0', " ");
+                // A zombie is not running; nothing is left of it to end.
+                let status = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+                let zombie = status.rsplit(") ").next()?.starts_with('Z');
+                (command.contains(marker) && !zombie).then(|| format!("{pid}: {command}"))
+            })
+            .collect()
+    }
+
+    /// A child that starts a long-running grandchild, as `lake` starts `lean`,
+    /// and outlives the timeout: after the timeout is reported neither is
+    /// running (the grandchild used to be orphaned, to run at full speed and
+    /// to grow, with nothing left to end it).
+    #[test]
+    fn a_timeout_ends_what_the_child_started() {
+        timeout_scenario();
+    }
+
+    /// Process groups are a unix notion; elsewhere the child is stopped with
+    /// its process tree by other means, which this test does not read.
+    #[cfg(not(unix))]
+    fn timeout_scenario() {}
+
+    #[cfg(unix)]
+    fn timeout_scenario() {
+        use std::os::unix::fs::PermissionsExt;
+        let marker = format!("lexlean-grandchild-{}", std::process::id());
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("lake");
+        std::fs::write(
+            &script,
+            format!("#!/bin/sh\nsleep 1000.{} &\nwait\n", std::process::id()),
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "lake",
+            module: Some(marker.clone()),
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let normalizer = Normalizer::default();
+        let sleeping = format!("sleep 1000.{}", std::process::id());
+        let error = run(&spec, &limits(700), &normalizer).expect_err("the child outlives 700 ms");
+        assert!(
+            error.message.contains("child_timeout_ms exceeded"),
+            "{error:?}"
+        );
+        let left = running(&sleeping);
+        // Do not leave it behind if the assertion is about to fail.
+        for line in &left {
+            if let Some(pid) = line.split(':').next() {
+                let _ = std::process::Command::new("kill")
+                    .args(["-KILL", pid])
+                    .status();
+            }
+        }
+        assert!(left.is_empty(), "a timeout left running: {left:?}");
+    }
 }

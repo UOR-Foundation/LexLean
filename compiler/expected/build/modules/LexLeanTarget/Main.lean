@@ -11,6 +11,7 @@ public import LexLeanTarget.TargetSyntax
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace LexLeanTarget.Main
 
 @[expose] public def emptyProgram : LexLeanTarget.TargetSyntax.Program := ({ adts := ([] : List (LexLeanTarget.TargetSyntax.Adt)), functions := ([] : List (LexLeanTarget.TargetSyntax.Function)) } : LexLeanTarget.TargetSyntax.Program)

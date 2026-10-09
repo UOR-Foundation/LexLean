@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 155] = [
+            let prescribed: [(&str, &str); 160] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -208,6 +208,7 @@ pub(crate) fn run(id: &str) {
                 ("certificate-generation-limit", "LLS8002"),
                 ("certificates-total-limit", "LLS8002"),
                 ("eligibility-report-limit", "LLS8002"),
+                ("eligibility-reports-total-limit", "LLS8002"),
                 ("preservation-drift", "LLV7014"),
                 ("axiom-policy-excess", "LLV7005"),
                 ("path-symlink", "LLS8001"),
@@ -241,6 +242,10 @@ pub(crate) fn run(id: &str) {
                 ("binder-bool-literal-name", "LLT4001"),
                 ("declaration-lean-name", "LLT4001"),
                 ("module-prefix-reserved", "LLC0101"),
+                ("module-prefix-shipped-root", "LLC0101"),
+                ("module-prefix-target-production", "LLT4005"),
+                ("module-name-lean-namespace", "LLT4001"),
+                ("member-generated-name", "LLT4001"),
                 // §17.12: higher-order code fails closed before any backend.
                 ("lambda-capture-missing", "LLT4001"),
                 ("lambda-capture-extra", "LLT4001"),

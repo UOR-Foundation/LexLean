@@ -279,6 +279,139 @@ pub fn roots_chain_default(count: usize) -> P {
     project_limited(&roots_chain(count), false)
 }
 
+/// A balanced sum of `terms` (a semantic module is JSON, which nests at most
+/// 128 levels).
+fn balanced_sum(mut level: Vec<Value>) -> Value {
+    while level.len() > 1 {
+        let mut next = Vec::with_capacity(level.len().div_ceil(2));
+        let mut items = level.into_iter();
+        while let Some(left) = items.next() {
+            next.push(match items.next() {
+                Some(right) => add(left, right),
+                None => left,
+            });
+        }
+        level = next;
+    }
+    level.pop().unwrap_or_else(|| literal(0))
+}
+
+/// `functions` definitions `g_i x = ((x, x), x), x)…` of a pair nested
+/// `depth` deep, and a root adding the second component of each call. A pair
+/// nested `d` deep has `d(d + 1) / 2` type nodes in its subterms' types and
+/// `d` in the type a certificate prints.
+fn nested_pairs(depth: usize, functions: usize) -> Vec<Value> {
+    let mut term = var("x");
+    let mut ty = nat();
+    for _ in 0..depth {
+        term = json!({"kind": "pair", "left": term, "right": var("x")});
+        ty = json!({"kind": "product", "left": ty, "right": nat()});
+    }
+    let mut declarations: Vec<Value> = (0..functions)
+        .map(|index| {
+            json!({
+                "body": term,
+                "executable": true,
+                "kind": "definition",
+                "name": format!("g{index}"),
+                "parameters": [parameter("x", nat())],
+                "result": ty,
+            })
+        })
+        .collect();
+    let seconds = (0..functions)
+        .map(|index| {
+            json!({"kind": "second", "value": {"kind": "call", "function": {"name": format!("g{index}")}, "arguments": [var("n")]}})
+        })
+        .collect();
+    declarations.push(root(
+        "r",
+        vec![parameter("n", nat())],
+        nat(),
+        balanced_sum(seconds),
+        &["overflow"],
+        &BOTH,
+    ));
+    declarations
+}
+
+/// A root returning `x` wrapped `depth` times in a type constructor: options
+/// (`Option.some`), lists (`cons x nil`), or results (`Result.ok`).
+fn nested_wrapper(kind: &str, depth: usize) -> Vec<Value> {
+    let mut term = var("x");
+    let mut ty = nat();
+    for _ in 0..depth {
+        term = match kind {
+            "option" => json!({
+                "arguments": [term], "constructor": {"name": "Option.some"},
+                "kind": "constructor", "type_arguments": [ty],
+            }),
+            "list" => json!({
+                "head": term, "kind": "cons",
+                "tail": {"element": ty, "kind": "nil"},
+            }),
+            _ => json!({
+                "arguments": [term], "constructor": {"name": "Result.ok"},
+                "kind": "constructor", "type_arguments": [ty, nat()],
+            }),
+        };
+        ty = match kind {
+            "option" => json!({"kind": "option", "value": ty}),
+            "list" => json!({"element": ty, "kind": "list"}),
+            _ => json!({"error": nat(), "kind": "result", "ok": ty}),
+        };
+    }
+    // A list allocates, so only the target with an allocator takes it.
+    let (effects, targets): (&[&str], &[&str]) = if kind == "list" {
+        (&["allocation"], &["rust-std"])
+    } else {
+        (&[], &BOTH)
+    };
+    vec![root(
+        "r",
+        vec![parameter("x", nat())],
+        ty,
+        term,
+        effects,
+        targets,
+    )]
+}
+
+/// Structures nested `depth` deep (`W1 { f: nat }`, `W2 { f: W1 }`, ...) and a
+/// root building the last.
+fn nested_records(depth: usize) -> Vec<Value> {
+    let mut declarations = Vec::new();
+    let mut term = var("x");
+    for level in 1..=depth {
+        let field_type = if level == 1 {
+            nat()
+        } else {
+            named(&format!("W{}", level - 1))
+        };
+        declarations.push(json!({
+            "fields": [parameter("f", field_type)],
+            "kind": "structure",
+            "name": format!("W{level}"),
+            "parameters": [],
+            "type_parameters": [],
+        }));
+        term = json!({
+            "fields": [{"field": "f", "value": term}],
+            "kind": "record",
+            "type": {"name": format!("W{level}")},
+        });
+    }
+    declarations.push(root(
+        "r",
+        vec![parameter("x", nat())],
+        named(&format!("W{depth}")),
+        term,
+        &[],
+        &BOTH,
+    ));
+    declarations
+}
+
 /// A function of `count` parameters that passes them all on, `depth` deep.
 fn many_parameters(count: usize, depth: usize) -> Vec<Value> {
     let arguments = |count: usize| {
@@ -598,6 +731,34 @@ pub fn families() -> Vec<(String, P)> {
     for depth in [6, 9, 10, 11] {
         push(format!("generic chain {depth}"), generic_chain(depth));
     }
+    // Types that nest, which count one way as the subterms of a term and
+    // another as what a certificate prints: pairs, options, lists, results,
+    // and records, one function and several.
+    for depth in [20, 60, 120] {
+        push(format!("nested pairs {depth}"), nested_pairs(depth, 1));
+    }
+    push(
+        "nested pairs 120 in 20 functions".to_owned(),
+        nested_pairs(120, 20),
+    );
+    // The depths are those the 128 levels of JSON allow: a wrapper costs
+    // two levels (an option, a result) or one (a list) of the term and one of
+    // its type.
+    for (kind, depths) in [
+        ("option", [15, 40]),
+        ("list", [20, 50]),
+        ("result", [15, 40]),
+    ] {
+        for depth in depths {
+            push(
+                format!("nested {kind} {depth}"),
+                nested_wrapper(kind, depth),
+            );
+        }
+    }
+    for depth in [10, 30] {
+        push(format!("nested records {depth}"), nested_records(depth));
+    }
     out
 }
 
@@ -847,6 +1008,11 @@ pub struct Shape {
     pub lets: usize,
     /// Bytes of a bytes literal.
     pub bytes: usize,
+    /// Depth of a pair nested that deep, in each of `nests` functions
+    /// (at most 120 when scaled: JSON nests at most 128 levels).
+    pub nest: usize,
+    /// How many functions return such a pair.
+    pub nests: usize,
 }
 
 impl Shape {
@@ -867,6 +1033,8 @@ impl Shape {
             chars: scale(self.chars),
             lets: scale(self.lets).min(100),
             bytes: scale(self.bytes),
+            nest: scale(self.nest).min(120),
+            nests: scale(self.nests).min(24),
         }
     }
 }
@@ -911,6 +1079,13 @@ fn mixed(shape: Shape) -> Vec<Value> {
             level = next;
         }
         parts.push((level.pop().unwrap_or_else(|| literal(0)), nat()));
+    }
+    if shape.nest > 0 && shape.nests > 0 {
+        let mut declared = nested_pairs(shape.nest, shape.nests);
+        let seconds = declared.pop().expect("the root");
+        declarations.extend(declared);
+        // The root of `nested_pairs` takes `n`, as this one does.
+        parts.push((seconds["body"].clone(), nat()));
     }
     if shape.lets > 0 {
         let mut body = var(&format!("x{}", shape.lets));
@@ -981,21 +1156,25 @@ pub fn mixed_default(shape: Shape) -> P {
 /// about the limit or beyond it, so that the search ends near it.
 #[must_use]
 pub fn mixed_shapes() -> Vec<Shape> {
-    let shape = |arms, fields, chars, lets, bytes| Shape {
+    let shape = |arms, fields, chars, lets, bytes, nest, nests| Shape {
         arms,
         fields,
         chars,
         lets,
         bytes,
+        nest,
+        nests,
     };
     vec![
-        shape(400, 0, 1_000_000, 0, 0),
-        shape(350, 0, 940_000, 0, 0),
-        shape(0, 800, 1_390_000, 0, 0),
-        shape(390, 100, 250_000, 50, 60_000),
-        shape(120, 300, 600_000, 90, 100_000),
-        shape(0, 0, 20_000, 100, 200_000),
-        shape(400, 20, 0, 100, 0),
+        shape(400, 0, 1_000_000, 0, 0, 0, 0),
+        shape(350, 0, 940_000, 0, 0, 0, 0),
+        shape(0, 800, 1_390_000, 0, 0, 0, 0),
+        shape(390, 100, 250_000, 50, 60_000, 0, 0),
+        shape(120, 300, 600_000, 90, 100_000, 0, 0),
+        shape(0, 0, 20_000, 100, 200_000, 0, 0),
+        shape(400, 20, 0, 100, 0, 0, 0),
+        shape(0, 0, 0, 0, 0, 120, 24),
+        shape(200, 50, 100_000, 20, 0, 120, 12),
     ]
 }
 
@@ -1041,6 +1220,8 @@ pub fn random_shapes(count: usize, seed: u64) -> Vec<Shape> {
                 chars: dimension(200_000),
                 lets: dimension(100),
                 bytes: dimension(60_000),
+                nest: dimension(120),
+                nests: dimension(24),
             }
         })
         .collect()

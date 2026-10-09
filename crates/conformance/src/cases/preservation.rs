@@ -2086,8 +2086,23 @@ pub fn run(id: &str) {
             // programs: their certificates E are stated in full, bind no
             // name a parameter could capture, and pass the token audit.
             let mut referenced: BTreeSet<String> = BTreeSet::new();
+            let mut unreserved: BTreeSet<String> = BTreeSet::new();
             for (_, project) in certified_projects() {
                 let users = user_names(&project);
+                // A module of a project is a namespace Lean searches before
+                // the root from every module of it, so a module named like a
+                // namespace the generated modules write qualified would
+                // capture those names: every such namespace of the corpora's
+                // modules is one a module name is refused for.
+                for module in &support::rendered(&project).modules {
+                    for namespace in referenced_namespaces(&module.lean_text, &users) {
+                        if namespace.starts_with(|c: char| c.is_ascii_uppercase())
+                            && !lexlean::ir::semantic::is_reserved_module_name(&namespace)
+                        {
+                            unreserved.insert(namespace.clone());
+                        }
+                    }
+                }
                 for entry in preservation::certificates(&project) {
                     referenced.extend(referenced_namespaces(&entry.certificate.text, &users));
                     for (_, rendering) in &entry.renderings {
@@ -2109,6 +2124,10 @@ pub fn run(id: &str) {
                     "the certificates of the corpora begin names with `{namespace}`: {referenced:?}"
                 );
             }
+            assert!(
+                unreserved.is_empty(),
+                "generated modules write namespaces qualified that a module name is not refused for: {unreserved:?}"
+            );
             let referenced: Vec<String> = referenced.into_iter().collect();
             let names = crate::stress::names(&referenced);
             let named = preservation::certificates(&names);

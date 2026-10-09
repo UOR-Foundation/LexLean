@@ -432,6 +432,10 @@ pub struct RootReport {
 pub struct ModuleReport {
     pub module: String,
     pub roots: Vec<RootReport>,
+    /// The bytes the roots take in the report as the analysis measured them,
+    /// which count toward `max_total_source_bytes` with those of the other
+    /// modules' reports.
+    pub bytes: u64,
 }
 
 fn strings(values: impl IntoIterator<Item = String>) -> serde_json::Value {

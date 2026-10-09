@@ -703,7 +703,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `spec` | Exactly `lexlean/project/1`. |
 | `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |
 | `language` | Language version: `1.0`, `1.1`, or `1.2`. |
-| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against) or `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it). A prefix that begins with one is `LLC0101`, the fixture `module-prefix-reserved`. |
+| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreservation`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanRuntime`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, the root of the calculus modules the library imports (the repository's `compiler` project uses it), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
 | `source_roots` | Nonempty, unique, sorted project-relative directories. |
 | `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |
 | `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |
@@ -2588,7 +2588,25 @@ either backend runs; they do not defer to what Lean would accept.
     declaration, a field, a constructor, and a parameter: the backend quotes it
     (`«native_decide»`), as do the certificates and the audit module that
     prints its axioms (`#print axioms Production.Main.«native_decide»`).
-    The language-1.1 contract is frozen and does not carry this rule.
+    A module is a namespace of the project that Lean searches before the root
+    from every module of it, so a module named like a namespace the generated
+    code writes qualified (`Nat`, `List`, `Option`, `Bool`, `String`, ..., the
+    runtime classes `Appendable`, `Key`, ..., and the roots this compiler
+    ships) would capture it (`module Nat` with a function `blt`: `Function
+    expected at Nat.blt`, also in the modules that import it): `LLT4001`,
+    fixture `module-name-lean-namespace`; `conformance_sp_09` reads the
+    namespaces the corpora's generated modules write qualified off them and
+    requires that each is refused. A constructor or a field is spelled like no
+    member Lean declares for the type (`rec`, `recOn`, `casesOn`, `noConfusion`,
+    `noConfusionType`, `ctorElim`, `ctorElimType`, `ctorIdx`, `toCtorIdx`,
+    `below`, `brecOn`, their numbered forms `rec_1`, ..., and, for a field,
+    `mk`), which would be declared twice (`constant has already been
+    declared`): `LLT4001`, fixture `member-generated-name`, and the set is the
+    one the pinned Lean declares for sample inductives and structures, which
+    `conformance_df_12` lists. A parameter named like a nullary constructor of
+    its own type (`zero : nat`, `none`, `red`) is valid; the module silences
+    Lean's `linter.constructorNameAsVariable`, which reports it. The
+    language-1.1 contract is frozen and does not carry this rule.
 11. **Source maps.** In a `lexlean/semantic-module/2` module every
     declaration is its own mapping node in both artifacts, relating its
     generated Lean and LaTeX to exactly its object in the source; the
@@ -4059,15 +4077,20 @@ byte for each unit the lowering counts, besides a base:
 
 | unit | A | B | E |
 | --- | --- | --- | --- |
-| base (bytes) | 1100 | 800 | 690 |
-| type node | 272 | 0 | 0 |
-| expression node, an arm counting as one | 76 | 1072 | 0 |
-| shape node (a field read, a constructor built, an arm binder) | 0 | 89 | 25 |
+| base (bytes) | 1080 | 800 | 690 |
+| type node (as printed) | 284 | 0 | 0 |
+| expression node, an arm counting as one | 176 | 1072 | 0 |
+| shape node (a field read, a constructor built, an arm binder) | 0 | 89 | 0 |
 | pair of arms of one match | 180 | 0 | 2 |
-| byte of a string literal | 8 | 24 | 0 |
+| byte of a string literal | 7 | 23 | 0 |
 | digit of a bytes literal | 19 | 59 | 0 |
 
-A match on `C` constructors states each arm after the others, so its proof
+A type node is counted as a certificate prints it: every node of a
+parameter's, result's, and constructor field's type, and the nodes of the
+largest type written at an expression of a function once for the function (a
+pair nested `d` deep is `d` nodes in a certificate, and the `d^2 / 2` of its
+subterms' types are charged to `max_ir_nodes` and not counted here). A match
+on `C` constructors states each arm after the others, so its proof
 grows with `C` squared: the pairs of a program are the sum of the squares of
 the arms of its matches. The root is refused when the greatest of the three
 bounds exceeds the limit, and not when their sum does: the certificates are
@@ -4084,7 +4107,7 @@ chain, generic instances at a wide structure, long names) and of programs that
 grow several at once. `conformance_sp_02` requires that each bound is never
 above its certificate (for B and E, the smaller of the targets') on any of
 them, and on random combinations of five dimensions, none of which the costs
-were fitted to, and requires that the largest scaling of each of seven mixed
+were fitted to, and requires that the largest scaling of each of nine mixed
 shapes whose certificates are all under the default limit, a program at the
 edge of what fits, is not refused. The early refusal refuses, and only
 refuses early: a root whose certificates fit under `max_file_bytes` is not
@@ -4133,10 +4156,13 @@ and 2000 exhausted a 16 GB host (the report of 1000 roots would have been
 member, dropped without recursion), and the report counts toward
 `max_total_source_bytes`, once more beyond the sources it is made from (§17.12
 rule 2, the rule for artifact declarations): the analysis totals the bytes of
-the report root by root, as it builds them, stops a single closure as soon as
-its members alone pass the limit, and a project whose report passes it is
-`LLS8002` from `check` (fixture `eligibility-report-limit`, a chain of 100
-roots under a limit of 4 194 304). At the default limit a call chain of 2359
+the reports of all the modules of the project together, root by root, as it
+builds them (a module's report counts with those of the modules before it), stops
+a single closure as soon as its members alone pass the limit, and a project
+whose reports pass it is `LLS8002` from `check` (fixtures
+`eligibility-report-limit`, a chain of 100 roots under a limit of 4 194 304, and
+`eligibility-reports-total-limit`, three modules of 60 roots each, which fit
+alone and not together). At the default limit a call chain of 2359
 functions from one root is accepted and one of 2360 refused, and a chain of 243
 roots is accepted (a report of 66 508 069 bytes, 4.5 seconds and 75 MB to
 check, 14 seconds and 675 MB to build) and one of 244 refused in the same time
@@ -4163,7 +4189,12 @@ middle of a proof ends as `Application type mismatch`, an error that blames a
 valid certificate. The certificates of a program whose widest match has more
 than 100 arms therefore set both budgets to 0, and the limit that remains is
 the wall clock: `child_timeout_ms` (300 seconds by default) bounds every Lean
-process, and its exhaustion is `LLS8002`. A match on 180 constructors verifies
+process, and its exhaustion is `LLS8002`. Each child process (`lake`, which
+starts `lean`, and the PDF provider: every child of `verify` is started the
+same way) leads a process group of its own, and on a
+timeout the whole group is killed and awaited, so no `lean` is left running at
+full speed and growing after the limit has been reported; where the platform
+has no process groups the tree is killed with `taskkill`. A match on 180 constructors verifies
 (`conformance_sp_02`), and so does one on 300, whose certificate B alone takes
 3 minutes and a half; the reference machine reaches the 300 seconds between 300
 and 400 constructors, where `lexlean verify` of a match on 400 ends with

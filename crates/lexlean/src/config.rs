@@ -264,11 +264,42 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(code!("LLC0101"), message).with_span(Span::whole_file(path))
 }
 
+/// The Lean roots this compiler ships or generates beside a project's own:
+/// the certificate library (`LexLeanPreservation`), the certificates and
+/// their audit (`LexLeanPreserve`, `LexLeanAudit`), the runtime and the model
+/// and collection helpers its generated modules open (`LexLeanRuntime`,
+/// `LexLeanCollections`, `LexLeanModels`, `LexLeanCore`), and what the
+/// extraction and the probes compile (`LexLeanExtract`, `LexLeanProbe`,
+/// `LexLeanIdentityProbe`, `LexLeanTokenProbe`).
+/// `LexLeanTarget`, the root of the calculus modules the library imports, is
+/// the one a project may take (the compiler's own project does), but not for
+/// a module with a production root: see [`SHIPPED_TARGET_ROOT`].
+pub const SHIPPED_ROOTS: [&str; 11] = [
+    "LexLeanAudit",
+    "LexLeanCollections",
+    "LexLeanCore",
+    "LexLeanExtract",
+    "LexLeanIdentityProbe",
+    "LexLeanModels",
+    "LexLeanPreservation",
+    "LexLeanPreserve",
+    "LexLeanProbe",
+    "LexLeanRuntime",
+    "LexLeanTokenProbe",
+];
+
+/// The root of the calculus modules that the certificate library imports.
+/// A project may name its modules under it, but the certificates of a root
+/// of such a project would import its module as the library's: its modules
+/// have no production root.
+pub const SHIPPED_TARGET_ROOT: &str = "LexLeanTarget";
+
 /// Whether `root` is a module root a project may not take as the first
 /// segment of its `module_prefix`: the roots of the pinned toolchain's
 /// libraries (a module `Lean.Main` would be found beside `Lean.Elab`, and
 /// `leanchecker` replays against the toolchain's `Lean`), `IO`, a namespace
-/// of Lean's prelude that generated Lean refuses to name.
+/// of Lean's prelude that generated Lean refuses to name, and the roots this
+/// compiler ships or generates ([`SHIPPED_ROOTS`]).
 #[must_use]
 pub fn is_reserved_module_root(root: &str) -> bool {
     [
@@ -282,6 +313,7 @@ pub fn is_reserved_module_root(root: &str) -> bool {
         "IO",
     ]
     .contains(&root)
+        || SHIPPED_ROOTS.contains(&root)
 }
 
 /// Is `text` a project-relative path: nonempty, `/`-separated, no leading
@@ -419,7 +451,7 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
         diagnostics.push(config_error(
             path,
             format!(
-                "module_prefix `{}` begins with `{root}`, a module root of the pinned Lean toolchain, or the namespace `IO` of its prelude, which the modules of a project would share",
+                "module_prefix `{}` begins with `{root}`, a module root of the pinned Lean toolchain, a root of the Lean this compiler ships, or the namespace `IO` of its prelude, which the modules of a project would share",
                 raw.module_prefix
             ),
         ));
@@ -1042,6 +1074,10 @@ mod reserved_root_tests {
             "LeanChecker",
             "LeanIR",
             "IO",
+            "LexLeanPreserve",
+            "LexLeanPreservation",
+            "LexLeanRuntime",
+            "LexLeanAudit",
         ] {
             assert!(is_reserved_module_root(reserved), "{reserved}");
         }
@@ -1049,11 +1085,38 @@ mod reserved_root_tests {
             "Production",
             "LexLeanExample",
             "LexLeanTarget",
+            "LexLeanExamples",
             "Leanish",
             "Initial",
             "Nat",
         ] {
             assert!(!is_reserved_module_root(free), "{free}");
+        }
+    }
+
+    /// Every root of the shipped library, of the certificates, and of the
+    /// calculus modules is reserved, or is the one documented exception.
+    #[test]
+    fn every_shipped_root_is_reserved() {
+        let library = crate::production::preserve::library().expect("the shipped library");
+        let mut roots: std::collections::BTreeSet<String> = library
+            .modules
+            .iter()
+            .filter_map(|module| module.split('.').next().map(str::to_owned))
+            .collect();
+        roots.insert(
+            crate::production::preserve::AUDIT_MODULE
+                .split('.')
+                .next()
+                .expect("a root")
+                .to_owned(),
+        );
+        roots.insert("LexLeanTarget".to_owned());
+        for root in roots {
+            assert!(
+                is_reserved_module_root(&root) || root == super::SHIPPED_TARGET_ROOT,
+                "`{root}` is a root of the shipped library and may be a module prefix"
+            );
         }
     }
 }

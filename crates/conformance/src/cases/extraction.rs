@@ -237,6 +237,7 @@ fn probe_host(
 ) -> Result<lcnf::CompilerInput, Rejection> {
     let roots = vec![format!("Probe.Main.{root}")];
     let report = ModuleReport {
+        bytes: 0,
         module: "Probe.Main".to_owned(),
         roots: vec![lexlean::production::RootReport {
             root: roots[0].clone(),

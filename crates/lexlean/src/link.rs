@@ -506,8 +506,26 @@ fn check_project_inline(
     let mut visible_union: BTreeSet<String> = BTreeSet::new();
     let mut ir_node_count: u64 = 0;
 
+    // The eligibility reports of all the modules count together toward
+    // `max_total_source_bytes`: the bound is on the project, not on a module.
+    let mut report_bytes: u64 = 0;
     for module_name in &order {
         let load = &loaded[module_name];
+        // Language 1.2: a module is a namespace of the project, which Lean
+        // searches before the root from every module of it, so one named
+        // like a namespace the generated code writes qualified would capture
+        // those names (§17.12 rule 10).
+        if project.config.language == crate::LANGUAGE_1_2
+            && crate::ir::semantic::is_reserved_module_name(module_name)
+        {
+            return Err(err(vec![Diagnostic::new(
+                code!("LLT4001"),
+                format!(
+                    "phase link: module name `{module_name}` is spelled like a Lean namespace the generated code writes qualified, or a root this compiler ships, and would capture its names in every module of the project"
+                ),
+            )
+            .with_span(crate::Span::whole_file(&load.path))]));
+        }
         let mut budget = Budget::new(
             limits.max_token_lattice_edges,
             limits.max_parse_states,
@@ -724,6 +742,7 @@ fn check_project_inline(
                     module_name,
                     &linked,
                     limits.max_total_source_bytes,
+                    report_bytes,
                 )
                 .map_err(|failure| {
                     let range = load
@@ -751,6 +770,27 @@ fn check_project_inline(
             }
             Some(_) | None => None,
         };
+        if production.is_some()
+            && project.config.module_prefix.split('.').next()
+                == Some(crate::config::SHIPPED_TARGET_ROOT)
+        {
+            let range = load
+                .ast
+                .semantic
+                .as_ref()
+                .map_or((0, load.atoms.len()), |ast| ast.data.range);
+            return Err(err(vec![Diagnostic::new(
+                code!("LLT4005"),
+                format!(
+                    "phase production: module `{module_name}` has a production root, and the module prefix `{}` begins with `{}`, the root of the calculus modules that the certificate library imports: its certificates would import the library's module for the project's",
+                    project.config.module_prefix,
+                    crate::config::SHIPPED_TARGET_ROOT
+                ),
+            )
+            .with_span(span_of_range(&load.path, &load.atoms, range))]));
+        }
+        report_bytes =
+            report_bytes.saturating_add(production.as_ref().map_or(0, |report| report.bytes));
         let document = DocumentModule {
             name: module_name.clone(),
             lean_module,

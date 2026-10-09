@@ -2104,8 +2104,16 @@ pub fn render_lean(
     // project still bounds child elapsed time and captured output, and every
     // declaration is elaborated, replayed, and axiom-audited normally.
     text.push_str(
-        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nnamespace ",
+        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\n",
     );
+    // A parameter named like a nullary constructor of its own type (`zero :
+    // Nat`, `red : Color`) is a valid binder, and Lean's linter reports it as
+    // resembling the constructor. The constructors of a module are never
+    // written bare, so nothing is hidden by silencing it.
+    if module.spec == "lexlean/semantic-module/2" {
+        text.push_str("set_option linter.constructorNameAsVariable false\n");
+    }
+    text.push_str("namespace ");
     text.push_str(&identifier(&document.lean_module));
     text.push('\n');
     if runtime {
