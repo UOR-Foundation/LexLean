@@ -71,6 +71,40 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
         SnapshotSemanticDeclaration::Realization { input, output, .. } => ty(&input.r#type) + ty(output),
         SnapshotSemanticDeclaration::Evidence { claims, .. } => claims.len(),
         SnapshotSemanticDeclaration::Model { evidence, entry, .. } => evidence.len() + entry.len(),
+        SnapshotSemanticDeclaration::Logic { state, .. } => ty(&state.r#type),
+        SnapshotSemanticDeclaration::InferenceRule { binding, guard, conclusion, .. } => {
+            binding.as_ref().map_or(0, |b| ty(&b.r#type) + term(&b.candidates))
+                + term(guard)
+                + term(conclusion)
+        }
+        SnapshotSemanticDeclaration::Verifier { subject, candidate, .. } => {
+            ty(&subject.r#type) + ty(&candidate.r#type)
+        }
+        SnapshotSemanticDeclaration::Reasoner { observe, rules, strategy, answer, claims, .. } => {
+            observe.as_ref().map_or(0, term)
+                + rules.len()
+                + answer.as_ref().map_or(0, |a| ty(&a.r#type) + term(&a.value))
+                + claims
+                    .iter()
+                    .map(|claim| match claim {
+                        lexlean::SnapshotReasoningClaim::InitialInvariant { .. }
+                        | lexlean::SnapshotReasoningClaim::Terminates { .. }
+                        | lexlean::SnapshotReasoningClaim::ObservationInvariant { .. }
+                        | lexlean::SnapshotReasoningClaim::AnswerCorrect { .. } => 1,
+                    })
+                    .sum::<usize>()
+                + match strategy {
+                    lexlean::SnapshotReasoningStrategy::Forward { fuel } => fuel.as_ref().map_or(0, term),
+                    lexlean::SnapshotReasoningStrategy::Search { order, fuel, frontier, .. } => {
+                        usize::from(matches!(order, lexlean::SnapshotSearchOrder::DepthFirst))
+                            + fuel.as_ref().map_or(0, term)
+                            + frontier.as_ref().map_or(0, term)
+                    }
+                    lexlean::SnapshotReasoningStrategy::GenerateAndVerify { generator, budget } => {
+                        term(generator) + budget.as_ref().map_or(0, term)
+                    }
+                }
+        }
     }
 }
 
@@ -97,7 +131,7 @@ fn ty(value: &SnapshotType) -> usize {
         | SnapshotType::Int64 | SnapshotType::UInt8 | SnapshotType::UInt16
         | SnapshotType::UInt32 | SnapshotType::UInt64 | SnapshotType::String
         | SnapshotType::Bytes | SnapshotType::Ordering
-        | SnapshotType::ContractViolation => 1,
+        | SnapshotType::ContractViolation | SnapshotType::ReasoningFailure => 1,
         SnapshotType::Parameter { name } => name.len(),
         SnapshotType::Option { value } => ty(value),
         SnapshotType::Result { ok, error } => ty(ok) + ty(error),
@@ -397,6 +431,16 @@ impl P {
                 allow_network: false,
             })
             .expect("relock");
+    }
+
+    /// Whether the entrypoints check.
+    #[must_use]
+    pub fn check_err_or_ok(&self) -> bool {
+        self.engine()
+            .check(CheckRequest {
+                selection: Selection::Entrypoints,
+            })
+            .is_ok()
     }
 
     /// Check the entrypoints, expecting success.

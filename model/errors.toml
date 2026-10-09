@@ -351,6 +351,27 @@ title = "Model evidence not established"
 statement = "Model evidence not established."
 
 [[error]]
+code = "LLT4010"
+class = "language"
+exit = 1
+title = "Reasoning interface or obligation mismatch"
+statement = "Reasoning interface or obligation mismatch."
+
+[[error]]
+code = "LLT4011"
+class = "language"
+exit = 1
+title = "Unbounded reasoning or missing termination evidence"
+statement = "Unbounded reasoning or missing termination evidence."
+
+[[error]]
+code = "LLT4012"
+class = "language"
+exit = 1
+title = "Unvalidated reasoning runtime boundary"
+statement = "Unvalidated reasoning runtime boundary."
+
+[[error]]
 code = "LLV7001"
 class = "environment"
 exit = 3

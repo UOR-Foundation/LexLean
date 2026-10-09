@@ -1,0 +1,229 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Spent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (t : (Prod (T) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((t).1 = (s).1) /\textbackslash{} ((t).2 < (s).2))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Remaining}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(s).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Countdown}}
+\noindent Kind: \texttt{logic}.\par
+\noindent States: \texttt{s, t : (Prod (T) (Nat))}.\par
+\noindent Relation: \texttt{Spent}.\par
+\noindent Ranking: \texttt{Remaining}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tick\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(((Nat.blt (2) ((s).2)) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tick\_progress}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(((Nat.blt (2) ((s).2)) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))) < Remaining (T) (s)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Tick}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Guard: \texttt{(Nat.blt (2) ((s).2))}.\par
+\noindent Conclusion: \texttt{((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))}.\par
+\noindent Soundness: \texttt{tick\_sound}.\par
+\noindent Progress: \texttt{tick\_progress}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (inference rule Tick soundness): \texttt{forall (s : (Prod (T) (Nat))), (((Nat.blt (2) ((s).2)) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat)))); stated exactly by tick\_sound}.\par
+\noindent Obligation (inference rule Tick progress): \texttt{forall (s : (Prod (T) (Nat))), (((Nat.blt (2) ((s).2)) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))) < Remaining (T) (s))); stated exactly by tick\_progress}.\par
+\noindent Elaborates to: \texttt{Tick.guard (s : (Prod (T) (Nat))) : Bool := (Nat.blt (2) ((s).2))}.\par
+\noindent Elaborates to: \texttt{Tick.conclusion (s : (Prod (T) (Nat))) : (Prod (T) (Nat)) := ((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))}.\par
+\noindent Elaborates to: \texttt{Tick.apply (s : (Prod (T) (Nat))) : Option ((Prod (T) (Nat))) := (if Tick.guard (T) (s) then Option.some (Tick.conclusion (T) (s)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Tick.apply\_sound : forall (s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Tick.apply (T) (s) = Option.some (\_\_t)) -> Spent (T) (s) (\_\_t))}.\par
+\noindent Generates theorem (term template): \texttt{Tick.apply\_progress : forall (s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Tick.apply (T) (s) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (s)))}.\par
+\subsection*{\texttt{burn\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (k : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{burn\_progress}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (k : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))) < Remaining (T) (s)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Burn}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Binding: \texttt{k : Nat, ranging over (2 :: (1 :: ([] : List (Nat)))) in order}.\par
+\noindent Guard: \texttt{((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k)))}.\par
+\noindent Conclusion: \texttt{((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))}.\par
+\noindent Soundness: \texttt{burn\_sound}.\par
+\noindent Progress: \texttt{burn\_progress}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (inference rule Burn soundness): \texttt{forall (s : (Prod (T) (Nat))) (k : Nat), ((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat)))); stated exactly by burn\_sound}.\par
+\noindent Obligation (inference rule Burn progress): \texttt{forall (s : (Prod (T) (Nat))) (k : Nat), ((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))) < Remaining (T) (s))); stated exactly by burn\_progress}.\par
+\noindent Elaborates to: \texttt{Burn.guard (s : (Prod (T) (Nat))) (k : Nat) : Bool := ((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k)))}.\par
+\noindent Elaborates to: \texttt{Burn.conclusion (s : (Prod (T) (Nat))) (k : Nat) : (Prod (T) (Nat)) := ((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))}.\par
+\noindent Elaborates to: \texttt{Burn.candidates (s : (Prod (T) (Nat))) : List (Nat) := (2 :: (1 :: ([] : List (Nat))))}.\par
+\noindent Elaborates to: \texttt{Burn.apply (s : (Prod (T) (Nat))) (k : Nat) : Option ((Prod (T) (Nat))) := (if Burn.guard (T) (s) (k) then Option.some (Burn.conclusion (T) (s) (k)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Burn.apply\_sound : forall (s : (Prod (T) (Nat))) (k : Nat) (\_\_t : (Prod (T) (Nat))), ((Burn.apply (T) (s) (k) = Option.some (\_\_t)) -> Spent (T) (s) (\_\_t))}.\par
+\noindent Generates theorem (term template): \texttt{Burn.apply\_progress : forall (s : (Prod (T) (Nat))) (k : Nat) (\_\_t : (Prod (T) (Nat))), ((Burn.apply (T) (s) (k) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (s)))}.\par
+\subsection*{\texttt{Empty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(r = 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{emptyCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (r) (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{empty\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Statement: \texttt{((emptyCheck (T) (x) (r) = true) -> Empty (T) (x) (r))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Drained}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{x : T}.\par
+\noindent Candidate: \texttt{r : Nat}.\par
+\noindent Specification: \texttt{Empty}.\par
+\noindent Check: \texttt{emptyCheck}.\par
+\noindent Soundness: \texttt{empty\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (verifier Drained sound): \texttt{forall (x : T) (r : Nat), ((emptyCheck (T) (x) (r) = true) -> Empty (T) (x) (r)); stated exactly by empty\_sound}.\par
+\noindent Generates theorem (term template): \texttt{Drained.sound : (LexLeanReasoning.Sound ((emptyCheck (T))) ((Empty (T))))}.\par
+\subsection*{\texttt{allowance\_bound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(Remaining (T) (((x).1, ((x).2 + 3))) < ((x).2 + 4))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Spend}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Type parameters: \texttt{T}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Observation: \texttt{x : (Prod (T) (Nat)), observed as ((x).1, ((x).2 + 3))}.\par
+\noindent Rules in priority order: \texttt{Tick (T), Burn (T)}.\par
+\noindent Strategy: \texttt{forward, at most ((x).2 + 4) iterations}.\par
+\noindent Answer: \texttt{account |-> Option.some ((account).2) : Option (Nat)}.\par
+\noindent Verifier: \texttt{Drained ((Prod (T) (Nat)))}.\par
+\noindent Claim: \texttt{terminates, discharged by allowance\_bound}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (reasoner Spend fuel bound): \texttt{forall (x : (Prod (T) (Nat))), (Remaining (T) (((x).1, ((x).2 + 3))) < ((x).2 + 4)); stated exactly by allowance\_bound}.\par
+\noindent Elaborates to: \texttt{inductive Spend.Step with Tick(), Burn(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Spend.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Spend.observe (x : (Prod (T) (Nat))) : (Prod (T) (Nat)) := ((x).1, ((x).2 + 3))}.\par
+\noindent Elaborates to: \texttt{Spend.fire (\_\_s : (Prod (T) (Nat))) (\_\_step : Spend.Step (T)) : Option ((Prod (T) (Nat))) := (match \_\_step with | Spend.Step.Tick => Tick.apply (T) (\_\_s) | Spend.Step.Burn \_\_b => Burn.apply (T) (\_\_s) (\_\_b))}.\par
+\noindent Elaborates to: \texttt{Spend.replay (\_\_acc : Except (ReasoningFailure) ((Prod (T) (Nat)))) (\_\_step : Spend.Step (T)) : Except (ReasoningFailure) ((Prod (T) (Nat))) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Spend.fire (T) (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Spend.follow (x : (Prod (T) (Nat))) (\_\_trace : List (Spend.Step (T))) : Except (ReasoningFailure) ((Prod (T) (Nat))) := (LexLeanCollections.listFold ((Spend.replay (T))) (Except.ok (Spend.observe (T) (x))) (\_\_trace) : Except (ReasoningFailure) ((Prod (T) (Nat))))}.\par
+\noindent Elaborates to: \texttt{Spend.extract (account : (Prod (T) (Nat))) : Option (Nat) := Option.some ((account).2)}.\par
+\noindent Elaborates to: \texttt{Spend.accept (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) : Option (Nat) := (match Spend.extract (T) (\_\_s) with | Option.none => Option.none | Option.some \_\_v => (if emptyCheck ((Prod (T) (Nat))) (x) (\_\_v) then Option.some (\_\_v) else Option.none))}.\par
+\noindent Elaborates to: \texttt{Spend.answer (x : (Prod (T) (Nat))) (\_\_trace : List (Spend.Step (T))) : Option (Nat) := (match Spend.follow (T) (x) (\_\_trace) with | Except.ok \_\_s => Spend.accept (T) (x) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{Spend.select (\_\_s : (Prod (T) (Nat))) : Option (Spend.Step (T)) := (match (if Tick.guard (T) (\_\_s) then Option.some (Spend.Step.Tick) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (LexLeanCollections.listFold ((fun (\_\_acc : Option (Spend.Step (T))) (\_\_b : Nat) => (match \_\_acc with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if Burn.guard (T) (\_\_s) (\_\_b) then Option.some (Spend.Step.Burn (\_\_b)) else Option.none)))) (Option.none) (Burn.candidates (T) (\_\_s)) : Option (Spend.Step (T))))}.\par
+\noindent Elaborates to: \texttt{Spend.attempts (\_\_s : (Prod (T) (Nat))) : Nat := ((let \_\_scan0l : (Prod (Bool) (Nat)) := (Tick.guard (T) (\_\_s), 1); (if (\_\_scan0l).1 then \_\_scan0l else (let \_\_scan0r : (Prod (Bool) (Nat)) := (LexLeanCollections.listFold ((fun (\_\_acc : (Prod (Bool) (Nat))) (\_\_b : Nat) => (if (\_\_acc).1 then \_\_acc else (Burn.guard (T) (\_\_s) (\_\_b), ((\_\_acc).2 + 1))))) ((false, 0)) (Burn.candidates (T) (\_\_s)) : (Prod (Bool) (Nat))); ((\_\_scan0r).1, ((\_\_scan0l).2 + (\_\_scan0r).2)))))).2}.\par
+\noindent Elaborates to: \texttt{Spend.next (\_\_s : (Prod (T) (Nat))) : Option ((Prod (T) (Nat))) := (match Spend.select (T) (\_\_s) with | Option.none => Option.none | Option.some \_\_step => Spend.fire (T) (\_\_s) (\_\_step))}.\par
+\noindent Elaborates to: \texttt{Spend.saturate (x : (Prod (T) (Nat))) : (Prod ((Prod (T) (Nat))) (Bool)) := (LexLeanCollections.iterateUntil ((Spend.next (T))) (((x).2 + 4)) (Spend.observe (T) (x)) : (Prod ((Prod (T) (Nat))) (Bool)))}.\par
+\noindent Elaborates to: \texttt{structure Spend.Run with state : (Prod (T) (Nat)), trace : List (Spend.Step (T)), ledger : Spend.Ledger (T)}.\par
+\noindent Elaborates to: \texttt{Spend.start (x : (Prod (T) (Nat))) : Spend.Run (T) := (\{ state := Spend.observe (T) (x), trace := ([] : List (Spend.Step (T))), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := 0 \} : Spend.Ledger (T)) \} : Spend.Run (T))}.\par
+\noindent Elaborates to: \texttt{Spend.step (\_\_r : Spend.Run (T)) : Option (Spend.Run (T)) := (match Spend.select (T) ((\_\_r).state) with | Option.none => Option.none | Option.some \_\_step => (match Spend.fire (T) ((\_\_r).state) (\_\_step) with | Option.none => Option.none | Option.some \_\_t => Option.some ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_r).trace) ((\_\_step :: ([] : List (Spend.Step (T))))) : List (Spend.Step (T))), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Spend.attempts (T) ((\_\_r).state)), firings := (((\_\_r).ledger).firings + 1), expansions := ((\_\_r).ledger).expansions, verifications := ((\_\_r).ledger).verifications, frontier := ((\_\_r).ledger).frontier \} : Spend.Ledger (T)) \} : Spend.Run (T)))))}.\par
+\noindent Elaborates to: \texttt{Spend.run (x : (Prod (T) (Nat))) : (Prod (Spend.Run (T)) (Bool)) := (LexLeanCollections.iterateUntil ((Spend.step (T))) (((x).2 + 4)) (Spend.start (T) (x)) : (Prod (Spend.Run (T)) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Spend.account (x : (Prod (T) (Nat))) : Spend.Ledger (T) := (let \_\_final : (Prod (Spend.Run (T)) (Bool)) := Spend.run (T) (x); (match (\_\_final).2 with | Bool.true => (\{ iterations := (((\_\_final).1).ledger).iterations, attempts := ((((\_\_final).1).ledger).attempts + Spend.attempts (T) (((\_\_final).1).state)), firings := (((\_\_final).1).ledger).firings, expansions := (((\_\_final).1).ledger).expansions, verifications := ((((\_\_final).1).ledger).verifications + 1), frontier := (((\_\_final).1).ledger).frontier \} : Spend.Ledger (T)) | Bool.false => ((\_\_final).1).ledger))}.\par
+\noindent Elaborates to: \texttt{Spend.conclude (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) : Except (ReasoningFailure) (Nat) := (match Spend.accept (T) (x) (\_\_s) with | Option.some \_\_v => Except.ok (\_\_v) | Option.none => (match Spend.extract (T) (\_\_s) with | Option.some \_ => Except.error (ReasoningFailure.rejected) | Option.none => Except.error (ReasoningFailure.unsolved)))}.\par
+\noindent Elaborates to: \texttt{Spend.verdict (x : (Prod (T) (Nat))) : Except (ReasoningFailure) (Nat) := (let \_\_final : (Prod ((Prod (T) (Nat))) (Bool)) := Spend.saturate (T) (x); (match (\_\_final).2 with | Bool.true => Spend.conclude (T) (x) ((\_\_final).1) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Elaborates to: \texttt{Spend (x : (Prod (T) (Nat))) : Except (ReasoningFailure) ((Prod (Nat) (List (Spend.Step (T))))) := (let \_\_final : (Prod (Spend.Run (T)) (Bool)) := Spend.run (T) (x); (match (\_\_final).2 with | Bool.true => (match Spend.conclude (T) (x) (((\_\_final).1).state) with | Except.ok \_\_v => Except.ok ((\_\_v, ((\_\_final).1).trace)) | Except.error \_\_e => Except.error (\_\_e)) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Spend.fire\_sound : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Spend.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Spend.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> Spent (T) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Spend.fire\_progress : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Spend.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Spend.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (\_\_s)))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Spend.replay\_fire : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Spend.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Spend.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Spend.replay (T) (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Spend.replay\_sound : forall (x : (Prod (T) (Nat))) (\_\_acc : Except (ReasoningFailure) ((Prod (T) (Nat)))) (\_\_step : Spend.Step (T)), ((LexLeanReasoning.Reaches ((Spent (T))) (Spend.observe (T) (x)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Spent (T))) (Spend.observe (T) (x)) (Spend.replay (T) (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Spend.derivation : forall (x : (Prod (T) (Nat))) (\_\_trace : List (Spend.Step (T))), (LexLeanReasoning.Reaches ((Spent (T))) (Spend.observe (T) (x)) (Spend.follow (T) (x) (\_\_trace)))}.\par
+\noindent Generates theorem (accept sound template): \texttt{Spend.accept\_sound : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Spend.accept (T) (x) (\_\_s) = Option.some (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v))}.\par
+\noindent Generates theorem (next sound template): \texttt{Spend.next\_sound : forall (\_\_s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Spend.next (T) (\_\_s) = Option.some (\_\_t)) -> Spent (T) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (next progress template): \texttt{Spend.next\_progress : forall (\_\_s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Spend.next (T) (\_\_s) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (\_\_s)))}.\par
+\noindent Generates theorem (step none template): \texttt{Spend.step\_none : forall (\_\_r : Spend.Run (T)), ((Spend.step (T) (\_\_r) = Option.none) -> (Spend.next (T) ((\_\_r).state) = Option.none))}.\par
+\noindent Generates theorem (step some template): \texttt{Spend.step\_some : forall (\_\_r : Spend.Run (T)) (\_\_q : Spend.Run (T)), ((Spend.step (T) (\_\_r) = Option.some (\_\_q)) -> (Spend.next (T) ((\_\_r).state) = Option.some ((\_\_q).state)))}.\par
+\noindent Generates theorem (step trace template): \texttt{Spend.step\_trace : forall (x : (Prod (T) (Nat))) (\_\_r : Spend.Run (T)) (\_\_q : Spend.Run (T)), ((Spend.step (T) (\_\_r) = Option.some (\_\_q)) -> ((Spend.follow (T) (x) ((\_\_r).trace) = Except.ok ((\_\_r).state)) -> (Spend.follow (T) (x) ((\_\_q).trace) = Except.ok ((\_\_q).state))))}.\par
+\noindent Generates theorem (step count template): \texttt{Spend.step\_count : forall (\_\_r : Spend.Run (T)) (\_\_q : Spend.Run (T)), ((Spend.step (T) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (step count template): \texttt{Spend.step\_fired : forall (\_\_r : Spend.Run (T)) (\_\_q : Spend.Run (T)), ((Spend.step (T) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).firings = (((\_\_r).ledger).firings + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.saturate\_derivation : forall (x : (Prod (T) (Nat))), (LexLeanReasoning.Star ((Spent (T))) (Spend.observe (T) (x)) ((Spend.saturate (T) (x)).1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.run\_state : forall (x : (Prod (T) (Nat))), ((((Spend.run (T) (x)).1).state = (Spend.saturate (T) (x)).1) /\textbackslash{} ((Spend.run (T) (x)).2 = (Spend.saturate (T) (x)).2))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.run\_trace : forall (x : (Prod (T) (Nat))), (Spend.follow (T) (x) (((Spend.run (T) (x)).1).trace) = Except.ok (((Spend.run (T) (x)).1).state))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.iterations\_bounded : forall (x : (Prod (T) (Nat))), ((((Spend.run (T) (x)).1).ledger).iterations <= ((x).2 + 4))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.firings\_bounded : forall (x : (Prod (T) (Nat))), ((((Spend.run (T) (x)).1).ledger).firings <= ((x).2 + 4))}.\par
+\noindent Generates theorem (unfold template): \texttt{Spend.saturates : forall (x : (Prod (T) (Nat))), ((Spend.saturate (T) (x)).2 = true)}.\par
+\noindent Generates theorem (conclude accept template): \texttt{Spend.conclude\_accept : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Spend.conclude (T) (x) (\_\_s) = Except.ok (\_\_v)) -> (Spend.accept (T) (x) (\_\_s) = Option.some (\_\_v)))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Spend.conclude\_sound : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Spend.conclude (T) (x) (\_\_s) = Except.ok (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v))}.\par
+\noindent Generates theorem (verdict forward template): \texttt{Spend.verdict\_sound : forall (x : (Prod (T) (Nat))), (forall (\_\_v : Nat), ((Spend.verdict (T) (x) = Except.ok (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v)))}.\par
+\noindent Generates theorem (explained forward template): \texttt{Spend.explained : forall (x : (Prod (T) (Nat))), (forall (\_\_v : Nat), (forall (\_\_trace : List (Spend.Step (T))), ((Spend (T) (x) = Except.ok ((\_\_v, \_\_trace))) -> ((Spend.answer (T) (x) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Empty ((Prod (T) (Nat))) (x) (\_\_v)))))}.\par
+\subsection*{\texttt{Refund}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Logic: \texttt{Countdown (Nat)}.\par
+\noindent Observation: \texttt{x : Nat, observed as (x, (x + 3))}.\par
+\noindent Rules in priority order: \texttt{Tick (Nat), Burn (Nat)}.\par
+\noindent Strategy: \texttt{forward, at most (x + 4) iterations}.\par
+\noindent Answer: \texttt{account |-> (if (Nat.blt ((account).1) (5)) then Option.some ((account).2) else Option.none) : Option (Nat)}.\par
+\noindent Verifier: \texttt{Drained (Nat)}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Elaborates to: \texttt{inductive Refund.Step with Tick(), Burn(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Refund.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Refund.observe (x : Nat) : (Prod (Nat) (Nat)) := (x, (x + 3))}.\par
+\noindent Elaborates to: \texttt{Refund.fire (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Refund.Step) : Option ((Prod (Nat) (Nat))) := (match \_\_step with | Refund.Step.Tick => Tick.apply (Nat) (\_\_s) | Refund.Step.Burn \_\_b => Burn.apply (Nat) (\_\_s) (\_\_b))}.\par
+\noindent Elaborates to: \texttt{Refund.replay (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Refund.Step) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Refund.fire (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Refund.follow (x : Nat) (\_\_trace : List (Refund.Step)) : Except (ReasoningFailure) ((Prod (Nat) (Nat))) := (LexLeanCollections.listFold ((Refund.replay)) (Except.ok (Refund.observe (x))) (\_\_trace) : Except (ReasoningFailure) ((Prod (Nat) (Nat))))}.\par
+\noindent Elaborates to: \texttt{Refund.extract (account : (Prod (Nat) (Nat))) : Option (Nat) := (if (Nat.blt ((account).1) (5)) then Option.some ((account).2) else Option.none)}.\par
+\noindent Elaborates to: \texttt{Refund.accept (x : Nat) (\_\_s : (Prod (Nat) (Nat))) : Option (Nat) := (match Refund.extract (\_\_s) with | Option.none => Option.none | Option.some \_\_v => (if emptyCheck (Nat) (x) (\_\_v) then Option.some (\_\_v) else Option.none))}.\par
+\noindent Elaborates to: \texttt{Refund.answer (x : Nat) (\_\_trace : List (Refund.Step)) : Option (Nat) := (match Refund.follow (x) (\_\_trace) with | Except.ok \_\_s => Refund.accept (x) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{Refund.select (\_\_s : (Prod (Nat) (Nat))) : Option (Refund.Step) := (match (if Tick.guard (Nat) (\_\_s) then Option.some (Refund.Step.Tick) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (LexLeanCollections.listFold ((fun (\_\_acc : Option (Refund.Step)) (\_\_b : Nat) => (match \_\_acc with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if Burn.guard (Nat) (\_\_s) (\_\_b) then Option.some (Refund.Step.Burn (\_\_b)) else Option.none)))) (Option.none) (Burn.candidates (Nat) (\_\_s)) : Option (Refund.Step)))}.\par
+\noindent Elaborates to: \texttt{Refund.attempts (\_\_s : (Prod (Nat) (Nat))) : Nat := ((let \_\_scan0l : (Prod (Bool) (Nat)) := (Tick.guard (Nat) (\_\_s), 1); (if (\_\_scan0l).1 then \_\_scan0l else (let \_\_scan0r : (Prod (Bool) (Nat)) := (LexLeanCollections.listFold ((fun (\_\_acc : (Prod (Bool) (Nat))) (\_\_b : Nat) => (if (\_\_acc).1 then \_\_acc else (Burn.guard (Nat) (\_\_s) (\_\_b), ((\_\_acc).2 + 1))))) ((false, 0)) (Burn.candidates (Nat) (\_\_s)) : (Prod (Bool) (Nat))); ((\_\_scan0r).1, ((\_\_scan0l).2 + (\_\_scan0r).2)))))).2}.\par
+\noindent Elaborates to: \texttt{Refund.next (\_\_s : (Prod (Nat) (Nat))) : Option ((Prod (Nat) (Nat))) := (match Refund.select (\_\_s) with | Option.none => Option.none | Option.some \_\_step => Refund.fire (\_\_s) (\_\_step))}.\par
+\noindent Elaborates to: \texttt{Refund.saturate (x : Nat) : (Prod ((Prod (Nat) (Nat))) (Bool)) := (LexLeanCollections.iterateUntil ((Refund.next)) ((x + 4)) (Refund.observe (x)) : (Prod ((Prod (Nat) (Nat))) (Bool)))}.\par
+\noindent Elaborates to: \texttt{structure Refund.Run with state : (Prod (Nat) (Nat)), trace : List (Refund.Step), ledger : Refund.Ledger}.\par
+\noindent Elaborates to: \texttt{Refund.start (x : Nat) : Refund.Run := (\{ state := Refund.observe (x), trace := ([] : List (Refund.Step)), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := 0 \} : Refund.Ledger) \} : Refund.Run)}.\par
+\noindent Elaborates to: \texttt{Refund.step (\_\_r : Refund.Run) : Option (Refund.Run) := (match Refund.select ((\_\_r).state) with | Option.none => Option.none | Option.some \_\_step => (match Refund.fire ((\_\_r).state) (\_\_step) with | Option.none => Option.none | Option.some \_\_t => Option.some ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_r).trace) ((\_\_step :: ([] : List (Refund.Step)))) : List (Refund.Step)), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Refund.attempts ((\_\_r).state)), firings := (((\_\_r).ledger).firings + 1), expansions := ((\_\_r).ledger).expansions, verifications := ((\_\_r).ledger).verifications, frontier := ((\_\_r).ledger).frontier \} : Refund.Ledger) \} : Refund.Run))))}.\par
+\noindent Elaborates to: \texttt{Refund.run (x : Nat) : (Prod (Refund.Run) (Bool)) := (LexLeanCollections.iterateUntil ((Refund.step)) ((x + 4)) (Refund.start (x)) : (Prod (Refund.Run) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Refund.account (x : Nat) : Refund.Ledger := (let \_\_final : (Prod (Refund.Run) (Bool)) := Refund.run (x); (match (\_\_final).2 with | Bool.true => (\{ iterations := (((\_\_final).1).ledger).iterations, attempts := ((((\_\_final).1).ledger).attempts + Refund.attempts (((\_\_final).1).state)), firings := (((\_\_final).1).ledger).firings, expansions := (((\_\_final).1).ledger).expansions, verifications := ((((\_\_final).1).ledger).verifications + 1), frontier := (((\_\_final).1).ledger).frontier \} : Refund.Ledger) | Bool.false => ((\_\_final).1).ledger))}.\par
+\noindent Elaborates to: \texttt{Refund.conclude (x : Nat) (\_\_s : (Prod (Nat) (Nat))) : Except (ReasoningFailure) (Nat) := (match Refund.accept (x) (\_\_s) with | Option.some \_\_v => Except.ok (\_\_v) | Option.none => (match Refund.extract (\_\_s) with | Option.some \_ => Except.error (ReasoningFailure.rejected) | Option.none => Except.error (ReasoningFailure.unsolved)))}.\par
+\noindent Elaborates to: \texttt{Refund.verdict (x : Nat) : Except (ReasoningFailure) (Nat) := (let \_\_final : (Prod ((Prod (Nat) (Nat))) (Bool)) := Refund.saturate (x); (match (\_\_final).2 with | Bool.true => Refund.conclude (x) ((\_\_final).1) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Elaborates to: \texttt{Refund (x : Nat) : Except (ReasoningFailure) ((Prod (Nat) (List (Refund.Step)))) := (let \_\_final : (Prod (Refund.Run) (Bool)) := Refund.run (x); (match (\_\_final).2 with | Bool.true => (match Refund.conclude (x) (((\_\_final).1).state) with | Except.ok \_\_v => Except.ok ((\_\_v, ((\_\_final).1).trace)) | Except.error \_\_e => Except.error (\_\_e)) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Refund.fire\_sound : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Refund.Step) (\_\_t : (Prod (Nat) (Nat))), ((Refund.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> Spent (Nat) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Refund.replay\_fire : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_step : Refund.Step) (\_\_t : (Prod (Nat) (Nat))), ((Refund.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Refund.replay (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Refund.replay\_sound : forall (x : Nat) (\_\_acc : Except (ReasoningFailure) ((Prod (Nat) (Nat)))) (\_\_step : Refund.Step), ((LexLeanReasoning.Reaches ((Spent (Nat))) (Refund.observe (x)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Spent (Nat))) (Refund.observe (x)) (Refund.replay (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Refund.derivation : forall (x : Nat) (\_\_trace : List (Refund.Step)), (LexLeanReasoning.Reaches ((Spent (Nat))) (Refund.observe (x)) (Refund.follow (x) (\_\_trace)))}.\par
+\noindent Generates theorem (accept sound template): \texttt{Refund.accept\_sound : forall (x : Nat) (\_\_s : (Prod (Nat) (Nat))) (\_\_v : Nat), ((Refund.accept (x) (\_\_s) = Option.some (\_\_v)) -> Empty (Nat) (x) (\_\_v))}.\par
+\noindent Generates theorem (next sound template): \texttt{Refund.next\_sound : forall (\_\_s : (Prod (Nat) (Nat))) (\_\_t : (Prod (Nat) (Nat))), ((Refund.next (\_\_s) = Option.some (\_\_t)) -> Spent (Nat) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (step none template): \texttt{Refund.step\_none : forall (\_\_r : Refund.Run), ((Refund.step (\_\_r) = Option.none) -> (Refund.next ((\_\_r).state) = Option.none))}.\par
+\noindent Generates theorem (step some template): \texttt{Refund.step\_some : forall (\_\_r : Refund.Run) (\_\_q : Refund.Run), ((Refund.step (\_\_r) = Option.some (\_\_q)) -> (Refund.next ((\_\_r).state) = Option.some ((\_\_q).state)))}.\par
+\noindent Generates theorem (step trace template): \texttt{Refund.step\_trace : forall (x : Nat) (\_\_r : Refund.Run) (\_\_q : Refund.Run), ((Refund.step (\_\_r) = Option.some (\_\_q)) -> ((Refund.follow (x) ((\_\_r).trace) = Except.ok ((\_\_r).state)) -> (Refund.follow (x) ((\_\_q).trace) = Except.ok ((\_\_q).state))))}.\par
+\noindent Generates theorem (step count template): \texttt{Refund.step\_count : forall (\_\_r : Refund.Run) (\_\_q : Refund.Run), ((Refund.step (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (step count template): \texttt{Refund.step\_fired : forall (\_\_r : Refund.Run) (\_\_q : Refund.Run), ((Refund.step (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).firings = (((\_\_r).ledger).firings + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Refund.saturate\_derivation : forall (x : Nat), (LexLeanReasoning.Star ((Spent (Nat))) (Refund.observe (x)) ((Refund.saturate (x)).1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Refund.run\_state : forall (x : Nat), ((((Refund.run (x)).1).state = (Refund.saturate (x)).1) /\textbackslash{} ((Refund.run (x)).2 = (Refund.saturate (x)).2))}.\par
+\noindent Generates theorem (unfold template): \texttt{Refund.run\_trace : forall (x : Nat), (Refund.follow (x) (((Refund.run (x)).1).trace) = Except.ok (((Refund.run (x)).1).state))}.\par
+\noindent Generates theorem (unfold template): \texttt{Refund.iterations\_bounded : forall (x : Nat), ((((Refund.run (x)).1).ledger).iterations <= (x + 4))}.\par
+\noindent Generates theorem (unfold template): \texttt{Refund.firings\_bounded : forall (x : Nat), ((((Refund.run (x)).1).ledger).firings <= (x + 4))}.\par
+\noindent Generates theorem (conclude accept template): \texttt{Refund.conclude\_accept : forall (x : Nat) (\_\_s : (Prod (Nat) (Nat))) (\_\_v : Nat), ((Refund.conclude (x) (\_\_s) = Except.ok (\_\_v)) -> (Refund.accept (x) (\_\_s) = Option.some (\_\_v)))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Refund.conclude\_sound : forall (x : Nat) (\_\_s : (Prod (Nat) (Nat))) (\_\_v : Nat), ((Refund.conclude (x) (\_\_s) = Except.ok (\_\_v)) -> Empty (Nat) (x) (\_\_v))}.\par
+\noindent Generates theorem (verdict forward template): \texttt{Refund.verdict\_sound : forall (x : Nat), (forall (\_\_v : Nat), ((Refund.verdict (x) = Except.ok (\_\_v)) -> Empty (Nat) (x) (\_\_v)))}.\par
+\noindent Generates theorem (explained forward template): \texttt{Refund.explained : forall (x : Nat), (forall (\_\_v : Nat), (forall (\_\_trace : List (Refund.Step)), ((Refund (x) = Except.ok ((\_\_v, \_\_trace))) -> ((Refund.answer (x) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Empty (Nat) (x) (\_\_v)))))}.\par
+\end{document}

@@ -2766,18 +2766,15 @@ pub fn main_module() -> String {
     );
     // `Main` is the project's root, so the GNAF model and its fixtures
     // (§17.15) are elaborated, replayed, and audited only if it imports them.
-    module_tex(
-        "Main",
-        &[
-            SYNTAX,
-            SEMANTICS,
-            ORACLE,
-            FIXTURES,
-            lexlean::gnaf::MODEL,
-            crate::gnaf::FIXTURES_MODULE,
-        ],
-        vec![empty_program],
-    )
+    let mut imports = vec![SYNTAX, SEMANTICS, ORACLE];
+    imports.extend(crate::calculus::reasoning::ORACLE_MODULES);
+    imports.extend([
+        FIXTURES,
+        crate::calculus::reasoning::FIXTURES,
+        lexlean::gnaf::MODEL,
+        crate::gnaf::FIXTURES_MODULE,
+    ]);
+    module_tex("Main", &imports, vec![empty_program])
 }
 
 // --- project configuration -------------------------------------------------
@@ -2848,6 +2845,9 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
         (ORACLE, oracle_module()),
         ("Main", main_module()),
     ] {
+        out.insert(format!("compiler/src/{module}.lex.tex"), text.into_bytes());
+    }
+    for (module, text) in crate::calculus::reasoning::oracle_modules() {
         out.insert(format!("compiler/src/{module}.lex.tex"), text.into_bytes());
     }
     out

@@ -234,6 +234,14 @@ recursion = false
 note = "A refusal is a pair of Booleans, plain data with exactly four values."
 
 [[construct]]
+key = "type.reasoning_failure"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "A reasoning failure is a pair of Booleans, plain data with exactly four values."
+
+[[construct]]
 key = "term.var"
 disposition = "runtime"
 allocation = false
@@ -1018,3 +1026,35 @@ allocation = false
 overflow = []
 recursion = false
 note = "A definition applying its realization."
+
+[[construct]]
+key = "declaration.logic"
+disposition = "erased"
+allocation = false
+overflow = []
+recursion = false
+note = "Specification only: its relation, invariant, and ranking are propositions and measures of proofs."
+
+[[construct]]
+key = "declaration.inference_rule"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through its guard, conclusion, candidates, and guarded application."
+
+[[construct]]
+key = "declaration.verifier"
+disposition = "erased"
+allocation = false
+overflow = []
+recursion = false
+note = "Specification only: its check is an ordinary definition and its theorems are never realized."
+
+[[construct]]
+key = "declaration.reasoner"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through the bounded loops and step types it elaborates to; its generated theorems are erased."

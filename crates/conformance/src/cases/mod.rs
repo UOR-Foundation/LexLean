@@ -21,6 +21,7 @@ mod lexicon;
 mod models;
 mod production;
 mod proofs;
+mod reasoning;
 mod repository;
 mod rust_backend;
 mod security;
@@ -58,6 +59,7 @@ pub fn run(id: &str) {
         "RB" => rust_backend::run(id),
         "GN" => gnaf::run(id),
         "MD" => models::run(id),
+        "RS" => reasoning::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

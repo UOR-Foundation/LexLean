@@ -1,7 +1,13 @@
 module
 public import Init
+public import Compiler.BudgetOracle
 public import Compiler.Gnaf
 public import Compiler.GnafFixtures
+public import Compiler.GradeOracle
+public import Compiler.PlannerOracle
+public import Compiler.ReasoningFixtures
+public import Compiler.ReasoningOracle
+public import Compiler.ScreeningOracle
 public import Compiler.TargetFixtures
 public import Compiler.TargetOracle
 public import Compiler.TargetSemantics
