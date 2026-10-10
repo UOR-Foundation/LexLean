@@ -2117,7 +2117,7 @@ running). Command: `cargo test -p lexlean --lib -- a_zombie_in_the_group`.
 Expected: the stop waits two seconds and reports the zombie.
 
 ```text
-thread 'verify::child::timeout_tests::a_zombie_in_the_group_counts_as_ended' (30432) panicked at crates/lexlean/src/verify/child.rs:852:9:
+thread 'verify::child::timeout_tests::a_zombie_in_the_group_counts_as_ended' (30432) panicked at crates/lexlean/src/verify/child.rs:857:9:
 assertion `left == right` failed: a zombie is not running
   left: Err("processes of group 30433 still existed 2000 ms after SIGKILL")
  right: Ok(())

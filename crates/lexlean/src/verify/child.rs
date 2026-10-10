@@ -813,9 +813,14 @@ mod timeout_tests {
     /// ended, so the stop neither waits two seconds for it nor says that
     /// processes may still be running. The zombie here is a child of this
     /// process, which `stop` reaps.
-    #[cfg(unix)]
     #[test]
     fn a_zombie_in_the_group_counts_as_ended() {
+        #[cfg(unix)]
+        zombie_scenario();
+    }
+
+    #[cfg(unix)]
+    fn zombie_scenario() {
         use std::os::unix::process::CommandExt;
         use std::process::{Command, Stdio};
         use std::time::{Duration, Instant};

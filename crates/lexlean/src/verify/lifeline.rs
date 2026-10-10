@@ -188,46 +188,59 @@ pub fn spawn(command: &mut Command) -> Result<(Child, Guard), String> {
         .map_err(|io_error| format!("cannot start: {io_error}"))
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod tests {
-    use super::*;
+    // The cases hold their unix code inside the body: a test hidden by an
+    // attribute is a defect of the repository (`conformance_rp_12`).
 
     #[test]
     fn an_ignored_signal_is_not_watched() {
-        let bit = |signal: i32| 1_u64 << (signal - 1);
-        assert_eq!(
-            watched(Some(0)),
-            vec![SIGINT, SIGTERM, SIGHUP, SIGQUIT],
-            "nothing ignored: all four"
-        );
-        assert_eq!(
-            watched(Some(bit(SIGHUP))),
-            vec![SIGINT, SIGTERM, SIGQUIT],
-            "nohup"
-        );
-        assert_eq!(
-            watched(Some(bit(SIGINT) | bit(SIGQUIT))),
-            vec![SIGTERM, SIGHUP],
-            "a background job of a non-interactive shell"
-        );
-        assert_eq!(
-            watched(Some(
-                bit(SIGINT) | bit(SIGTERM) | bit(SIGHUP) | bit(SIGQUIT)
-            )),
-            Vec::<i32>::new()
-        );
-        assert_eq!(
-            watched(None),
-            vec![SIGINT, SIGTERM, SIGQUIT],
-            "a host that cannot say leaves SIGHUP alone"
-        );
+        #[cfg(unix)]
+        {
+            use super::watched;
+            use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM};
+            let bit = |signal: i32| 1_u64 << (signal - 1);
+            assert_eq!(
+                watched(Some(0)),
+                vec![SIGINT, SIGTERM, SIGHUP, SIGQUIT],
+                "nothing ignored: all four"
+            );
+            assert_eq!(
+                watched(Some(bit(SIGHUP))),
+                vec![SIGINT, SIGTERM, SIGQUIT],
+                "nohup"
+            );
+            assert_eq!(
+                watched(Some(bit(SIGINT) | bit(SIGQUIT))),
+                vec![SIGTERM, SIGHUP],
+                "a background job of a non-interactive shell"
+            );
+            assert_eq!(
+                watched(Some(
+                    bit(SIGINT) | bit(SIGTERM) | bit(SIGHUP) | bit(SIGQUIT)
+                )),
+                Vec::<i32>::new()
+            );
+            assert_eq!(
+                watched(None),
+                vec![SIGINT, SIGTERM, SIGQUIT],
+                "a host that cannot say leaves SIGHUP alone"
+            );
+        }
     }
 
     #[test]
     fn the_mask_of_this_process_is_read() {
         // Not vacuous: on a host with `/proc` or `ps` the mask is known, and
         // a test process does not ignore SIGTERM.
-        let mask = ignored_at_start().expect("the host reports the ignored signals");
-        assert_eq!(mask & (1_u64 << (SIGTERM - 1)), 0, "{mask:x}");
+        #[cfg(unix)]
+        {
+            let mask = super::ignored_at_start().expect("the host reports the ignored signals");
+            assert_eq!(
+                mask & (1_u64 << (signal_hook::consts::SIGTERM - 1)),
+                0,
+                "{mask:x}"
+            );
+        }
     }
 }
