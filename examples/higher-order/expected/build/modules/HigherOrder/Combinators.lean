@@ -3,6 +3,7 @@ public import Init
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace HigherOrder.Combinators
 
 @[expose] public def mapList (Input : Type) (Output : Type) : (transform : ((Input) -> (Output))) -> (values : List (Input)) -> List (Output)

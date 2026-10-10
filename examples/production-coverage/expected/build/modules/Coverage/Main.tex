@@ -1,0 +1,103 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{double}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(n + n)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{natOps}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Nat) (b : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let q : Nat := (LexLeanRuntime.quotient (a) (b) (7) : Nat); (let r : Nat := (LexLeanRuntime.remainder (a) (b) (0) : Nat); (if ((Nat.beq (q) (0)) \&\& ((Nat.ble (r) (3)) || (!(Nat.blt (a) (b))))) then ((LexLeanRuntime.subtract (a) (b) : Nat) + r) else (LexLeanRuntime.multiply (q) (r) : Nat))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{intOps}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int) (b : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract ((LexLeanRuntime.multiply (a) ((-3 : Int)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder ((LexLeanRuntime.quotient (a) (b) ((1 : Int)) : Int)) (b) ((0 : Int)) : Int)) : Int)) : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(w : Nat) (h : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(Coverage.Types.area (Coverage.Types.Shape.rect (w) (h)) + (Coverage.Types.area (Coverage.Types.Shape.circle (w)) + Coverage.Types.area (Coverage.Types.Shape.empty)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{treeTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{Coverage.Types.treeSum (Coverage.Types.Tree.node (Coverage.Types.Tree.leaf) (n) (Coverage.Types.Tree.node (Coverage.Types.Tree.leaf) (5) (Coverage.Types.Tree.leaf)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{records}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Nat) (b : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(let p : Coverage.Types.Point := (\{ x := a, y := b \} : Coverage.Types.Point); (((p).x + (Coverage.Types.defaultWeights).scale), Coverage.Types.unbox (Nat) ((\{ content := (p).y, count := 1 \} : Coverage.Types.Box (Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{options}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : Option (Nat)) (r : Except (Bool) (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((match v with | Option.none => 0 | Option.some x => x) + (match r with | Except.ok y => y | Except.error flag => (if flag then 1 else 2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{builders}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{(Prod (Option (Nat)) (Except (Unit) (Nat)))}.\par
+\noindent Definition: \texttt{(Option.some (Nat.succ (n)), (if (Nat.blt (n) (3)) then Except.ok (Nat.zero) else Except.error (())))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pairs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(p : (Prod (Nat) (Bool)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (Bool) (Nat))}.\par
+\noindent Definition: \texttt{((p).2, (p).1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{higher}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(base : Nat) (offset : Nat)}.\par
+\noindent Closure 1: binds \texttt{(x)}, captures \texttt{(k, offset)}.\par
+\noindent Closure 2: binds \texttt{(y)}, captures \texttt{(k)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let k : Nat := (base + 1); (Coverage.Types.twice ((fun (x : Nat) => ((LexLeanRuntime.multiply (x) (k) : Nat) + offset))) (base) + (((fun (y : Nat) => (LexLeanRuntime.subtract (y) (k) : Nat)) (base)) + Coverage.Types.twice ((double)) (offset))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, recursion}.\par
+\noindent Type: \texttt{List (Bool)}.\par
+\noindent Definition: \texttt{Coverage.Types.mapList (Nat) (Bool) ((Coverage.Types.isEven)) (values)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{parity}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{recursion}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{Coverage.Types.isOdd (n)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

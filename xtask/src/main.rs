@@ -130,6 +130,7 @@ fn engine_for(dir: &Path) -> Result<lexlean::Engine, Fail> {
 /// normalized) must equal it, and `--write` regenerates them.
 fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
     for dir in example_dirs(root)? {
+        let started = std::time::Instant::now();
         let name = dir
             .file_name()
             .unwrap_or_default()
@@ -180,6 +181,12 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
                 selection: lexlean::Selection::Entrypoints,
             })
             .map_err(|error| format!("{name}: verify: {error}"))?;
+        // The wall-clock of each example is printed so that a run that
+        // approaches the CI job limit shows where its time went.
+        println!(
+            "verify-examples: {name} took {} s",
+            started.elapsed().as_secs()
+        );
         println!(
             "verify-examples: {name} verified (attestation {})",
             verified.attestation_id.to_hex()
@@ -221,7 +228,8 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
 
 /// The verification records that are platform independent after
 /// normalization (§22.7, §29.5): the audit output, the probe, audit, and
-/// extraction modules, the canonical compiler input, and every process
+/// extraction modules, the canonical compiler input, the preservation
+/// certificates, their audit output and record (§17.17), and every process
 /// record with the executable digest replaced.
 fn normalized_verify_records(verified: &Path) -> Result<Vec<(String, Vec<u8>)>, Fail> {
     let mut out = Vec::new();
@@ -249,6 +257,7 @@ fn normalized_verify_records(verified: &Path) -> Result<Vec<(String, Vec<u8>)>, 
         // byte for byte, so it is compared exactly.
         if relative == "audit/output.txt"
             || relative == "production/compiler-input.json"
+            || relative.starts_with("preserve/")
             || is_module
         {
             out.push((relative, std::fs::read(entry.path())?));

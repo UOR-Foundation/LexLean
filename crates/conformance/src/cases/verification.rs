@@ -592,7 +592,7 @@ pub(crate) fn run(id: &str) {
                 // End to end: a project whose declaration name is long
                 // enough to wrap its audit record verifies under pinned
                 // Lean, through every stage.
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let long = support::long_named_em_project();
                 let outcome = long
                     .engine()
@@ -628,7 +628,7 @@ pub(crate) fn run(id: &str) {
             );
 
             // A sufficient allow-list verifies and records the observed set.
-            let _guard = support::env_lock();
+            let _guard = support::env_shared();
             let allowed = support::em_project("\\allowaxioms{Classical.choice;Quot.sound;propext}");
             let outcome = allowed
                 .engine()
@@ -761,6 +761,32 @@ pub(crate) fn run(id: &str) {
                 (
                     "production/compiler-input.json",
                     Box::new(|f: &str| f == "production/compiler-input.json"),
+                ),
+                (
+                    "preserve/LexLeanPreserve/*/*.lean",
+                    Box::new(|f: &str| {
+                        f.starts_with("preserve/LexLeanPreserve/") && f.ends_with(".lean")
+                    }),
+                ),
+                (
+                    "preserve/program/R<i>.json",
+                    Box::new(|f: &str| f.starts_with("preserve/program/R") && f.ends_with(".json")),
+                ),
+                (
+                    "preserve/crate/R<i>.<target>.rs",
+                    Box::new(|f: &str| f.starts_with("preserve/crate/R") && f.ends_with(".rs")),
+                ),
+                (
+                    "preserve/audit.txt",
+                    Box::new(|f: &str| f == "preserve/audit.txt"),
+                ),
+                (
+                    "preserve/preservation.json",
+                    Box::new(|f: &str| f == "preserve/preservation.json"),
+                ),
+                (
+                    "process/preserve/*.json",
+                    Box::new(|f: &str| f.starts_with("process/preserve/")),
                 ),
             ];
             let patterns: Vec<(&str, Matcher)> = vec![
@@ -1040,7 +1066,7 @@ pub(crate) fn run(id: &str) {
         // Lake manifest dependency must be locally available; verification
         // never fetches.
         "VR-17" => {
-            let _guard = support::env_lock();
+            let _guard = support::env_shared();
             // A drifted workspace file without relocking is a stale lock.
             let drifted = P::example();
             drifted.edit(

@@ -61,8 +61,8 @@ fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
 pub fn validate(root: &Path) -> Result<(), Fail> {
     let spec = std::fs::read_to_string(root.join("SPEC.md"))?;
     let rows = parse_table(&spec)?;
-    if rows.len() != 304 {
-        return Err(format!("RP-07: the §31 table has {} rows, not 304", rows.len()).into());
+    if rows.len() != 315 {
+        return Err(format!("RP-07: the §31 table has {} rows, not 315", rows.len()).into());
     }
     // The prose total under the table is part of the contract a reader
     // relies on; a row added without it would leave §31 contradicting itself.
@@ -129,6 +129,14 @@ pub fn validate(root: &Path) -> Result<(), Fail> {
         }
     }
     let _ = register;
+
+    // The statement vocabulary the specification quotes equals the library's
+    // (§17.17, SP-04).
+    let library = root.join(repo_model::vocabulary::LIBRARY_DIR);
+    repo_model::vocabulary::audit(&spec, &|file| {
+        std::fs::read_to_string(library.join(file)).ok()
+    })
+    .map_err(|report| format!("§17.17 (SP-04): {report}"))?;
 
     // Every source section referenced by an ID exists.
     for row in &rows {

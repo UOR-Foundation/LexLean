@@ -308,7 +308,7 @@ pub(crate) fn run(id: &str) {
                     "features",
                     "cargo check --workspace --all-features --all-targets",
                 ),
-                ("bdd", "cargo test -p repo-conformance"),
+                ("bdd", "cargo test -p repo-conformance --test bdd"),
                 ("examples", "cargo xtask verify-examples"),
                 ("golden", "cargo xtask check-golden"),
                 ("repro", "cargo xtask check-reproducibility"),
@@ -407,7 +407,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 304, "§31 has 304 rows");
+            assert_eq!(table.len(), 315, "§31 has 315 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())

@@ -393,3 +393,27 @@ Class: `language`. Exit code: 1.
 The pinned Lean compiler-front-end interface no longer matches its registry: a signature probe or the pinned extraction adapter fails to elaborate, or the running Lean reports another version or source commit.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7013` --- Certificate A rejected
+
+A production root's preservation certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its root theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7014` --- Preservation environment drift
+
+The shipped preservation library or calculus modules fail their token audit, do not compile silently under the pinned Lean, or a library declaration depends on axioms other than those its registry row states.
+
+Class: `environment`. Exit code: 3.
+
+## `LLV7015` --- Certificate B rejected
+
+A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7016` --- Certificate E rejected
+
+The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext.
+
+Class: `language`. Exit code: 1.

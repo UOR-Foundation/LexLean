@@ -1,0 +1,195 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{roseSize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Mutual recursion group \texttt{RoseSize}, decreasing on \texttt{rose}.\par
+\noindent Parameters: \texttt{(rose : Coverage.Syntax.Rose (Item))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match rose with | Coverage.Syntax.Rose.node \_ children => (1 + forestSize (Item) (children)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{forestSize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Mutual recursion group \texttt{RoseSize}, decreasing on \texttt{forest}.\par
+\noindent Parameters: \texttt{(forest : List (Coverage.Syntax.Rose (Item)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match forest with | List.nil => 0 | List.cons head tail => (roseSize (Item) (head) + forestSize (Item) (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exprSize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{SyntaxSize}, decreasing on \texttt{expression}.\par
+\noindent Parameters: \texttt{(expression : Coverage.Syntax.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match expression with | Coverage.Syntax.Expr.literal \_ => 1 | Coverage.Syntax.Expr.plus left right => ((exprSize (left) + exprSize (right)) + 1) | Coverage.Syntax.Expr.block statements result => (statementsSize (statements) + exprSize (result)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{statementsSize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{SyntaxSize}, decreasing on \texttt{statements}.\par
+\noindent Parameters: \texttt{(statements : List (Coverage.Syntax.Stmt))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match statements with | List.nil => 0 | List.cons head tail => (statementSize (head) + statementsSize (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{statementSize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{SyntaxSize}, decreasing on \texttt{statement}.\par
+\noindent Parameters: \texttt{(statement : Coverage.Syntax.Stmt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match statement with | Coverage.Syntax.Stmt.assign \_ value => (exprSize (value) + 1) | Coverage.Syntax.Stmt.sequence first second => (statementSize (first) + statementSize (second)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isEven}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Parity}, decreasing on \texttt{number}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match number with | Nat.zero => true | Nat.succ previous => isOdd (previous))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isOdd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Parity}, decreasing on \texttt{number}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match number with | Nat.zero => false | Nat.succ previous => isEven (previous))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{countdown\_decreases}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(number : Nat) (steps : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.blt (number) (2)) = false) -> ((LexLeanRuntime.subtract (number) (2) : Nat) < number))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{countdown}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{number}; decrease evidence per call: \texttt{countdown\_decreases}.\par
+\noindent Parameters: \texttt{(number : Nat) (steps : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.blt (number) (2)) then steps else countdown ((LexLeanRuntime.subtract (number) (2) : Nat)) ((steps + 1)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{reduce\_decreases}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(value : Nat) (bound : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.beq (bound) (0)) = false) -> (((Nat.blt (value) (bound)) = false) -> ((LexLeanRuntime.subtract (value) (bound) : Nat) < value)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{reduce}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{value}; decrease evidence per call: \texttt{reduce\_decreases}.\par
+\noindent Parameters: \texttt{(value : Nat) (bound : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.beq (bound) (0)) then value else (if (Nat.blt (value) (bound)) then value else reduce ((LexLeanRuntime.subtract (value) (bound) : Nat)) (bound)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{search\_decreases}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(target : Nat) (low : Nat) (high : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.blt (low) (high)) = true) -> (((Nat.ble (target) ((low + low))) = false) -> ((LexLeanRuntime.subtract (high) ((low + 1)) : Nat) < (LexLeanRuntime.subtract (high) (low) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{search}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{(LexLeanRuntime.subtract (high) (low) : Nat)}; decrease evidence per call: \texttt{search\_decreases}.\par
+\noindent Parameters: \texttt{(target : Nat) (low : Nat) (high : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.blt (low) (high)) then (if (Nat.ble (target) ((low + low))) then low else search (target) ((low + 1)) (high)) else high)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{weight}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match term with | Coverage.Syntax.Term.literal \_ => 1 | Coverage.Syntax.Term.plus left right => (((weight (left) + weight (left)) + weight (right)) + 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reassociate\_literal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term) (left : Coverage.Syntax.Term) (right : Coverage.Syntax.Term) (value : Nat)}.\par
+\noindent Statement: \texttt{((term = Coverage.Syntax.Term.plus (left) (right)) -> ((left = Coverage.Syntax.Term.literal (value)) -> (weight (right) < weight (term))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{reassociate\_plus}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term) (left : Coverage.Syntax.Term) (right : Coverage.Syntax.Term) (inner : Coverage.Syntax.Term) (rest : Coverage.Syntax.Term)}.\par
+\noindent Statement: \texttt{((term = Coverage.Syntax.Term.plus (left) (right)) -> ((left = Coverage.Syntax.Term.plus (inner) (rest)) -> (weight (Coverage.Syntax.Term.plus (inner) (Coverage.Syntax.Term.plus (rest) (right))) < weight (term))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{reassociate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{weight (term)}; decrease evidence per call: \texttt{reassociate\_literal, reassociate\_plus}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Coverage.Syntax.Term}.\par
+\noindent Definition: \texttt{(match term with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.literal (value) | Coverage.Syntax.Term.plus left right => (match left with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.plus (Coverage.Syntax.Term.literal (value)) (reassociate (right)) | Coverage.Syntax.Term.plus inner rest => reassociate (Coverage.Syntax.Term.plus (inner) (Coverage.Syntax.Term.plus (rest) (right)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{prune\_plus}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term) (left : Coverage.Syntax.Term) (right : Coverage.Syntax.Term) (inner : Coverage.Syntax.Term) (rest : Coverage.Syntax.Term)}.\par
+\noindent Statement: \texttt{((term = Coverage.Syntax.Term.plus (left) (right)) -> ((left = Coverage.Syntax.Term.plus (inner) (rest)) -> (weight (Coverage.Syntax.Term.plus (inner) (right)) < weight (term))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{prune}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{weight (term)}; decrease evidence per call: \texttt{reassociate\_literal, prune\_plus}.\par
+\noindent Parameters: \texttt{(term : Coverage.Syntax.Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Coverage.Syntax.Term}.\par
+\noindent Definition: \texttt{(match term with | Coverage.Syntax.Term.literal value => Coverage.Syntax.Term.literal (value) | Coverage.Syntax.Term.plus left right => (match left with | Coverage.Syntax.Term.literal \_ => prune (right) | Coverage.Syntax.Term.plus inner \_ => prune (Coverage.Syntax.Term.plus (inner) (right))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{foldExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Folding}, decreasing on \texttt{expression}.\par
+\noindent Parameters: \texttt{(expression : Coverage.Syntax.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Coverage.Syntax.Expr}.\par
+\noindent Definition: \texttt{(match expression with | Coverage.Syntax.Expr.literal value => Coverage.Syntax.Expr.literal (value) | Coverage.Syntax.Expr.plus left right => (let foldedLeft : Coverage.Syntax.Expr := foldExpr (left); (let foldedRight : Coverage.Syntax.Expr := foldExpr (right); (match foldedLeft with | Coverage.Syntax.Expr.literal leftValue => (match foldedRight with | Coverage.Syntax.Expr.literal rightValue => Coverage.Syntax.Expr.literal ((leftValue + rightValue)) | Coverage.Syntax.Expr.plus \_ \_ => Coverage.Syntax.Expr.plus (foldedLeft) (foldedRight) | Coverage.Syntax.Expr.block \_ \_ => Coverage.Syntax.Expr.plus (foldedLeft) (foldedRight)) | Coverage.Syntax.Expr.plus \_ \_ => Coverage.Syntax.Expr.plus (foldedLeft) (foldedRight) | Coverage.Syntax.Expr.block \_ \_ => Coverage.Syntax.Expr.plus (foldedLeft) (foldedRight)))) | Coverage.Syntax.Expr.block statements result => Coverage.Syntax.Expr.block (foldStatements (statements)) (foldExpr (result)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foldStatements}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Folding}, decreasing on \texttt{statements}.\par
+\noindent Parameters: \texttt{(statements : List (Coverage.Syntax.Stmt))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Coverage.Syntax.Stmt)}.\par
+\noindent Definition: \texttt{(match statements with | List.nil => ([] : List (Coverage.Syntax.Stmt)) | List.cons head tail => (foldStatement (head) :: foldStatements (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foldStatement}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Folding}, decreasing on \texttt{statement}.\par
+\noindent Parameters: \texttt{(statement : Coverage.Syntax.Stmt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Coverage.Syntax.Stmt}.\par
+\noindent Definition: \texttt{(match statement with | Coverage.Syntax.Stmt.assign target value => Coverage.Syntax.Stmt.assign (target) (foldExpr (value)) | Coverage.Syntax.Stmt.sequence first second => Coverage.Syntax.Stmt.sequence (foldStatement (first)) (foldStatement (second)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ping\_to\_pong}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.beq (number) (0)) = false) -> ((number + number) < ((number + number) + 1)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pong\_to\_ping}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.beq (number) (0)) = false) -> ((((LexLeanRuntime.subtract (number) (1) : Nat) + (LexLeanRuntime.subtract (number) (1) : Nat)) + 1) < (number + number)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{ping}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{((number + number) + 1)}; decrease evidence per call: \texttt{ping\_to\_pong}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.beq (number) (0)) then 0 else (pong (number) + 1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pong}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{(number + number)}; decrease evidence per call: \texttt{pong\_to\_ping}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.beq (number) (0)) then 0 else (ping ((LexLeanRuntime.subtract (number) (1) : Nat)) + 1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{ping\_seven}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(ping (7) = 14)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

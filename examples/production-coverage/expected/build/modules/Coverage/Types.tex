@@ -1,0 +1,83 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Shape}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{circle}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{rect}: \texttt{(Nat, Nat)}.\par
+\noindent Constructor \texttt{empty}: \texttt{()}.\par
+\subsection*{\texttt{Tree}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{leaf}: \texttt{()}.\par
+\noindent Constructor \texttt{node}: \texttt{(Tree, Nat, Tree)}.\par
+\subsection*{\texttt{Point}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{x}: \texttt{Nat}.\par
+\noindent Field \texttt{y}: \texttt{Nat}.\par
+\subsection*{\texttt{Box}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Field \texttt{content}: \texttt{Item}.\par
+\noindent Field \texttt{count}: \texttt{Nat}.\par
+\subsection*{\texttt{Weights}}
+\noindent Kind: \texttt{class}.\par
+\noindent Field \texttt{base}: \texttt{Nat}.\par
+\noindent Field \texttt{scale}: \texttt{Nat}.\par
+\subsection*{\texttt{defaultWeights}}
+\noindent Kind: \texttt{instance}.\par
+\subsection*{\texttt{area}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shape : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match shape with | Shape.circle r => (LexLeanRuntime.multiply ((LexLeanRuntime.multiply (r) (r) : Nat)) (3) : Nat) | Shape.rect w h => (LexLeanRuntime.multiply (w) (h) : Nat) | Shape.empty => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{treeSum}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tree : Tree)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match tree with | Tree.leaf => 0 | Tree.node l v r => ((treeSum (l) + v) + treeSum (r)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unbox}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(box : Box (Item))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Item}.\par
+\noindent Definition: \texttt{(box).content}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{twice}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(step : ((Nat) -> (Nat))) (value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(step ((step (value))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(A, B)}.\par
+\noindent Parameters: \texttt{(transform : ((A) -> (B))) (values : List (A))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (B)}.\par
+\noindent Definition: \texttt{(match values with | List.nil => ([] : List (B)) | List.cons head tail => ((transform (head)) :: mapList (A) (B) (transform) (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isEven}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Parity}, decreasing on \texttt{n}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match n with | Nat.zero => true | Nat.succ k => isOdd (k))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isOdd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Parity}, decreasing on \texttt{n}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match n with | Nat.zero => false | Nat.succ k => isEven (k))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

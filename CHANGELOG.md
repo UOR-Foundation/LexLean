@@ -15,6 +15,277 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The acceptance gate fits its job again (SPEC.md §9.2, VERIFICATION.md,
+  "Runtime of `just vv`"): the run of this branch was cancelled at the
+  360-minute limit. `bdd` is `cargo test -p repo-conformance --test bdd`, the
+  meta-gate, because `test` already runs every conformance test (the second
+  run was 79 minutes); the conformance cases' environment lock is shared by
+  verifications and exclusive only for the code that changes the process
+  environment; the preservation environment (the calculus modules and the library) is compiled once per toolchain and library text and shared by the workspaces of a run;
+  the four corpora, the stress families, the rejection fixtures, and the
+  fixture suite run side by side; and `cargo xtask verify-examples` prints
+  the time of each example. The conformance suite takes 50 minutes of the
+  reference container where it took 68, and the gate is projected at
+  276 minutes (4 h 36 min) on the runner, `uor-atlas` (three hours of it)
+  unchanged.
+- The certified projects are the four examples `production`,
+  `production-coverage`, `models`, and `reasoning`. The five reasoning oracle
+  modules of the `compiler` project declare no `production` root, so they are
+  never analysed (SPEC.md §17.13) and have no certificate; the `compiler`
+  project is verified, not certified.
+- Semantic preservation from the source to the realization calculus
+  (SPEC.md §17.17, `SP-01`..`SP-06`): every production root is lowered to a
+  target program and certified by a kernel-checked Lean theorem (certificate
+  A) that the lowered program converges on the encoded arguments to the
+  encoded source value, or to overflow exactly where the width predicate
+  fails. The hand-written proof library and the calculus modules ship as
+  language data under `language/preservation-1.2/`, with every library
+  declaration's axioms pinned in `library.toml`. `lexlean verify` checks the
+  certificates after named-root extraction, publishes them with
+  `preserve/preservation.json` (`schemas/preservation.schema.json`), binds the
+  record in the attestation, and fails closed with `LLV7013` (a rejected
+  certificate) or `LLV7014` (a drifted preservation environment). The
+  compiler project's module prefix is now `LexLeanTarget`.
+- The graph templates of the calculus library now count and order every
+  node, successors without their own entry included, as the Lean rendering
+  does; `graph_topological`'s instance is in first-binding order.
+- Fixed a pre-existing defect: `LLV7012` (Lean compiler-front-end authority
+  drift) is registered in the environment class with exit code 3, but the
+  compiler mapped it to the language class and exited 1. The code now exits
+  3, `conformance_cl_11` asserts every registered code's class and exit code
+  against `model/errors.toml`, and the `extraction-authority-drift` fixture
+  expects exit 3.
+- The declared Rust machine (SPEC.md §17.17, `SP-07`): the meaning of a
+  rendered crate is stated by the generated, kernel-checked LexLean modules
+  `RustSyntax` (the closed Rust AST) and `RustSemantics` (its evaluator over
+  calculus values, `?` as a raise out of the function, each runtime item as
+  the calculus primitive it realizes, and the machine's abort on an
+  unrealizable sequence length), shipped beside the calculus modules. Every
+  certified root's crate prints to a Lean term (`production::rust_term`) that
+  the machine evaluates in agreement with the calculus interpreter.
+- Certificate B (SPEC.md §17.17, `SP-08`): each certified root's crate in
+  each of its targets is related to its lowered program by a kernel-checked
+  simulation theorem, `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd`.
+  The library proves once that every derivation of its closed
+  correspondence `Corr` is sound for the machine (`sound`, `simulate`); the
+  aligner (`production::rust_cert`) writes each function's derivation, whose
+  side conditions the kernel decides. `audit-production` holds the aligner's
+  rules, `Corr`'s constructors, and the soundness theorem's cases to one
+  another and requires the aligner to name every calculus construct with no
+  default arm. `lexlean verify` derives, checks, replays, and audits
+  certificate B beside certificate A, records it under `renderings` in
+  `preservation.json`, and refuses a rendering it cannot certify with
+  `LLV7015` (negative fixture `certificate-b-rejected`).
+- Machine items are indexed by width and sequence kind (SPEC.md §17.17,
+  `SP-08`): `fixed_u8::checked_add` on two `u16` values, or `length_bytes` on
+  text, is stuck as in Rust rather than the calculus primitive's value, and
+  value typing carries a fixed-width value's width and a sequence's kind, so
+  certificate B refuses a rendering that changes either. This closed a gap the
+  first width mutation exposed.
+- Certificate E (SPEC.md §17.17, `SP-09`): certificates A and B compose into
+  `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or `.RustStd`, whose theorem
+  states that the rendered root, invoked on the encoded arguments, realizes
+  the encoded source result. The proof is the library's `compose` over a
+  generated proof that every encoded argument is well typed. `lexlean verify`
+  checks and records it beside A and B and refuses a rejected composition with
+  the new `LLV7016` (negative fixture `certificate-e-rejected`).
+- Boundary validators (SPEC.md §17.12, §17.17, `SP-10`): a root whose
+  parameters can hold a map, set, or graph, including inside options,
+  results, products, lists, document types, and recursive groups of them, is
+  lowered with generated validators and an entry that returns `none` for
+  arguments that break the strictly-ascending invariant §17.12 states and
+  the root's result as `some` otherwise. Certificate A proves each validator
+  decides exactly the library's proposition of its type (the recursive
+  group's by the same structural recursion as its encoders) and the entry's
+  two outcomes; certificate E states the rendered entry's. A validator is
+  called only by the entry and by validators, which a boundary audit in the
+  lowering enforces, so no proof-only invariant becomes a runtime check.
+  `examples/production-coverage` gains a recursive tree root (`Boundary`) with
+  such a boundary.
+- The conformance suite plants defects (SPEC.md §17.17) of nine kinds in
+  lowered programs, each refused by Lean at the relation of the function it
+  changed, and of ten kinds in rendered crates, including an entry that omits
+  its first validator; and it builds every certified root as a Rust
+  package under the pinned toolchain and compares its printed outcomes,
+  through the root and through the entry, with the interpreter's
+  (`SP-11`), as build evidence that rustc agrees with the declared machine.
+- Review of the semantic-preservation work (SPEC.md §17.17): the certificate
+  generator now judges which parameters the entry validates, and which
+  components each validator checks, from the source types by its own
+  recursion, and refuses a lowering that differs (a skipped parameter, a
+  validator that checks nothing); the validation mutation is planted at every
+  validated parameter, every component check, and every order comparison, and
+  the differential breaks each validated parameter's invariant in turn. Every
+  mutation, in the lowered program, in the crate, and in certificate E, is
+  planted at its first, a middle, and its last place and must fail in the
+  declaration of the function it changed. Certificate E is stated for the
+  arguments a Rust caller can pass (`RepresentableL`); the machine's abort
+  is proved to arise only in an item that cannot fail
+  (`runItem_abort_infallible`) and the suite checks that no infallible item
+  other than a length overflows. The differential reaches the overflow arm
+  (top and bottom of every scalar type, larger and longer inputs, a search),
+  and the rustc differential runs a root with an entry through the entry
+  alone. `preservation.json` binds the lowered program and each rendered
+  crate, which are published beside the certificates. The statement
+  vocabulary SPEC.md quotes is held byte-equal to the library's by
+  `validate-spec-links`, and every library declaration must be registered.
+- Limits (SPEC.md §17.17 *Limits*). A root whose lowered program exceeds
+  `max_ir_nodes`, or for which a lower bound on one of its certificates
+  exceeds `max_file_bytes`, or whose field reads print so many record entries
+  that certificate B would exceed it, is refused with `LLS8002` before the
+  toolchain is touched. The bound is per certificate (A from types,
+  expressions, and the pairs of arms of its matches; B from expressions,
+  shapes, and literals; E from shapes and pairs), the greatest of the three is
+  compared with the limit and not their sum, and each cost is half of the
+  greatest that stays below its certificate over the corpora, the stress
+  families, and programs that grow several dimensions at once; `conformance_sp_02`
+  checks it against the corpora, the families, random combinations none of
+  which it was fitted to, and the largest scaling of nine mixed shapes that
+  fits the default limit (not refused). Certificate B, whose derivations grow
+  with the square of a record's arity and cannot be bounded from node counts,
+  is generated under `max_file_bytes` and stops at it. Certificates are
+  generated right after lowering for that reason. Negative fixtures
+  `lowering-size-limit`, `certificate-size-limit` (a record of 800 fields
+  copied field by field), `certificate-generation-limit` (a sum of the 500
+  fields of a record), and `certificates-total-limit` cover them. The
+  programs, crates, and certificates of all the roots of a project count
+  toward `max_total_source_bytes` as they are generated, and so does the
+  eligibility report (§17.13), whose closure members each record a shortest
+  call path: a chain of 3000 calls took 638 MB, a chain of 1000 roots 9.5 GB
+  and 90 seconds, and 2000 exhausted a 16 GB host in `lexlean check`. A path is
+  now shared, and a chain of 2359 functions or 243 roots is the most a project
+  may have at the default limit (`LLS8002` from `check`, fixture
+  `eligibility-report-limit`). A pinned Lean that is killed, runs out of memory, or
+  overflows its stack while checking a certificate is `LLS8002`; one that
+  exhausts its heartbeat or recursion budget is `LLS8002` only when the module
+  is at least a quarter of `max_file_bytes` and is otherwise Lean's verdict
+  on the certificate, `LLV7013`, `LLV7015`, or `LLV7016` (fixtures
+  `certificate-heartbeat-rejected` and `certificate-resource-exhausted`): a
+  wrong certificate whose proof makes `isDefEq` loop is not a limit.
+  Rejections of certificates A, B, and E name the declaration, the root, and
+  the bounded first error.
+- Every certificate is generated under `max_file_bytes` (the proof of each
+  term, each match arm, the encoders, each function, the boundary), so no
+  program makes the generator build more than the limit allows; the early
+  refusal is a lower bound, not the guarantee. A
+  match of thousands of arms cannot overflow the stack (the aligner derives
+  arms in a loop and a derivation is written and dropped iteratively).
+- A match on many constructors verifies through `lexlean verify`. The
+  extraction record of a named root nests two levels of JSON for each arm, and
+  its reader refused it from about 60 arms (`LLV7011`, `recursion limit
+  exceeded`); it is now read without the limit, on a thread with a large
+  stack, as is the compiler input. The pinned Lean needs more than its default
+  heartbeats for a certificate B of a match on 160 or more arms (a type
+  mismatch that blamed a valid certificate), so a program whose widest match
+  has more than 100 arms sets both budgets to 0 and the wall clock,
+  `child_timeout_ms`, is the limit. A match on 180 constructors is verified by
+  `conformance_sp_02`, and one on 300 by hand; SPEC.md says where the machine
+  reaches the timeout. The earlier statement that a match on 440 constructors
+  verifies was false: its certificates are generated, and Lean does not check
+  certificate B within 15 minutes.
+- A timeout ends the work. `child_timeout_ms` killed `lake` and left the
+  `lean` it had started running at full speed with a growing resident set,
+  which with the budgets lifted for a wide match nothing ended; every child of
+  `verify` now leads a process group of its own, killed and awaited as a whole
+  on a timeout (a test starts a grandchild and asserts none is left). The
+  group is signalled directly (`rustix`, no `kill` executable on `PATH`, which
+  the shipped image does not have), a group that cannot be ended is said so in
+  the diagnostic, and an interrupt (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, watched with
+  `signal-hook`) ends the live groups before it ends the `lexlean` executable,
+  because a child in a group of its own no longer receives the terminal's
+  Ctrl-C; a test sends each to the real binary. A signal the process was
+  started ignoring (`nohup`'s `SIGHUP`) stays ignored, the library installs no
+  handler (a host that embeds it keeps its own signals), a zombie in a killed
+  group counts as ended (the shipped image runs `lexlean` as PID 1 and reaps
+  what it can), a `taskkill` that fails is reported, and `verify` removes the
+  staging directories that interrupted runs left. `SIGKILL` cannot be caught,
+  and leaves the children. SPEC.md §8.5 names the role of every shipped
+  dependency, including `rustix` and `signal-hook`, and `audit-shipped`
+  requires it.
+- The lower bound on certificate A counts a type as the certificate prints
+  it: a pair nested 120 deep was `120 * 121 / 2` type nodes and a bound 1.5
+  times the certificate, and the programs that are refused when they fit are
+  now sought among nested pairs, options, lists, results, and records, one
+  function and twenty, and random combinations of seven dimensions.
+- Names of a project that Lean resolves to something else, refused at `check`:
+  a module, or any segment of a dotted module name, named like a namespace the
+  generated code writes qualified (`Nat` with a function `blt`; `Sub.Nat` in
+  `Sub.Other`), a pattern binder named `none`, `some`, `isTrue`, or `isFalse`
+  (a bare name in a pattern is the constructor), a constructor or field named like a member Lean
+  declares for the type (`rec`, `casesOn`, `noConfusion`, `ctorIdx`, ... read
+  off the pinned Lean), a `module_prefix` that begins with a root this compiler
+  ships (`LexLeanPreserve`, `LexLeanPreservation`, `LexLeanRuntime`, ...), and a
+  module with a production root under the prefix `LexLeanTarget`; a parameter
+  named like a nullary constructor of its own type (`zero`, `red`, and `none`
+  or `some` of a parameter) is valid, and the module silences the linter that
+  reported it.
+- The token audit reads a number as the pinned Lean's `numberFnAux` does
+  (`1e10axiom`, `1_0axiom`, `0b1_0axiom`, `1.e5axiom` are a number and a
+  keyword; `1_`, `1.foo`, and a field index followed by `_` or an exponent are
+  refused where Lean refuses them or reads them by the parse), checked against
+  the pinned Lean on a generated set of prefixes by `conformance_sp_09`, and
+  refuses every `#` command, since Lean reads the longest command token it
+  knows and the rest as a name (`#evalIO`).
+- The eligibility reports of all the modules of a project count together
+  toward `max_total_source_bytes` (it was per module), and `check` and `build`
+  measure them with one function (the length of the written file), so they
+  pass and refuse the same limits (they differed by about 128 bytes a module).
+- A root verifies whatever its names are, with no name a user can write
+  capturing a name a generated file uses. Every reference a certificate makes to
+  a global is written from the root (`_root_.LexLeanPreservation.conv_var`),
+  so that a parameter, however spelled, cannot turn the first segment of a
+  global into a field access of itself (a parameter named `LexLeanPreservation`,
+  `LexLeanTarget`, or `LexLeanPreserve` broke certificates A and E); the names
+  certificate E binds begin with two underscores, which no semantic name does;
+  the certificate token audit follows Lean's tokenizer (character literals,
+  raw strings, dotted and unicode names, `sorry.1`, attributes) and reads a
+  quoted name as the name it is, forbidden constants and attributes included
+  (the generator quotes a name spelled like a forbidden token, the backend and
+  the audit module one spelled like a word the generated-Lean audit forbids,
+  such as `native_decide` and `IO`, so a function, structure, inductive,
+  field, constructor, or parameter of that name verifies), and fails closed
+  on anything it cannot classify; `conformance_sp_09` verifies a project whose
+  parameters are spelled like every namespace the certificates of the corpora
+  begin a name with, and its gate reads the first component of every longer
+  name.
+- Language-1.2 declaration names (§17.12 rule 10). No declaration may be spelled
+  like a name the backend writes unqualified (`Int`, `String`, `Unit`,
+  `Except`, `ByteArray`, `Ordering`, `UInt8`..`UInt64`, `Int8`..`Int64`,
+  `true`, `false`, ...), and no binder may be named `true` or `false`: a
+  declaration `Int` was the `Int` of every later signature of its module and a
+  parameter `true` the `true` of every Boolean literal, and Lean reported
+  `LLV7002` for a program `check` had accepted. Linking now refuses them
+  (`LLT4001`, fixtures `declaration-lean-name` and `binder-bool-literal-name`).
+  A `module_prefix` whose first segment is a module root of the pinned
+  toolchain (`Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`,
+  `LeanIR`) or `IO` is refused by configuration (`LLC0101`, fixture
+  `module-prefix-reserved`) where it was `LLV7003` or `LLI9001` in the middle
+  of verification.
+- Certificate E is stated, in full, for representable arguments, and Lean
+  applies it to arguments of the differential, some at the bounds of `u64`
+  and `i64`, so a hypothesis that cannot be met or used fails; the planted
+  `RepresentableL .. ∧ False` is refused. `preservation.json` records the
+  function each crate is invoked through, per root and target, which E states
+  and the crate defines; SPEC.md says what is and is not a package and which
+  certified roots rest on the kernel proof alone for the overflow arm.
+- Fixed a pre-existing defect: named-root extraction (SPEC.md §22.10)
+  refused every root that reached an `Init` function whose module does not
+  expose its body (`String.toInt?`, `String.toUTF8`, `String.splitOn`,
+  `String.intercalate`, `List.takeTR`), because the module system exports
+  such a definition as an axiom, and every root whose LCNF types carry the
+  `borrowed` annotation (an instance over `Nat.div` or `Int.div`), because
+  the adapter recorded all metadata as unsupported. The adapter now records
+  each constant's declared kind (`Lean.getOriginalConstKind?`), whether
+  Lean's compiler holds an external's code (`Lean.IR.findEnvDecl`), and the
+  `borrowed` annotation (`Lean.annotation?`), each registered in
+  `language/lcnf-1.2/authority.toml`; the host admits an exported axiom
+  exactly when it was declared a computable definition with compiled code,
+  as Lean's own code generator does, and reads a borrowed type as the type
+  it annotates. Declared axioms, opaques, unsafe, partial, and noncomputable
+  dependencies, other metadata, and a kind that differs from the declared
+  kind still fail with `LLV7011` (`NE-03`). The coverage corpus that these
+  defects had kept out of verification is now the verified example
+  `examples/production-coverage`, whose certificates `lexlean verify` checks.
 - Language 1.2 (SPEC.md §17.12): a strict extension of language 1.1 selected
   by `language = "1.2"`, with builtin packages at `1.2.0`, the lock schema
   `lexlean/lock/2`, the semantic-module schema `lexlean/semantic-module/2`,
@@ -460,6 +731,16 @@ versions, and the entries below say what each tag does and does not claim.
     definition), the model declaration variants, `CheckedApply`,
     `ContractViolation`, and `LessThan`. Downstream exhaustive matches must
     add them.
+- Semantic preservation certifies the roots of `examples/reasoning`
+  (`ReasoningFailure` is lowered as the pair of Booleans `ContractViolation` is,
+  and the reasoning declarations are read through their elaborations). Two
+  defects of the certificate generator that the older corpora did not reach are
+  fixed: a source local that linking generated (`__b`, `__acc`) is spelled
+  `_y...` in the certificates, because the certificates' own binders begin with
+  two underscores and captured it, and the `match` of a generic template carries
+  its result type, because Lean otherwise postpones it and a fold's step relation
+  fails on the pending metavariable. `LexLeanReasoning` is a reserved module
+  root, as `LexLeanModels` is.
 - Language-1.2 reasoning machines (§17.12, issue #31): `logic`,
   `inference_rule`, `verifier`, and `reasoner` declarations and the
   `reasoning_failure` type, in the closed `lexlean/semantic-module/2`

@@ -208,6 +208,7 @@ pub fn render_build(
     let aliases = crate::backend::lean::DocumentAliases::of_documents(
         checked.modules.values().map(|module| &module.document),
     );
+    let mut report_total: u64 = 0;
     for (name, checked_module) in &checked.modules {
         let lean_emitter = crate::backend::lean::render_module(
             checked_module,
@@ -328,6 +329,23 @@ pub fn render_build(
         if let Some(report) = &checked_module.production {
             let production_path = format!("production/{module_path}.eligibility.json");
             let production_bytes = report.to_file_bytes();
+            // The analysis refuses a report beyond the limit by the same
+            // length, that of `to_file_bytes`, so `check` and `build` cross
+            // the limit at the same byte; this is the report as written. Like
+            // an artifact declaration, it materializes bytes beyond the
+            // sources, and counts toward `max_total_source_bytes` (§17.12
+            // rule 2).
+            report_total = report_total.saturating_add(production_bytes.len() as u64);
+            if report_total > project.config.limits.max_total_source_bytes {
+                return Err(LexLeanError::from_diagnostic(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "max_total_source_bytes exceeded: configured {}, the production-eligibility reports of the project are {report_total} bytes once module `{name}` has written its {}",
+                        project.config.limits.max_total_source_bytes,
+                        production_bytes.len()
+                    ),
+                )));
+            }
             outputs.push(file_row(
                 "production-eligibility",
                 &production_path,

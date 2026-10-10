@@ -302,7 +302,7 @@ fn planted_compiler(planted: &[Fixture], edit: impl FnOnce(&mut Vec<Json>)) -> V
     edit(data["declarations"].as_array_mut().expect("declarations"));
     let project = P::compiler();
     project.write("src/GnafFixtures.lex.tex", &with_module_data(&text, &data));
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let error = project.verify_fails_with("LLV7002");
     error
         .diagnostics
@@ -402,7 +402,7 @@ fn planted_vector() -> Vec<String> {
     );
     *tail = tail["tail"].clone();
     project.write("src/Gnaf.lex.tex", &with_module_data(&text, &data));
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let error = project.verify_fails_with("LLV7002");
     error
         .diagnostics

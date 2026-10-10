@@ -1,0 +1,15 @@
+#!/bin/sh
+# Passes every invocation to the pinned lake except `lake env lean` on the
+# shipped preservation library's first module, which is compiled with a
+# false theorem appended, as a library that drifted from the one LexLean
+# ships would be; verification refuses the environment (SPEC.md 17.17).
+real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
+if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
+  for source; do :; done
+  case "$source" in
+    */preserve-src/LexLeanPreservation/Core.lean)
+      printf '\ntheorem drifted : 1 = 2 := rfl\n' >> "$source"
+      ;;
+  esac
+fi
+exec "$real" "$@"

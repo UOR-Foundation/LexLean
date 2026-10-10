@@ -4,6 +4,7 @@ public import HigherOrder.Combinators
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace HigherOrder.Main
 
 @[expose] public def addAll (offset : Nat) (values : List (Nat)) : List (Nat) := HigherOrder.Combinators.mapList (Nat) (Nat) ((fun (value : Nat) => (value + offset))) (values)

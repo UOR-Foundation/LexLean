@@ -256,7 +256,7 @@ pub fn f0(v0: List<(u64, List<u64>)>, v1: u64) -> R<List<u64>> {
 pub fn f1(v0: List<(u64, List<u64>)>, v1: u64) -> R<List<u64>> {
     Ok(f2(v0.clone(), {
         let a2 = {
-            let a1 = v0.clone();
+            let a1 = f11(v0.clone(), List::<u64>::nil());
             length_list(a1)
         };
         let a3 = 1u64;
@@ -447,6 +447,63 @@ pub fn f10(v0: List<u64>, v1: u64) -> List<u64> {
                 }
                 Ordering::Greater => {
                     List::cons(v2, f10(v3.clone(), v1))
+                }
+            }
+        }
+    }
+}
+
+pub fn f11(v0: List<(u64, List<u64>)>, v1: List<u64>) -> List<u64> {
+    let m28 = v0.clone();
+    match m28.uncons() {
+        None => {
+            v1.clone()
+        }
+        Some((v2, v3)) => {
+            f11(v3.clone(), f12({
+                let (_, h29) = v2.clone();
+                h29
+            }, f13(v1.clone(), {
+                let (h30, _) = v2.clone();
+                h30
+            })))
+        }
+    }
+}
+
+pub fn f12(v0: List<u64>, v1: List<u64>) -> List<u64> {
+    let m31 = v0.clone();
+    match m31.uncons() {
+        None => {
+            v1.clone()
+        }
+        Some((v2, v3)) => {
+            f12(v3.clone(), f13(v1.clone(), v2))
+        }
+    }
+}
+
+pub fn f13(v0: List<u64>, v1: u64) -> List<u64> {
+    let m32 = v0.clone();
+    match m32.uncons() {
+        None => {
+            List::cons(v1, List::<u64>::nil())
+        }
+        Some((v2, v3)) => {
+            let m35 = {
+                let a33 = v1;
+                let a34 = v2;
+                compare(a33, a34)
+            };
+            match m35 {
+                Ordering::Less => {
+                    List::cons(v1, v0.clone())
+                }
+                Ordering::Equal => {
+                    v0.clone()
+                }
+                Ordering::Greater => {
+                    List::cons(v2, f13(v3.clone(), v1))
                 }
             }
         }

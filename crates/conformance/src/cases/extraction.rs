@@ -105,7 +105,7 @@ fn toolchain() -> lexlean::verify::toolchain::Toolchain {
 /// imported, so only the adapter, the probes, the registry check, and the
 /// root lookup run.
 fn run_lean(text: &str) -> (i32, String) {
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let toolchain = toolchain();
     let directory = tempfile::tempdir().expect("tempdir");
     let source = directory.path().join("Extract.lean");
@@ -153,6 +153,10 @@ structure Box where
   value : Nat
   ok : value = value
 def boxed (n : Nat) : Box := { value := n, ok := rfl }
+def parsed (s : String) : Option Int := s.toInt?
+structure Halver where
+  run : Nat → Nat → Nat
+def halver : Halver := ⟨Nat.div⟩
 end Probe.Main
 end
 ";
@@ -160,7 +164,7 @@ end
 /// Build `PROBE_MODULE` in a Lake workspace with pinned Lean and run the
 /// extraction driver for `roots` over it; the parsed raw record.
 fn probe_extraction(roots: &[&str]) -> serde_json::Value {
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let toolchain = toolchain();
     let directory = tempfile::tempdir().expect("tempdir");
     let root = directory.path();
@@ -233,6 +237,7 @@ fn probe_host(
 ) -> Result<lcnf::CompilerInput, Rejection> {
     let roots = vec![format!("Probe.Main.{root}")];
     let report = ModuleReport {
+        bytes: 0,
         module: "Probe.Main".to_owned(),
         roots: vec![lexlean::production::RootReport {
             root: roots[0].clone(),
@@ -244,7 +249,7 @@ fn probe_host(
                     declaration: format!("Probe.Main.{member}"),
                     construct: "declaration.definition".to_owned(),
                     type_arguments: Vec::new(),
-                    path: vec![roots[0].clone()],
+                    path: lexlean::production::CallPath::from_steps([roots[0].clone()]),
                 })
                 .collect(),
             types: std::collections::BTreeMap::new(),
@@ -462,8 +467,9 @@ pub fn run(id: &str) {
             // is a disagreement, not a silent addition.
             rejected(
                 &mutate(&committed_record(), |value| {
-                    constant_mut(value, "Production.Kernel.countdown_decreases")["kind"] =
-                        "definition".into();
+                    let proof = constant_mut(value, "Production.Kernel.countdown_decreases");
+                    proof["kind"] = "definition".into();
+                    proof["original_kind"] = "definition".into();
                 }),
                 "the proof-only dependencies of `Production.Main.halvings` differ",
             );
@@ -487,17 +493,25 @@ pub fn run(id: &str) {
                         }
                     }
                 }),
-                "`instSubNat` is noncomputable or generates no code",
+                "`instSubNat` is noncomputable or has no compiled code",
             );
         }
         // §22.10: every rejection class fails closed with LLV7011, and the
         // adapter classifies real Lean constants of every kind.
         "NE-03" => {
             let record = committed_record();
+            // A project module is imported in full, so a constant of each
+            // kind reports the kind it was declared with unchanged (Lean's
+            // `ConstantKind` has no unsafe definition).
             let untranslated = |kind: &'static str| {
                 mutate(&record, move |value| {
                     let area = constant_mut(value, "Production.Kernel.area");
                     area["kind"] = kind.into();
+                    area["original_kind"] = match kind {
+                        "unsafe-definition" => "definition",
+                        other => other,
+                    }
+                    .into();
                     area["declaration"] = serde_json::Value::Null;
                 })
             };
@@ -562,15 +576,104 @@ pub fn run(id: &str) {
                 }),
                 "unresolved dependency: `instMulNat`",
             );
-            rejected(
-                &mutate(&record, |value| {
+            let external = |edit: fn(&mut serde_json::Value)| {
+                mutate(&record, move |value| {
                     for external in value["externals"].as_array_mut().expect("externals") {
                         if external["name"] == "instMulNat" {
-                            external["kind"] = "axiom".into();
+                            edit(external);
                         }
                     }
+                })
+            };
+            // A constant of Lean's core declared an axiom or an opaque is
+            // refused whatever view exports it.
+            rejected(
+                &external(|external| {
+                    external["kind"] = "axiom".into();
+                    external["original_kind"] = "axiom".into();
                 }),
                 "`instMulNat` is an axiom",
+            );
+            rejected(
+                &external(|external| {
+                    external["kind"] = "opaque".into();
+                    external["original_kind"] = "opaque".into();
+                }),
+                "`instMulNat` is an opaque",
+            );
+            rejected(
+                &external(|external| {
+                    external["kind"] = "axiom".into();
+                    external["original_kind"] = "opaque".into();
+                }),
+                "reports `instMulNat` as an axiom declared as an opaque",
+            );
+            rejected(
+                &external(|external| {
+                    external["kind"] = "unsafe-definition".into();
+                }),
+                "`instMulNat` is an unsafe-definition",
+            );
+            // A definition its module exports as an axiom is the definition
+            // it was declared as only while it is computable and Lean's
+            // compiler holds its code.
+            let weakened = extract(&external(|external| {
+                external["kind"] = "axiom".into();
+                external["generates_code"] = false.into();
+            }))
+            .expect("a definition exported as an axiom is admitted");
+            assert_eq!(
+                weakened,
+                extract(&record).expect("the committed record"),
+                "the admitted definition canonicalizes as the definition it was declared as"
+            );
+            rejected(
+                &external(|external| {
+                    external["kind"] = "axiom".into();
+                    external["generates_code"] = false.into();
+                    external["compiled"] = false.into();
+                }),
+                "`instMulNat` is noncomputable or has no compiled code",
+            );
+            rejected(
+                &external(|external| {
+                    external["kind"] = "axiom".into();
+                    external["generates_code"] = false.into();
+                    external["computable"] = false.into();
+                }),
+                "`instMulNat` is noncomputable or has no compiled code",
+            );
+            rejected(
+                &external(|external| external["compiled"] = false.into()),
+                "`instMulNat` is noncomputable or has no compiled code",
+            );
+            // A project constant reports the kind it was declared with.
+            rejected(
+                &mutate(&record, |value| {
+                    constant_mut(value, "Production.Kernel.area")["original_kind"] =
+                        "axiom".into();
+                }),
+                "reports the project constant `Production.Kernel.area` as a definition declared as an axiom",
+            );
+            // The `borrowed` annotation is an ownership hint LCNF type
+            // equivalence looks through; it canonicalizes away, and any
+            // other metadata is an unsupported form.
+            assert_eq!(
+                extract(&mutate(&record, |value| {
+                    let ty =
+                        &mut constant_mut(value, "Production.Kernel.area")["declaration"]["type"];
+                    let inner = ty["domain"].clone();
+                    ty["domain"] = serde_json::json!({"kind": "borrowed", "type": inner});
+                }))
+                .expect("a borrowed domain"),
+                extract(&record).expect("the committed record"),
+            );
+            rejected(
+                &mutate(&record, |value| {
+                    constant_mut(value, "Production.Kernel.area")["declaration"]["type"] =
+                        serde_json::json!({"kind": "unsupported", "expression": "metadata"});
+                }),
+                "unsupported compiler form: the LCNF type `metadata`",
             );
             rejected(
                 &mutate(&record, |value| {
@@ -652,6 +755,8 @@ pub fn run(id: &str) {
                     "Probe.Main.impossible",
                     "Probe.Main.ordinal",
                     "Probe.Main.boxed",
+                    "Probe.Main.parsed",
+                    "Probe.Main.halver",
                 ]);
                 let fact = |name: &str| {
                     record["constants"]
@@ -671,6 +776,23 @@ pub fn run(id: &str) {
                 assert_eq!(fact("risky")["kind"], "unsafe-definition");
                 assert!(fact("risky")["declaration"].is_null());
                 assert_eq!(fact("external")["declaration"]["value"]["kind"], "extern");
+                // `String.toInt?`'s module does not expose its body, so the
+                // module system exports it as an axiom; Lean records the
+                // definition it was declared as and holds its code.
+                let core = record["externals"]
+                    .as_array()
+                    .expect("externals")
+                    .iter()
+                    .find(|external| external["name"] == "String.toInt?")
+                    .expect("String.toInt? is reported")
+                    .clone();
+                assert_eq!(core["kind"], "axiom", "{core}");
+                assert_eq!(core["original_kind"], "definition", "{core}");
+                assert_eq!(core["compiled"], true, "{core}");
+                // `Nat.div` borrows its arguments, and its LCNF type says so.
+                let mut halver = BTreeSet::new();
+                kinds(&fact("halver")["declaration"], &mut halver);
+                assert!(halver.contains("borrowed"), "{halver:?}");
                 let mut forms = BTreeSet::new();
                 for name in ["greeting", "joined", "impossible", "ordinal", "boxed"] {
                     kinds(&fact(name)["declaration"]["value"], &mut forms);
@@ -712,7 +834,15 @@ pub fn run(id: &str) {
                     probe_host(&record, "viaExternal", &["viaExternal"]),
                     "unsupported compiler form: `Probe.Main.external` is implemented externally",
                 );
-                for root in ["greeting", "joined", "impossible", "ordinal", "boxed"] {
+                for root in [
+                    "greeting",
+                    "joined",
+                    "impossible",
+                    "ordinal",
+                    "boxed",
+                    "parsed",
+                    "halver",
+                ] {
                     let input = probe_host(&record, root, &[root]).unwrap_or_else(|rejection| {
                         panic!("`{root}` canonicalizes: {rejection:?}")
                     });
@@ -722,6 +852,18 @@ pub fn run(id: &str) {
                         &serde_json::from_slice(&input.to_file_bytes()).expect("JSON"),
                     );
                 }
+                // The admitted core definition is handed on as the definition
+                // it was declared as, with its compiled code.
+                let parsed = probe_host(&record, "parsed", &["parsed"]).expect("parsed");
+                let core = parsed
+                    .externals
+                    .iter()
+                    .find(|external| external.name == "String.toInt?")
+                    .expect("String.toInt? is an external");
+                assert_eq!(
+                    (core.kind.as_str(), core.computable, core.generates_code),
+                    ("definition", true, true)
+                );
             }
         }
         // §22.10: the authority interface is closed, pinned, and probed.
@@ -940,6 +1082,7 @@ pub fn run(id: &str) {
             let proof_as_runtime = mutate(&record, |value| {
                 let area = constant_mut(value, "Production.Kernel.area");
                 area["kind"] = "theorem".into();
+                area["original_kind"] = "theorem".into();
                 area["declaration"] = serde_json::Value::Null;
             });
             rejected(

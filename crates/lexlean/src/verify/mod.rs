@@ -23,6 +23,7 @@
 pub mod axiom;
 pub mod child;
 pub mod leanchecker;
+pub(crate) mod lifeline;
 pub mod source_audit;
 pub mod toolchain;
 pub mod workspace;
@@ -743,6 +744,35 @@ where
     Ok(values)
 }
 
+/// The bytes the production roots generate, counted toward
+/// `max_total_source_bytes` as they are generated.
+struct GeneratedBytes {
+    limit: u64,
+    used: u64,
+}
+
+impl GeneratedBytes {
+    fn new(limit: u64) -> Self {
+        Self { limit, used: 0 }
+    }
+
+    /// Count `bytes` generated for `root`, refusing as `LLS8002` when the
+    /// total passes the limit.
+    fn charge(&mut self, bytes: usize, root: &str, what: &str) -> Result<(), Diagnostic> {
+        self.used = self.used.saturating_add(bytes as u64);
+        if self.used > self.limit {
+            return Err(Diagnostic::new(
+                code!("LLS8002"),
+                format!(
+                    "max_total_source_bytes exceeded in phase certificates: configured {}, the programs, crates, and certificates generated so far are {} bytes once root `{root}` has generated {what}",
+                    self.limit, self.used
+                ),
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// Run the complete verification pipeline (§22.1) over a rendered build.
 /// The caller holds the project mutation lock for the whole run (§21.8).
 #[allow(clippy::too_many_lines)]
@@ -754,6 +784,178 @@ pub fn run(
 ) -> Result<VerifyOutcome, LexLeanError> {
     let limits = project.config.limits;
 
+    // Every production root is lowered before any Lean work, and before the
+    // toolchain is touched: the lowered program grows with the size of the types a generic
+    // definition is instantiated at, and a root whose program or certificates
+    // would exceed the project's limits is refused here, as `LLS8002`, before
+    // anything is generated from it (§17.17).
+    let linked = crate::production::lower::linked_modules(checked);
+    // What the roots generate is held until it is written, and a chain of
+    // roots, each calling the one before, makes the closure of the last as
+    // large as the program: the texts of all the roots grow with the square of
+    // their number, each under `max_file_bytes` and none of them above it. The
+    // programs, the crates, and the certificates count toward
+    // `max_total_source_bytes`, once more beyond the sources they are made
+    // from (§17.12 rule 2), as they are made, so that such a chain is refused
+    // when it passes the limit and not when the memory is gone.
+    let mut budget = GeneratedBytes::new(limits.max_total_source_bytes);
+    let mut lowered_roots = Vec::new();
+    for root in crate::production::lower::roots(checked).map_err(fail)? {
+        let lowered = crate::production::lower::lower_root(
+            &linked,
+            &root.module,
+            &root.name,
+            root.report,
+            &limits,
+        )
+        .map_err(fail)?;
+        let program = lowered.program.to_file_bytes();
+        budget
+            .charge(program.len(), &root.report.root, "its lowered program")
+            .map_err(fail)?;
+        lowered_roots.push((lowered, program));
+    }
+    // The certificates are generated here too, from the lowered programs: A,
+    // and B and E for each target the root is eligible for, each under
+    // `max_file_bytes`. The derivations of B grow with the nesting of what
+    // they derive, which no count of the program bounds, so what bounds them
+    // is their generation under the limit; a root whose certificates would
+    // exceed it is refused as `LLS8002` before the toolchain is touched.
+    let semantic_hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+    let mut certified: Vec<crate::production::preserve::CertifiedRoot> = Vec::new();
+    {
+        use crate::production::certificate::certificate;
+        use crate::production::lower::roots;
+        use crate::production::preserve::{CertifiedRendering, CertifiedRoot};
+        use crate::production::rust_cert;
+        for (index, root) in roots(checked).map_err(fail)?.iter().enumerate() {
+            let (lowered, program) = lowered_roots[index].clone();
+            let module = format!("LexLeanPreserve.C{semantic_hex32}.R{index}");
+            let generated = certificate(
+                &linked,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                limits.max_file_bytes,
+            )
+            .map_err(fail)?;
+            // Certificate B: the root's crate in each of its targets
+            // simulates the lowered program.
+            let mut renderings = Vec::new();
+            for row in &root.report.targets {
+                let profile =
+                    crate::calculus::rust::Profile::named(&row.target).ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust profile", row.target)))
+                    })?;
+                let rendered =
+                    crate::calculus::rust::lower(&lowered.program, profile).map_err(|reason| {
+                        fail(internal(format!(
+                            "{} has no rendering in {}: {reason}",
+                            root.report.root, row.target
+                        )))
+                    })?;
+                let module_b = rust_cert::module_for(&module, &row.target).ok_or_else(|| {
+                    fail(internal(format!("`{}` is not a Rust target", row.target)))
+                })?;
+                let certificate_b = rust_cert::certificate_b(
+                &lowered.program,
+                &rendered,
+                &module_b,
+                limits.max_file_bytes,
+            )
+            .map_err(|reason| match reason.strip_prefix(crate::production::lower::LIMIT) {
+                Some(limit) => fail(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "root `{}`: max_file_bytes exceeded in phase certificates: certificate B of its {} rendering: {limit}",
+                        root.report.root, row.target
+                    ),
+                )),
+                None => fail(Diagnostic::new(
+                    code!("LLV7015"),
+                    format!(
+                        "certificate B: `{module_b}`: no derivation relates {} to its {} rendering: {reason}",
+                        root.report.root, row.target
+                    ),
+                )),
+            })?;
+                // Certificate E: A and B composed, for the root's rendering.
+                let module_e = rust_cert::module_for(&format!("{module}.Compose"), &row.target)
+                    .ok_or_else(|| {
+                        fail(internal(format!("`{}` is not a Rust target", row.target)))
+                    })?;
+                let fallible = crate::calculus::rust::fallible_functions(&lowered.program)
+                    .map_err(|reason| fail(internal(reason)))?
+                    .get(lowered.entry() as usize)
+                    .copied()
+                    .ok_or_else(|| fail(internal("a lowered program without its entry")))?;
+                let composed = crate::production::certificate::certificate_e(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    &lowered,
+                    &module,
+                    &module_b,
+                    &module_e,
+                    fallible,
+                    limits.max_file_bytes,
+                )
+                .map_err(fail)?;
+                renderings.push(CertifiedRendering {
+                    target: row.target.clone(),
+                    certificate: certificate_b.into_certificate(),
+                    composed,
+                    crate_text: crate::calculus::rust::ast::print(&rendered),
+                    entry: lowered.entry(),
+                });
+            }
+            for generated in std::iter::once(&generated).chain(
+                renderings
+                    .iter()
+                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed]),
+            ) {
+                if generated.text.len() as u64 > limits.max_file_bytes {
+                    return Err(fail(Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "max_file_bytes exceeded in phase certificates: configured {}, `{}` is {} bytes",
+                        limits.max_file_bytes,
+                        generated.module,
+                        generated.text.len()
+                    ),
+                )));
+                }
+            }
+            for rendering in &renderings {
+                budget
+                    .charge(
+                        rendering.certificate.text.len()
+                            + rendering.composed.text.len()
+                            + rendering.crate_text.len(),
+                        &root.report.root,
+                        "its certificates B and E and its crates",
+                    )
+                    .map_err(fail)?;
+            }
+            budget
+                .charge(generated.text.len(), &root.report.root, "its certificate A")
+                .map_err(fail)?;
+            certified.push(CertifiedRoot {
+                root: root.report.root.clone(),
+                targets: root
+                    .report
+                    .targets
+                    .iter()
+                    .map(|row| row.target.clone())
+                    .collect(),
+                certificate: generated,
+                program,
+                renderings,
+            });
+        }
+    }
     // Stage 4: toolchain preflight (§22.2).
     let mut toolchain: Toolchain = toolchain::preflight(&limits).map_err(fail)?;
     let toolchain_bin = toolchain.root.join("bin");
@@ -761,7 +963,6 @@ pub fn run(
     // Stage 5: Lake workspace preflight (§10.4) and module-name conflicts
     // (§18.8, §18.9).
     workspace::preflight(project, lock).map_err(fail)?;
-    let semantic_hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
     let probe_name = format!("LexLeanProbe.P{semantic_hex32}");
     let audit_name = format!("LexLeanAudit.A{semantic_hex32}");
     let mut all_names: Vec<String> = build
@@ -875,6 +1076,9 @@ pub fn run(
             format!("{verified_root}: {io_error}"),
         ))
     })?;
+    // The mutation lock of the project is held (§21.8), so no other `verify`
+    // stages here: what an interrupted or killed run left behind is stale.
+    remove_stale_staging(verified_root.as_std_path());
     let staging = tempfile::Builder::new()
         .prefix(".staging-")
         .tempdir_in(verified_root.as_std_path())
@@ -1578,6 +1782,305 @@ pub fn run(
         process_records.push(record);
     }
 
+    // Stage 12b: certificate A (§17.17). Every production root is lowered
+    // and certified; the certificates compile beside the shipped library and
+    // calculus modules, are replayed, and their axioms audited exactly.
+    let mut preservation_row: Option<Json> = None;
+    if !production_reports.is_empty() {
+        use crate::production::preserve;
+        // Lean's first error, from its severity on: the location before it
+        // names the staging directory, which is not part of any diagnostic.
+        let first_error = |output: &str| lean_error(output);
+        let rejected = |module: &str, output: &str, place: &str| {
+            Diagnostic::new(
+                code!("LLV7013"),
+                format!(
+                    "certificate A: `{module}` was rejected{place}: {}",
+                    first_error(output)
+                ),
+            )
+        };
+        let certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .map(|root| root.certificate.clone())
+            .collect();
+        let rendered_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.certificate.clone())
+            })
+            .collect();
+        let composed_certificates: Vec<crate::production::certificate::Certificate> = certified
+            .iter()
+            .flat_map(|root| {
+                root.renderings
+                    .iter()
+                    .map(|rendering| rendering.composed.clone())
+            })
+            .collect();
+        let staged_certificates: Vec<crate::production::certificate::Certificate> = certificates
+            .iter()
+            .chain(&rendered_certificates)
+            .chain(&composed_certificates)
+            .cloned()
+            .collect();
+        let is_b = |module: &str| {
+            rendered_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
+        let is_e = |module: &str| {
+            composed_certificates
+                .iter()
+                .any(|certificate| certificate.module == module)
+        };
+        // Where a rejection lies: the declaration of the certificate Lean's
+        // first error is in, and the root it certifies.
+        let place = |module: &str, output: &str, text: &str| {
+            let declaration = preserve::failing_declaration(text, output)
+                .map(|declaration| format!(" in `{declaration}`"))
+                .unwrap_or_default();
+            let root = certified
+                .iter()
+                .find(|root| module.starts_with(&root.certificate.module))
+                .map(|root| format!(" of root `{}`", root.root))
+                .unwrap_or_default();
+            format!("{declaration}{root}")
+        };
+        let reject = |module: &str, output: &str, exit_code: i32, text: &str| {
+            let place = place(module, output, text);
+            if let Some(exhausted) =
+                resource_death(module, exit_code, output, text.len() as u64, &limits)
+            {
+                exhausted
+            } else if is_e(module) {
+                Diagnostic::new(
+                    code!("LLV7016"),
+                    format!(
+                        "certificate E: `{module}` was rejected{place}: {}",
+                        first_error(output)
+                    ),
+                )
+            } else if is_b(module) {
+                Diagnostic::new(
+                    code!("LLV7015"),
+                    format!(
+                        "certificate B: `{module}` was rejected{place}: {}",
+                        first_error(output)
+                    ),
+                )
+            } else {
+                rejected(module, output, &place)
+            }
+        };
+        let generated_modules: Vec<String> = build
+            .modules
+            .iter()
+            .map(|module| module.lean_module.clone())
+            .collect();
+        let stage = preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
+        let preserve_src = staging_utf8.join("preserve-src");
+        let preserve_oleans = staging_utf8.join("preserve-oleans");
+        let preserve_path =
+            std::env::join_paths([preserve_oleans.as_std_path(), olean_root.as_std_path()])
+                .map_err(|error| fail(internal(format!("the preservation search path: {error}"))))?
+                .to_string_lossy()
+                .into_owned();
+        for file in stage
+            .environment
+            .iter()
+            .chain(&stage.certificates)
+            .chain([&stage.audit])
+        {
+            write_staged(
+                staging.path(),
+                &format!("preserve-src/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+        }
+        let compile = |file: &preserve::StagedFile, output: bool| {
+            let source = preserve_src.join(&file.path);
+            let mut argv = vec![
+                "env".to_owned(),
+                "lean".to_owned(),
+                "-R".to_owned(),
+                preserve_src.to_string(),
+            ];
+            if output {
+                let olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
+                if let Some(parent) = olean.parent() {
+                    std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                        Diagnostic::new(code!("LLB6003"), format!("staging oleans: {io_error}"))
+                    })?;
+                }
+                argv.push("-o".to_owned());
+                argv.push(olean.to_string());
+            }
+            argv.push(source.to_string());
+            run_child(
+                &ChildSpec {
+                    tool: "lean",
+                    module: Some(file.module.clone()),
+                    program: &toolchain.lake.path,
+                    executable_sha256: toolchain.lean.sha256,
+                    argv,
+                    cwd: &workspace_root,
+                    extra_env: vec![("LEAN_PATH".to_owned(), preserve_path.clone())],
+                    home: ChildHome::Toolchain {
+                        toolchain_bin: &toolchain_bin,
+                    },
+                },
+                &limits,
+                &normalizer,
+            )
+        };
+        for file in &stage.environment {
+            let record = compile(file, true).map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                let combined = format!("{}{}", record.stdout, record.stderr);
+                if let Some(exhausted) = resource_death(
+                    &file.module,
+                    record.exit_code,
+                    &combined,
+                    file.text.len() as u64,
+                    &limits,
+                ) {
+                    return Err(fail(exhausted));
+                }
+                return Err(fail(Diagnostic::new(
+                    code!("LLV7014"),
+                    format!(
+                        "preservation environment: `{}` does not compile silently under the pinned Lean: {}",
+                        file.module,
+                        first_error(&format!("{}{}", record.stdout, record.stderr))
+                    ),
+                )));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/preserve/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            process_records.push(record);
+        }
+        for file in &stage.certificates {
+            let record = compile(file, true).map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                let combined = format!("{}{}", record.stdout, record.stderr);
+                return Err(fail(reject(
+                    &file.module,
+                    &combined,
+                    record.exit_code,
+                    &file.text,
+                )));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/preserve/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            process_records.push(record);
+            let replay = leanchecker::run_leanchecker(
+                &toolchain,
+                &file.module,
+                &preserve_path,
+                &workspace_root,
+                &limits,
+                &normalizer,
+            )
+            .map_err(fail)?;
+            if replay.exit_code != 0 {
+                let combined = format!("{}{}", replay.stdout, replay.stderr);
+                return Err(fail(reject(
+                    &file.module,
+                    &combined,
+                    replay.exit_code,
+                    &file.text,
+                )));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/leanchecker/{}.json", file.module),
+                &replay.to_json().to_file_bytes(),
+            )?;
+            process_records.push(replay);
+        }
+        let audit_record = compile(&stage.audit, false).map_err(fail)?;
+        let audit_output = format!("{}{}", audit_record.stdout, audit_record.stderr);
+        if audit_record.exit_code != 0 {
+            if let Some(exhausted) = resource_death(
+                &stage.audit.module,
+                audit_record.exit_code,
+                &audit_output,
+                stage.audit.text.len() as u64,
+                &limits,
+            ) {
+                return Err(fail(exhausted));
+            }
+            return Err(fail(rejected(&stage.audit.module, &audit_output, "")));
+        }
+        preserve::classify_audit(
+            &audit_output,
+            &certificates,
+            &rendered_certificates,
+            &composed_certificates,
+        )
+        .map_err(fail)?;
+        write_staged(
+            staging.path(),
+            &format!("process/preserve/{}.json", stage.audit.module),
+            &audit_record.to_json().to_file_bytes(),
+        )?;
+        process_records.push(audit_record);
+        for file in &stage.certificates {
+            write_staged(
+                staging.path(),
+                &format!("preserve/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+        }
+        // The program each root's certificates are about and the crate each
+        // target's certificates B and E are about, published beside them and
+        // bound by `preservation.json`: what a user compiles is rendered from
+        // the first by the second's printer, and certificate E states nothing
+        // of the export wrappers or the package around it (§17.17).
+        for (index, root) in certified.iter().enumerate() {
+            write_staged(
+                staging.path(),
+                &format!("preserve/program/R{index}.json"),
+                &root.program,
+            )?;
+            for rendering in &root.renderings {
+                write_staged(
+                    staging.path(),
+                    &format!("preserve/crate/R{index}.{}.rs", rendering.target),
+                    rendering.crate_text.as_bytes(),
+                )?;
+            }
+        }
+        write_staged(
+            staging.path(),
+            "preserve/audit.txt",
+            audit_output.as_bytes(),
+        )?;
+        let bytes = preserve::record(&certified).to_file_bytes();
+        write_staged(staging.path(), "preserve/preservation.json", &bytes)?;
+        preservation_row = Some(Json::object(vec![
+            ("byte_length", Json::from_usize(bytes.len())),
+            ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
+        ]));
+        let _ = std::fs::remove_dir_all(preserve_src.as_std_path());
+        let _ = std::fs::remove_dir_all(preserve_oleans.as_std_path());
+    }
+
     // Stage 13: optional configured PDF rendering (§19.7): one row and two
     // process records per module.
     let mut pdf_rows: Vec<Json> = Vec::new();
@@ -1790,6 +2293,9 @@ pub fn run(
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
     }
+    if let Some(row) = preservation_row {
+        body_fields.push(("preservation", row));
+    }
     if !pdf_rows.is_empty() {
         body_fields.push(("pdf", Json::Arr(pdf_rows)));
     }
@@ -1841,6 +2347,25 @@ pub fn run(
     })
 }
 
+/// Remove the staging directories that earlier runs left in `verified_root`:
+/// a run that was interrupted (or killed, which no handler can catch) never
+/// removes its own, and each is megabytes of generated sources. Only what this
+/// tool owns is touched: a real directory (a link is left alone, and never
+/// followed) directly under the root whose name is the staging prefix. The
+/// caller holds the project's mutation lock, which every staging run holds
+/// too, so none of these is in use.
+fn remove_stale_staging(verified_root: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(verified_root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let is_staging = entry.file_name().to_string_lossy().starts_with(".staging-");
+        if is_staging && entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            let _ = std::fs::remove_dir_all(entry.path());
+        }
+    }
+}
+
 /// A helper for tests: the reserved probe and audit module names for a
 /// semantic ID (§18.8, §18.9).
 #[must_use]
@@ -1854,6 +2379,38 @@ pub fn reserved_module_names(semantic_id: Sha256Digest) -> (String, String) {
 
 #[cfg(test)]
 mod tests {
+    /// What an interrupted run left in the verified root is removed by the next
+    /// one, and nothing else is: not a file, not a link (nor what it points
+    /// to), not a directory of another name.
+    #[test]
+    fn stale_staging_directories_are_removed_and_nothing_else() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let root = directory.path().join("verified");
+        let elsewhere = directory.path().join("elsewhere");
+        std::fs::create_dir_all(root.join(".staging-AbC123/inner")).expect("mkdir");
+        std::fs::write(root.join(".staging-AbC123/inner/M.lean"), "x").expect("write");
+        std::fs::create_dir_all(root.join(".staging-second")).expect("mkdir");
+        std::fs::create_dir_all(root.join("0123abcd")).expect("published");
+        std::fs::write(root.join(".staging-file"), "not a directory").expect("write");
+        std::fs::create_dir_all(&elsewhere).expect("mkdir");
+        std::fs::write(elsewhere.join("keep"), "kept").expect("write");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&elsewhere, root.join(".staging-link")).expect("symlink");
+        super::remove_stale_staging(&root);
+        assert!(!root.join(".staging-AbC123").exists());
+        assert!(!root.join(".staging-second").exists());
+        assert!(root.join("0123abcd").is_dir(), "a published tree stays");
+        assert!(root.join(".staging-file").is_file(), "a file is not ours");
+        assert!(elsewhere.join("keep").is_file(), "a link is not followed");
+        #[cfg(unix)]
+        assert!(
+            std::fs::symlink_metadata(root.join(".staging-link")).is_ok(),
+            "a link is left alone"
+        );
+        // A root that does not exist yet is not an error.
+        super::remove_stale_staging(&directory.path().join("absent"));
+    }
+
     use std::sync::{mpsc, Mutex};
     use std::time::Duration;
 
@@ -1879,5 +2436,171 @@ mod tests {
         })
         .expect("the independent jobs run together");
         assert_eq!(values, vec![7, 3]);
+    }
+}
+
+/// Lean's first error with its continuation, from its severity on and
+/// bounded: the location before it names the staging directory, which is not
+/// part of any diagnostic, and the lines after it carry the mismatch it
+/// reports, which say which construct the rejection concerns.
+fn lean_error(output: &str) -> String {
+    const LINES: usize = 12;
+    const BYTES: usize = 1500;
+    let lines: Vec<&str> = output.lines().collect();
+    let Some(start) = lines.iter().position(|line| line.contains("error")) else {
+        return "no error was reported".to_owned();
+    };
+    let first = lines[start];
+    let mut out = first[first.find("error").unwrap_or(0)..].trim().to_owned();
+    for line in lines[start + 1..].iter().take(LINES - 1) {
+        out.push('\n');
+        out.push_str(line.trim_end());
+    }
+    if out.len() > BYTES {
+        let mut cut = BYTES;
+        while !out.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        out.truncate(cut);
+        out.push_str(" ...");
+    }
+    out
+}
+
+/// How much of `max_file_bytes` a module has to take before a heartbeat or
+/// recursion failure of the pinned Lean on it is the module's weight and not
+/// the certificate's content: a quarter of it. Lean's budgets are fixed per
+/// declaration, and a certificate whose text is a small part of what the
+/// project allows is one that the limits' own estimate says fits; when Lean
+/// gives up on it, the certificate is what it gave up on.
+const HEAVY_FRACTION: u64 = 4;
+
+/// A pinned Lean that ran out of a resource while checking a generated
+/// certificate, as opposed to one that rejected it.
+///
+/// Dying with no message, running out of memory, and overflowing the stack
+/// say nothing of the term being checked: they are a limit (`LLS8002`).
+/// A heartbeat or recursion-depth failure is Lean's verdict on a particular
+/// declaration, and a wrong certificate produces it as readily as an
+/// oversized one (a mutated proof that makes `isDefEq` loop is the common
+/// case), so it is a limit only when the module is heavy: its `text_len` is at
+/// least a quarter of `max_file_bytes`. Below that it is a rejection of the
+/// certificate (`LLV7013`, `LLV7015`, `LLV7016`), reported with the
+/// declaration and Lean's error.
+#[must_use]
+pub fn resource_death(
+    module: &str,
+    exit_code: i32,
+    output: &str,
+    text_len: u64,
+    limits: &crate::config::Limits,
+) -> Option<Diagnostic> {
+    const UNCONDITIONAL: [&str; 3] = ["out of memory", "stack overflow", "Stack overflow"];
+    const BUDGETS: [&str; 3] = [
+        "maximum number of heartbeats",
+        "(deterministic) timeout",
+        "maximum recursion depth",
+    ];
+    let heavy = text_len.saturating_mul(HEAVY_FRACTION) >= limits.max_file_bytes;
+    let marked = UNCONDITIONAL
+        .iter()
+        .find(|marker| output.contains(**marker))
+        .or_else(|| {
+            BUDGETS
+                .iter()
+                .find(|marker| heavy && output.contains(**marker))
+        });
+    if marked.is_none() && exit_code != -1 {
+        return None;
+    }
+    let cause = marked.map_or("it was killed by the system", |marker| *marker);
+    let weight = if heavy {
+        format!(
+            "the generated module is {text_len} bytes, at least a quarter of max_file_bytes {}, and is beyond what the machine checks",
+            limits.max_file_bytes
+        )
+    } else {
+        format!("the generated module is {text_len} bytes and the machine could not check it",)
+    };
+    Some(Diagnostic::new(
+        code!("LLS8002"),
+        format!("the pinned Lean exhausted a resource checking `{module}` ({cause}): {weight}"),
+    ))
+}
+
+#[cfg(test)]
+mod resource_tests {
+    use super::{lean_error, resource_death};
+
+    fn limits() -> crate::config::Limits {
+        crate::config::Limits {
+            max_file_bytes: 4_194_304,
+            max_total_source_bytes: 67_108_864,
+            max_primitive_atoms: 2_000_000,
+            max_token_lattice_edges: 4_000_000,
+            max_parse_states: 4_000_000,
+            max_ir_nodes: 2_000_000,
+            max_scope_depth: 1024,
+            max_import_depth: 128,
+            max_diagnostics: 256,
+            max_child_output_bytes: 16_777_216,
+            child_timeout_ms: 300_000,
+        }
+    }
+
+    const HEARTBEATS: &str = "R0.lean:12:3: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (200000) has been reached";
+
+    /// A pinned Lean that was killed with no message, ran out of memory, or
+    /// overflowed its stack says nothing of the certificate: a limit, whatever
+    /// the size of the module; a type error never is.
+    #[test]
+    fn a_death_with_no_verdict_is_a_limit_and_a_type_error_is_not() {
+        assert!(resource_death("M.R0", 1, "error: out of memory", 100, &limits()).is_some());
+        assert!(resource_death("M.R0", 1, "Stack overflow detected.", 100, &limits()).is_some());
+        assert!(resource_death("M.R0", -1, "", 100, &limits()).is_some());
+        assert!(resource_death(
+            "M.R0",
+            1,
+            "R0.lean:3:1: error: Application type mismatch",
+            4_000_000,
+            &limits()
+        )
+        .is_none());
+    }
+
+    /// Lean's heartbeat verdict on a certificate is a rejection of it when
+    /// the module is small against the limit, as it is for a wrong
+    /// certificate whose proof makes `isDefEq` loop (the lowering defect
+    /// planted in `Coverage.Prims.fixedMiddle`, 472 bytes of Lean output that
+    /// are this one, is certificate A's `LLV7013`); it is a limit when the
+    /// module is a quarter of `max_file_bytes` or more.
+    #[test]
+    fn a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module() {
+        assert!(resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none());
+        assert!(resource_death("M.R0", 1, HEARTBEATS, 1_048_575, &limits()).is_none());
+        let diagnostic =
+            resource_death("M.R0", 1, HEARTBEATS, 1_048_576, &limits()).expect("a limit");
+        assert_eq!(diagnostic.code.as_str(), "LLS8002");
+        assert!(diagnostic
+            .message
+            .contains("at least a quarter of max_file_bytes"));
+        let recursion = "R0.lean:4:1: error: maximum recursion depth has been reached";
+        assert!(resource_death("M.R0", 1, recursion, 5_000, &limits()).is_none());
+        assert!(resource_death("M.R0", 1, recursion, 2_000_000, &limits()).is_some());
+    }
+
+    /// The first error is reported with the lines that say what it
+    /// concerns, bounded.
+    #[test]
+    fn the_first_error_carries_its_continuation_within_a_bound() {
+        let long = format!(
+            "x.lean:1:1: warning: w\nx.lean:2:2: error: Application type mismatch: The argument\n  hr\nhas type\n{}",
+            "  y\n".repeat(400)
+        );
+        let text = lean_error(&long);
+        assert!(text.starts_with("error: Application type mismatch"));
+        assert!(text.contains("has type"));
+        assert!(text.len() <= 1600);
+        assert_eq!(lean_error("fine"), "no error was reported");
     }
 }

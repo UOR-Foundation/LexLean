@@ -4,6 +4,7 @@ public import RecursiveData.Types
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace RecursiveData.Main
 
 @[expose] public def treeSize : (tree : RecursiveData.Types.Tree (Nat)) -> Nat

@@ -444,7 +444,7 @@ pub fn observe(case: &Case) -> Result<Observed, String> {
             support::with_env(&[("ELAN_HOME", Some(&home_text))], run_all)?;
         }
         None => {
-            let _guard = support::env_lock();
+            let _guard = support::env_shared();
             run_all()?;
         }
     }
@@ -622,6 +622,13 @@ fn has_drive_path(line: &str) -> bool {
 pub fn check(dir: &Utf8Path) -> Result<Observed, String> {
     let case = load_case(dir)?;
     let observed = observe(&case)?;
+    compare_with_committed(dir, &observed)?;
+    Ok(observed)
+}
+
+/// The observed run of the fixture in `dir` compared with its committed
+/// expectation.
+fn compare_with_committed(dir: &Utf8Path, observed: &Observed) -> Result<(), String> {
     let committed = read_expected(dir)?;
     for ((name, expected), (_, actual)) in committed.files().iter().zip(observed.expected.files()) {
         if expected != &actual {
@@ -640,6 +647,41 @@ pub fn check(dir: &Utf8Path) -> Result<Observed, String> {
             ));
         }
     }
+    Ok(())
+}
+
+/// The run of the fixture in `dir`, made once for the process.
+///
+/// A fixture that verifies a project under a substituted toolchain takes
+/// minutes and the environment lock exclusively, and two cases read the same
+/// runs (the conformance of the fixtures as a whole and the preservation
+/// cases that name six of them), so the second to ask is given the first's
+/// observation instead of making the suite wait for the run again.
+pub fn observe_shared(dir: &Utf8Path) -> Result<&'static Observed, String> {
+    type Cell = std::sync::OnceLock<Result<Observed, String>>;
+    static CELLS: std::sync::Mutex<std::collections::BTreeMap<String, &'static Cell>> =
+        std::sync::Mutex::new(std::collections::BTreeMap::new());
+    let cell: &'static Cell = {
+        let mut cells = CELLS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        cells
+            .entry(dir.as_str().to_owned())
+            .or_insert_with(|| Box::leak(Box::new(Cell::new())))
+    };
+    cell.get_or_init(|| observe(&load_case(dir)?))
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+/// [`check`] over the shared observation of [`observe_shared`].
+///
+/// # Errors
+///
+/// The first difference, naming the file.
+pub fn check_shared(dir: &Utf8Path) -> Result<&'static Observed, String> {
+    let observed = observe_shared(dir)?;
+    compare_with_committed(dir, observed)?;
     Ok(observed)
 }
 

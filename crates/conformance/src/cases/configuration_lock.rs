@@ -1226,16 +1226,19 @@ pub(crate) fn run(id: &str) {
                 .iter()
                 .map(|module| module.lean_text.clone())
                 .collect();
-            // Language 1.2 exposes the portable runtime (§17.12, rule 6) and
-            // makes proposition-valued definitions reducible (§17.12,
-            // models, rule 11); undoing exactly those attributes leaves the
-            // 1.1 text.
+            // Language 1.2 exposes the portable runtime (§17.12, rule 6), makes
+            // proposition-valued definitions reducible (§17.12, models, rule
+            // 11), and silences the constructor-name linter (rule 10); undoing
+            // exactly those leaves the 1.1 text.
             let unexposed: Vec<String> = migrated_lean
                 .iter()
                 .map(|text| {
                     // Only a proposition-valued definition is reducible; any
                     // other reducible definition is left to fail the comparison.
                     let mut text = text
+                        // 1.2 modules silence the linter that reports a
+                        // parameter named like a nullary constructor.
+                        .replace("set_option linter.constructorNameAsVariable false\n", "")
                         .replace("@[expose, noinline] public def ", "@[noinline] public def ")
                         .split_inclusive('\n')
                         .map(|line| {

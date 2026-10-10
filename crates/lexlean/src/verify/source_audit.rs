@@ -255,6 +255,14 @@ fn forbidden_words() -> [String; 6] {
     ]
 }
 
+/// Whether an identifier segment is spelled like a word the audit forbids
+/// (`native_decide`, `admit`, `IO`, ...). A user's name of that spelling is
+/// valid, so the backend quotes it, and a quoted segment is a different
+/// token to this audit.
+pub(crate) fn forbids_segment(segment: &str) -> bool {
+    segment == "IO" || forbidden_words().iter().any(|word| word == segment)
+}
+
 /// The commands whose purpose is textual output (§18.2).
 fn forbidden_commands() -> [String; 5] {
     [

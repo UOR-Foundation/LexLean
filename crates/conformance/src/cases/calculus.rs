@@ -274,7 +274,7 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     let mut source = String::from(EVALUATOR);
     for case in cases {
         source.push_str(&format!(
-            "#eval IO.println (\"FIXTURE {} \" ++ showOutcome Compiler.{}.{}Run)\n",
+            "#eval IO.println (\"FIXTURE {} \" ++ showOutcome LexLeanTarget.{}.{}Run)\n",
             case.fixture.name,
             fixtures::fixture_module(&case.fixture.name),
             fixtures::identifier(&case.fixture.name)
@@ -287,7 +287,7 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     // needs, so the published generated sources are compiled again here by
     // the same pinned Lean, in import order.
     let compiled = scratch.path().join("out");
-    std::fs::create_dir_all(compiled.join("Compiler")).expect("output directory");
+    std::fs::create_dir_all(compiled.join("LexLeanTarget")).expect("output directory");
     let search = std::env::join_paths([compiled.clone(), library]).expect("LEAN_PATH");
     for module in [
         "TargetSyntax",
@@ -303,8 +303,12 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     ] {
         let built = std::process::Command::new(&lean)
             .arg("-o")
-            .arg(compiled.join("Compiler").join(format!("{module}.olean")))
-            .arg(format!("Compiler/{module}.lean"))
+            .arg(
+                compiled
+                    .join("LexLeanTarget")
+                    .join(format!("{module}.olean")),
+            )
+            .arg(format!("LexLeanTarget/{module}.lean"))
             // Lean names a module by its path relative to the working
             // directory.
             .current_dir(verified.join("modules").as_std_path())
@@ -362,9 +366,9 @@ fn evaluator_disagreements(evaluated: &BTreeMap<String, Json>, cases: &[Case]) -
 }
 
 /// Prints a denotation outcome in the fixtures' exact JSON form.
-const EVALUATOR: &str = r#"import Compiler.TargetFixtures
-import Compiler.ReasoningFixtures
-open Compiler.TargetSyntax Compiler.TargetSemantics
+const EVALUATOR: &str = r#"import LexLeanTarget.TargetFixtures
+import LexLeanTarget.ReasoningFixtures
+open LexLeanTarget.TargetSyntax LexLeanTarget.TargetSemantics
 
 def hexDigit (n : Nat) : Char := if n < 10 then Char.ofNat (48 + n) else Char.ofNat (87 + n)
 def byteHex (b : UInt8) : String := String.ofList [hexDigit (b.toNat / 16), hexDigit (b.toNat % 16)]
@@ -445,7 +449,7 @@ fn planted_verification() -> &'static Vec<String> {
             "src/TargetFixtures.lex.tex",
             &fixtures::fixtures_module(&[wrong_sum, insert]),
         );
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         let error = project.verify_fails_with("LLV7002");
         error
             .diagnostics

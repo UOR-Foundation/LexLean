@@ -1,0 +1,78 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{fixedSmall}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int8) (b : Int8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (Option (Int8)) ((Prod (Option (Int8)) ((Prod (Option (Int8)) ((Prod (Option (Int8)) (Option (Int8)))))))))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.checkedAdd (a) (b) : Option (Int8)), ((LexLeanRuntime.checkedSubtract (a) (b) : Option (Int8)), ((LexLeanRuntime.checkedMultiply (a) (b) : Option (Int8)), ((LexLeanRuntime.checkedQuotient (a) (b) : Option (Int8)), (LexLeanRuntime.checkedNegate (a) : Option (Int8))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fixedMiddle}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int16) (b : Int32)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (Option (Int16)) ((Prod (Option (Int32)) ((Prod (Option (Int32)) (Bool))))))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.checkedMultiply (a) (a) : Option (Int16)), ((LexLeanRuntime.checkedAdd (b) ((-7 : Int32)) : Option (Int32)), ((LexLeanRuntime.checkedConvert (a) : Option (Int32)), (LexLeanRuntime.equal (b) ((3 : Int32)) : Bool))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fixedWide}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int64) (b : Int64) (c : UInt64)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (Option (Int64)) ((Prod (Option (Int64)) ((Prod (Option (Int64)) ((Prod (Option (Int64)) ((Prod (Option (Int64)) (Option (UInt64)))))))))))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.checkedAddInt64 (a) (b) : Option (Int64)), ((LexLeanRuntime.checkedSubtractInt64 (a) (b) : Option (Int64)), ((LexLeanRuntime.checkedMultiplyInt64 (a) (b) : Option (Int64)), ((LexLeanRuntime.checkedQuotientInt64 (a) (b) : Option (Int64)), ((LexLeanRuntime.checkedNegateInt64 (a) : Option (Int64)), (LexLeanRuntime.checkedAdd (c) ((1 : UInt64)) : Option (UInt64)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{bits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : UInt16) (b : UInt16) (s : UInt32)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (UInt16) ((Prod (UInt16) ((Prod (UInt16) ((Prod (UInt16) ((Prod (Option (UInt16)) ((Prod (Option (UInt16)) (Bool))))))))))))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.bitAnd (a) (b) : UInt16), ((LexLeanRuntime.bitOr (a) (b) : UInt16), ((LexLeanRuntime.bitXor (a) (b) : UInt16), ((LexLeanRuntime.bitNot (a) : UInt16), ((LexLeanRuntime.shiftLeft (a) (s) : Option (UInt16)), ((LexLeanRuntime.shiftRight (a) ((3 : UInt32)) : Option (UInt16)), (LexLeanRuntime.equal (a) (b) : Bool)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{conversions}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int) (b : Int8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{(Prod (Option (UInt16)) (Option (Int64)))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.checkedConvert (a) : Option (UInt16)), (LexLeanRuntime.checkedConvert (b) : Option (Int64)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{sequences}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (b : ByteArray) (i : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (List (Nat)) ((Prod (ByteArray) ((Prod (Nat) ((Prod (Option (Nat)) ((Prod (Option (UInt8)) ((Prod (Option (List (Nat))) ((Prod (Option (ByteArray)) ((Prod (Bool) (Bool))))))))))))))))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.append (xs) ((1 :: ([] : List (Nat)))) : List (Nat)), ((LexLeanRuntime.append (b) (ByteArray.mk \#[10]) : ByteArray), (((LexLeanRuntime.length (xs) : Nat) + (LexLeanRuntime.length (b) : Nat)), ((LexLeanRuntime.index (xs) (i) : Option (Nat)), ((LexLeanRuntime.index (b) (i) : Option (UInt8)), ((LexLeanRuntime.slice (xs) (i) (2) : Option (List (Nat))), ((LexLeanRuntime.slice (b) (0) (i) : Option (ByteArray)), ((LexLeanRuntime.equal (b) (ByteArray.mk \#[]) : Bool), (LexLeanRuntime.equal ((LexLeanRuntime.equal (i) (3) : Bool)) (true) : Bool)))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimals}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Option (Int)) (Option (UInt32)))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.parseDecimal (s) : Option (Int)), (LexLeanRuntime.parseDecimal (s) : Option (UInt32)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{formats}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Int) (b : Int8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{(Prod (String) (String))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.formatDecimal (a) : String), (LexLeanRuntime.formatDecimal (b) : String))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{text}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : String) (d : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (ByteArray) ((Prod (Option (String)) ((Prod (Ordering) ((Prod (Option (List (String))) ((Prod (String) ((Prod (Nat) (Bool))))))))))))}.\par
+\noindent Definition: \texttt{(let raw : ByteArray := (LexLeanRuntime.utf8Encode (s) : ByteArray); (raw, ((LexLeanRuntime.utf8Decode (raw) : Option (String)), ((LexLeanRuntime.compareBytes (raw) (ByteArray.mk \#[0, 255]) : Ordering), ((LexLeanRuntime.splitExact (s) (d) ((4 : UInt32)) : Option (List (String))), ((LexLeanRuntime.join ((s :: ("x\textbackslash{}"y" :: ([] : List (String))))) (d) : String), ((LexLeanRuntime.length (s) : Nat), ((LexLeanRuntime.equal (s) (d) : Bool) \&\& (LexLeanRuntime.equal ((LexLeanRuntime.compareBytes (raw) (raw) : Ordering)) ((LexLeanRuntime.compareBytes (ByteArray.mk \#[]) (ByteArray.mk \#[1]) : Ordering)) : Bool)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\end{document}

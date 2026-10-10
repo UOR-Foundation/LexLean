@@ -40,17 +40,19 @@ struct Render<'a> {
 /// The generated name of well-founded hypothesis `index`. Semantic names
 /// begin with an ASCII letter and an unused binder lowers as `_name`, so no
 /// source binder can capture a name beginning with two underscores.
-fn hypothesis(index: usize) -> String {
+pub(crate) fn hypothesis(index: usize) -> String {
     format!("__decrease{index}")
 }
 
 // Semantic names are validated data, not Lean tokens. Quoting a reserved
 // segment preserves its exact Name identity instead of narrowing the source
 // language to whatever the pinned parser happens to leave unreserved.
-fn identifier(name: &str) -> String {
+pub(crate) fn identifier(name: &str) -> String {
     name.split('.')
         .map(|segment| {
-            if super::lean_tokens::is_reserved(segment) {
+            if super::lean_tokens::is_reserved(segment)
+                || crate::verify::source_audit::forbids_segment(segment)
+            {
                 format!("«{segment}»")
             } else {
                 segment.to_owned()
@@ -63,7 +65,7 @@ fn identifier(name: &str) -> String {
 // Lean's pinned parser accepts four-digit Unicode escapes, not Rust's
 // zero escape or braced Unicode debug spelling. Escape characters, never
 // substrings, so a literal backslash followed by `0` remains literal data.
-fn string_literal(value: &str) -> String {
+pub(crate) fn string_literal(value: &str) -> String {
     use std::fmt::Write as _;
 
     let mut output = String::from("\"");
@@ -138,7 +140,7 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
     }
 }
 
-fn term_uses(term: &SemanticTerm, local: &str) -> bool {
+pub(crate) fn term_uses(term: &SemanticTerm, local: &str) -> bool {
     let pair = |left: &SemanticTerm, right: &SemanticTerm| {
         term_uses(left, local) || term_uses(right, local)
     };
@@ -267,7 +269,7 @@ fn term_uses(term: &SemanticTerm, local: &str) -> bool {
 
 /// The Lean pattern of a `ContractViolation` or `ReasoningFailure`
 /// constructor: the pair of Booleans it is represented by (§17.12).
-fn violation_pattern(constructor: &MemberRef) -> Option<&'static str> {
+pub(crate) fn violation_pattern(constructor: &MemberRef) -> Option<&'static str> {
     if constructor.module.is_some() {
         return None;
     }
@@ -2364,8 +2366,16 @@ pub fn render_lean(
     // project still bounds child elapsed time and captured output, and every
     // declaration is elaborated, replayed, and axiom-audited normally.
     text.push_str(
-        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nnamespace ",
+        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\n",
     );
+    // A parameter named like a nullary constructor of its own type (`zero :
+    // Nat`, `red : Color`) is a valid binder, and Lean's linter reports it as
+    // resembling the constructor. The constructors of a module are never
+    // written bare, so nothing is hidden by silencing it.
+    if module.spec == "lexlean/semantic-module/2" {
+        text.push_str("set_option linter.constructorNameAsVariable false\n");
+    }
+    text.push_str("namespace ");
     text.push_str(&identifier(&document.lean_module));
     text.push('\n');
     if runtime {

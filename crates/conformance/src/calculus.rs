@@ -2738,6 +2738,33 @@ fn renderer_cases() -> Vec<Case> {
         vec![natv(3)],
         200,
     ));
+    // A conditional whose branches are the Boolean literals, on a condition
+    // that can overflow, in the tail of a function that can: the rendering
+    // is the condition itself, its failure returned as the function's.
+    out.push(case(
+        "fallible-condition-value",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    vec![nat_t()],
+                    Ty::Bool,
+                    cond(call(1, vec![v(0)]), boolean(true), boolean(false)),
+                ),
+                function(
+                    vec![nat_t()],
+                    Ty::Bool,
+                    p(
+                        Prim::NatLt,
+                        vec![p(Prim::NatAdd, vec![v(0), nat(1)]), nat(5)],
+                    ),
+                ),
+            ],
+        ),
+        0,
+        vec![natv(3)],
+        200,
+    ));
     out
 }
 
@@ -3563,6 +3590,7 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     // change to committed bytes.
     out.extend(crate::rust_packages::files());
     out.extend(crate::calculus_source::files());
+    out.extend(crate::rust_source::files());
     out
 }
 
@@ -3578,6 +3606,13 @@ const GENERATED_DIRECTORIES: [&str; 3] = ["compiler/fixtures", "compiler/gnaf", 
 /// Returns the first generated file whose committed bytes differ, or a
 /// committed fixture no generator produces.
 pub fn check(root: &Path, write: bool) -> Result<usize, String> {
+    // A drifted shipped module also changes the compiler-semantics ID every
+    // provenance binds, so it is compared first, where its report names it.
+    let shipped = if write {
+        0
+    } else {
+        shipped_modules(root, false)?
+    };
     let mut files = files();
     files.extend(crate::gnaf::files());
     for directory in GENERATED_DIRECTORIES {
@@ -3616,5 +3651,39 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
             }
         }
     }
-    Ok(files.len())
+    let shipped = if write {
+        shipped_modules(root, true)?
+    } else {
+        shipped
+    };
+    Ok(files.len() + shipped)
+}
+
+/// §17.17: the calculus modules shipped for certificates are byte-equal to
+/// the compiler project's golden modules; `write` copies the golden.
+///
+/// # Errors
+///
+/// Returns the first shipped module that differs or is missing.
+pub fn shipped_modules(root: &Path, write: bool) -> Result<usize, String> {
+    use lexlean::production::preserve::{module_path, MODULES_DIR, TARGET_MODULES};
+    for module in TARGET_MODULES {
+        let golden = root
+            .join("compiler/expected/build/modules")
+            .join(module_path(module));
+        let shipped = root.join(MODULES_DIR).join(module_path(module));
+        let bytes =
+            std::fs::read(&golden).map_err(|error| format!("{}: {error}", golden.display()))?;
+        if write {
+            std::fs::write(&shipped, &bytes)
+                .map_err(|error| format!("{}: {error}", shipped.display()))?;
+        } else if std::fs::read(&shipped).ok().as_deref() != Some(bytes.as_slice()) {
+            return Err(format!(
+                "{} differs from the compiler golden {}; run `cargo xtask check-calculus --write`",
+                shipped.display(),
+                golden.display()
+            ));
+        }
+    }
+    Ok(TARGET_MODULES.len())
 }

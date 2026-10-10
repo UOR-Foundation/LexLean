@@ -786,6 +786,48 @@ pub(crate) fn run(id: &str) {
                 "RecursiveData",
                 "binder `RecursiveData` in `Outcome` is spelled like the module prefix `RecursiveData`",
             );
+            // A declaration spelled like a name the backend writes without
+            // qualification would be that name in every later signature of
+            // its module (`error: type expected, got (Int : Nat -> Nat)`), and
+            // quoting cannot help: linking refuses it, whatever it declares.
+            // A name that the generated-Lean audit forbids but nothing
+            // captures is not one of them.
+            for name in lexlean::ir::semantic::BACKEND_BARE_NAMES {
+                for kind in ["definition", "structure", "inductive"] {
+                    let declaration = match kind {
+                        "definition" => serde_json::json!({
+                            "body": {"kind": "add", "left": {"kind": "var", "name": "n"}, "right": {"kind": "nat", "value": "1"}},
+                            "executable": true, "kind": "definition", "name": name,
+                            "parameters": [{"name": "n", "type": {"kind": "nat"}}],
+                            "result": {"kind": "nat"},
+                        }),
+                        "structure" => serde_json::json!({
+                            "fields": [{"name": "f", "type": {"kind": "nat"}}],
+                            "kind": "structure", "name": name, "parameters": [], "type_parameters": [],
+                        }),
+                        _ => serde_json::json!({
+                            "constructors": [{"fields": [], "name": "k"}],
+                            "kind": "inductive", "name": name, "parameters": [], "type_parameters": [],
+                        }),
+                    };
+                    let copy = P::negative("declaration-lean-name");
+                    let data = serde_json::json!({"declarations": [declaration], "spec": "lexlean/semantic-module/2"});
+                    copy.write(
+                        "src/Main.lex.tex",
+                        &format!(
+                            "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{data}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+                        ),
+                    );
+                    let error = copy.check_fails_with("LLT4001");
+                    assert!(
+                        error
+                            .to_string()
+                            .contains(&format!("declaration name `{name}` is ")),
+                        "a {kind} named `{name}`: {error}"
+                    );
+                    copy.assert_no_backend_output();
+                }
+            }
             // A self-referential structure.
             mutate(
                 r#"{"name":"value","type":{"kind":"parameter","name":"Item"}}"#,
@@ -849,6 +891,80 @@ pub(crate) fn run(id: &str) {
                 !at_limit.contains("through module `Types`"),
                 "the exact charge of `Types` is admitted: {at_limit}"
             );
+            // A constructor or a field spelled like a member that Lean
+            // declares for every type is declared twice (`constant has
+            // already been declared 'T.rec'`): linking refuses it, for each
+            // such name and the numbered ones of nested and mutual types.
+            let member_project = |declaration: serde_json::Value, root: &str| {
+                let copy = P::negative("declaration-lean-name");
+                let data = serde_json::json!({"declarations": [declaration], "spec": "lexlean/semantic-module/2"});
+                let _ = root;
+                copy.write(
+                    "src/Main.lex.tex",
+                    &format!(
+                        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{data}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+                    ),
+                );
+                copy
+            };
+            let numbered = ["rec_1", "rec_2", "below_1", "brecOn_1"];
+            for name in lexlean::ir::semantic::LEAN_GENERATED_MEMBERS
+                .iter()
+                .copied()
+                .chain(numbered)
+            {
+                let constructor = member_project(
+                    serde_json::json!({
+                        "constructors": [{"fields": [], "name": name}, {"fields": [], "name": "other"}],
+                        "kind": "inductive", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "constructor",
+                );
+                // `mk` is the constructor of every structure and nothing
+                // special for an inductive.
+                if name == "mk" {
+                    constructor.check_ok();
+                } else {
+                    let error = constructor.check_fails_with("LLT4001");
+                    assert!(
+                        error.to_string().contains(&format!(
+                            "constructor name `{name}` is spelled like a member"
+                        )),
+                        "a constructor `{name}`: {error}"
+                    );
+                }
+                let field = member_project(
+                    serde_json::json!({
+                        "fields": [{"name": name, "type": {"kind": "nat"}}],
+                        "kind": "structure", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "field",
+                );
+                let error = field.check_fails_with("LLT4001");
+                assert!(
+                    error
+                        .to_string()
+                        .contains(&format!("field name `{name}` is spelled like a member")),
+                    "a field `{name}`: {error}"
+                );
+            }
+            // The names that are not members are free: `rec_`, `recur`,
+            // `mk` as a constructor, `toCtorIdx_`.
+            for name in ["rec_", "recur", "rec1", "casesOn_", "ctorIdx0", "below1"] {
+                member_project(
+                    serde_json::json!({
+                        "constructors": [{"fields": [], "name": name}],
+                        "kind": "inductive", "name": "T", "parameters": [], "type_parameters": [],
+                    }),
+                    "constructor",
+                )
+                .check_ok();
+            }
+            pattern_binders_named_like_constructors_are_refused();
+            if support::lean_backed("DF-12") {
+                lean_generated_members_are_refused();
+                lean_root_constructors_are_the_refused_pattern_binders();
+            }
         }
         // §17.12: structural recursion and induction over a recursive
         // inductive use exactly its direct recursive fields.
@@ -1442,3 +1558,189 @@ features = []
 [render]
 math = "(seq (token mathbb) (group (token blackboard-n)))"
 "#;
+
+/// A pattern binder is read as the constructor it is spelled like when Lean
+/// resolves that spelling without a namespace, and as a variable otherwise:
+/// the first are refused at `check` (a binder `none` in the branch
+/// `Option.some` of an `option (option nat)` made Lean report `Missing cases`
+/// only when verified), the others are not.
+fn pattern_binders_named_like_constructors_are_refused() {
+    for name in lexlean::ir::semantic::PATTERN_CONSTRUCTOR_NAMES {
+        let project = P::negative("binder-pattern-constructor-name");
+        project.edit("src/Main.lex.tex", "\"none\"", &format!("\"{name}\""));
+        project.relock();
+        let error = project.check_fails_with("LLT4001");
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("pattern binder `{name}`")),
+            "{error}"
+        );
+    }
+    // The constructors of the matched types, spelled as binders, are
+    // variables (`zero`, `nil`, `cons`, `none` as a parameter).
+    let project = P::negative("binder-pattern-constructor-name");
+    project.write("src/Main.lex.tex", POSITIVE_PATTERN_BINDERS);
+    project.relock();
+    project.check_ok();
+}
+
+/// A module whose pattern binders and parameters are spelled like
+/// constructors Lean does not resolve bare, and whose parameter is spelled
+/// `none`: all variables.
+const POSITIVE_PATTERN_BINDERS: &str = r#"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["zero"],"body":{"kind":"var","name":"zero"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"n"}},"executable":true,"kind":"definition","name":"pred","parameters":[{"name":"n","type":{"kind":"nat"}}],"recursive_argument":"n","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"List.nil"}},{"binders":["nil","cons"],"body":{"kind":"var","name":"nil"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"first","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"kind":"nat"}},{"body":{"kind":"var","name":"none"},"executable":true,"kind":"definition","name":"keep","parameters":[{"name":"none","type":{"kind":"nat"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+\end{semanticmodule}
+\end{lexlean}
+"#;
+
+/// The constructors the pinned Lean resolves without a namespace, from the
+/// root, are exactly the refused pattern binders (with `true` and `false`,
+/// refused as built-in names): every constructor of `Init` whose last
+/// component, written bare, resolves to a constructor.
+fn lean_root_constructors_are_the_refused_pattern_binders() {
+    let project = P::copy_example("production");
+    let loaded = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
+    let toolchain =
+        lexlean::verify::toolchain::preflight(&loaded.config.limits).expect("the pinned toolchain");
+    let source = "import Lean
+#eval show Lean.Meta.MetaM Unit from do
+  let env ← Lean.getEnv
+  let mut seen : Std.HashSet String := {}
+  let mut hits : Array String := #[]
+  for (n, ci) in env.constants.toList do
+    if let .ctorInfo _ := ci then
+      let .str _ last := n | continue
+      if seen.contains last then continue
+      seen := seen.insert last
+      let r ← Lean.resolveGlobalName (Lean.Name.mkSimple last)
+      for (rn, fields) in r do
+        if fields.isEmpty then
+          if let some (.ctorInfo _) := env.find? rn then
+            let m := (env.getModuleIdxFor? rn).map (fun i => env.header.moduleNames[i.toNat]!)
+            if m.any (fun m => m.getRoot == `Init) then hits := hits.push last
+  IO.println s!\"ROOT {hits.qsort (· < ·)}\"
+";
+    let output = {
+        let _guard = support::env_shared();
+        let directory = tempfile::tempdir().expect("tempdir");
+        let path = directory.path().join("Roots.lean");
+        std::fs::write(&path, source).expect("write");
+        std::process::Command::new(toolchain.lean.path.as_std_path())
+            .arg(&path)
+            .current_dir(directory.path())
+            .output()
+            .expect("lean runs")
+    };
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    let line = text
+        .lines()
+        .find_map(|line| line.strip_prefix("ROOT #["))
+        .unwrap_or_else(|| panic!("the query answered: {text} {:?}", output.stderr));
+    let mut found: Vec<&str> = line.trim_end_matches(']').split(", ").collect();
+    found.sort_unstable();
+    let mut refused: Vec<&str> = lexlean::ir::semantic::PATTERN_CONSTRUCTOR_NAMES.to_vec();
+    refused.extend(["false", "true"]);
+    refused.sort_unstable();
+    assert_eq!(
+        found, refused,
+        "the constructors Lean resolves bare are the pattern binders linking refuses"
+    );
+    // A pattern binder that is a variable verifies with the real Lean.
+    let project = P::negative("binder-pattern-constructor-name");
+    project.write("src/Main.lex.tex", POSITIVE_PATTERN_BINDERS);
+    project.relock();
+    support::verify_ok(&project);
+}
+
+/// The members Lean declares for a type besides the user's constructors and
+/// fields are all among those linking refuses: sample inductives (recursive,
+/// nested, mutual, higher-order, enumerations) and structures are declared
+/// in the pinned Lean, and the first-level names it holds under each are
+/// listed.
+fn lean_generated_members_are_refused() {
+    let project = P::copy_example("production");
+    let loaded = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
+    let toolchain =
+        lexlean::verify::toolchain::preflight(&loaded.config.limits).expect("the pinned toolchain");
+    let source = "import Lean
+open Lean Elab Command Meta
+inductive T1 | a | b (x : Nat)
+inductive T2 | a | b (n : Nat) (t : T2)
+inductive T3 (α : Type) | a | b (x : α) (t : T3 α) (l : List (T3 α))
+structure S1 where
+  x : Nat
+structure S2 (α : Type) where
+  x : α
+  y : List α
+mutual
+inductive M1 | a | b (m : M2)
+inductive M2 | c (m : M1) | d
+end
+inductive T4 | a (n : Nat) | b (f : Nat → T4)
+structure S3 where
+  x : Nat
+  h : x = x
+inductive E1 | a | b | c
+def generated (ts : List Name) : CoreM Unit := do
+  let env ← getEnv
+  for t in ts do
+    let mut names : Array String := #[]
+    for (n, _) in env.constants.toList do
+      if n.getPrefix == t then names := names.push n.getString!
+    IO.println s!\"{t}: {names.qsort (· < ·)}\"
+#eval generated [`T1, `T2, `T3, `S1, `S2, `M1, `M2, `T4, `S3, `E1]
+";
+    let _guard = support::env_shared();
+    let directory = tempfile::tempdir().expect("tempdir");
+    let path = directory.path().join("Generated.lean");
+    std::fs::write(&path, source).expect("write");
+    let output = std::process::Command::new(toolchain.lean.path.as_std_path())
+        .arg(&path)
+        .current_dir(directory.path())
+        .output()
+        .expect("lean runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    // The user's own members of each sample.
+    let own: std::collections::BTreeMap<&str, &[&str]> = [
+        ("T1", &["a", "b"][..]),
+        ("T2", &["a", "b"][..]),
+        ("T3", &["a", "b"][..]),
+        ("S1", &["x"][..]),
+        ("S2", &["x", "y"][..]),
+        ("M1", &["a", "b"][..]),
+        ("M2", &["c", "d"][..]),
+        ("T4", &["a", "b"][..]),
+        ("S3", &["x", "h"][..]),
+        ("E1", &["a", "b", "c"][..]),
+    ]
+    .into_iter()
+    .collect();
+    let mut seen = 0;
+    for line in text.lines() {
+        let Some((type_name, names)) = line.split_once(": #[") else {
+            continue;
+        };
+        let names = names.trim_end_matches(']');
+        let user = own[type_name];
+        for name in names.split(", ") {
+            if user.contains(&name) || name.starts_with('_') {
+                continue;
+            }
+            let field = type_name.starts_with('S');
+            assert!(
+                lexlean::ir::semantic::is_lean_generated_member(name, true)
+                    || lexlean::ir::semantic::is_lean_generated_member(name, field),
+                "Lean declares `{type_name}.{name}`, which a constructor or field may still be named: {text}"
+            );
+            seen += 1;
+        }
+    }
+    assert!(
+        seen > 60,
+        "the samples are read ({seen} generated names): {text}"
+    );
+}

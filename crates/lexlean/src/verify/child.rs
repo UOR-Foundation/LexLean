@@ -14,6 +14,7 @@ use crate::artifact::content_id::Sha256Digest;
 use crate::code;
 use crate::config::Limits;
 use crate::diagnostic::Diagnostic;
+use crate::verify::lifeline;
 
 /// The §22.7 normalizer: ordered longest-prefix replacements.
 #[derive(Debug, Clone, Default)]
@@ -298,6 +299,178 @@ pub fn resolve_on_path(name: &str) -> Result<Utf8PathBuf, Diagnostic> {
     ))
 }
 
+/// Stop a child and everything it started: the whole process group it leads
+/// (unix) or its process tree (windows), then the child itself, and wait
+/// until nothing of the group is left running, so that a timeout ends the
+/// work and not only the process that was waited for.
+///
+/// The group is signalled directly (`rustix`, no `kill` executable and no
+/// `PATH`), and a failure is returned and reported, never swallowed: a
+/// timeout that could not end the processes says so.
+fn stop(child: &mut std::process::Child) -> Result<(), String> {
+    let id = child.id();
+    #[cfg(unix)]
+    {
+        use rustix::io::Errno;
+        use rustix::process::{kill_process_group, test_kill_process_group, Pid, Signal};
+        let Some(group) = i32::try_from(id).ok().and_then(Pid::from_raw) else {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(format!("process {id} has no usable group number"));
+        };
+        let signalled = kill_process_group(group, Signal::KILL);
+        let _ = child.kill();
+        let _ = child.wait();
+        // No such group means nothing of it was left to signal.
+        if let Err(errno) = signalled {
+            if errno != Errno::SRCH {
+                return Err(format!(
+                    "the process group {id} could not be signalled: {}",
+                    std::io::Error::from(errno)
+                ));
+            }
+        }
+        // The group exists while any process of it does, and a zombie is one:
+        // under a PID 1 that never reaps (the shipped image runs `lexlean` as
+        // PID 1) the killed grandchildren stay zombies for good. A zombie is
+        // ended, so what counts is a member that is not one, and the zombies
+        // this process is the parent of are reaped.
+        for _ in 0..200 {
+            if test_kill_process_group(group) == Err(Errno::SRCH) {
+                return Ok(());
+            }
+            if let Some(members) = group_members(group.as_raw_pid()) {
+                let mut alive = false;
+                for member in members {
+                    if !member.zombie {
+                        alive = true;
+                    } else if member.parent == std::process::id() {
+                        if let Some(pid) = i32::try_from(member.pid).ok().and_then(Pid::from_raw) {
+                            let _ = rustix::process::waitpid(
+                                Some(pid),
+                                rustix::process::WaitOptions::NOHANG,
+                            );
+                        }
+                    }
+                }
+                if !alive {
+                    return Ok(());
+                }
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        Err(format!(
+            "processes of group {id} still existed 2000 ms after SIGKILL"
+        ))
+    }
+    #[cfg(windows)]
+    {
+        let ended = Command::new("taskkill")
+            .args(["/PID", &id.to_string(), "/T", "/F"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        let _ = child.kill();
+        let _ = child.wait();
+        taskkill_outcome(ended)
+    }
+}
+
+/// What `taskkill` did, as the outcome of ending a process tree: a tool that
+/// could not be run, and one that ran and failed (access denied, no such
+/// process tree), are both said, never taken for success.
+#[cfg(any(windows, test))]
+fn taskkill_outcome(ended: std::io::Result<std::process::ExitStatus>) -> Result<(), String> {
+    match ended {
+        Ok(status) if status.success() => Ok(()),
+        Ok(status) => Err(format!("taskkill failed: {status}")),
+        Err(io_error) => Err(format!("taskkill could not be run: {io_error}")),
+    }
+}
+
+/// A process of a group, as the process table shows it.
+#[cfg(unix)]
+struct Member {
+    pid: u32,
+    parent: u32,
+    zombie: bool,
+}
+
+/// The processes of a process group, read from `/proc` where the host has it
+/// and from `ps` where it does not (macOS); `None` when neither can be read.
+#[cfg(unix)]
+fn group_members(group: i32) -> Option<Vec<Member>> {
+    if std::path::Path::new("/proc/self").exists() {
+        let mut members = Vec::new();
+        for entry in std::fs::read_dir("/proc").ok()?.flatten() {
+            let Some(pid) = entry
+                .file_name()
+                .to_str()
+                .and_then(|n| n.parse::<u32>().ok())
+            else {
+                continue;
+            };
+            // A process that ended meanwhile has no `stat` any more.
+            let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) else {
+                continue;
+            };
+            // `pid (comm) S ppid pgrp ...`: `comm` may hold spaces and
+            // parentheses, so the fields are counted from the last `)`.
+            let mut fields = stat.rsplit_once(')')?.1.split_whitespace();
+            let state = fields.next()?;
+            let parent = fields.next()?.parse::<u32>().ok()?;
+            let pgrp = fields.next()?.parse::<i32>().ok()?;
+            if pgrp == group {
+                members.push(Member {
+                    pid,
+                    parent,
+                    zombie: state.starts_with('Z'),
+                });
+            }
+        }
+        return Some(members);
+    }
+    // An absolute path: nothing is searched for on `PATH`.
+    let ps = ["/bin/ps", "/usr/bin/ps"]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file())?;
+    let output = Command::new(ps)
+        .args(["-axo", "pid=,ppid=,pgid=,stat="])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let mut members = Vec::new();
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        let mut fields = line.split_whitespace();
+        let (Some(pid), Some(parent), Some(pgid), Some(state)) =
+            (fields.next(), fields.next(), fields.next(), fields.next())
+        else {
+            continue;
+        };
+        if pgid.parse::<i32>().ok() == Some(group) {
+            members.push(Member {
+                pid: pid.parse().ok()?,
+                parent: parent.parse().ok()?,
+                zombie: state.starts_with('Z'),
+            });
+        }
+    }
+    Some(members)
+}
+
+/// How a diagnostic reports that the children could not be ended.
+fn left_running(outcome: Result<(), String>) -> String {
+    match outcome {
+        Ok(()) => String::new(),
+        Err(reason) => format!("; the processes it started may still be running: {reason}"),
+    }
+}
+
 /// Run one child under the allow-list environment (§25.4), the timeout,
 /// and the output cap (§25.5). Every arithmetic step over the configured
 /// limits is checked; a limit failure is `LLS8002` naming the limit, the
@@ -341,10 +514,18 @@ pub fn run(
     for (key, value) in &spec.extra_env {
         command.env(key, value);
     }
-    let mut child = command.spawn().map_err(|io_error| {
+    // The child leads a process group of its own, so that what it starts
+    // (`lake` starts `lean`) can be stopped with it: a kill of the leader
+    // alone leaves the grandchild running with nothing to end it.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let (mut child, tracked) = lifeline::spawn(&mut command).map_err(|reason| {
         Diagnostic::new(
             code!("LLV7001"),
-            format!("{}: cannot start `{}`: {io_error}", spec.tool, spec.program),
+            format!("{}: `{}`: {reason}", spec.tool, spec.program),
         )
     })?;
     let cap = limits.max_child_output_bytes;
@@ -353,11 +534,14 @@ pub fn run(
     let read_limit = cap.saturating_add(1);
     let (Some(mut stdout_pipe), Some(mut stderr_pipe)) = (child.stdout.take(), child.stderr.take())
     else {
-        let _ = child.kill();
-        let _ = child.wait();
+        let ended = stop(&mut child);
         return Err(Diagnostic::new(
             code!("LLI9001"),
-            format!("{}: the child pipes were not attached", spec.tool),
+            format!(
+                "{}: the child pipes were not attached{}",
+                spec.tool,
+                left_running(ended)
+            ),
         ));
     };
     let stdout_reader = std::thread::spawn(move || {
@@ -379,33 +563,42 @@ pub fn run(
     let started = Instant::now();
     let timeout = Duration::from_millis(limits.child_timeout_ms);
     let deadline = started.checked_add(timeout);
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break status,
-            Ok(None) => {
-                let now = Instant::now();
-                if deadline.is_none_or(|deadline| now >= deadline) {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    let elapsed_ms = now.saturating_duration_since(started).as_millis();
-                    return Err(Diagnostic::new(
+    let status = {
+        // Registered for as long as the child may be running.
+        let _tracked = tracked;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status,
+                Ok(None) => {
+                    let now = Instant::now();
+                    if deadline.is_none_or(|deadline| now >= deadline) {
+                        let ended = stop(&mut child);
+                        let elapsed_ms = now.saturating_duration_since(started).as_millis();
+                        return Err(Diagnostic::new(
                         code!("LLS8002"),
                         format!(
-                            "child_timeout_ms exceeded by `{}` in phase {}: configured {}, observed {} ms",
+                            "child_timeout_ms exceeded by `{}` in phase {}: configured {}, observed {} ms{}",
                             spec.tool,
                             spec.module.as_deref().unwrap_or("verify"),
                             limits.child_timeout_ms,
-                            elapsed_ms
+                            elapsed_ms,
+                            left_running(ended)
+                        ),
+                    ));
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Err(io_error) => {
+                    let ended = stop(&mut child);
+                    return Err(Diagnostic::new(
+                        code!("LLV7001"),
+                        format!(
+                            "waiting for {}: {io_error}{}",
+                            spec.program,
+                            left_running(ended)
                         ),
                     ));
                 }
-                std::thread::sleep(Duration::from_millis(10));
-            }
-            Err(io_error) => {
-                return Err(Diagnostic::new(
-                    code!("LLV7001"),
-                    format!("waiting for {}: {io_error}", spec.program),
-                ));
             }
         }
     };
@@ -442,4 +635,237 @@ pub fn run(
         stderr: normalizer.normalize(&stderr_bytes),
         executable_sha256: spec.executable_sha256,
     })
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    #[cfg(unix)]
+    use super::{run, ChildHome, ChildSpec, Normalizer};
+    #[cfg(unix)]
+    use crate::artifact::content_id::Sha256Digest;
+    #[cfg(unix)]
+    use camino::Utf8Path;
+
+    #[cfg(unix)]
+    fn limits(timeout_ms: u64) -> crate::config::Limits {
+        crate::config::Limits {
+            max_file_bytes: 4_194_304,
+            max_total_source_bytes: 67_108_864,
+            max_primitive_atoms: 2_000_000,
+            max_token_lattice_edges: 4_000_000,
+            max_parse_states: 4_000_000,
+            max_ir_nodes: 2_000_000,
+            max_scope_depth: 1024,
+            max_import_depth: 128,
+            max_diagnostics: 256,
+            max_child_output_bytes: 16_777_216,
+            child_timeout_ms: timeout_ms,
+        }
+    }
+
+    /// The processes whose command line holds `marker`, from the process
+    /// table: `/proc` where the host has one and `ps` otherwise (macOS), so
+    /// the case is not vacuous there; a host with neither is an error.
+    #[cfg(unix)]
+    fn running(marker: &str) -> Vec<String> {
+        if std::path::Path::new("/proc/self").exists() {
+            return std::fs::read_dir("/proc")
+                .into_iter()
+                .flatten()
+                .flatten()
+                .filter_map(|entry| {
+                    let pid = entry.file_name().to_str()?.parse::<u32>().ok()?;
+                    let command = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
+                    let command = String::from_utf8_lossy(&command).replace('\0', " ");
+                    // A zombie is not running; nothing is left of it to end.
+                    let status = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+                    let zombie = status.rsplit(") ").next()?.starts_with('Z');
+                    (command.contains(marker) && !zombie).then(|| format!("{pid}: {command}"))
+                })
+                .collect();
+        }
+        let ps = ["/bin/ps", "/usr/bin/ps"]
+            .into_iter()
+            .find(|path| std::path::Path::new(path).is_file())
+            .expect("the host has neither /proc nor ps, so the process table cannot be read");
+        let output = std::process::Command::new(ps)
+            .args(["-axo", "pid=,stat=,command="])
+            .output()
+            .expect("ps runs");
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter_map(|line| {
+                let mut fields = line.split_whitespace();
+                let pid = fields.next()?.parse::<u32>().ok()?;
+                let state = fields.next()?;
+                let command = fields.collect::<Vec<_>>().join(" ");
+                (command.contains(marker) && !state.starts_with('Z'))
+                    .then(|| format!("{pid}: {command}"))
+            })
+            .collect()
+    }
+
+    /// A group that could not be ended is reported as such, in the words of
+    /// the timeout diagnostic, and an ended one adds nothing to it.
+    #[test]
+    fn a_group_that_could_not_be_ended_is_reported() {
+        assert_eq!(super::left_running(Ok(())), "");
+        let text = super::left_running(Err("EPERM".to_owned()));
+        assert!(
+            text.contains("may still be running") && text.contains("EPERM"),
+            "{text}"
+        );
+    }
+
+    /// A child that starts a long-running grandchild, as `lake` starts `lean`,
+    /// and outlives the timeout: after the timeout is reported neither is
+    /// running (the grandchild used to be orphaned, to run at full speed and
+    /// to grow, with nothing left to end it).
+    #[test]
+    fn a_timeout_ends_what_the_child_started() {
+        timeout_scenario();
+    }
+
+    /// Process groups are a unix notion; elsewhere the child is stopped with
+    /// its process tree by other means, which this test does not read.
+    #[cfg(not(unix))]
+    fn timeout_scenario() {}
+
+    #[cfg(unix)]
+    fn timeout_scenario() {
+        use std::os::unix::fs::PermissionsExt;
+        let marker = format!("lexlean-grandchild-{}", std::process::id());
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("lake");
+        std::fs::write(
+            &script,
+            format!("#!/bin/sh\nsleep 1000.{} &\nwait\n", std::process::id()),
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "lake",
+            module: Some(marker.clone()),
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let normalizer = Normalizer::default();
+        let sleeping = format!("sleep 1000.{}", std::process::id());
+        let error = run(&spec, &limits(700), &normalizer).expect_err("the child outlives 700 ms");
+        assert!(
+            error.message.contains("child_timeout_ms exceeded"),
+            "{error:?}"
+        );
+        let left = running(&sleeping);
+        // Do not leave it behind if the assertion is about to fail.
+        for line in &left {
+            if let Some(pid) = line
+                .split(':')
+                .next()
+                .and_then(|pid| pid.parse::<i32>().ok())
+                .and_then(rustix::process::Pid::from_raw)
+            {
+                let _ = rustix::process::kill_process(pid, rustix::process::Signal::KILL);
+            }
+        }
+        assert!(
+            !error.message.contains("may still be running"),
+            "the group was ended, so the report does not say otherwise: {error:?}"
+        );
+        assert!(left.is_empty(), "a timeout left running: {left:?}");
+    }
+
+    /// The exit status `code` as the platform makes one.
+    fn exit_status(code: i32) -> std::process::ExitStatus {
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::ExitStatusExt;
+            std::process::ExitStatus::from_raw(code << 8)
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::ExitStatusExt;
+            std::process::ExitStatus::from_raw(u32::try_from(code).expect("code"))
+        }
+    }
+
+    /// A `taskkill` that ran and failed is reported, like one that could not
+    /// be run; only a success is an ended tree.
+    #[test]
+    fn a_failing_taskkill_is_reported() {
+        assert_eq!(super::taskkill_outcome(Ok(exit_status(0))), Ok(()));
+        let failed = super::taskkill_outcome(Ok(exit_status(128))).expect_err("exit 128");
+        assert!(failed.contains("taskkill failed"), "{failed}");
+        let missing = super::taskkill_outcome(Err(std::io::Error::other("absent")))
+            .expect_err("could not be run");
+        assert!(missing.contains("could not be run"), "{missing}");
+    }
+
+    /// A process group in which one process is a zombie that nothing reaps,
+    /// as the grandchildren of a killed `lake` are under a PID 1 that never
+    /// reaps (the shipped image runs `lexlean` as PID 1): the zombie is
+    /// ended, so the stop neither waits two seconds for it nor says that
+    /// processes may still be running. The zombie here is a child of this
+    /// process, which `stop` reaps.
+    #[test]
+    fn a_zombie_in_the_group_counts_as_ended() {
+        #[cfg(unix)]
+        zombie_scenario();
+    }
+
+    #[cfg(unix)]
+    fn zombie_scenario() {
+        use std::os::unix::process::CommandExt;
+        use std::process::{Command, Stdio};
+        use std::time::{Duration, Instant};
+        let mut leader = Command::new("sleep")
+            .arg(format!("1000.{}", std::process::id()))
+            .process_group(0)
+            .stdin(Stdio::null())
+            .spawn()
+            .expect("sleep starts");
+        let group = i32::try_from(leader.id()).expect("pid");
+        let mut zombie = Command::new("true")
+            .process_group(group)
+            .stdin(Stdio::null())
+            .spawn()
+            .expect("true starts");
+        // Not vacuous: the table shows a zombie in the group before the stop.
+        let give_up = Instant::now() + Duration::from_secs(10);
+        let seen = loop {
+            let members = super::group_members(group)
+                .expect("the host has /proc or ps, so the process table can be read");
+            if members.iter().any(|member| member.zombie) {
+                break members;
+            }
+            if Instant::now() >= give_up {
+                let _ = leader.kill();
+                let _ = leader.wait();
+                panic!("the exited child never showed as a zombie of the group");
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        };
+        assert!(seen.iter().any(|member| !member.zombie), "the leader runs");
+        let started = Instant::now();
+        let outcome = super::stop(&mut leader);
+        assert_eq!(outcome, Ok(()), "a zombie is not running");
+        assert!(
+            started.elapsed() < Duration::from_millis(1500),
+            "the stop did not wait for the zombie: {:?}",
+            started.elapsed()
+        );
+        // Nothing of the group is left once the zombie is reaped too. The
+        // test reaps it itself if `stop` has not: where the group signal
+        // skips zombies (macOS) `stop` returns before reaping, and that is
+        // not what is under test (`stop` reaps it on Linux, and `wait` then
+        // finds nothing left, which is not an error here).
+        drop(zombie.wait());
+        assert!(super::group_members(group).is_some_and(|members| members.is_empty()));
+    }
 }

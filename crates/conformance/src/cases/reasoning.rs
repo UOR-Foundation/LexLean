@@ -129,7 +129,7 @@ fn refused_by_lean(id: &str, names: &[&str]) {
     if !support::lean_backed(id) {
         return;
     }
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     for name in names {
         let project = P::negative(&format!("reasoning-{name}"));
         project.check_ok();
@@ -274,7 +274,7 @@ fn evaluated_guards(value: &Json) -> Vec<String> {
 fn verified_reasoning() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         let project = P::copy_example(EXAMPLE);
         let outcome = project
             .engine()
@@ -341,7 +341,7 @@ fn root<'a>(report: &'a Json, name: &str) -> &'a Json {
 /// Run the pinned Lean on `text` as a standalone module in `project`'s
 /// workspace: whether it is accepted, and what it printed.
 fn lean_run(project: &P, name: &str, text: &str) -> (bool, String) {
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let inner = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
     let toolchain =
         lexlean::verify::toolchain::preflight(&inner.config.limits).expect("the pinned toolchain");
@@ -959,7 +959,7 @@ fn rs_05() {
                 "Reasoning.Clinic.Triage.explained",
             ],
         );
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         reversed.verify_fails_with("LLV7002");
     }
 }
@@ -2739,7 +2739,7 @@ fn planted_verification() -> &'static Vec<String> {
             "src/ReasoningFixtures.lex.tex",
             &crate::calculus::reasoning_fixtures_module(&planted_transcriptions()),
         );
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         project
             .verify_fails_with("LLV7002")
             .diagnostics
@@ -3155,7 +3155,7 @@ fn rs_12() {
             let id = crate::calculus::identifier(&case.fixture.name);
             assert_attested_ok(
                 &verified.attestation,
-                &[&format!("Compiler.ReasoningFixtures.{id}Agrees")],
+                &[&format!("LexLeanTarget.ReasoningFixtures.{id}Agrees")],
             );
         }
         // The statements are falsifiable: a transcription that forgets the
@@ -3314,12 +3314,12 @@ fn rs_13() {
         assert_attested_ok(
             &verified.attestation,
             &[
-                "Compiler.GnafFixtures.reasoningArgminAnswer",
-                "Compiler.GnafFixtures.reasoningArgminStatuses",
-                "Compiler.GnafFixtures.reasoningFrontierAnswer",
-                "Compiler.ReasoningFixtures.reasoningGnafPriorityAgrees",
-                "Compiler.ReasoningFixtures.reasoningGnafSweepAgrees",
-                "Compiler.ReasoningFixtures.reasoningGnafGoalAgrees",
+                "LexLeanTarget.GnafFixtures.reasoningArgminAnswer",
+                "LexLeanTarget.GnafFixtures.reasoningArgminStatuses",
+                "LexLeanTarget.GnafFixtures.reasoningFrontierAnswer",
+                "LexLeanTarget.ReasoningFixtures.reasoningGnafPriorityAgrees",
+                "LexLeanTarget.ReasoningFixtures.reasoningGnafSweepAgrees",
+                "LexLeanTarget.ReasoningFixtures.reasoningGnafGoalAgrees",
             ],
         );
     }
@@ -3359,6 +3359,6 @@ fn rs_14() {
         declaration["body"]["left"] = json!({"kind": "nat", "value": "80"});
     });
     planted.check_ok();
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     planted.verify_fails_with("LLV7002");
 }

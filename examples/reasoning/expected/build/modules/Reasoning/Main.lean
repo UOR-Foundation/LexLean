@@ -7,6 +7,7 @@ public import Reasoning.Screening
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 1000000000
+set_option linter.constructorNameAsVariable false
 namespace Reasoning.Main
 
 namespace LexLeanRuntime

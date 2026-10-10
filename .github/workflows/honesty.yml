@@ -7,8 +7,8 @@
 # read the model, the suites, and the sources; the meta-gate test binary
 # (`crates/conformance/tests/bdd.rs`) checks register/scenario/test bijection,
 # the Gherkin subset, and its own falsifiability. The Lean-backed conformance
-# cases belong to `just bdd` inside `just vv` in ci.yml, where the pinned
-# toolchain is installed.
+# cases belong to `just test` inside `just vv` in ci.yml, where the pinned
+# toolchain is installed; `just bdd` is this meta-gate alone.
 name: honesty
 
 on:

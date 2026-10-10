@@ -271,19 +271,53 @@ fn forbidden(code: &str) -> Option<&'static str> {
     None
 }
 
+/// The preservation sources that lower and certify every runtime construct
+/// (§17.17). A default branch there would realize or prove a construct
+/// nobody considered, so they obey the eligibility analysis's rules.
+pub const PRESERVATION_SOURCES: [&str; 4] = [
+    "crates/lexlean/src/production/lower.rs",
+    "crates/lexlean/src/production/certificate.rs",
+    "crates/lexlean/src/production/source.rs",
+    "crates/lexlean/src/production/rust_term.rs",
+];
+
 /// Audit the eligibility analysis source against the IR source.
 ///
 /// # Errors
 ///
 /// Returns every violation found, one per line.
 pub fn audit_eligibility(eligibility: &str, semantic: &str) -> Result<(), String> {
+    audit_source(ELIGIBILITY_SOURCE, eligibility, semantic, true)
+}
+
+/// Audit one preservation source: no forbidden form, and, for the lowering
+/// and the certificate, every variant of every audited enum named.
+///
+/// # Errors
+///
+/// Returns every violation found, one per line.
+pub fn audit_preservation(path: &str, text: &str, semantic: &str) -> Result<(), String> {
+    audit_source(
+        path,
+        text,
+        semantic,
+        path == PRESERVATION_SOURCES[0] || path == PRESERVATION_SOURCES[1],
+    )
+}
+
+fn audit_source(
+    path: &str,
+    eligibility: &str,
+    semantic: &str,
+    covering: bool,
+) -> Result<(), String> {
     let mut report = String::new();
     for (index, line) in eligibility.lines().enumerate() {
         let code = code_of(line);
         if let Some(reason) = forbidden(&code) {
             let _ = writeln!(
                 report,
-                "{ELIGIBILITY_SOURCE}:{}: {reason} would classify constructs by default",
+                "{path}:{}: {reason} would classify constructs by default",
                 index + 1
             );
         }
@@ -308,13 +342,13 @@ pub fn audit_eligibility(eligibility: &str, semantic: &str) -> Result<(), String
                 .is_some_and(|next| next.is_ascii_alphanumeric() || next == '_')
         }) && (line.contains("=>") || line.ends_with('{') || line.ends_with('|') || continues)
     };
-    for name in AUDITED_ENUMS {
+    for name in AUDITED_ENUMS.iter().filter(|_| covering) {
         for variant in enum_variants(semantic, name)? {
-            let path = format!("{name}::{variant}");
-            if !(0..lines.len()).any(|index| pattern_line(index, &path)) {
+            let variant_path = format!("{name}::{variant}");
+            if !(0..lines.len()).any(|index| pattern_line(index, &variant_path)) {
                 let _ = writeln!(
                     report,
-                    "{ELIGIBILITY_SOURCE}: `{path}` has no explicit production disposition"
+                    "{path}: `{variant_path}` has no explicit production disposition"
                 );
             }
         }

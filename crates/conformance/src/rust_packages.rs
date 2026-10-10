@@ -90,7 +90,7 @@ pub fn bound_to_source(committed: &Committed) -> Result<(), String> {
     let map: serde_json::Value = serde_json::from_slice(
         &std::fs::read(
             root.join(format!(
-                "compiler/expected/build/maps/Compiler/{module}.map.json"
+                "compiler/expected/build/maps/LexLeanTarget/{module}.map.json"
             ))
             .as_std_path(),
         )

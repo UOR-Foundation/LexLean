@@ -35,9 +35,13 @@ features:
     cargo check --workspace --all-features --all-targets
 
 # R3: every capability begins as a Gherkin scenario, and every scenario has a
-# test named `conformance_<id>` (§27.8).
+# test named `conformance_<id>` (§27.8). The meta-gate is the `bdd` test target
+# alone: the conformance tests themselves are already run, once, by `test`
+# (`cargo test --workspace` runs every target of `repo-conformance`), and running
+# them a second time here doubled the longest stage of `vv` without checking
+# anything the first run did not.
 bdd:
-    cargo test -p repo-conformance
+    cargo test -p repo-conformance --test bdd
 
 # §17.14, §17.15: the target and GNAF fixtures and their Lean modules equal
 # their generator. `just test` enforces the same comparison through

@@ -7,11 +7,17 @@
 //! and formal-only content coexists with executable roots because only the
 //! computational closure of a root is ever inspected.
 
+pub mod certificate;
 pub mod eligibility;
 pub mod lcnf;
+pub mod lower;
+pub mod preserve;
+pub mod rust_cert;
+pub mod rust_term;
+pub(crate) mod source;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use serde::Deserialize;
 
@@ -240,6 +246,105 @@ pub fn check_declaration(name: &str, targets: &[String], effects: &[String]) -> 
     Ok(())
 }
 
+/// A call path from a root, root first, shared with the paths that extend it.
+///
+/// The path of a closure member is the path of the member that first reached
+/// it and one more step, so a closure of `k` members in a chain would hold
+/// `k * (k + 1) / 2` steps as lists, and a project of `N` roots, each calling
+/// the one before, `N^3 / 6`: 9.5 GB for a thousand roots. Sharing makes it
+/// one step for each member; what the report writes out is bounded separately,
+/// by [`ClosureMember::json_bytes`] and `max_total_source_bytes`.
+#[derive(Debug, Clone, Default)]
+pub struct CallPath(Option<Arc<PathStep>>);
+
+#[derive(Debug)]
+struct PathStep {
+    parent: CallPath,
+    instance: String,
+    length: usize,
+    /// The bytes of the steps up to and including this one as elements of a
+    /// JSON array of strings: each step is its text, two quotes, and a comma.
+    json_bytes: u64,
+}
+
+impl Drop for PathStep {
+    /// A path of a long chain is dropped step by step, not by recursion.
+    fn drop(&mut self) {
+        let mut next = self.parent.0.take();
+        while let Some(step) = next {
+            next = match Arc::try_unwrap(step) {
+                Ok(mut owned) => owned.parent.0.take(),
+                Err(_) => None,
+            };
+        }
+    }
+}
+
+impl CallPath {
+    /// This path and one more step, `instance`.
+    #[must_use]
+    pub fn extended(&self, instance: String) -> CallPath {
+        let json_bytes = self
+            .json_bytes()
+            .saturating_add(instance.len() as u64)
+            .saturating_add(3);
+        CallPath(Some(Arc::new(PathStep {
+            parent: self.clone(),
+            instance,
+            length: self.len() + 1,
+            json_bytes,
+        })))
+    }
+
+    /// The path of the given steps, root first.
+    #[must_use]
+    pub fn from_steps(steps: impl IntoIterator<Item = String>) -> CallPath {
+        steps
+            .into_iter()
+            .fold(CallPath::default(), |path, step| path.extended(step))
+    }
+
+    /// The number of steps.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.as_ref().map_or(0, |step| step.length)
+    }
+
+    /// Whether the path has no step.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_none()
+    }
+
+    /// The bytes of the steps as the elements of a JSON array of strings, at
+    /// the least (an escaped character is counted once).
+    #[must_use]
+    pub fn json_bytes(&self) -> u64 {
+        self.0.as_ref().map_or(0, |step| step.json_bytes)
+    }
+
+    /// The steps, root first.
+    #[must_use]
+    pub fn steps(&self) -> Vec<&str> {
+        let mut steps = Vec::with_capacity(self.len());
+        let mut at = &self.0;
+        while let Some(step) = at {
+            steps.push(step.instance.as_str());
+            at = &step.parent.0;
+        }
+        steps.reverse();
+        steps
+    }
+}
+
+impl PartialEq for CallPath {
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.steps() == other.steps()
+    }
+}
+
+impl Eq for CallPath {}
+
 /// Where a closure member sits relative to its root.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClosureMember {
@@ -253,7 +358,28 @@ pub struct ClosureMember {
     /// Canonical type-argument spellings.
     pub type_arguments: Vec<String>,
     /// The shortest call path from the root, root first.
-    pub path: Vec<String>,
+    pub path: CallPath,
+}
+
+impl ClosureMember {
+    /// The bytes of this member in the report, at the least: its keys and
+    /// punctuation, its strings, and its call path. The path is what grows with
+    /// the square of a chain, so the report is bounded by this sum before it is
+    /// built.
+    #[must_use]
+    pub fn json_bytes(&self) -> u64 {
+        let arguments: u64 = self
+            .type_arguments
+            .iter()
+            .map(|argument| argument.len() as u64 + 3)
+            .sum();
+        70_u64
+            .saturating_add(self.instance.len() as u64)
+            .saturating_add(self.declaration.len() as u64)
+            .saturating_add(self.construct.len() as u64)
+            .saturating_add(arguments)
+            .saturating_add(self.path.json_bytes())
+    }
 }
 
 /// One effect of a root on one target with every construct site causing it.
@@ -336,10 +462,98 @@ pub struct ReasoningRow {
 pub struct ModuleReport {
     pub module: String,
     pub roots: Vec<RootReport>,
+    /// The length of `to_file_bytes`: the report as written, which counts
+    /// toward `max_total_source_bytes` with those of the other modules'
+    /// reports. The analysis, `check`, and `build` all use this one length.
+    pub bytes: u64,
 }
 
 fn strings(values: impl IntoIterator<Item = String>) -> serde_json::Value {
     serde_json::Value::Array(values.into_iter().map(serde_json::Value::String).collect())
+}
+
+impl RootReport {
+    /// The canonical value of this root in the report.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the registry failed to load after analysis succeeded,
+    /// which analysis rules out.
+    #[must_use]
+    pub fn to_value(&self) -> serde_json::Value {
+        let registry = registry().expect("analysis loaded the registry");
+        let root = self;
+        let mut value = serde_json::json!({
+            "root": root.root,
+            "declared_effects": strings(root.declared_effects.iter().cloned()),
+            "runtime_closure": root.runtime.iter().map(|member| serde_json::json!({
+                "instance": member.instance,
+                "declaration": member.declaration,
+                "construct": member.construct,
+                "type_arguments": strings(member.type_arguments.iter().cloned()),
+                "path": strings(member.path.steps().into_iter().map(str::to_owned)),
+            })).collect::<Vec<_>>(),
+            "types": root.types.iter().map(|(ty, construct)| serde_json::json!({
+                "type": ty,
+                "construct": construct,
+            })).collect::<Vec<_>>(),
+            "erased": strings(root.erased.iter().cloned()),
+            "constructs": root.constructs.iter().map(|(key, instances)| {
+                let disposition = registry
+                    .constructs
+                    .get(key)
+                    .map_or("runtime", |row| row.disposition.as_str());
+                serde_json::json!({
+                    "construct": key,
+                    "disposition": disposition,
+                    "instances": strings(instances.iter().cloned()),
+                })
+            }).collect::<Vec<_>>(),
+            "targets": root.targets.iter().map(|target| serde_json::json!({
+                "target": target.target,
+                "status": "eligible",
+                "boundary": target.boundary.iter().map(|row| serde_json::json!({
+                    "position": row.position,
+                    "representation": row.representation,
+                    "bits": row.bits,
+                })).collect::<Vec<_>>(),
+                "effects": target.effects.iter().map(|effect| serde_json::json!({
+                    "effect": effect.effect,
+                    "sources": effect.sources.iter().map(|(construct, instance)| serde_json::json!({
+                        "construct": construct,
+                        "instance": instance,
+                    })).collect::<Vec<_>>(),
+                })).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+        });
+        if !root.reasoning.is_empty() {
+            value["reasoning"] = root
+                .reasoning
+                .iter()
+                .map(|row| {
+                    let mut item = serde_json::json!({
+                        "reasoner": row.reasoner,
+                        "strategy": row.strategy,
+                        "deduplicate": row.deduplicate,
+                        "rules": strings(row.rules.iter().cloned()),
+                        "ledger": strings(row.ledger.iter().cloned()),
+                        "bounds": strings(row.bounds.iter().cloned()),
+                    });
+                    if let Some(fuel) = &row.fuel {
+                        item["fuel"] = serde_json::Value::String(fuel.clone());
+                    }
+                    if let Some(budget) = &row.budget {
+                        item["budget"] = serde_json::Value::String(budget.clone());
+                    }
+                    if let Some(frontier) = &row.frontier {
+                        item["frontier"] = serde_json::Value::String(frontier.clone());
+                    }
+                    item
+                })
+                .collect();
+        }
+        value
+    }
 }
 
 impl ModuleReport {
@@ -351,82 +565,10 @@ impl ModuleReport {
     /// which analysis rules out.
     #[must_use]
     pub fn to_value(&self) -> serde_json::Value {
-        let registry = registry().expect("analysis loaded the registry");
         let roots = self
             .roots
             .iter()
-            .map(|root| {
-                let mut value = serde_json::json!({
-                    "root": root.root,
-                    "declared_effects": strings(root.declared_effects.iter().cloned()),
-                    "runtime_closure": root.runtime.iter().map(|member| serde_json::json!({
-                        "instance": member.instance,
-                        "declaration": member.declaration,
-                        "construct": member.construct,
-                        "type_arguments": strings(member.type_arguments.iter().cloned()),
-                        "path": strings(member.path.iter().cloned()),
-                    })).collect::<Vec<_>>(),
-                    "types": root.types.iter().map(|(ty, construct)| serde_json::json!({
-                        "type": ty,
-                        "construct": construct,
-                    })).collect::<Vec<_>>(),
-                    "erased": strings(root.erased.iter().cloned()),
-                    "constructs": root.constructs.iter().map(|(key, instances)| {
-                        let disposition = registry
-                            .constructs
-                            .get(key)
-                            .map_or("runtime", |row| row.disposition.as_str());
-                        serde_json::json!({
-                            "construct": key,
-                            "disposition": disposition,
-                            "instances": strings(instances.iter().cloned()),
-                        })
-                    }).collect::<Vec<_>>(),
-                    "targets": root.targets.iter().map(|target| serde_json::json!({
-                        "target": target.target,
-                        "status": "eligible",
-                        "boundary": target.boundary.iter().map(|row| serde_json::json!({
-                            "position": row.position,
-                            "representation": row.representation,
-                            "bits": row.bits,
-                        })).collect::<Vec<_>>(),
-                        "effects": target.effects.iter().map(|effect| serde_json::json!({
-                            "effect": effect.effect,
-                            "sources": effect.sources.iter().map(|(construct, instance)| serde_json::json!({
-                                "construct": construct,
-                                "instance": instance,
-                            })).collect::<Vec<_>>(),
-                        })).collect::<Vec<_>>(),
-                    })).collect::<Vec<_>>(),
-                });
-                if !root.reasoning.is_empty() {
-                    value["reasoning"] = root
-                        .reasoning
-                        .iter()
-                        .map(|row| {
-                            let mut item = serde_json::json!({
-                                "reasoner": row.reasoner,
-                                "strategy": row.strategy,
-                                "deduplicate": row.deduplicate,
-                                "rules": strings(row.rules.iter().cloned()),
-                                "ledger": strings(row.ledger.iter().cloned()),
-                                "bounds": strings(row.bounds.iter().cloned()),
-                            });
-                            if let Some(fuel) = &row.fuel {
-                                item["fuel"] = serde_json::Value::String(fuel.clone());
-                            }
-                            if let Some(budget) = &row.budget {
-                                item["budget"] = serde_json::Value::String(budget.clone());
-                            }
-                            if let Some(frontier) = &row.frontier {
-                                item["frontier"] = serde_json::Value::String(frontier.clone());
-                            }
-                            item
-                        })
-                        .collect();
-                }
-                value
-            })
+            .map(RootReport::to_value)
             .collect::<Vec<_>>();
         serde_json::json!({
             "spec": REPORT_SPEC,
@@ -447,5 +589,38 @@ impl ModuleReport {
         crate::artifact::canonical_json::Json::parse(text.as_bytes())
             .expect("report is JSON")
             .to_file_bytes()
+    }
+}
+
+#[cfg(test)]
+mod call_path_tests {
+    use super::CallPath;
+
+    #[test]
+    fn a_path_shares_its_steps_and_reads_root_first() {
+        let root = CallPath::from_steps(["a".to_owned()]);
+        let left = root.extended("b".to_owned());
+        let right = root.extended("c".to_owned());
+        assert_eq!(left.steps(), ["a", "b"]);
+        assert_eq!(right.steps(), ["a", "c"]);
+        assert_eq!(left.len(), 2);
+        // Each step is its text, two quotes, and a comma.
+        assert_eq!(left.json_bytes(), 4 + 4);
+        assert_ne!(left, right);
+        assert_eq!(left, CallPath::from_steps(["a".to_owned(), "b".to_owned()]));
+        assert!(CallPath::default().is_empty());
+    }
+
+    /// A chain of a million roots' worth of steps is dropped, and read, without
+    /// a call for each step.
+    #[test]
+    fn a_long_path_is_dropped_without_recursion() {
+        let mut path = CallPath::default();
+        for step in 0..1_000_000 {
+            path = path.extended(step.to_string());
+        }
+        assert_eq!(path.len(), 1_000_000);
+        assert_eq!(path.steps().len(), 1_000_000);
+        drop(path);
     }
 }

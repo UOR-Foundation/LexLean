@@ -1,0 +1,18 @@
+#!/bin/sh
+# Passes every invocation to the pinned lake except `lake env lean` on a
+# certificate A, whose module first gets a heartbeat budget of one: the
+# pinned Lean then gives up with "maximum number of heartbeats". The module
+# is small against max_file_bytes, so that is Lean's verdict on the
+# certificate, reported as a rejected certificate (LLV7013) and not as an
+# exhausted resource (SPEC.md 17.17); `certificate-resource-exhausted` is the
+# same project with a limit the module is a large part of.
+real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
+if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
+  for source; do :; done
+  case "$source" in
+    */preserve-src/LexLeanPreserve/C*/R[0-9]*.lean)
+      awk '1; /^set_option autoImplicit false/ { print "set_option maxHeartbeats 1" }' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
+      ;;
+  esac
+fi
+exec "$real" "$@"

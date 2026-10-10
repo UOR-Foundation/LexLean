@@ -1,0 +1,82 @@
+'Coverage.Boundary.Grove' does not depend on any axioms
+'Coverage.Boundary.Ledger' does not depend on any axioms
+'Coverage.Boundary.groveRoot' does not depend on any axioms
+'Coverage.Boundary.groveTags' does not depend on any axioms
+'Coverage.Colls.folds' does not depend on any axioms
+'Coverage.Colls.graphs' depends on axioms: [propext]
+'Coverage.Colls.iterations' does not depend on any axioms
+'Coverage.Colls.keyTypes' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.Colls.literals' does not depend on any axioms
+'Coverage.Colls.mapFolding' does not depend on any axioms
+'Coverage.Colls.mapOps' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.Colls.setOps' does not depend on any axioms
+'Coverage.Colls.stringGraph' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.Main.builders' does not depend on any axioms
+'Coverage.Main.double' does not depend on any axioms
+'Coverage.Main.higher' does not depend on any axioms
+'Coverage.Main.intOps' does not depend on any axioms
+'Coverage.Main.mapped' does not depend on any axioms
+'Coverage.Main.natOps' does not depend on any axioms
+'Coverage.Main.options' does not depend on any axioms
+'Coverage.Main.pairs' does not depend on any axioms
+'Coverage.Main.parity' does not depend on any axioms
+'Coverage.Main.records' does not depend on any axioms
+'Coverage.Main.shapes' does not depend on any axioms
+'Coverage.Main.treeTotal' does not depend on any axioms
+'Coverage.Prims.bits' depends on axioms: [propext, Quot.sound]
+'Coverage.Prims.conversions' depends on axioms: [propext, Quot.sound]
+'Coverage.Prims.decimals' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.Prims.fixedMiddle' depends on axioms: [propext, Quot.sound]
+'Coverage.Prims.fixedSmall' depends on axioms: [propext, Quot.sound]
+'Coverage.Prims.fixedWide' depends on axioms: [propext, Quot.sound]
+'Coverage.Prims.formats' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.Prims.sequences' does not depend on any axioms
+'Coverage.Prims.text' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Coverage.RecRoots.rewrite' depends on axioms: [propext, Quot.sound]
+'Coverage.RecRoots.roseTotal' does not depend on any axioms
+'Coverage.RecRoots.syntaxTotal' does not depend on any axioms
+'Coverage.RecRoots.wellFounded' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.countdown' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.countdown_decreases' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.exprSize' does not depend on any axioms
+'Coverage.Recur.foldExpr' does not depend on any axioms
+'Coverage.Recur.foldStatement' does not depend on any axioms
+'Coverage.Recur.foldStatements' does not depend on any axioms
+'Coverage.Recur.forestSize' does not depend on any axioms
+'Coverage.Recur.isEven' does not depend on any axioms
+'Coverage.Recur.isOdd' does not depend on any axioms
+'Coverage.Recur.ping' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.ping_seven' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.ping_to_pong' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.pong' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.pong_to_ping' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.prune' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.prune_plus' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.reassociate' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.reassociate_literal' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.reassociate_plus' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.reduce' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.reduce_decreases' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.roseSize' does not depend on any axioms
+'Coverage.Recur.search' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.search_decreases' depends on axioms: [propext, Quot.sound]
+'Coverage.Recur.statementSize' does not depend on any axioms
+'Coverage.Recur.statementsSize' does not depend on any axioms
+'Coverage.Recur.weight' does not depend on any axioms
+'Coverage.Syntax.Expr' does not depend on any axioms
+'Coverage.Syntax.Rose' does not depend on any axioms
+'Coverage.Syntax.Stmt' does not depend on any axioms
+'Coverage.Syntax.Term' does not depend on any axioms
+'Coverage.Types.Box' does not depend on any axioms
+'Coverage.Types.Point' does not depend on any axioms
+'Coverage.Types.Shape' does not depend on any axioms
+'Coverage.Types.Tree' does not depend on any axioms
+'Coverage.Types.Weights' does not depend on any axioms
+'Coverage.Types.area' does not depend on any axioms
+'Coverage.Types.defaultWeights' does not depend on any axioms
+'Coverage.Types.isEven' does not depend on any axioms
+'Coverage.Types.isOdd' does not depend on any axioms
+'Coverage.Types.mapList' does not depend on any axioms
+'Coverage.Types.treeSum' does not depend on any axioms
+'Coverage.Types.twice' does not depend on any axioms
+'Coverage.Types.unbox' does not depend on any axioms

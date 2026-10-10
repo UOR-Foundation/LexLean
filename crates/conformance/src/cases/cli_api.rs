@@ -146,7 +146,7 @@ pub(crate) fn run(id: &str) {
                 let manifest_before =
                     std::fs::read(target_path.join("lake-manifest.json").as_std_path())
                         .expect("read");
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let (exit, _, stderr) = support::cli_in(target_path, &["verify"]);
                 assert_eq!(exit, 0, "the fresh skeleton verifies: {stderr}");
                 drop(_guard);
@@ -517,6 +517,28 @@ pub(crate) fn run(id: &str) {
                 ErrorClass::Internal.exit_code(),
                 70,
                 "internal failures map to 70"
+            );
+            // Every registered code's class, and so its exit code, is the
+            // one the registry documents (R1: the registry is the source).
+            let model = repo_model::Model::load_from_repo_root().expect("the model loads");
+            let mut mismatches = Vec::new();
+            for row in &model.errors.error {
+                let code: &'static str = Box::leak(row.code.clone().into_boxed_str());
+                let class = lexlean::diagnostic::DiagnosticCode::from_validated(code).class();
+                if class.as_str() != row.class || class.exit_code() != i32::from(row.exit) {
+                    mismatches.push(format!(
+                        "{}: registered {} (exit {}), mapped {} (exit {})",
+                        row.code,
+                        row.class,
+                        row.exit,
+                        class.as_str(),
+                        class.exit_code()
+                    ));
+                }
+            }
+            assert!(
+                mismatches.is_empty(),
+                "§23.6: codes whose mapped class differs from model/errors.toml: {mismatches:?}"
             );
         }
         // §23.7, §20.6: exact stream, color, and path discipline in both
@@ -974,9 +996,9 @@ pub(crate) fn run(id: &str) {
             assert_eq!(snapshot.language(), "1.1");
             if support::lean_backed("CL-20") {
                 // Toolchain resolution reads `ELAN_HOME`, which other cases
-                // override under `env_lock`; resolve under the same lock so
+                // override under the exclusive environment lock; resolve under the shared lock so
                 // a concurrent override cannot redirect this verification.
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let (exit, _, stderr) = support::cli_in(root, &["verify"]);
                 assert_eq!(exit, 0, "source-free generated module verifies: {stderr}");
             }

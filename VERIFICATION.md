@@ -12,9 +12,9 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 304 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 315 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
-| `bdd` | `cargo test -p repo-conformance` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test |
+| `bdd` | `cargo test -p repo-conformance --test bdd` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test; the conformance tests it names are run once, by `test` |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
@@ -23,7 +23,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
-- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, the generated `TargetFixtures` and `GnafFixtures` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` model, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the model's definition in `crates/conformance/src/gnaf_model.rs`, and the renderer produce (§17.14, §17.15); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
+- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, the generated `TargetFixtures` and `GnafFixtures` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` model, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the model's definition in `crates/conformance/src/gnaf_model.rs`, and the renderer produce (§17.14, §17.15), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
 - `just verify-write` (`cargo xtask verify-examples --write`) is the only path that rewrites `examples/*/expected/verify/`.
 - `just release` runs `vv` and then `cargo xtask release-check` (RP-12): every §30.3 artifact by content, the §30.4 completion criteria, and the crate-packaging round trip (`cargo package`, extract, offline build, `--version` equal to the in-repository binary). It is refused until 1.0.0.
 
@@ -375,7 +375,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
 - recursion never marked (`if next == *name && false`), `conformance_ne_02`:
 
   ```text
-  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:429:13:
+  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:434:13:
   assertion `left == right` failed
   ```
 
@@ -383,7 +383,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
   `conformance_ne_02`:
 
   ```text
-  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:411:18:
+  thread 'conformance_ne_02' panicked at crates/conformance/src/cases/extraction.rs:416:18:
   the firstOr instance
   ```
 
@@ -401,7 +401,7 @@ Planted, one at a time in `crates/lexlean/src/production/lcnf.rs`, each with
   record:
 
   ```text
-  thread 'conformance_ne_04' panicked at crates/conformance/src/cases/extraction.rs:835:34:
+  thread 'conformance_ne_04' panicked at crates/conformance/src/cases/extraction.rs:977:34:
   expected drift naming "the pinned extraction adapter no longer elaborates cleanly", got Rejected("the extraction record is malformed: expected value at line 1 column 1")
   ```
 
@@ -526,7 +526,7 @@ call of the wrong arity. Command: `cargo test -p repo-conformance --test
 conformance -- conformance_sm_25 conformance_df_14`.
 
 ```text
-thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:926:13:
+thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1042:13:
 assertion failed: combinators.contains("mapList (Input) (Output) (transform) (tail)")
 thread 'conformance_sm_25' panicked at crates/conformance/src/cases/semantic_ir.rs:1684:17:
 missing "HigherOrder.Combinators.mapList (Nat) (Nat) ((fun (value : Nat) => (value + offset))) (values)" in:
@@ -544,7 +544,7 @@ conformance -- conformance_df_15`. The executable `evaluator` that returns a
 `Visitor` of closures is no longer refused for returning a function.
 
 ```text
-thread 'conformance_df_15' panicked at crates/conformance/src/cases/declarations.rs:1040:17:
+thread 'conformance_df_15' panicked at crates/conformance/src/cases/declarations.rs:1156:17:
 expected "escaping closure: executable definition `evaluator` returns a value of type Combinators.Visitor, which holds a function", got LLT4001: phase link: escaping closure in executable definition `evaluator`: a lambda may only be passed directly to an executable function parameter or applied
 ```
 
@@ -561,7 +561,7 @@ declaration never mentions. Command: `cargo test -p repo-conformance --test
 conformance -- conformance_sm_08 conformance_df_14`.
 
 ```text
-thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:953:17:
+thread 'conformance_df_14' panicked at crates/conformance/src/cases/declarations.rs:1069:17:
 missing "public def keepNat (_Phantom : Type) (value : Nat) : Nat := value\n" in:
 thread 'conformance_sm_08' panicked at crates/conformance/src/cases/semantic_ir.rs:572:17:
 missing "public def constantTrue (_ignored : Nat) : Bool := true" in:
@@ -771,6 +771,1623 @@ gate failed: compiler/src/TargetSemantics.lex.tex differs from its generator; ru
 Removed: the committed module was restored; the gate reports 208 generated
 files equal to their generator.
 
+### check-calculus covers the shipped calculus modules
+
+Planted: one comment line appended to
+`language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean`, the copy
+certificates import. Command: `cargo xtask check-calculus`. Expected: the
+shipped module no longer equals the compiler project's golden module (§17.17),
+reported before any file whose provenance binds the compiler-semantics ID.
+
+```text
+gate failed: <root>/language/preservation-1.2/modules/LexLeanTarget/TargetSyntax.lean differs from the compiler golden <root>/compiler/expected/build/modules/LexLeanTarget/TargetSyntax.lean; run `cargo xtask check-calculus --write`
+```
+
+Removed: the line was deleted; `cargo xtask check-calculus` reports 581
+generated files equal to their generator.
+
+### audit-production covers the preservation sources
+
+Planted: `fn planted(t: Option<u8>) { if let Some(_) = t {} }` appended to
+`crates/lexlean/src/production/certificate.rs`. Command: `cargo xtask
+validate-model`. Expected: the certificate generator matches a construct by
+default (§17.17 extends §17.13's audit to the lowering, the generator, and
+the source reader).
+
+```text
+gate failed: §17.17: crates/lexlean/src/production/certificate.rs:6381: an `if let` with an implicit default would classify constructs by default
+```
+
+Removed: the function was deleted; `audit-production` reports that the three
+preservation sources match no construct by default. `conformance_sp_01` plants
+an `if let`, a `matches!`, and a wildcard arm in each source and requires
+the audit to refuse every one.
+
+### audit-production closes certificate B's rule set
+
+Planted: in `crates/lexlean/src/production/rust_cert.rs`, the block
+judgment's arm `Term::Apply { .. } => self.apply(g, fl, false, term, lets,
+tail),` rewritten as `_ => self.apply(g, fl, false, term, lets, tail),`.
+Command: `cargo xtask validate-model`. Expected: the aligner meets a
+calculus construct by default (§17.17, SP-08).
+
+```text
+gate failed: §17.17 (SP-08): crates/lexlean/src/production/rust_cert.rs: the block judgment does not name the construct `Term::Apply`
+crates/lexlean/src/production/rust_cert.rs: the block judgment has a wildcard arm, which would meet a construct by default
+```
+
+Removed: the arm was restored; `audit-production` reports that certificate
+B's 49 rules are exactly the correspondence's constructors, each a case of
+its soundness theorem, with every calculus construct named.
+`conformance_sp_08` plants, in the repository's own sources, a rule dropped
+from the aligner's `RULES`, a case renamed in `sound`, and this wildcard arm,
+and requires each to be reported; the unit tests of
+`repo_model::correspondence` plant a duplicate rule, an extra constructor, a
+stray soundness case, a rule never written, a binding arm, and a calculus
+construct the aligner does not name.
+
+### certificate E can fail
+
+Planted: certificate E of the recursive-tree root (`examples/production-coverage`,
+`Coverage.Boundary.groveRoot`, `rust-std`) restated twice, once with the
+first `RealizesFn false` read as `RealizesFn true` (the other result shape),
+and once with the rendered function's identifier `fnIdent 18` read as
+`fnIdent 19` (another function). Command: `lean` on each restated module
+beside the environment (`conformance_sp_09` plants both in the first root of
+each project). Expected: no composition of certificates A and B proves the
+restatement.
+
+```text
+E_fall.lean:45:130: error: Type mismatch
+  hr
+has type
+  LexLeanPreservation.Rust.RealizesFn
+E_func.lean:45:25: error: Application type mismatch: The argument
+  hc
+has type
+  LexLeanPreservation.Rust.RCI RustStd.krate (LexLeanPreservation.Rust.fnIdent 18)
+```
+
+The negative fixture `certificate-e-rejected` (a lake overlay swaps the
+result shape of every certificate E) fails `lexlean verify` with `LLV7016`
+and nothing published. Removed: the restatements were deleted; every
+certificate E compiles, replays, and depends on exactly the three axioms.
+
+### boundary validators can fail
+
+Planted, in the lowered program of the recursive-tree root and with the
+certificate still derived from the source (`conformance_sp_10`): the entry
+calls the root without its first validator, and the last order-checking
+validator's `eq` arm answers true, admitting an equal key. Expected: Lean
+refuses each at the relation of the function it changed.
+
+```text
+Planted/Validation.lean:381:1236: error: Application type mismatch: The argument
+  __vrel_2 g
+Planted/Weakening.lean:352:333: error: Application type mismatch: The argument
+  rfl
+```
+
+The first lies in the declaration `entry` (function 18), the second in
+`__vrel_16`; `conformance_sp_10` requires the declaration to be the changed
+function's own. Planted, in a rendered crate (`conformance_sp_08`): the same
+entry's crate without its first validator's `if`; the aligner derives
+nothing (`function 18: no conditional form fits: a call is not rendered as a
+call; …`) and Lean rejects the unmutated derivation restated over the
+mutated crate. Planted, in the lowered program: a call of a validator from
+the root, and the entry removed while the validators remain. Expected: the
+lowering's boundary audit (`LLI9001`) refuses both.
+
+```text
+function 0 references function 2: a boundary validator runs only at the entry, because inside the program §17.12's invariants hold by construction and are proof-only
+0 entries for 16 boundary validators
+```
+
+Removed: every plant was removed; the entry and its 16 validators for the
+recursive-tree root certify in A, B, and E, and the differential's inputs
+that break an invariant are refused with `none` by the interpreter, by
+Lean's `denoteEntry`, by the declared machine, and by rustc.
+
+### the lowered-program mutations are targeted
+
+Planted (`conformance_sp_02`): a checked addition bounded as a subtraction
+(`Coverage.Prims.fixedSmall`) and the bounds of a slice exchanged
+(`Coverage.Prims.sequences`), beside the five earlier mutations. Expected:
+Lean rejects each inside `__rel_0`, the relation of the function changed, and
+`conformance_sp_02` requires the declaration of the first error to be exactly
+that relation.
+
+```text
+Planted/Overflow.lean:30:304: error: Application type mismatch: The argument
+  LexLeanPreservation.prim_checkedAdd_i8 a b
+Planted/Buffer.lean:30:3029: error: Application type mismatch: The argument
+  LexLeanPreservation.conv_value
+```
+
+Removed: the mutations were removed; all nine kinds (seven of the closure,
+two of the boundary) are planted in the coverage example in each run.
+
+### the rustc differential of the declared machine can fail
+
+Planted: `nat_lt` of the Rust runtime written as `a <= b` in
+`crates/lexlean/src/calculus/rust/runtime.rs`. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_11`. Expected: a root's
+package prints another outcome than the interpreter.
+
+```text
+thread 'conformance_sp_11' (17125) panicked at crates/conformance/src/preservation.rs:2630:5:
+root_3_core run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
+root_3_std run 0: rustc {"kind":"nat","value":"1"} != interpreter {"kind":"nat","value":"2"}
+```
+
+Removed: the runtime was restored; the 68 packages build and 504 runs agree,
+96 of them through a boundary entry.
+
+### the boundary is judged from the source types
+
+At `e43d31a` the validated set was whatever the lowering wrote into the
+entry's layout, and certificate A then proved the weaker statement it
+implied: a lowering that skipped the validator of a parameter was certified
+(`conformance_sp_10` and `lexlean verify` passed). Planted in
+`crates/lexlean/src/production/lower.rs`, first the entry omitting the
+validator of the parameter named `spare : list (map nat bool)`, then
+`carries` answering false for a list. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_10`; and `lexlean verify` on a project
+whose root takes `spare : list (map nat bool)` with the second plant.
+Expected: the certificate generator, which decides which parameters carry
+§17.12's invariant from the source types by its own recursion, refuses the
+lowering before any theorem is written.
+
+```text
+thread 'conformance_sp_10' (25266) panicked at crates/conformance/src/cases/preservation.rs:2143:40:
+the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
+thread 'conformance_sp_10' (30777) panicked at crates/conformance/src/cases/preservation.rs:2143:40:
+the lowering's own boundary is accepted: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: parameter 3: `List (Map (Nat) (Bool))` carries §17.12's invariant but the entry does not validate it", …
+error[LLI9001]: phase preservation: a parameter carries §17.12's invariant but the root has no entry
+```
+
+Removed: both plants were removed. `conformance_sp_10` also plants the same
+defects itself, in the lowered program (a skipped parameter validator for
+every validated parameter of every entry, a validator replaced by the
+trivial one for every non-trivial validator), requires the generator to
+refuse each naming the parameter or the validator, and requires the entry to
+exist exactly for the roots whose parameters hold a map or a set by its own
+oracle (`differential::carriers`), and an input breaking each validated
+parameter's invariant in turn to be refused with `none` by the interpreter,
+Lean, the machine, and rustc.
+
+### the statement vocabulary quoted in SPEC.md can fail
+
+Planted, first in `SPEC.md`, `Rel`'s quoted definition ending in `.stuck`
+instead of `.overflow`, then in
+`language/preservation-1.2/library/LexLeanPreservation/Core.lean`, a comment
+appended to the definition of `Rel`. Command: `cargo xtask
+validate-spec-links`. Expected: a definition changed on one side only is
+refused.
+
+```text
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/Core.lean` that the file does not state byte for byte: `def Rel (fits : Bool) (v : Value) : Obs := cond fits (.value v) .stuck`
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/Core.lean` that the file does not state byte for byte: `def Rel (fits : Bool) (v : Value) : Obs := cond fits (.value v) .overflow`
+```
+
+Removed: both edits were reverted; the gate reports the quoted
+declarations equal the library's. The unit test of
+`repo_model::vocabulary` plants a changed definition, a missing quotation,
+a missing file, and no quotation at all; `conformance_sp_04` also requires
+every declaration the library states to be registered in `library.toml`.
+
+### certificate generation is bounded
+
+`lexlean verify` of a project whose root instantiates the generic chain
+`g_k<T> = g_{k+1}<(T, T)>` (§17.17 *Limits*) before the limits existed used
+gigabytes and failed with a rejected certificate A (`LLV7013`, a heartbeat
+timeout) at 17 deep. Now the lowering counts the types, expressions, shapes,
+literals, and pairs of arms the certificates repeat and refuses, before the
+toolchain is touched, only a root for which a lower bound on one of its
+certificates is certain to exceed the limit (a bound for each of A, B, and E,
+from costs per unit that SPEC.md §17.17 *Limits* tabulates; the greatest of
+the three is compared with the limit), and every certificate is generated under
+the limit:
+
+```text
+chain 13 deep: verified 1 module; attestation 43e4a0e1bf30e7be8d987013ff62ada3f5a7e4b2b09f2929f53aa9810887d849
+chain 14 deep: error[LLS8002]: max_file_bytes exceeded in phase certificates: a part of the certificate is 4601936 bytes, beyond the 4194304 bytes of max_file_bytes
+chain 15 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 4457541 bytes (262189 program nodes)
+chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 8913991 bytes (524336 program nodes)
+```
+
+(The chain verified 14 deep before certificates wrote every reference to a
+global from the root: `_root_.` adds about 10% to certificate A, which at 14
+deep was 4.2 MB, and the generation, which sees the whole, now stops it.)
+
+The first estimate (400 bytes a node) refused the chain from 11 deep though
+its certificates were 0.5 MB, the second (an upper-bound calibration, 70 bytes
+a type node) from 13 although certificate A of 13 deep is 2.1 MB and the
+chain verifies: both refused programs whose certificates fit. A bound that
+only refuses what cannot fit refuses nothing that does. The third, one bound
+on the sum of what the certificates repeat, was calibrated on programs that
+grow one dimension at a time and was above the largest certificate of programs
+that grow two: `S` with 100 `nat` fields and a string of 5000 characters (bound
+17 668, A 12 225, B 17 456, E 9 781), and a match on 200 constructors
+returned in a pair with a string of 330 000 characters (bound 1 447 939,
+largest certificate 1 135 681), so that 350 constructors with 940 000
+characters, whose certificates are at 80% of the limit, were refused. The
+bound is now one for each certificate, the greatest is compared with the limit,
+and `conformance_sp_02` certifies under the default limits a match on 420
+constructors (certificate A of 4.0 MB), a string literal of 450 000 characters
+(certificate B of 1.4 MB), and, for each of nine mixed shapes, the largest
+scaling whose certificates are all under the limit, found by search. The
+string literal verifies under the pinned Lean:
+
+```text
+string literal of 450000 characters: verified 1 module; attestation b8722f14b820547f7dbdfa61293f4847d18a50f4756db154abfe3b445f4dd637
+```
+
+Certificate B cannot be bounded from the counts: the
+rendering of a field read prints the whole pattern of its record, so B grows
+with the square of the arity, and with the depth of a nesting. Two negative
+fixtures reach it before the toolchain:
+
+```text
+certificate-size-limit (a record of 800 fields copied field by field): error[LLS8002]: root `Production.Main.copy`: max_file_bytes exceeded in phase lowering: configured 4194304, its field reads print 640000 record entries, which take its certificate B at least 10240000 bytes
+certificate-generation-limit (the sum of the 500 fields of a record): error[LLS8002]: root `Production.Main.total`: max_file_bytes exceeded in phase certificates: certificate B of its rust-core rendering: the derivation of a function is at least 5285359 bytes, beyond the 4194304 bytes of max_file_bytes
+```
+
+At 800 fields the generator used to build a 13 MB certificate B from 2400
+program nodes, 3 times `max_file_bytes`, before the check after generation
+refused it; the estimate gave 0.97 MB.
+
+A pinned Lean that dies, or runs out of memory, while checking a certificate
+is `LLS8002`; one that exhausts a heartbeat or recursion budget is `LLS8002`
+only when the module is at least a quarter of `max_file_bytes`, and is
+Lean's verdict on the certificate otherwise. The two fixtures are one project
+(a function of 100 parameters called by the root, with a lake overlay that
+gives certificate A a heartbeat budget of one): with the default limit the
+module is 56 680 bytes and the outcome is a rejected certificate; with
+`max_file_bytes` at 131 072, above its largest certificate (56 680 bytes, so
+that generation passes) and below four times its module (226 720), the module
+is more than a quarter of it and the outcome is a limit; `conformance_sp_02`
+asserts the two inequalities, so a change of a certificate reports that the
+fixture no longer lies between them, not a changed hash.
+
+```text
+certificate-heartbeat-rejected: error[LLV7013]: certificate A: `LexLeanPreserve.C8fe….R0` was rejected in `__prog` of root `Production.Main.total`: error: (deterministic) timeout at `isDefEq`, maximum number of heartbeats (1) has been reached
+certificate-resource-exhausted: error[LLS8002]: the pinned Lean exhausted a resource checking `LexLeanPreserve.C8fe….R0` (maximum number of heartbeats): the generated module is 56680 bytes, at least a quarter of max_file_bytes 131072, and is beyond what the machine checks
+```
+
+Rejections of certificates A, B, and E carry the declaration, the root, and
+the bounded first error, as the fixtures' expected output records:
+
+```text
+error[LLV7015]: certificate B: `LexLeanPreserve.C….R2.RustCore` was rejected in `fun2` of root `Production.Main.quadruple`: error: Application type mismatch: The argument
+  rfl
+has type
+  ?m.157 = ?m.157
+but is expected to have type
+  RustSemantics.itemFallible RustSyntax.Item.natSub = true
+```
+
+### a wrong certificate is not reported as a limit
+
+At `eea3db0` any heartbeat or recursion message ended in `LLS8002`. The
+overflow plant on `Coverage.Prims.fixedMiddle` (a lowering defect: the
+certificate is generated from the source and the program is mutated after)
+makes Lean give up on its heartbeats, and `lexlean verify` would have blamed
+the project's types. Planted: the quarter-of-the-limit test of
+`resource_death` removed (`HEAVY_FRACTION` made so large that every module is
+heavy, which is the old behaviour). Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_02`. Expected: the suite, which asks the
+product's classifier about every rejection it plants in A and E, refuses.
+
+```text
+thread 'conformance_sp_02' (25505) panicked at crates/conformance/src/cases/preservation.rs:76:5:
+Coverage.Prims.fixedMiddle Overflow: a rejected certificate of 4776 bytes is reported as an exhausted resource:
+/tmp/lexlean-plant-mx1DoX/src/LexLeanPreserve/Planted/P7.lean:29:0: error: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+```
+
+Removed: the constant was restored. The unit test of `lexlean::verify` for a
+heartbeat verdict on a small and on a heavy module fails under each plant of
+the constant, a fraction of 0 (nothing is heavy) and a huge one (everything
+is):
+
+```text
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2582:73:
+a limit
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2579:9:
+assertion failed: resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none()
+```
+
+### the lower bound and the floor are checked against what is generated
+
+Planted: the cost of a type node of certificate A in `lower.rs` raised from
+272 to 2000 sixteenths of a byte. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_02`. Expected: the bound passes the size
+of a certificate of the corpora or of the stress families, so that it would
+refuse a program that fits.
+
+```text
+production-coverage: Coverage.Colls.mapOps: the lower bounds Bounds { a: 51284, b: 13958, e: 839 } are above certificate A (29765), B (59984), or E (2963)
+```
+
+Planted: the cost of a pair of arms of certificate A raised from 180 to 500.
+Expected: the check that valid programs whose certificates fit are not refused
+(a match on 420 constructors, a string of 450 000 characters, at the default
+limits) refuses the match.
+
+```text
+Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 5524790 bytes (1265 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
+```
+
+Planted: the reviewer's defect, the bounds at twice their cost (the greatest
+for which each stays below its certificate) and compared with the limit as
+a sum. Expected: the same check refuses a program whose certificates fit.
+
+```text
+Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate the sum of A, B, and E is at least 7111500 bytes (1142 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
+```
+
+(At half the cost the sum would still be below the largest certificate of
+those programs, which is why the check plants the cost too: the margin and the
+aggregator are separate protections.)
+
+Planted: the floor under certificate B raised from 16 to 100 bytes a record
+entry. Expected: a certificate B smaller than its floor.
+
+```text
+record copy 25 Production.Main.r (rust-core): the floor 62500 is above certificate B, 24733 bytes
+```
+
+Planted: the check of a derivation against the limit removed from
+`within_budget` in `rust_cert.rs`. The final check of the finished
+certificate still refuses it, at its whole size, and the suite, which asks
+that certificate B stop while it is derived, refuses.
+
+```text
+record copy 100: certificate B was refused when finished, not while derived: limit: the certificate is 245088 bytes, beyond the 122544 bytes of max_file_bytes
+```
+
+Removed: all were restored. The size a rule records is the length of
+the text it prints (a unit test of `rust_cert`), and `conformance_sp_02`
+requires that each bound is never above its certificate for any root of
+the corpora, of the stress families, or of 24 random combinations of five
+dimensions (none of which the costs were fitted to), that the largest scaling
+of each mixed shape that fits is not refused, that the record copies have a B
+far beyond A and E, and that the floor is never above any B.
+
+### the unreached-overflow list is checked both ways
+
+Planted: the exemption of `Coverage.Main.shapes` kept in `UNREACHED_OVERFLOW`
+although a sampled input of that root overflows. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_03`. Expected: a root
+listed as unreached that is reached is refused, as is a root absent from the
+list that never overflows.
+
+```text
+Coverage.Main.shapes overflows on a sampled input but is listed as unreached (exempt: true)
+```
+
+Removed: the list was restored.
+
+### the interpreter, Lean, the machine, and rustc agree where arithmetic overflows
+
+Planted: the skip of fallible operations removed from the check of the
+declared machine's infallible items. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_07`. Expected: an infallible item
+overflows on an argument it was never meant to receive, which the check names.
+
+```text
+rust-core: the infallible item op_nat_add overflows on [Nat 1, Nat 18446744073709551615]
+```
+
+Removed: the skip was restored; the machine's `abort` allowance is pinned to
+the fallible items only.
+
+### certificate E is stated in full and cannot be vacuous
+
+Planted: `∧ False` added to the `hrep` hypothesis of both statements of
+certificate E in `crates/lexlean/src/production/certificate.rs` (with and
+without an entry). The proof never uses `hrep`, so Lean accepts the module,
+and at `eea3db0` `conformance_sp_09` passed. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_09`. Expected: the suite
+asserts the whole binder list, the one hypothesis, and the conclusion by
+equality, and refuses.
+
+```text
+production: `LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R0.Compose.RustCore`: hypothesis (hrep : LexLeanPreservation.Rust.RepresentableL [(LexLeanTarget.TargetSyntax.Value.u32 left), (LexLeanTarget.TargetSyntax.Value.u32 right)] ∧ False)
+```
+
+Removed: the generator was restored. Independently of that equality, Lean
+applies every certificate E to arguments of the differential, one that breaks
+an invariant and ones at `u64::MAX` and the bounds of `i64`, proving the
+hypothesis by unfolding it, and `conformance_sp_09` plants the same
+`RepresentableL .. ∧ False` in every root's E and requires Lean to refuse the
+planted module at a witness, not at `root`. An argument that is not
+representable cannot be witnessed, as the check on a hand-written module
+shows (`root 18446744073709551616 (by simp [RepresentableL, Representable])`
+leaves `⊢ False`). `conformance_sp_09` also requires, as before, that each of
+the other two compositions (the other result shape, another function) is
+refused at `root`.
+
+### the mutation checks name the declaration
+
+Planted: the declaration expected for a mutation of an entry in
+`expected_declarations` (`crates/conformance/src/preservation.rs`) renamed
+from `entry` to `entry_wrong`. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_10`. Expected: Lean rejects the mutated
+entry in `entry`, the check compares that name with the expected one and
+refuses. (`conformance_sp_02` passes under the same plant: it plants the
+lowered-program mutations of the closure, not the entry.)
+
+```text
+Coverage.Boundary.groveRoot Validation in function 18 (Entry { validators: [Some(2), Some(13), Some(14), Some(15)] }): the error lies in `entry`, not in ["entry_wrong"]:
+Planted/P0.lean:381:1236: error: Application type mismatch: The argument
+  __vrel_2 g
+```
+
+Removed: the name was restored. The same check holds for B and E (each
+rejected rendering must fail inside the declaration of the function mutated,
+or of its callers for a member of a template instance) and for the first,
+middle, and last site of every kind.
+
+### the published program and crate are bound by the record
+
+Planted: the digest of a rendering's crate in `preservation.json` computed
+over the text without its trailing newline
+(`crates/lexlean/src/production/preserve.rs`). Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_05`. Expected: the
+digest the record carries differs from the digest of the file published
+under `preserve/crate`.
+
+```text
+LexLeanPreserve.C2b83c7159500bd653f3a83abd73760f3.R0: the record binds the published crate in rust-core
+  left: Some("62fd4c69178f72589d4336ed4f5695f4515fd7b322669e892acddf48ba5b1dcb")
+ right: Some("a9ae0afab91c841fada5f7d20ccfe8a41dfc2ca90b5b46dab280d5cd17d1385f")
+```
+
+Removed: the digest was restored; the program digest is bound the same way.
+
+### the record names the function each crate is invoked through
+
+Planted: the entry of the root `Coverage.Boundary.groveRoot` in the committed
+record `examples/production-coverage/expected/verify/preserve/preservation.json`
+changed from function 18 to 0 (and its symbol from `f18` to `f0`). Command:
+`cargo test -p repo-conformance --test conformance -- conformance_sp_05`.
+Expected: the record disagrees with certificate E, which states function 18.
+
+```text
+thread 'conformance_sp_05' (25243) panicked at crates/conformance/src/cases/preservation.rs:1569:25:
+assertion `left == right` failed: production-coverage R0 rust-std: E states the function the record names
+  left: {18}
+ right: {0}
+```
+
+Removed: the record was restored. `conformance_sp_11` reads the entry of each
+root and target from the same committed records and asserts it equals the
+lowering's before it builds the package that exports it.
+
+### the register, the vocabulary, and the exempt roots are held to the text
+
+Planted: a word added to `SP-02`'s statement in `model/ids.toml` only; a
+character changed in `SPEC.md`'s quotation of `RCI`; a root removed from the
+specification's list of roots whose overflow no input reaches. Commands:
+`cargo xtask validate-spec-links` for the first two, `conformance_sp_03` for
+the third.
+
+```text
+gate failed: RP-07: `SP-02`'s statement differs between the table and the register:
+gate failed: §17.17 (SP-04): SPEC.md quotes a declaration of `LexLeanPreservation/RustBase.lean` that the file does not state byte for byte: `/-- Rust convergence: some fuel gives the outcome, which is never`
+thread 'conformance_sp_03' (16266) panicked at crates/conformance/src/cases/preservation.rs:1387:13:
+assertion `left == right` failed: SPEC.md lists exactly the roots the suite exempts
+```
+
+Removed: all three were restored. The specification states that of 49
+certified roots 34 declare an overflow, 15 reach it, and 19 rest on the
+kernel proof alone for the overflow arm, and names the 19; the test computes
+the counts and compares the list.
+
+### a validated parameter that cannot be broken fails the sampling
+
+Planted: `invalidate` in `crates/conformance/src/differential.rs` made to find
+nothing. At `eea3db0` the parameter was left out of the differential without a
+word. Command: `conformance_sp_03`. Expected: the sampling fails.
+
+```text
+Coverage.Boundary.groveRoot: no sampled `g` could be made to break its invariant in 64 tries
+```
+
+Removed: the function was restored.
+
+### no name of the source can capture a name the generator binds, or fail the audit
+
+At `96088be` a root `r(hrep: nat)` was rejected as a certificate E
+(`LLV7016`: the parameter was captured by the hypothesis), as were `ro`, and,
+for a root with a set parameter (a boundary entry), `h`, `hr`, `hc`; and a
+parameter named `kernel`, `prefix`, `notation`, `infix`, `elab`, `macro`,
+`syntax`, or `extern` failed the token audit of its certificate with
+`LLI9001`, an internal error. Every name the composition binds now begins
+with two underscores (`__e_hrep`, `__e_ro`, `__e_hr`, `__e_hc`, `__e_h`,
+`__e_n`), which no semantic name does; the audit reads a quoted name as data,
+and the generator quotes a name spelled like a forbidden token. The suite's
+`names` project has five roots: parameters named `hrep ro h hr hc n f x P`,
+a root with set parameters named `h hr` and others named `hc ro hrep`, the
+eight words as parameters, and a structure with fields `macro` and `syntax`
+and a local `elab`; each certificate E is asserted in full, every binder of
+it is checked, the staged workspace passes the audit, and the project
+verifies under the pinned Lean.
+
+Planted: the proof lambda of E named `h` as before. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_sp_09`. Expected: the
+binder check refuses.
+
+```text
+thread 'conformance_sp_09' (5944) panicked at crates/conformance/src/cases/preservation.rs:955:9:
+names: `LexLeanPreserve.Cf98777d97dc3c4f7e91e905af21e1e07.R1.Compose.RustStd` binds `h`, which a parameter of that name would capture
+```
+
+Planted: the audit's reading of a quoted name removed (`code_only` no longer
+skips `«…»`). Expected: the audit refuses the user's `kernel` as a forbidden
+token, as before.
+
+```text
+the workspace stages: Diagnostic { code: DiagnosticCode("LLI9001"), message: "phase preservation: the certificate `LexLeanPreserve.Cf98777d97dc3c4f7e91e905af21e1e07.R2`: the forbidden token `kernel`", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
+```
+
+Removed: both were restored. The unit test of `production::preserve` shows
+the other direction: the audit still refuses a bare `prefix` binder, `macro`
+as a command, `implemented_by`, `sorry`, and `Lean.ofReduceBool`, and takes
+the same words quoted.
+
+### a match of thousands of arms cannot overflow the stack
+
+`Aligner::m` recursed once per arm, and a derivation nested as deeply as the
+match, written and dropped recursively: with `max_file_bytes = 33554432` a
+9000-arm match made `lexlean verify` die with `fatal runtime error: stack
+overflow` (the debug build at 2000). The arms are now derived by a loop, and
+a derivation is written and dropped with a stack of its own (a unit test
+writes and drops one 300 000 levels deep on a 256 KiB stack). `conformance_sp_08`
+aligns a match of 9000 arms, and then under a limit of 1 MiB, on the 2 MiB
+stack of a thread. Planted: the previous `rust_cert.rs`.
+
+```text
+thread '<unknown>' (28415) has overflowed its stack
+fatal runtime error: stack overflow, aborting
+```
+
+Removed: the file was restored.
+
+### a name of the source cannot shadow a word a certificate writes
+
+At `6992f33` a root `r(true: nat)` was rejected as a certificate A
+(`LLV7013`, in `__fits_0`: the bare `true` of `(true && …)` was the
+parameter). Real-Lean verifies of one root with a set parameter (a boundary
+entry) and one named parameter showed the same capture for six more names,
+which the first review's list had not tried:
+
+```text
+true: error[LLV7013]: certificate A: `…R0` was rejected in `__fits_0` of root `Production.Main.total`: error: Application type mismatch: The argument true has type Nat but is expected to have type Bool
+cond: … was rejected in `denote` … Function expected at cond but this term has type Nat
+denote, accepts: … was rejected in `entry_accepts` … Function expected at denote / accepts
+entryFits, entryValue: … was rejected in `denoteEntry` … Function expected at entryFits / entryValue
+absurd: … was rejected in `entry_refuses` … Function expected at absurd
+if_true: … was rejected in `entry_accepts` … Variable `if_true` is not a proposition or let-declaration
+```
+
+The certificates now write `Bool.true` and `Bool.false` for the Booleans they
+mention where a parameter is in scope, `_root_.cond`, `_root_.absurd`,
+`_root_.trivial`, `_root_.if_true`, and `_root_.True` for the globals, and the
+definitions they state (`denote`, `accepts`, `entryFits`, `entryValue`,
+`denoteEntry`) by their full names, and their own lambdas use names beginning
+with two underscores. `conformance_sp_09` checks the whole text of every
+certificate A and E of the three corpora: every bare word that is not Lean
+syntax or a tactic, a backend type name (which linking refuses as a binder), a
+named argument, a declared name, a pattern head, or one of the source's own
+names fails. The suite's `names` project has roots whose parameters are named
+`cond denote accepts entry entryFits entryValue denoteEntry root fits absurd
+if_true trivial native_decide` (also behind a set parameter, for the entry),
+besides the names of the earlier rounds; it is asserted in full and verifies
+under the pinned Lean. (`true` and `false` were parameters of it until the
+backend's own module was found to capture the Boolean literals of a function
+with a parameter of that name; linking now refuses them, and the certificates
+still write `Bool.true`, as the reasoning above holds for them.)
+
+Planted: `true` written bare again. Expected: the check of bare words refuses.
+
+```text
+thread 'conformance_sp_09' (22628) panicked at crates/conformance/src/cases/preservation.rs:689:5:
+LexLeanPreserve.Cb181ebce5bf85940bfaf72afe84d15a7.R0: bare words a parameter could shadow: {"true (in ` : UInt32) : Bool :=   ((true && (true && tr`)", "true (in ` :=   ((true && (true && true)) && true)  th`)", "true (in `) : Bool :=   ((true && (true && true)) && t`)", "true (in `ue && (true && tr
+```
+
+Removed: the constant was restored.
+
+### a quoted name is the name it is
+
+The token audit read `«…»` as data at `6992f33`, which let `Lean.«ofReduceBool»`,
+`«sorryAx» False true`, `@[«implemented_by» g]`, `@[«extern» "c"]`,
+`«Lean».«ofReduceNat»`, `@[«macro» foo]`, and an unclosed `«x` before
+`:= sorry` through; the pinned Lean elaborates each as the thing itself. The
+audit now keeps the content of a quoted name: forbidden constants are refused
+quoted or not, a quoted name inside an attribute list is read plain, and a
+quoted name outside one is exempt only from the keyword spellings (a quoted
+`kernel` or `prefix` is an identifier). An unclosed quotation, string, or
+comment, an empty quotation, and one that is not made of letters, digits, `_`,
+`.`, and `'` are refused. The unit test of `production::preserve` holds the
+reviewer's seven probes, with the other attribute forms, as refusals, and the
+positive cases (`«kernel»`, `«sorry»` as a name) as acceptances.
+
+Planted: the quoted content skipped again. Command: `cargo test -p lexlean
+--lib production::preserve`. Expected: the first probe passes the audit.
+
+```text
+test production::preserve::tests::a_quoted_forbidden_name_is_still_forbidden ... FAILED
+
+```
+
+Removed: the audit was restored.
+
+### a name spelled like a word the generated-Lean audit forbids
+
+A parameter `native_decide` ended in `error[LLI9001]: phase verify:
+`Production.Main`: forbidden token `native_decide` in generated Lean`, an
+internal error for a valid program. The backend now quotes a segment spelled
+like a word that audit forbids (`native_decide`, `admit`, `IO`), as it quotes
+a reserved token, and the audit reads a quoted segment as a different token.
+The `names` project has a parameter of that name and verifies.
+
+Planted: the quoting removed from the backend's `identifier`. Command:
+`lexlean verify` on a project with a parameter `native_decide`. Expected: the
+old internal error.
+
+```text
+error[LLI9001]: phase verify: `Production.Main`: forbidden token `native_decide` in generated Lean
+```
+
+Removed: the quoting was restored.
+
+### the roots of a project are bounded together
+
+The call path of a closure member is the work of this section. A member of the
+eligibility report (§17.13, a build artifact) records its shortest call path
+from the root, as a list of strings, so the closure of a chain of `D` calls
+holds `D^2 / 2` steps and the closures of `N` roots that call one another
+`N^3 / 6`. Measured with the previous code (`lexlean check`; the roots are
+chained, each calling the one before):
+
+```text
+chain of 3000 functions: 638 MB (7000: about 3 GB, the 2.9 GB an earlier text recorded)
+chain of 250 roots: 214 MB, 1.9 s; 500: 1.3 GB, 15 s; 1000: 9.5 GB, 90 s; 2000: exhausted the host
+```
+
+Independent functions are linear, as the first reviewer of the earlier text
+found: 1500, 3000, 7000, and 14000 trivial functions take 56, 101, 223, and
+435 MB. The certificates of the roots repeat their closures too, and `verify`
+held all of them: the texts of `N` chained roots grow with `N` squared, each
+under `max_file_bytes` (in-process, 25 roots take 1.3 MB, 50 4.8 MB, 100
+18.4 MB of certificates, crates excluded). A path is now shared with the paths
+that extend it, and the report counts toward `max_total_source_bytes`, once more
+beyond the sources (the rule for artifact declarations): the analysis totals the
+bytes the report takes root by root and stops a closure whose members alone pass
+the limit; the certificates, crates, and programs of all the roots count toward
+`max_total_source_bytes` as they are generated. (A first version bounded the
+report by `max_file_bytes` and refused the generic chain 14 deep, whose
+report is 4 266 130 bytes and which verifies; the report is an artifact, not a
+file the compiler reads.) Now (`lexlean check` and `build`):
+
+```text
+chain of 250 roots (default limits): error[LLS8002]: phase production: the production-eligibility report of module `Main` is beyond the 67108864 bytes of max_total_source_bytes at root `Production.Main.r243`: a member of a closure records its shortest call path, so a chain of calls takes the square of its length and roots that call one another the cube of their number
+accepted and refused: a chain of 243 roots (check 4.5 s, 75 MB; build 14 s, 675 MB, a report of 66 508 069 bytes) and 244; a chain of 2359 functions and 2360
+```
+
+The negative fixture `eligibility-report-limit` is a chain of 100 roots under
+a `max_total_source_bytes` of 4 194 304 (`check`), and `certificates-total-limit`
+a chain of 40 roots under one of 2 000 000 (`verify`), which passes the report
+and is refused by the count of generated bytes:
+
+```text
+error[LLS8002]: max_total_source_bytes exceeded in phase certificates: configured 2000000, the programs, crates, and certificates generated so far are 2010779 bytes once root `Production.Main.r25` has generated its certificates B and E and its crates
+```
+
+Planted: the report's limit removed (`ReportBudget::exceeded` never reached:
+the stop of a closure and the sum over roots both disabled). Command: `lexlean
+check` in the fixture `eligibility-report-limit`. Expected: the project is
+accepted, as it was (its report is 5.5 MB).
+
+```text
+checked 1 module (source ec9e53086cd452500ccaf1b1d524bd2619b6e6e58198e4b2925a4cf1ee97bf69, semantic cce26a8cdd58e11dbb290260bdd03259cc463a76359f0b81cdbcb5ce146129e5)
+exit 0
+```
+
+Planted: the count removed from `GeneratedBytes::charge`. Command: `lexlean
+verify` in the fixture `certificates-total-limit`. Expected: the project is not
+refused; Lean is started on a project of 40 roots.
+
+```text
+(no output after 200 seconds; the process was stopped by the timeout, exit 124)
+```
+
+Removed: both were restored.
+
+### a parameter named like a namespace of the library
+
+A root with a parameter named `LexLeanPreservation`, `LexLeanTarget`, or
+`LexLeanPreserve` failed certificate A or E: Lean reads the first component
+of a dotted name as a local before it reads a namespace, so every
+`LexLeanPreservation.conv_var` of the certificate was a field of the
+parameter. Every reference a certificate makes to a global is now written from
+the root (`_root_.LexLeanPreservation.conv_var`), by a pass over the text
+that reads it with the lexer of the token audit (`from_the_root`), and
+`conformance_sp_09` has two oracles that do not depend on it. Its gate reads
+the first component of every longer name, the parameter's name included (the
+earlier gate skipped any name beginning with a name of the source, which is
+what hid the three); and the `names` project has a parameter for each
+namespace the certificates of the three corpora begin a name with, which the
+suite reads off those certificates (`LexLeanPreservation`, `LexLeanTarget`,
+`LexLeanPreserve`, `Corr`, `RustSyntax`, `TargetSyntax`, ...), for the
+namespaces of the shipped libraries and the toolchain besides (`Compose`,
+`Rust`, `RustStd`, `RustCore`, `LexLeanAudit`, `LexLeanCore`, `LexLeanModels`,
+`LexLeanError`, `IO`, `Init`, `Lean`, `Lake`, `Std`; `LexLeanRuntime` and
+`LexLeanCollections` are names the backend writes bare and linking refuses), and
+verifies under the pinned Lean. A project of three roots, one parameter named
+for each of the first three, verifies through `lexlean verify`.
+
+Planted: the pass removed (`from_the_root` returns its text). Command: `cargo
+test -p repo-conformance --test conformance -- conformance_sp_09`. Expected:
+the gate names the unrooted references.
+
+```text
+LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0: names a parameter could shadow: {"LexLeanPreservation.FunRel (line 21)", "LexLeanPreservation.Obs (line 24)", "LexLeanPreservation.Obs.overflow (line 25)", "LexLeanPreservation.Obs.value (line 25)", "LexLeanPreservation.Rel (line 21)", ...
+```
+
+The same plant through `lexlean verify` of the project of three roots is
+refused by Lean itself, which is the oracle that does not read the text:
+
+```text
+error[LLV7013]: certificate A: `LexLeanPreserve.C5fb782e9353b19232660321887217eca.R0` was rejected in `__rel_0` of root `Production.Main.rPreservation`: error(lean.invalidField): Invalid field `FunRel`: The environment does not contain `Nat.FunRel`, so it is not possible to project the field `FunRel` from an expression
+  LexLeanPreservation
+of type `Nat`
+```
+
+Planted: `LexLeanPreserve` removed from the roots the pass writes (the root in
+which a certificate E names its A and B). Expected: the gate refuses E.
+
+```text
+LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0.Compose.RustCore: names a parameter could shadow: {"LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0.RustCore.krate (line 10)", "LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0.RustCore.root (line 11)", "LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0.denote (line 10)", "LexLeanPreserve.C26947099fef0ea02e807c837bb4923e0.R0.root (line 11)"}
+```
+
+Removed: both were restored.
+
+### a match of many arms verifies through `lexlean verify`
+
+SPEC.md and this file said that a match on 440 constructors verifies. It was
+certified in-process and never checked by Lean: through `lexlean verify` a
+match of about 60 arms or more ended in `error[LLV7011]: named-root
+extraction: the extraction record is malformed: recursion limit exceeded`
+(Lean's code for a match nests two levels of JSON for each arm, and the reader
+stops at 128 levels), and past that three more things stood in the way. The
+compiler input holding the record was serialized and re-read with the same
+limit (a panic); the pinned Lean's default `synthInstance.maxHeartbeats`
+(20 000) is exhausted by a certificate B of a match on 160 arms, and
+`maxHeartbeats` (200 000) by one on 200, each ending as `Application type
+mismatch` in a valid certificate; and Lean's time for certificate B grows
+faster than the fourth power of the arms. The record is read without the
+limit on a stack of its own, the compiler input likewise, and the certificates
+of a program whose widest match has more than 100 arms lift both budgets
+(SPEC.md §17.17 *Limits*). Measured, with the pinned Lean 4.32.1, the
+certificate B of a match on 100 constructors took 11 seconds, 130 took 17, 160
+26, 200 42, 300 201, and 440 more than 15 minutes; certificate A of 200
+constructors (949 KB) took 59 seconds. Through `lexlean verify`, a match on
+180 constructors verifies (`conformance_sp_02` runs it), and so does one on
+300 (about 13 minutes with the library compiled first), while one on 400 ends
+in the registered limit:
+
+```text
+300 constructors: verified 1 module; attestation e4e97a92752af7d2dca23dcec4c4998cd8751f9f070e8d7323f568fa36585cb0
+400 constructors: error[LLS8002]: child_timeout_ms exceeded by `lean` in phase LexLeanPreserve.C439e5df7108688ab7813661fe3502b62.R0: configured 300000, observed 300006 ms
+```
+
+Planted: the recursion limit of the extraction record not disabled
+(`reader.disable_recursion_limit()` removed in `lcnf.rs`). Command: `lexlean
+verify` of a match on 100 constructors. Expected: the old error.
+
+```text
+error[LLV7011]: named-root extraction: the extraction record is malformed: recursion limit exceeded at line 1 column 83365
+```
+
+Planted: the budgets not lifted (`budget_options` returns nothing). Command: the
+same on 180 constructors. Expected: a valid certificate is rejected.
+
+```text
+error[LLV7013]: certificate A: `LexLeanPreserve.Cfb71e290f81fe25a5c5414c91c004e69.R0` was rejected in `__rel_0` of root `Production.Main.r`: error: (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached
+```
+
+(With the budgets scaled by a formula instead, 300 constructors ended in
+`error[LLV7015]: certificate B ... was rejected in `fun0` ...: Application
+type mismatch`: the cost of B grows faster than any formula that could be
+stated, so the budgets are lifted and the wall clock is the limit.) The quick
+check of `conformance_sp_02`, that the certificates of 101 arms carry the two
+options and those of 100 do not, refuses the plant before Lean starts:
+
+```text
+assertion `left == right` failed: 101 arms: `LexLeanPreserve.C16c73cd9be17a8a630fd2b154636a079.R0` and `set_option maxHeartbeats 0
+```
+
+Removed: both were restored. A semantic module is JSON and the front end
+reads it with the reader's own recursion limit of 128 levels, which
+SPEC.md §17.17 now records: a chain of 130 nested `let`s is `LLT4001`
+`recursion limit exceeded` (`conformance_sp_02` checks it).
+
+### no declaration can be named for a name the backend writes bare
+
+A function, structure, or inductive named `Int`, `String`, `Unit`, `Except`,
+`ByteArray`, `Ordering`, `UInt8`, `UInt64`, `Int8`, `Int64` (and the other
+widths), `true`, or `false` was accepted by `check` and ended in
+`error[LLV7002]: Lean rejected Coverage.Main: type expected, got (Int : Nat ->
+Nat)`, because the module's namespace holds the declaration and Lean resolves
+the name there before the root. A probe of every identifier the examples'
+generated Lean writes (1218), each as a function in a module that uses the
+built-in types, found exactly these, besides the seven refused before. A
+parameter named `true` was the same defect for Boolean literals (`Application
+type mismatch: The argument true has type Nat`). Quoting cannot prevent it,
+since Lean resolves names and not spellings, so linking refuses every name of
+`BACKEND_BARE_NAMES` (33, `true` and `false` added) for a declaration of any
+kind and for a binder: `LLT4001`, the fixtures `declaration-lean-name` and
+`binder-bool-literal-name`, and `conformance_df_12` for each name and each of
+the three kinds.
+
+Planted: the declaration check removed (`check_declaration_name`). Command:
+`cargo test -p repo-conformance --test conformance -- conformance_df_12`.
+Expected: a declaration named `Int` is accepted.
+
+```text
+thread 'conformance_df_12' (9037) panicked at crates/conformance/src/support.rs:462:14:
+check fails
+```
+
+Planted: `true` and `false` removed from the names. Command: `conformance_ex_07`.
+Expected: the fixture of a parameter `true` is accepted.
+
+```text
+/home/user/wt-25/tests/negative/binder-bool-literal-name: step 1 `check ` exited 0, case.toml expects 1
+```
+
+A function, structure, inductive, field, or constructor named `native_decide`
+or `IO` is valid: the module quotes it, and so now does the audit module,
+which printed `#print axioms Coverage.Main.native_decide` unquoted and ended
+in `error[LLI9001]: phase verify: audit module LexLeanAudit...: forbidden
+token Coverage.Main.native_decide in generated Lean`. A unit test of the audit
+module holds the quoted text, and `conformance_sp_09` verifies, under the
+pinned Lean, a project with a function `native_decide`, a structure `IO`
+with fields `native_decide` and `kernel`, and an inductive `extern` with
+constructors of those names.
+
+Planted: the quoting removed from `audit_modules`. Command: `cargo test -p
+lexlean --lib audit_module_tests`. Expected: the old text.
+
+```text
+thread 'backend::lean::audit_module_tests::the_audit_module_names_a_forbidden_looking_declaration_quoted' (3453) panicked at crates/lexlean/src/backend/lean.rs:2587:9:
+module
+import Coverage.Main
+#print axioms Coverage.Main.IO
+```
+
+A `module_prefix` of `IO` gave the same internal error and `Lean`, `Init`, or
+`Std` gave `LLV7003` in the middle of verification (the project's `Lean.Main`
+beside the toolchain's `Lean`); a first segment of one of the toolchain's
+roots (`Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR`) or
+`IO` is now a configuration error before anything runs: `LLC0101`, the fixture
+`module-prefix-reserved`. The prefixes the repository uses (`LexLeanExample`, `Production`, ...) are free;
+so is `LexLeanTarget` without a production root (see the module and prefix
+record below).
+
+Planted: `is_reserved_module_root` made false. Command: `cargo test -p lexlean
+--lib reserved_root_tests`. Expected: a toolchain root is accepted.
+
+```text
+thread 'config::reserved_root_tests::a_toolchain_root_is_reserved_and_a_project_root_is_not' (3500) panicked at crates/lexlean/src/config.rs:1083:13:
+Init
+```
+
+Removed: all four were restored.
+
+### the token audit reads text as Lean does
+
+The audit of certificates and library modules read characters differently from
+Lean in ways that hid text from it: a character literal `'"'` opened a string
+that swallowed the following `theorem t : False := sorry`; a raw string
+`r"\"` ended later than Lean ends it; `sorry.1`, `0sorry`, and `sorry` followed
+by a Greek letter or an accented one were read as another word than Lean
+reads; and `attribute [«implemented_by» g] h` was not read as an attribute. The
+scanner is now a lexer of Lean's tokens (comments with nesting, strings with
+escapes and gaps, raw strings with any number of `#`, character literals with
+`\x` and `\u` escapes, numbers, dotted and unicode and quoted names, commands),
+fails closed on anything it cannot classify (an unclosed literal, comment, or
+quotation, a control character, code in an interpolated string, a character
+literal of two characters), and takes every use of a forbidden name as the name,
+quoted or not. The unit test `the_text_is_read_as_lean_reads_it` holds each
+probe as a refusal and the legitimate forms (`'"'`, `r#"a"b"#`, `x''`, `α₁`,
+`0x1F`, `«sorry»` as a name, doc comments containing the word) as acceptances,
+and `the_shipped_library_audits` reads every module of the library with it.
+
+Planted: the character literal branch of `lex` disabled. Command: `cargo test
+-p lexlean --lib production::preserve`. Expected: the first probe passes.
+
+```text
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (17823) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
+"def c1 := '\"'\ntheorem t3 : False := sorry\ndef c2 := '\"'\n"
+```
+
+Removed: the branch was restored.
+
+### a timeout ends the work, not only the process that was waited for
+
+`child_timeout_ms` killed `lake`, and the `lean` it had started was left
+running with its parent gone: at 100% of a core, with a resident set that grew
+without bound (3.3 GB after 70 seconds, 4.5 GB after two minutes). Before the
+budgets of a wide match were lifted, Lean's heartbeats ended such a process by
+themselves; with them at 0 nothing did, and SPEC.md §17.17 said the timeout
+bounds every Lean process. Every child of `verify` now leads a process group of
+its own (`CommandExt::process_group`, safe Rust), and on a timeout (or any
+other failure of waiting) the whole group is killed and awaited (first with the
+platform's `kill`, which a host may not have: the section on interrupts below
+replaces it with a direct signal; `taskkill /T` on windows). The unit test starts a script that
+starts a long-running grandchild and outlives the timeout, then reads the
+process table:
+
+```text
+test verify::child::timeout_tests::a_timeout_ends_what_the_child_started ... ok
+```
+
+Planted: the signal to the group removed, so that only the child is killed.
+Command: `cargo test -p lexlean --lib timeout_tests`. Expected: the
+grandchild is still running.
+
+```text
+thread 'verify::child::timeout_tests::a_timeout_ends_what_the_child_started' (13145) panicked at crates/lexlean/src/verify/child.rs:781:9:
+a timeout left running: ["13149: sleep 1000.13144 "]
+```
+
+Through the CLI, `lexlean verify` of a match on 200 constructors under a
+`child_timeout_ms` of 30 000 ends `error[LLS8002]: child_timeout_ms exceeded by
+`lean` in phase LexLeanPreservation.RustLemmas` and, three seconds later, no
+`lean` and no `lake` is running. The other places that start `lake`, `lean`,
+`rustc`, or `cargo` are the test harness (no timeout) and `lock` and the PDF
+provider, which go through the same function.
+
+Removed: the signal was restored.
+
+### a bound on certificate A that counts a type as it is printed
+
+The early bound counted the type of a `Build`, `Value`, `Let`, or `Match` as
+a tree at every node, so a pair nested `d` deep cost `d(d + 1) / 2` type
+nodes at 17 bytes, and the bound exceeded the certificate from about 40 deep
+(1.55 times at 120; with twenty functions of that depth, a bound of 5.08 MB on
+certificates of 2.9 MB, refused at the default limit). A type node is now
+counted as the certificate prints it: those of every parameter, result, and
+constructor field, and the largest type written at an expression of a function
+once for the function (`Measure::printed_types`); `types`, which charges
+`max_ir_nodes`, is unchanged. The costs were fitted again on 166 programs
+(the corpora, 32 families, the mixed shapes at five scalings, and 24 random
+shapes held out of the fit): the largest ratio of a bound to its certificate
+at the fitted costs is 1.00 in the fit and 0.99 in the held-out programs, and
+0.50 at half. The families added are pairs nested 20, 60, and 120 deep, the same
+in twenty functions, options, lists, and results nested 15 to 50 deep, and
+records nested 10 and 30 deep, and two of the mixed shapes (and every random one)
+have a nested pair of up to 120 deep in up to 24 functions.
+
+Planted: the type of an expression counted at every node again
+(`note_type` keeps `printed_types`). Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_02`. Expected: a program whose
+certificates fit is refused.
+
+```text
+Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 6508182 bytes (363049 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
+```
+
+Removed: the count was restored. Certificate E's bound no longer has a cost
+for shapes (it was above E for 24 functions of nested pairs, 3.7 times): E
+states the entry, whatever else the program holds.
+
+### a module is a namespace, and a prefix is not the library's
+
+A module of a project is a namespace Lean searches before the root from every
+module of it, so a module `Nat` with a function `blt` captured `Nat.blt` in
+itself and in the modules that import it (`error[LLV7002]: Function expected
+at Nat.blt`). Language 1.2 refuses a module named like a namespace the
+generated code writes qualified: the names of `BACKEND_BARE_NAMES`, the
+runtime classes and Lean namespaces of `QUALIFIED_NAMESPACES`, and the roots
+this compiler ships; `conformance_sp_09` reads every uppercase namespace the
+corpora's generated modules write qualified off them and requires that a module
+of each name is refused (the first run named `Appendable`, `Decimal`, `Fixed`,
+`Indexable`, `Key`, `Lengthable`, `Sliceable`, `ToMathInt`, besides `Ord` and
+`Quotient`, which the list now holds). Fixture `module-name-lean-namespace`.
+
+A `module_prefix` that begins with `LexLeanPreserve`, `LexLeanTarget`, or
+`LexLeanPreservation` passed `check` and failed every production `verify`
+(`LLV7013`, `object file … of module LexLeanTarget.Main does not exist`). The
+roots this compiler ships or generates (`SHIPPED_ROOTS`, eleven, checked against
+the roots of the shipped library by `every_shipped_root_is_reserved`) are
+`LLC0101` at configuration. `LexLeanTarget` is the root of the calculus modules
+that the library imports and the prefix of the repository's `compiler` project,
+which has no production root: it is accepted, and a module with a production
+root under it is `LLT4005`. (The previous record called `LexLeanTarget` free,
+which is true only without a production root.) Fixtures
+`module-prefix-shipped-root` and `module-prefix-target-production`.
+
+Planted: `is_reserved_module_name` made false. Command: `conformance_sp_09`.
+Expected: the namespaces are named.
+
+```text
+generated modules write namespaces qualified that a module name is not refused for: {"Appendable", "Decimal", "Fixed", "Indexable", "Key", "Lengthable", "Ord", "Quotient", "Sliceable", "ToMathInt"}
+```
+
+Planted: the shipped roots removed from `is_reserved_module_root`. Command:
+`cargo test -p lexlean --lib reserved_root`. Expected: the prefixes are free.
+
+```text
+thread 'config::reserved_root_tests::every_shipped_root_is_reserved' (32745) panicked at crates/lexlean/src/config.rs:1117:13:
+```
+
+Removed: both were restored.
+
+### a name Lean declares itself, and a parameter named like a constructor
+
+A constructor named `rec`, `recOn`, `casesOn`, `noConfusion`,
+`noConfusionType`, `ctorElim`, `ctorElimType`, `ctorIdx`, or `rec_1`, or a field
+named `rec`, `recOn`, `casesOn`, `noConfusion`, `noConfusionType`, or `ctorIdx`,
+was accepted by `check` and ended in `error[LLV7002]: … (kernel) constant has
+already been declared 'Coverage.Main.I_rec.rec'`. `LEAN_GENERATED_MEMBERS` is
+read off the pinned Lean: `conformance_df_12` declares ten samples (a
+recursive inductive, a nested one, mutual ones, a higher-order one, an
+enumeration, structures with a proposition field) and lists the names Lean holds
+under each besides the user's own and the `_sizeOf_` ones, which no source name
+can spell: `casesOn`, `ctorElim`, `ctorElimType`, `ctorIdx`, `noConfusion`,
+`noConfusionType`, `rec`, `recOn`, `below`, `brecOn`, `toCtorIdx` (enumerations),
+`mk` (structures), and the numbered `rec_1`, `below_1`, `brecOn_1`. They are
+`LLT4001` for a constructor or a field (`mk` only for a field); the near names
+(`rec_`, `recur`, `ctorIdx0`) are free. Fixture `member-generated-name`.
+
+A used parameter named like a nullary constructor of its own type (`zero :
+nat`, `none : option nat`, `nil : list nat`, `red : Color`) is valid, and ended
+in `error[LLV7006]: Lean produced unexpected output … Local variable 'red'
+resembles constructor 'Production.Main.Color.red'`. The constructors of a module
+are never written bare, so its header now silences
+`linter.constructorNameAsVariable`; a project of the four verifies.
+
+Planted: the check of the generated members removed. Command: `conformance_df_12`.
+Expected: a constructor `rec` is accepted.
+
+```text
+thread 'conformance_df_12' (358) panicked at crates/conformance/src/support.rs:462:14:
+check fails
+```
+
+Planted: the option removed from the header. Command: `lexlean verify` of the
+project of the four. Expected: the old error.
+
+```text
+error[LLV7006]: Lean produced unexpected output for `Production.Main` (warning): Local variable 'red' resembles constructor 'Production.Main.Color.red' - write '.red' (with a dot) or 'Production.Main.Color.red' to use the constructor.
+Note: This linter can be disabled with `set_option linter.constructorNameAsVariable false`
+```
+
+Removed: both were restored.
+
+### the lexer takes the longest token
+
+`def x : Float := 1e10axiom bad : False` was read as `1`, the name `e10axiom`,
+and so on: the exponent of a number was not scanned, and Lean reads `1e10`
+and the keyword `axiom` (the same for `1.5e3unsafe` and `1e10#evalIO.println
+"pwn2"`, which printed `pwn2`); and `#evalIO.println "pwned"` was one command
+`#evalIO` where Lean takes the longest token it knows, `#eval`, and a name. A
+number now takes `[eE][+-]?[0-9]+` after its digits and fraction (an `e` with
+no digits is refused, as Lean refuses it), and `0b`, `0o`, `0x` the digits of
+their radix (none is refused); every `#` command is refused, since neither a
+library module nor a certificate holds one and the word after the `#` is not
+read. The unit test holds the reviewer's probes (and `#evalpwned`,
+`#printaxiom`, `0b1sorry`) as refusals and `1e10`, `1E-3`, `1.5e+3`, `0xFF`,
+`0b101e` as acceptances.
+
+Planted: the exponent not scanned. Command: `cargo test -p lexlean --lib
+production::preserve`. Expected: the first probe passes the audit.
+
+```text
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32386) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
+"def x : Float := 1e10axiom bad : False\ntheorem t : False := bad\n"
+```
+
+Planted: commands refused only when they are exactly `#evalnever` (the old
+exact match, in effect). Expected: `1e10#evalIO.println "pwn2"` and the rest
+pass.
+
+```text
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (32444) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
+"def x := 1e10#evalIO.println \"pwn2\"\n"
+```
+
+Removed: both were restored.
+
+### the eligibility reports of a project are bounded together
+
+The budget was per module: six modules of a chain of 240 roots wrote six
+reports of 58 984 126 bytes (354 MB) against a limit of 67 108 864, and `build`
+held 1.18 GB. The analysis now carries the bytes of the reports of the modules
+before it (`check` and `build` and `verify` all go through it), and `build` sums
+the files it writes. The fixture `eligibility-reports-total-limit` is three
+modules of 60 roots, each of 1.6 MB, under a limit of 4 194 304: the third
+module is refused.
+
+```text
+error[LLS8002]: phase production: the production-eligibility report of module `Main` is beyond the 4194304 bytes of max_total_source_bytes at root `Production.Main.r56`: a member of a closure records its shortest call path, so a chain of calls takes the square of its length and roots that call one another the cube of their number
+```
+
+Planted: each module starts from 0 again (the old behaviour). Command:
+`lexlean check` in the fixture. Expected: the project is accepted.
+
+```text
+checked 3 modules (source 20f1bcc232bf1186b1118a118beb8947341bfcf4c524d2ef57af5f19a2cd782b, semantic 8077be4ab922d16dc2f9611b1b915d5562759428c237a5d16f3f24cdb71b8e03)
+exit 0
+```
+
+Removed: the carry was restored.
+
+### certificates A and E are generated under the limit
+
+At `96088be` the estimate (nodes only) was below certificate A for a string
+literal of 100 000 characters (0.01), an enumeration of 2000 constructors
+(0.05), and a match nested 25 deep (0.26), and `lexlean verify` generated a
+certificate A of 297 MB for 4000 constructors before refusing it. Every
+certificate is now generated under `max_file_bytes`: the proof of each term,
+each match arm, the encoders, each function, and the boundary are checked as
+they are built. A match arm was also written by wrapping the whole arm again
+for each preceding arm, which is cubic in the arms in time; it is written
+once. `conformance_sp_02` certifies the stress families (literals,
+enumerations of many constructors, nested matches, wide instances, long
+names) and regenerates A and E of every family under half their size,
+requiring `LLS8002`.
+
+Planted: the byte budget removed from certificate A (`within` never refuses).
+Expected: A is regenerated under half its size and accepted.
+
+```text
+thread '<unnamed>' (28544) panicked at crates/conformance/src/cases/preservation.rs:384:17:
+assertion `left == right` failed: doubling let chain 4: Production.Main.r: certificate A under half its size
+  left: "accepted"
+```
+
+Removed: the budget was restored. The early refusal is a lower bound and the
+budget is the guarantee; the SPEC says so.
+
+### the cost of certification is fixed, not proportional to the roots
+
+`lexlean verify` of a project with a production root compiles the whole
+preservation library (13 modules) before the first certificate, whether the
+project has one root or many; a reviewer measured about 2.5 minutes for it,
+209 s for a six-root project and 144 to 157 s for a three-root one. The
+preservation suite reflects it: on the host that ran the plants above,
+`conformance_sp_10` took 236 s, `conformance_sp_05` 131 s, and
+`conformance_sp_02` 727 s alone; the whole suite is about 24 minutes at three
+test threads. A CI budget for the Lean-backed jobs must count that, not the
+number of roots.
+
+Scope note: the relaxation of named-root extraction that admits `Init`
+definitions exported as axioms (NE-03) shares this change because the
+certificates need it; it is recorded in `CHANGELOG.md` and is not part of the
+semantic-preservation claim.
+
+### an interrupt ends the children, and a group is ended without `kill`
+
+A child leads a process group of its own so that a timeout can end what it
+started. That took it out of the group the terminal signals: a Ctrl-C (or the
+`SIGTERM` of `timeout 600 lexlean verify`) ended `lexlean` and left the `lake`
+and the `lean` it had started running at full speed. `child::run` now starts a
+thread, once, that waits for `SIGINT`, `SIGTERM`, and `SIGHUP` (the next section
+says what changed since: `SIGQUIT`, ignored signals, who arms it) (`signal-hook`,
+Apache-2.0 OR MIT, with `libc` and `signal-hook-registry`, which `cargo deny`
+accepts under the licences already allowed); the thread kills every live child
+group, and lets the signal end the process, so the exit status is the
+signal's. A child is registered under the lock the thread takes, so a signal
+between the spawn and the registration still ends it. `SIGKILL` cannot be
+caught and leaves the children; SPEC.md says so.
+The code is `crates/lexlean/src/verify/lifeline.rs`, a module of its own with
+item-level `cfg`: an inline `#[cfg(unix)] mod` makes `conformance_rp_12` treat every
+test after it in the file as cfg-hidden (it did, on the first full run).
+
+The group was signalled by a `kill` executable found on `PATH`, and where there
+was none (the shipped `debian:bookworm-slim` image has no `procps`) only `lake`
+was killed and the failure dropped. It is now `rustix::process::kill_process_group`
+(a safe wrapper; the crate still forbids unsafe code), and a group that could
+not be signalled, or that is still there two seconds after `SIGKILL`, is said in
+the diagnostic: `the processes it started may still be running: …`.
+
+`crates/lexlean/tests/interrupt.rs` runs the real `lexlean lock --allow-network`
+with a `git` on `PATH` that starts a `sleep` and never finishes, waits until
+the `sleep` runs, sends `lexlean` `SIGINT` and, in a second run, `SIGTERM`,
+and requires that `lexlean` ended by the signal itself and that no `sleep` is
+left. `crates/lexlean/tests/stop_without_kill.rs` sets `PATH` to a directory
+holding only `sleep` (and requires that `kill` cannot be resolved there) and
+requires that a timeout ends the grandchild.
+
+Planted: the handler does not signal the live groups. Command: `cargo test -p
+lexlean --test interrupt`. Expected: the `sleep` is left running after
+`SIGINT`.
+
+```text
+thread 'an_interrupt_leaves_no_child_running' (28288) panicked at crates/lexlean/tests/interrupt.rs:134:5:
+SIGINT left running: [(28294, "sleep 1000.28287 ")]
+```
+
+Planted: `stop` does not signal the group (only the child is killed and awaited).
+Command: `cargo test -p lexlean --test stop_without_kill`. Expected: the
+grandchild survives and the diagnostic says so, rather than saying nothing.
+
+```text
+thread 'a_timeout_ends_the_group_on_a_host_without_kill' (28375) panicked at crates/lexlean/tests/stop_without_kill.rs:59:5:
+the group was ended, so the report does not claim otherwise: Diagnostic { code: DiagnosticCode("LLS8002"), message: "child_timeout_ms exceeded by `lake` in phase Probe: configured 700, observed 702 ms; the processes it started may still be running: processes of group 28377 still existed 2000 ms after SIGKILL"
+```
+
+Removed: both were restored.
+
+### the interrupt handler leaves the process alone, and a zombie is ended
+
+Review r49h found that the thread above did more than it should. It is now
+armed by `cli::main_entry`, which only the `lexlean` executable calls, and the
+first child installs it only then: `lexlean::cli::run`, called by a host that
+embeds the library, installs no handler, so the host's `SIGTERM` is the
+host's. The thread watches `SIGINT`, `SIGTERM`, `SIGHUP`, and `SIGQUIT`
+(Ctrl-\ used to leave the child running), less the signals the process was
+started ignoring: the mask is read before anything is installed, from
+`SigIgn` of `/proc/self/status` or from `ps -o ignored`, so a `nohup lexlean
+verify` is not ended by the `SIGHUP` it was told to ignore; where the host can
+report neither, `SIGHUP` is not watched. `stop` counts a zombie of the group
+as ended, and reaps the ones that are children of this process (the shipped
+image runs `lexlean` as PID 1, which never reaps the grandchildren it killed,
+so the group seemed to outlive `SIGKILL` and every timeout waited two seconds
+and claimed that processes might still be running); the process table is
+`/proc` or `ps -axo pid=,ppid=,pgid=,stat=`. A `taskkill` that exits non-zero
+is reported (`taskkill_outcome`), and `verify` removes the
+`.lexlean/verified/.staging-*` directories that interrupted or killed runs left
+(`remove_stale_staging`, under the project's mutation lock; a file, a link, and
+a directory of another name are left alone). SPEC.md §8.5 gives `rustix` and
+`signal-hook` (and every other direct dependency) a role, and `audit-shipped`
+requires the table and the declared dependencies of `lexlean` to be the same
+set.
+
+Tests: `tests/interrupt.rs` sends `SIGINT`, `SIGTERM`, `SIGQUIT` and (where
+`/proc` says which signals were ignored) `SIGHUP` to the real binary and requires
+that nothing is left; `an_ignored_signal_stays_ignored` starts it through `sh -c
+'trap "" HUP; exec lexlean ...'` (and `INT`, `QUIT` where there is a `/proc`),
+signals it, requires that it and its child are still there 1.5 s later, and
+then that `SIGTERM` still ends both. A case skips a signal that the test process
+itself was started ignoring (a test run in the background of a
+non-interactive shell), and says so, because `lexlean` rightly keeps it ignored.
+`tests/embedded.rs` registers a `SIGTERM` flag as a host would, calls
+`lexlean::cli::run` on a project whose `git` starts and fails, and then signals
+its own process: the host's handler must see it and the process must live.
+The unit tests are `a_zombie_in_the_group_counts_as_ended` (a zombie child of
+the test process in the group of a killed `sleep`; the stop returns `Ok` within
+1.5 s), `a_failing_taskkill_is_reported`, `an_ignored_signal_is_not_watched`,
+`the_mask_of_this_process_is_read`, and
+`stale_staging_directories_are_removed_and_nothing_else`; `verify_ok` of the
+conformance suite plants a stale staging directory before every verification and
+requires that it is gone afterwards. The windows build of the tests and the
+library is checked with `cargo clippy -p lexlean --all-targets --target
+x86_64-pc-windows-gnu -- -D warnings`.
+
+The binders of the declarations that Lean elaborates inside a namespace
+(`def X.initial`, `X.guard`, `X.apply` of models and reasoners, where Lean opens
+`X`) were probed with the real `lexlean verify`: a model whose state is a
+`match` with the binder `initial`, the very name of the declaration being
+defined, verifies; the binder `none` is `LLT4001`, as in every declaration. A
+data type cannot share the name of a model or a rule, since that is `duplicate
+generated name` at link (probed with a type `Fever` beside the rule `Fever`),
+so the namespace of `X` holds no constructor that a pattern binder could be
+read as; a definition of the namespace (`X.guard`) in a pattern is a variable,
+as the pinned Lean elaborates it (`some guard => guard + 1` over
+`def A2.guard`).
+
+Planted: the signals the process was started ignoring are watched like the
+others. Command: `cargo test -p lexlean --test interrupt -- an_ignored_signal_stays_ignored`.
+Expected: the process started with `SIGHUP` ignored is ended by it.
+
+```text
+thread 'an_ignored_signal_stays_ignored' (30305) panicked at crates/lexlean/tests/interrupt.rs:198:13:
+SIGHUP was ignored at start, yet lexlean ended (Some(ExitStatus(unix_wait_status(1)))) or lost its child ([])
+```
+
+Planted: the handler is installed whether or not the executable armed it.
+Command: `cargo test -p lexlean --test embedded`. Expected: the embedding host is
+ended by its own `SIGTERM`.
+
+```text
+error: test failed, to rerun pass `-p lexlean --test embedded`
+
+Caused by:
+  process didn't exit successfully: `/home/user/wt-24/target/debug/deps/embedded-d0e54ad484b58cfc` (signal: 15, SIGTERM: termination signal)
+```
+
+Planted: `SIGQUIT` is not among the signals watched. Command: `cargo test -p
+lexlean --test interrupt -- an_interrupt_leaves_no_child_running`. Expected: the
+child survives Ctrl-\.
+
+```text
+thread 'an_interrupt_leaves_no_child_running' (29414) panicked at crates/lexlean/tests/interrupt.rs:229:5:
+SIGQUIT left running: [(29432, "sleep 3000.29413 ")]
+```
+
+Planted: `stop` reads no process table (every member of the group is taken to be
+running). Command: `cargo test -p lexlean --lib -- a_zombie_in_the_group`.
+Expected: the stop waits two seconds and reports the zombie.
+
+```text
+thread 'verify::child::timeout_tests::a_zombie_in_the_group_counts_as_ended' (30432) panicked at crates/lexlean/src/verify/child.rs:857:9:
+assertion `left == right` failed: a zombie is not running
+  left: Err("processes of group 30433 still existed 2000 ms after SIGKILL")
+ right: Ok(())
+```
+
+Planted: `taskkill_outcome` takes any exit status for success. Command: `cargo test
+-p lexlean --lib -- a_failing_taskkill`. Expected: an exit status 128 is not
+reported.
+
+```text
+thread 'verify::child::timeout_tests::a_failing_taskkill_is_reported' (30484) panicked at crates/lexlean/src/verify/child.rs:803:68:
+exit 128: ()
+```
+
+Planted: `verify` does not call `remove_stale_staging`. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_df_12`. Expected: the
+staging directory of an interrupted run is still there after the verification.
+
+```text
+thread 'conformance_df_12' (29640) panicked at crates/conformance/src/support.rs:2019:5:
+/tmp/lexlean-example-case-0Rm1sS/.lexlean/verified/.staging-interrupted-0: the staging directory of an interrupted run is removed by the next verify
+```
+
+Planted: the role of `signal-hook` removed from the table of SPEC.md §8.5 (the
+name spelled differently). Command: `cargo xtask validate-model`. Expected:
+`audit-shipped` fails naming the dependency.
+
+```text
+gate failed: R6: the shipped crate depends on `signal-hook`, which SPEC.md §8.5 gives no role
+```
+
+Removed: all seven were restored (the unit test of the audit,
+`every_shipped_dependency_has_a_role_and_every_role_a_dependency`, plants a
+dependency with no role, a role with no dependency, and a SPEC without the
+table).
+
+### a module is a namespace at every segment
+
+Module `Sub.Nat` with a function `blt`, imported by `Sub.Other`, was accepted by
+`check` and refused by `verify`: `Nat.blt` in `Sub.Other` resolved to
+`Prefix.Sub.Nat.blt` (`Application type mismatch`). Lean searches the enclosing
+namespaces of `Prefix.Sub.Other`, which include `Prefix.Sub`, and every segment
+of a module name is a namespace of the project. Linking now tests every segment
+of a dotted name against the reserved set (`reserved_module_segment`); the
+fixtures `module-name-dotted-last` (`Sub.Nat`) and `module-name-dotted-first`
+(`Nat.Sub`) are `LLT4001`, and the existing `module-name-lean-namespace` message
+names the segment.
+
+Planted: `reserved_module_segment` tests the whole name only. Command: `lexlean
+check` in each of the fixtures `module-name-dotted-last` and
+`module-name-dotted-first`. Expected: both are accepted.
+
+```text
+checked 2 modules (source 4bd59b5867512b66e98b35dd74d27eef50e6bc850c897d5af4d530678c0d3cc4, semantic e904a4a2e026042bc708e7b8129258d69ae2763c697b71f3d11cebfbb1a76c05)
+checked 2 modules (source c584273f917668a46189fa9c29cbfbe55135d7951b24fd93bacee8b9622ea2fc, semantic 24d36bc5a7c86fae8260eb6c958736b683fda227531b8ae77e5fd43ef62cedde)
+```
+
+Removed: the segment check was restored; both are `LLT4001`.
+
+### a pattern binder is read as the constructor it is spelled like
+
+A binder `none` in the branch `Option.some` of an `option (option nat)` was
+generated as `Option.some none`, which Lean reads as the constructor, so the
+match was not exhaustive (`Missing cases`) after `check` had accepted it. Read off
+the pinned Lean by `conformance_df_12` (every constructor of `Init` whose last
+component, written bare, resolves to a constructor), the names are `false`,
+`true`, `isFalse`, `isTrue`, `none`, `some`: the first two were refused as
+built-in names already, and the rest are `PATTERN_CONSTRUCTOR_NAMES`, refused as
+pattern binders only (`LLT4001`, fixture `binder-pattern-constructor-name`). A
+parameter of these names is a variable and stays valid (the backend writes the
+constructors qualified); a pattern binder `zero`, `nil`, or `cons` is a
+variable, and the case verifies a module of them with the real Lean.
+SPEC.md and CHANGELOG.md said that a parameter named like a nullary
+constructor of its own type is valid, which is true of parameters; they now say
+what holds of pattern binders.
+
+Planted: the refusal of pattern binders removed. Command: `lexlean check`, then
+`lexlean verify`, in the fixture `binder-pattern-constructor-name`. Expected:
+`check` accepts it and Lean rejects it, the state before.
+
+```text
+checked 1 module (source 69a1b8dbb8e3e72bcaf6ce3e8c77a5363bb269a8dfca623c8b95786311caf795, semantic 71742264c7601d60fb55f1c9008080c221571a48031f15e3847dee19c77b7977)
+error[LLV7002]: Lean rejected `LanguageTwelve.Main` (error): Missing cases:
+(some (some _))
+```
+
+Removed: the refusal was restored (`LLT4001`, `pattern binder `none` is spelled
+like a constructor Lean resolves without a namespace`).
+
+### the lexer reads a number as Lean's `numberFnAux` does
+
+Lean 4.32.1 reads `_` between and after digits (`takeDigitsFn`), a bare dot
+followed by an exponent (`1.e5`), and nothing but digits after a `.` that follows
+a term (`p.1.2`, `fieldIdxFn`); the lexer read `1_0axiom` as `1` and the name
+`_0axiom`, so the audit accepted `def x := 1_0axiom bad : False` and Lean
+declared the axiom. The number branch follows the pinned source line for line
+(`Lean/Parser/Basic.lean`: `decimalNumberFn`, `parseOptDot`, `parseOptExp`,
+`binNumberFn`, `octalNumberFn`, `hexNumberFn`; there are no hexadecimal floats
+in 4.32.1, `0x1.8` is `0x1`, `.`, `8`). Where Lean refuses the text (`1_` and a
+non-digit, `1.foo`, `1e`) the audit refuses it, and a field index followed by
+`_` or an exponent, which the token reads differently by the parse, is refused
+rather than guessed. `conformance_sp_09` writes 611 prefixes (radix
+prefixes, digit runs with separators, fractions, bare dots, exponents, signs,
+ranges, field indices) followed by `axiom bad : False`, has the pinned Lean say
+which declare the axiom, and requires the audit to agree on every text it reads.
+
+The first run of the differential failed on fourteen prefixes (`1e5.`,
+`0x1.`, `p.1.`, ...) followed by `axiom`: Lean reads the number and the field
+`axiom` of it, a name, where the audit reads the keyword. That is a text the
+audit refuses and Lean accepts, which misses nothing, and the test now counts
+those prefixes (a word right after a `.`) apart; every other prefix agrees.
+
+Planted: a `_` ends the number. Command: `cargo test -p lexlean --lib
+production::preserve`. Expected: `1_0axiom` passes the audit.
+
+```text
+thread 'production::preserve::tests::the_text_is_read_as_lean_reads_it' (27826) panicked at crates/lexlean/src/production/preserve.rs:1436:13:
+"def x := 1_0axiom bad : False\n"
+```
+
+The same plant, against the pinned Lean. Command: `cargo test -p repo-conformance
+--test conformance -- conformance_sp_09`. Expected: the audit misses the axiom
+that Lean declares.
+
+```text
+thread 'conformance_sp_09' (27961) panicked at crates/conformance/src/cases/preservation.rs:277:5:
+the audit reads numbers differently from the pinned Lean:
+`0.5_`: the audit reads the keyword false, Lean declares it true
+`0.5_0`: the audit reads the keyword false, Lean declares it true
+`00_`: the audit reads the keyword false, Lean declares it true
+`00__0`: the audit reads the keyword false, Lean declares it true
+```
+
+Removed: the lexer was restored; `conformance_sp_09` passes (840 s).
+
+### the eligibility reports are measured by one function
+
+`check` passed the fixture `eligibility-reports-total-limit` from a limit of 4 422 588
+and `build` from 4 422 972: the analysis counted the roots of a module and not
+the module around them (128 bytes a module). The analysis now measures the
+report as `to_file_bytes`, the one function the written file, `build`, and
+`check` answer to. `conformance_sp_02` builds the fixture, sums the lengths of
+the report files written (the limit at which both pass), and requires `check`
+and `build` to refuse 1024, 384, 128, and 1 byte below it and to accept it and
+one byte above.
+
+Planted: the report's bytes are the roots' (`budget.used - written_before`, the
+old accounting). Command: `cargo test -p repo-conformance --test conformance --
+conformance_sp_02`. Expected: the two commands disagree at the limits the
+reviewer found.
+
+```text
+thread 'conformance_sp_02' (27712) panicked at crates/conformance/src/cases/preservation.rs:183:13:
+assertion `left == right` failed: check at max_total_source_bytes 4422588 (4422972 written)
+  left: true
+ right: false
+```
+
+Removed: the measure was restored. The same test leaves `crates/conformance/tests`
+without `zz_scratch.rs`, the scratch probe that `cee5c34` committed by mistake: it
+asserted nothing and ran every stress family on every `cargo test`. The two
+functions it called, `measure_program` and `record_slots`, were public before it
+(`assert_bounds` uses them) and stay so.
+
+### the reasoning example is certified like any other
+
+Merging #31 (reasoning machines) made the eight roots of `examples/reasoning`
+production-eligible: they return `ReasoningFailure`, which is a pair of Booleans
+like `ContractViolation` (`answered`, `replay`), and they call reasoners and
+rules that linking elaborates to ordinary definitions. The lowering, the
+certificate generator, and the source reader take `ReasoningFailure` with the
+same representation (`exhausted`, `unsolved`, `rejected`, `invalid_step` are
+`(false, false)`, `(false, true)`, `(true, false)`, `(true, true)`), and read the
+four reasoning declarations (`logic`, `inference_rule`, `verifier`, `reasoner`)
+only through their elaborations, as they do the model declarations.
+`lexlean verify` of the example failed on its first certificate A, twice, for two
+defects the older corpora did not reach.
+
+The elaboration of a reasoner names its own locals `__acc`, `__b`, `__found`,
+`__s`, `__step`, and the certificates bind names of their own that begin with two
+underscores (`__b` for the condition of a conditional, `__a`, `__x0`): under the
+condition `__b`, the source local `__b` of `Step.Burn __b` was the Boolean.
+A generated source local is now spelled `_y` and the rest in every certificate
+(`identifier`); no source name begins with an underscore, so the other spelling
+is no one's.
+
+Planted: `identifier` without the `_y` spelling. Command: `lexlean verify` in a
+copy of `examples/reasoning`. Expected: certificate A of `spendLeft` is rejected.
+
+```text
+error[LLV7013]: certificate A: `LexLeanPreserve.C18ad574fdbd90d6971bb010291acf197.R7` was rejected in `__rel_14` of root `Reasoning.Main.spendLeft`: error: Application type mismatch: The argument
+  __b
+has type
+  Bool
+but is expected to have type
+  Nat
+in the application
+  Reasoning.Budget.Spend.Step.Burn __b
+```
+
+The second defect was in a template the older corpora also use: a source `match`
+in a generic definition is written as a function over the type parameters whose
+body is the `match`, applied to the type arguments. That function is elaborated
+before its arguments, so its `match` has no expected type, Lean postpones it, and
+the check of a fold's step relation against the step function failed on the
+pending metavariable (`(fun T __a __k0 __k1 => ?m.369) Nat __p0 ...`). The
+`match` now carries its result type.
+
+Planted: the result type removed from the template's `match`. Command: the same.
+Expected: the fold of `spendLeft` is rejected.
+
+```text
+error[LLV7013]: certificate A: `LexLeanPreserve.C18ad574fdbd90d6971bb010291acf197.R7` was rejected in `__rel_9` of root `Reasoning.Main.spendLeft`: error: Type mismatch
+  __rel_14 _ys __p0 __p1
+has type
+  LexLeanPreservation.FunRel __prog 14
+    [LexLeanPreservation.encPair LexLeanTarget.TargetSyntax.Value.nat LexLeanTarget.TargetSyntax.Value.nat _ys,
+      LexLeanPreservation.encOption __enc_0 __p0, LexLeanTarget.TargetSyntax.Value.nat __p1]
+```
+
+Removed: both were restored. `examples/reasoning` verifies with its certificates
+A, B, and E, in the example's `verify` records, and the conformance suite
+certifies its roots with the rest (`conformance_sp_02`, `conformance_sp_03`, the
+differential of the four examples); four of its roots declare an overflow that no
+input reaches, which SPEC.md lists.
+
+### CL-11 covers every registered code's class
+
+Planted: `LLV7012` absent from the environment arm of
+`DiagnosticCode::class` (`crates/lexlean/src/diagnostic.rs`), the state the
+repository was in before the fix. Command: `cargo test -p repo-conformance
+--test conformance conformance_cl_11`. Expected: the code's mapped class and
+exit code differ from its `model/errors.toml` row (§23.6, R1).
+
+```text
+thread 'conformance_cl_11' panicked at crates/conformance/src/cases/cli_api.rs:539:13:
+§23.6: codes whose mapped class differs from model/errors.toml: ["LLV7012: registered environment (exit 3), mapped language (exit 1)"]
+```
+
+Removed: `LLV7012` was added to the environment arm (with `LLV7014`); the case
+passes, and the `extraction-authority-drift` fixture expects exit 3.
+
+### NE-03 admits an exported axiom only as a compiled definition
+
+Planted, one at a time, in `admissible_external` and the record reader
+(`crates/lexlean/src/production/lcnf.rs`): (1) the `compiled` requirement
+dropped; (2) the `borrowed` annotation read as an unsupported form, the state
+before the fix; (3) every external reported as an axiom treated as an
+exported definition, whatever kind it was declared with. Command: `cargo test
+-p repo-conformance --all-features --test conformance conformance_ne_03
+conformance_ex_07`. Expected: the planted rule admits what §22.10 refuses, or
+refuses what it admits.
+
+```text
+(1) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is noncomputable or has no compiled code", got Ok(CompilerInput { …
+(1) thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:550:13:
+/home/user/wt-25/tests/negative/extraction-uncompiled-external: step 1 `verify ` exited 0, case.toml expects 1
+(2) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:668:18:
+a borrowed domain: Rejected("`Production.Kernel.area`: unsupported compiler form: the LCNF type `metadata` has no closed representation")
+(3) thread 'conformance_ne_03' panicked at crates/conformance/src/cases/extraction.rs:73:18:
+expected an LLV7011 rejection containing "`instMulNat` is an axiom", got Ok(CompilerInput { …
+```
+
+Removed: each plant restored; both cases pass. Before the fix, verifying
+`examples/production-coverage` failed with `LLV7011` at `String.toInt?`,
+`String.toUTF8`, and `List.takeTR` (axioms in the exported view) and at the
+`metadata` type of `instQuotientNat`; it now verifies, its 33 certificates
+included.
+
 ### calculus kernel oracle can fail
 
 Planted: the reference interpreter computed `int_rem` as a Euclidean
@@ -780,7 +2397,7 @@ the stated expectation of `int-arithmetic` changed from -1 to 1. The oracle
 is Lean's kernel. Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   intArithmeticRun
 is not definitionally equal to the right-hand side
 ```
@@ -796,7 +2413,7 @@ repo-conformance --test conformance -- conformance_tc_07`. Expected: the
 compiled rendering of `nat-arithmetic` prints a different value.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1375:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1379:17:
 assertion `left == right` failed: natArithmetic_rust_std: the Rust rendering and the denotation disagree
 ```
 
@@ -811,7 +2428,7 @@ while its value stayed correct. Command: `cargo test -p repo-conformance
 `list-append-long` counts more work than the denotation charges steps.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1380:17:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1384:17:
 listAppendLong_rust_std: the rendering worked 1220 units for 87 steps
 ```
 
@@ -827,7 +2444,7 @@ conformance -- conformance_tc_07`. Expected: `rust-core` renders a program
 whose realization requires allocation.
 
 ```text
-thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1295:29:
+thread 'conformance_tc_07' panicked at crates/conformance/src/cases/calculus.rs:1299:29:
 binding-and-shapes: rust-core renders a program that needs the heap
 ```
 
@@ -841,7 +2458,7 @@ Planted: the realization row of `primitive.map_size` was deleted from
 repo-conformance --test conformance -- conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1173:48:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1177:48:
 the realization table: "runtime construct `primitive.map_size` has no realization row"
 ```
 
@@ -855,7 +2472,7 @@ Command: `cargo test -p repo-conformance --test conformance --
 conformance_tc_06`.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1189:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1193:13:
 allocation disagreements: [
     "term.nil: registry true, realization false",
 ]
@@ -872,7 +2489,7 @@ repo-conformance --test conformance -- conformance_tc_06`. Expected: the
 typed (primitive, width) pairs only those fixtures exercise are reported.
 
 ```text
-thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1243:13:
+thread 'conformance_tc_06' panicked at crates/conformance/src/cases/calculus.rs:1247:13:
 (primitive, width) pairs no fixture exercises: [("bit_and", "u16"), ("bit_not", "u16"), ("bit_or", "u16"), ("bit_xor", "u16"), ("checked_mul", "u16"), ("checked_quot", "u16"), ("compare", "u16"), ("format_decimal", "u16"), ("parse_decimal", "u16"), ("shift_left", "u16"), ("shift_right", "u16")]
 ```
 
@@ -903,7 +2520,7 @@ fixtures from it. The oracle is Lean's kernel over the LexLean denotation.
 Command: `lexlean verify` in `compiler/`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
   TargetSemantics.Outcome.value (TargetSyntax.Value.nat 37) 49
@@ -922,7 +2539,7 @@ the new fixture `byte-compare` applies `compare_bytes` alone. Command:
 `byte-compare`:
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   byteCompareRun
 is not definitionally equal to the right-hand side
 ```
@@ -937,7 +2554,7 @@ every rendering that adds naturals emits a construct with no
 target-semantics correspondence.
 
 ```text
-thread 'conformance_rb_01' (22507) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (22507) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 adt-evaluation (rust-std): the construct `call:runtime:nat_add` has no target-semantics correspondence
 ```
 
@@ -952,14 +2569,14 @@ it. Command: `cargo test -p repo-conformance --test conformance -- conformance_r
 is `prim:nat_add`.
 
 ```text
-thread 'conformance_rb_01' (11292) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (11292) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 adt-evaluation (rust-std): the construct `call:runtime:nat_mul` does not realize `prim:nat_add`, the element it was lowered from
 ```
 
 A second plant chose the `u16` checked addition for every `u8` one:
 
 ```text
-thread 'conformance_rb_01' (12208) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (12208) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 fixed-checked-narrow (rust-std): the construct `call:runtime:checked_add` works at width Some(U16), but `prim:checked_add` is at Some(U8)
 ```
 
@@ -974,7 +2591,7 @@ unjustified. Command: `cargo test -p repo-conformance --test conformance -- conf
 are stated nowhere are refused.
 
 ```text
-thread 'conformance_rb_01' (29092) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (29092) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 closure-captures (rust-core): the construct `enum:closures` does not realize `expr:closure`, the element it was lowered from
 ```
 
@@ -988,7 +2605,7 @@ Planted: the package check admitted Rust keywords as exported names
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_02' (29709) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_02' (29709) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 identifier-keyword: the negative manifest packages
 ```
 
@@ -1001,7 +2618,7 @@ Planted: the package check let an export copy a parameter of any type
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_03' (30347) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_03' (30347) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 ownership-copy-list: the negative manifest packages
 ```
 
@@ -1014,7 +2631,7 @@ boundary (`Ty::Fn { .. } => false`). Command: `cargo test -p repo-conformance --
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (31065) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (31065) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-function-boundary: the negative manifest packages
 ```
 
@@ -1027,7 +2644,7 @@ Planted: the boundary check stopped at a named type
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (31880) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (31880) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-function-in-record: the negative manifest packages
 ```
 
@@ -1040,7 +2657,7 @@ inhabits (the `self.inhabited(&result)?` of `Term::Call` was deleted). Command: 
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_04' (32579) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_04' (32579) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 unsupported-uninhabited-value: the negative manifest packages
 ```
 
@@ -1053,7 +2670,7 @@ function that can overflow (`(Errors::None, true) if false`). Command: `cargo te
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_05' (759) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_05' (759) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 arithmetic-undeclared-overflow: the negative manifest packages
 ```
 
@@ -1066,7 +2683,7 @@ Planted: the version check read each part as a `u128`, so a part above
 manifest that the check exists for is packaged.
 
 ```text
-thread 'conformance_rb_07' (1325) panicked at crates/conformance/src/cases/rust_backend.rs:108:13:
+thread 'conformance_rb_07' (1325) panicked at crates/conformance/src/cases/rust_backend.rs:109:13:
 version-overflow: the negative manifest packages
 ```
 
@@ -1079,7 +2696,7 @@ and the packages were regenerated. Command: `cargo test -p repo-conformance --te
 with a planted clone of a `Copy` value passes Clippy.
 
 ```text
-thread 'conformance_rb_06' (10515) panicked at crates/conformance/src/cases/rust_backend.rs:1035:13:
+thread 'conformance_rb_06' (10515) panicked at crates/conformance/src/cases/rust_backend.rs:975:13:
 the planted lint is refused
 ```
 
@@ -1130,7 +2747,7 @@ first lint or build error of each:
 The transcripts are of the form:
 
 ```text
-thread 'conformance_rb_06' (18145) panicked at crates/conformance/src/cases/rust_backend.rs:905:13:
+thread 'conformance_rb_06' (18145) panicked at crates/conformance/src/cases/rust_backend.rs:845:13:
 a package fails its lint gate:
 error: very complex type used. Consider factoring parts into `type` definitions
 ```
@@ -1146,7 +2763,7 @@ primitive differential, which runs every primitive instance on its
 boundary and seeded inputs, finds the inputs whose denotation overflows.
 
 ```text
-thread 'conformance_rb_06' (2037) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+thread 'conformance_rb_06' (2037) panicked at crates/conformance/src/cases/rust_backend.rs:902:17:
 primitives_std: the rendering and the denotation disagree on 3 of 51441 runs: ["run 38634: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38650: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}", "run 38656: {\"kind\":\"none\"} != {\"kind\":\"overflow\"}"]
 ```
 
@@ -1154,7 +2771,7 @@ A second plant computed `int_rem` as `a.checked_rem(b).unwrap_or(z)`, so
 `i64::MIN rem -1` returned the default:
 
 ```text
-thread 'conformance_rb_06' (17475) panicked at crates/conformance/src/cases/rust_backend.rs:962:17:
+thread 'conformance_rb_06' (17475) panicked at crates/conformance/src/cases/rust_backend.rs:902:17:
 primitives_core: the rendering and the denotation disagree on 1 of 39092 runs: ["run 8393: {\"kind\":\"int\",\"value\":\"-9223372036854775807\"} != {\"kind\":\"int\",\"value\":\"0\"}"]
 ```
 
@@ -1174,7 +2791,7 @@ and project from records of mixed types, so the same mutations no longer
 type check and the build refuses them first:
 
 ```text
-thread 'conformance_rb_06' (3563) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+thread 'conformance_rb_06' (3563) panicked at crates/conformance/src/cases/rust_backend.rs:829:13:
 a package does not build:
 error[E0308]: arguments to this function are incorrect
 ```
@@ -1182,7 +2799,7 @@ error[E0308]: arguments to this function are incorrect
 and for the projection:
 
 ```text
-thread 'conformance_rb_06' (6453) panicked at crates/conformance/src/cases/rust_backend.rs:889:13:
+thread 'conformance_rb_06' (6453) panicked at crates/conformance/src/cases/rust_backend.rs:829:13:
 a package does not build:
 error[E0614]: type `u64` cannot be dereferenced
 ```
@@ -1198,7 +2815,7 @@ package's provenance no longer records the runtime LexLean's semantics
 records.
 
 ```text
-thread 'conformance_rb_07' (28593) panicked at crates/conformance/src/cases/rust_backend.rs:1179:17:
+thread 'conformance_rb_07' (28593) panicked at crates/conformance/src/cases/rust_backend.rs:1119:17:
 assertion `left == right` failed: compiler/rust/rust-std/adt-evaluation: the runtime is the one LexLean's semantics records
 ```
 
@@ -1213,7 +2830,7 @@ processes, each run with its own working directory and environment, write
 different bytes.
 
 ```text
-thread 'conformance_rb_07' (13568) panicked at crates/conformance/src/cases/rust_backend.rs:1129:17:
+thread 'conformance_rb_07' (13568) panicked at crates/conformance/src/cases/rust_backend.rs:1069:17:
 assertion `left == right` failed: rust-core/boolean-shapes/provenance.json: the renderers of two roots disagree
 ```
 
@@ -1227,7 +2844,7 @@ Planted: the package generator wrote the zero identity as every package's
 package binds the verified build that states its program.
 
 ```text
-thread 'conformance_rb_07' (30490) panicked at crates/conformance/src/cases/rust_backend.rs:1186:46:
+thread 'conformance_rb_07' (30490) panicked at crates/conformance/src/cases/rust_backend.rs:1126:46:
 compiler/rust/rust-std/adt-evaluation: sources ["0000000000000000000000000000000000000000000000000000000000000000"] are not the semantic ID cd690f0a5afba87d8ddeebfb51773d2d833d2d9b0f897cc9c5702224d8b1994d of the verified compiler build
 ```
 
@@ -1235,7 +2852,7 @@ A second plant made the binding check accept any single source
 (`sources.len() != 1`); the forged-identity check refused it:
 
 ```text
-thread 'conformance_rb_07' (19913) panicked at crates/conformance/src/cases/rust_backend.rs:1199:69:
+thread 'conformance_rb_07' (19913) panicked at crates/conformance/src/cases/rust_backend.rs:1139:69:
 forged: ()
 ```
 
@@ -1277,7 +2894,7 @@ built (command `cargo test -p repo-conformance --test conformance --
 conformance_rb_01`):
 
 ```text
-thread 'conformance_rb_01' (10406) panicked at crates/conformance/src/cases/rust_backend.rs:514:40:
+thread 'conformance_rb_01' (10406) panicked at crates/conformance/src/cases/rust_backend.rs:454:40:
 boolean-shapes (rust-core): a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean
 ```
 
@@ -1627,7 +3244,7 @@ module can no longer reduce `run`, which `TargetSemantics` defines through
 `LexLeanRuntime.index`.
 
 ```text
-error[LLV7002]: Lean rejected `Compiler.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
+error[LLV7002]: Lean rejected `LexLeanTarget.TargetFixtures` (error): Tactic `rfl` failed: The left-hand side
   adtEvaluationRun
 is not definitionally equal to the right-hand side
 ```
@@ -1644,7 +3261,7 @@ seeded graphs and the 24-node chain, whose last node is such a successor,
 disagree with the independent model.
 
 ```text
-thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.graphTopological
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1662,7 +3279,7 @@ canonical order disagreed with Lean's `Key Int` instance. Command: `cargo test
 insertion of the source order, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  [-2, -10, -100, 0, 3, 9, 100] =\n    LexLeanCollections.listFold (fun built element => LexLeanCollections.setInsert built element) []\n      [3, -2, 0, -10, 100, -100, 9]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -1679,7 +3296,7 @@ conformance -- conformance_sm_28`. Expected: the seeded union theorems,
 whose right-hand sides come from `BTreeSet`, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.setUnion [1, 2, 3] [0, 5] = [0, 1, 2, 3, 5]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -2231,13 +3848,13 @@ values, and the portable runtime's integer quotient flooring (`Int.ediv`
 for `Int.tdiv`). Expected: Lean refuses the seeded expectations.
 
 ```text
-thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Tie Sample.s0 = 1\nis false", ...
-thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:1947:10:
+thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Quantized Sample.s0 = [0, -14, -37, -33, -40, 10, -32, 46]\nis false", ...
 ```
 
@@ -2890,7 +4507,10 @@ Removed: the constant, the mutations, and the plan were restored; `conformance_r
 
 The literal §29 example verifies against real `leanprover/lean4:v4.32.1`: probe elaboration, module compilation, separate-process `leanchecker` replay, exact `#print axioms` parsing, and the `\noaxioms` policy over an empty observed set (`conformance_ex_01`). The required §29.6 mutations are mechanized: a false proposition fails inside Lean and remaps to the source proof sentence (`conformance_ex_02`, `conformance_pf_18`); an undeclared title word fails lexical closure (`conformance_ex_03`); an indistinguishable same-surface entry is ambiguity, never priority (`conformance_ex_04`); an insufficient axiom allow-list fails policy checking with the observed excess recorded (`conformance_ex_05`, `conformance_vr_16`); and two clean builds in distinct paths publish byte-identical trees (`conformance_ex_06`, plus `just repro`).
 
-The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
+The negative fixture suite (`tests/negative/<class>/`, §28.5) runs every rejection class through the CLI, including the Lean-backed ones: a Lean elaboration failure (`LLV7002`), a failing `leanchecker` (`LLV7003`, through a fixture toolchain overlay), malformed axiom output (`LLV7004`, through a `lake` overlay that corrupts only the audit run), an axiom-policy excess (`LLV7005`), a toolchain version mismatch (`LLV7001`), and a PDF executable hash mismatch (`LLS8004`). `conformance_vr_15` asserts that each failing stage (probe, module, replay, audit, policy) leaves no staging or verified directory behind, and `conformance_vr_07` plants a warning on a successful module compilation and asserts `LLV7006` with nothing published. `conformance_sp_06` collects the constructs every
+certified root realizes and requires every runtime row of
+`language/production-1.2.toml` among them; with the coverage example's collection roots
+withheld, `primitive.map_insert` and the other collection rows are reported. `conformance_vr_10` runs the pinned `lean` on a module with three `#print axioms` commands and asserts the parser accepts the live output in the toolchain's own order and rejects an unknown-constant error line.
 
 ## Generic language delta verification (Issue #4)
 
@@ -2914,7 +4534,7 @@ Every upstream authority cited by LexLean (`model/authorities.toml`) is bound to
 
 Oracle execution evidence binds positive and negative paths:
 - Positive execution: End-to-end elaboration, kernel replay, and axiom auditing across all examples (`list-induction`, `nat-add-zero`, `peano-arithmetic`, `propositional-logic`, `semantic-1.1`, `uor-atlas`).
-- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
+- Negative execution: Non-vacuous rejection of planted mutations in `tests/negative/` across toolchain mismatch (`LLV7001`), elaboration failure (`LLV7002`), kernel replay rejection (`LLV7003`), axiom corruption (`LLV7004`), axiom policy excess (`LLV7005`), compilation warning (`LLV7006`), named-root extraction rejection (`LLV7011`, `extraction-rejected`, `extraction-uncompiled-external`), extraction authority drift (`LLV7012`, `extraction-authority-drift`), and PDF mismatch (`LLS8004`).
 - Non-executable boundaries: Lean's mathematical correctness is an external authority guarantee (`some-true`), not proven by LexLean; `leanchecker` is a same-kernel replay mechanism rather than an independent verifier.
 
 ## First-party package identity and publishing bootstrap closure (Issue #5)
@@ -2978,3 +4598,282 @@ LexLean synthesizes complete release artifacts, evidence receipts, and authorita
   - Both positive execution (elaboration, kernel replay, axiom auditing across all examples) and negative execution (non-vacuous mutation rejection in tests/negative/) are validated and bound to upstream commit digests.
 - Downstream integration:
   - PrismPM dependency/identity checks referencing LexLean pass without manual exceptions or source assumptions.
+
+## Semantic preservation (Issue #25)
+
+`conformance_sp_01` lowers every production root of the language-1.2 examples
+(`examples/production-coverage` among them) twice and
+requires one valid program in first-binding order, an origin for every
+function and ADT, and exactly the root's eligibility closure; a report with a
+member removed must fail with `LLI9001`, and `validate-model` audits the
+lowering, the certificate generator, and the source reader for default
+matches. `conformance_sp_02` generates certificate A for every production root
+of `examples/production` (6 roots) and `examples/production-coverage` (33 roots), compiles each
+with the pinned Lean beside the shipped library, the shipped calculus modules,
+and the generated modules, replays each through `leanchecker` (the same
+kernel, §22.4), and requires every root theorem to depend on exactly
+`Classical.choice`, `Quot.sound`, and `propext`; it then regenerates
+certificates against programs with a planted branch swap, an addition that
+subtracts, a wrong constructor, a wrong callee, and a wrong literal, and
+requires Lean to reject all five. `conformance_sp_03` runs six seeded inputs
+per root through the calculus interpreter and through Lean's evaluation of
+each certificate's `denote`, requires every pair to agree (234 cases), and
+requires one altered outcome to be reported. `conformance_sp_04` compares
+every library declaration's printed axioms with
+`language/preservation-1.2/library.toml` (406 declarations), the shipped
+calculus modules with the compiler golden, and refuses planted `sorry`,
+`axiom`, `native_decide`, `ofReduceBool`, a disallowed option, and a foreign
+import. Each theorem is a kernel-checked proof about the root it names; the
+generator, the library's coverage of constructs, and the coverage example are `build`
+evidence for roots not certified. `conformance_sp_07` checks the declared Rust machine: the generated
+`RustSyntax` and `RustSemantics` sources equal their generator
+(`crates/conformance/src/rust_source.rs`), their shipped copies equal the
+compiler golden (which `cargo xtask verify-examples` reverifies with exact
+axioms), the machine declares exactly the renderer's runtime items with the
+renderer's failure and heap classes, and every certified root's crate, in
+every target it is eligible for, prints to a `RustSyntax` term that the
+pinned Lean elaborates and evaluates on the differential's seeded inputs,
+each outcome equal to the calculus interpreter's on the lowered program.
+`conformance_sp_08` checks certificate B: the closed-rule-set audit
+(`repo_model::correspondence`, also run by `cargo xtask validate-model`)
+holds on the repository's aligner, correspondence, soundness theorem, and
+calculus, the aligner's `RULES` equal `Corr`'s constructors in order, and a
+rule dropped from `RULES`, a case renamed in `sound`, and a wildcard arm in
+the block judgment are each reported; every renderer fixture in every profile
+that renders it (138 renderings) has a certificate B whose
+derivations use only declared rules, and with the certified roots'
+renderings every one of the 49 rules is used; every certified root carries a
+certificate B in each of its targets, audited in the certification run; the
+fixtures' certificates compile, replay through `leanchecker`, and their
+`root` theorems depend on exactly the three axioms. Seven crate mutations
+(an `if`'s branches swapped, `nat_add` as `nat_sub`, a checked addition
+as a checked subtraction, a sibling enum variant, a byte literal one byte
+longer, a neighbouring callee, a natural literal plus one), each planted in
+the first rendering that admits it, are refused twice: the aligner derives
+nothing for the mutated crate or Lean rejects the derivation it writes, and
+Lean rejects the unmutated derivation restated over the mutated crate. An
+eighth mutation moves the first checked operation to another width
+(`fixed_u8::checked_add` as `fixed_u16::checked_add`). The first run of
+this case planted it and Lean accepted the realigned derivation: the machine
+then read every width's item as the calculus's width-polymorphic primitive.
+The machine now indexes such items by width (`itemAccepts`), the
+correspondence's primitive rules require the operand types to have the
+item's width (`itemTyped`), and value typing carries a fixed-width value's
+width; the case requires certificate B to refuse the width change like the
+other seven, and the renderer's correspondence check to refuse it too. A
+ninth calls a list, bytes, or text item's sibling for another sequence
+(`length_string` as `length_bytes`); the machine's sequence guard
+(`itemTakes`) and value typing of lists, bytes, and text make certificate B
+refuse it as well.
+`conformance_sp_09` certifies certificate E for every root in each target
+and restates the first root's two ways (the other result shape, another
+function); `conformance_sp_10` checks the boundary: every root with a map or
+set parameter has an entry, a validator is called only from the entry or from
+validators, every invalid input is refused with `none`, two mutations of the
+boundary and the planted calls above are refused; `conformance_sp_11` builds
+every certified root as a package under the pinned Rust toolchain and compares
+504 runs, 96 of them through an entry, with the interpreter's outcomes.
+`conformance_sp_05` verifies
+`examples/production` and requires every certificate, the audit output, and a
+schema-valid `preservation.json` bound by the attestation in the published
+set; the negative fixtures `certificate-rejected` (a lake overlay turns the
+certificates' natural additions into subtractions) and `preservation-drift`
+(it appends a false theorem to the shipped library) must fail with `LLV7013`
+and `LLV7014` with nothing published, and `certificate-b-rejected` (the
+overlay turns every `nat_add` call of each certificate B's crate into
+`nat_sub`, leaving certificate A intact) with `LLV7015`.
+
+## Runtime of `just vv` (Issue #25, merged with #31)
+
+The acceptance gate is one job with a limit of 360 minutes (`ci.yml`), and the
+job of this branch at `03a58a6` (run 37946936724) was cancelled at that limit
+while `repro` ran, with `deny` still to come. The runner log gives where the
+time went (UTC, 2026-10-09; the runner has 4 vCPUs and 16 GB):
+
+| Stage | Start | Took |
+| --- | --- | --- |
+| `fmt-check`, `model`, `spec-links`, `lint` | 14:49:04 | 1.6 min |
+| `test` (`cargo test --workspace --all-features`) | 14:50:40 | 82.3 min: `property` 5.7, `conformance` 70.0 (4199 s), `zz_scratch` 6.0 |
+| `features` | 16:12:58 | 0.3 min |
+| `bdd` (`cargo test -p repo-conformance`) | 16:13:13 | 78.9 min: `conformance` 71.5 (4288 s), `zz_scratch` 6.7 |
+| `examples`, the eleven examples without `uor-atlas` | 17:32:04 | 12.0 min |
+| `examples`, `uor-atlas` | 17:44:03 | 182.5 min |
+| `examples`, `compiler` | 20:46:34 | 1.9 min |
+| `golden` | 20:48:26 | 0.1 min |
+| `repro` | 20:48:30 | cancelled at 20:49:15 |
+
+PR #50's complete run took 4 h 18 min and the run of the tree before it
+(`6b198ee`) 3 h 48 min, of which `uor-atlas` is the same 3 hours. Of the 360
+minutes, 79 were the second run of the conformance suite by `bdd`, 12 were the
+scratch probe `zz_scratch` (deleted in the commit before this one), and the
+suite itself took 70 minutes of a machine that was a little more than half
+busy.
+
+What was found and changed, in the order of what it saved (measured on the
+reference container of this repository, 4 vCPUs and 16 GB):
+
+- **`bdd` ran the whole suite again.** `test` is `cargo test --workspace`,
+  which runs every target of `repo-conformance`, and `bdd` was `cargo test -p
+  repo-conformance`, the same targets. `bdd` is now `cargo test -p
+  repo-conformance --test bdd`, the meta-gate (R2, R3, §27.7, §27.8) that it
+  exists for; every conformance test still runs once, in `test`. SPEC.md §9.2,
+  the recipe, `RP-05`'s table of recipe lines, and the table at the top of this
+  file say so. Saved: 79 minutes of CI.
+- **Every verification in the test process took a turn.** `support::env_lock()`
+  was one mutex held for the whole of every `verify`, so the Lean runs of the
+  suite's cases ran one at a time on four cores. It is now a read-write lock:
+  the only code that changes the process environment, `with_env`, holds it
+  exclusively, and every test that merely resolves a toolchain holds it
+  shared (`env_shared`), so verifications run side by side. Nothing that
+  changes the environment runs beside anything that reads it, as before.
+- **The preservation environment was compiled for every workspace.** The
+  calculus modules and the library of `language/preservation-1.2/` take 86
+  seconds of the pinned Lean, and the harness staged and compiled them again in
+  every workspace it checked (the four corpora, the plants, the renderings).
+  `preservation::shipped` compiles them once per toolchain and library text,
+  into `target/debug/lexlean-preserve-shipped/<hash>`, published by renaming a
+  finished directory, and the workspaces' `LEAN_PATH` ends in it; each
+  workspace still compiles and replays every module that depends on a project,
+  and `leanchecker` replays what a certificate imports. `conformance_sp_03`
+  went from 776 s to 401 s (cold) and 315 s (warm).
+- **The corpora were certified one after another, and the cases waited for
+  them.** `reports()` runs the four projects side by side (each holds about two
+  gigabytes and waits on one Lean process at a time), and three of the suite's
+  four test threads no longer wait on it for fifteen minutes. `conformance_sp_02`
+  starts its independent parts together (the stress families, the verification
+  of the 180-arm match, the corpora) and certifies the stress families on four
+  workers: 1156 s to 593 s alone. `conformance_sp_05` verifies the example while
+  two of the rejected fixtures run; `conformance_ex_07` runs its fixtures four at
+  a time (the ones with a substituted toolchain take the lock exclusively, as
+  they must); and the six rejection fixtures that `EX-07`, `SP-02`, and `SP-05`
+  all read are run once (`fixtures::observe_shared`).
+- **`uor-atlas` is unchanged.** It is 182.5 minutes of the 360, every module
+  of it elaborated, replayed, and audited one process at a time
+  (`PROCESS_WIDTH = 1`) because one of its environments approaches the
+  memory of the runner; overlapping two made the hosted runner lose its
+  control-plane heartbeat in the past. Nothing here touches it.
+
+Before and after, on the reference container, `cargo test --workspace
+--all-features` (315 conformance tests, all passing):
+
+| | before | after |
+| --- | --- | --- |
+| `property` target | 322 s | 298 s |
+| `conformance` target | 4085 s | 3013 s |
+| whole `test` stage | 4483 s | 3373 s |
+| `bdd` | 4085 s again | 1 s |
+| mean CPU use of the four cores | n/a | 69 % |
+
+The other stages of `vv` on the reference container: `fmt-check` 2 s, `model`
+57 s (a build), `spec-links` under 1 s, `lint` 28 s, `features` 19 s, `golden`
+61 s, `repro` 121 s, `deny` 6 s; `cargo xtask check-fixtures` (run by
+`conformance_ex_07` as well) 573 s.
+
+`cargo xtask verify-examples` on the reference container, after the last edit
+(every example verified, and its normalized records equal `expected/verify`):
+
+| Example | Took |
+| --- | --- |
+| `collections`, `higher-order`, `language-1.2`, `list-induction`, `nat-add-zero`, `propositional-logic`, `recursion`, `recursive-data` | 7 to 12 s each (71 s together) |
+| `peano-arithmetic`, `semantic-1.1` | 13 s, 17 s |
+| `production` | 124 s |
+| `models` | 158 s |
+| `reasoning` | 201 s |
+| `production-coverage` | 245 s |
+| the fourteen without `uor-atlas` | 825 s (13.8 min) |
+| `compiler` | 250 s (4.2 min) |
+| `uor-atlas` | 14876 s (248 min), at a peak of 14.4 GB with 8 GB of swap added to the 16 GB container; the runner took 182.5 min |
+
+`uor-atlas` depends on nothing this change touches (it has no preservation
+certificates and its sources, lock, and goldens are byte-identical to
+`origin/main`), so its runner time is carried over as measured.
+
+Projected `just vv` on the runner, from the measured stages of the runner log
+and the ratio of the runner to the reference container in the one stage both
+ran, the conformance suite (4199 s there for 301 tests, 4085 s here for 315
+before the changes above):
+
+| Stage | Runner, measured at `03a58a6` | Projected, merged tree |
+| --- | --- | --- |
+| `fmt-check` .. `lint` | 1.6 min | 2 min |
+| `test` | 82.3 min | 58 min (3373 s x 1.03, the ratio of the one stage both ran) |
+| `features` | 0.3 min | 0.3 min |
+| `bdd` | 78.9 min | 1 min |
+| `examples` without `uor-atlas`, with `compiler` | 13.9 min | 27 min (13.8 + 4.2 min, taken at 1.5 times for the runner) |
+| `uor-atlas` | 182.5 min | 183 min |
+| `golden`, `repro`, `deny` | not reached | 5 min (0.1 + 2 + 0.1 min at 1.5 times, rounded up) |
+| Total | over 360 min | 276 min (4 h 36 min); at 2 times on the examples, 288 min |
+
+The projection assumes the runner's `uor-atlas` time as it was and a runner
+as fast as the reference container on everything else, which the one stage
+that both ran supports; it is evidence for the margin, and the first complete
+run on the runner is the measurement.
+
+### the lock, the shared environment, and the parallel cases can fail
+
+Each of the changes above leaves a gate in place that it could have made
+vacuous, so each was made to fail again after the change.
+
+- `bdd`'s recipe is pinned by `RP-05`. Planted: the recipe restored to `cargo
+  test -p repo-conformance`. Command: `cargo test -p repo-conformance --test
+  conformance -- conformance_rp_05`. Observed, then removed:
+
+  ```text
+  thread 'conformance_rp_05' panicked at crates/conformance/src/cases/repository.rs:325:17:
+  assertion `left == right` failed: §9.2: `bdd` runs exactly the specified command
+    left: ["cargo test -p repo-conformance"]
+   right: ["cargo test -p repo-conformance --test bdd"]
+  ```
+
+- The shipped environment is still compiled by the pinned Lean, and a rejected
+  module stops the harness. Planted: the text of every shipped module written
+  with `def plantedBroken : Nat := "x"` appended (and the cache key changed, so
+  that a cached build was not found). Command: `cargo test -p repo-conformance
+  --test conformance -- conformance_sp_03`. Observed, then removed:
+
+  ```text
+  the shipped module `LexLeanTarget.TargetSyntax` was rejected:
+  .../lexlean-preserve-shipped/3dd836fd....17031/src/LexLeanTarget/TargetSyntax.lean:162:27: error: Type mismatch
+    "x"
+  has type
+  ```
+
+  (A change to the library text itself changes the semantic ID, so every locked
+  project is `LLC0102` stale before the harness is reached: the key of the
+  cache is the hash of the text for the case that nothing else notices.)
+- A rejected fixture is still reported when `conformance_ex_07` runs its
+  fixtures on four threads. Planted: `LLL1004` in
+  `tests/negative/unknown-word/expected/diagnostics.json` changed to `LLL1005`.
+  Command: `cargo test -p repo-conformance --test conformance --
+  conformance_ex_07`. Observed, then restored:
+
+  ```text
+  thread 'conformance_ex_07' panicked at crates/conformance/src/cases/examples.rs:550:13:
+  fixture failures:
+  .../tests/negative/unknown-word/expected/diagnostics.json differs from the observed run (§28.3: golden output changes only through `just fixtures-write`)
+  ```
+
+- A rejection fixture is still checked when `conformance_sp_05` runs two at a
+  time. Planted: `("preservation-drift", "LLV7014")` expected as `LLV7013`.
+  Observed, then restored: `assertion `left == right` failed: preservation-drift
+  left: ["LLV7014"] right: ["LLV7013"]`, raised in the worker and carried to the
+  case.
+- A failing stress family still fails `conformance_sp_02` when four workers
+  certify them. Planted: the first assertion of the fitting families inverted
+  (`assert!(certified.is_empty(), ..)`). Observed, then restored: `enumeration
+  of 420 constructors certifies`, raised in a worker.
+- The gate that no parameter can capture a name a certificate writes still
+  reads the locals that linking generates. `assert_no_bare_globals` passes
+  names that begin `_y`, the spelling of a local that linking generated (`__acc`
+  of a model or a reasoner), because no source name begins with an underscore.
+  Planted: `identifier` spelling such a local bare (`acc`). Command:
+  `cargo test -p repo-conformance --test conformance -- conformance_sp_09`.
+  Observed, then restored: `names a parameter could shadow: {"acc (line 101)",
+  "acc (line 102)", ... "best (line 199)", ... "bias (line 101)", ...}`.
+  Without the exemption the gate reports the `_yacc`, `_ybest`, and `_ybias`
+  that the models and reasoning examples introduce, which is what it was added for.
+- `names()`, the project whose parameters are spelled like every namespace
+  a certificate writes, no longer tries the namespaces the backend writes bare
+  (`LexLeanModels`, `LexLeanReasoning`): linking refuses those as binders, and
+  the fixtures `binder-bool-literal-name` and `declaration-lean-name` hold
+  that.

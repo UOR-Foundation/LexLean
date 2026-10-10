@@ -1,0 +1,135 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Graded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (r : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{((r <= 3) /\textbackslash{} ((r = 3) -> LexLeanTarget.ReasoningOracle.Hypotensive (v)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{gradedCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (r : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((Nat.ble (r) (3)) \&\& ((!(Nat.beq (r) (3))) || LexLeanTarget.ReasoningOracle.hypotensive (v)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{graded\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (r : Nat)}.\par
+\noindent Statement: \texttt{((gradedCheck (v) (r) = true) -> Graded (v) (r))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{Scale}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{v : LexLeanTarget.ReasoningOracle.Vitals}.\par
+\noindent Candidate: \texttt{r : Nat}.\par
+\noindent Specification: \texttt{Graded}.\par
+\noindent Check: \texttt{gradedCheck}.\par
+\noindent Soundness: \texttt{graded\_sound}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (verifier Scale sound): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals) (r : Nat), ((gradedCheck (v) (r) = true) -> Graded (v) (r)); stated exactly by graded\_sound}.\par
+\noindent Generates theorem (term template): \texttt{Scale.sound : (LexLeanReasoning.Sound ((gradedCheck)) ((Graded)))}.\par
+\subsection*{\texttt{grade\_admitted}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals)}.\par
+\noindent Statement: \texttt{LexLeanTarget.ReasoningOracle.Consistent ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{grade\_pending}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals)}.\par
+\noindent Statement: \texttt{(LexLeanTarget.ReasoningOracle.Pending ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)) < 11)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Related}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (c : LexLeanTarget.ReasoningOracle.Chart)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(LexLeanTarget.ReasoningOracle.Consistent (c) /\textbackslash{} (LexLeanTarget.ReasoningOracle.Warranted (c) /\textbackslash{} ((((c).shock = 1) -> LexLeanTarget.ReasoningOracle.Hypotensive ((c).vitals)) /\textbackslash{} (((c).vitals).systolic = (v).systolic))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{related\_admitted}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals)}.\par
+\noindent Statement: \texttt{Related (v) ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{related\_preserved}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (s : LexLeanTarget.ReasoningOracle.Chart) (t : LexLeanTarget.ReasoningOracle.Chart)}.\par
+\noindent Statement: \texttt{(Related (v) (s) -> (LexLeanTarget.ReasoningOracle.Justified (s) (t) -> Related (v) (t)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{grade\_correct}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(v : LexLeanTarget.ReasoningOracle.Vitals) (chart : LexLeanTarget.ReasoningOracle.Chart) (r : Nat)}.\par
+\noindent Statement: \texttt{(Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (r)) -> Graded (v) (r)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{Grade}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Logic: \texttt{LexLeanTarget.ReasoningOracle.Findings}.\par
+\noindent Observation: \texttt{v : LexLeanTarget.ReasoningOracle.Vitals, observed as (\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)}.\par
+\noindent Rules in priority order: \texttt{LexLeanTarget.ReasoningOracle.Fever, LexLeanTarget.ReasoningOracle.Tachycardia, LexLeanTarget.ReasoningOracle.Tachypnea, LexLeanTarget.ReasoningOracle.Leukocytosis, LexLeanTarget.ReasoningOracle.Sirs, LexLeanTarget.ReasoningOracle.Sepsis, LexLeanTarget.ReasoningOracle.Shock, LexLeanTarget.ReasoningOracle.Escalate}.\par
+\noindent Strategy: \texttt{forward, at most 11 iterations}.\par
+\noindent Answer: \texttt{chart |-> Option.some ((chart).level) : Option (Nat)}.\par
+\noindent Verifier: \texttt{Scale}.\par
+\noindent Claim: \texttt{initial invariant, discharged by grade\_admitted}.\par
+\noindent Claim: \texttt{terminates, discharged by grade\_pending}.\par
+\noindent Claim: \texttt{observation invariant Related, discharged by related\_admitted and related\_preserved}.\par
+\noindent Claim: \texttt{answer correct, its check erased, discharged by grade\_correct}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\noindent Obligation (reasoner Grade initial invariant): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals), LexLeanTarget.ReasoningOracle.Consistent ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)); stated exactly by grade\_admitted}.\par
+\noindent Obligation (reasoner Grade fuel bound): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals), (LexLeanTarget.ReasoningOracle.Pending ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)) < 11); stated exactly by grade\_pending}.\par
+\noindent Obligation (reasoner Grade observation invariant initial): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals), Related (v) ((\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)); stated exactly by related\_admitted}.\par
+\noindent Obligation (reasoner Grade observation invariant preservation): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), (Related (v) (\_\_s) -> (LexLeanTarget.ReasoningOracle.Justified (\_\_s) (\_\_t) -> Related (v) (\_\_t))); stated exactly by related\_preserved}.\par
+\noindent Obligation (reasoner Grade answer correctness): \texttt{forall (v : LexLeanTarget.ReasoningOracle.Vitals) (chart : LexLeanTarget.ReasoningOracle.Chart) (\_\_v : Nat), (Related (v) (chart) -> ((Option.some ((chart).level) = Option.some (\_\_v)) -> Graded (v) (\_\_v))); stated exactly by grade\_correct}.\par
+\noindent Elaborates to: \texttt{inductive Grade.Step with Fever(), Tachycardia(), Tachypnea(), Leukocytosis(), Sirs(), Sepsis(), Shock(), Escalate()}.\par
+\noindent Elaborates to: \texttt{structure Grade.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Grade.observe (v : LexLeanTarget.ReasoningOracle.Vitals) : LexLeanTarget.ReasoningOracle.Chart := (\{ vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0 \} : LexLeanTarget.ReasoningOracle.Chart)}.\par
+\noindent Elaborates to: \texttt{Grade.fire (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_step : Grade.Step) : Option (LexLeanTarget.ReasoningOracle.Chart) := (match \_\_step with | Grade.Step.Fever => LexLeanTarget.ReasoningOracle.Fever.apply (\_\_s) | Grade.Step.Tachycardia => LexLeanTarget.ReasoningOracle.Tachycardia.apply (\_\_s) | Grade.Step.Tachypnea => LexLeanTarget.ReasoningOracle.Tachypnea.apply (\_\_s) | Grade.Step.Leukocytosis => LexLeanTarget.ReasoningOracle.Leukocytosis.apply (\_\_s) | Grade.Step.Sirs => LexLeanTarget.ReasoningOracle.Sirs.apply (\_\_s) | Grade.Step.Sepsis => LexLeanTarget.ReasoningOracle.Sepsis.apply (\_\_s) | Grade.Step.Shock => LexLeanTarget.ReasoningOracle.Shock.apply (\_\_s) | Grade.Step.Escalate => LexLeanTarget.ReasoningOracle.Escalate.apply (\_\_s))}.\par
+\noindent Elaborates to: \texttt{Grade.replay (\_\_acc : Except (ReasoningFailure) (LexLeanTarget.ReasoningOracle.Chart)) (\_\_step : Grade.Step) : Except (ReasoningFailure) (LexLeanTarget.ReasoningOracle.Chart) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Grade.fire (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Grade.follow (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_trace : List (Grade.Step)) : Except (ReasoningFailure) (LexLeanTarget.ReasoningOracle.Chart) := (LexLeanCollections.listFold ((Grade.replay)) (Except.ok (Grade.observe (v))) (\_\_trace) : Except (ReasoningFailure) (LexLeanTarget.ReasoningOracle.Chart))}.\par
+\noindent Elaborates to: \texttt{Grade.extract (chart : LexLeanTarget.ReasoningOracle.Chart) : Option (Nat) := Option.some ((chart).level)}.\par
+\noindent Elaborates to: \texttt{Grade.accept (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) : Option (Nat) := Grade.extract (\_\_s)}.\par
+\noindent Elaborates to: \texttt{Grade.answer (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_trace : List (Grade.Step)) : Option (Nat) := (match Grade.follow (v) (\_\_trace) with | Except.ok \_\_s => Grade.accept (v) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{Grade.select (\_\_s : LexLeanTarget.ReasoningOracle.Chart) : Option (Grade.Step) := (match (match (match (if LexLeanTarget.ReasoningOracle.Fever.guard (\_\_s) then Option.some (Grade.Step.Fever) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if LexLeanTarget.ReasoningOracle.Tachycardia.guard (\_\_s) then Option.some (Grade.Step.Tachycardia) else Option.none)) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (match (if LexLeanTarget.ReasoningOracle.Tachypnea.guard (\_\_s) then Option.some (Grade.Step.Tachypnea) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if LexLeanTarget.ReasoningOracle.Leukocytosis.guard (\_\_s) then Option.some (Grade.Step.Leukocytosis) else Option.none))) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (match (match (if LexLeanTarget.ReasoningOracle.Sirs.guard (\_\_s) then Option.some (Grade.Step.Sirs) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if LexLeanTarget.ReasoningOracle.Sepsis.guard (\_\_s) then Option.some (Grade.Step.Sepsis) else Option.none)) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (match (if LexLeanTarget.ReasoningOracle.Shock.guard (\_\_s) then Option.some (Grade.Step.Shock) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if LexLeanTarget.ReasoningOracle.Escalate.guard (\_\_s) then Option.some (Grade.Step.Escalate) else Option.none))))}.\par
+\noindent Elaborates to: \texttt{Grade.attempts (\_\_s : LexLeanTarget.ReasoningOracle.Chart) : Nat := ((let \_\_scan6l : (Prod (Bool) (Nat)) := (let \_\_scan2l : (Prod (Bool) (Nat)) := (let \_\_scan0l : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Fever.guard (\_\_s), 1); (if (\_\_scan0l).1 then \_\_scan0l else (let \_\_scan0r : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Tachycardia.guard (\_\_s), 1); ((\_\_scan0r).1, ((\_\_scan0l).2 + (\_\_scan0r).2))))); (if (\_\_scan2l).1 then \_\_scan2l else (let \_\_scan2r : (Prod (Bool) (Nat)) := (let \_\_scan1l : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Tachypnea.guard (\_\_s), 1); (if (\_\_scan1l).1 then \_\_scan1l else (let \_\_scan1r : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Leukocytosis.guard (\_\_s), 1); ((\_\_scan1r).1, ((\_\_scan1l).2 + (\_\_scan1r).2))))); ((\_\_scan2r).1, ((\_\_scan2l).2 + (\_\_scan2r).2))))); (if (\_\_scan6l).1 then \_\_scan6l else (let \_\_scan6r : (Prod (Bool) (Nat)) := (let \_\_scan5l : (Prod (Bool) (Nat)) := (let \_\_scan3l : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Sirs.guard (\_\_s), 1); (if (\_\_scan3l).1 then \_\_scan3l else (let \_\_scan3r : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Sepsis.guard (\_\_s), 1); ((\_\_scan3r).1, ((\_\_scan3l).2 + (\_\_scan3r).2))))); (if (\_\_scan5l).1 then \_\_scan5l else (let \_\_scan5r : (Prod (Bool) (Nat)) := (let \_\_scan4l : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Shock.guard (\_\_s), 1); (if (\_\_scan4l).1 then \_\_scan4l else (let \_\_scan4r : (Prod (Bool) (Nat)) := (LexLeanTarget.ReasoningOracle.Escalate.guard (\_\_s), 1); ((\_\_scan4r).1, ((\_\_scan4l).2 + (\_\_scan4r).2))))); ((\_\_scan5r).1, ((\_\_scan5l).2 + (\_\_scan5r).2))))); ((\_\_scan6r).1, ((\_\_scan6l).2 + (\_\_scan6r).2)))))).2}.\par
+\noindent Elaborates to: \texttt{Grade.next (\_\_s : LexLeanTarget.ReasoningOracle.Chart) : Option (LexLeanTarget.ReasoningOracle.Chart) := (match Grade.select (\_\_s) with | Option.none => Option.none | Option.some \_\_step => Grade.fire (\_\_s) (\_\_step))}.\par
+\noindent Elaborates to: \texttt{Grade.saturate (v : LexLeanTarget.ReasoningOracle.Vitals) : (Prod (LexLeanTarget.ReasoningOracle.Chart) (Bool)) := (LexLeanCollections.iterateUntil ((Grade.next)) (11) (Grade.observe (v)) : (Prod (LexLeanTarget.ReasoningOracle.Chart) (Bool)))}.\par
+\noindent Elaborates to: \texttt{structure Grade.Run with state : LexLeanTarget.ReasoningOracle.Chart, trace : List (Grade.Step), ledger : Grade.Ledger}.\par
+\noindent Elaborates to: \texttt{Grade.start (v : LexLeanTarget.ReasoningOracle.Vitals) : Grade.Run := (\{ state := Grade.observe (v), trace := ([] : List (Grade.Step)), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := 0 \} : Grade.Ledger) \} : Grade.Run)}.\par
+\noindent Elaborates to: \texttt{Grade.step (\_\_r : Grade.Run) : Option (Grade.Run) := (match Grade.select ((\_\_r).state) with | Option.none => Option.none | Option.some \_\_step => (match Grade.fire ((\_\_r).state) (\_\_step) with | Option.none => Option.none | Option.some \_\_t => Option.some ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_r).trace) ((\_\_step :: ([] : List (Grade.Step)))) : List (Grade.Step)), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Grade.attempts ((\_\_r).state)), firings := (((\_\_r).ledger).firings + 1), expansions := ((\_\_r).ledger).expansions, verifications := ((\_\_r).ledger).verifications, frontier := ((\_\_r).ledger).frontier \} : Grade.Ledger) \} : Grade.Run))))}.\par
+\noindent Elaborates to: \texttt{Grade.run (v : LexLeanTarget.ReasoningOracle.Vitals) : (Prod (Grade.Run) (Bool)) := (LexLeanCollections.iterateUntil ((Grade.step)) (11) (Grade.start (v)) : (Prod (Grade.Run) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Grade.account (v : LexLeanTarget.ReasoningOracle.Vitals) : Grade.Ledger := (let \_\_final : (Prod (Grade.Run) (Bool)) := Grade.run (v); (match (\_\_final).2 with | Bool.true => (\{ iterations := (((\_\_final).1).ledger).iterations, attempts := ((((\_\_final).1).ledger).attempts + Grade.attempts (((\_\_final).1).state)), firings := (((\_\_final).1).ledger).firings, expansions := (((\_\_final).1).ledger).expansions, verifications := (((\_\_final).1).ledger).verifications, frontier := (((\_\_final).1).ledger).frontier \} : Grade.Ledger) | Bool.false => ((\_\_final).1).ledger))}.\par
+\noindent Elaborates to: \texttt{Grade.conclude (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) : Except (ReasoningFailure) (Nat) := (match Grade.accept (v) (\_\_s) with | Option.some \_\_v => Except.ok (\_\_v) | Option.none => (match Grade.extract (\_\_s) with | Option.some \_ => Except.error (ReasoningFailure.rejected) | Option.none => Except.error (ReasoningFailure.unsolved)))}.\par
+\noindent Elaborates to: \texttt{Grade.verdict (v : LexLeanTarget.ReasoningOracle.Vitals) : Except (ReasoningFailure) (Nat) := (let \_\_final : (Prod (LexLeanTarget.ReasoningOracle.Chart) (Bool)) := Grade.saturate (v); (match (\_\_final).2 with | Bool.true => Grade.conclude (v) ((\_\_final).1) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Elaborates to: \texttt{Grade (v : LexLeanTarget.ReasoningOracle.Vitals) : Except (ReasoningFailure) ((Prod (Nat) (List (Grade.Step)))) := (let \_\_final : (Prod (Grade.Run) (Bool)) := Grade.run (v); (match (\_\_final).2 with | Bool.true => (match Grade.conclude (v) (((\_\_final).1).state) with | Except.ok \_\_v => Except.ok ((\_\_v, ((\_\_final).1).trace)) | Except.error \_\_e => Except.error (\_\_e)) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Grade.fire\_sound : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_step : Grade.Step) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> LexLeanTarget.ReasoningOracle.Justified (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Grade.fire\_progress : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_step : Grade.Step) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), (LexLeanTarget.ReasoningOracle.Consistent (\_\_s) -> ((Grade.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (LexLeanTarget.ReasoningOracle.Pending (\_\_t) < LexLeanTarget.ReasoningOracle.Pending (\_\_s))))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Grade.replay\_fire : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_step : Grade.Step) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.fire (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Grade.replay (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Grade.replay\_sound : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_acc : Except (ReasoningFailure) (LexLeanTarget.ReasoningOracle.Chart)) (\_\_step : Grade.Step), ((LexLeanReasoning.Reaches ((LexLeanTarget.ReasoningOracle.Justified)) (Grade.observe (v)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((LexLeanTarget.ReasoningOracle.Justified)) (Grade.observe (v)) (Grade.replay (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.derivation : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_trace : List (Grade.Step)), (LexLeanReasoning.Reaches ((LexLeanTarget.ReasoningOracle.Justified)) (Grade.observe (v)) (Grade.follow (v) (\_\_trace)))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.follow\_invariant : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_trace : List (Grade.Step)) (\_\_s : LexLeanTarget.ReasoningOracle.Chart), ((Grade.follow (v) (\_\_trace) = Except.ok (\_\_s)) -> LexLeanTarget.ReasoningOracle.Consistent (\_\_s))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.follow\_relation : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_trace : List (Grade.Step)) (\_\_s : LexLeanTarget.ReasoningOracle.Chart), ((Grade.follow (v) (\_\_trace) = Except.ok (\_\_s)) -> Related (v) (\_\_s))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.accept\_sound : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_v : Nat), (Related (v) (\_\_s) -> ((Grade.accept (v) (\_\_s) = Option.some (\_\_v)) -> Graded (v) (\_\_v)))}.\par
+\noindent Generates theorem (next sound template): \texttt{Grade.next\_sound : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> LexLeanTarget.ReasoningOracle.Justified (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (term template): \texttt{Grade.next\_preserves : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (LexLeanTarget.ReasoningOracle.Consistent (\_\_s) -> LexLeanTarget.ReasoningOracle.Consistent (\_\_t)))}.\par
+\noindent Generates theorem (next progress template): \texttt{Grade.next\_progress : forall (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (LexLeanTarget.ReasoningOracle.Consistent (\_\_s) -> (LexLeanTarget.ReasoningOracle.Pending (\_\_t) < LexLeanTarget.ReasoningOracle.Pending (\_\_s))))}.\par
+\noindent Generates theorem (step none template): \texttt{Grade.step\_none : forall (\_\_r : Grade.Run), ((Grade.step (\_\_r) = Option.none) -> (Grade.next ((\_\_r).state) = Option.none))}.\par
+\noindent Generates theorem (step some template): \texttt{Grade.step\_some : forall (\_\_r : Grade.Run) (\_\_q : Grade.Run), ((Grade.step (\_\_r) = Option.some (\_\_q)) -> (Grade.next ((\_\_r).state) = Option.some ((\_\_q).state)))}.\par
+\noindent Generates theorem (step trace template): \texttt{Grade.step\_trace : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_r : Grade.Run) (\_\_q : Grade.Run), ((Grade.step (\_\_r) = Option.some (\_\_q)) -> ((Grade.follow (v) ((\_\_r).trace) = Except.ok ((\_\_r).state)) -> (Grade.follow (v) ((\_\_q).trace) = Except.ok ((\_\_q).state))))}.\par
+\noindent Generates theorem (step count template): \texttt{Grade.step\_count : forall (\_\_r : Grade.Run) (\_\_q : Grade.Run), ((Grade.step (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (step count template): \texttt{Grade.step\_fired : forall (\_\_r : Grade.Run) (\_\_q : Grade.Run), ((Grade.step (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).firings = (((\_\_r).ledger).firings + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.saturate\_derivation : forall (v : LexLeanTarget.ReasoningOracle.Vitals), (LexLeanReasoning.Star ((LexLeanTarget.ReasoningOracle.Justified)) (Grade.observe (v)) ((Grade.saturate (v)).1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.run\_state : forall (v : LexLeanTarget.ReasoningOracle.Vitals), ((((Grade.run (v)).1).state = (Grade.saturate (v)).1) /\textbackslash{} ((Grade.run (v)).2 = (Grade.saturate (v)).2))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.run\_trace : forall (v : LexLeanTarget.ReasoningOracle.Vitals), (Grade.follow (v) (((Grade.run (v)).1).trace) = Except.ok (((Grade.run (v)).1).state))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.iterations\_bounded : forall (v : LexLeanTarget.ReasoningOracle.Vitals), ((((Grade.run (v)).1).ledger).iterations <= 11)}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.firings\_bounded : forall (v : LexLeanTarget.ReasoningOracle.Vitals), ((((Grade.run (v)).1).ledger).firings <= 11)}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.saturate\_invariant : forall (v : LexLeanTarget.ReasoningOracle.Vitals), LexLeanTarget.ReasoningOracle.Consistent ((Grade.saturate (v)).1)}.\par
+\noindent Generates theorem (term template): \texttt{Grade.next\_preserves\_relation : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_t : LexLeanTarget.ReasoningOracle.Chart), ((Grade.next (\_\_s) = Option.some (\_\_t)) -> (Related (v) (\_\_s) -> Related (v) (\_\_t)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.saturate\_relation : forall (v : LexLeanTarget.ReasoningOracle.Vitals), Related (v) ((Grade.saturate (v)).1)}.\par
+\noindent Generates theorem (run invariant template): \texttt{Grade.run\_relation : forall (v : LexLeanTarget.ReasoningOracle.Vitals), Related (v) (((Grade.run (v)).1).state)}.\par
+\noindent Generates theorem (unfold template): \texttt{Grade.saturates : forall (v : LexLeanTarget.ReasoningOracle.Vitals), ((Grade.saturate (v)).2 = true)}.\par
+\noindent Generates theorem (conclude accept template): \texttt{Grade.conclude\_accept : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_v : Nat), ((Grade.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> (Grade.accept (v) (\_\_s) = Option.some (\_\_v)))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Grade.conclude\_sound : forall (v : LexLeanTarget.ReasoningOracle.Vitals) (\_\_s : LexLeanTarget.ReasoningOracle.Chart) (\_\_v : Nat), (Related (v) (\_\_s) -> ((Grade.conclude (v) (\_\_s) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
+\noindent Generates theorem (verdict forward template): \texttt{Grade.verdict\_sound : forall (v : LexLeanTarget.ReasoningOracle.Vitals), (forall (\_\_v : Nat), ((Grade.verdict (v) = Except.ok (\_\_v)) -> Graded (v) (\_\_v)))}.\par
+\noindent Generates theorem (explained forward template): \texttt{Grade.explained : forall (v : LexLeanTarget.ReasoningOracle.Vitals), (forall (\_\_v : Nat), (forall (\_\_trace : List (Grade.Step)), ((Grade (v) = Except.ok ((\_\_v, \_\_trace))) -> ((Grade.answer (v) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Graded (v) (\_\_v)))))}.\par
+\end{document}

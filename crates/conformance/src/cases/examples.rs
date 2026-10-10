@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 239] = [
+            let prescribed: [(&str, &str); 262] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -195,7 +195,21 @@ pub(crate) fn run(id: &str) {
                 ("leanchecker-failure", "LLV7003"),
                 ("malformed-axiom-output", "LLV7004"),
                 ("extraction-rejected", "LLV7011"),
+                ("extraction-uncompiled-external", "LLV7011"),
                 ("extraction-authority-drift", "LLV7012"),
+                // §17.17: certificate A fails closed before publication.
+                ("certificate-rejected", "LLV7013"),
+                ("certificate-b-rejected", "LLV7015"),
+                ("certificate-e-rejected", "LLV7016"),
+                ("certificate-heartbeat-rejected", "LLV7013"),
+                ("certificate-resource-exhausted", "LLS8002"),
+                ("lowering-size-limit", "LLS8002"),
+                ("certificate-size-limit", "LLS8002"),
+                ("certificate-generation-limit", "LLS8002"),
+                ("certificates-total-limit", "LLS8002"),
+                ("eligibility-report-limit", "LLS8002"),
+                ("eligibility-reports-total-limit", "LLS8002"),
+                ("preservation-drift", "LLV7014"),
                 ("axiom-policy-excess", "LLV7005"),
                 ("path-symlink", "LLS8001"),
                 ("stale-lock", "LLC0102"),
@@ -225,6 +239,16 @@ pub(crate) fn run(id: &str) {
                 ("recursive-mutual-uninhabited", "LLT4001"),
                 ("recursive-match-foreign-constructor", "LLT4001"),
                 ("binder-capture", "LLT4001"),
+                ("binder-bool-literal-name", "LLT4001"),
+                ("declaration-lean-name", "LLT4001"),
+                ("module-prefix-reserved", "LLC0101"),
+                ("module-prefix-shipped-root", "LLC0101"),
+                ("module-prefix-target-production", "LLT4005"),
+                ("module-name-lean-namespace", "LLT4001"),
+                ("module-name-dotted-last", "LLT4001"),
+                ("module-name-dotted-first", "LLT4001"),
+                ("binder-pattern-constructor-name", "LLT4001"),
+                ("member-generated-name", "LLT4001"),
                 // §17.12: higher-order code fails closed before any backend.
                 ("lambda-capture-missing", "LLT4001"),
                 ("lambda-capture-extra", "LLT4001"),
@@ -440,31 +464,38 @@ pub(crate) fn run(id: &str) {
             );
 
             let lean_available = support::lean_backed("EX-07");
-            let mut failures: Vec<String> = Vec::new();
-            for dir in crate::fixtures::discover(&root) {
+            // The fixtures are independent of one another (each runs in a
+            // copy of its project, and the ones that override the toolchain
+            // take the environment lock exclusively), and the longest of
+            // them wait on Lean, so a few run at once: one after another
+            // they were the longest case of the suite.
+            let directories = crate::fixtures::discover(&root);
+            let failures: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+            let check_directory = |dir: &camino::Utf8PathBuf| {
                 let case =
-                    crate::fixtures::load_case(&dir).unwrap_or_else(|error| panic!("{error}"));
+                    crate::fixtures::load_case(dir).unwrap_or_else(|error| panic!("{error}"));
                 let is_lean_backed = case
                     .invocations
                     .iter()
                     .any(|invocation| invocation.command == "verify");
                 if is_lean_backed && !lean_available {
-                    continue;
+                    return;
                 }
                 // A checkout without symlink support (Windows with
                 // core.symlinks=false) materializes the fixture's symlink as
                 // text, so the path-symlink class is host-bound there.
                 if cfg!(windows) && dir.ends_with("path-symlink") {
                     eprintln!("EX-07: {dir}: symlink fixture skipped on a host without symlink checkout (§8.3)");
-                    continue;
+                    return;
                 }
-                let observed = match crate::fixtures::check(&dir) {
+                let observed = match crate::fixtures::check_shared(dir) {
                     Ok(observed) => observed,
                     Err(error) => {
-                        failures.push(error);
-                        continue;
+                        failures.lock().expect("failures").push(error);
+                        return;
                     }
                 };
+                let mut found: Vec<String> = Vec::new();
                 // §30.4: every emitted diagnostic validates against the
                 // diagnostic schema.
                 let diagnostics: serde_json::Value =
@@ -476,7 +507,7 @@ pub(crate) fn run(id: &str) {
                     let violations =
                         crate::schema::validate(&support::schema("diagnostic"), diagnostic);
                     if !violations.is_empty() {
-                        failures.push(format!(
+                        found.push(format!(
                             "{dir}: diagnostic {index} violates schemas/diagnostic.schema.json: {}",
                             violations
                                 .iter()
@@ -486,7 +517,7 @@ pub(crate) fn run(id: &str) {
                         ));
                     }
                 }
-                let relative = dir.strip_prefix(&root).unwrap_or(&dir);
+                let relative = dir.strip_prefix(&root).unwrap_or(dir);
                 if let Ok(class) = relative.strip_prefix("tests/negative") {
                     let class = class.as_str();
                     let code = prescribed
@@ -500,18 +531,22 @@ pub(crate) fn run(id: &str) {
                     if observed.codes.is_empty()
                         || observed.codes.iter().any(|observed| observed != code)
                     {
-                        failures.push(format!(
+                        found.push(format!(
                             "tests/negative/{class}: prescribed only {code}, observed {:?} (§28.5)",
                             observed.codes
                         ));
                     }
                     if observed.exit == 0 {
-                        failures.push(format!(
+                        found.push(format!(
                             "tests/negative/{class}: a negative fixture must fail"
                         ));
                     }
                 }
-            }
+                failures.lock().expect("failures").extend(found);
+            };
+            support::for_each_parallel(&directories, 4, check_directory);
+            let mut failures = failures.into_inner().expect("failures");
+            failures.sort();
             assert!(
                 failures.is_empty(),
                 "fixture failures:\n{}",
