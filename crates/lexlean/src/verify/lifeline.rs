@@ -74,17 +74,30 @@ fn ignored_at_start() -> Option<u64> {
             u64::from_str_radix(mask.trim(), 16).ok()
         });
     }
-    // An absolute path: nothing is searched for on `PATH`.
+    // An absolute path: nothing is searched for on `PATH`. BSD `ps` spells
+    // the column `ignored` or `sigignore` depending on the system, and may
+    // print the mask with a `0x` prefix; a host that does none of these
+    // cannot say, which `watched` handles.
     let ps = ["/bin/ps", "/usr/bin/ps"]
         .into_iter()
         .find(|path| std::path::Path::new(path).is_file())?;
-    let output = Command::new(ps)
-        .args(["-o", "ignored=", "-p", &std::process::id().to_string()])
-        .stdin(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()?;
-    u64::from_str_radix(String::from_utf8_lossy(&output.stdout).trim(), 16).ok()
+    ["ignored", "sigignore"].into_iter().find_map(|keyword| {
+        let output = Command::new(ps)
+            .args([
+                "-o",
+                &format!("{keyword}="),
+                "-p",
+                &std::process::id().to_string(),
+            ])
+            .stdin(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout);
+        let digits = text.trim();
+        let digits = digits.strip_prefix("0x").unwrap_or(digits);
+        u64::from_str_radix(digits, 16).ok()
+    })
 }
 
 /// The signals to watch: the four that end a run, less the ones the process
@@ -231,16 +244,24 @@ mod tests {
 
     #[test]
     fn the_mask_of_this_process_is_read() {
-        // Not vacuous: on a host with `/proc` or `ps` the mask is known, and
-        // a test process does not ignore SIGTERM.
+        // Not vacuous where the mask is knowable: with `/proc` it must be
+        // reported, and a test process does not ignore SIGTERM. Where only
+        // `ps` can say (macOS), a host whose `ps` has no such column reports
+        // nothing, which `watched` handles (the case above); a mask that is
+        // reported must still be right.
         #[cfg(unix)]
         {
-            let mask = super::ignored_at_start().expect("the host reports the ignored signals");
-            assert_eq!(
-                mask & (1_u64 << (signal_hook::consts::SIGTERM - 1)),
-                0,
-                "{mask:x}"
-            );
+            let mask = super::ignored_at_start();
+            if std::path::Path::new("/proc/self/status").is_file() {
+                assert!(mask.is_some(), "the host reports the ignored signals");
+            }
+            if let Some(mask) = mask {
+                assert_eq!(
+                    mask & (1_u64 << (signal_hook::consts::SIGTERM - 1)),
+                    0,
+                    "{mask:x}"
+                );
+            }
         }
     }
 }
