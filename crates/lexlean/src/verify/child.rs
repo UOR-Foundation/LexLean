@@ -860,8 +860,12 @@ mod timeout_tests {
             "the stop did not wait for the zombie: {:?}",
             started.elapsed()
         );
-        // Nothing of the group is left once the zombie is reaped too.
+        // Nothing of the group is left once the zombie is reaped too. The
+        // test reaps it itself if `stop` has not: where the group signal
+        // skips zombies (macOS) `stop` returns before reaping, and that is
+        // not what is under test (`stop` reaps it on Linux, and `wait` then
+        // finds nothing left, which is not an error here).
+        drop(zombie.wait());
         assert!(super::group_members(group).is_some_and(|members| members.is_empty()));
-        drop(zombie.try_wait());
     }
 }

@@ -74,14 +74,35 @@ fn ignored_here(name: &str) -> bool {
         "HUP" => 1,
         _ => 15,
     };
-    std::fs::read_to_string("/proc/self/status")
+    let from_proc = std::fs::read_to_string("/proc/self/status")
         .ok()
         .and_then(|status| {
             status
                 .lines()
                 .find_map(|line| u64::from_str_radix(line.strip_prefix("SigIgn:")?.trim(), 16).ok())
+        });
+    // Without `/proc` (macOS) the column of `ps` says it, as it does for the
+    // executable under test; a host that cannot say reports nothing ignored.
+    let mask = from_proc.or_else(|| {
+        let ps = ["/bin/ps", "/usr/bin/ps"]
+            .into_iter()
+            .find(|path| std::path::Path::new(path).is_file())?;
+        ["ignored", "sigignore"].into_iter().find_map(|keyword| {
+            let output = std::process::Command::new(ps)
+                .args([
+                    "-o",
+                    &format!("{keyword}="),
+                    "-p",
+                    &std::process::id().to_string(),
+                ])
+                .output()
+                .ok()?;
+            let text = String::from_utf8_lossy(&output.stdout);
+            let digits = text.trim();
+            u64::from_str_radix(digits.strip_prefix("0x").unwrap_or(digits), 16).ok()
         })
-        .is_some_and(|mask| mask & (1_u64 << (number - 1)) != 0)
+    });
+    mask.is_some_and(|mask| mask & (1_u64 << (number - 1)) != 0)
 }
 
 #[cfg(unix)]

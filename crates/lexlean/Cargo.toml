@@ -32,7 +32,7 @@ walkdir = { workspace = true }
 
 # Process groups are a unix notion. `rustix` signals a group without calling
 # the system directly (this crate forbids unsafe code) and without a `kill`
-# executable from the host; `signal-hook` turns SIGINT/SIGTERM/SIGHUP into an
+# executable from the host; `signal-hook` turns SIGINT/SIGTERM/SIGHUP/SIGQUIT into an
 # ordinary thread that ends the children before the process is, because a
 # child in a group of its own no longer receives the terminal's Ctrl-C.
 [target.'cfg(unix)'.dependencies]

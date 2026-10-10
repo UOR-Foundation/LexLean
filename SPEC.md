@@ -4584,7 +4584,7 @@ status is the signal's). A signal that the process was started ignoring (what
 `nohup` does to `SIGHUP`, and a non-interactive shell to `SIGINT` and
 `SIGQUIT` of a background job) is not watched and stays ignored; on a host that
 can report neither `/proc/self/status` nor `ps -o ignored`, `SIGHUP` is not
-watched. the test suite of the crate runs the real `lexlean` and sends it each, while a child
+watched. The test suite of the crate runs the real `lexlean` and sends it each, while a child
 is running, and requires that nothing the child started is left, that an
 ignored signal ends neither the run nor its child, and that an embedded run
 leaves the host's `SIGTERM` handling alone (`SIGKILL` cannot be caught by any
