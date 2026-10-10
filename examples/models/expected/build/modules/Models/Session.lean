@@ -370,7 +370,7 @@ public structure Window where
 public theorem affordable_check_sound (window : Window) (cost : Nat) : ((affordableCheck (window) (cost) = true) -> Affordable (window) (cost)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Affordable, affordableCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Affordable, affordableCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def Bounded (window : Window) : Prop := ((window).used <= 64)
@@ -380,7 +380,7 @@ public theorem affordable_check_sound (window : Window) (cost : Nat) : ((afforda
 public theorem bounded_check_sound (window : Window) : ((boundedCheck (window) = true) -> Bounded (window)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Bounded, boundedCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Bounded, boundedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def Conserves (window : Window) (cost : Nat) (updated : Window) (overflow : Nat) : Prop := (((updated).used + overflow) = ((window).used + cost))
@@ -397,13 +397,13 @@ public theorem session_initial : Bounded (SessionStep.initial) := by
 public theorem session_preserves (window : Window) (cost : Nat) : (Bounded (window) -> (Affordable (window) (cost) -> Bounded ((SessionStep (window) (cost)).1))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Affordable, Bounded, SessionStep, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Affordable, Bounded, SessionStep, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem session_conserves (window : Window) (cost : Nat) : (Bounded (window) -> (Affordable (window) (cost) -> Conserves (window) (cost) ((SessionStep (window) (cost)).1) ((SessionStep (window) (cost)).2))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Affordable, Bounded, Conserves, SessionStep, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Affordable, Bounded, Conserves, SessionStep, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem SessionEvidence.session_initial : LexLeanModels.Initial ((Models.Session.Bounded)) (Models.Session.SessionStep.initial) := Models.Session.session_initial

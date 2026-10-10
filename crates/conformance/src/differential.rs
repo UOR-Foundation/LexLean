@@ -286,7 +286,7 @@ fn sample(
             right: Box::new(sample(modules, rng, right, depth + 1, extreme)),
         },
         // A violation is the pair of Booleans it lowers to (§17.12 rule 9).
-        SemanticType::ContractViolation => Value::Pair {
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => Value::Pair {
             left: Box::new(Value::Bool {
                 value: rng.below(2) == 0,
             }),

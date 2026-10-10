@@ -304,6 +304,24 @@ Model evidence not established.
 
 Class: `language`. Exit code: 1.
 
+## `LLT4010` --- Reasoning interface or obligation mismatch
+
+Reasoning interface or obligation mismatch.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4011` --- Unbounded reasoning or missing termination evidence
+
+Unbounded reasoning or missing termination evidence.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4012` --- Unvalidated reasoning runtime boundary
+
+Unvalidated reasoning runtime boundary.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

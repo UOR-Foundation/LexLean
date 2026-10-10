@@ -1,3 +1,110 @@
+'LexLeanTarget.BudgetOracle.Burn.apply' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Burn.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Burn.apply_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Burn.candidates' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Burn.conclusion' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Burn.guard' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Drained.sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Empty' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.Ledger' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.Run' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.Step' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.accept' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.accept_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Refund.account' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.answer' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.attempts' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.conclude' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.conclude_accept' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.conclude_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Refund.derivation' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Refund.explained' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Refund.extract' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.fire' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.fire_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Refund.firings_bounded' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.follow' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.next' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.next_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Refund.observe' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.replay' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.replay_fire' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.replay_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Refund.run' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.run_state' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.run_trace' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.saturate' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.saturate_derivation' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Refund.select' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.start' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step_count' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step_fired' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step_none' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step_some' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.step_trace' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.verdict' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Refund.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Remaining' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.Ledger' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.Run' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.Step' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.accept' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.accept_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Spend.account' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.answer' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.attempts' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.conclude' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.conclude_accept' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.conclude_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Spend.derivation' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.explained' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Spend.extract' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.fire' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.fire_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.fire_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.firings_bounded' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.follow' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.next' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.next_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.next_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.observe' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.replay' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.replay_fire' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.replay_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.run' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.run_state' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.run_trace' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.saturate' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.saturate_derivation' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.saturates' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Spend.select' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.start' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step_count' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step_fired' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step_none' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step_some' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.step_trace' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.verdict' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Spend.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.Spent' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Tick.apply' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Tick.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Tick.apply_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.Tick.conclusion' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.Tick.guard' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.allowance_bound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.burn_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.burn_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.emptyCheck' does not depend on any axioms
+'LexLeanTarget.BudgetOracle.empty_sound' depends on axioms: [propext]
+'LexLeanTarget.BudgetOracle.tick_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.BudgetOracle.tick_sound' depends on axioms: [propext, Quot.sound]
 'LexLeanTarget.Gnaf.Action' does not depend on any axioms
 'LexLeanTarget.Gnaf.ActionKind' does not depend on any axioms
 'LexLeanTarget.Gnaf.Answer' does not depend on any axioms
@@ -202,6 +309,14 @@
 'LexLeanTarget.GnafFixtures.preparationCommonStateRequest' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.preparationCommonStateStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.GnafFixtures.preparationCommonStateUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.reasoningArgminAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.reasoningArgminRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.reasoningArgminStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.reasoningArgminUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.reasoningFrontierAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.reasoningFrontierRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.reasoningFrontierStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.reasoningFrontierUniverse' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.rejectBeyondCapacityAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.GnafFixtures.rejectBeyondCapacityRequest' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.rejectBeyondCapacityUniverse' does not depend on any axioms
@@ -261,6 +376,14 @@
 'LexLeanTarget.GnafFixtures.rejectRandomnessAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.GnafFixtures.rejectRandomnessRequest' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.rejectRandomnessUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectReasoningDiscoveredUniverseAnswer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectReasoningDiscoveredUniverseRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectReasoningDiscoveredUniverseUniverse' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectReasoningFreeSearchAnswer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GnafFixtures.rejectReasoningFreeSearchRequest' does not depend on any axioms
+'LexLeanTarget.GnafFixtures.rejectReasoningFreeSearchUniverse' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.rejectRestrictedUniverseAliasAnswer' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
@@ -343,7 +466,570 @@
 'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeRequest' does not depend on any axioms
 'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeStatuses' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.GnafFixtures.vec02ParetoEnvelopeUniverse' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.Ledger' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.Run' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.Step' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.accept' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.accept_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.account' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.answer' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.attempts' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.conclude' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.conclude_accept' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.conclude_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.extract' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.fire' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.fire_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.firings_bounded' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.follow' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.next' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.next_preserves_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.next_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.observe' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.replay' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.replay_fire' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.run' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.run_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.run_state' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.run_trace' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.saturate' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.saturate_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Grade.select' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.start' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step_count' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step_fired' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step_none' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step_some' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.step_trace' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.verdict' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Grade.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.Graded' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Related' does not depend on any axioms
+'LexLeanTarget.GradeOracle.Scale.sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.grade_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.grade_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.grade_pending' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.GradeOracle.gradedCheck' does not depend on any axioms
+'LexLeanTarget.GradeOracle.graded_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.related_admitted' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.GradeOracle.related_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.Main.emptyProgram' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Anywhere.sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.EmptyB.apply' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.EmptyB.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.EmptyB.conclusion' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.EmptyB.guard' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.FillA.apply' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.FillA.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.FillA.conclusion' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.FillA.guard' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Fits' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Held' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Inside.sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Measured.sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Measures' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Moves' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.EmptyB.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.EmptyB.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.FillA.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.FillA.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Ledger' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Node' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Pour.collect' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Pour.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Pour.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Search' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.Step' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.accept' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.accept_sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.answer' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.attempts' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.Plan.expansions_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.explained' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.extend' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.extract' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.failure' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.Plan.follow' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.Plan.fresh' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.fresh_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.frontier_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.iterations_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.observe' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.replay' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.replay_fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.Plan.run' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.searchStep' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_count' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_expanded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_peak' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_step' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.search_verify_growth' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.start' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Plan.verdict' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Plan.verifications_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.EmptyB.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.EmptyB.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.FillA.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.FillA.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Ledger' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Node' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Pour.collect' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Pour.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Pour.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Search' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.Step' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.accept' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.accept_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.answer' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.attempts' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.expansions_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.extend' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.extract' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.failure' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.follow' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.fresh' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.fresh_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.frontier_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.iterations_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.observe' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.replay' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.replay_fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.run' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.searchStep' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_count' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_expanded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_peak' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_step' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.search_verify_growth' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.start' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFit.verdict' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFit.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFit.verifications_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.EmptyB.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.EmptyB.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.FillA.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.FillA.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Ledger' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Node' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Pour.collect' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Pour.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Pour.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Search' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.Step' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.accept' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.accept_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.answer' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.attempts' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.expansions_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.extend' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.extract' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.failure' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.follow' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.follow_relation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.fresh' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.fresh_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.frontier_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.iterations_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.observe' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.replay' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.replay_fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.run' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.searchStep' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_count' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_expanded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_peak' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_step' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.search_verify_growth' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.start' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitR.verdict' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitR.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitR.verifications_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.EmptyB.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.EmptyB.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.FillA.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.FillA.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Ledger' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Node' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Pour.collect' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Pour.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Pour.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Search' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.Step' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.accept' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.accept_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.answer' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.attempts' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.expansions_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.explained' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.extend' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.extract' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.failure' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.follow' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.fresh' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.fresh_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.frontier_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.iterations_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.observe' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.replay' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.replay_fire' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.run' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.searchStep' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_count' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_expanded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_ok' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_peak' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_step' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.search_verify_growth' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.start' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.successors' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.successors_ok' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.PlanFitU.verdict' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.PlanFitU.verdict_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.PlanFitU.verifications_bounded' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.Pour.apply' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Pour.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.Pour.candidates' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Pour.conclusion' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Pour.guard' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Pouring.preserves' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Whole' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.Within' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.empty_jugs_fit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.emptyb_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.filla_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.fits_kept' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.held_initial' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.held_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.measuresCheck' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.measures_sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.plan_fit_correct' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.plan_held_correct' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.plan_whole_correct' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.PlannerOracle.pour_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.PlannerOracle.wholeCheck' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.whole_sound' depends on axioms: [propext]
+'LexLeanTarget.PlannerOracle.withinCheck' does not depend on any axioms
+'LexLeanTarget.PlannerOracle.within_sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningFixtures.encodeDoseSteps' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeDoseStepsOne' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeFailure' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodePlanSteps' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodePlanStepsOne' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeScreenSteps' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeScreenStepsOne' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeTriageStep' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.encodeTriageSteps' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningDose120Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningDose120Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningDose120Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningDose120Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningDose60Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningDose60Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningDose60Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningDose60Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafGoalAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafGoalOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafGoalProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningGnafGoalRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafPriorityAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafPriorityOutcome' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafPriorityProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningGnafPriorityRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafSweepAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafSweepOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGnafSweepProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningGnafSweepRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeShockAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeShockOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeShockProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningGradeShockRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeWellAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeWellOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningGradeWellProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningGradeWellRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan2Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan2Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan2Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningPlan2Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan5Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan5Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningPlan5Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningPlan5Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewExhaustedAgrees' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewExhaustedOutcome' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewExhaustedProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningReviewExhaustedRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewRejectedAgrees' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewRejectedOutcome' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningReviewRejectedProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningReviewRejectedRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen0Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen0Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen0Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningScreen0Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen100Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen100Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen100Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningScreen100Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen60Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen60Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningScreen60Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningScreen60Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningSpend2Agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningSpend2Outcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningSpend2Program' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningSpend2Run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageShockAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageShockOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageShockProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningTriageShockRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageTracedAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageTracedOutcome' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageTracedProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningTriageTracedRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageWellAgrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageWellOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningFixtures.reasoningTriageWellProgram' does not depend on any axioms
+'LexLeanTarget.ReasoningFixtures.reasoningTriageWellRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Chart' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Consistent' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Discharged' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Escalate.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Escalate.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Escalate.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Escalate.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Escalate.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Febrile' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Fever.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Fever.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Fever.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Fever.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Fever.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Findings.preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Hypotensive' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Indicated' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Justified' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Leukocytic' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Leukocytosis.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Leukocytosis.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Leukocytosis.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Leukocytosis.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Leukocytosis.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Outpatient.sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.Pending' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Recommendation.complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Recommendation.sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.Ledger' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.Run' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.Step' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.accept' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.accept_sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.Review.account' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.answer' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.attempts' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.conclude' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.conclude_accept' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.conclude_sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.Review.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.explained' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.Review.extract' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.fire' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.firings_bounded' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.follow' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.next' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.observe' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.replay' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.replay_fire' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.run' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.run_state' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.run_trace' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.saturate' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Review.select' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.start' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step_count' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step_fired' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step_none' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step_some' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.step_trace' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.verdict' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Review.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.Sepsis.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Sepsis.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Sepsis.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Sepsis.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Sepsis.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Shock.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Shock.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Shock.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Shock.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Shock.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Sirs.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Sirs.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Sirs.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Sirs.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Sirs.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachycardia.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachycardia.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Tachycardia.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Tachycardia.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachycardia.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachycardic' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachypnea.apply' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachypnea.apply_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Tachypnea.apply_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Tachypnea.conclusion' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachypnea.guard' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Tachypneic' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.Ledger' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.Run' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.Step' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.accept' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.accept_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.account' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.answer' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.attempts' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.conclude' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.conclude_accept' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.conclude_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.explained' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.extract' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.fire' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.fire_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.fire_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.firings_bounded' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.follow' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.follow_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.next' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.next_preserves' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.next_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.next_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.observe' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.replay' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.replay_fire' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.replay_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.run' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.run_state' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.run_trace' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.saturate' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.saturate_derivation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.saturate_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.saturates' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Triage.select' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.start' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step_count' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step_fired' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step_none' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step_some' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.step_trace' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.verdict' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Triage.verdict_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.Vitals' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.Warranted' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.admitted_consistent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.admitted_pending' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.consistent_preserved' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.dischargeCheck' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.discharge_sound' depends on axioms: [propext]
+'LexLeanTarget.ReasoningOracle.escalate_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.escalate_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.fever_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.fever_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.feverish' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.hypotensive' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.leukocytic' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.leukocytosis_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.leukocytosis_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.recommendationCheck' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.recommendation_complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.recommendation_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.sepsis_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.sepsis_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.shock_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.shock_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.sirs_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.sirs_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.tachycardia_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.tachycardia_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.tachycardic' does not depend on any axioms
+'LexLeanTarget.ReasoningOracle.tachypnea_progress' depends on axioms: [propext, Quot.sound]
+'LexLeanTarget.ReasoningOracle.tachypnea_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.ReasoningOracle.tachypneic' does not depend on any axioms
 'LexLeanTarget.RustSemantics.ROutcome' does not depend on any axioms
 'LexLeanTarget.RustSemantics.ROutcomes' does not depend on any axioms
 'LexLeanTarget.RustSemantics.allWidth' does not depend on any axioms
@@ -402,6 +1088,82 @@
 'LexLeanTarget.RustSyntax.Profile' does not depend on any axioms
 'LexLeanTarget.RustSyntax.RustType' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Variant' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.Ledger' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.Step' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.Trial' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.answer' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.candidates' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.explained' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Dose.failure' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.run' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.run_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Dose.try' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.try_count' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.try_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Dose.verdict' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Dose.verifications_bounded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.verify' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Dose.verify_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.DoseCandidates' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.DoseContract.postcondition_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.DoseModel' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Propose.apply' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Propose.apply_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Propose.candidates' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Propose.conclusion' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Propose.guard' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Proposed' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Safe' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.SafeDose.sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Ledger' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Node' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Propose.collect' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Propose.successors' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Propose.successors_ok' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Search' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.Step' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.accept' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.accept_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.answer' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.attempts' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.derivation' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.expansions_bounded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.explained' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.extend' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.extract' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.failure' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.fire' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.fire_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.follow' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.frontier_bounded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.iterations_bounded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.observe' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.replay' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.replay_fire' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.replay_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.run' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.searchStep' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_count' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_expanded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_ok' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_peak' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_step' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.search_verify_growth' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.start' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.successors' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.successors_ok' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.verdict' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Screen.verdict_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.Screen.verifications_bounded' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.Short' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.propose_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.safeCheck' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.safe_sound' depends on axioms: [propext]
+'LexLeanTarget.ScreeningOracle.shortCheck' does not depend on any axioms
+'LexLeanTarget.ScreeningOracle.short_sound' depends on axioms: [propext]
 'LexLeanTarget.TargetFixtures.adtEvaluationOutcome' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.TargetFixtures.adtEvaluationProgram' does not depend on any axioms
 'LexLeanTarget.TargetFixtures.adtEvaluationRun' depends on axioms: [propext, Classical.choice, Quot.sound]

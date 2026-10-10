@@ -60,6 +60,8 @@ pub const TABLE: &[(&str, &[&str])] = &[
     ("type.set", &["type:list"]),
     // A refusal is the pair of Booleans (after run, invariant) (§17.12).
     ("type.contract_violation", &["type:pair", "type:bool"]),
+    // A reasoning failure is the pair of Booleans (answered, replay).
+    ("type.reasoning_failure", &["type:pair", "type:bool"]),
     ("term.var", &["expr:var"]),
     ("term.nat", &["expr:value", "value:nat"]),
     (
@@ -243,6 +245,11 @@ pub const TABLE: &[(&str, &[&str])] = &[
     ("declaration.artifact", &["function"]),
     ("declaration.realization", &["function"]),
     ("declaration.model", &["function", "expr:call"]),
+    // A rule is realized as its guard, conclusion, candidates, and guarded
+    // application; a reasoner as the definitions of its bounded loops, whose
+    // step and record types are ordinary data declarations (§17.12).
+    ("declaration.inference_rule", &["function"]),
+    ("declaration.reasoner", &["function"]),
 ];
 
 /// The serialized `kind` tag of a closed calculus value.

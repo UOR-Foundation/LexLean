@@ -130,6 +130,7 @@ fn engine_for(dir: &Path) -> Result<lexlean::Engine, Fail> {
 /// normalized) must equal it, and `--write` regenerates them.
 fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
     for dir in example_dirs(root)? {
+        let started = std::time::Instant::now();
         let name = dir
             .file_name()
             .unwrap_or_default()
@@ -180,6 +181,12 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
                 selection: lexlean::Selection::Entrypoints,
             })
             .map_err(|error| format!("{name}: verify: {error}"))?;
+        // The wall-clock of each example is printed so that a run that
+        // approaches the CI job limit shows where its time went.
+        println!(
+            "verify-examples: {name} took {} s",
+            started.elapsed().as_secs()
+        );
         println!(
             "verify-examples: {name} verified (attestation {})",
             verified.attestation_id.to_hex()

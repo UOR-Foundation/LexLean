@@ -268,13 +268,13 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
 /// the certificate library (`LexLeanPreservation`), the certificates and
 /// their audit (`LexLeanPreserve`, `LexLeanAudit`), the runtime and the model
 /// and collection helpers its generated modules open (`LexLeanRuntime`,
-/// `LexLeanCollections`, `LexLeanModels`, `LexLeanCore`), and what the
+/// `LexLeanCollections`, `LexLeanModels`, `LexLeanReasoning`, `LexLeanCore`), and what the
 /// extraction and the probes compile (`LexLeanExtract`, `LexLeanProbe`,
 /// `LexLeanIdentityProbe`, `LexLeanTokenProbe`).
 /// `LexLeanTarget`, the root of the calculus modules the library imports, is
 /// the one a project may take (the compiler's own project does), but not for
 /// a module with a production root: see [`SHIPPED_TARGET_ROOT`].
-pub const SHIPPED_ROOTS: [&str; 11] = [
+pub const SHIPPED_ROOTS: [&str; 12] = [
     "LexLeanAudit",
     "LexLeanCollections",
     "LexLeanCore",
@@ -284,6 +284,7 @@ pub const SHIPPED_ROOTS: [&str; 11] = [
     "LexLeanPreservation",
     "LexLeanPreserve",
     "LexLeanProbe",
+    "LexLeanReasoning",
     "LexLeanRuntime",
     "LexLeanTokenProbe",
 ];

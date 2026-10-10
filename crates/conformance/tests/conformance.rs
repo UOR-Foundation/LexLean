@@ -1509,3 +1509,73 @@ fn conformance_md_11() {
 fn conformance_md_12() {
     repo_conformance::cases::run("MD-12");
 }
+
+#[test]
+fn conformance_rs_01() {
+    repo_conformance::cases::run("RS-01");
+}
+
+#[test]
+fn conformance_rs_02() {
+    repo_conformance::cases::run("RS-02");
+}
+
+#[test]
+fn conformance_rs_03() {
+    repo_conformance::cases::run("RS-03");
+}
+
+#[test]
+fn conformance_rs_04() {
+    repo_conformance::cases::run("RS-04");
+}
+
+#[test]
+fn conformance_rs_05() {
+    repo_conformance::cases::run("RS-05");
+}
+
+#[test]
+fn conformance_rs_06() {
+    repo_conformance::cases::run("RS-06");
+}
+
+#[test]
+fn conformance_rs_07() {
+    repo_conformance::cases::run("RS-07");
+}
+
+#[test]
+fn conformance_rs_08() {
+    repo_conformance::cases::run("RS-08");
+}
+
+#[test]
+fn conformance_rs_09() {
+    repo_conformance::cases::run("RS-09");
+}
+
+#[test]
+fn conformance_rs_10() {
+    repo_conformance::cases::run("RS-10");
+}
+
+#[test]
+fn conformance_rs_11() {
+    repo_conformance::cases::run("RS-11");
+}
+
+#[test]
+fn conformance_rs_12() {
+    repo_conformance::cases::run("RS-12");
+}
+
+#[test]
+fn conformance_rs_13() {
+    repo_conformance::cases::run("RS-13");
+}
+
+#[test]
+fn conformance_rs_14() {
+    repo_conformance::cases::run("RS-14");
+}

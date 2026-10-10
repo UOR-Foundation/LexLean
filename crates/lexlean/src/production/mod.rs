@@ -425,6 +425,36 @@ pub struct RootReport {
     /// Every construct the closure realizes, with the instances using it.
     pub constructs: BTreeMap<String, BTreeSet<String>>,
     pub targets: Vec<TargetRow>,
+    /// Language 1.2 (reasoning): the explicit resource account of every
+    /// reasoner the closure runs (§17.13).
+    pub reasoning: Vec<ReasoningRow>,
+}
+
+/// The resources one reasoner in a root's closure accounts for: its
+/// strategy and bounds, its rules in priority order, the counters of its
+/// ledger, and the generated theorems that bound them (§17.12, §17.13).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReasoningRow {
+    /// The qualified Lean name of the reasoner.
+    pub reasoner: String,
+    /// `forward`, `breadth_first`, `depth_first`, or `generate_and_verify`.
+    pub strategy: String,
+    /// Whether a search expands each state once.
+    pub deduplicate: bool,
+    /// The canonical semantic JSON of the iteration bound of a rule-based
+    /// reasoner.
+    pub fuel: Option<String>,
+    /// The canonical semantic JSON of the check budget of a
+    /// generate-and-verify reasoner.
+    pub budget: Option<String>,
+    /// The canonical semantic JSON of the frontier bound of a search.
+    pub frontier: Option<String>,
+    /// Its rules, qualified, in priority order.
+    pub rules: Vec<String>,
+    /// The counters of its ledger.
+    pub ledger: Vec<String>,
+    /// The generated theorems bounding the ledger, qualified.
+    pub bounds: Vec<String>,
 }
 
 /// The eligibility report of one module.
@@ -453,7 +483,7 @@ impl RootReport {
     pub fn to_value(&self) -> serde_json::Value {
         let registry = registry().expect("analysis loaded the registry");
         let root = self;
-        serde_json::json!({
+        let mut value = serde_json::json!({
             "root": root.root,
             "declared_effects": strings(root.declared_effects.iter().cloned()),
             "runtime_closure": root.runtime.iter().map(|member| serde_json::json!({
@@ -495,7 +525,34 @@ impl RootReport {
                     })).collect::<Vec<_>>(),
                 })).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
-        })
+        });
+        if !root.reasoning.is_empty() {
+            value["reasoning"] = root
+                .reasoning
+                .iter()
+                .map(|row| {
+                    let mut item = serde_json::json!({
+                        "reasoner": row.reasoner,
+                        "strategy": row.strategy,
+                        "deduplicate": row.deduplicate,
+                        "rules": strings(row.rules.iter().cloned()),
+                        "ledger": strings(row.ledger.iter().cloned()),
+                        "bounds": strings(row.bounds.iter().cloned()),
+                    });
+                    if let Some(fuel) = &row.fuel {
+                        item["fuel"] = serde_json::Value::String(fuel.clone());
+                    }
+                    if let Some(budget) = &row.budget {
+                        item["budget"] = serde_json::Value::String(budget.clone());
+                    }
+                    if let Some(frontier) = &row.frontier {
+                        item["frontier"] = serde_json::Value::String(frontier.clone());
+                    }
+                    item
+                })
+                .collect();
+        }
+        value
     }
 }
 

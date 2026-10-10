@@ -535,13 +535,13 @@ public theorem banner.decoded : banner = banner.bytes := rfl
 public theorem recognizes_check_sound (glyph : Models.Glyphs.Glyph) (digit : Nat) : ((recognizesCheck (glyph) (digit) = true) -> Recognizes (glyph) (digit)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Recognizes, recognizesCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Recognizes, recognizesCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem recognizes_check_complete (glyph : Models.Glyphs.Glyph) (digit : Nat) : (Recognizes (glyph) (digit) -> (recognizesCheck (glyph) (digit) = true)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Recognizes, recognizesCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Recognizes, recognizesCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem DigitContract.postcondition_sound : LexLeanModels.Sound2 ((Models.Recognizer.recognizesCheck)) ((Models.Recognizer.Recognizes)) := Models.Recognizer.recognizes_check_sound
@@ -611,7 +611,7 @@ public theorem digit_net_correct (glyph : Models.Glyphs.Glyph) : Recognizes (gly
 public theorem same_digit_sound (expected : Nat) (observed : Nat) : ((sameDigit (expected) (observed) = true) -> (expected = observed)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [sameDigit, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [sameDigit, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem labeled_agreement : (((LexLeanRuntime.length (labeledGlyphs) : Nat) = 40) /\ ((LexLeanCollections.listFold ((fun (count : Nat) («example» : (Prod (Models.Glyphs.Glyph) (Nat))) => (if sameDigit (DigitNet ((«example»).1)) ((«example»).2) then (count + 1) else count))) (0) (labeledGlyphs) : Nat) = 37)) := by

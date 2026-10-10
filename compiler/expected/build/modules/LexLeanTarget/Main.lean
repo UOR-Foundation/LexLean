@@ -1,9 +1,15 @@
 module
 public import Init
+public import LexLeanTarget.BudgetOracle
 public import LexLeanTarget.Gnaf
 public import LexLeanTarget.GnafFixtures
+public import LexLeanTarget.GradeOracle
+public import LexLeanTarget.PlannerOracle
+public import LexLeanTarget.ReasoningFixtures
+public import LexLeanTarget.ReasoningOracle
 public import LexLeanTarget.RustSemantics
 public import LexLeanTarget.RustSyntax
+public import LexLeanTarget.ScreeningOracle
 public import LexLeanTarget.TargetFixtures
 public import LexLeanTarget.TargetOracle
 public import LexLeanTarget.TargetSemantics

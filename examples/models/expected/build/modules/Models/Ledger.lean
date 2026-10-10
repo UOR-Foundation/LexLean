@@ -510,13 +510,13 @@ end LexLeanModels
 public theorem capped_check_sound (s : Nat) : ((cappedCheck (s) = true) -> Capped (s)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Capped, cappedCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, cappedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem capped_check_complete (s : Nat) : (Capped (s) -> (cappedCheck (s) = true)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Capped, cappedCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, cappedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def Small (_s : Nat) (x : Nat) : Prop := (x <= 10)
@@ -526,7 +526,7 @@ public theorem capped_check_complete (s : Nat) : (Capped (s) -> (cappedCheck (s)
 public theorem small_check_sound (s : Nat) (x : Nat) : ((smallCheck (s) (x) = true) -> Small (s) (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Small, smallCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Small, smallCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def Grows (s : Nat) (_x : Nat) (t : Nat) (_y : Nat) : Prop := (s <= t)
@@ -536,13 +536,13 @@ public theorem small_check_sound (s : Nat) (x : Nat) : ((smallCheck (s) (x) = tr
 public theorem grows_check_sound (s : Nat) (x : Nat) (t : Nat) (y : Nat) : ((growsCheck (s) (x) (t) (y) = true) -> Grows (s) (x) (t) (y)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Grows, growsCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Grows, growsCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem grows_check_complete (s : Nat) (x : Nat) (t : Nat) (y : Nat) : (Grows (s) (x) (t) (y) -> (growsCheck (s) (x) (t) (y) = true)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Grows, growsCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Grows, growsCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem LedgerContract.invariant_sound : LexLeanModels.Sound1 ((Models.Ledger.cappedCheck)) ((Models.Ledger.Capped)) := Models.Ledger.capped_check_sound
@@ -559,13 +559,13 @@ public theorem LedgerContract.precondition_sound : LexLeanModels.Sound2 ((Models
 public theorem spill_grows (s : Nat) (x : Nat) : (Capped (s) -> (Small (s) (x) -> Grows (s) (x) ((Spill (s) (x)).1) ((Spill (s) (x)).2))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Capped, Grows, Small, Spill, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, Grows, Small, Spill, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem spill_reference (s : Nat) (x : Nat) : (Capped (s) -> (Small (s) (x) -> (Spill (s) (x) = spillRef (s) (x)))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Spill, spillRef, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Spill, spillRef, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem SpillEvidence.spill_grows : LexLeanModels.SatisfiesStep ((Models.Ledger.Capped)) ((Models.Ledger.Small)) ((Models.Ledger.Grows)) ((Models.Ledger.Spill)) := Models.Ledger.spill_grows
@@ -589,13 +589,13 @@ public theorem TallyContract.precondition_sound : LexLeanModels.Sound2 ((Models.
 public theorem tally_grows (s : Nat) (x : Nat) : (Small (s) (x) -> Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Grows, Small, Tally, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Grows, Small, Tally, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem tally_reference (s : Nat) (x : Nat) : (Small (s) (x) -> (Tally (s) (x) = tallyRef (s) (x))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Tally, tallyRef, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Tally, tallyRef, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem TallyEvidence.tally_reference : LexLeanModels.EquivalentStepNoInvariant ((Models.Ledger.Small)) ((Models.Ledger.Tally)) ((Models.Ledger.tallyRef)) := Models.Ledger.tally_reference
@@ -619,19 +619,19 @@ public theorem clamp_initial : Capped (Clamp.initial) := by
 public theorem clamp_preserves (s : Nat) (x : Nat) : (Capped (s) -> Capped ((Clamp (s) (x)).1)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Capped, Clamp, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, Clamp, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem clamp_grows (s : Nat) (x : Nat) : (Capped (s) -> Grows (s) (x) ((Clamp (s) (x)).1) ((Clamp (s) (x)).2)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Capped, Clamp, Grows, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Capped, Clamp, Grows, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem clamp_reference (s : Nat) (x : Nat) : (Capped (s) -> (Clamp (s) (x) = clampRef (s) (x))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Clamp, clampRef, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Clamp, clampRef, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem ClampEvidence.clamp_reference : LexLeanModels.EquivalentStepNoPrecondition ((Models.Ledger.Capped)) ((Models.Ledger.Clamp)) ((Models.Ledger.clampRef)) := Models.Ledger.clamp_reference
@@ -647,13 +647,13 @@ public theorem FreeContract.postcondition_sound : LexLeanModels.Sound4 ((Models.
 public theorem tally_free_grows (s : Nat) (x : Nat) : Grows (s) (x) ((Tally (s) (x)).1) ((Tally (s) (x)).2) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Grows, Tally, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Grows, Tally, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem tally_free_reference (s : Nat) (x : Nat) : (Tally (s) (x) = tallyRef (s) (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Tally, tallyRef, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Tally, tallyRef, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem FreeEvidence.tally_free_reference : LexLeanModels.EquivalentStepTotal ((Models.Ledger.Tally)) ((Models.Ledger.tallyRef)) := Models.Ledger.tally_free_reference
@@ -669,13 +669,13 @@ public theorem FreeEvidence.tally_free_grows : LexLeanModels.SatisfiesStepTotal 
 public theorem within_check_sound (x : Nat) : ((withinCheck (x) = true) -> Within (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Within, withinCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Within, withinCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem within_check_complete (x : Nat) : (Within (x) -> (withinCheck (x) = true)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Within, withinCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Within, withinCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def Below (x : Nat) (y : Nat) : Prop := (y <= x)
@@ -685,7 +685,7 @@ public theorem within_check_complete (x : Nat) : (Within (x) -> (withinCheck (x)
 public theorem below_check_sound (x : Nat) (y : Nat) : ((belowCheck (x) (y) = true) -> Below (x) (y)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Below, belowCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Below, belowCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem GuessContract.postcondition_sound : LexLeanModels.Sound2 ((Models.Ledger.belowCheck)) ((Models.Ledger.Below)) := Models.Ledger.below_check_sound
@@ -699,7 +699,7 @@ public theorem GuessContract.precondition_complete : LexLeanModels.Complete1 ((M
 public theorem guess_reference (x : Nat) : (Within (x) -> (Guess (x) = guessRef (x))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Guess, guessRef, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Guess, guessRef, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def guessSamples : List ((Prod (Nat) (Nat))) := ((0, 0) :: ((1, 0) :: ((2, 1) :: ((5, 4) :: ((9, 9) :: ([] : List ((Prod (Nat) (Nat)))))))))
@@ -709,7 +709,7 @@ public theorem guess_reference (x : Nat) : (Within (x) -> (Guess (x) = guessRef 
 public theorem same_nat_sound (expected : Nat) (observed : Nat) : ((sameNat (expected) (observed) = true) -> (expected = observed)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [sameNat, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [sameNat, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem guess_agreement : (((LexLeanRuntime.length (guessSamples) : Nat) = 5) /\ ((LexLeanCollections.listFold ((fun (count : Nat) («example» : (Prod (Nat) (Nat))) => (if sameNat (Guess ((«example»).1)) ((«example»).2) then (count + 1) else count))) (0) (guessSamples) : Nat) = 4)) := by

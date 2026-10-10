@@ -601,7 +601,7 @@ spec-links  cargo xtask validate-spec-links
 lint        cargo clippy --workspace --all-targets --all-features -- -D warnings
 test        cargo test --workspace --all-features
 features    cargo check --workspace --all-features --all-targets
-bdd         cargo test -p repo-conformance
+bdd         cargo test -p repo-conformance --test bdd
 examples    cargo xtask verify-examples
 golden      cargo xtask check-golden
 repro       cargo xtask check-reproducibility
@@ -609,7 +609,7 @@ deny        cargo deny --all-features check
 vv          all recipes above, in order
 ```
 
-`just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
+`test` runs every test target of every workspace crate, the conformance tests of `repo-conformance` among them, and `bdd` runs that crate's meta-gate target alone, so that no conformance test runs twice in `vv`. `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
 
 ### 9.3 Development container
 
@@ -703,7 +703,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `spec` | Exactly `lexlean/project/1`. |
 | `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |
 | `language` | Language version: `1.0`, `1.1`, or `1.2`. |
-| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreservation`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanRuntime`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, the root of the calculus modules the library imports (the repository's `compiler` project uses it), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
+| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreservation`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanRuntime`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, the root of the calculus modules the library imports (the repository's `compiler` project uses it), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
 | `source_roots` | Nonempty, unique, sorted project-relative directories. |
 | `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |
 | `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |
@@ -2490,7 +2490,7 @@ backend runs.
 | `executable` definitions | `lexlean/semantic-module/2` | `"executable":true` asserts production eligibility under the higher-order rules below. |
 | `mutual` definition label | `lexlean/semantic-module/2` | `"mutual":"Label"` on a structurally recursive definition places it in a mutual definition group under the recursion rules below. |
 | `termination` evidence | `lexlean/semantic-module/2` | `{"measure":m,"evidence":[theorem...]}` on a definition declares well-founded recursion under the recursion rules below. |
-| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. Without definitions it lowers to the fixed script `intros`, `try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq] at *` (adding `LexLeanRuntime.subtract, LexLeanRuntime.multiply` when the module emits the portable runtime), and `all_goals omega`, so a goal the simplifier already closed leaves nothing for `omega`; with definitions, `subst_vars` follows `intros` and the definitions lead the `simp only` list, so hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. |
+| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. Without definitions it lowers to the fixed script `intros`, `try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq] at *` (adding `LexLeanRuntime.subtract, LexLeanRuntime.multiply` when the module emits the portable runtime), and `all_goals omega`, so a goal the simplifier already closed leaves nothing for `omega`; with definitions, `subst_vars` follows `intros` and the definitions lead the `simp only` list, so hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. |
 | `map`, `set` types | `lexlean/semantic-module/2` | `{"kind":"map","key":K,"value":V}` and `{"kind":"set","element":K}` over an ordered key type, under the collection rules below. |
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
@@ -2502,6 +2502,11 @@ backend runs.
 | `model` declaration | `lexlean/semantic-module/2` | A contract bound to a realization of its interface, with evidence and entry theorems, under the model rules below. |
 | `checked_apply` term | `lexlean/semantic-module/2` | `{"kind":"checked_apply","model":M,"type_arguments":[T...],"arguments":[...],"checks":[...]}`, a model application that runs the named validators, under the model rules below. |
 | `contract_violation` type | `lexlean/semantic-module/2` | `{"kind":"contract_violation"}`, the closed type of a validator refusal, with the four nullary constructors `ContractViolation.precondition`, `.input_invariant`, `.postcondition`, and `.output_invariant`, under the model rules below. |
+| `logic` declaration | `lexlean/semantic-module/2` | A state type with a relation, an optional invariant, and an optional ranking, under the reasoning rules below. |
+| `inference_rule` declaration | `lexlean/semantic-module/2` | A guarded transition of a logic's state with exact soundness and progress theorems, under the reasoning rules below. |
+| `verifier` declaration | `lexlean/semantic-module/2` | An executable check of a candidate answer, sound (and optionally complete) for a specification, under the reasoning rules below. |
+| `reasoner` declaration | `lexlean/semantic-module/2` | A bounded forward, search, or generate-and-verify engine with a verified or proved-correct answer, under the reasoning rules below. |
+| `reasoning_failure` type | `lexlean/semantic-module/2` | `{"kind":"reasoning_failure"}`, the closed type of a reasoner's missing answer, with the four nullary constructors `ReasoningFailure.exhausted`, `.unsolved`, `.rejected`, and `.invalid_step`, under the reasoning rules below. |
 
 #### Recursive data (language 1.2)
 
@@ -2562,10 +2567,11 @@ either backend runs; they do not defer to what Lean would accept.
    historical count.
 10. **Binder hygiene.** The backend refers to the module's own declarations,
     to the built-in names it emits (`And`, `Bool`, `ByteArray`, `Except`,
-    `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`, `LexLeanRuntime`,
-    `List`, `Nat`, `Option`, `Ordering`, `Prod`, `Prop`, `Result`, `String`,
-    `Type`, `UInt8`..`UInt64`, `Unit`, `and_congr`, `congr`, `decide`,
-    `false`, `id`, `rfl`, `true`), and to every imported declaration through
+    `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`, `LexLeanModels`,
+    `LexLeanReasoning`, `LexLeanRuntime`, `List`, `Nat`, `Option`,
+    `Ordering`, `Prod`, `Prop`, `Result`, `String`, `Type`,
+    `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `congr`, `decide`,
+    `false`, `id`, `rfl`, `true`, `true_and`), and to every imported declaration through
     the project's module prefix, all without qualification. In a
     `lexlean/semantic-module/2` module no binder (a type parameter, a value
     parameter, or a pattern, `let`, quantifier, lambda, or proof binder) is
@@ -3226,6 +3232,251 @@ session, a rule policy, a statistical triage and an artifact-backed neural
 recognizer, every composite form, checked boundaries at production roots,
 and every claim kind, all verified by pinned Lean.
 
+#### Reasoning machines (language 1.2)
+
+A reasoning machine is a *logic* (a state type with a relation between a state
+and its successor), *inference rules* over the logic, a *verifier* that
+checks a candidate answer against a specification, and a *reasoner* that
+applies the rules under a closed strategy and answers only what its verifier
+accepts or what a theorem proves correct. As with models, the rules below are
+LexLean's own and are checked in linking, before either backend runs; the
+diagnostic each failure raises is named with the rule. Every reasoning
+declaration *elaborates*, in linking, to ordinary language-1.2 inductives,
+structures, definitions, and theorems over the existing `match`, `if`,
+`list_fold`, `iterate_until`, and set primitives, which the ordinary rules
+then check again. There is no reasoner primitive, no runtime template of its
+own, and no oracle, prompt, or model-based escape hatch: every member of
+every reasoning declaration belongs to the closed `lexlean/semantic-module/2`
+schema, and an unknown member, strategy, or claim is an ordinary schema
+failure (`LLT4001`). The Lean backend, production eligibility, extraction,
+and the axiom audit read only the elaboration.
+
+1. **References and order** (`LLT4010`). Every logic, rule, verifier,
+   relation, predicate, ranking, check, and theorem a reasoning declaration
+   names is a prior declaration of its module or an imported one, and every
+   theorem it names is a prior theorem of the same module. A use of a
+   logic, rule, or verifier is `{"member":M,"type_arguments":[T...]}` with
+   exactly its type parameters. Logics, rules, verifiers, and reasoners may
+   declare `type_parameters`; a generic reasoner's whole elaboration takes
+   them. A declaration's `axioms` row is the exact axiom policy of every
+   Lean declaration it generates.
+2. **Logics** (`LLT4010`). `{"kind":"logic","name":L,"state":{"name":s,
+   "next":t,"type":S},"relation":Rel,"invariant":{"predicate":J,
+   "preserves":P}?,"ranking":Mu?}`: `s` and `t` are distinct; `Rel` takes
+   `(S, S)` to `Prop`, `J` takes `S` to `Prop`, and `Mu` takes `S` to `nat`.
+   `P` states exactly `J s -> Rel s t -> J t`. A logic elaborates to no
+   definition; it generates `L.preserves : Preserves Rel J`.
+3. **Inference rules** (`LLT4010`). `{"kind":"inference_rule","name":N,
+   "logic":Luse,"binding":{"name":b,"type":B,"candidates":c}?,"guard":g,
+   "conclusion":k,"soundness":T,"progress":U?,"executable":true?}`: over the
+   logic's state binder (and `b`), `g` is `bool`, `k` is the state type, and
+   `c` is `list B` over the state. `T` states exactly `g = true -> Rel s k`;
+   `U`, which needs a ranking, states exactly `[J s ->] g = true -> Mu k <
+   Mu s`, its premise present exactly when the logic has an invariant. A
+   rule elaborates to `N.guard`, `N.conclusion`, `N.candidates` (with a
+   binding), and the guarded application `N.apply = if N.guard then some
+   N.conclusion else none`, and generates `N.apply_sound` and
+   `N.apply_progress`. The guarded application is the only way an
+   elaboration applies a rule.
+4. **Verifiers** (`LLT4010`). `{"kind":"verifier","name":V,"subject":
+   {x:X},"candidate":{r:C},"specification":Spec,"check":v,"sound":T,
+   "complete":U?}`: `Spec` takes `(X, C)` to `Prop`, `v` is an executable
+   definition taking `(X, C)` to `bool`, `T` states exactly `v x r = true ->
+   Spec x r`, and `U` the converse. A verifier generates `V.sound :
+   Sound v Spec` and, with `U`, `V.complete : Complete v Spec`.
+5. **Reasoners** (`LLT4010`). `{"kind":"reasoner","name":E,
+   "type_parameters":[...]?,"logic":Luse?,"observation":{x:I},"observe":o?,
+   "rules":[...],"strategy":...,"answer":{"name":s,"type":R,"value":a}?,
+   "verifier":Vuse,"claims":[...]?,"executable":true?}`. A rule-based
+   reasoner (strategy `forward` or `search`) names its logic, observed
+   state `o : S` over `x`, at least one rule, all distinct, over exactly its
+   logic at exactly its type arguments, and executable when it is, and an
+   answer `a : option R` over the state; its verifier checks an `I`
+   subject and an `R` candidate. A `generate_and_verify` reasoner names no
+   logic, observed state, answer, rule, or claim; its candidates have its
+   verifier's candidate type.
+6. **Strategies and bounds** (`LLT4011`). The closed strategies are
+   `{"kind":"forward","fuel":f}`, `{"kind":"search","order":
+   "breadth_first"|"depth_first","fuel":f,"frontier":k,"deduplicate":bool?}`,
+   and `{"kind":"generate_and_verify","generator":gen,"budget":n}`. Every
+   bound is a `nat` term over the observation, and it is optional in the
+   schema only so that a missing bound is named: a missing or non-`nat`
+   fuel, frontier, or budget, a literal zero frontier, and deduplication
+   over a state type that is not an ordered key type are `LLT4011`. The
+   generator is a `list R` term over the observation.
+7. **Claims.** Claims are strictly sorted by kind, each at most once
+   (`LLT4010`). `initial_invariant` names a theorem stating exactly `J o`
+   (the logic must have an invariant). `terminates` is admitted only on a
+   forward reasoner whose logic has a ranking and whose every rule states
+   progress, with an initial invariant claimed when progress assumes the
+   invariant (`LLT4011` otherwise); its theorem states exactly `Mu o < f`.
+   `observation_invariant` names a predicate `Rl` over the observation and
+   a state, `Rl : (I, S) -> prop`, and two theorems stating exactly `Rl x
+   o` (the predicate holds of the observed state) and `Rl x s -> Rel s t
+   -> Rl x t` (the logic's relation preserves it), so it holds of the final
+   state of every run, which the generated `E.next_preserves_relation`,
+   `E.saturate_relation`, and `E.run_relation` (forward) or
+   `E.follow_relation` (search) prove (`LLT4010` when the predicate has
+   another signature or a theorem states another obligation).
+   `answer_correct` names a theorem of exactly one of three statements over
+   the answer term `a`, tried in this order: `forall x s v, a = some v ->
+   Spec x v` (the answer is correct on every state); `forall x s v, J s ->
+   a = some v -> Spec x v` (correct on every state satisfying the logic's
+   invariant `J`, which holds of every state a run reaches given the
+   initial invariant, so this form needs the logic's invariant and an
+   `initial_invariant` claim, `LLT4010` otherwise); or `forall x s v, Rl x
+   s -> a = some v -> Spec x v` (correct on every state `Rl` holds of, so
+   `Spec` may depend on the observation `x` through `Rl`, which `J`, a
+   predicate of the state alone, cannot express; this form needs the
+   `observation_invariant` claim). Each form erases the verifier's check
+   in the reasoner's own verdict (rule 9), the second and third through
+   the premise the generated `E.run_invariant`, `E.saturate_invariant`, or
+   `E.follow_invariant` (and their `_relation` counterparts) discharge. A
+   generate-and-verify reasoner makes no claim (`LLT4010`).
+8. **Elaboration.** Every reasoner elaborates, in a fixed order, to:
+   `E.Step`, an inductive with one constructor per rule carrying its
+   binding (generate-and-verify: `E.Step.candidate` carrying the accepted
+   candidate); `E.Ledger`, a structure of the six counters `iterations`,
+   `attempts` (guard evaluations), `firings`, `expansions`, `verifications`,
+   and `frontier` (the frontier's peak); and definitions over them. A
+   rule-based reasoner has `E.observe`; `E.fire s t`, one arm per rule,
+   each exactly the rule's guarded application; `E.replay` and `E.follow x
+   trace`, the left fold of `E.fire` from `E.observe x` whose first step
+   that does not fire is `invalid_step`; `E.extract`, the answer term;
+   `E.accept x s`, the extracted answer if the verifier's check accepts it;
+   and `E.answer x trace`, the accepted answer of the state a trace replays
+   to. A forward reasoner adds `E.select` (the first rule whose guard holds,
+   in declared order, and of a binding rule the first candidate in list
+   order), `E.attempts` (the guard evaluations `E.select` makes), `E.next`,
+   `E.saturate x` (the state-only `iterate_until` of `E.next` under the
+   fuel), `E.run x` (the traced loop, counting each step's iterations,
+   attempts, and firings), `E.account x` (the run's ledger with the final
+   scan and the one verification of a saturated run), `E.conclude`,
+   `E.verdict x`, and `E x`. A search reasoner adds `E.Node` and
+   `E.Search`, the successors of each rule and their concatenation in
+   declared order, `E.fresh` (with deduplication, against a set of visited
+   states), `E.attempts` (every guard evaluation of an expansion),
+   `E.searchStep` (pop the head node; answer it if accepted; else expand it,
+   breadth-first appending and depth-first prepending its successors, cut
+   to the frontier bound, recording a cut as truncation), `E.run` (the
+   `iterate_until` of `E.searchStep` under the fuel), `E.failure`, `E.verdict
+   x`, and `E x`. A generate-and-verify reasoner has `E.candidates x` (the
+   generator), `E.verify x c` (the candidate if the verifier's check
+   accepts it), `E.Trial`, `E.try` (check the next candidate while fewer
+   than the budget have been checked, else record truncation), `E.run x`
+   (the left fold of `E.try` over the candidates), `E.failure`, `E.verdict
+   x`, `E x`, and `E.answer`. The generator is a term evaluated in full
+   before the budget applies, so the ledger accounts the verifications the
+   budget limits and not the work of generating the candidates.
+9. **Verdicts and the runtime boundary** (`LLT4012`). `E.verdict x :
+   result R reasoning_failure` and `E x : result (product R (list E.Step))
+   reasoning_failure` answer only a candidate the verifier's check accepted,
+   or, under `answer_correct`, the extracted answer, which the claim's
+   theorem proves correct on every state, or on every state of a run, which
+   satisfies the invariant or the observation invariant (rule 7). A forward
+   reasoner
+   answers only from a saturated state; a forward run cut short by its fuel
+   is `exhausted` whatever its partial state holds. A search or generation
+   cut short by a bound is `exhausted` and never `unsolved`; a saturated
+   reasoner with no answer, a search whose frontier emptied, and a generator
+   that proposed nothing are `unsolved`; an answer the check refused is
+   `rejected`. Executable code that reaches a rule's `N.conclusion`, or a
+   reasoner's unverified answer, other than through the reasoner's own
+   elaboration, is `LLT4012`, whether it is called, applied, folded,
+   iterated, bound to a name, or mentioned in a lambda, a branch, a rule's
+   guard, an observation, or a generator. The members that read an answer
+   from a state or a search their caller supplies are guarded: `E.extract`
+   of every reasoner that does not claim its answer correct on every state
+   (the first form of rule 7); and, of a reasoner whose claim erased the
+   check but holds only under the invariant or the observation invariant
+   (the second and third forms), also `E.accept`, which is then `E.extract`,
+   `E.conclude` of a forward reasoner, and `E.searchStep` of a search,
+   which accepts the nodes of a frontier it is given. An answer proved only
+   under an invariant is unconstrained on the states outside it, which
+   direct code may supply. The remaining members start from the observation
+   (`E.answer`, `E.start`, `E.verdict`, `E.run`, `E x`) or yield no answer
+   (states, steps, counts, the node successors), so they stay reachable;
+   where the check was erased by the first form every state's answer is
+   proved, and where no claim erased it `E.accept`, `E.conclude`, and
+   `E.searchStep` run the verifier's check, so none of those is guarded.
+10. **The `reasoning_failure` type.** Its four nullary constructors
+    `ReasoningFailure.exhausted`, `.unsolved`, `.rejected`, and
+    `.invalid_step` are ordinary data, lowered to the pairs of `Prod Bool
+    Bool` `(false, false)`, `(false, true)`, `(true, false)`, and `(true,
+    true)`.
+11. **Generated theorems and the fixed reasoning semantics.** A module with
+    a reasoning declaration emits the fixed, formal-only `LexLeanReasoning`
+    runtime in its namespace: the definitions `Star`, `All`, `Preserves`,
+    `Sound`, `Complete`, `Reaches`, `Found`, and `SearchOk`, and lemmas
+    proved by induction, `cases`, and core facts about natural numbers,
+    none of which depends on any axiom, as pinned Lean's `#print axioms`
+    reports. Every logic,
+    rule, verifier, and reasoner generates theorems whose statements are
+    fixed shapes over its elaboration and whose proofs are one of the closed
+    templates of the snapshot schema, with names substituted, applying only
+    runtime lemmas and the declaration's own and named theorems: guarded
+    application soundness and progress, firing, replay and derivation
+    (`E.derivation : Reaches Rel (E.observe x) (E.follow x trace)`),
+    invariant preservation, the traced and state-only loops agreeing
+    (`E.run_state`), the trace of every run replaying to its state
+    (`E.run_trace`), the bounds the fuel, the frontier, and the budget give
+    (a forward run's iterations and firings, a search's iterations,
+    verifications, expansions, and frontier peak, a generation's
+    verifications, each at most its bound; the guard evaluations of a run and
+    the firings of a search count work over a rule's candidate list, a user
+    term, so they are accounted in the ledger and decided counter by counter
+    for the example's runs, not bounded by a theorem),
+    saturation under a `terminates` claim (`E.saturates`), and answer
+    soundness (`E.verdict_sound : forall v, E.verdict x = ok v -> Spec x v`
+    and `E.explained`: an explained answer replays from its trace and meets
+    the specification). A generated theorem stated as an ordinary
+    proposition is registered as a prior theorem, so later proofs may
+    `apply` it. Each is allowed its owner's axioms, and their union equals
+    the owner's exact policy (§22.6). `examples/reasoning` produces, and
+    verifies, every runtime name and every template, and `RS-08` fails if
+    one is produced by none of its declarations.
+12. **Identity, accounting, document, snapshot, and production.** Reasoning
+    declarations are linked IR and part of the semantic ID (§21.4); every
+    source node, elaborated declaration, obligation, and generated theorem
+    is charged to `max_ir_nodes`. An elaboration is larger than its source
+    by a bounded factor (a rule use in a reasoner is a few source nodes and
+    about a hundred elaborated ones), so each logic, rule, verifier, and
+    reasoner is charged for the most its elaboration can be, computed from
+    its source terms and types and the number of rules it names, *before*
+    any of it is built, running across the link like an artifact's decoded
+    value (rule 2); exceeding the limit is `LLS8002` naming the declaration
+    and "before elaborating". The bound is fitted to the committed shapes (many rules, wide
+    states and bindings, large terms, and large type arguments of every
+    use of a logic, rule, or verifier) and checked after the elaboration
+    is built: an elaboration that exceeded it is a defect of the bound,
+    reported as the internal error `LLT4001` with the prefix `internal:`,
+    never a silent overrun. It is not a proof that no admitted input
+    exceeds it. The rules
+    of a reasoner are combined as balanced trees, in their declared order,
+    wherever the elaboration combines them (selection, guard-evaluation
+    counts, successors, and the proof that successors replay), so the
+    nesting of an elaboration, which every later pass recurses on, grows
+    with the logarithm of the number of rules and not with the number. A language-1.2 snapshot carries each
+    reasoning declaration's elaboration with its generated theorems (name,
+    type parameters, parameters, statement, and template). The canonical
+    document renders each as a closed catalog (interfaces, rules in
+    priority order, strategy and bounds, claims with the theorems that
+    discharge them, obligations, elaborated declarations, and generated
+    theorems with their templates); it shows no trace value and no document
+    text says "verified". Inference rules and reasoners are realized through
+    their elaborations, logics and verifiers are erased, and the runtime is
+    in no production closure (§17.13); a root's eligibility report records
+    each reasoner it runs with its strategy, bounds or budget, rules, ledger
+    counters, and bounding theorems.
+
+`examples/reasoning` is the committed instance: a multi-step clinical forward
+derivation with its invariant and termination, a generic terminating
+countdown, a deduplicating breadth-first planner, a depth-first search and a
+generate-and-verify reasoner over model-generated candidates, and an answer
+proved correct on every state its run reaches, with its check erased, all
+verified by pinned Lean, with the six-counter ledger of each run decided
+counter by counter by Lean's kernel.
+
 Routing is fixed by the project language and is never inferred from module
 content, so no byte sequence has two meanings:
 
@@ -3244,7 +3495,11 @@ under *Models, contracts, realizations, and evidence*). An elaboration is
 described by its own `elaboration_*` definitions, identical to the source
 definitions except that their names also admit the reserved spelling with two
 leading underscores that only generated binders use; the source definitions,
-and so every `linked_ir`, keep rejecting it, as linking does.
+and so every `linked_ir`, keep rejecting it, as linking does. An elaboration
+also carries the `theorems` a reasoning declaration generates, each with its
+name, type parameters, parameters, statement (an ordinary proposition, a fixed
+`LexLeanReasoning` proposition, or an implication between them), and the
+closed `template` that proves it (`generatedTheorem`).
 `schemas/lock-v2.schema.json` has the lock shape of
 `schemas/lock.schema.json` with `spec` fixed to `lexlean/lock/2` and
 `language` fixed to `1.2`.
@@ -3360,6 +3615,20 @@ reaches them, while a contract's validators are ordinary executable
 definitions. The `contract_violation` type is `runtime` plain data, and
 `less_than` a `runtime` key comparison.
 
+Language-1.2 reasoning declarations enter a closure the same way (§17.12,
+*Reasoning machines*, rule 12): inference rules (`declaration.inference_rule`)
+and reasoners (`declaration.reasoner`) are `runtime`, a closure member they
+generate is reported with that construct and walked as the ordinary
+definition it is, and logics (`declaration.logic`) and verifiers
+(`declaration.verifier`) are `erased` and elaborate to no runtime definition
+(a verifier's check is an ordinary executable definition). The
+`reasoning_failure` type is `runtime` plain data. The `LexLeanReasoning`
+runtime and every generated theorem are formal-only and in no closure. A
+reasoner's search is bounded by its explicit fuel, frontier, or budget, whose
+terms are ordinary closure members, and a natural-number counter of its
+ledger is subject to the same width rule as any natural number, so a root
+that runs a reasoner admits `overflow` where the target requires it.
+
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
 violation nearest the root, the closure member it occurs in, and the call path
@@ -3412,7 +3681,15 @@ members using it, and, per target, each realized effect with every
 representation crossing the root boundary (`parameter <name>` or `result`,
 directly or inside a container or a named type's fields) with the width in
 which the target realizes it, so the first realization obligation above is
-stated per root. Each member records its shortest call path, so the
+stated per root. A root whose closure runs a reasoner also records, in
+`reasoning`, one row per reasoner: its qualified name, its strategy
+(`forward`, `breadth_first`, `depth_first`, or `generate_and_verify`),
+whether a search deduplicates, the canonical semantic JSON of its fuel, or of
+its budget, and of its frontier, its rules qualified and in priority order,
+the six counters of its ledger, and the generated theorems that bound them
+(`E.iterations_bounded`, `E.frontier_bounded`, `E.verifications_bounded`,
+`E.saturates`), so the search a production claim relies on is explicit. Each
+member records its shortest call path, so the
 report grows with the square of the length of a chain of calls and the cube of
 a chain of roots; it counts toward `max_total_source_bytes` and a module whose
 report passes it is `LLS8002` (§17.17 *Limits*). The report is a deterministic
@@ -3435,8 +3712,12 @@ Production compilation targets one closed calculus, defined before any
 optimizer and independently of every renderer. The calculus is LexLean: the
 language-1.2 project `compiler/` defines its syntax (`TargetSyntax`), its
 denotation (`TargetSemantics`), encoders of LexLean collection values
-(`TargetOracle`), and the statements about its fixtures (`TargetFixtures`).
-Lean elaborates, replays, and axiom-audits these modules like any other
+(`TargetOracle`), the reasoning declarations the reasoning fixtures are
+compared with (`ReasoningOracle`, `GradeOracle`, `BudgetOracle`,
+`PlannerOracle`, and `ScreeningOracle`, §17.15), and the statements about its
+fixtures (`TargetFixtures`, and `ReasoningFixtures` for the reasoning
+fixtures, so neither module outgrows the project's file limit). Lean
+elaborates, replays, and axiom-audits these modules like any other
 LexLean program, and `compiler/` passes the verify, golden, and
 reproducibility gates of §28.6. No meaning is read from rendered Rust text.
 
@@ -3785,6 +4066,56 @@ A wrong answer, an answer computed from a universe with a system omitted, a
 tie with a member dropped, and a universe with a system omitted are
 rejected by Lean. The GNAF schemas are generated with the fixtures, and
 their calculus definitions are `schemas/target-program.schema.json`'s own.
+
+**Reasoning plans.** A reasoner's rule search is execution: every guard it
+evaluates and every rule it fires is work of the system that runs it, charged
+as calculus steps like any other work, and it is never an action charged
+separately. The `compiler` project's oracle modules state exactly the declarations
+(equal as structured data once definition lists are put in key order and the
+oracle's own module name replaces the example's, not as bytes) of every
+reasoner the reasoning example's production roots run: `ReasoningOracle`
+those of `examples/reasoning/src/Clinic.lex.tex` (the forward reasoners
+`Triage` and `Review`), `GradeOracle` the `Grade` reasoner of `Main` and what
+it is declared with (over the clinical rules, whose module the oracle
+imports under its own name), and `BudgetOracle`, `PlannerOracle`, and
+`ScreeningOracle` the modules `Budget` (the generic forward reasoner `Spend`
+and `Refund`), `Planner` (the breadth-first search with deduplication
+`Plan`), and `Screening` (the depth-first search `Screen` and the
+generate-and-verify reasoner `Dose`). Lean elaborates each there to the
+definitions the example verifies (`RS-12`). The fixtures `reasoning-*`
+(§17.14) hand-transcribe those elaborations to calculus programs, function
+for function and through the realization library's `list_fold`,
+`set_insert`, `set_contains`, and `iterate_until` instances: the forward
+engine of `Triage`, `Review`, and `Grade` (whose answer is proved correct,
+so its transcription runs no check), the generic `Spend` at a
+natural-number payload with its binding rule, the node, frontier, visited
+set, frontier cut, and truncation of `Plan` and `Screen`, and the budgeted
+fold over `Dose`'s candidates. Each is stated equal to the oracle's verdict by Lean's kernel; the
+fixtures of `Triage` (traced), `Plan`, `Screen`, and `Dose` are stated equal
+to the oracle's explained answer, with the steps that reach it, and to the
+six counters of the oracle's run, so the order a search expands its nodes
+and tries its candidates in is decided by the kernel. Each charges at least
+the guard evaluations and firings of the oracle reasoner's ledger on the
+same argument in steps, a floor that a transcription searching nothing
+fails and a generation, which fires no rule, meets with its verifications
+alone. That ledger is the
+one the example's committed theorems (`triage_ledger`, `plan_ledger`, and the
+others) state for the run, which Lean's kernel decides counter by counter.
+The requests `reasoning-argmin` and `reasoning-frontier` pose an analogous
+problem over three forward-chaining plans (priority-order chaining, one
+sweep, and a goal-directed decision) over findings held as the bits of a
+natural number, because GNAF realizations admit no algebraic types: the
+plans that search more are charged more and the argmin is the plan that
+searches least. Each plan is also a fixture, `reasoning-gnaf-priority`,
+`-sweep`, and `-goal`, whose function is the plan the request declares and
+which Lean's kernel decides computes, on every patient of the request's
+domain, the level the oracle's `Triage` derives from the same findings
+(observed as the vital signs that state them), so the plans are, on that
+domain, the problem `Triage` solves. `reject-reasoning-free-search`
+(`hidden_cost`) charges the search nothing, and
+`reject-reasoning-discovered-universe` (`discovered_universe`) takes the
+candidates one search encountered as its universe; both are refused. No
+reasoning claim is a claim over a universe its search discovered.
 
 **Authority vectors, dependency manifest, and honesty.** The authority's
 normative fixtures GNAF-VEC-01 (the compositions of its operations, with
@@ -4728,8 +5059,8 @@ value. A certificate E that does not compile silently, fails its replay,
 or whose theorem's axioms are not exactly the three above is `LLV7016`.
 
 **Evidence.** The conformance suite certifies every production root of
-`examples/production`, `examples/production-coverage`, and `examples/models`,
-and verification checks every example's certificates as part of its
+`examples/production`, `examples/production-coverage`, `examples/models`, and
+`examples/reasoning`, and verification checks every example's certificates as part of its
 published set. Together these roots exercise every runtime row of the
 production registry (§17.13), a type parameter through an instance of a
 generic definition: arithmetic at every width, text and bytes, documents,
@@ -4785,13 +5116,14 @@ root's crate. Every root whose closure declares an overflow is run on an input
 on which it overflows, so the overflow arm of each statement is exercised on
 the interpreter, Lean, the machine, and rustc, except the roots below, whose
 declared overflow no input reaches (the registry's effect rows
-over-approximate). Of the 49 certified roots of the three examples, 34
-declare an overflow, 15 of them reach it, and the other 19 rest on the
+over-approximate). Of the 57 certified roots of the four examples, 42
+declare an overflow, 19 of them reach it, and the other 23 rest on the
 kernel proof alone for the overflow arm of E, B, and the machine, because
 either the operands that can overflow do not depend on the root's parameters,
 or the overflow is a sequence, text, or collection of 2^64 elements, which no
 test can build, or, for the model roots, no input found overflows their
-arithmetic over the decoded weights. The list is checked against the suite
+arithmetic over the decoded weights, or, for four of the reasoning roots,
+no input found overflows the arithmetic of their rule guards and conclusions. The list is checked against the suite
 both ways: a root on it that overflows, or a root off it that does not, fails
 `conformance_sp_03`.
 
@@ -4815,6 +5147,10 @@ Models.Main.admitCosts
 Models.Main.ledgerPost
 Models.Main.ledgerFull
 Models.Main.guessChecked
+Reasoning.Main.triageLevel
+Reasoning.Main.gatewayLevel
+Reasoning.Main.triageSteps
+Reasoning.Main.gradeLevel
 ```
 
 Every
@@ -6298,6 +6634,9 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4007` | Invalid model composition or entry obligation (§17.12). |
 | `LLT4008` | Unvalidated model runtime boundary (§17.12). |
 | `LLT4009` | Model evidence not established (§17.12). |
+| `LLT4010` | Reasoning interface or obligation mismatch (§17.12). |
+| `LLT4011` | Unbounded reasoning or missing termination evidence (§17.12). |
+| `LLT4012` | Unvalidated reasoning runtime boundary (§17.12). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -6685,6 +7024,65 @@ Tests MUST establish that LexLean rejects, at minimum:
   (`LLT4009`);
 - false evidence stating the exact claim, refused by verification
   (`LLV7002`).
+- a logic declaration under language 1.1, a reasoner with an oracle member
+  outside the closed schema, an unregistered strategy, and an unregistered
+  reasoner claim kind (`LLT4001`);
+- a binder spelled with the reserved generated prefix, and a declaration
+  named like, or below, a namespace the generated Lean refers to
+  (`LLT4001`);
+- a logic binding its state and next-state names alike, a relation of
+  another signature or that is not a definition or takes other type
+  parameters than the logic's, an invariant or a ranking of another
+  signature, a verifier specification of another signature, a reasoner
+  naming a declaration that is not a rule, a rule whose conclusion is not of
+  its state type, a generate-and-verify reasoner whose observation is not its
+  verifier's subject, an invariant-preservation theorem stating another
+  obligation, a rule over a declaration that is not a logic or with type
+  arguments its logic does not take, a guard that is not Boolean, candidates
+  that are not a list, a soundness or progress theorem stating another
+  obligation, progress over a logic without a ranking, a verifier check that
+  is not a Boolean function or is not executable, a completeness theorem
+  stating another obligation, a reasoner naming a declaration that is not a
+  verifier, a verifier of another candidate type, an answer that is not an
+  option, an observation of another state type, no rules, a rule named
+  twice, a non-executable rule in an executable reasoner, a rule over
+  another logic, a rule used at type arguments other than its reasoner's
+  logic, a verifier of another subject type, claims out of order or naming
+  a kind twice, an initial-invariant claim over a logic without an
+  invariant, and an initial-invariant or fuel-bound theorem stating another
+  obligation (`LLT4010`);
+- a generate-and-verify reasoner with rules, with a logic, with a claim, or
+  with a generator that is not a list of its verifier's candidates; a
+  rule-based reasoner without its logic; an answer-correctness theorem
+  stating another obligation; an answer-correctness claim out of order; and
+  an answer-correctness claim under the invariant without the initial
+  invariant that makes it hold of every reached state, an observation
+  invariant with a predicate of another signature, an initial or
+  preservation theorem stating another obligation, or claimed out of order
+  (`LLT4010`);
+- a generate-and-verify reasoner without a budget, and a budget that is not
+  a natural number (`LLT4011`);
+- a reasoner whose elaboration would exceed `max_ir_nodes`, refused before it
+  is elaborated (`LLS8002`);
+- a forward reasoner without fuel, a search without a frontier, a frontier
+  of zero, deduplication over a state type without a canonical order, a
+  fuel or frontier that is not a natural number, a termination claim by a
+  search, and a termination claim with a rule that states no progress, with
+  no initial invariant for the progress it assumes, or over a logic without
+  a ranking (`LLT4011`);
+- an executable definition reaching a rule's unguarded conclusion and one
+  reaching a reasoner's unverified answer, each by a call, a function value
+  applied or folded or iterated, a name bound to one, a lambda body, a
+  branch, a rule guard, a reasoner's observation, a generator, and another
+  reasoner's answer, and one reaching the answer of a reasoner claimed
+  correct only under an invariant (`LLT4012`);
+- a rule whose guard admits a step its relation forbids, a rule that does
+  not decrease the ranking, a verifier whose check accepts a candidate its
+  specification forbids, a fuel bound false for the observation, and a
+  forged trace claimed to replay, and an answer claimed correct on every
+  state, or on every state satisfying the invariant or the observation
+  invariant, that is not, each
+  stating its exact obligation and refused by verification (`LLV7002`).
 
 ### 28.6 Example verification
 
@@ -7224,16 +7622,16 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GN-07` | `gnaf` | The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true. | §17.15, §27.4 |
 | `GN-08` | `gnaf` | The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator. | §17.15, §27.4 |
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
-| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 420 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it, and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; and in every case by generating each certificate under the limit, which stops it at the limit; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline. | §17.17 |
-| `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, and examples/models, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
+| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 420 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it, and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; and in every case by generating each certificate under the limit, which stops it at the limit; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline. | §17.17 |
+| `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; the lowered program and each target's crate the certificates are about are published and bound by that record, which also states the function each crate is invoked through and agrees with certificate E and the crate; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication; and a pinned Lean that gives up on a certificate by heartbeats or recursion depth is reported as that rejection unless the module is at least a quarter of max_file_bytes, in which case, as when it is killed or out of memory, it is an exhausted resource, LLS8002. | §17.17, §22.8, §22.9 |
-| `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, and examples/models together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
+| `SP-06` | `preservation` | The certified roots of examples/production, examples/production-coverage, examples/models, and examples/reasoning together exercise every runtime construct of the production registry, a type parameter through an instance of a generic definition, and a construct that no certified root exercises is reported. | §17.13, §17.17 |
 | `SP-07` | `preservation` | The declared Rust machine is generated LexLean: RustSyntax states every construct of the closed Rust AST and RustSemantics its evaluator over calculus values, a `?` on an error raising out of its function, and each runtime item as the calculus primitive it realizes at its width and in its profile; both are kernel-checked modules of the compiler project with exact axioms whose shipped copies equal the compiler golden, the runtime items' failure and heap classes equal the renderer's, and the term of every certified root's crate elaborates against RustSyntax. | §17.16, §17.17 |
 | `SP-08` | `preservation` | Certificate B relates every rendering to its program: for every production root in each of its targets and every renderer fixture in each profile that renders it, the aligner derives the shipped library's correspondence between the lowered program and its crate from a closed rule set, whose rules are exactly the correspondence's constructors, each a case of the library's soundness theorem and used by some rendering, and which names every calculus construct; the pinned Lean checks and replays every derivation, each simulation theorem depends on exactly Classical.choice, Quot.sound, and propext, and a crate mutated after rendering is refused. | §17.16, §17.17 |
 | `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, or its boundary entry when it has one, invoked on the encoded source arguments, realizes certificate A's observation of the source, as `some` when the arguments satisfy the invariants §17.12 states of them and as `none` otherwise; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, verification fails with LLV7016 on a rejected composition, and a root verifies whatever its parameters are named, including the names the composition binds for itself, the words a certificate writes bare, the names of the namespaces the certificates begin a name with, and the tokens the certificate audit forbids, as does a declaration spelled like a word the audit of generated Lean forbids. | §17.17 |
 | `SP-10` | `preservation` | A production root whose parameters can hold a map, set, or graph, directly or inside options, results, products, lists, document types, and recursive groups of them, is lowered with a generated entry function that calls the root only when the generated validators of each such parameter accept it and returns none otherwise; certificate A proves each validator decides exactly the proposition §17.12 states of its type and the entry's two outcomes; a validator is called only by the entry and by validators, so no proof-only invariant becomes a runtime check, and a validator called from inside the program is refused by the lowering; and a validator dropped from the entry, one weakened to admit an equal key, and a rendering whose entry drops a validator are each refused by Lean at the relation they change; a lowering whose entry skips a validated parameter is refused by the generator, which judges the validated parameters from the source types alone, and the differentials break each validated parameter's invariant in turn, which the interpreter, Lean, the declared machine, and rustc each refuse with none. | §17.12, §17.17 |
-| `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, and examples/models is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
+| `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -7246,8 +7644,22 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `MD-10` | `models` | Model declarations are part of the semantic identity, so changing an artifact byte with its declared digest, a descriptor, a claim, or a check changes the semantic ID, and language-1.2 snapshots carry, schema-valid, every elaborated declaration, generated obligation, cross-check, and required check. | §17.12, §21.4 |
 | `MD-11` | `models` | Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean. | §17.13, §17.14, §22.10 |
 | `MD-12` | `models` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. | §17.12, §28.6 |
+| `RS-01` | `reasoning` | Language 1.2 logic, inference_rule, verifier, and reasoner declarations, the forward, search, and generate_and_verify strategies, the initial_invariant, terminates, observation_invariant, and answer_correct claims, and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member, strategy, or claim outside the closed schema, such as an opaque oracle, a prompt, an unregistered strategy, or an unregistered claim, which fail with LLT4001. | §17.12 |
+| `RS-02` | `reasoning` | A logic names a prior state relation and an optional invariant with a statement-exact preservation theorem and an optional ranking, each of exactly its state type, and an inference rule over a logic is a typed guard, conclusion, and optional binding with a candidate list whose soundness theorem states exactly that the guard implies the relation and whose progress theorem states exactly that the ranking decreases; logics, rules, verifiers, and reasoners may be generic, and a predicate of the wrong signature, an inexact theorem, a rule over another logic than its reasoner's, or a use with the wrong number of type arguments fails with LLT4010. | §17.12 |
+| `RS-03` | `reasoning` | A verifier links an executable Boolean check over a subject and a candidate to a prior proposition-valued specification by statement-exact soundness and optional completeness theorems that Lean restates against the fixed reasoning semantics; an inexact statement or a verifier whose subject or candidate type differs from its reasoner's fails with LLT4010, and a false soundness theorem is refused by verification with LLV7002. | §17.12, §22.6 |
+| `RS-04` | `reasoning` | Every reasoner, generic or not, elaborates in linking to ordinary language-1.2 inductives, structures, definitions, and theorems over the existing match, if, list_fold, iterate_until, and set operations, with no reasoner primitive and no model-based semantic escape hatch, and the formal-only LexLeanReasoning runtime appears in no production closure. | §17.12, §17.13 |
+| `RS-05` | `reasoning` | A forward reasoner fires, at each of at most its fuel iterations, the first applicable rule in declared priority order and candidate order, re-checking the rule's guard at every application, accounts its iterations, guard evaluations, firings, and its one verification in its ledger, and its verdict is the verifier-accepted answer of a saturated state or exactly one of the closed failures exhausted, unsolved, or rejected. | §17.12 |
+| `RS-06` | `reasoning` | A search reasoner explores states breadth-first or depth-first under explicit natural-number fuel and frontier bounds, with optional deduplication over an ordered state type, and accepts only a state whose answer its verifier's check accepts, and a generate-and-verify reasoner checks at most its budget of its generator's candidates in order and answers the first its verifier accepts; a missing or non-natural bound or budget, a literal zero frontier, or deduplication over an unordered state fails with LLT4011, and a search or generation cut short by a bound yields exhausted and never unsolved. | §17.12 |
+| `RS-07` | `reasoning` | A terminates claim requires a ranking, a statement-exact progress theorem on every rule, an initial-invariant claim when progress assumes the invariant, and a statement-exact fuel-bound theorem, and generates a kernel-checked theorem that the forward reasoner saturates within its fuel; a claim without that evidence fails with LLT4011, and a false progress theorem for a rule that undoes another is refused by verification with LLV7002. | §17.12, §22.6 |
+| `RS-08` | `reasoning` | Each logic, rule, verifier, and reasoner generates fixed-template theorems over its elaboration, among them guarded-application soundness, trace replay, derivation, invariant preservation, iteration, frontier, and verification bounds, saturation, and answer soundness, whose proofs apply only the emitted, axiom-free LexLeanReasoning runtime and the declaration's own theorems; every runtime lemma and every template is used by the committed example and accepted by pinned Lean, and a mutated runtime lemma statement is refused by Lean. | §17.12, §22.6 |
+| `RS-09` | `reasoning` | Executable code reaches a rule's conclusion only through the rule's guarded application and a state's answer only through its reasoner's verifier, unless an answer_correct claim's statement-exact theorem proves the answer correct on every state, which erases the check, and otherwise fails with LLT4012, an answer proved correct only under an invariant keeping the guard of every member that reads an answer from a state or a search its caller supplies (extract, accept, conclude, and searchStep); a trace is evidence only by replay: a forged trace or an inapplicable rule application yields invalid_step at run time and the kernel decides that it does. | §17.12 |
+| `RS-10` | `reasoning` | Reasoning declarations and their elaborations are part of the semantic ID; each declaration is charged to max_ir_nodes, before it is elaborated, by a bound its elaboration never exceeds, so a reasoner whose elaboration would exceed the limit fails with LLS8002 before any of it is built, and an elaboration nests with the logarithm of its number of rules rather than their number; a language-1.2 snapshot carries each elaboration with its generated theorems, and the canonical document renders a closed catalog of interfaces, rules, strategy, bounds, claims, and generated obligations that contains no trace value and never says verified. | §17.12, §21.4 |
+| `RS-11` | `reasoning` | Production eligibility realizes inference rules and reasoners through their elaborations and erases logics and verifiers, the realization table maps every reasoning row to calculus elements, the eligibility report records each reasoning root's strategy, bounds or budget, rule order, ledger counters, and the theorems bounding them, and the example's rust-core and rust-std reasoning roots extract through Lean. | §17.13, §17.14, §22.10 |
+| `RS-12` | `reasoning` | The compiler project's reasoning oracles declare exactly the declarations of every reasoner the reasoning example's production roots run (the forward reasoners Triage and Grade, the generic Spend, the breadth-first search Plan with deduplication, the depth-first search Screen, and the generate-and-verify reasoner Dose) and of Review, which the example states by theorem, and a calculus transcription of each produces the oracle's verdict on every fixture argument as the kernel decides, the explained answer and the six-counter ledger of its run too for Triage, Plan, Screen, and Dose, compiles to committed rust-core and rust-std packages, and charges at least the guard evaluations and firings of the reasoner's ledger in calculus steps. | §17.14, §17.16 |
+| `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |
+| `RS-14` | `reasoning` | The committed reasoning example verifies a multi-step clinical forward derivation with its invariant and termination, a generic terminating countdown, a deduplicating breadth-first planner, a depth-first search and a generate-and-verify reasoner over model-generated candidates, and an answer proved correct with its check erased, with every generated theorem kernel-checked, and planting a rule-threshold mutation in it is refused by verification. | §17.12, §28.6 |
 
-**Total required capability IDs:** 301.
+**Total required capability IDs:** 315.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

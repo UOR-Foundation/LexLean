@@ -296,6 +296,52 @@ impl<'a> Source<'a> {
                     evidence: _,
                     entry: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Logic {
+                    name: _,
+                    type_parameters: _,
+                    state: _,
+                    relation: _,
+                    invariant: _,
+                    ranking: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::InferenceRule {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    binding: _,
+                    guard: _,
+                    conclusion: _,
+                    soundness: _,
+                    progress: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Verifier {
+                    name: _,
+                    type_parameters: _,
+                    subject: _,
+                    candidate: _,
+                    specification: _,
+                    check: _,
+                    sound: _,
+                    complete: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Reasoner {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    observation: _,
+                    observe: _,
+                    rules: _,
+                    strategy: _,
+                    answer: _,
+                    verifier: _,
+                    claims: _,
+                    executable: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
@@ -336,7 +382,8 @@ impl<'a> Source<'a> {
             }
             | SemanticType::Map { key: _, value: _ }
             | SemanticType::Set { element: _ }
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 return Err(internal("a document shape of a non-document type"));
             }
         };
@@ -483,6 +530,52 @@ impl<'a> Source<'a> {
                     evidence: _,
                     entry: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Logic {
+                    name: _,
+                    type_parameters: _,
+                    state: _,
+                    relation: _,
+                    invariant: _,
+                    ranking: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::InferenceRule {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    binding: _,
+                    guard: _,
+                    conclusion: _,
+                    soundness: _,
+                    progress: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Verifier {
+                    name: _,
+                    type_parameters: _,
+                    subject: _,
+                    candidate: _,
+                    specification: _,
+                    check: _,
+                    sound: _,
+                    complete: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Reasoner {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    observation: _,
+                    observe: _,
+                    rules: _,
+                    strategy: _,
+                    answer: _,
+                    verifier: _,
+                    claims: _,
+                    executable: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
@@ -525,6 +618,7 @@ impl<'a> Source<'a> {
                 let ty = match builtin {
                     BuiltinOwner::Bool => SemanticType::Bool,
                     BuiltinOwner::ContractViolation => SemanticType::ContractViolation,
+                    BuiltinOwner::ReasoningFailure => SemanticType::ReasoningFailure,
                     BuiltinOwner::Nat => SemanticType::Nat,
                     BuiltinOwner::List => SemanticType::List {
                         element: argument(0),
@@ -558,9 +652,23 @@ impl<'a> Source<'a> {
                     (BuiltinOwner::ContractViolation, "output_invariant") => {
                         Constructor::Violation(true, true)
                     }
+                    // `(answered, replay)` (§17.12, reasoning).
+                    (BuiltinOwner::ReasoningFailure, "exhausted") => {
+                        Constructor::Violation(false, false)
+                    }
+                    (BuiltinOwner::ReasoningFailure, "unsolved") => {
+                        Constructor::Violation(false, true)
+                    }
+                    (BuiltinOwner::ReasoningFailure, "rejected") => {
+                        Constructor::Violation(true, false)
+                    }
+                    (BuiltinOwner::ReasoningFailure, "invalid_step") => {
+                        Constructor::Violation(true, true)
+                    }
                     (
                         BuiltinOwner::Bool
                         | BuiltinOwner::ContractViolation
+                        | BuiltinOwner::ReasoningFailure
                         | BuiltinOwner::Nat
                         | BuiltinOwner::List
                         | BuiltinOwner::Option
@@ -619,7 +727,10 @@ impl<'a> Source<'a> {
                 member: _,
                 arguments,
             } => arguments.clone(),
-            SemanticType::Nat | SemanticType::Bool | SemanticType::ContractViolation => Vec::new(),
+            SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => Vec::new(),
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
@@ -708,7 +819,8 @@ impl<'a> Source<'a> {
                 }
                 | SemanticType::Map { key: _, value: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::ContractViolation => Err(mismatch()),
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => Err(mismatch()),
             },
             Constructor::OptionSome | Constructor::Ok | Constructor::Error => {
                 let field = match (constructor, ty) {
@@ -759,7 +871,8 @@ impl<'a> Source<'a> {
                         }
                         | SemanticType::Map { key: _, value: _ }
                         | SemanticType::Set { element: _ }
-                        | SemanticType::ContractViolation,
+                        | SemanticType::ContractViolation
+                        | SemanticType::ReasoningFailure,
                     ) => return Err(mismatch()),
                 };
                 Ok(vec![field.as_ref().clone()])

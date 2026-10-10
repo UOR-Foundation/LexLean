@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 163] = [
+            let prescribed: [(&str, &str); 262] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -344,6 +344,108 @@ pub(crate) fn run(id: &str) {
                 ("model-vacuous-claim", "LLT4009"),
                 ("model-foreign-evidence", "LLT4009"),
                 ("model-false-evidence", "LLV7002"),
+                // §17.12: reasoning machines fail closed (schema, interfaces and
+                // obligations, bounds, the runtime boundary) before any backend,
+                // or at verification.
+                ("reasoning-under-1.1", "LLT4001"),
+                ("reasoning-opaque-member", "LLT4001"),
+                ("reasoning-unregistered-strategy", "LLT4001"),
+                ("reasoning-unregistered-claim", "LLT4001"),
+                ("reasoning-interface-rebound", "LLT4010"),
+                ("reasoning-relation-signature", "LLT4010"),
+                ("reasoning-invariant-unpreserved", "LLT4010"),
+                ("reasoning-rule-unknown-logic", "LLT4010"),
+                ("reasoning-rule-type-arguments", "LLT4010"),
+                ("reasoning-rule-guard-type", "LLT4010"),
+                ("reasoning-rule-candidates-type", "LLT4010"),
+                ("reasoning-rule-soundness-inexact", "LLT4010"),
+                ("reasoning-rule-progress-inexact", "LLT4010"),
+                ("reasoning-progress-without-ranking", "LLT4010"),
+                ("reasoning-verifier-signature", "LLT4010"),
+                ("reasoning-verifier-formal-check", "LLT4010"),
+                ("reasoning-verifier-inexact", "LLT4010"),
+                ("reasoning-unknown-verifier", "LLT4010"),
+                ("reasoning-verifier-type-mismatch", "LLT4010"),
+                ("reasoning-answer-type", "LLT4010"),
+                ("reasoning-observation-type", "LLT4010"),
+                ("reasoning-no-rules", "LLT4010"),
+                ("reasoning-duplicate-rule", "LLT4010"),
+                ("reasoning-formal-rule", "LLT4010"),
+                ("reasoning-rule-foreign-logic", "LLT4010"),
+                ("reasoning-claims-unsorted", "LLT4010"),
+                ("reasoning-initial-without-invariant", "LLT4010"),
+                ("reasoning-initial-inexact", "LLT4010"),
+                ("reasoning-fuel-bound-inexact", "LLT4010"),
+                ("reasoning-forward-without-fuel", "LLT4011"),
+                ("reasoning-search-without-frontier", "LLT4011"),
+                ("reasoning-zero-frontier", "LLT4011"),
+                ("reasoning-deduplicate-unordered-state", "LLT4011"),
+                ("reasoning-fuel-not-nat", "LLT4011"),
+                ("reasoning-frontier-not-nat", "LLT4011"),
+                ("reasoning-terminating-search", "LLT4011"),
+                ("reasoning-terminates-without-progress", "LLT4011"),
+                ("reasoning-terminates-without-initial", "LLT4011"),
+                ("reasoning-terminates-without-ranking", "LLT4011"),
+                ("reasoning-rule-bypass", "LLT4012"),
+                ("reasoning-unverified-answer", "LLT4012"),
+                ("reasoning-invalid-rule-application", "LLV7002"),
+                ("reasoning-nonterminating-rule", "LLV7002"),
+                ("reasoning-inconsistent-verifier", "LLV7002"),
+                ("reasoning-insufficient-fuel", "LLV7002"),
+                ("reasoning-forged-trace", "LLV7002"),
+                ("reasoning-generate-without-budget", "LLT4011"),
+                ("reasoning-budget-not-nat", "LLT4011"),
+                ("reasoning-generate-with-rules", "LLT4010"),
+                ("reasoning-generate-with-logic", "LLT4010"),
+                ("reasoning-generate-claims", "LLT4010"),
+                ("reasoning-generator-type", "LLT4010"),
+                ("reasoning-rules-without-logic", "LLT4010"),
+                ("reasoning-answer-correct-inexact", "LLT4010"),
+                ("reasoning-answer-correct-unsorted", "LLT4010"),
+                ("reasoning-false-answer-correct", "LLV7002"),
+                ("reasoning-elaboration-over-limit", "LLS8002"),
+                ("reasoning-relation-not-definition", "LLT4010"),
+                ("reasoning-logic-type-parameters", "LLT4010"),
+                ("reasoning-invariant-signature", "LLT4010"),
+                ("reasoning-ranking-signature", "LLT4010"),
+                ("reasoning-specification-signature", "LLT4010"),
+                ("reasoning-unknown-rule", "LLT4010"),
+                ("reasoning-rule-conclusion-type", "LLT4010"),
+                ("reasoning-binder-reserved", "LLT4001"),
+                ("reasoning-generate-subject-mismatch", "LLT4010"),
+                ("reasoning-rule-bypass-ref", "LLT4012"),
+                ("reasoning-rule-bypass-alias", "LLT4012"),
+                ("reasoning-rule-bypass-lambda", "LLT4012"),
+                ("reasoning-rule-bypass-iterate", "LLT4012"),
+                ("reasoning-rule-bypass-branch", "LLT4012"),
+                ("reasoning-rule-bypass-guard", "LLT4012"),
+                ("reasoning-rule-bypass-observe", "LLT4012"),
+                ("reasoning-rule-bypass-generator", "LLT4012"),
+                ("reasoning-extract-bypass-ref", "LLT4012"),
+                ("reasoning-extract-bypass-alias", "LLT4012"),
+                ("reasoning-extract-bypass-branch", "LLT4012"),
+                ("reasoning-extract-bypass-reasoner", "LLT4012"),
+                ("reasoning-claims-duplicate", "LLT4010"),
+                ("reasoning-reasoner-rule-type-arguments", "LLT4010"),
+                ("reasoning-verifier-subject-mismatch", "LLT4010"),
+                ("reasoning-answer-invariant-without-initial", "LLT4010"),
+                ("reasoning-false-invariant-answer-correct", "LLV7002"),
+                ("reasoning-reserved-declaration-name", "LLT4001"),
+                ("reasoning-reserved-declaration-namespace", "LLT4001"),
+                ("reasoning-observation-invariant-signature", "LLT4010"),
+                ("reasoning-observation-initial-inexact", "LLT4010"),
+                ("reasoning-observation-preserved-inexact", "LLT4010"),
+                ("reasoning-observation-unsorted", "LLT4010"),
+                ("reasoning-extract-bypass-invariant", "LLT4012"),
+                ("reasoning-accept-bypass-invariant", "LLT4012"),
+                ("reasoning-accept-bypass-ref", "LLT4012"),
+                ("reasoning-accept-bypass-alias", "LLT4012"),
+                ("reasoning-accept-bypass-observation", "LLT4012"),
+                ("reasoning-conclude-bypass-invariant", "LLT4012"),
+                ("reasoning-conclude-bypass-observation", "LLT4012"),
+                ("reasoning-search-accept-bypass-invariant", "LLT4012"),
+                ("reasoning-search-step-bypass-invariant", "LLT4012"),
+                ("reasoning-false-observation-answer-correct", "LLV7002"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())
@@ -362,31 +464,38 @@ pub(crate) fn run(id: &str) {
             );
 
             let lean_available = support::lean_backed("EX-07");
-            let mut failures: Vec<String> = Vec::new();
-            for dir in crate::fixtures::discover(&root) {
+            // The fixtures are independent of one another (each runs in a
+            // copy of its project, and the ones that override the toolchain
+            // take the environment lock exclusively), and the longest of
+            // them wait on Lean, so a few run at once: one after another
+            // they were the longest case of the suite.
+            let directories = crate::fixtures::discover(&root);
+            let failures: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+            let check_directory = |dir: &camino::Utf8PathBuf| {
                 let case =
-                    crate::fixtures::load_case(&dir).unwrap_or_else(|error| panic!("{error}"));
+                    crate::fixtures::load_case(dir).unwrap_or_else(|error| panic!("{error}"));
                 let is_lean_backed = case
                     .invocations
                     .iter()
                     .any(|invocation| invocation.command == "verify");
                 if is_lean_backed && !lean_available {
-                    continue;
+                    return;
                 }
                 // A checkout without symlink support (Windows with
                 // core.symlinks=false) materializes the fixture's symlink as
                 // text, so the path-symlink class is host-bound there.
                 if cfg!(windows) && dir.ends_with("path-symlink") {
                     eprintln!("EX-07: {dir}: symlink fixture skipped on a host without symlink checkout (§8.3)");
-                    continue;
+                    return;
                 }
-                let observed = match crate::fixtures::check(&dir) {
+                let observed = match crate::fixtures::check_shared(dir) {
                     Ok(observed) => observed,
                     Err(error) => {
-                        failures.push(error);
-                        continue;
+                        failures.lock().expect("failures").push(error);
+                        return;
                     }
                 };
+                let mut found: Vec<String> = Vec::new();
                 // §30.4: every emitted diagnostic validates against the
                 // diagnostic schema.
                 let diagnostics: serde_json::Value =
@@ -398,7 +507,7 @@ pub(crate) fn run(id: &str) {
                     let violations =
                         crate::schema::validate(&support::schema("diagnostic"), diagnostic);
                     if !violations.is_empty() {
-                        failures.push(format!(
+                        found.push(format!(
                             "{dir}: diagnostic {index} violates schemas/diagnostic.schema.json: {}",
                             violations
                                 .iter()
@@ -408,7 +517,7 @@ pub(crate) fn run(id: &str) {
                         ));
                     }
                 }
-                let relative = dir.strip_prefix(&root).unwrap_or(&dir);
+                let relative = dir.strip_prefix(&root).unwrap_or(dir);
                 if let Ok(class) = relative.strip_prefix("tests/negative") {
                     let class = class.as_str();
                     let code = prescribed
@@ -422,18 +531,22 @@ pub(crate) fn run(id: &str) {
                     if observed.codes.is_empty()
                         || observed.codes.iter().any(|observed| observed != code)
                     {
-                        failures.push(format!(
+                        found.push(format!(
                             "tests/negative/{class}: prescribed only {code}, observed {:?} (§28.5)",
                             observed.codes
                         ));
                     }
                     if observed.exit == 0 {
-                        failures.push(format!(
+                        found.push(format!(
                             "tests/negative/{class}: a negative fixture must fail"
                         ));
                     }
                 }
-            }
+                failures.lock().expect("failures").extend(found);
+            };
+            support::for_each_parallel(&directories, 4, check_directory);
+            let mut failures = failures.into_inner().expect("failures");
+            failures.sort();
             assert!(
                 failures.is_empty(),
                 "fixture failures:\n{}",

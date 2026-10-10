@@ -515,7 +515,7 @@ public theorem FlowContract.invariant_sound : LexLeanModels.Sound1 ((Models.Ledg
 public theorem flow_entry (s : Nat) (_x : Nat) : (Models.Ledger.Capped (s) -> Models.Ledger.Capped (s)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def FlowModel.initial : Nat := Models.Flows.ClampGuess.initial
@@ -531,13 +531,13 @@ public theorem PairGuessContract.precondition_sound : LexLeanModels.Sound1 ((Mod
 public theorem pair_entry_left (x : Nat) : (Models.Ledger.Within (x) -> Models.Ledger.Within (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Within, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Within, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem pair_entry_right (x : Nat) : (Models.Ledger.Within (x) -> Models.Ledger.Within (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Within, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Within, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def PairGuessModel (__input : Nat) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := Models.Flows.GuessTwice (__input)
@@ -553,7 +553,7 @@ public theorem pair_entry_right (x : Nat) : (Models.Ledger.Within (x) -> Models.
 public theorem few_check_sound (xs : List (Nat)) : ((fewCheck (xs) = true) -> Few (xs)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Few, fewCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Few, fewCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem SpillStreamContract.precondition_sound : LexLeanModels.Sound1 ((Models.Flows.fewCheck)) ((Models.Flows.Few)) := Models.Flows.few_check_sound
@@ -569,7 +569,7 @@ public theorem SpillStreamContract.precondition_sound : LexLeanModels.Sound1 ((M
 public theorem twin_capped_check_sound (s : (Prod (Nat) (Nat))) : ((twinCappedCheck (s) = true) -> TwinCapped (s)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, Models.Ledger.cappedCheck, TwinCapped, twinCappedCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, Models.Ledger.cappedCheck, TwinCapped, twinCappedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose, reducible] public def TwinSmall (_s : (Prod (Nat) (Nat))) (x : Nat) : Prop := (x <= 10)
@@ -579,7 +579,7 @@ public theorem twin_capped_check_sound (s : (Prod (Nat) (Nat))) : ((twinCappedCh
 public theorem twin_small_check_sound (s : (Prod (Nat) (Nat))) (x : Nat) : ((twinSmallCheck (s) (x) = true) -> TwinSmall (s) (x)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [TwinSmall, twinSmallCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [TwinSmall, twinSmallCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem TwinContract.invariant_sound : LexLeanModels.Sound1 ((Models.Flows.twinCappedCheck)) ((Models.Flows.TwinCapped)) := Models.Flows.twin_capped_check_sound
@@ -591,13 +591,13 @@ public theorem TwinContract.precondition_sound : LexLeanModels.Sound2 ((Models.F
 public theorem twin_entry_left (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem twin_entry_right (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).2) (x))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def TwinModel.initial : (Prod (Nat) (Nat)) := Models.Flows.ClampTally.initial
@@ -610,7 +610,7 @@ public theorem twin_entry_right (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped
 public theorem both_capped_check_sound (s : (Prod (Nat) (Nat))) : ((bothCappedCheck (s) = true) -> BothCapped (s)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, bothCappedCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, bothCappedCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem PairClampContract.invariant_sound : LexLeanModels.Sound1 ((Models.Flows.bothCappedCheck)) ((Models.Flows.BothCapped)) := Models.Flows.both_capped_check_sound
@@ -621,13 +621,13 @@ public theorem PairClampContract.invariant_sound : LexLeanModels.Sound1 ((Models
 public theorem both_entry_left (s : (Prod (Nat) (Nat))) (_x : (Prod (Nat) (Nat))) : (BothCapped (s) -> Models.Ledger.Capped ((s).1)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem both_entry_right (s : (Prod (Nat) (Nat))) (_x : (Prod (Nat) (Nat))) : (BothCapped (s) -> Models.Ledger.Capped ((s).2)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [BothCapped, Models.Ledger.Capped, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def PairClampModel.initial : (Prod (Nat) (Nat)) := Models.Flows.ClampBoth.initial
@@ -642,13 +642,13 @@ public theorem BranchContract.precondition_sound : LexLeanModels.Sound2 ((Models
 public theorem branch_entry_then (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = true) -> Models.Ledger.Capped ((s).1)))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem branch_entry_else (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> (((Nat.ble (x) (5)) = false) -> Models.Ledger.Small ((s).2) (x)))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def BranchModel.initial : (Prod (Nat) (Nat)) := Models.Flows.ClampOrTally.initial
@@ -660,7 +660,7 @@ public theorem ChainContract.precondition_sound : LexLeanModels.Sound2 ((Models.
 public theorem spill_tally (s : (Prod (Nat) (Nat))) (x : Nat) : (Models.Ledger.Capped ((s).1) -> (Models.Ledger.Small ((s).1) (x) -> Models.Ledger.Small ((s).2) ((Models.Ledger.SpillModel ((s).1) (x)).2))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, Models.Ledger.Small, Models.Ledger.Spill, Models.Ledger.SpillModel, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, Models.Ledger.Small, Models.Ledger.Spill, Models.Ledger.SpillModel, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def SpillTally.initial : (Prod (Nat) (Nat)) := (0, 0)
@@ -669,13 +669,13 @@ public theorem spill_tally (s : (Prod (Nat) (Nat))) (x : Nat) : (Models.Ledger.C
 public theorem chain_entry_invariant (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Capped ((s).1))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Capped, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem chain_entry_precondition (s : (Prod (Nat) (Nat))) (x : Nat) : (TwinCapped (s) -> (TwinSmall (s) (x) -> Models.Ledger.Small ((s).1) (x))) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Ledger.Small, TwinCapped, TwinSmall, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 @[expose] public def ChainModel.initial : (Prod (Nat) (Nat)) := Models.Flows.SpillTally.initial

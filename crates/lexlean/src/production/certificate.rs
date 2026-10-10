@@ -163,7 +163,8 @@ pub fn source_type(
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => Vec::new(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Vec::new(),
     };
     Ok((lean, constructors))
 }
@@ -658,7 +659,18 @@ const TRUE: &str = "Bool.true";
 /// in addition quoted when a segment is spelled like a token the token audit
 /// forbids (`kernel`, `extern`), so that a user's name is an identifier to the
 /// audit as it is to Lean, whatever it is.
+///
+/// A local that linking generated (`__acc`, `__b`, `__s`, `__step`: the
+/// elaboration of a model or a reasoner names its own binders so) is spelled
+/// `_y` and the rest. The certificates bind names of their own that begin with
+/// two underscores (`__b` for the condition of a conditional, `__a`, `__x0`),
+/// and a source local of the same spelling under one of those binders is
+/// captured: `Step.Burn __b` was a Boolean. No source name begins with an
+/// underscore, so the other spelling is no one's.
 fn identifier(name: &str) -> String {
+    if name.starts_with("__") && !name.contains('.') {
+        return format!("_y{}", name.chars().skip(2).collect::<String>());
+    }
     semantic_identifier(name)
         .split('.')
         .map(|segment| {
@@ -693,7 +705,9 @@ fn lean_type_text(source: &Source<'_>, ty: &SemanticType, generic: bool) -> Resu
         SemanticType::String => "String".to_owned(),
         SemanticType::Bytes => "ByteArray".to_owned(),
         SemanticType::Ordering => "Ordering".to_owned(),
-        SemanticType::ContractViolation => "(Prod Bool Bool)".to_owned(),
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
+            "(Prod Bool Bool)".to_owned()
+        }
         SemanticType::Option { value } => {
             format!("(Option {})", lean_type_text(source, value, generic)?)
         }
@@ -1148,7 +1162,8 @@ fn function_type(ty: &SemanticType) -> Option<(&[SemanticType], &SemanticType)> 
         | SemanticType::Product { left: _, right: _ }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => None,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => None,
     }
 }
 
@@ -1336,7 +1351,7 @@ impl Gen<'_> {
             SemanticType::Bytes => value_ctor("bytes"),
             SemanticType::Unit => lib("encUnit"),
             SemanticType::Ordering => lib("encOrdering"),
-            SemanticType::ContractViolation => format!(
+            SemanticType::ContractViolation | SemanticType::ReasoningFailure => format!(
                 "({} {} {})",
                 lib("encPair"),
                 value_ctor("bool"),
@@ -1952,7 +1967,8 @@ fn integer_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => width_suffix(ty),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => width_suffix(ty),
     }
 }
 
@@ -1995,7 +2011,8 @@ fn element_of(ty: &SemanticType) -> Result<SemanticType, String> {
             parameters: _,
             result: _,
         }
-        | SemanticType::ContractViolation => Err("an element of a non-collection".to_owned()),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Err("an element of a non-collection".to_owned()),
     }
 }
 
@@ -2034,7 +2051,8 @@ fn option_value(ty: &SemanticType) -> Result<SemanticType, String> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => Err("a non-option primitive result".to_owned()),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Err("a non-option primitive result".to_owned()),
     }
 }
 
@@ -2079,7 +2097,8 @@ fn numeric(ty: &SemanticType) -> Result<Numeric, String> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => {
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => {
             Err("an arithmetic primitive at a non-integer".to_owned())
         }
     }
@@ -2126,7 +2145,8 @@ fn sequence(ty: &SemanticType) -> Result<Sequence, String> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => {
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => {
             Err("a sequence primitive at a non-sequence".to_owned())
         }
     }
@@ -2148,7 +2168,8 @@ fn equal_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         | SemanticType::UInt16
         | SemanticType::UInt32
         | SemanticType::UInt64
-        | SemanticType::ContractViolation => width_suffix(ty),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => width_suffix(ty),
         SemanticType::Type
         | SemanticType::Parameter { name: _ }
         | SemanticType::Prop
@@ -3958,6 +3979,52 @@ impl<'a> Gen<'a> {
                     evidence: _,
                     entry: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Logic {
+                    name: _,
+                    type_parameters: _,
+                    state: _,
+                    relation: _,
+                    invariant: _,
+                    ranking: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::InferenceRule {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    binding: _,
+                    guard: _,
+                    conclusion: _,
+                    soundness: _,
+                    progress: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Verifier {
+                    name: _,
+                    type_parameters: _,
+                    subject: _,
+                    candidate: _,
+                    specification: _,
+                    check: _,
+                    sound: _,
+                    complete: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Reasoner {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    observation: _,
+                    observe: _,
+                    rules: _,
+                    strategy: _,
+                    answer: _,
+                    verifier: _,
+                    claims: _,
+                    executable: _,
+                    axioms: _,
                 } => {}
             }
         }
@@ -4095,6 +4162,52 @@ impl<'a> Gen<'a> {
                                 realization: _,
                                 evidence: _,
                                 entry: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Logic {
+                                name: _,
+                                type_parameters: _,
+                                state: _,
+                                relation: _,
+                                invariant: _,
+                                ranking: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::InferenceRule {
+                                name: _,
+                                type_parameters: _,
+                                logic: _,
+                                binding: _,
+                                guard: _,
+                                conclusion: _,
+                                soundness: _,
+                                progress: _,
+                                executable: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Verifier {
+                                name: _,
+                                type_parameters: _,
+                                subject: _,
+                                candidate: _,
+                                specification: _,
+                                check: _,
+                                sound: _,
+                                complete: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Reasoner {
+                                name: _,
+                                type_parameters: _,
+                                logic: _,
+                                observation: _,
+                                observe: _,
+                                rules: _,
+                                strategy: _,
+                                answer: _,
+                                verifier: _,
+                                claims: _,
+                                executable: _,
                                 axioms: _,
                             },
                         )
@@ -4276,6 +4389,52 @@ impl<'a> Gen<'a> {
                                 realization: _,
                                 evidence: _,
                                 entry: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Logic {
+                                name: _,
+                                type_parameters: _,
+                                state: _,
+                                relation: _,
+                                invariant: _,
+                                ranking: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::InferenceRule {
+                                name: _,
+                                type_parameters: _,
+                                logic: _,
+                                binding: _,
+                                guard: _,
+                                conclusion: _,
+                                soundness: _,
+                                progress: _,
+                                executable: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Verifier {
+                                name: _,
+                                type_parameters: _,
+                                subject: _,
+                                candidate: _,
+                                specification: _,
+                                check: _,
+                                sound: _,
+                                complete: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::Reasoner {
+                                name: _,
+                                type_parameters: _,
+                                logic: _,
+                                observation: _,
+                                observe: _,
+                                rules: _,
+                                strategy: _,
+                                answer: _,
+                                verifier: _,
+                                claims: _,
+                                executable: _,
                                 axioms: _,
                             },
                         )
@@ -4760,7 +4919,8 @@ fn named_types(ty: &SemanticType, out: &mut Vec<SemanticType>) {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => {}
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => {}
     }
 }
 
@@ -4770,7 +4930,8 @@ fn nested_enc(nested: &Nested) -> String {
         SemanticType::List { element: _ }
         | SemanticType::Set { element: _ }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::ContractViolation => {
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => {
             format!("({} __L_{})", lib("ListEnc.enc"), nested.index)
         }
         SemanticType::Option { value: _ } => {
@@ -4932,7 +5093,8 @@ impl<'a> Gen<'a> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 return Err(format!(
                     "`{}` cannot hold a document type in a field",
                     self.source.type_text(ty)
@@ -4958,7 +5120,8 @@ impl<'a> Gen<'a> {
                 SemanticType::List { element: _ }
                 | SemanticType::Set { element: _ }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::ContractViolation => {
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => {
                     format!("({} (__items_{} {arg}))", value_ctor("list"), nested.index)
                 }
                 SemanticType::Option { value: _ }
@@ -5029,7 +5192,7 @@ impl<'a> Gen<'a> {
             SemanticType::List { element: _ }
             | SemanticType::Set { element: _ }
             | SemanticType::Map { key: _, value: _ }
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
                 let element = element_of(&nested.ty)?;
                 (
                     format!(
@@ -5330,6 +5493,52 @@ impl<'a> Gen<'a> {
                         realization: _,
                         evidence: _,
                         entry: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Logic {
+                        name: _,
+                        type_parameters: _,
+                        state: _,
+                        relation: _,
+                        invariant: _,
+                        ranking: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::InferenceRule {
+                        name: _,
+                        type_parameters: _,
+                        logic: _,
+                        binding: _,
+                        guard: _,
+                        conclusion: _,
+                        soundness: _,
+                        progress: _,
+                        executable: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Verifier {
+                        name: _,
+                        type_parameters: _,
+                        subject: _,
+                        candidate: _,
+                        specification: _,
+                        check: _,
+                        sound: _,
+                        complete: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::Reasoner {
+                        name: _,
+                        type_parameters: _,
+                        logic: _,
+                        observation: _,
+                        observe: _,
+                        rules: _,
+                        strategy: _,
+                        answer: _,
+                        verifier: _,
+                        claims: _,
+                        executable: _,
                         axioms: _,
                     },
                 )
@@ -6018,6 +6227,52 @@ impl<'a> Gen<'a> {
                                         evidence: _,
                                         entry: _,
                                         axioms: _,
+                                    }
+                                    | SemanticDeclaration::Logic {
+                                        name: _,
+                                        type_parameters: _,
+                                        state: _,
+                                        relation: _,
+                                        invariant: _,
+                                        ranking: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::InferenceRule {
+                                        name: _,
+                                        type_parameters: _,
+                                        logic: _,
+                                        binding: _,
+                                        guard: _,
+                                        conclusion: _,
+                                        soundness: _,
+                                        progress: _,
+                                        executable: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Verifier {
+                                        name: _,
+                                        type_parameters: _,
+                                        subject: _,
+                                        candidate: _,
+                                        specification: _,
+                                        check: _,
+                                        sound: _,
+                                        complete: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::Reasoner {
+                                        name: _,
+                                        type_parameters: _,
+                                        logic: _,
+                                        observation: _,
+                                        observe: _,
+                                        rules: _,
+                                        strategy: _,
+                                        answer: _,
+                                        verifier: _,
+                                        claims: _,
+                                        executable: _,
+                                        axioms: _,
                                     },
                                 )
                                 | None => {
@@ -6207,7 +6462,7 @@ impl Gen<'_> {
         Ok(match ty {
             SemanticType::Nat => Ty::Nat,
             SemanticType::Bool => Ty::Bool,
-            SemanticType::ContractViolation => Ty::Pair {
+            SemanticType::ContractViolation | SemanticType::ReasoningFailure => Ty::Pair {
                 left: Box::new(Ty::Bool),
                 right: Box::new(Ty::Bool),
             },
@@ -6340,7 +6595,8 @@ impl Gen<'_> {
             | SemanticType::Type
             | SemanticType::Prop
             | SemanticType::Parameter { name: _ }
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 return Err(format!("`{}` has no key order", self.source.type_text(ty)));
             }
         })
@@ -7001,7 +7257,8 @@ fn mentions_parameter(ty: &SemanticType, name: &str) -> bool {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => {}
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {}
         }
     }
     found
@@ -7097,7 +7354,12 @@ impl Gen<'_> {
                 arguments.push_str(&format!(" (fun{parameters} => {alternative})"));
             }
         }
-        let mut out = format!("((fun{binders} => {}{arms})", head("__a"));
+        // The result type is written on the `match`: the template is a
+        // function elaborated before its arguments, so its body has no
+        // expected type, and Lean postpones such a `match`. A caller that
+        // checks a type that mentions it (a fold's step relation, against the
+        // step function) then fails on the pending metavariable.
+        let mut out = format!("((fun{binders} => ({}{arms} : {result}))", head("__a"));
         for (_, argument) in &abstracted {
             out.push_str(&format!(" {}", self.ty(argument)?));
         }
@@ -7117,7 +7379,8 @@ impl Gen<'_> {
                     SemanticType::List { element: _ }
                     | SemanticType::Set { element: _ }
                     | SemanticType::Map { key: _, value: _ }
-                    | SemanticType::ContractViolation => format!(
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => format!(
                         "({} {module_a}.__L_{n} {})",
                         lib("Rust.wt_listEnc"),
                         self.wtf(&element_of(ty)?, module_a)?
@@ -7201,7 +7464,7 @@ impl Gen<'_> {
                 self.wtf(left, module_a)?,
                 self.wtf(right, module_a)?
             ),
-            SemanticType::ContractViolation => format!(
+            SemanticType::ContractViolation | SemanticType::ReasoningFailure => format!(
                 "({} {} {})",
                 rust("wt_encPair"),
                 rust("wt_bool"),
@@ -7241,7 +7504,8 @@ impl Gen<'_> {
                 SemanticType::List { element: _ }
                 | SemanticType::Set { element: _ }
                 | SemanticType::Map { key: _, value: _ }
-                | SemanticType::ContractViolation => format!(
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => format!(
                     "({} (__wtItems_{} {arg}))",
                     lib("Rust.wt_list"),
                     nested.index
@@ -7401,7 +7665,7 @@ impl Gen<'_> {
             SemanticType::List { element: _ }
             | SemanticType::Set { element: _ }
             | SemanticType::Map { key: _, value: _ }
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
                 let element = element_of(&nested.ty)?;
                 format!(
                     "theorem __wtItems_{n} : ∀ (__v : {lean}), {} {sem} ({module_a}.__items_{n} __v) {}\n  | [] => {}\n  | __x0 :: __x1 => {} {} (__wtItems_{n} __x1)\n\n",
@@ -7596,7 +7860,8 @@ fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
             parameters: _,
             result: _,
         }
-        | SemanticType::ContractViolation => Err(format!("{ty:?} has no two components")),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Err(format!("{ty:?} has no two components")),
     }
 }
 
@@ -7637,7 +7902,8 @@ fn shape_tag(ty: &SemanticType) -> &'static str {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => "scalar",
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => "scalar",
     }
 }
 
@@ -7709,7 +7975,8 @@ fn component_types(ty: &SemanticType) -> Vec<SemanticType> {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => Vec::new(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Vec::new(),
     }
 }
 
@@ -7946,7 +8213,8 @@ impl Gen<'_> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => Ok(false),
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => Ok(false),
         }
     }
 

@@ -1350,7 +1350,7 @@ fn cond(condition: Expr, then_branch: Expr, else_branch: Expr) -> Expr {
 /// Whether a closed type is `ContractViolation`.
 const fn is_violation(ty: &SemanticType) -> bool {
     match ty {
-        SemanticType::ContractViolation => true,
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => true,
         SemanticType::Type
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
@@ -1421,7 +1421,8 @@ pub(crate) const fn fixed_kind(ty: &SemanticType) -> Option<IntKind> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => None,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => None,
     }
 }
 
@@ -1512,7 +1513,8 @@ pub(crate) fn template_of(
                 result: _,
             }
             | SemanticType::Set { element: _ }
-            | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-map")),
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => Err(format!("{operation:?} of a non-map")),
         }
     };
     let element = |ty: &SemanticType| -> Result<SemanticType, String> {
@@ -1550,7 +1552,8 @@ pub(crate) fn template_of(
                 result: _,
             }
             | SemanticType::Map { key: _, value: _ }
-            | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-collection")),
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => Err(format!("{operation:?} of a non-collection")),
         }
     };
     let argument = |index: usize| -> Result<&SemanticType, String> {
@@ -1889,7 +1892,8 @@ impl Lowerer<'_> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => false,
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => false,
         })
     }
 
@@ -2026,7 +2030,8 @@ impl Lowerer<'_> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => {
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 return Err(format!(
                     "`{}` carries no invariant",
                     self.source.type_text(ty)
@@ -2122,7 +2127,7 @@ impl Lowerer<'_> {
             },
             // A violation is the pair of Booleans it lowers to (§17.12
             // rule 9).
-            SemanticType::ContractViolation => Ty::Pair {
+            SemanticType::ContractViolation | SemanticType::ReasoningFailure => Ty::Pair {
                 left: Box::new(Ty::Bool),
                 right: Box::new(Ty::Bool),
             },
@@ -2271,6 +2276,52 @@ impl Lowerer<'_> {
                             evidence: _,
                             entry: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Logic {
+                            name: _,
+                            type_parameters: _,
+                            state: _,
+                            relation: _,
+                            invariant: _,
+                            ranking: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::InferenceRule {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            binding: _,
+                            guard: _,
+                            conclusion: _,
+                            soundness: _,
+                            progress: _,
+                            executable: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Verifier {
+                            name: _,
+                            type_parameters: _,
+                            subject: _,
+                            candidate: _,
+                            specification: _,
+                            check: _,
+                            sound: _,
+                            complete: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Reasoner {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            observation: _,
+                            observe: _,
+                            rules: _,
+                            strategy: _,
+                            answer: _,
+                            verifier: _,
+                            claims: _,
+                            executable: _,
+                            axioms: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not a definition")),
@@ -2401,6 +2452,52 @@ impl Lowerer<'_> {
                             evidence: _,
                             entry: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Logic {
+                            name: _,
+                            type_parameters: _,
+                            state: _,
+                            relation: _,
+                            invariant: _,
+                            ranking: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::InferenceRule {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            binding: _,
+                            guard: _,
+                            conclusion: _,
+                            soundness: _,
+                            progress: _,
+                            executable: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Verifier {
+                            name: _,
+                            type_parameters: _,
+                            subject: _,
+                            candidate: _,
+                            specification: _,
+                            check: _,
+                            sound: _,
+                            complete: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Reasoner {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            observation: _,
+                            observe: _,
+                            rules: _,
+                            strategy: _,
+                            answer: _,
+                            verifier: _,
+                            claims: _,
+                            executable: _,
+                            axioms: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not an instance")),
@@ -2519,9 +2616,11 @@ impl Lowerer<'_> {
     /// leaf the branch of the constructor that pair of Booleans is. The
     /// branches are lowered in leaf order, so locals stay in first-binding
     /// order whatever order the source lists them in.
+    #[allow(clippy::too_many_arguments)]
     fn violation_match(
         &mut self,
         lowered: Expr,
+        scrutinee_ty: &SemanticType,
         branches: &[SemanticBranch],
         result: &Ty,
         scope: &mut Scope,
@@ -2530,9 +2629,7 @@ impl Lowerer<'_> {
     ) -> Result<Expr, String> {
         let mut leaves: Vec<((bool, bool), &SemanticTerm)> = Vec::new();
         for branch in branches {
-            let (constructor, _) =
-                self.source
-                    .branch(branch, &SemanticType::ContractViolation, site)?;
+            let (constructor, _) = self.source.branch(branch, scrutinee_ty, site)?;
             let key = match constructor {
                 Constructor::Violation(first, second) => (first, second),
                 Constructor::Bool(_)
@@ -2774,7 +2871,15 @@ impl Lowerer<'_> {
                 let result = self.ty(&result)?;
                 let lowered = self.term(scrutinee, scope, site, owner)?;
                 if is_violation(&scrutinee_ty) {
-                    return self.violation_match(lowered, branches, &result, scope, site, owner);
+                    return self.violation_match(
+                        lowered,
+                        &scrutinee_ty,
+                        branches,
+                        &result,
+                        scope,
+                        site,
+                        owner,
+                    );
                 }
                 let mut arms = Vec::new();
                 for branch in branches {
@@ -3126,7 +3231,8 @@ impl Lowerer<'_> {
                 }
                 | SemanticType::Map { key: _, value: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::ContractViolation => Err(format!("{operation:?} of a non-integer")),
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => Err(format!("{operation:?} of a non-integer")),
             }
         };
         let option_value = || -> Result<SemanticType, String> {
@@ -3163,7 +3269,8 @@ impl Lowerer<'_> {
                 }
                 | SemanticType::Map { key: _, value: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::ContractViolation => {
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => {
                     Err(format!("{operation:?} does not return an option"))
                 }
             }
@@ -3293,7 +3400,8 @@ fn product(ty: SemanticType) -> Result<(SemanticType, SemanticType), String> {
         }
         | SemanticType::Map { key: _, value: _ }
         | SemanticType::Set { element: _ }
-        | SemanticType::ContractViolation => Err("a projection of a non-product".to_owned()),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => Err("a projection of a non-product".to_owned()),
     }
 }
 
@@ -3496,7 +3604,8 @@ impl Source<'_> {
                 | SemanticType::Product { left: _, right: _ }
                 | SemanticType::Map { key: _, value: _ }
                 | SemanticType::Set { element: _ }
-                | SemanticType::ContractViolation => {
+                | SemanticType::ContractViolation
+                | SemanticType::ReasoningFailure => {
                     return Err("an application of a non-function".to_owned());
                 }
             },

@@ -5,7 +5,7 @@
 
 use std::collections::BTreeSet;
 use std::path::Path;
-use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::sync::OnceLock;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use lexlean::error::LexLeanError;
@@ -71,6 +71,40 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
         SnapshotSemanticDeclaration::Realization { input, output, .. } => ty(&input.r#type) + ty(output),
         SnapshotSemanticDeclaration::Evidence { claims, .. } => claims.len(),
         SnapshotSemanticDeclaration::Model { evidence, entry, .. } => evidence.len() + entry.len(),
+        SnapshotSemanticDeclaration::Logic { state, .. } => ty(&state.r#type),
+        SnapshotSemanticDeclaration::InferenceRule { binding, guard, conclusion, .. } => {
+            binding.as_ref().map_or(0, |b| ty(&b.r#type) + term(&b.candidates))
+                + term(guard)
+                + term(conclusion)
+        }
+        SnapshotSemanticDeclaration::Verifier { subject, candidate, .. } => {
+            ty(&subject.r#type) + ty(&candidate.r#type)
+        }
+        SnapshotSemanticDeclaration::Reasoner { observe, rules, strategy, answer, claims, .. } => {
+            observe.as_ref().map_or(0, term)
+                + rules.len()
+                + answer.as_ref().map_or(0, |a| ty(&a.r#type) + term(&a.value))
+                + claims
+                    .iter()
+                    .map(|claim| match claim {
+                        lexlean::SnapshotReasoningClaim::InitialInvariant { .. }
+                        | lexlean::SnapshotReasoningClaim::Terminates { .. }
+                        | lexlean::SnapshotReasoningClaim::ObservationInvariant { .. }
+                        | lexlean::SnapshotReasoningClaim::AnswerCorrect { .. } => 1,
+                    })
+                    .sum::<usize>()
+                + match strategy {
+                    lexlean::SnapshotReasoningStrategy::Forward { fuel } => fuel.as_ref().map_or(0, term),
+                    lexlean::SnapshotReasoningStrategy::Search { order, fuel, frontier, .. } => {
+                        usize::from(matches!(order, lexlean::SnapshotSearchOrder::DepthFirst))
+                            + fuel.as_ref().map_or(0, term)
+                            + frontier.as_ref().map_or(0, term)
+                    }
+                    lexlean::SnapshotReasoningStrategy::GenerateAndVerify { generator, budget } => {
+                        term(generator) + budget.as_ref().map_or(0, term)
+                    }
+                }
+        }
     }
 }
 
@@ -97,7 +131,7 @@ fn ty(value: &SnapshotType) -> usize {
         | SnapshotType::Int64 | SnapshotType::UInt8 | SnapshotType::UInt16
         | SnapshotType::UInt32 | SnapshotType::UInt64 | SnapshotType::String
         | SnapshotType::Bytes | SnapshotType::Ordering
-        | SnapshotType::ContractViolation => 1,
+        | SnapshotType::ContractViolation | SnapshotType::ReasoningFailure => 1,
         SnapshotType::Parameter { name } => name.len(),
         SnapshotType::Option { value } => ty(value),
         SnapshotType::Result { ok, error } => ty(ok) + ty(error),
@@ -399,6 +433,16 @@ impl P {
             .expect("relock");
     }
 
+    /// Whether the entrypoints check.
+    #[must_use]
+    pub fn check_err_or_ok(&self) -> bool {
+        self.engine()
+            .check(CheckRequest {
+                selection: Selection::Entrypoints,
+            })
+            .is_ok()
+    }
+
     /// Check the entrypoints, expecting success.
     pub fn check_ok(&self) -> lexlean::ProjectResultSet<lexlean::CheckedUnit> {
         self.engine()
@@ -537,13 +581,61 @@ pub fn expect_code(error: &LexLeanError, code: &str) {
     );
 }
 
-/// The serialization lock for tests that mutate process environment
-/// variables. Shared Lean-backed fixtures also initialize under it, so an
-/// environment mutation can never race toolchain resolution.
-pub fn env_lock() -> MutexGuard<'static, ()> {
-    static LOCK: Mutex<()> = Mutex::new(());
-    LOCK.lock()
+/// The environment lock. A test that mutates process environment variables
+/// ([`with_env`]) holds it exclusively, so nothing else runs while a variable
+/// is overridden; a test that only reads the environment, as toolchain
+/// resolution does when it verifies a project, holds it shared by
+/// [`env_shared`], so that verifications run side by side. Holding it
+/// exclusively for a whole verification, as every such test once did, made
+/// all of the case suite's Lean runs take turns on a machine whose cores
+/// were mostly idle.
+static ENV_LOCK: std::sync::RwLock<()> = std::sync::RwLock::new(());
+
+/// The exclusive environment lock; see [`ENV_LOCK`].
+pub fn env_lock() -> std::sync::RwLockWriteGuard<'static, ()> {
+    ENV_LOCK
+        .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// The shared environment lock for a test that reads the environment (and
+/// so needs no one to change it) but changes nothing; see [`ENV_LOCK`].
+pub fn env_shared() -> std::sync::RwLockReadGuard<'static, ()> {
+    ENV_LOCK
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// Run `job` on every item of `items`, on up to `width` threads at once.
+///
+/// For cases whose items are independent runs of the compiler or of Lean
+/// (each in a copy of its own project): they are run side by side, because a
+/// run waits on a child process most of its time, and one after another they
+/// were the longest cases of the suite. A panic in a job is raised here, after
+/// the others have finished.
+pub fn for_each_parallel<T: Sync>(items: &[T], width: usize, job: impl Fn(&T) + Sync) {
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .clamp(1, width.max(1));
+    std::thread::scope(|scope| {
+        let running: Vec<_> = (0..workers)
+            .map(|_| {
+                scope.spawn(|| loop {
+                    let index = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    let Some(item) = items.get(index) else {
+                        break;
+                    };
+                    job(item);
+                })
+            })
+            .collect();
+        for thread in running {
+            thread
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+        }
+    });
 }
 
 /// Run `body` with environment overrides, restoring the previous values.
@@ -593,7 +685,7 @@ pub struct VerifiedFixture {
 pub fn verified() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = P::example();
         let outcome = project
             .engine()
@@ -634,7 +726,7 @@ pub fn example_backed(id: &str) -> Option<&'static VerifiedFixture> {
 pub fn broken_proof() -> &'static (P, LexLeanError) {
     static FIXTURE: OnceLock<(P, LexLeanError)> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = P::example();
         project.edit("src/Main.lex.tex", "\\(n + 0 = n\\)", "\\(n + 0 = 0\\)");
         let error = project
@@ -721,7 +813,7 @@ pub fn em_project(policy: &str) -> P {
 pub fn axioms_insufficient() -> &'static (P, LexLeanError) {
     static FIXTURE: OnceLock<(P, LexLeanError)> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = em_project("\\allowaxioms{Classical.choice}");
         let error = project
             .engine()
@@ -1706,7 +1798,7 @@ pub fn corpus_project() -> P {
 pub fn verified_corpus() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = corpus_project();
         let outcome = project
             .engine()
@@ -1734,7 +1826,7 @@ pub fn verified_corpus() -> &'static VerifiedFixture {
 pub fn verified_compiler() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = P::compiler();
         let outcome = project
             .engine()
@@ -1902,7 +1994,7 @@ pub fn ext_project(module: &str) -> P {
 /// Verify a project through the complete pipeline, expecting success, and
 /// return the verified outcome. Real Lean runs.
 pub fn verify_ok(project: &P) -> lexlean::VerifiedProject {
-    let _guard = env_lock();
+    let _guard = env_shared();
     project
         .engine()
         .verify(VerifyRequest {
@@ -1962,7 +2054,7 @@ pub fn probe_lean(
     let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
     let probe = lexlean::backend::lean::probe_module(&hex32, &externals, &checked.closure)
         .expect("probe renders");
-    let _guard = env_lock();
+    let _guard = env_shared();
     let inner = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
     let toolchain =
         lexlean::verify::toolchain::preflight(&inner.config.limits).expect("the pinned toolchain");
@@ -2879,7 +2971,7 @@ pub fn lean_position_of(text: &str, needle: &str) -> (usize, usize) {
 pub fn verified_frames() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = frames_project();
         let outcome = project
             .engine()
@@ -2950,7 +3042,7 @@ pub fn polish_project() -> P {
 pub fn verified_polish() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = polish_project();
         let outcome = project
             .engine()
@@ -3296,7 +3388,7 @@ pub fn f1_project() -> P {
 pub fn verified_f1() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = env_lock();
+        let _guard = env_shared();
         let project = f1_project();
         let outcome = project
             .engine()

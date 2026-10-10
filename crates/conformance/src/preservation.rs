@@ -297,18 +297,129 @@ pub struct Checked {
 /// A pinned-toolchain command: the toolchain's `bin` leads `PATH`, so a
 /// tool that spawns `lean` (as `leanchecker` does) finds the pinned binary
 /// rather than an elan proxy, whatever `ELAN_HOME` a concurrent test holds.
+/// Modules are found in the workspace's own build and in the shipped
+/// environment compiled once for the process ([`shipped`]).
 fn pinned(program: &str, root: &Path) -> Command {
+    pinned_with(
+        program,
+        root,
+        &[root.join("build"), shipped().build.clone()],
+    )
+}
+
+fn pinned_with(program: &str, root: &Path, search: &[PathBuf]) -> Command {
     let bin = toolchain_bin();
     let path = std::env::join_paths(std::iter::once(bin.clone()).chain(std::env::split_paths(
         &std::env::var_os("PATH").unwrap_or_default(),
     )))
     .expect("a search path");
     let mut command = Command::new(bin.join(program));
+    command.current_dir(root).env("PATH", path).env(
+        "LEAN_PATH",
+        std::env::join_paths(search).expect("LEAN_PATH"),
+    );
     command
-        .current_dir(root)
-        .env("PATH", path)
-        .env("LEAN_PATH", root.join("build"));
-    command
+}
+
+/// The modules every workspace shares: the calculus and Rust machine modules
+/// and the preservation library, which no project's modules or certificates
+/// change.
+struct Shipped {
+    /// The directory the compiled modules are found in.
+    build: PathBuf,
+    /// Their names.
+    modules: std::collections::BTreeSet<String>,
+}
+
+/// The shipped environment, compiled with the pinned Lean once, not once per
+/// workspace.
+///
+/// Every workspace this harness checks begins with the same dozen modules,
+/// which take minutes to elaborate, and a run checks dozens of workspaces:
+/// compiling them for each was most of the time of the preservation cases
+/// that had nothing to do with them. The result is kept below the build
+/// directory under the hash of the modules' text, so that a changed library
+/// is compiled again and an unchanged one is not, and it is published by
+/// renaming a finished directory, so a process that finds it finds all of it.
+/// Each workspace still compiles and replays every module that depends on a
+/// project, and `leanchecker` replays what a certificate imports as well.
+fn shipped() -> &'static Shipped {
+    static SHIPPED: std::sync::OnceLock<Shipped> = std::sync::OnceLock::new();
+    SHIPPED.get_or_init(|| {
+        let staged = workspace(&[], &[]).expect("the shipped environment stages");
+        let mut digest = String::new();
+        for file in &staged.files {
+            digest.push_str(&format!("{}\n{}\n", file.module, file.text));
+        }
+        digest.push_str(lexlean::LEAN_TOOLCHAIN);
+        let key = lexlean::artifact::content_id::Sha256Digest::of(digest.as_bytes()).to_hex();
+        let base = std::env::current_exe()
+            .ok()
+            .and_then(|exe| {
+                exe.ancestors()
+                    .nth(2)
+                    .map(|debug| debug.join("lexlean-preserve-shipped"))
+            })
+            .unwrap_or_else(|| std::env::temp_dir().join("lexlean-preserve-shipped"));
+        let finished = base.join(&key);
+        let modules = staged
+            .files
+            .iter()
+            .map(|file| file.module.clone())
+            .collect();
+        if finished.join("ready").is_file() {
+            return Shipped {
+                build: finished.join("build"),
+                modules,
+            };
+        }
+        std::fs::create_dir_all(&base).expect("the shipped build's directory");
+        let building = base.join(format!("{key}.{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&building);
+        /// Removes the unfinished directory when a module is rejected, so a
+        /// failed run leaves nothing for the next to trip over.
+        struct Unfinished(PathBuf);
+        impl Drop for Unfinished {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        let _unfinished = Unfinished(building.clone());
+        let search = [building.join("build")];
+        for file in &staged.files {
+            let source = building.join("src").join(&file.path);
+            let olean = building
+                .join("build")
+                .join(file.path.trim_end_matches(".lean"))
+                .with_extension("olean");
+            for path in [&source, &olean] {
+                std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
+            }
+            std::fs::write(&source, &file.text).expect("write");
+            let output = pinned_with("lean", &building, &search)
+                .arg("-o")
+                .arg(&olean)
+                .arg(&source)
+                .output()
+                .expect("lean runs");
+            assert!(
+                output.status.success(),
+                "the shipped module `{}` was rejected:\n{}",
+                file.module,
+                joined(&output)
+            );
+        }
+        std::fs::write(building.join("ready"), &key).expect("write");
+        // Another process may have published the same directory meanwhile;
+        // its copy is as good as this one.
+        if std::fs::rename(&building, &finished).is_err() {
+            std::fs::remove_dir_all(&building).expect("remove the duplicate build");
+        }
+        Shipped {
+            build: finished.join("build"),
+            modules,
+        }
+    })
 }
 
 fn lean(root: &Path, arguments: &[String]) -> std::process::Output {
@@ -387,6 +498,7 @@ pub fn check(workspace: &Workspace, root: &Path) -> Checked {
     let (certificates, environment): (Vec<_>, Vec<_>) = workspace
         .files
         .iter()
+        .filter(|file| !shipped().modules.contains(&file.module))
         .partition(|file| workspace.certificates.contains(&file.module));
     for file in environment {
         if let Some(failure) = compile(file) {

@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The acceptance gate fits its job again (SPEC.md §9.2, VERIFICATION.md,
+  "Runtime of `just vv`"): the run of this branch was cancelled at the
+  360-minute limit. `bdd` is `cargo test -p repo-conformance --test bdd`, the
+  meta-gate, because `test` already runs every conformance test (the second
+  run was 79 minutes); the conformance cases' environment lock is shared by
+  verifications and exclusive only for the code that changes the process
+  environment; the preservation environment is compiled once per process;
+  the four corpora, the stress families, the rejection fixtures, and the
+  fixture suite run side by side; and `cargo xtask verify-examples` prints
+  the time of each example. The conformance suite takes 50 minutes of the
+  reference container where it took 68, and the gate is projected at under
+  four and a half hours on the runner, `uor-atlas` (three hours of it) unchanged.
 - Semantic preservation from the source to the realization calculus
   (SPEC.md §17.17, `SP-01`..`SP-06`): every production root is lowered to a
   target program and certified by a kernel-checked Lean theorem (certificate
@@ -705,6 +717,95 @@ versions, and the entries below say what each tag does and does not claim.
     definition), the model declaration variants, `CheckedApply`,
     `ContractViolation`, and `LessThan`. Downstream exhaustive matches must
     add them.
+- Semantic preservation certifies the roots of `examples/reasoning`
+  (`ReasoningFailure` is lowered as the pair of Booleans `ContractViolation` is,
+  and the reasoning declarations are read through their elaborations). Two
+  defects of the certificate generator that the older corpora did not reach are
+  fixed: a source local that linking generated (`__b`, `__acc`) is spelled
+  `_y...` in the certificates, because the certificates' own binders begin with
+  two underscores and captured it, and the `match` of a generic template carries
+  its result type, because Lean otherwise postpones it and a fold's step relation
+  fails on the pending metavariable. `LexLeanReasoning` is a reserved module
+  root, as `LexLeanModels` is.
+- Language-1.2 reasoning machines (§17.12, issue #31): `logic`,
+  `inference_rule`, `verifier`, and `reasoner` declarations and the
+  `reasoning_failure` type, in the closed `lexlean/semantic-module/2`
+  schema, with no oracle, prompt, or reasoner primitive. Each elaborates in
+  linking to ordinary inductives, structures, definitions, and theorems over
+  `match`, `if`, `list_fold`, `iterate_until`, and set primitives.
+  - Rules are guarded transitions of a logic's state with statement-exact
+    soundness and progress theorems; verifiers are executable checks with
+    exact soundness (and completeness) theorems; reasoners are `forward`
+    (first applicable rule in priority and candidate order, under fuel),
+    `search` (breadth- or depth-first under fuel and a frontier bound,
+    optionally deduplicating over an ordered state type), or
+    `generate_and_verify` (a generator's candidates checked in order within a
+    mandatory budget). Logics, rules, verifiers, and reasoners may be
+    generic. Claims `initial_invariant`, `terminates` (forward only, from a
+    ranking, progress on every rule, and an exact fuel bound),
+    `observation_invariant` (a predicate of the observation and a state kept
+    by every step), and `answer_correct` (the answer term correct on every
+    state, or on every state satisfying the invariant or the observation
+    invariant, which erases the check).
+  - Verdicts are the verifier-accepted (or proved-correct) answer or one of
+    `exhausted`, `unsolved`, `rejected`, `invalid_step`; a forward reasoner
+    answers only from a saturated state. Traces are `E.Step` data, evidence
+    only by replay. A six-counter ledger (iterations, guard evaluations,
+    firings, expansions, verifications, frontier peak) accounts every run.
+  - Generated theorems are fixed-template applications of the formal-only,
+    axiom-free `LexLeanReasoning` runtime and are restated by pinned Lean;
+    executable code reaching a rule's conclusion or an unverified answer is
+    refused (`LLT4012`).
+  - New diagnostics `LLT4010`, `LLT4011`, and `LLT4012`; new conformance IDs
+    `RS-01` to `RS-14`; new example `examples/reasoning` (five modules and a
+    title glossary) with the six-counter ledger of each run decided by the
+    kernel; 85 new negative fixtures; the `compiler` project's five oracle
+    modules (`ReasoningOracle`, `GradeOracle`, `BudgetOracle`,
+    `PlannerOracle`, `ScreeningOracle`) stating every reasoner the example's
+    production roots run, with calculus transcriptions of each strategy
+    (the forward engines `Triage`, `Review`, `Grade`, and the generic
+    `Spend`; the breadth-first search with deduplication `Plan`; the
+    depth-first search `Screen`; the generate-and-verify `Dose`) and their
+    rust-core and rust-std packages, in the new `ReasoningFixtures` module;
+    GNAF requests over forward-chaining plans, each plan tied to the
+    oracle's `Triage` on the request's domain.
+  - `answer_correct` names a theorem of one of three exact statements: the
+    answer correct on every state (`forall x s v, a = some v -> Spec x v`),
+    on every state satisfying the logic's invariant (`forall x s v, J s -> a
+    = some v -> Spec x v`, which needs the `initial_invariant` claim and
+    whose premise the generated run theorem `E.run_invariant` discharges),
+    or on every state a new `observation_invariant` claim holds of
+    (`forall x s v, Rl x s -> a = some v -> Spec x v`, where `Rl : (I, S) ->
+    prop` holds of the observed state and is kept by the logic's relation,
+    so `Spec` may depend on the observation: `Grade` answers a chart's level,
+    at most 3 and 3 only for a hypotensive patient). The check of a reasoner
+    that claims any form is erased in its own verdict, but only an answer
+    correct on every state may be read by executable code without its
+    verifier: under an invariant, `E.extract`, `E.accept`, and `E.conclude`
+    (forward) or `E.searchStep` (search) are `LLT4012`, because each reads
+    an answer from a state or search the caller supplies.
+  - A declaration named like, or below, any namespace the generated Lean
+    refers to (`LexLeanReasoning.Star`, but also `Nat.x` or `List.y`) is
+    refused in language 1.2 (`LLT4001`): the reservation is not limited to
+    reasoning modules.
+  - The elaboration charge of a reasoner covers the type arguments of every
+    use of its logic, rules, and verifier; it remains a fitted bound checked
+    after elaboration, not a proof.
+  - Generated bounds also state a forward run's firings and a search's
+    verifications and expansions at most the fuel (`E.firings_bounded`,
+    `E.verifications_bounded`, `E.expansions_bounded`), recorded in the
+    eligibility report; a run's guard evaluations and a search's firings are
+    accounted, not bounded.
+  - Every logic, rule, verifier, and reasoner is charged to `max_ir_nodes`
+    for the most its elaboration can be before it is elaborated
+    (`LLS8002`), and the rules of a reasoner are combined as balanced
+    trees, so an elaboration nests with the logarithm of its rule count.
+  - The language-1.2 `semantic_ir`, `lean_backend`, and `latex_backend`
+    versions are bumped; `linear_arithmetic` also rewrites with
+    `Bool.and_eq_true`, `Bool.or_eq_true`, `Bool.not_eq_true'`, `and_true`,
+    `true_and`, and `Option.some.injEq`. The eligibility report gains
+    per-root `reasoning` rows, and its schema now admits the model and
+    reasoning construct keys. The snapshot elaboration gains `theorems`.
 ## 0.3.0
 
 - Support exhaustive Boolean matches and keep imported list construction

@@ -836,6 +836,11 @@ pub fn names(referenced: &[String]) -> P {
     ];
     let mut every: std::collections::BTreeSet<&str> = SHIPPED.into_iter().collect();
     every.extend(referenced.iter().map(String::as_str));
+    // A namespace the backend writes bare (`LexLeanModels`, `LexLeanReasoning`,
+    // the built-in types) is refused as a binder at `check`, which the
+    // fixtures `binder-bool-literal-name` and `declaration-lean-name` hold;
+    // only the others are valid parameters.
+    every.retain(|name| !lexlean::ir::semantic::is_backend_bare_name(name));
     let namespaces: Vec<&str> = every.into_iter().collect();
     let declarations = vec![
         root(

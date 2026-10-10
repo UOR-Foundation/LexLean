@@ -146,7 +146,7 @@ pub(crate) fn run(id: &str) {
                 let manifest_before =
                     std::fs::read(target_path.join("lake-manifest.json").as_std_path())
                         .expect("read");
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let (exit, _, stderr) = support::cli_in(target_path, &["verify"]);
                 assert_eq!(exit, 0, "the fresh skeleton verifies: {stderr}");
                 drop(_guard);
@@ -996,9 +996,9 @@ pub(crate) fn run(id: &str) {
             assert_eq!(snapshot.language(), "1.1");
             if support::lean_backed("CL-20") {
                 // Toolchain resolution reads `ELAN_HOME`, which other cases
-                // override under `env_lock`; resolve under the same lock so
+                // override under the exclusive environment lock; resolve under the shared lock so
                 // a concurrent override cannot redirect this verification.
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let (exit, _, stderr) = support::cli_in(root, &["verify"]);
                 assert_eq!(exit, 0, "source-free generated module verifies: {stderr}");
             }

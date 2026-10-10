@@ -235,7 +235,7 @@ fn names(values: &[Json]) -> Vec<String> {
 fn verified_models() -> &'static VerifiedFixture {
     static FIXTURE: OnceLock<VerifiedFixture> = OnceLock::new();
     FIXTURE.get_or_init(|| {
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         let project = P::copy_example(EXAMPLE);
         let outcome = project
             .engine()
@@ -1275,7 +1275,7 @@ fn md_05() {
     let project = P::negative("model-false-evidence");
     project.check_ok();
     if support::lean_backed("MD-05") {
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         project.verify_fails_with("LLV7002");
     }
 }
@@ -1474,7 +1474,7 @@ fn md_06() {
             declaration["axioms"] = json!(["Classical.choice", "propext"]);
         });
         overstated.check_ok();
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         let error = overstated.verify_fails_with("LLV7005");
         assert!(
             error
@@ -2668,7 +2668,7 @@ fn md_09() {
         // The theorems are not vacuous: one wrong expectation is refused.
         let skewed = differential.project(1);
         skewed.check_ok();
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         skewed.verify_fails_with("LLV7002");
     }
 }
@@ -3148,6 +3148,6 @@ fn md_12() {
         &bias,
     );
     planted.check_ok();
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     planted.verify_fails_with("LLV7002");
 }

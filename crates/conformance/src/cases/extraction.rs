@@ -105,7 +105,7 @@ fn toolchain() -> lexlean::verify::toolchain::Toolchain {
 /// imported, so only the adapter, the probes, the registry check, and the
 /// root lookup run.
 fn run_lean(text: &str) -> (i32, String) {
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let toolchain = toolchain();
     let directory = tempfile::tempdir().expect("tempdir");
     let source = directory.path().join("Extract.lean");
@@ -164,7 +164,7 @@ end
 /// Build `PROBE_MODULE` in a Lake workspace with pinned Lean and run the
 /// extraction driver for `roots` over it; the parsed raw record.
 fn probe_extraction(roots: &[&str]) -> serde_json::Value {
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let toolchain = toolchain();
     let directory = tempfile::tempdir().expect("tempdir");
     let root = directory.path();
@@ -256,6 +256,7 @@ fn probe_host(
             erased: BTreeSet::new(),
             constructs: std::collections::BTreeMap::new(),
             targets: Vec::new(),
+            reasoning: Vec::new(),
         }],
     };
     let driver = lcnf::driver(&"0".repeat(32), &roots, &["Probe.Main".to_owned()]).expect("driver");

@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLT4011","help":[],"labels":[],"message":"phase link: reasoner `Clinic` declares no fuel; every reasoning strategy is bounded by an explicit natural-number fuel","notes":[],"primary":{"byte_end":13339,"byte_start":127,"column_end":13227,"column_start":15,"line_end":5,"line_start":5,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

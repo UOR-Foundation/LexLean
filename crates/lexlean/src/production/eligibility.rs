@@ -25,8 +25,8 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::{
-    registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport, Registry,
-    RootReport, TargetRow,
+    registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport,
+    ReasoningRow, Registry, RootReport, TargetRow,
 };
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticConstructor, SemanticDeclaration,
@@ -43,6 +43,7 @@ pub(crate) enum BuiltinOwner {
     Nat,
     List,
     Option,
+    ReasoningFailure,
     Result,
 }
 
@@ -50,19 +51,20 @@ impl BuiltinOwner {
     /// The number of type arguments a constructor of this type carries.
     pub(crate) const fn arity(self) -> usize {
         match self {
-            Self::Bool | Self::ContractViolation | Self::Nat => 0,
+            Self::Bool | Self::ContractViolation | Self::Nat | Self::ReasoningFailure => 0,
             Self::List | Self::Option => 1,
             Self::Result => 2,
         }
     }
 }
 
-pub(crate) const BUILTIN_OWNERS: [(&str, BuiltinOwner); 6] = [
+pub(crate) const BUILTIN_OWNERS: [(&str, BuiltinOwner); 7] = [
     ("Bool", BuiltinOwner::Bool),
     ("ContractViolation", BuiltinOwner::ContractViolation),
     ("Nat", BuiltinOwner::Nat),
     ("List", BuiltinOwner::List),
     ("Option", BuiltinOwner::Option),
+    ("ReasoningFailure", BuiltinOwner::ReasoningFailure),
     ("Result", BuiltinOwner::Result),
 ];
 
@@ -284,7 +286,7 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
 /// the primitive keys, which [`PRIMITIVES`] enumerates. The conformance suite
 /// checks this list, the primitive keys, and the declaration keys against
 /// the registry rows in both directions.
-pub const STRUCTURAL_KEYS: [&str; 83] = [
+pub const STRUCTURAL_KEYS: [&str; 88] = [
     "type.type",
     "type.parameter",
     "type.nat",
@@ -312,6 +314,7 @@ pub const STRUCTURAL_KEYS: [&str; 83] = [
     "type.map",
     "type.set",
     "type.contract_violation",
+    "type.reasoning_failure",
     "term.var",
     "term.nat",
     "term.integer",
@@ -368,6 +371,10 @@ pub const STRUCTURAL_KEYS: [&str; 83] = [
     "declaration.realization",
     "declaration.evidence",
     "declaration.model",
+    "declaration.logic",
+    "declaration.inference_rule",
+    "declaration.verifier",
+    "declaration.reasoner",
 ];
 
 /// The registry key of a type, before its arguments are visited.
@@ -407,6 +414,7 @@ pub const fn type_key(ty: &SemanticType) -> &'static str {
         SemanticType::Map { key: _, value: _ } => "type.map",
         SemanticType::Set { element: _ } => "type.set",
         SemanticType::ContractViolation => "type.contract_violation",
+        SemanticType::ReasoningFailure => "type.reasoning_failure",
     }
 }
 
@@ -603,6 +611,7 @@ fn representation(ty: &SemanticType) -> Option<Representation> {
         | SemanticType::Bytes
         | SemanticType::Ordering
         | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure
         | SemanticType::Result { ok: _, error: _ }
         | SemanticType::List { element: _ }
         | SemanticType::Named {
@@ -665,6 +674,7 @@ pub(crate) fn type_text(ty: &SemanticType, owner: &Owner<'_>) -> String {
         SemanticType::Map { key, value } => format!("Map {} {}", wrap(key), wrap(value)),
         SemanticType::Set { element } => format!("Set {}", wrap(element)),
         SemanticType::ContractViolation => "ContractViolation".to_owned(),
+        SemanticType::ReasoningFailure => "ReasoningFailure".to_owned(),
     }
 }
 
@@ -728,7 +738,8 @@ pub(crate) fn substitute(ty: &SemanticType, map: &BTreeMap<String, SemanticType>
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => ty.clone(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => ty.clone(),
     }
 }
 
@@ -790,7 +801,8 @@ pub(crate) fn anchor(ty: &SemanticType, from: &str) -> SemanticType {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => ty.clone(),
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => ty.clone(),
     }
 }
 
@@ -1099,6 +1111,52 @@ impl<'a> Walk<'a> {
                             evidence: _,
                             entry: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Logic {
+                            name: _,
+                            type_parameters: _,
+                            state: _,
+                            relation: _,
+                            invariant: _,
+                            ranking: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::InferenceRule {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            binding: _,
+                            guard: _,
+                            conclusion: _,
+                            soundness: _,
+                            progress: _,
+                            executable: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Verifier {
+                            name: _,
+                            type_parameters: _,
+                            subject: _,
+                            candidate: _,
+                            specification: _,
+                            check: _,
+                            sound: _,
+                            complete: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::Reasoner {
+                            name: _,
+                            type_parameters: _,
+                            logic: _,
+                            observation: _,
+                            observe: _,
+                            rules: _,
+                            strategy: _,
+                            answer: _,
+                            verifier: _,
+                            claims: _,
+                            executable: _,
+                            axioms: _,
                         },
                     )
                     | None => {
@@ -1140,7 +1198,8 @@ impl<'a> Walk<'a> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => None,
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => None,
         }
     }
 
@@ -1219,6 +1278,52 @@ impl<'a> Walk<'a> {
                     entry: _,
                     axioms: _,
                 } => "declaration.model",
+                SemanticDeclaration::Logic {
+                    name: _,
+                    type_parameters: _,
+                    state: _,
+                    relation: _,
+                    invariant: _,
+                    ranking: _,
+                    axioms: _,
+                } => "declaration.logic",
+                SemanticDeclaration::InferenceRule {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    binding: _,
+                    guard: _,
+                    conclusion: _,
+                    soundness: _,
+                    progress: _,
+                    executable: _,
+                    axioms: _,
+                } => "declaration.inference_rule",
+                SemanticDeclaration::Verifier {
+                    name: _,
+                    type_parameters: _,
+                    subject: _,
+                    candidate: _,
+                    specification: _,
+                    check: _,
+                    sound: _,
+                    complete: _,
+                    axioms: _,
+                } => "declaration.verifier",
+                SemanticDeclaration::Reasoner {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    observation: _,
+                    observe: _,
+                    rules: _,
+                    strategy: _,
+                    answer: _,
+                    verifier: _,
+                    claims: _,
+                    executable: _,
+                    axioms: _,
+                } => "declaration.reasoner",
                 SemanticDeclaration::Structure {
                     name: _,
                     type_parameters: _,
@@ -1340,7 +1445,8 @@ impl<'a> Walk<'a> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::ContractViolation => {}
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {}
         }
         self.types.entry(text).or_insert_with(|| key.to_owned());
     }
@@ -1493,6 +1599,52 @@ impl<'a> Walk<'a> {
                 realization: _,
                 evidence: _,
                 entry: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Logic {
+                name: _,
+                type_parameters: _,
+                state: _,
+                relation: _,
+                invariant: _,
+                ranking: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::InferenceRule {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                binding: _,
+                guard: _,
+                conclusion: _,
+                soundness: _,
+                progress: _,
+                executable: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Verifier {
+                name: _,
+                type_parameters: _,
+                subject: _,
+                candidate: _,
+                specification: _,
+                check: _,
+                sound: _,
+                complete: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Reasoner {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules: _,
+                strategy: _,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
                 axioms: _,
             } => {
                 self.violation(
@@ -1852,6 +2004,7 @@ impl<'a> Walk<'a> {
                 match builtin {
                     BuiltinOwner::Bool => SemanticType::Bool,
                     BuiltinOwner::ContractViolation => SemanticType::ContractViolation,
+                    BuiltinOwner::ReasoningFailure => SemanticType::ReasoningFailure,
                     BuiltinOwner::Nat => SemanticType::Nat,
                     BuiltinOwner::List => SemanticType::List {
                         element: argument(0),
@@ -2000,6 +2153,52 @@ impl<'a> Walk<'a> {
                 entry: _,
                 axioms: _,
             }) => "declaration.model",
+            Some(SemanticDeclaration::Logic {
+                name: _,
+                type_parameters: _,
+                state: _,
+                relation: _,
+                invariant: _,
+                ranking: _,
+                axioms: _,
+            }) => "declaration.logic",
+            Some(SemanticDeclaration::InferenceRule {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                binding: _,
+                guard: _,
+                conclusion: _,
+                soundness: _,
+                progress: _,
+                executable: _,
+                axioms: _,
+            }) => "declaration.inference_rule",
+            Some(SemanticDeclaration::Verifier {
+                name: _,
+                type_parameters: _,
+                subject: _,
+                candidate: _,
+                specification: _,
+                check: _,
+                sound: _,
+                complete: _,
+                axioms: _,
+            }) => "declaration.verifier",
+            Some(SemanticDeclaration::Reasoner {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules: _,
+                strategy: _,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
+                axioms: _,
+            }) => "declaration.reasoner",
             Some(SemanticDeclaration::Structure {
                 name: _,
                 type_parameters: _,
@@ -2177,6 +2376,52 @@ impl<'a> Walk<'a> {
                     entry: _,
                     axioms: _,
                 }
+                | SemanticDeclaration::Logic {
+                    name: _,
+                    type_parameters: _,
+                    state: _,
+                    relation: _,
+                    invariant: _,
+                    ranking: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::InferenceRule {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    binding: _,
+                    guard: _,
+                    conclusion: _,
+                    soundness: _,
+                    progress: _,
+                    executable: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Verifier {
+                    name: _,
+                    type_parameters: _,
+                    subject: _,
+                    candidate: _,
+                    specification: _,
+                    check: _,
+                    sound: _,
+                    complete: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::Reasoner {
+                    name: _,
+                    type_parameters: _,
+                    logic: _,
+                    observation: _,
+                    observe: _,
+                    rules: _,
+                    strategy: _,
+                    answer: _,
+                    verifier: _,
+                    claims: _,
+                    executable: _,
+                    axioms: _,
+                }
                 | SemanticDeclaration::Structure {
                     name: _,
                     type_parameters: _,
@@ -2339,6 +2584,52 @@ fn inductive_group(
                 evidence: _,
                 entry: _,
                 axioms: _,
+            }
+            | SemanticDeclaration::Logic {
+                name: _,
+                type_parameters: _,
+                state: _,
+                relation: _,
+                invariant: _,
+                ranking: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::InferenceRule {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                binding: _,
+                guard: _,
+                conclusion: _,
+                soundness: _,
+                progress: _,
+                executable: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Verifier {
+                name: _,
+                type_parameters: _,
+                subject: _,
+                candidate: _,
+                specification: _,
+                check: _,
+                sound: _,
+                complete: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Reasoner {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules: _,
+                strategy: _,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
+                axioms: _,
             } => {}
         }
     }
@@ -2391,7 +2682,8 @@ fn mentions(ty: &SemanticType, module: &str, group: &BTreeSet<String>) -> bool {
         | SemanticType::String
         | SemanticType::Bytes
         | SemanticType::Ordering
-        | SemanticType::ContractViolation => false,
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => false,
     }
 }
 
@@ -2630,11 +2922,12 @@ fn analyse_root(
                 .collect(),
         });
     }
-    let runtime = walk
+    let runtime: Vec<ClosureMember> = walk
         .member_order
         .iter()
         .filter_map(|instance| walk.members.get(instance).cloned())
         .collect();
+    let reasoning = reasoning_rows(&runtime, modules);
     Ok(RootReport {
         root,
         declared_effects: production.effects.clone(),
@@ -2643,7 +2936,132 @@ fn analyse_root(
         erased: walk.erased,
         constructs: walk.constructs,
         targets,
+        reasoning,
     })
+}
+
+/// The canonical semantic JSON of a bound term, as the report states it.
+fn canonical_term(term: &SemanticTerm) -> String {
+    let text = serde_json::to_string(term).expect("semantic terms serialize");
+    crate::artifact::canonical_json::Json::parse(text.as_bytes())
+        .expect("a serialized term is JSON")
+        .to_canonical_string()
+}
+
+/// §17.12, §17.13: the explicit resource account of every reasoner whose
+/// elaboration the runtime closure reaches. A reasoner's cost is its loop,
+/// bounded by its fuel (and, for a search, its frontier), and the
+/// generated theorems that bound its ledger are named, never asserted.
+fn reasoning_rows(
+    runtime: &[ClosureMember],
+    modules: &BTreeMap<String, LinkedModule<'_>>,
+) -> Vec<ReasoningRow> {
+    use crate::ir::semantic::{ReasoningStrategy, SearchOrder};
+    let reached: BTreeSet<&str> = runtime
+        .iter()
+        .map(|member| member.declaration.as_str())
+        .collect();
+    let mut rows = Vec::new();
+    for linked in modules.values() {
+        let qualify = |name: &str| format!("{}.{name}", linked.lean_module);
+        for (index, declaration) in linked.semantic.declarations.iter().enumerate() {
+            let SemanticDeclaration::Reasoner {
+                name,
+                type_parameters: _,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules,
+                strategy,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
+                axioms: _,
+            } = declaration
+            else {
+                continue;
+            };
+            let runs = linked
+                .semantic
+                .elaboration
+                .lowered(index)
+                .iter()
+                .any(|derived| reached.contains(qualify(derived.name()).as_str()));
+            if !runs {
+                continue;
+            }
+            let (kind, deduplicate, fuel, frontier, budget) = match strategy {
+                ReasoningStrategy::Forward { fuel } => {
+                    ("forward", false, fuel.as_ref(), None, None)
+                }
+                ReasoningStrategy::GenerateAndVerify {
+                    budget,
+                    generator: _,
+                } => ("generate_and_verify", false, None, None, budget.as_ref()),
+                ReasoningStrategy::Search {
+                    order,
+                    fuel,
+                    frontier,
+                    deduplicate,
+                } => (
+                    match order {
+                        SearchOrder::BreadthFirst => "breadth_first",
+                        SearchOrder::DepthFirst => "depth_first",
+                    },
+                    *deduplicate,
+                    fuel.as_ref(),
+                    frontier.as_ref(),
+                    None,
+                ),
+            };
+            let rule_names = rules
+                .iter()
+                .map(|rule| match &rule.member.module {
+                    Some(module) => modules.get(module).map_or_else(
+                        || format!("{module}.{}", rule.member.name),
+                        |other| format!("{}.{}", other.lean_module, rule.member.name),
+                    ),
+                    None => qualify(&rule.member.name),
+                })
+                .collect();
+            let bounds = linked
+                .semantic
+                .elaboration
+                .theorems(index)
+                .iter()
+                .filter(|theorem| {
+                    [
+                        "iterations_bounded",
+                        "firings_bounded",
+                        "expansions_bounded",
+                        "frontier_bounded",
+                        "verifications_bounded",
+                        "saturates",
+                    ]
+                    .iter()
+                    .any(|suffix| theorem.name == format!("{name}.{suffix}"))
+                })
+                .map(|theorem| qualify(&theorem.name))
+                .collect();
+            rows.push(ReasoningRow {
+                reasoner: qualify(name),
+                strategy: kind.to_owned(),
+                deduplicate,
+                fuel: fuel.map(canonical_term),
+                budget: budget.map(canonical_term),
+                frontier: frontier.map(canonical_term),
+                rules: rule_names,
+                ledger: crate::ir::semantic::reasoning::LEDGER
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                bounds,
+            });
+        }
+    }
+    rows.sort_by(|left, right| left.reasoner.cmp(&right.reasoner));
+    rows
 }
 
 /// The eligibility report of one module, or `None` when it declares no
@@ -2798,6 +3216,52 @@ pub fn analyse_module(
                 realization: _,
                 evidence: _,
                 entry: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Logic {
+                name: _,
+                type_parameters: _,
+                state: _,
+                relation: _,
+                invariant: _,
+                ranking: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::InferenceRule {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                binding: _,
+                guard: _,
+                conclusion: _,
+                soundness: _,
+                progress: _,
+                executable: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Verifier {
+                name: _,
+                type_parameters: _,
+                subject: _,
+                candidate: _,
+                specification: _,
+                check: _,
+                sound: _,
+                complete: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::Reasoner {
+                name: _,
+                type_parameters: _,
+                logic: _,
+                observation: _,
+                observe: _,
+                rules: _,
+                strategy: _,
+                answer: _,
+                verifier: _,
+                claims: _,
+                executable: _,
                 axioms: _,
             } => {}
         }

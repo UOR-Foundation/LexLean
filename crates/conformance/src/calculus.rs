@@ -26,6 +26,8 @@ use serde_json::{json, Value as Json};
 
 use crate::lx;
 
+pub mod reasoning;
+
 /// The library instance a fixture exercises.
 #[derive(Debug, Clone)]
 pub struct LibraryUse {
@@ -42,8 +44,9 @@ pub struct LibraryUse {
 pub struct Case {
     /// The fixture.
     pub fixture: Fixture,
-    /// The library instance it exercises.
-    pub library: Option<LibraryUse>,
+    /// The library instances it exercises, in function order after its own
+    /// functions: each instance's functions follow the previous one's.
+    pub libraries: Vec<LibraryUse>,
     /// For a library fixture, the LexLean term of type `Value` that
     /// LexLean's own primitive computes for the same input.
     pub oracle: Option<Json>,
@@ -310,7 +313,7 @@ fn case(name: &str, program: Program, entry: u64, arguments: Vec<Value>, fuel: u
             fuel,
             expected,
         },
-        library: None,
+        libraries: Vec::new(),
         oracle: None,
     }
 }
@@ -2785,11 +2788,11 @@ fn library_case(
             .unwrap_or_else(|reason| panic!("fixture {name}: {reason}")),
     );
     let mut out = case(name, program(Vec::new(), all), 0, arguments, 4000);
-    out.library = Some(LibraryUse {
+    out.libraries = vec![LibraryUse {
         template,
         types,
         at,
-    });
+    }];
     out.oracle = Some(oracle);
     out
 }
@@ -3463,6 +3466,7 @@ fn library_cases() -> Vec<Case> {
 pub fn cases() -> Vec<Case> {
     let mut out = core_cases();
     out.extend(library_cases());
+    out.extend(reasoning::cases());
     out.sort_by(|left, right| left.fixture.name.cmp(&right.fixture.name));
     out
 }
@@ -3470,10 +3474,24 @@ pub fn cases() -> Vec<Case> {
 /// The axioms Lean reports for every declaration that reaches the evaluator.
 const RUN_AXIOMS: [&str; 3] = ["Classical.choice", "Quot.sound", "propext"];
 
-/// The `TargetFixtures` module.
+/// The module stating a fixture: the reasoning fixtures state the values of
+/// the oracle's reasoners, in a module of their own, so neither module
+/// outgrows the project's file limit.
 #[must_use]
-pub fn fixtures_module(cases: &[Case]) -> String {
-    let mut declarations = Vec::new();
+pub fn fixture_module(fixture: &str) -> &'static str {
+    if fixture.starts_with("reasoning-") {
+        reasoning::FIXTURES
+    } else {
+        TARGET_FIXTURES
+    }
+}
+
+/// The module stating every fixture but the reasoning ones.
+pub const TARGET_FIXTURES: &str = "TargetFixtures";
+
+/// The declarations stating `cases`: each program, its denotation, its
+/// outcome, and, for a case with an oracle, that the two agree.
+fn fixture_declarations(cases: &[&Case], mut declarations: Vec<Json>) -> Vec<Json> {
     for case in cases {
         let id = identifier(&case.fixture.name);
         let mut items = term::fixture_declarations(&case.fixture, &id);
@@ -3511,10 +3529,39 @@ pub fn fixtures_module(cases: &[Case]) -> String {
             }));
         }
     }
+    declarations
+}
+
+/// The `TargetFixtures` module: every fixture but the reasoning ones.
+#[must_use]
+pub fn fixtures_module(cases: &[Case]) -> String {
+    let cases: Vec<&Case> = cases
+        .iter()
+        .filter(|case| fixture_module(&case.fixture.name) == TARGET_FIXTURES)
+        .collect();
     lx::module_tex(
-        "TargetFixtures",
+        TARGET_FIXTURES,
         &[term::SYNTAX, term::SEMANTICS, "TargetOracle"],
-        declarations,
+        fixture_declarations(&cases, Vec::new()),
+    )
+}
+
+/// The `ReasoningFixtures` module: the reasoning fixtures, each stating
+/// that its transcription computes what the oracle's reasoner does.
+#[must_use]
+pub fn reasoning_fixtures_module(cases: &[Case]) -> String {
+    let cases: Vec<&Case> = cases
+        .iter()
+        .filter(|case| fixture_module(&case.fixture.name) == reasoning::FIXTURES)
+        .collect();
+    // The encoders of the reasoning oracle's values come first, so every
+    // agreement theorem below can state them.
+    let mut imports = vec![term::SYNTAX, term::SEMANTICS];
+    imports.extend(reasoning::ORACLE_MODULES);
+    lx::module_tex(
+        reasoning::FIXTURES,
+        &imports,
+        fixture_declarations(&cases, reasoning::encoders()),
     )
 }
 
@@ -3533,6 +3580,10 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     out.insert(
         "compiler/src/TargetFixtures.lex.tex".to_owned(),
         fixtures_module(&cases).into_bytes(),
+    );
+    out.insert(
+        format!("compiler/src/{}.lex.tex", reasoning::FIXTURES),
+        reasoning_fixtures_module(&cases).into_bytes(),
     );
     // Each fixture's package in each Rust profile that admits it, and the
     // negative package manifests, so a change to a rendering is a reviewed

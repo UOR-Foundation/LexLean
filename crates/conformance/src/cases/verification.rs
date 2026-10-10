@@ -592,7 +592,7 @@ pub(crate) fn run(id: &str) {
                 // End to end: a project whose declaration name is long
                 // enough to wrap its audit record verifies under pinned
                 // Lean, through every stage.
-                let _guard = support::env_lock();
+                let _guard = support::env_shared();
                 let long = support::long_named_em_project();
                 let outcome = long
                     .engine()
@@ -628,7 +628,7 @@ pub(crate) fn run(id: &str) {
             );
 
             // A sufficient allow-list verifies and records the observed set.
-            let _guard = support::env_lock();
+            let _guard = support::env_shared();
             let allowed = support::em_project("\\allowaxioms{Classical.choice;Quot.sound;propext}");
             let outcome = allowed
                 .engine()
@@ -1066,7 +1066,7 @@ pub(crate) fn run(id: &str) {
         // Lake manifest dependency must be locally available; verification
         // never fetches.
         "VR-17" => {
-            let _guard = support::env_lock();
+            let _guard = support::env_shared();
             // A drifted workspace file without relocking is a stale lock.
             let drifted = P::example();
             drifted.edit(

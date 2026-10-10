@@ -539,7 +539,7 @@ public theorem triage_actionable (presentation : Models.Triage.Presentation) : (
 public theorem pipeline_entry (presentation : Models.Triage.Presentation) : (Models.Triage.Symptomatic (presentation) -> Models.Triage.Symptomatic (presentation)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [Models.Triage.Symptomatic, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [Models.Triage.Symptomatic, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem pipeline_responds (presentation : Models.Triage.Presentation) : (Models.Triage.Symptomatic (presentation) -> Responds (presentation) (TriagePipeline (presentation))) := by
@@ -714,7 +714,7 @@ public theorem RouteEvidence.route_bounded : LexLeanModels.SatisfiesTotal ((Mode
 public theorem short_stream_check_sound (costs : List (Nat)) : ((shortStreamCheck (costs) = true) -> ShortStream (costs)) := by
   intros
   subst_vars
-  try set_option linter.unusedSimpArgs false in simp only [ShortStream, shortStreamCheck, ← Bool.not_eq_true, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
+  try set_option linter.unusedSimpArgs false in simp only [ShortStream, shortStreamCheck, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *
   all_goals omega
 
 public theorem StreamContract.precondition_sound : LexLeanModels.Sound1 ((Models.Pipeline.shortStreamCheck)) ((Models.Pipeline.ShortStream)) := Models.Pipeline.short_stream_check_sound

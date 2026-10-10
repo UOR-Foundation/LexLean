@@ -11,10 +11,11 @@ use crate::preservation::{self, Mutation, Report};
 use crate::support::{self, repo_root, P};
 
 /// The projects whose every production root is certified: the example that
-/// declares production roots, the coverage example, and the models example,
-/// whose roots together exercise every runtime row of the production
-/// registry.
-fn certified_projects() -> [(&'static str, P); 3] {
+/// declares production roots, the coverage example, the models example, and
+/// the reasoning example (whose roots run reasoners, elaborated to ordinary
+/// definitions), whose roots together exercise every runtime row of the
+/// production registry.
+fn certified_projects() -> [(&'static str, P); 4] {
     [
         ("production", P::copy_example("production")),
         (
@@ -22,6 +23,7 @@ fn certified_projects() -> [(&'static str, P); 3] {
             P::copy_example("production-coverage"),
         ),
         ("models", P::copy_example("models")),
+        ("reasoning", P::copy_example("reasoning")),
     ]
 }
 
@@ -36,7 +38,7 @@ fn certified_projects() -> [(&'static str, P); 3] {
 /// model roots no input found overflows their arithmetic over the decoded
 /// weights. The list is checked both ways: a root on it that overflows, or a
 /// root off it that does not, fails SP-03.
-const UNREACHED_OVERFLOW: [&str; 19] = [
+const UNREACHED_OVERFLOW: [&str; 23] = [
     "Production.Main.halvings",
     "Coverage.Colls.mapOps",
     "Coverage.Colls.setOps",
@@ -56,6 +58,10 @@ const UNREACHED_OVERFLOW: [&str; 19] = [
     "Models.Main.ledgerPost",
     "Models.Main.ledgerFull",
     "Models.Main.guessChecked",
+    "Reasoning.Main.triageLevel",
+    "Reasoning.Main.gatewayLevel",
+    "Reasoning.Main.triageSteps",
+    "Reasoning.Main.gradeLevel",
 ];
 
 /// What the product reports of a rejected certificate: Lean's verdict on
@@ -223,7 +229,7 @@ fn numbers_are_read_as_lean_reads_them() {
             "def x{index} := {case}axiom bad{index} : False\n#check @bad{index}\n"
         ));
     }
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let directory = tempfile::tempdir().expect("tempdir");
     let path = directory.path().join("Numbers.lean");
     std::fs::write(&path, &source).expect("write");
@@ -289,16 +295,23 @@ fn numbers_are_read_as_lean_reads_them() {
 /// default limits are not refused. Returns how far certificate B went
 /// beyond A and E at most.
 fn stress_estimates() -> u64 {
-    let mut quadratic = 0_u64;
+    // The families are independent of one another and take minutes of one
+    // core each, so they are certified on every core: one at a time they were
+    // the longest part of the case, with three cores idle.
+    type Job = Box<dyn FnOnce() -> u64 + Send>;
+    let mut jobs: Vec<Job> = Vec::new();
     // Valid programs whose certificates fit the default limits are not
     // refused: `certificates` panics on a refusal.
-    for (family, project) in crate::stress::fitting() {
-        let certified = preservation::certificates(&project);
-        assert!(!certified.is_empty(), "{family} certifies");
-        for entry in &certified {
-            assert_bounds(&family, entry);
+    jobs.push(Box::new(|| {
+        for (family, project) in crate::stress::fitting() {
+            let certified = preservation::certificates(&project);
+            assert!(!certified.is_empty(), "{family} certifies");
+            for entry in &certified {
+                assert_bounds(&family, entry);
+            }
         }
-    }
+        0
+    }));
     // Programs that make different certificates large at once are not
     // refused when they fit either. For each mixed shape, the largest scaling
     // whose certificates are all under the default `max_file_bytes` is
@@ -306,43 +319,46 @@ fn stress_estimates() -> u64 {
     // ones, so the program sits at the edge of what fits.
     let limit = support::limits(&crate::stress::wide_match_default(2)).max_file_bytes;
     for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
-        let largest = |numerator: usize| -> u64 {
-            preservation::certificates(&crate::stress::mixed_lifted(shape.scaled(numerator)))
-                .iter()
-                .map(|entry| {
-                    std::iter::once(&entry.certificate)
-                        .chain(entry.renderings.iter().map(|(_, b)| b))
-                        .chain(entry.composed.iter().map(|(_, e)| e))
-                        .map(|certificate| certificate.text.len() as u64)
-                        .max()
-                        .unwrap_or(0)
-                })
-                .max()
-                .unwrap_or(0)
-        };
-        let (mut low, mut high) = (1_usize, 256_usize);
-        if largest(high) <= limit {
-            low = high;
-        } else {
-            while high - low > 1 {
-                let middle = (low + high) / 2;
-                if largest(middle) <= limit {
-                    low = middle;
-                } else {
-                    high = middle;
+        jobs.push(Box::new(move || {
+            let largest = |numerator: usize| -> u64 {
+                preservation::certificates(&crate::stress::mixed_lifted(shape.scaled(numerator)))
+                    .iter()
+                    .map(|entry| {
+                        std::iter::once(&entry.certificate)
+                            .chain(entry.renderings.iter().map(|(_, b)| b))
+                            .chain(entry.composed.iter().map(|(_, e)| e))
+                            .map(|certificate| certificate.text.len() as u64)
+                            .max()
+                            .unwrap_or(0)
+                    })
+                    .max()
+                    .unwrap_or(0)
+            };
+            let (mut low, mut high) = (1_usize, 256_usize);
+            if largest(high) <= limit {
+                low = high;
+            } else {
+                while high - low > 1 {
+                    let middle = (low + high) / 2;
+                    if largest(middle) <= limit {
+                        low = middle;
+                    } else {
+                        high = middle;
+                    }
                 }
             }
-        }
-        let size = largest(low);
-        assert!(
-            size <= limit && size * 10 >= limit * 6,
-            "mixed shape {index} ({shape:?}): the largest scaling that fits has certificates of {size} bytes, which is not near the limit {limit}"
-        );
-        let certified =
-            preservation::certificates(&crate::stress::mixed_default(shape.scaled(low)));
-        for entry in &certified {
-            assert_bounds(&format!("mixed shape {index} at {low}/256"), entry);
-        }
+            let size = largest(low);
+            assert!(
+                size <= limit && size * 10 >= limit * 6,
+                "mixed shape {index} ({shape:?}): the largest scaling that fits has certificates of {size} bytes, which is not near the limit {limit}"
+            );
+            let certified =
+                preservation::certificates(&crate::stress::mixed_default(shape.scaled(low)));
+            for entry in &certified {
+                assert_bounds(&format!("mixed shape {index} at {low}/256"), entry);
+            }
+            0
+        }));
     }
     // Random shapes, none of them used to choose the costs of the bound,
     // however they combine.
@@ -350,63 +366,104 @@ fn stress_estimates() -> u64 {
         .into_iter()
         .enumerate()
     {
-        for entry in &preservation::certificates(&crate::stress::mixed_lifted(shape)) {
-            assert_bounds(&format!("random shape {index} {shape:?}"), entry);
-        }
+        jobs.push(Box::new(move || {
+            for entry in &preservation::certificates(&crate::stress::mixed_lifted(shape)) {
+                assert_bounds(&format!("random shape {index} {shape:?}"), entry);
+            }
+            0
+        }));
     }
     for (family, project) in crate::stress::families() {
-        let certified = preservation::certificates(&project);
-        // However large a program makes its certificates, generation stops
-        // at the limit it is given: A and E regenerated under half their
-        // size are refused with `LLS8002`.
-        for (root, a, e) in preservation::halved(&project, &certified) {
-            assert_eq!(
-                a, "LLS8002",
-                "{family}: {root}: certificate A under half its size"
-            );
-            assert!(
-                e.iter().all(|code| code == "LLS8002"),
-                "{family}: {root}: certificate E under half its size: {e:?}"
-            );
-        }
-        for entry in certified {
-            assert_floor(&family, &entry);
-            assert_bounds(&family, &entry);
-            let a = entry.certificate.text.len() as u64;
-            let e = entry
-                .composed
-                .iter()
-                .map(|(_, certificate)| certificate.text.len() as u64)
-                .max()
-                .unwrap_or(0);
-            for (target, certificate) in &entry.renderings {
-                let size = certificate.text.len() as u64;
-                quadratic = quadratic.max(size.saturating_sub(a.max(e)));
-                // Certificate B stops at the limit it is given, at
-                // the size it would have had or below it.
-                if family.starts_with("record copy 100") {
-                    let krate = lexlean::calculus::rust::lower(
-                        &entry.program,
-                        lexlean::calculus::rust::Profile::named(target).expect("a Rust profile"),
-                    )
-                    .expect("a rendering");
-                    let refused = lexlean::production::rust_cert::certificate_b(
-                        &entry.program,
-                        &krate,
-                        &certificate.module,
-                        size / 2,
-                    )
-                    .expect_err("a certificate beyond its limit is refused");
-                    assert!(
-                        refused.starts_with(lexlean::production::lower::LIMIT)
-                            && refused.contains("the derivation of a function is at least"),
-                        "{family}: certificate B was refused when finished, not while derived: {refused}"
-                    );
+        jobs.push(Box::new(move || {
+            let mut quadratic = 0_u64;
+            let certified = preservation::certificates(&project);
+            // However large a program makes its certificates, generation stops
+            // at the limit it is given: A and E regenerated under half their
+            // size are refused with `LLS8002`.
+            for (root, a, e) in preservation::halved(&project, &certified) {
+                assert_eq!(
+                    a, "LLS8002",
+                    "{family}: {root}: certificate A under half its size"
+                );
+                assert!(
+                    e.iter().all(|code| code == "LLS8002"),
+                    "{family}: {root}: certificate E under half its size: {e:?}"
+                );
+            }
+            for entry in certified {
+                assert_floor(&family, &entry);
+                assert_bounds(&family, &entry);
+                let a = entry.certificate.text.len() as u64;
+                let e = entry
+                    .composed
+                    .iter()
+                    .map(|(_, certificate)| certificate.text.len() as u64)
+                    .max()
+                    .unwrap_or(0);
+                for (target, certificate) in &entry.renderings {
+                    let size = certificate.text.len() as u64;
+                    quadratic = quadratic.max(size.saturating_sub(a.max(e)));
+                    // Certificate B stops at the limit it is given, at
+                    // the size it would have had or below it.
+                    if family.starts_with("record copy 100") {
+                        let krate = lexlean::calculus::rust::lower(
+                            &entry.program,
+                            lexlean::calculus::rust::Profile::named(target)
+                                .expect("a Rust profile"),
+                        )
+                        .expect("a rendering");
+                        let refused = lexlean::production::rust_cert::certificate_b(
+                            &entry.program,
+                            &krate,
+                            &certificate.module,
+                            size / 2,
+                        )
+                        .expect_err("a certificate beyond its limit is refused");
+                        assert!(
+                            refused.starts_with(lexlean::production::lower::LIMIT)
+                                && refused.contains("the derivation of a function is at least"),
+                            "{family}: certificate B was refused when finished, not while derived: {refused}"
+                        );
+                    }
                 }
             }
-        }
+            quadratic
+        }));
     }
-    quadratic
+    // Certifying a family's deepest program recurses deeply, so each worker
+    // has the stack the case's single thread had.
+    let queue = std::sync::Mutex::new(jobs.into_iter().collect::<std::collections::VecDeque<_>>());
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .clamp(1, 4);
+    std::thread::scope(|scope| {
+        let running: Vec<_> = (0..workers)
+            .map(|_| {
+                std::thread::Builder::new()
+                    .stack_size(512 << 20)
+                    .spawn_scoped(scope, || {
+                        let mut quadratic = 0_u64;
+                        loop {
+                            let job = queue.lock().expect("the queue").pop_front();
+                            let Some(job) = job else {
+                                break quadratic;
+                            };
+                            quadratic = quadratic.max(job());
+                        }
+                    })
+                    .expect("a thread")
+            })
+            .collect();
+        running
+            .into_iter()
+            .map(|thread| {
+                thread
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+            })
+            .max()
+            .unwrap_or(0)
+    })
 }
 
 /// The floor the lowering puts under certificate B from the entries of its
@@ -563,7 +620,15 @@ fn assert_no_bare_globals(what: &str, text: &str, user: &BTreeSet<String>, prefi
         let option = line_words
             .get(&lexeme.line)
             .is_some_and(|word| word == "set_option");
-        if first.starts_with("__") || on_module_line || after_dot || option {
+        // `_y…` is the spelling of a local that linking generated (the
+        // `__acc` of a model or a reasoner), bound by the certificate; no
+        // source name begins with an underscore, so no parameter takes it.
+        if first.starts_with("__")
+            || first.starts_with("_y")
+            || on_module_line
+            || after_dot
+            || option
+        {
             continue;
         }
         // A name of the source that begins a longer name is a local with a
@@ -902,14 +967,30 @@ fn assert_statement(
     );
 }
 
-/// Certifying both projects takes minutes; the cases share one run.
+/// Certifying the projects takes minutes; the cases share one run, and the
+/// projects are certified side by side: each waits most of its time on one
+/// Lean process at a time and holds about two gigabytes, so four of them keep
+/// the cores of the runner busy where one at a time left half of them idle
+/// while three test threads waited here.
 fn reports() -> &'static Vec<(&'static str, Report)> {
     static REPORTS: OnceLock<Vec<(&'static str, Report)>> = OnceLock::new();
     REPORTS.get_or_init(|| {
-        certified_projects()
-            .into_iter()
-            .map(|(name, project)| (name, preservation::certify(&project, name)))
-            .collect()
+        std::thread::scope(|scope| {
+            let running: Vec<_> = certified_projects()
+                .into_iter()
+                .map(|(name, project)| {
+                    scope.spawn(move || (name, preservation::certify(&project, name)))
+                })
+                .collect();
+            running
+                .into_iter()
+                .map(|thread| {
+                    thread
+                        .join()
+                        .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+                })
+                .collect()
+        })
     })
 }
 
@@ -1060,6 +1141,22 @@ pub fn run(id: &str) {
         }
         // §17.17: certificate A.
         "SP-02" => {
+            // The long parts of this case do not depend on one another, so
+            // they start together and are joined where their results are
+            // read: the stress families (Rust only), the verification of a
+            // wide match through the whole pipeline, and the certification
+            // of the corpora, which the other cases share.
+            let stress = std::thread::spawn(stress_estimates);
+            let wide = support::lean_host_available().then(|| {
+                std::thread::spawn(|| {
+                    support::verify_ok(&crate::stress::wide_match_default(180));
+                })
+            });
+            let certified = support::lean_host_available().then(|| {
+                std::thread::spawn(|| {
+                    reports();
+                })
+            });
             check_and_build_agree_on_the_report_budget();
             for (name, project) in certified_projects() {
                 let certified = preservation::certificates(&project);
@@ -1091,16 +1188,6 @@ pub fn run(id: &str) {
             // is generated under, which the family of record copies reaches.
             // Certifying a family's deepest program recurses deeply, as the
             // differential's interpreter does.
-            let quadratic = std::thread::Builder::new()
-                .stack_size(512 << 20)
-                .spawn(stress_estimates)
-                .expect("a thread")
-                .join()
-                .expect("the stress families certify");
-            assert!(
-                quadratic > 100_000,
-                "the record-copy family has a certificate B far beyond A and E, which is what B's own limit is for"
-            );
             // Two negative fixtures reach the limits of certificate B before
             // the toolchain. A record of 800 fields copied field by field
             // has 640 000 record entries in its field reads, which the
@@ -1135,10 +1222,10 @@ pub fn run(id: &str) {
                 "certificate-generation-limit",
                 "certificates-total-limit",
             ] {
-                let case =
-                    crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
-                        .expect("the fixture loads");
-                let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+                let observed = crate::fixtures::observe_shared(
+                    &repo_root().join("tests/negative").join(fixture),
+                )
+                .expect("the fixture runs");
                 assert_eq!(observed.codes, ["LLS8002"], "{fixture}");
             }
             // A root whose lowered program, or the certificates it implies,
@@ -1147,10 +1234,10 @@ pub fn run(id: &str) {
             // 16 deep has a type of 2^16 nodes (its certificates are
             // at least twice the limit), and `lexlean verify`
             // refuses it with `LLS8002` without starting Lean.
-            let case =
-                crate::fixtures::load_case(&repo_root().join("tests/negative/lowering-size-limit"))
-                    .expect("the fixture loads");
-            let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+            let observed = crate::fixtures::observe_shared(
+                &repo_root().join("tests/negative/lowering-size-limit"),
+            )
+            .expect("the fixture runs");
             assert_eq!(observed.codes, ["LLS8002"]);
             // The pinned Lean's heartbeat budgets are lifted by the
             // certificates A and B of a program whose widest match has more
@@ -1187,6 +1274,13 @@ pub fn run(id: &str) {
                 error.to_string().contains("recursion limit exceeded"),
                 "{error}"
             );
+            let quadratic = stress
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            assert!(
+                quadratic > 100_000,
+                "the record-copy family has a certificate B far beyond A and E, which is what B's own limit is for"
+            );
             if !support::lean_backed("SP-02") {
                 return;
             }
@@ -1196,7 +1290,11 @@ pub fn run(id: &str) {
             // beyond the pinned Lean's default `synthInstance.maxHeartbeats`
             // from 160 arms and `maxHeartbeats` from 200, and the certificates
             // of a match above 100 arms lift both.
-            support::verify_ok(&crate::stress::wide_match_default(180));
+            for thread in [wide, certified].into_iter().flatten() {
+                thread
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            }
             for (name, report) in reports() {
                 assert!(!report.certified.is_empty(), "{name}: certified roots");
             }
@@ -1221,6 +1319,7 @@ pub fn run(id: &str) {
         // §17.17: the differential evaluator.
         "SP-03" => {
             let (mut all, mut declared, mut reached) = (0_usize, 0_usize, 0_usize);
+            let mut offenders: Vec<String> = Vec::new();
             for (name, project) in certified_projects() {
                 let cases = crate::differential::cases(&project);
                 assert!(
@@ -1260,18 +1359,20 @@ pub fn run(id: &str) {
                     });
                     reached += usize::from(overflows);
                     let exempt = UNREACHED_OVERFLOW.contains(&root.report.root.as_str());
-                    assert!(
-                        overflows != exempt,
-                        "{name}: `{}` {} (exempt: {exempt})",
-                        root.report.root,
-                        if overflows {
-                            "overflows on a sampled input but is listed as unreached"
-                        } else {
-                            "has no input on which it overflows"
-                        }
-                    );
+                    if overflows == exempt {
+                        offenders.push(format!(
+                            "{name}: `{}` {} (exempt: {exempt})",
+                            root.report.root,
+                            if overflows {
+                                "overflows on a sampled input but is listed as unreached"
+                            } else {
+                                "has no input on which it overflows"
+                            }
+                        ));
+                    }
                 }
             }
+            assert!(offenders.is_empty(), "{}", offenders.join("\n"));
             // The specification states which certified roots rest on the
             // kernel proof alone for the overflow arm, and how many do.
             let spec = std::fs::read_to_string(repo_root().join("SPEC.md").as_std_path())
@@ -1291,7 +1392,7 @@ pub fn run(id: &str) {
             let flat = spec.split_whitespace().collect::<Vec<_>>().join(" ");
             assert!(
                 flat.contains(&format!(
-                    "Of the {all} certified roots of the three examples, {declared} declare an overflow, {reached} of them reach it"
+                    "Of the {all} certified roots of the four examples, {declared} declare an overflow, {reached} of them reach it"
                 )),
                 "SPEC.md states that of {all} certified roots {declared} declare an overflow and {reached} reach it"
             );
@@ -1492,112 +1593,120 @@ pub fn run(id: &str) {
             if !support::lean_backed("SP-05") {
                 return;
             }
-            let project = P::copy_example("production");
-            let verified = support::verify_ok(&project);
-            let root = verified.root.as_std_path();
-            let record_bytes =
-                std::fs::read(root.join("preserve/preservation.json")).expect("preservation.json");
-            let record: serde_json::Value =
-                serde_json::from_slice(&record_bytes).expect("preservation.json is JSON");
-            support::assert_schema("preservation", "preservation.json", &record);
-            let rows = record["roots"].as_array().expect("roots");
-            let checked = support::checked_project(&project);
-            assert_eq!(
-                rows.len(),
-                roots(&checked).expect("the eligibility reports").len(),
-                "one certificate per production root"
-            );
-            for row in rows {
-                let module = row["module"].as_str().expect("a module");
-                let text = std::fs::read(
-                    root.join("preserve")
-                        .join(lexlean::production::preserve::module_path(module)),
-                )
-                .expect("the published certificate");
+            let verified_example = || {
+                let project = P::copy_example("production");
+                let verified = support::verify_ok(&project);
+                let root = verified.root.as_std_path();
+                let record_bytes = std::fs::read(root.join("preserve/preservation.json"))
+                    .expect("preservation.json");
+                let record: serde_json::Value =
+                    serde_json::from_slice(&record_bytes).expect("preservation.json is JSON");
+                support::assert_schema("preservation", "preservation.json", &record);
+                let rows = record["roots"].as_array().expect("roots");
+                let checked = support::checked_project(&project);
                 assert_eq!(
-                    row["sha256"].as_str(),
+                    rows.len(),
+                    roots(&checked).expect("the eligibility reports").len(),
+                    "one certificate per production root"
+                );
+                for row in rows {
+                    let module = row["module"].as_str().expect("a module");
+                    let text = std::fs::read(
+                        root.join("preserve")
+                            .join(lexlean::production::preserve::module_path(module)),
+                    )
+                    .expect("the published certificate");
+                    assert_eq!(
+                        row["sha256"].as_str(),
+                        Some(
+                            lexlean::artifact::content_id::Sha256Digest::of(&text)
+                                .to_hex()
+                                .as_str()
+                        ),
+                        "{module}: the record binds the published certificate"
+                    );
+                    // The program the certificates are about and each target's
+                    // crate are published and bound too.
+                    let digest = |path: &std::path::Path| {
+                        lexlean::artifact::content_id::Sha256Digest::of(
+                            &std::fs::read(path).expect("a published file"),
+                        )
+                        .to_hex()
+                    };
+                    let index = rows
+                        .iter()
+                        .position(|candidate| candidate == row)
+                        .expect("the row");
+                    assert_eq!(
+                        row["program"]["sha256"].as_str(),
+                        Some(
+                            digest(&root.join(format!("preserve/program/R{index}.json"))).as_str()
+                        ),
+                        "{module}: the record binds the published program"
+                    );
+                    for rendering in row["renderings"].as_array().expect("renderings") {
+                        let target = rendering["target"].as_str().expect("a target");
+                        assert_eq!(
+                            rendering["crate"]["sha256"].as_str(),
+                            Some(
+                                digest(&root.join(format!("preserve/crate/R{index}.{target}.rs")))
+                                    .as_str()
+                            ),
+                            "{module}: the record binds the published crate in {target}"
+                        );
+                    }
+                    // Certificates B and E of each target are published and bound
+                    // the same way.
+                    for rendering in row["renderings"].as_array().expect("renderings") {
+                        for bound in [rendering, &rendering["composed"]] {
+                            let module = bound["module"].as_str().expect("a module");
+                            let text = std::fs::read(
+                                root.join("preserve")
+                                    .join(lexlean::production::preserve::module_path(module)),
+                            )
+                            .expect("the published certificate");
+                            assert_eq!(
+                                bound["sha256"].as_str(),
+                                Some(
+                                    lexlean::artifact::content_id::Sha256Digest::of(&text)
+                                        .to_hex()
+                                        .as_str()
+                                ),
+                                "{module}: the record binds the published certificate"
+                            );
+                        }
+                    }
+                }
+                let attestation: serde_json::Value = serde_json::from_slice(
+                    &std::fs::read(root.join("attestation.json")).expect("attestation"),
+                )
+                .expect("attestation JSON");
+                assert_eq!(
+                    attestation["preservation"]["sha256"].as_str(),
                     Some(
-                        lexlean::artifact::content_id::Sha256Digest::of(&text)
+                        lexlean::artifact::content_id::Sha256Digest::of(&record_bytes)
                             .to_hex()
                             .as_str()
                     ),
-                    "{module}: the record binds the published certificate"
+                    "the attestation binds preservation.json"
                 );
-                // The program the certificates are about and each target's
-                // crate are published and bound too.
-                let digest = |path: &std::path::Path| {
-                    lexlean::artifact::content_id::Sha256Digest::of(
-                        &std::fs::read(path).expect("a published file"),
-                    )
-                    .to_hex()
-                };
-                let index = rows
-                    .iter()
-                    .position(|candidate| candidate == row)
-                    .expect("the row");
-                assert_eq!(
-                    row["program"]["sha256"].as_str(),
-                    Some(digest(&root.join(format!("preserve/program/R{index}.json"))).as_str()),
-                    "{module}: the record binds the published program"
-                );
-                for rendering in row["renderings"].as_array().expect("renderings") {
-                    let target = rendering["target"].as_str().expect("a target");
-                    assert_eq!(
-                        rendering["crate"]["sha256"].as_str(),
-                        Some(
-                            digest(&root.join(format!("preserve/crate/R{index}.{target}.rs")))
-                                .as_str()
-                        ),
-                        "{module}: the record binds the published crate in {target}"
-                    );
-                }
-                // Certificates B and E of each target are published and bound
-                // the same way.
-                for rendering in row["renderings"].as_array().expect("renderings") {
-                    for bound in [rendering, &rendering["composed"]] {
-                        let module = bound["module"].as_str().expect("a module");
-                        let text = std::fs::read(
-                            root.join("preserve")
-                                .join(lexlean::production::preserve::module_path(module)),
-                        )
-                        .expect("the published certificate");
-                        assert_eq!(
-                            bound["sha256"].as_str(),
-                            Some(
-                                lexlean::artifact::content_id::Sha256Digest::of(&text)
-                                    .to_hex()
-                                    .as_str()
-                            ),
-                            "{module}: the record binds the published certificate"
-                        );
-                    }
-                }
-            }
-            let attestation: serde_json::Value = serde_json::from_slice(
-                &std::fs::read(root.join("attestation.json")).expect("attestation"),
-            )
-            .expect("attestation JSON");
-            assert_eq!(
-                attestation["preservation"]["sha256"].as_str(),
-                Some(
-                    lexlean::artifact::content_id::Sha256Digest::of(&record_bytes)
-                        .to_hex()
-                        .as_str()
-                ),
-                "the attestation binds preservation.json"
-            );
-            for (fixture, code) in [
+            };
+            let rejected = [
                 ("certificate-rejected", "LLV7013"),
                 ("certificate-b-rejected", "LLV7015"),
                 ("certificate-e-rejected", "LLV7016"),
                 ("certificate-heartbeat-rejected", "LLV7013"),
                 ("certificate-resource-exhausted", "LLS8002"),
                 ("preservation-drift", "LLV7014"),
-            ] {
-                let case =
-                    crate::fixtures::load_case(&repo_root().join("tests/negative").join(fixture))
-                        .expect("the fixture loads");
-                let observed = crate::fixtures::observe(&case).expect("the fixture runs");
+            ];
+            // The verification of the example and the six rejections are
+            // independent runs of the whole pipeline, so they run side by
+            // side: a few at a time, because each holds a Lean process.
+            let reject = |&(fixture, code): &(&str, &str)| {
+                let observed = crate::fixtures::observe_shared(
+                    &repo_root().join("tests/negative").join(fixture),
+                )
+                .expect("the fixture runs");
                 assert_eq!(observed.codes, [code], "{fixture}");
                 assert!(
                     !observed.project.root.join(".lexlean/verified").exists()
@@ -1612,7 +1721,14 @@ pub fn run(id: &str) {
                         .unwrap_or(true),
                     "{fixture}: nothing is published"
                 );
-            }
+            };
+            std::thread::scope(|scope| {
+                let rejections = scope.spawn(|| support::for_each_parallel(&rejected, 2, reject));
+                verified_example();
+                rejections
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            });
         }
         // §17.16, §17.17: the declared Rust machine.
         "SP-07" => {

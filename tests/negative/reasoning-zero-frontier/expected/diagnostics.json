@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLT4011","help":[],"labels":[],"message":"phase link: reasoner `Clinic` bounds its frontier by zero, so it can explore nothing","notes":[],"primary":{"byte_end":12846,"byte_start":127,"column_end":12734,"column_start":15,"line_end":5,"line_start":5,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

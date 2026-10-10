@@ -1625,7 +1625,7 @@ fn lean_root_constructors_are_the_refused_pattern_binders() {
   IO.println s!\"ROOT {hits.qsort (· < ·)}\"
 ";
     let output = {
-        let _guard = support::env_lock();
+        let _guard = support::env_shared();
         let directory = tempfile::tempdir().expect("tempdir");
         let path = directory.path().join("Roots.lean");
         std::fs::write(&path, source).expect("write");
@@ -1694,7 +1694,7 @@ def generated (ts : List Name) : CoreM Unit := do
     IO.println s!\"{t}: {names.qsort (· < ·)}\"
 #eval generated [`T1, `T2, `T3, `S1, `S2, `M1, `M2, `T4, `S3, `E1]
 ";
-    let _guard = support::env_lock();
+    let _guard = support::env_shared();
     let directory = tempfile::tempdir().expect("tempdir");
     let path = directory.path().join("Generated.lean");
     std::fs::write(&path, source).expect("write");
