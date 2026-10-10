@@ -336,7 +336,6 @@ fn non_utf8_argv_and_cwd_are_environment_diagnostics() {
             None,
             "the process is not terminated by a signal"
         );
-        return;
     }
     #[cfg(unix)]
     use std::os::unix::ffi::OsStrExt;

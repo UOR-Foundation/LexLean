@@ -1091,9 +1091,9 @@ the constant, a fraction of 0 (nothing is heavy) and a huge one (everything
 is):
 
 ```text
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2528:73:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25315) panicked at crates/lexlean/src/verify/mod.rs:2582:73:
 a limit
-thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2525:9:
+thread 'verify::resource_tests::a_heartbeat_verdict_is_a_limit_only_for_a_heavy_module' (25377) panicked at crates/lexlean/src/verify/mod.rs:2579:9:
 assertion failed: resource_death("M.R0", 1, HEARTBEATS, 5_000, &limits()).is_none()
 ```
 
@@ -1741,7 +1741,7 @@ Command: `cargo test -p lexlean --lib timeout_tests`. Expected: the
 grandchild is still running.
 
 ```text
-thread 'verify::child::timeout_tests::a_timeout_ends_what_the_child_started' (13145) panicked at crates/lexlean/src/verify/child.rs:654:9:
+thread 'verify::child::timeout_tests::a_timeout_ends_what_the_child_started' (13145) panicked at crates/lexlean/src/verify/child.rs:781:9:
 a timeout left running: ["13149: sleep 1000.13144 "]
 ```
 
@@ -1978,7 +1978,8 @@ A child leads a process group of its own so that a timeout can end what it
 started. That took it out of the group the terminal signals: a Ctrl-C (or the
 `SIGTERM` of `timeout 600 lexlean verify`) ended `lexlean` and left the `lake`
 and the `lean` it had started running at full speed. `child::run` now starts a
-thread, once, that waits for `SIGINT`, `SIGTERM`, and `SIGHUP` (`signal-hook`,
+thread, once, that waits for `SIGINT`, `SIGTERM`, and `SIGHUP` (the next section
+says what changed since: `SIGQUIT`, ignored signals, who arms it) (`signal-hook`,
 Apache-2.0 OR MIT, with `libc` and `signal-hook-registry`, which `cargo deny`
 accepts under the licences already allowed); the thread kills every live child
 group, and lets the signal end the process, so the exit status is the
@@ -2023,6 +2024,135 @@ the group was ended, so the report does not claim otherwise: Diagnostic { code: 
 ```
 
 Removed: both were restored.
+
+### the interrupt handler leaves the process alone, and a zombie is ended
+
+Review r49h found that the thread above did more than it should. It is now
+armed by `cli::main_entry`, which only the `lexlean` executable calls, and the
+first child installs it only then: `lexlean::cli::run`, called by a host that
+embeds the library, installs no handler, so the host's `SIGTERM` is the
+host's. The thread watches `SIGINT`, `SIGTERM`, `SIGHUP`, and `SIGQUIT`
+(Ctrl-\ used to leave the child running), less the signals the process was
+started ignoring: the mask is read before anything is installed, from
+`SigIgn` of `/proc/self/status` or from `ps -o ignored`, so a `nohup lexlean
+verify` is not ended by the `SIGHUP` it was told to ignore; where the host can
+report neither, `SIGHUP` is not watched. `stop` counts a zombie of the group
+as ended, and reaps the ones that are children of this process (the shipped
+image runs `lexlean` as PID 1, which never reaps the grandchildren it killed,
+so the group seemed to outlive `SIGKILL` and every timeout waited two seconds
+and claimed that processes might still be running); the process table is
+`/proc` or `ps -axo pid=,ppid=,pgid=,stat=`. A `taskkill` that exits non-zero
+is reported (`taskkill_outcome`), and `verify` removes the
+`.lexlean/verified/.staging-*` directories that interrupted or killed runs left
+(`remove_stale_staging`, under the project's mutation lock; a file, a link, and
+a directory of another name are left alone). SPEC.md §8.5 gives `rustix` and
+`signal-hook` (and every other direct dependency) a role, and `audit-shipped`
+requires the table and the declared dependencies of `lexlean` to be the same
+set.
+
+Tests: `tests/interrupt.rs` sends `SIGINT`, `SIGTERM`, `SIGQUIT` and (where
+`/proc` says which signals were ignored) `SIGHUP` to the real binary and requires
+that nothing is left; `an_ignored_signal_stays_ignored` starts it through `sh -c
+'trap "" HUP; exec lexlean ...'` (and `INT`, `QUIT` where there is a `/proc`),
+signals it, requires that it and its child are still there 1.5 s later, and
+then that `SIGTERM` still ends both. A case skips a signal that the test process
+itself was started ignoring (a test run in the background of a
+non-interactive shell), and says so, because `lexlean` rightly keeps it ignored.
+`tests/embedded.rs` registers a `SIGTERM` flag as a host would, calls
+`lexlean::cli::run` on a project whose `git` starts and fails, and then signals
+its own process: the host's handler must see it and the process must live.
+The unit tests are `a_zombie_in_the_group_counts_as_ended` (a zombie child of
+the test process in the group of a killed `sleep`; the stop returns `Ok` within
+1.5 s), `a_failing_taskkill_is_reported`, `an_ignored_signal_is_not_watched`,
+`the_mask_of_this_process_is_read`, and
+`stale_staging_directories_are_removed_and_nothing_else`; `verify_ok` of the
+conformance suite plants a stale staging directory before every verification and
+requires that it is gone afterwards. The windows build of the tests and the
+library is checked with `cargo clippy -p lexlean --all-targets --target
+x86_64-pc-windows-gnu -- -D warnings`.
+
+The binders of the declarations that Lean elaborates inside a namespace
+(`def X.initial`, `X.guard`, `X.apply` of models and reasoners, where Lean opens
+`X`) were probed with the real `lexlean verify`: a model whose state is a
+`match` with the binder `initial`, the very name of the declaration being
+defined, verifies; the binder `none` is `LLT4001`, as in every declaration. A
+data type cannot share the name of a model or a rule, since that is `duplicate
+generated name` at link (probed with a type `Fever` beside the rule `Fever`),
+so the namespace of `X` holds no constructor that a pattern binder could be
+read as; a definition of the namespace (`X.guard`) in a pattern is a variable,
+as the pinned Lean elaborates it (`some guard => guard + 1` over
+`def A2.guard`).
+
+Planted: the signals the process was started ignoring are watched like the
+others. Command: `cargo test -p lexlean --test interrupt -- an_ignored_signal_stays_ignored`.
+Expected: the process started with `SIGHUP` ignored is ended by it.
+
+```text
+thread 'an_ignored_signal_stays_ignored' (30305) panicked at crates/lexlean/tests/interrupt.rs:198:13:
+SIGHUP was ignored at start, yet lexlean ended (Some(ExitStatus(unix_wait_status(1)))) or lost its child ([])
+```
+
+Planted: the handler is installed whether or not the executable armed it.
+Command: `cargo test -p lexlean --test embedded`. Expected: the embedding host is
+ended by its own `SIGTERM`.
+
+```text
+error: test failed, to rerun pass `-p lexlean --test embedded`
+
+Caused by:
+  process didn't exit successfully: `/home/user/wt-24/target/debug/deps/embedded-d0e54ad484b58cfc` (signal: 15, SIGTERM: termination signal)
+```
+
+Planted: `SIGQUIT` is not among the signals watched. Command: `cargo test -p
+lexlean --test interrupt -- an_interrupt_leaves_no_child_running`. Expected: the
+child survives Ctrl-\.
+
+```text
+thread 'an_interrupt_leaves_no_child_running' (29414) panicked at crates/lexlean/tests/interrupt.rs:229:5:
+SIGQUIT left running: [(29432, "sleep 3000.29413 ")]
+```
+
+Planted: `stop` reads no process table (every member of the group is taken to be
+running). Command: `cargo test -p lexlean --lib -- a_zombie_in_the_group`.
+Expected: the stop waits two seconds and reports the zombie.
+
+```text
+thread 'verify::child::timeout_tests::a_zombie_in_the_group_counts_as_ended' (30432) panicked at crates/lexlean/src/verify/child.rs:852:9:
+assertion `left == right` failed: a zombie is not running
+  left: Err("processes of group 30433 still existed 2000 ms after SIGKILL")
+ right: Ok(())
+```
+
+Planted: `taskkill_outcome` takes any exit status for success. Command: `cargo test
+-p lexlean --lib -- a_failing_taskkill`. Expected: an exit status 128 is not
+reported.
+
+```text
+thread 'verify::child::timeout_tests::a_failing_taskkill_is_reported' (30484) panicked at crates/lexlean/src/verify/child.rs:803:68:
+exit 128: ()
+```
+
+Planted: `verify` does not call `remove_stale_staging`. Command: `cargo test -p
+repo-conformance --test conformance -- conformance_df_12`. Expected: the
+staging directory of an interrupted run is still there after the verification.
+
+```text
+thread 'conformance_df_12' (29640) panicked at crates/conformance/src/support.rs:2019:5:
+/tmp/lexlean-example-case-0Rm1sS/.lexlean/verified/.staging-interrupted-0: the staging directory of an interrupted run is removed by the next verify
+```
+
+Planted: the role of `signal-hook` removed from the table of SPEC.md §8.5 (the
+name spelled differently). Command: `cargo xtask validate-model`. Expected:
+`audit-shipped` fails naming the dependency.
+
+```text
+gate failed: R6: the shipped crate depends on `signal-hook`, which SPEC.md §8.5 gives no role
+```
+
+Removed: all seven were restored (the unit test of the audit,
+`every_shipped_dependency_has_a_role_and_every_role_a_dependency`, plants a
+dependency with no role, a role with no dependency, and a SPEC without the
+table).
 
 ### a module is a namespace at every segment
 
@@ -3131,7 +3261,7 @@ seeded graphs and the 24-node chain, whose last node is such a successor,
 disagree with the independent model.
 
 ```text
-thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_sm_30' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.graphTopological
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -3149,7 +3279,7 @@ canonical order disagreed with Lean's `Key Int` instance. Command: `cargo test
 insertion of the source order, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  [-2, -10, -100, 0, 3, 9, 100] =\n    LexLeanCollections.listFold (fun built element => LexLeanCollections.setInsert built element) []\n      [3, -2, 0, -10, 100, -100, 9]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -3166,7 +3296,7 @@ conformance -- conformance_sm_28`. Expected: the seeded union theorems,
 whose right-hand sides come from `BTreeSet`, fail under verification.
 
 ```text
-thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_sm_28' panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Collections.Main` (error): Tactic `decide` proved that the proposition\n  LexLeanCollections.setUnion [1, 2, 3] [0, 5] = [0, 1, 2, 3, 5]\nis false"
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out
 ```
@@ -3718,13 +3848,13 @@ values, and the portable runtime's integer quotient flooring (`Int.ediv`
 for `Int.tdiv`). Expected: Lean refuses the seeded expectations.
 
 ```text
-thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_md_09' (15625) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Tie Sample.s0 = 1\nis false", ...
-thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_md_09' (18279) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_md_09' (18907) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Logits Sample.s0 = [50075, 63645, 87054, -4700, 27212]\nis false", ...
-thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:2003:10:
+thread 'conformance_md_09' (19553) panicked at crates/conformance/src/support.rs:2018:10:
 the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "Lean rejected `Models.Main` (error): Tactic `decide` proved that the proposition\n  Quantized Sample.s0 = [0, -14, -37, -33, -40, 10, -32, 46]\nis false", ...
 ```
 

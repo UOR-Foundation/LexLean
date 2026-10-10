@@ -558,7 +558,30 @@ The implementation MAY choose exact compatible releases through `Cargo.lock`, bu
 - structured errors;
 - temporary directories;
 - directory walking;
-- file locking.
+- file locking;
+- file identity (whether two paths are the same file);
+- process-group signalling and interrupt handling (unix).
+
+Every dependency the shipped crate declares, for any target and of any kind but development, MUST be named in the following table with its role, and every crate the table names MUST be one it declares (`cargo xtask audit-shipped`, R6). A dependency without a row, or a row without a dependency, is a failure of the gate.
+
+| Dependency | Role |
+| --- | --- |
+| `camino` | UTF-8 path handling |
+| `clap` | CLI parsing |
+| `fs4` | file locking |
+| `rustix` | process-group signalling (`kill` of a group, without an external `kill`; safe wrappers, the crate forbids unsafe code) |
+| `same-file` | file identity |
+| `semver` | semantic-version parsing |
+| `serde` | JSON and TOML deserialization and serialization |
+| `serde_json` | JSON parsing and serialization |
+| `sha2` | SHA-256 |
+| `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |
+| `tempfile` | temporary directories |
+| `toml` | TOML parsing |
+| `unicode-normalization` | Unicode NFC normalization |
+| `walkdir` | directory walking |
+
+The role "structured errors" is filled by the crate's own closed error model (§26) and needs no dependency.
 
 No dependency may provide arbitrary TeX execution, Lean parsing by string substitution, probabilistic language interpretation, or a second proof authority.
 
@@ -4546,17 +4569,32 @@ signalled directly by the compiler (no `kill` executable and no `PATH` are
 involved, so a host without one, such as the shipped image, ends the work all
 the same), and a group that could not be signalled, or that is still there two
 seconds after `SIGKILL`, is stated in the diagnostic (`the processes it
-started may still be running: …`), never passed over. A child in a group of its
+started may still be running: …`), never passed over; a process of the group
+that is a zombie is ended, not running (a compiler that runs as PID 1, as the
+shipped image does, is the parent of the grandchildren it killed, reaps the
+ones it can, and does not wait for the rest). A child in a group of its
 own is not reached by the terminal's Ctrl-C, nor by the `SIGTERM` that
-`timeout(1)` or a service manager sends to the compiler alone, so the compiler
-watches for `SIGINT`, `SIGTERM`, and `SIGHUP` from the first child on, kills
-every live child group when one arrives, and then lets the signal end the
-process as it would have (the exit status is the signal's); `conformance` runs
-the real `lexlean` and sends it each, while a child is running, and requires
-that nothing the child started is left (`SIGKILL` cannot be caught by any
-process, so a compiler killed that way leaves its children). Where the
-platform has no process groups the tree is killed with `taskkill`, and the
-console delivers Ctrl-C to the children. A match on 180 constructors verifies
+`timeout(1)` or a service manager sends to the compiler alone, so the
+`lexlean` executable (and no embedding host: the library never installs a
+signal handler, and a host that calls `lexlean::cli::run` keeps its own
+signals and its own termination) watches for `SIGINT`, `SIGTERM`, `SIGHUP`,
+and `SIGQUIT` from the first child on, kills every live child group when one
+arrives, and then lets the signal end the process as it would have (the exit
+status is the signal's). A signal that the process was started ignoring (what
+`nohup` does to `SIGHUP`, and a non-interactive shell to `SIGINT` and
+`SIGQUIT` of a background job) is not watched and stays ignored; on a host that
+can report neither `/proc/self/status` nor `ps -o ignored`, `SIGHUP` is not
+watched. the test suite of the crate runs the real `lexlean` and sends it each, while a child
+is running, and requires that nothing the child started is left, that an
+ignored signal ends neither the run nor its child, and that an embedded run
+leaves the host's `SIGTERM` handling alone (`SIGKILL` cannot be caught by any
+process, so a compiler killed that way leaves its children). The staging
+directories of `verify` (`<build_root>/verified/.staging-*`), which an
+interrupted or killed run cannot remove, are removed by the next `verify` of
+the project, under the project's mutation lock. Where the platform has no
+process groups the tree is killed with `taskkill`, a `taskkill` that fails is
+stated like a group that could not be ended, and the console delivers Ctrl-C to
+the children. A match on 180 constructors verifies
 (`conformance_sp_02`), and so does one on 300, whose certificate B alone takes
 3 minutes and a half; the reference machine reaches the 300 seconds between 300
 and 400 constructors, where `lexlean verify` of a match on 400 ends with

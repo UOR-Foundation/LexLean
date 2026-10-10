@@ -21,12 +21,18 @@ versions, and the entries below say what each tag does and does not claim.
   meta-gate, because `test` already runs every conformance test (the second
   run was 79 minutes); the conformance cases' environment lock is shared by
   verifications and exclusive only for the code that changes the process
-  environment; the preservation environment is compiled once per process;
+  environment; the preservation environment (the calculus modules and the library) is compiled once per toolchain and library text and shared by the workspaces of a run;
   the four corpora, the stress families, the rejection fixtures, and the
   fixture suite run side by side; and `cargo xtask verify-examples` prints
   the time of each example. The conformance suite takes 50 minutes of the
-  reference container where it took 68, and the gate is projected at under
-  four and a half hours on the runner, `uor-atlas` (three hours of it) unchanged.
+  reference container where it took 68, and the gate is projected at
+  276 minutes (4 h 36 min) on the runner, `uor-atlas` (three hours of it)
+  unchanged.
+- The certified projects are the four examples `production`,
+  `production-coverage`, `models`, and `reasoning`. The five reasoning oracle
+  modules of the `compiler` project declare no `production` root, so they are
+  never analysed (SPEC.md §17.13) and have no certificate; the `compiler`
+  project is verified, not certified.
 - Semantic preservation from the source to the realization calculus
   (SPEC.md §17.17, `SP-01`..`SP-06`): every production root is lowered to a
   target program and certified by a kernel-checked Lean theorem (certificate
@@ -184,10 +190,18 @@ versions, and the entries below say what each tag does and does not claim.
   on a timeout (a test starts a grandchild and asserts none is left). The
   group is signalled directly (`rustix`, no `kill` executable on `PATH`, which
   the shipped image does not have), a group that cannot be ended is said so in
-  the diagnostic, and an interrupt (`SIGINT`, `SIGTERM`, `SIGHUP`, watched with
-  `signal-hook`) ends the live groups before it ends `lexlean`, because a child
-  in a group of its own no longer receives the terminal's Ctrl-C; a test sends
-  each to the real binary. `SIGKILL` cannot be caught, and leaves the children.
+  the diagnostic, and an interrupt (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, watched with
+  `signal-hook`) ends the live groups before it ends the `lexlean` executable,
+  because a child in a group of its own no longer receives the terminal's
+  Ctrl-C; a test sends each to the real binary. A signal the process was
+  started ignoring (`nohup`'s `SIGHUP`) stays ignored, the library installs no
+  handler (a host that embeds it keeps its own signals), a zombie in a killed
+  group counts as ended (the shipped image runs `lexlean` as PID 1 and reaps
+  what it can), a `taskkill` that fails is reported, and `verify` removes the
+  staging directories that interrupted runs left. `SIGKILL` cannot be caught,
+  and leaves the children. SPEC.md §8.5 names the role of every shipped
+  dependency, including `rustix` and `signal-hook`, and `audit-shipped`
+  requires it.
 - The lower bound on certificate A counts a type as the certificate prints
   it: a pair nested 120 deep was `120 * 121 / 2` type nodes and a bound 1.5
   times the certificate, and the programs that are refused when they fit are

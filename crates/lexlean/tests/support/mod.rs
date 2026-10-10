@@ -1,4 +1,6 @@
 #![cfg(unix)]
+// Each test binary uses the helpers it needs.
+#![allow(dead_code)]
 //! Helpers shared by the process-group tests: the process table, read the
 //! way an operator would, and a script that starts a long-running child.
 

@@ -1991,16 +1991,36 @@ pub fn ext_project(module: &str) -> P {
     project
 }
 
+static STALE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 /// Verify a project through the complete pipeline, expecting success, and
 /// return the verified outcome. Real Lean runs.
 pub fn verify_ok(project: &P) -> lexlean::VerifiedProject {
     let _guard = env_shared();
-    project
+    // What an interrupted run leaves behind (SPEC.md §17.17): `verify` removes
+    // it before it stages its own, so every verification in the suite also
+    // checks that.
+    let stale = project.root.join(".lexlean/verified").join(format!(
+        ".staging-interrupted-{}",
+        STALE.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(stale.join("inner").as_std_path()).expect("stale staging");
+    std::fs::write(
+        stale.join("inner/Leftover.lean").as_std_path(),
+        "-- left behind",
+    )
+    .expect("stale staging file");
+    let verified = project
         .engine()
         .verify(VerifyRequest {
             selection: Selection::Entrypoints,
         })
-        .expect("the module verifies with real Lean")
+        .expect("the module verifies with real Lean");
+    assert!(
+        !stale.as_std_path().exists(),
+        "{stale}: the staging directory of an interrupted run is removed by the next verify"
+    );
+    verified
 }
 
 /// [`verify_ok`] behind the §8.3 host gate: `Some` where the pinned toolchain

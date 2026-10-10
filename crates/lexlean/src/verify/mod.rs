@@ -23,7 +23,7 @@
 pub mod axiom;
 pub mod child;
 pub mod leanchecker;
-mod lifeline;
+pub(crate) mod lifeline;
 pub mod source_audit;
 pub mod toolchain;
 pub mod workspace;
@@ -1076,6 +1076,9 @@ pub fn run(
             format!("{verified_root}: {io_error}"),
         ))
     })?;
+    // The mutation lock of the project is held (§21.8), so no other `verify`
+    // stages here: what an interrupted or killed run left behind is stale.
+    remove_stale_staging(verified_root.as_std_path());
     let staging = tempfile::Builder::new()
         .prefix(".staging-")
         .tempdir_in(verified_root.as_std_path())
@@ -2344,6 +2347,25 @@ pub fn run(
     })
 }
 
+/// Remove the staging directories that earlier runs left in `verified_root`:
+/// a run that was interrupted (or killed, which no handler can catch) never
+/// removes its own, and each is megabytes of generated sources. Only what this
+/// tool owns is touched: a real directory (a link is left alone, and never
+/// followed) directly under the root whose name is the staging prefix. The
+/// caller holds the project's mutation lock, which every staging run holds
+/// too, so none of these is in use.
+fn remove_stale_staging(verified_root: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(verified_root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let is_staging = entry.file_name().to_string_lossy().starts_with(".staging-");
+        if is_staging && entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            let _ = std::fs::remove_dir_all(entry.path());
+        }
+    }
+}
+
 /// A helper for tests: the reserved probe and audit module names for a
 /// semantic ID (§18.8, §18.9).
 #[must_use]
@@ -2357,6 +2379,38 @@ pub fn reserved_module_names(semantic_id: Sha256Digest) -> (String, String) {
 
 #[cfg(test)]
 mod tests {
+    /// What an interrupted run left in the verified root is removed by the next
+    /// one, and nothing else is: not a file, not a link (nor what it points
+    /// to), not a directory of another name.
+    #[test]
+    fn stale_staging_directories_are_removed_and_nothing_else() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let root = directory.path().join("verified");
+        let elsewhere = directory.path().join("elsewhere");
+        std::fs::create_dir_all(root.join(".staging-AbC123/inner")).expect("mkdir");
+        std::fs::write(root.join(".staging-AbC123/inner/M.lean"), "x").expect("write");
+        std::fs::create_dir_all(root.join(".staging-second")).expect("mkdir");
+        std::fs::create_dir_all(root.join("0123abcd")).expect("published");
+        std::fs::write(root.join(".staging-file"), "not a directory").expect("write");
+        std::fs::create_dir_all(&elsewhere).expect("mkdir");
+        std::fs::write(elsewhere.join("keep"), "kept").expect("write");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&elsewhere, root.join(".staging-link")).expect("symlink");
+        super::remove_stale_staging(&root);
+        assert!(!root.join(".staging-AbC123").exists());
+        assert!(!root.join(".staging-second").exists());
+        assert!(root.join("0123abcd").is_dir(), "a published tree stays");
+        assert!(root.join(".staging-file").is_file(), "a file is not ours");
+        assert!(elsewhere.join("keep").is_file(), "a link is not followed");
+        #[cfg(unix)]
+        assert!(
+            std::fs::symlink_metadata(root.join(".staging-link")).is_ok(),
+            "a link is left alone"
+        );
+        // A root that does not exist yet is not an error.
+        super::remove_stale_staging(&directory.path().join("absent"));
+    }
+
     use std::sync::{mpsc, Mutex};
     use std::time::Duration;
 

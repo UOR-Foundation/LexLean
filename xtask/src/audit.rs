@@ -1171,8 +1171,77 @@ pub fn audit_shipped(root: &Path) -> Result<(), Fail> {
             .into());
         }
     }
-    println!("audit-shipped: only lexlean ships, with no repository-only dependency, and its normative links resolve to the repository data (R6)");
+    // §8.5: the dependency roles are fixed, and the SPEC names the role of
+    // every dependency the shipped crate declares.
+    let manifest = std::fs::read_to_string(root.join("crates/lexlean/Cargo.toml"))?;
+    let spec = std::fs::read_to_string(root.join("SPEC.md"))?;
+    let dependencies = dependency_roles(&manifest, &spec)?;
+    println!(
+        "audit-shipped: only lexlean ships, with no repository-only dependency, its {dependencies} dependencies each have a role in SPEC.md §8.5, and its normative links resolve to the repository data (R6)"
+    );
     Ok(())
+}
+
+/// The names the shipped crate depends on for any target (`[dependencies]`,
+/// `[build-dependencies]`, and the `[target.*]` tables of both), development
+/// dependencies excepted.
+fn declared_dependencies(manifest: &str) -> Result<BTreeSet<String>, Fail> {
+    let data: toml::Value = manifest.parse()?;
+    let mut names = BTreeSet::new();
+    let mut collect = |table: Option<&toml::Value>| {
+        if let Some(table) = table.and_then(toml::Value::as_table) {
+            names.extend(table.keys().cloned());
+        }
+    };
+    for kind in ["dependencies", "build-dependencies"] {
+        collect(data.get(kind));
+        if let Some(targets) = data.get("target").and_then(toml::Value::as_table) {
+            for target in targets.values() {
+                collect(target.get(kind));
+            }
+        }
+    }
+    Ok(names)
+}
+
+/// The dependencies the table of SPEC.md §8.5 gives a role.
+fn specified_dependencies(spec: &str) -> BTreeSet<String> {
+    let Some((_, after)) = spec.split_once("\n### 8.5 ") else {
+        return BTreeSet::new();
+    };
+    let section = after.split("\n---\n").next().unwrap_or(after);
+    section
+        .lines()
+        .filter_map(|line| {
+            let cell = line.strip_prefix("| `")?;
+            let (name, rest) = cell.split_once("` |")?;
+            (!rest.trim().is_empty()).then(|| name.to_owned())
+        })
+        .collect()
+}
+
+/// R6, §8.5: the declared dependencies of the shipped crate and the table of
+/// roles in the SPEC are the same set. Returns how many there are.
+fn dependency_roles(manifest: &str, spec: &str) -> Result<usize, Fail> {
+    let declared = declared_dependencies(manifest)?;
+    let specified = specified_dependencies(spec);
+    // Anti-vacuity: the table is read from a populated SPEC.
+    if specified.is_empty() {
+        return Err("R6: SPEC.md §8.5 has no table of dependency roles".into());
+    }
+    if let Some(name) = declared.difference(&specified).next() {
+        return Err(format!(
+            "R6: the shipped crate depends on `{name}`, which SPEC.md §8.5 gives no role"
+        )
+        .into());
+    }
+    if let Some(name) = specified.difference(&declared).next() {
+        return Err(format!(
+            "R6: SPEC.md §8.5 gives `{name}` a role, but the shipped crate does not depend on it"
+        )
+        .into());
+    }
+    Ok(declared.len())
 }
 
 /// §27.10: generated documents and schemas are current. The document halves

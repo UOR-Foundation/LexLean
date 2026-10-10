@@ -792,6 +792,9 @@ fn write_skeleton(destination: &Utf8Path, files: &[(String, Vec<u8>)]) -> Result
 /// directory are the §8.3 environment diagnostic, never a panic.
 #[must_use]
 pub fn main_entry() -> i32 {
+    // Only the executable ends its children when it is interrupted: a host
+    // that calls `run` owns its signals (see `verify::lifeline`).
+    crate::verify::lifeline::arm();
     let mut stdout = std::io::stdout();
     let mut stderr = std::io::stderr();
     let mut arguments: Vec<String> = Vec::new();
