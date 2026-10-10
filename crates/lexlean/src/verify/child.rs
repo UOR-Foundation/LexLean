@@ -559,21 +559,43 @@ mod timeout_tests {
     }
 
     /// The processes whose command line holds `marker`, from the process
-    /// table.
+    /// table: `/proc` where the host has one and `ps` otherwise (macOS), so
+    /// the case is not vacuous there; a host with neither is an error.
     #[cfg(unix)]
     fn running(marker: &str) -> Vec<String> {
-        std::fs::read_dir("/proc")
+        if std::path::Path::new("/proc/self").exists() {
+            return std::fs::read_dir("/proc")
+                .into_iter()
+                .flatten()
+                .flatten()
+                .filter_map(|entry| {
+                    let pid = entry.file_name().to_str()?.parse::<u32>().ok()?;
+                    let command = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
+                    let command = String::from_utf8_lossy(&command).replace('\0', " ");
+                    // A zombie is not running; nothing is left of it to end.
+                    let status = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+                    let zombie = status.rsplit(") ").next()?.starts_with('Z');
+                    (command.contains(marker) && !zombie).then(|| format!("{pid}: {command}"))
+                })
+                .collect();
+        }
+        let ps = ["/bin/ps", "/usr/bin/ps"]
             .into_iter()
-            .flatten()
-            .flatten()
-            .filter_map(|entry| {
-                let pid = entry.file_name().to_str()?.parse::<u32>().ok()?;
-                let command = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
-                let command = String::from_utf8_lossy(&command).replace('\0', " ");
-                // A zombie is not running; nothing is left of it to end.
-                let status = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-                let zombie = status.rsplit(") ").next()?.starts_with('Z');
-                (command.contains(marker) && !zombie).then(|| format!("{pid}: {command}"))
+            .find(|path| std::path::Path::new(path).is_file())
+            .expect("the host has neither /proc nor ps, so the process table cannot be read");
+        let output = std::process::Command::new(ps)
+            .args(["-axo", "pid=,stat=,command="])
+            .output()
+            .expect("ps runs");
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter_map(|line| {
+                let mut fields = line.split_whitespace();
+                let pid = fields.next()?.parse::<u32>().ok()?;
+                let state = fields.next()?;
+                let command = fields.collect::<Vec<_>>().join(" ");
+                (command.contains(marker) && !state.starts_with('Z'))
+                    .then(|| format!("{pid}: {command}"))
             })
             .collect()
     }
