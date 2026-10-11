@@ -3590,6 +3590,102 @@ pub fn render_latex(
 }
 
 #[cfg(test)]
+mod byte_literal_tests {
+    use super::{Render, SemanticParameter, SemanticTerm, SemanticType};
+
+    fn render(document: bool, term: &SemanticTerm) -> String {
+        Render {
+            prefix: "ByteFixture",
+            hypotheses: std::collections::BTreeMap::new(),
+            runtime: false,
+            document,
+            qualify: None,
+        }
+        .term(term)
+    }
+
+    fn literal(values: &[u8]) -> SemanticTerm {
+        SemanticTerm::Bytes {
+            hex: values.iter().map(|value| format!("{value:02x}")).collect(),
+        }
+    }
+
+    #[test]
+    fn byte_literals_are_explicit_octets_without_changing_document_numbers() {
+        for values in [vec![], vec![0, 255, 128], (0..=255).collect()] {
+            let term = literal(&values);
+            let explicit = values
+                .iter()
+                .map(|value| format!("(_root_.UInt8.ofNat (nat_lit {value}))"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(
+                render(false, &term),
+                format!("_root_.ByteArray.mk #[{explicit}]")
+            );
+            let numbers = values
+                .iter()
+                .map(u8::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            assert_eq!(render(true, &term), format!("ByteArray.mk #[{numbers}]"));
+        }
+    }
+
+    #[test]
+    fn repeated_octets_have_one_closed_binding_at_the_four_occurrence_boundary() {
+        assert_eq!(
+            render(false, &literal(&[0, 255, 0, 255, 0, 255, 0, 255, 128])),
+            "(let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[__byte0, __byte255, __byte0, __byte255, __byte0, __byte255, __byte0, __byte255, (_root_.UInt8.ofNat (nat_lit 128))])"
+        );
+        for count in 1..=3 {
+            let text = render(false, &literal(&vec![255; count]));
+            assert!(!text.contains("let "), "{count} occurrences: {text}");
+            assert_eq!(text.matches("UInt8.ofNat").count(), count);
+        }
+        let all: Vec<u8> = (0..4).flat_map(|_| 0..=255).collect();
+        let text = render(false, &literal(&all));
+        assert_eq!(text.matches("let __byte").count(), 256);
+        assert_eq!(text.matches("UInt8.ofNat").count(), 256);
+        assert_eq!(text.matches("_root_.ByteArray.mk #[").count(), 1);
+        let numbers = all.iter().map(u8::to_string).collect::<Vec<_>>().join(", ");
+        assert_eq!(
+            render(true, &literal(&all)),
+            format!("ByteArray.mk #[{numbers}]")
+        );
+        assert_eq!(
+            text,
+            render(false, &literal(&all)),
+            "deterministic literal-local scope"
+        );
+    }
+
+    #[test]
+    fn shared_octet_scope_cannot_capture_an_outer_generated_local() {
+        let bytes = literal(&[0; 4]);
+        let term = SemanticTerm::Let {
+            binder: SemanticParameter {
+                name: "__byte0".to_owned(),
+                r#type: SemanticType::Nat,
+            },
+            value: Box::new(SemanticTerm::Nat {
+                value: "9".to_owned(),
+            }),
+            body: Box::new(SemanticTerm::Pair {
+                left: Box::new(SemanticTerm::Var {
+                    name: "__byte0".to_owned(),
+                }),
+                right: Box::new(bytes),
+            }),
+        };
+        assert_eq!(
+            render(false, &term),
+            "(let __byte0 : Nat := 9; (__byte0, (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[__byte0, __byte0, __byte0, __byte0])))"
+        );
+    }
+}
+
+#[cfg(test)]
 mod declaration_span_tests {
     use super::declaration_spans_in;
 
