@@ -302,16 +302,14 @@ jobs:
               timeout 60 docker inspect "$cid" > ci-evidence/container-inspect.json || result=1
               timeout 60 docker stop --time 10 "$cid" > ci-evidence/container-stop.txt 2>&1 || result=1
               timeout 60 docker rm "$cid" > ci-evidence/container-remove.txt 2>&1 || result=1
-              if by_id="$(timeout 60 docker ps --all --quiet --no-trunc --filter "id=$cid")"; then
-                test -z "$by_id" || result=1
-              else
-                result=1
-              fi
-              if by_name="$(timeout 60 docker ps --all --quiet --no-trunc --filter "name=^/$actor$")"; then
-                test -z "$by_name" || result=1
-              else
-                result=1
-              fi
+              query_status=0
+              timeout 60 docker ps --all --quiet --no-trunc --filter "id=$cid" > ci-evidence/remaining-id.stdout || query_status=$?
+              printf '%s\n' "$query_status" > ci-evidence/remaining-id-exit.txt || result=1
+              test "$query_status" -eq 0 && test ! -s ci-evidence/remaining-id.stdout || result=1
+              query_status=0
+              timeout 60 docker ps --all --quiet --no-trunc --filter "name=^/$actor$" > ci-evidence/remaining-name.stdout || query_status=$?
+              printf '%s\n' "$query_status" > ci-evidence/remaining-name-exit.txt || result=1
+              test "$query_status" -eq 0 && test ! -s ci-evidence/remaining-name.stdout || result=1
             else
               echo "Unresolved pending container identity; absence is not established" >&2
               result=1
@@ -369,6 +367,16 @@ jobs:
                   target/debug/lexlean --project "$project" lock
                 done
                 just golden-write
+                # The second compiler build changes every Rust package source
+                # identity. Refresh those through their owning writer without
+                # permitting a further change to the embedded Lean modules.
+                preservation_before=$(mktemp)
+                preservation_after=$(mktemp)
+                find language/preservation-1.2/modules -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$preservation_before"
+                test -s "$preservation_before"
+                just calculus-write
+                find language/preservation-1.2/modules -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$preservation_after"
+                cmp "$preservation_before" "$preservation_after"
                 just calculus
                 affected=0
                 refreshed=0
