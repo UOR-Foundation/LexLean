@@ -791,10 +791,46 @@ impl Render<'_> {
                         let pair = core::str::from_utf8(pair).expect("validated byte literal");
                         u8::from_str_radix(pair, 16).expect("validated byte literal")
                     })
-                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>();
+                if self.document {
+                    let numbers = values
+                        .iter()
+                        .map(u8::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    return format!("ByteArray.mk #[{numbers}]");
+                }
+                let mut counts = [0_usize; 256];
+                for value in &values {
+                    counts[usize::from(*value)] += 1;
+                }
+                // Keep sharing inside this literal: generated locals outside it
+                // must not participate in the meaning of its octets.
+                let mut bindings = String::new();
+                for (value, count) in counts.iter().enumerate() {
+                    if *count >= 4 {
+                        bindings.push_str(&format!(
+                            "let __byte{value} : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit {value}); "
+                        ));
+                    }
+                }
+                let octets = values
+                    .iter()
+                    .map(|value| {
+                        if counts[usize::from(*value)] >= 4 {
+                            format!("__byte{value}")
+                        } else {
+                            format!("(_root_.UInt8.ofNat (nat_lit {value}))")
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("ByteArray.mk #[{values}]")
+                let array = format!("_root_.ByteArray.mk #[{octets}]");
+                if bindings.is_empty() {
+                    array
+                } else {
+                    format!("({bindings}{array})")
+                }
             }
             SemanticTerm::Primitive {
                 operation,
