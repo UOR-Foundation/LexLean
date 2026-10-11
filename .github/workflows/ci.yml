@@ -247,6 +247,9 @@ jobs:
           digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
           cases = sorted(p for root in ("tests/fixtures", "tests/negative") for p in Path(root).rglob("case.toml"))
           assert cases
+          for p in cases:
+              build_root = p.parent / "project/.lexlean"
+              assert not build_root.exists() and not build_root.is_symlink(), f"Fixture build root already exists: {build_root}"
           before = {
               "cases": {str(p): digest(p) for p in cases},
               "codes": {str(p.parent / "expected/diagnostics.json"): [d["code"] for d in json.loads((p.parent / "expected/diagnostics.json").read_bytes())] for p in cases},
@@ -326,6 +329,9 @@ jobs:
           for relative, expected in before["codes"].items():
               actual = [d["code"] for d in json.loads((root / relative).read_bytes())]
               assert actual == expected, f"Intended oracle diagnostic changed: {relative}"
+          for relative in before["cases"]:
+              build_root = (root / relative).parent / "project/.lexlean"
+              assert not build_root.exists() and not build_root.is_symlink(), f"Fixture build root remains: {build_root}"
           print("Original case inputs, protected admission failures and all diagnostic-code arrays are unchanged")
           PY
             git -c safe.directory="$source_dir" -C "$source_dir" diff --binary > ci-evidence/generated.patch || result=1
@@ -387,6 +393,11 @@ jobs:
                       tests/negative/lock-schema-language-mismatch/project/lexlean.toml|tests/negative/lock-schema-language-mismatch-1.1/project/lexlean.toml|tests/negative/model-artifact-source-under-1.1/project/lexlean.toml|tests/negative/module-prefix-reserved/project/lexlean.toml|tests/negative/module-prefix-shipped-root/project/lexlean.toml|tests/negative/package-language-mismatch/project/lexlean.toml) continue ;;
                     esac
                     target/debug/lexlean --project "$project" lock
+                    # The normal lock writer owns a mutation-lock build root.
+                    # Retire it with the confined CLI before fixture readback.
+                    target/debug/lexlean --project "$project" clean
+                    test ! -e "${project%/lexlean.toml}/.lexlean"
+                    test ! -L "${project%/lexlean.toml}/.lexlean"
                     refreshed=$((refreshed + 1))
                   fi
                 done
