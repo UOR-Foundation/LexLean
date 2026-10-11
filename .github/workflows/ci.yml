@@ -29,6 +29,12 @@ on:
   push: { branches: [main] }
   pull_request:
   workflow_dispatch:
+    inputs:
+      maintenance:
+        description: Explicit devcontainer maintenance; not ordinary CI acceptance
+        type: choice
+        default: none
+        options: [none, regenerate, verify-devcontainer]
 
 # Read-only: nothing in this workflow writes to the repository or publishes a
 # package. The acceptance log is retained as CI evidence; `release.yml` asks
@@ -50,6 +56,7 @@ env:
 jobs:
   vv:
     name: just vv (${{ matrix.part }})
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.maintenance != 'regenerate' && inputs.maintenance != 'verify-devcontainer') }}
     # A failing leg does not cancel the other: each leg's evidence is complete.
     strategy:
       fail-fast: false
@@ -171,6 +178,7 @@ jobs:
   # own `xtask` and `repo-conformance`, which no host in this job runs.
   host-matrix:
     name: build and non-Lean tests (${{ matrix.target }})
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.maintenance != 'regenerate' && inputs.maintenance != 'verify-devcontainer') }}
     strategy:
       fail-fast: false
       matrix:
@@ -203,3 +211,193 @@ jobs:
       # further one costs a whole run of the leg. The job fails exactly when a
       # test fails, as before; only what it reports is complete (SPEC.md §8.3).
       - run: cargo test --locked --workspace --all-features --no-fail-fast
+  devcontainer-maintenance:
+    name: devcontainer maintenance (${{ inputs.maintenance }})
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.maintenance == 'regenerate' || inputs.maintenance == 'verify-devcontainer') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MAINTENANCE_MODE: ${{ inputs.maintenance }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the repository's pinned devcontainer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          mkdir -p ci-evidence
+          git rev-parse HEAD | tee ci-evidence/source-commit.txt
+          git rev-parse HEAD^{tree} | tee ci-evidence/source-tree.txt
+          docker build --iidfile ci-evidence/image-id.txt -f .devcontainer/Dockerfile . 2>&1 | tee ci-evidence/image-build.txt
+          docker image inspect "$(cat ci-evidence/image-id.txt)" > ci-evidence/image-inspect.json
+      - name: Capture the original fixture oracle boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          protected = (
+              "lock-schema-language-mismatch", "lock-schema-language-mismatch-1.1",
+              "model-artifact-source-under-1.1", "module-prefix-reserved",
+              "module-prefix-shipped-root", "package-language-mismatch",
+          )
+          digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
+          cases = sorted(p for root in ("tests/fixtures", "tests/negative") for p in Path(root).rglob("case.toml"))
+          assert cases
+          before = {
+              "cases": {str(p): digest(p) for p in cases},
+              "codes": {str(p.parent / "expected/diagnostics.json"): [d["code"] for d in json.loads((p.parent / "expected/diagnostics.json").read_bytes())] for p in cases},
+              "protected": {str(p): digest(p) for name in protected for p in (Path("tests/negative") / name / "project/lexlean.toml", Path("tests/negative") / name / "project/lexlean.lock")},
+          }
+          Path("ci-evidence/fixture-boundaries.json").write_text(json.dumps(before, sort_keys=True) + "\n")
+          PY
+      - name: Run the explicit maintenance operation as the devcontainer user
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$MAINTENANCE_MODE" in regenerate|verify-devcontainer) ;; *) exit 1 ;; esac
+          source_dir="$RUNNER_TEMP/lexlean-maintenance-source"
+          test ! -e "$source_dir"
+          git clone --no-local --no-hardlinks "$GITHUB_WORKSPACE" "$source_dir"
+          test "$(git -C "$source_dir" rev-parse HEAD)" = "$(cat ci-evidence/source-commit.txt)"
+          sudo chown -R 1000:1000 "$source_dir"
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+          actor="lexlean-maintenance-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          nonce="$(openssl rand -hex 16)"
+          revision="$(cat ci-evidence/source-commit.txt)"
+          image="$(cat ci-evidence/image-id.txt)"
+          matches_inspection() {
+            local target=$1 format=$2 expected=$3 observed
+            observed="$(timeout 10 docker inspect --format "$format" "$target")" || return 1
+            test "$observed" = "$expected"
+          }
+          retire_actor() {
+            primary_status=$?
+            trap - EXIT
+            set +e
+            result=$primary_status
+            printf '%s\n' "$primary_status" > ci-evidence/maintenance-primary-exit.txt || result=1
+            deadline=$((SECONDS + 60))
+            while [ ! -s ci-evidence/container.cid ] && [ "$SECONDS" -lt "$deadline" ]; do
+              sleep 0.25
+            done
+            if [ -f ci-evidence/container.cid ] && [ ! -L ci-evidence/container.cid ] && \
+              [ "$(stat --format '%h' ci-evidence/container.cid)" = 1 ]; then
+              cid="$(cat ci-evidence/container.cid)"
+              if [[ ! "$cid" =~ ^[0-9a-f]{64}$ ]] || \
+                ! matches_inspection "$cid" '{{.Name}}' "/$actor" || \
+                ! matches_inspection "$cid" '{{.Config.Image}}' "$image" || \
+                ! matches_inspection "$cid" '{{index .Config.Labels "lexlean.maintenance.nonce"}}' "$nonce" || \
+                ! matches_inspection "$cid" '{{index .Config.Labels "lexlean.maintenance.revision"}}' "$revision"; then
+                echo "Cannot authenticate maintenance container" >&2
+                exit 1
+              fi
+              timeout 60 docker inspect "$cid" > ci-evidence/container-inspect.json || result=1
+              timeout 60 docker stop --time 10 "$cid" > ci-evidence/container-stop.txt 2>&1 || result=1
+              timeout 60 docker rm "$cid" > ci-evidence/container-remove.txt 2>&1 || result=1
+              if by_id="$(timeout 60 docker ps --all --quiet --no-trunc --filter "id=$cid")"; then
+                test -z "$by_id" || result=1
+              else
+                result=1
+              fi
+              if by_name="$(timeout 60 docker ps --all --quiet --no-trunc --filter "name=^/$actor$")"; then
+                test -z "$by_name" || result=1
+              else
+                result=1
+              fi
+            else
+              echo "Unresolved pending container identity; absence is not established" >&2
+              result=1
+            fi
+            python3 - "$source_dir" <<'PY' || result=1
+          import hashlib, json, sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          before = json.loads(Path("ci-evidence/fixture-boundaries.json").read_bytes())
+          for relative, expected in {**before["cases"], **before["protected"]}.items():
+              p = root / relative
+              actual = hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
+              assert actual == expected, f"Fixture input changed: {relative}"
+          for relative, expected in before["codes"].items():
+              actual = [d["code"] for d in json.loads((root / relative).read_bytes())]
+              assert actual == expected, f"Intended oracle diagnostic changed: {relative}"
+          print("Original case inputs, protected admission failures and all diagnostic-code arrays are unchanged")
+          PY
+            git -c safe.directory="$source_dir" -C "$source_dir" diff --binary > ci-evidence/generated.patch || result=1
+            git -c safe.directory="$source_dir" -C "$source_dir" diff --stat > ci-evidence/generated-stat.txt || result=1
+            sha256sum ci-evidence/generated.patch > ci-evidence/generated-patch.sha256 || result=1
+            if ! printf '%s\n' "$result" > ci-evidence/maintenance-exit.txt; then
+              exit 1
+            fi
+            exit "$result"
+          }
+          trap retire_actor EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          docker run --name "$actor" --cidfile ci-evidence/container.cid --init --user 1000:1000 \
+            --label "lexlean.maintenance.nonce=$nonce" --label "lexlean.maintenance.revision=$revision" \
+            --env CARGO_INCREMENTAL=0 --env CARGO_TERM_COLOR=never \
+            --env MAINTENANCE_MODE --volume "$source_dir:/work" \
+            --workdir /work \
+            "$(cat ci-evidence/image-id.txt)" bash -euo pipefail -c '
+              test "$(id -u)" = 1000
+              rustc -vV
+              cargo --version
+              lean --version
+              just --version
+              cargo deny --version
+              test -z "$(git status --porcelain)"
+              if [ "$MAINTENANCE_MODE" = verify-devcontainer ]; then
+                just vv
+                test -z "$(git status --porcelain)"
+              else
+                cargo build --locked -p lexlean
+                for project in examples/*/lexlean.toml compiler/lexlean.toml; do
+                  target/debug/lexlean --project "$project" lock
+                done
+                just golden-write
+                just calculus-write
+                cargo build --locked -p lexlean
+                for project in examples/*/lexlean.toml compiler/lexlean.toml; do
+                  target/debug/lexlean --project "$project" lock
+                done
+                just golden-write
+                just calculus
+                affected=0
+                refreshed=0
+                for project in tests/negative/*/project/lexlean.toml; do
+                  if grep -Eq "^language = \"1\.[12]\"$" "$project"; then
+                    affected=$((affected + 1))
+                    case "$project" in
+                      tests/negative/lock-schema-language-mismatch/project/lexlean.toml|tests/negative/lock-schema-language-mismatch-1.1/project/lexlean.toml|tests/negative/model-artifact-source-under-1.1/project/lexlean.toml|tests/negative/module-prefix-reserved/project/lexlean.toml|tests/negative/module-prefix-shipped-root/project/lexlean.toml|tests/negative/package-language-mismatch/project/lexlean.toml) continue ;;
+                    esac
+                    target/debug/lexlean --project "$project" lock
+                    refreshed=$((refreshed + 1))
+                  fi
+                done
+                test "$affected" = 232
+                test "$refreshed" = 226
+                just fixtures-write
+                just verify-write
+                just fixtures golden
+                git diff --check
+                git add --intent-to-add -- examples compiler language/preservation-1.2/modules tests/fixtures tests/negative
+                test -z "$(git ls-files --others --exclude-standard)"
+              fi
+            ' 2>&1 | tee ci-evidence/maintenance.txt
+          matches_inspection "$actor" '{{.State.ExitCode}}' 0
+          matches_inspection "$actor" '{{.State.OOMKilled}}' false
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: devcontainer-maintenance-evidence
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14
