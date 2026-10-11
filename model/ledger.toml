@@ -53,3 +53,9 @@ id = "AUTH-UOR-GNAF-1-DRAFT-2"
 level = "some-true"
 statement = "UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only."
 authority = "UOR-GNAF-1-DRAFT-2"
+
+[[claim]]
+id = "AUTH-LEAN4-PROD-991956FE"
+level = "some-true"
+statement = "auser/lean4-prod at source commit 991956fe427bb646498fd0912c89b71be71e7beb exports the deterministic compilable closure of a named Lean 4.32.1 definition through Lean's own compiler front end, rejecting what it cannot realize, and generates Rust whose stated contract is no panic on caller-controlled input and no heap allocation, with Nat as u64 under checked arithmetic and a Result return exactly for definitions that can fail."
+authority = "LEAN4-PROD-991956FE"

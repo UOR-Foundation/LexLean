@@ -1743,6 +1743,12 @@ suite = "preservation"
 statement = "Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof."
 
 [[id]]
+id = "SP-12"
+level = "build"
+suite = "preservation"
+statement = "The pinned auser/lean4-prod compiler, recorded in model/authorities.toml by source, revision, and SHA-256, is used strictly as a differential validation oracle over the overlapping production domain: the committed corpus covers every LexLean production construct the oracle realizes through the rust-core-eligible roots of examples/production, examples/production-coverage, examples/models, and examples/reasoning, comparing acceptance and rejection, observable outcomes on the differential's inputs, the failure contract and export shape, and the allocation-free resource invariant where comparable, semantically and never by byte identity, so a better-but-equivalent rendering is accepted; a disagreement fails the gate closed with both sides' evidence recorded, an oracle that cannot run is the distinct unavailable outcome and never a successful validation, every deliberate difference is explicit, versioned, and tested, and no oracle artifact enters a semantic ID, a build ID, a verified artifact, an attestation, or an optimality claim."
+
+[[id]]
 id = "MD-01"
 level = "build"
 suite = "models"

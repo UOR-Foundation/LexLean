@@ -470,7 +470,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
-│   └── negative/
+│   ├── negative/
+│   └── oracle/
 └── xtask/
     ├── Cargo.toml
     └── src/
@@ -5205,6 +5206,91 @@ and are an explicit internal error otherwise. The theorems are proofs about
 the roots they name; the generator and the suite are `build` evidence for any
 root not certified.
 
+### 17.18 Differential validation oracle
+
+The auser/lean4-prod compiler (authority `LEAN4-PROD-991956FE`, §27.4) is
+integrated strictly as a *differential validation oracle* over the
+overlapping production domain. It falsifies regressions; it establishes
+nothing. Its output is validation evidence at honesty level `build` (§27.3):
+it is never normative semantics, never a proof, never candidate-universe
+completeness, and never optimality evidence (§17.15), and no claim row may
+present it as any of those. `leanchecker`'s rule applies here with the
+stakes reversed (§22.4): the oracle is an *independent* implementation, so
+its agreement is stronger than a replay and its disagreement is a finding,
+and for exactly that reason its absence must never read as agreement.
+
+**Pin.** The oracle is exactly the source commit recorded in
+`model/authorities.toml` (`991956fe427bb646498fd0912c89b71be71e7beb`),
+identified by its immutable source URL and the SHA-256 of the acquired
+archive. The corpus records outputs of that revision and no other, and names
+the revision it was recorded against; a record against another revision is
+stale evidence and the gate treats it as unavailable (below).
+
+**Corpus.** `tests/oracle/` holds the differential corpus, one manifest
+(`lexlean/oracle-corpus/1`) with per-root artifacts. The overlapping domain
+is defined from the production side, not the oracle side: every root of
+`examples/production`, `examples/production-coverage`, `examples/models`,
+and `examples/reasoning` whose eligibility report admits `rust-core` is in
+the overlap, and a production construct (§17.13) is in the overlap when some
+such root realizes it without allocation. Every root in the overlap appears
+in the corpus exactly once, with the oracle's recorded verdict, and every
+overlapping construct is exercised by at least one accepted corpus root. A
+construct or root the oracle does not realize is not silently dropped: it is
+a *deliberate difference*, recorded in the manifest with the oracle's
+recorded rejection, and versioned by the corpus's `version`, which a change
+to any difference must bump.
+
+**Comparison.** For each accepted root the corpus records the oracle's
+exported IR, its generated Rust, its export shape (parameters, result, and
+whether the result can fail), and its observable outcomes. The gate
+recomputes LexLean's side from the committed examples (the interpreter's
+outcomes on the differential's inputs, the failure contract and export shape
+of the root's `rust-core` package) and re-executes the recorded generated
+Rust under the pinned `rustc` on the same inputs. The comparison is semantic
+on four dimensions, never byte identity:
+
+1. acceptance and rejection agree with the recorded verdicts;
+2. observable outcomes agree on every input of the differential;
+3. the failure contract and export shape agree where comparable: the
+   oracle's `Result`-returning functions are exactly the roots LexLean
+   renders as fallible;
+4. resource invariants agree where comparable: the recorded generated Rust
+   of a `rust-core` root allocates nothing and never panics.
+
+Byte identity is not a dimension. The oracle renders its own code from its
+own LCNF view, so a better-but-semantically-equivalent rendering — different
+bytes, the same four dimensions — is accepted, and the corpus carries such a
+case deliberately.
+
+**Fail closed.** The outcome of the lane is one of a closed set:
+`agreement`, `disagreement`, or `unavailable`. A disagreement on any
+dimension fails the gate and the failure names both sides' evidence: the
+root, the input, LexLean's outcome, and the oracle's recorded outcome and
+artifact hashes. An oracle that cannot run — its artifacts missing, its
+record stale against the pinned revision, its generated Rust no longer
+compiling — is `unavailable`, which fails the gate as itself and can never
+be coerced to `agreement`; the conformance suite plants each coercion and
+requires the refusal. Nothing in the lane has a default verdict.
+
+**Isolation.** Oracle artifacts are inputs to the differential gate and to
+nothing else. They are read by no identity computation: no semantic ID,
+build ID, or compiler-semantics ID (§21) hashes them; no verified artifact,
+attestation (§22.9), provenance, or GNAF manifest (§17.15) names them or
+their digests; the shipped crate does not read them. Removing or disabling
+the lane removes `SP-12` and changes no normative compiler semantics and no
+formal proof artifact: certificates A, B, and E (§17.17) are checked by the
+pinned Lean kernel, which never sees the oracle. The gate itself asserts
+this isolation by scanning the committed artifacts for any reference to the
+oracle.
+
+**Regeneration.** The recorded artifacts are produced by running the pinned
+oracle on the generated Lean modules of the committed examples: its named-root
+export of each corpus root, its code generation, and the execution of the
+generated Rust on the differential's inputs, all under the toolchains this
+section pins. Re-deriving the record and finding a difference is a
+disagreement; an oracle that cannot run produces no record, never a passing
+one.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -6770,6 +6856,13 @@ which `cargo xtask validate-model` recomputes from the copy's bytes. Its ledger
 claim is `some-true`, and the GN conformance IDs are `build` evidence that
 LexLean realizes it.
 
+The differential validation lane (§17.18) adds `LEAN4-PROD-991956FE`, the
+auser/lean4-prod production compiler at its pinned source commit, recorded
+with `source_role = "validation"`: its guarantees are reproduced `some-true`
+and its recorded output is differential validation evidence, never normative
+semantics. Nothing from it is vendored, because the authority publishes no
+license.
+
 ### 27.5 Generated documents
 
 `cargo xtask validate-model` MUST:
@@ -7670,6 +7763,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-09` | `preservation` | Certificate E composes certificates A and B: for every production root in each of its targets, a generated proof that every encoded argument is well typed for the root's parameters and the library's composition theorem establish that the rendered root, or its boundary entry when it has one, invoked on the encoded source arguments, realizes certificate A's observation of the source, as `some` when the arguments satisfy the invariants §17.12 states of them and as `none` otherwise; the pinned Lean checks and replays every composition, each end-to-end theorem depends on exactly Classical.choice, Quot.sound, and propext, a composition claiming the other result shape or another function is refused, verification fails with LLV7016 on a rejected composition, and a root verifies whatever its parameters are named, including the names the composition binds for itself, the words a certificate writes bare, the names of the namespaces the certificates begin a name with, and the tokens the certificate audit forbids, as does a declaration spelled like a word the audit of generated Lean forbids. | §17.17 |
 | `SP-10` | `preservation` | A production root whose parameters can hold a map, set, or graph, directly or inside options, results, products, lists, document types, and recursive groups of them, is lowered with a generated entry function that calls the root only when the generated validators of each such parameter accept it and returns none otherwise; certificate A proves each validator decides exactly the proposition §17.12 states of its type and the entry's two outcomes; a validator is called only by the entry and by validators, so no proof-only invariant becomes a runtime check, and a validator called from inside the program is refused by the lowering; and a validator dropped from the entry, one weakened to admit an equal key, and a rendering whose entry drops a validator are each refused by Lean at the relation they change; a lowering whose entry skips a validated parameter is refused by the generator, which judges the validated parameters from the source types alone, and the differentials break each validated parameter's invariant in turn, which the interpreter, Lean, the declared machine, and rustc each refuse with none. | §17.12, §17.17 |
 | `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
+| `SP-12` | `preservation` | The pinned auser/lean4-prod compiler, recorded in model/authorities.toml by source, revision, and SHA-256, is used strictly as a differential validation oracle over the overlapping production domain: the committed corpus covers every LexLean production construct the oracle realizes through the rust-core-eligible roots of examples/production, examples/production-coverage, examples/models, and examples/reasoning, comparing acceptance and rejection, observable outcomes on the differential's inputs, the failure contract and export shape, and the allocation-free resource invariant where comparable, semantically and never by byte identity, so a better-but-equivalent rendering is accepted; a disagreement fails the gate closed with both sides' evidence recorded, an oracle that cannot run is the distinct unavailable outcome and never a successful validation, every deliberate difference is explicit, versioned, and tested, and no oracle artifact enters a semantic ID, a build ID, a verified artifact, an attestation, or an optimality claim. | §17.13, §17.16, §17.18 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -7697,7 +7791,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |
 | `RS-14` | `reasoning` | The committed reasoning example verifies a multi-step clinical forward derivation with its invariant and termination, a generic terminating countdown, a deduplicating breadth-first planner, a depth-first search and a generate-and-verify reasoner over model-generated candidates, and an answer proved correct with its check erased, with every generated theorem kernel-checked, and planting a rule-threshold mutation in it is refused by verification. | §17.12, §28.6 |
 
-**Total required capability IDs:** 315.
+**Total required capability IDs:** 316.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
