@@ -41,6 +41,27 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### maintenance generated-tree capture can fail
+
+`python3 -B .github/test-capture-generated.py` runs 16 small, real Git controls.
+A fixture performs an ordinary modification, a binary addition, and a deletion,
+then runs the maintenance writer's actual `git add --intent-to-add`. Git stages
+that deletion. The previous worktree-only patch omits it; an executed mutant
+using that capture fails with `Captured patch does not reconstruct the complete
+result tree`. Capture against `HEAD` passes, including the deleted path and the
+complete resulting generated-file inventory. Two private indexes and a private
+object database compare the actual result with applying the patch to `HEAD`,
+without changing the devcontainer clone's Git metadata.
+
+The same controls refuse missing or corrupt inventory entries, ignored extra
+generated files, authored-source changes, untracked source, links, stale HEAD,
+growth, truncation, bounds overflow, capture-time mutation and evidence overwrite.
+A late tracked change outside all generated scopes is refused by the final
+whole-HEAD diff comparison. The complete 16-control run passed on the host. This is artifact-capture
+falsifiability, not compiler, own-devcontainer, full-V&V or release acceptance.
+The successful writer at `4dc09534` and its incomplete uploaded patch remain
+distinct evidence; missing deletions are not reconstructed for adoption.
+
 ### release inventory can fail
 
 `release-artifacts` derives the tree manifest directly from the captured crate

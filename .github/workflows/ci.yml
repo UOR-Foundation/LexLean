@@ -222,6 +222,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Test complete generated-tree capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          python3 -B .github/test-capture-generated.py 2>&1 | tee ci-evidence/generated-capture-tests.txt
       - name: Build the repository's pinned devcontainer
         shell: bash
         run: |
@@ -334,9 +340,7 @@ jobs:
               assert not build_root.exists() and not build_root.is_symlink(), f"Fixture build root remains: {build_root}"
           print("Original case inputs, protected admission failures and all diagnostic-code arrays are unchanged")
           PY
-            git -c safe.directory="$source_dir" -C "$source_dir" diff --binary > ci-evidence/generated.patch || result=1
-            git -c safe.directory="$source_dir" -C "$source_dir" diff --stat > ci-evidence/generated-stat.txt || result=1
-            sha256sum ci-evidence/generated.patch > ci-evidence/generated-patch.sha256 || result=1
+            python3 -B .github/capture-generated.py "$source_dir" "$GITHUB_WORKSPACE/ci-evidence" "$revision" > ci-evidence/generated-capture.txt 2>&1 || result=1
             if ! printf '%s\n' "$result" > ci-evidence/maintenance-exit.txt; then
               exit 1
             fi
