@@ -222,12 +222,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Test complete generated-tree capture
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ci-evidence
-          python3 -B .github/test-capture-generated.py 2>&1 | tee ci-evidence/generated-capture-tests.txt
       - name: Build the repository's pinned devcontainer
         shell: bash
         run: |
@@ -238,6 +232,12 @@ jobs:
           git rev-parse HEAD^{tree} | tee ci-evidence/source-tree.txt
           docker build --iidfile ci-evidence/image-id.txt -f .devcontainer/Dockerfile . 2>&1 | tee ci-evidence/image-build.txt
           docker image inspect "$(cat ci-evidence/image-id.txt)" > ci-evidence/image-inspect.json
+      - name: Test complete generated-tree capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          python3 -B .github/test-capture-generated.py 2>&1 | tee ci-evidence/generated-capture-tests.txt
       - name: Capture the original fixture oracle boundaries
         shell: bash
         run: |
