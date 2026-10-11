@@ -12,9 +12,9 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `model` | `cargo xtask validate-model` | R1 (model is the single source; every model file parsed with unknown-field rejection), R2 (honesty levels and vocabulary, via the meta-gate), R3 (register/scenario/test bijection, Gherkin subset), R4 (`audit-deferral`), R5 (`audit-errors`), R6 (`audit-shipped`, including the shipped crate's normative links, and every vendored authority's SHA-256 recomputed from its copy), R8 (`audit-generated`, `audit-language-closure`), RP-09 (`audit-no-unsafe`), PD-07 (`audit-production`), §27.5 (CONFORMANCE.md and ERRORS.md equal regeneration) |
 | `spec-links` | `cargo xtask validate-spec-links` | RP-07, §27.6: the §31 table and `model/ids.toml` are bijective and byte-consistent |
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
-| `test` | `cargo test --workspace --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI), the model crate's own tests, and all 316 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `test` | `cargo test --workspace --exclude repo-conformance --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI) and the model crate's own tests, over every workspace member except `repo-conformance`, which `bdd` owns (RP-13) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
-| `bdd` | `cargo test -p repo-conformance --test bdd` | R3, §27.7, §27.8: register ↔ scenario ↔ test bijection, the meta-gate, and its own falsifiability test; the conformance tests it names are run once, by `test` |
+| `bdd` | `cargo test -p repo-conformance --all-features` | R3, §27.7, §27.8: the complete `repo-conformance` suite, owned by this phase alone (RP-13) — register ↔ scenario ↔ test bijection, the honesty meta-gate and its falsifiability test, and all 319 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
@@ -4877,3 +4877,125 @@ vacuous, so each was made to fail again after the change.
   (`LexLeanModels`, `LexLeanReasoning`): linking refuses those as binders, and
   the fixtures `binder-bool-literal-name` and `declaration-lean-name` hold
   that.
+
+## CI execution structure (Issue #48)
+
+Issue #48 changes execution structure only; it does not weaken, skip, cache
+away, or change the meaning of any `just vv` acceptance obligation. It makes
+the two test-phase ownerships exact, replaces the fixed verifier process width
+with an explicit operational resource setting, adds CI-only performance
+telemetry, and removes the waste that survived the runtime work of #25.
+
+### Exact test-phase ownership (RP-13)
+
+`test` is `cargo test --workspace --exclude repo-conformance --all-features`
+and `bdd` is `cargo test -p repo-conformance --all-features`. The two phases
+partition the workspace test surface: `test` runs every member but the
+`repo-conformance` package, `bdd` runs that package's complete suite — all the
+conformance tests and the honesty meta-gate — and no test runs twice or not at
+all. `conformance_rp_13` proves this statically, without a nested `cargo` (which
+would deadlock on the target lock): it pins the two recipe lines, reads the
+workspace member set from the root manifest, and checks that every
+`conformance_*` test and every meta-gate target is defined under
+`crates/conformance`. `RP-05` continues to pin the recipe text.
+
+Before #48 the meta-gate (`tests/bdd.rs`) ran twice in `vv`: once inside `test`
+(`cargo test --workspace` runs every target of `repo-conformance`) and again in
+`bdd`. Now it runs exactly once, in `bdd`. No conformance test was already
+duplicated, so the wall-clock change here is the one meta-gate run; the value
+is that the documented ownership and the executed ownership are identical.
+
+### Operational verification process width (VR-20)
+
+`PROCESS_WIDTH` was a `const usize = 1`. It is now read from
+`LEXLEAN_VERIFY_PROCESS_WIDTH` (SPEC.md §22.11): default 1, refused as `LLV7017`
+before any toolchain work when empty, zero, negative, or non-integer. Width 1
+remains what the normative `just vv` uses on the standard runner, so Atlas is
+unchanged. Topological import barriers remain mandatory, and replay and
+axiom-audit work overlap only where the per-module jobs are already
+independent. The canonical record order is fixed by item index, never by
+completion order, so a greater width cannot change any record, ID, or artifact.
+
+`conformance_vr_20` asserts the refusal on every host, then verifies a
+diamond-frontier project (`Base`; `Left`, `Right`; `Main`) at width 1 and at
+width 4 and compares the two published verified trees byte for byte and their
+semantic ID, build ID, and attestation ID. The attestation body carries every
+process record, the observed axiom sets, and the policy results, so identical
+trees are identical evidence.
+
+### Verification telemetry (VR-21)
+
+`LEXLEAN_VERIFY_TELEMETRY` names a host-chosen file that receives one JSON row
+per verification child process (stage, module, wall time) and one per measured
+stage. It lives in `crates/lexlean/src/verify/telemetry.rs` and is structurally
+outside semantics: it is read by nothing, hashed into nothing, and a write that
+fails drops its row rather than failing the verification (SPEC.md §22.11, R2).
+`conformance_vr_21` asserts that a run refused before any stage emits no row
+and publishes nothing, and that a verified run with telemetry enabled publishes
+byte-identical artifacts (and the same attestation ID) to one without, with no
+row or telemetry path inside any published artifact.
+
+`ci.yml` sets `LEXLEAN_VERIFY_TELEMETRY` under `ci-evidence` and runs
+`just --timestamp vv` — the same recipes `just vv` runs — then a summarize step
+writes `ci-evidence/performance.json`: per-recipe wall time from the
+timestamps, per-stage and slowest-module verification wall time from the
+telemetry rows, and peak host memory, swap, and proof-process RSS from
+five-second samples of `/proc/meminfo` and `ps`. All of it is CI evidence: none
+of it enters a semantic ID, build ID, verified artifact, normalized record, or
+attestation identity.
+
+### Waste removed
+
+- The `host-matrix` job ran `cargo build --locked --workspace --all-features`
+  and then `cargo test --locked --workspace --all-features`, which compiles the
+  library, the binaries, and every test target on the same profile. The build
+  step is removed; the test run alone establishes §8.3's "builds and non-Lean
+  tests pass". The removed step rebuilt the same artifacts on each of the five
+  supported hosts.
+- The resource monitor sampled once a minute; it samples every five seconds
+  now, which is what makes a proof-process RSS peak visible rather than the
+  average of a minute.
+
+The remaining long pole is `uor-atlas` at width 1, unchanged: it is the same
+182.5 minutes and touching it is out of scope.
+
+### Falsifiability record
+
+- **The ownership gate can fail.** Planted: the `test` recipe restored to
+  `cargo test --workspace --all-features`. Command: `cargo test -p
+  repo-conformance --test conformance -- conformance_rp_13`. Observed, then
+  removed:
+
+  ```text
+  thread 'conformance_rp_13' panicked at crates/conformance/src/cases/repository.rs:941:17:
+  assertion `left == right` failed: §9.2: `test` runs exactly the specified command
+    left: ["cargo test --workspace --all-features"]
+   right: ["cargo test --workspace --exclude repo-conformance --all-features"]
+  ```
+
+- **The width-invariance gate can fail.** Planted: the completion-order defect
+  — `run_process_batch` collecting results in completion order rather than item
+  order — which lets `Left` and `Right` elaborate in a non-canonical order at
+  width 4. `conformance_vr_20` compares the two published trees and their
+  attestation IDs, so the reordered records diverge and the comparison fails.
+  (Run on the normative runner, where the pinned toolchain is present.)
+
+- **The telemetry-isolation gate can fail.** Planted: a row written into the
+  staged attestation body (for example a `telemetry` field carrying a wall
+  time). `conformance_vr_21` compares the published tree of a run with
+  telemetry enabled against one without it, so the injected field changes the
+  attestation ID and the byte comparison fails, and its scan for `wall_ms`
+  inside published artifacts reports the file.
+
+- **The reuse rule still fails closed.** Planted: a prior run's
+  `.lexlean/verified/<id>` tree copied into a fresh project before
+  verification. `verify` stages its own, and publication compares the staged
+  files against the existing directory (`validate_existing`, §21.8), so a
+  planted prior artifact that does not match the current run's bytes is the
+  `LLB6003` "existing verified directory ... does not validate against this
+  run" refusal, never a silent reuse. `conformance_vr_14` recomputes the
+  attestation ID from a published tree independently.
+
+The standard-runner before/after timings and the CI-evidence numbers that back
+this section are recorded from the complete run of this change on the standard
+runner; the run's `ci-evidence/performance.json` is the measurement.

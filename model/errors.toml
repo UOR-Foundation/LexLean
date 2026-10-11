@@ -482,3 +482,10 @@ class = "language"
 exit = 1
 title = "Certificate E rejected"
 statement = "The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."
+
+[[error]]
+code = "LLV7017"
+class = "environment"
+exit = 3
+title = "Invalid operational verification process width"
+statement = "The operational verification process width named by LEXLEAN_VERIFY_PROCESS_WIDTH is empty, zero, negative, or not a positive integer."

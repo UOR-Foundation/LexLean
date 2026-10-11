@@ -15,6 +15,21 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- CI execution structure (Issue #48, SPEC.md §9.2, §9.4, §22.11, RP-13, VR-20,
+  VR-21): the two test phases own their coverage exactly — `test` is `cargo
+  test --workspace --exclude repo-conformance --all-features` and `bdd` owns
+  the complete `repo-conformance` suite (the conformance tests and the honesty
+  meta-gate), so the meta-gate no longer runs twice; the verifier's fixed
+  `PROCESS_WIDTH = 1` becomes the operational `LEXLEAN_VERIFY_PROCESS_WIDTH`
+  (default 1, refused as `LLV7017` when empty, zero, negative, or
+  non-integer, and 1 is what the normative gate uses); verification telemetry
+  (`LEXLEAN_VERIFY_TELEMETRY`, one wall-time row per child) and a five-second
+  `/proc/meminfo`/`ps` sampler are recorded under `ci-evidence` only and never
+  enter a semantic ID, build ID, artifact, normalized record, or attestation;
+  and the `host-matrix` job's duplicate `cargo build` step is removed.
+  `conformance_rp_13` proves the test-phase partition, `conformance_vr_20`
+  proves width invariance on a diamond-frontier project, and
+  `conformance_vr_21` proves telemetry isolation.
 - The acceptance gate fits its job again (SPEC.md §9.2, VERIFICATION.md,
   "Runtime of `just vv`"): the run of this branch was cancelled at the
   360-minute limit. `bdd` is `cargo test -p repo-conformance --test bdd`, the

@@ -26,8 +26,11 @@ spec-links:
 lint:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+# The workspace test phase excludes `repo-conformance`, whose complete test
+# suite — the conformance tests and the honesty meta-gate alike — is owned by
+# `bdd` alone, so no test runs twice in `vv` and none is dropped (RP-13, §9.2).
 test:
-    cargo test --workspace --all-features
+    cargo test --workspace --exclude repo-conformance --all-features
 
 # A feature only its author has built is a feature that does not work: every
 # optional feature compiles, with its tests.
@@ -35,13 +38,11 @@ features:
     cargo check --workspace --all-features --all-targets
 
 # R3: every capability begins as a Gherkin scenario, and every scenario has a
-# test named `conformance_<id>` (§27.8). The meta-gate is the `bdd` test target
-# alone: the conformance tests themselves are already run, once, by `test`
-# (`cargo test --workspace` runs every target of `repo-conformance`), and running
-# them a second time here doubled the longest stage of `vv` without checking
-# anything the first run did not.
+# test named `conformance_<id>` (§27.8). This phase is the sole owner of the
+# `repo-conformance` package: its conformance tests and its honesty meta-gate,
+# run exactly once, while `test` excludes the package (RP-13, §9.2).
 bdd:
-    cargo test -p repo-conformance --test bdd
+    cargo test -p repo-conformance --all-features
 
 # §17.14, §17.15: the target and GNAF fixtures and their Lean modules equal
 # their generator. `just test` enforces the same comparison through

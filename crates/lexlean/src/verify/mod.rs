@@ -19,12 +19,20 @@
 //!   compilations, `leanchecker` replays, the audit, and both PDF provider
 //!   processes per module) is recorded in the attestation and checked for
 //!   unexpected absolute paths.
+//! - **Operational width and telemetry.** How many independent verification
+//!   processes run at once is an execution resource setting, never semantic
+//!   input (SPEC.md §22.11): `LEXLEAN_VERIFY_PROCESS_WIDTH` selects it with
+//!   default 1, and `LEXLEAN_VERIFY_TELEMETRY` names a CI-evidence file for
+//!   per-child wall times. Neither reaches any identity or published
+//!   artifact; the canonical record order is fixed by item index, never by
+//!   completion order.
 
 pub mod axiom;
 pub mod child;
 pub mod leanchecker;
 pub(crate) mod lifeline;
 pub mod source_audit;
+pub mod telemetry;
 pub mod toolchain;
 pub mod workspace;
 
@@ -46,6 +54,7 @@ use crate::lock::Lock;
 use crate::project::Project;
 use crate::source::coverage::Origin;
 use crate::verify::child::{run as run_child, ChildHome, ChildRecord, ChildSpec, Normalizer};
+use crate::verify::telemetry::Telemetry;
 use crate::verify::toolchain::Toolchain;
 
 /// The outcome of a successful verification.
@@ -710,12 +719,41 @@ fn require_silent(
     Ok(())
 }
 
-/// Proof processes run one at a time. A single Atlas environment approaches
-/// the memory available on the normative GitHub runner; overlapping two made
-/// the hosted runner lose its control-plane heartbeat while swapping. Lean is
-/// still free to use its own internal parallelism, while this fixed outer
-/// width makes the verifier's peak resident set bounded and reproducible.
-const PROCESS_WIDTH: usize = 1;
+/// The operational verification process width (SPEC.md §22.11): how many
+/// independent verification processes run at once. It is an execution
+/// resource setting, never semantic input — it never enters a semantic ID, a
+/// build ID, a verified artifact, a normalized record, or an attestation
+/// identity, and the canonical record order is fixed by item index, never by
+/// completion order.
+///
+/// The default is 1, the conservative width the normative `just vv` uses on
+/// the standard runner: a single Atlas environment approaches the runner's
+/// memory, and overlapping two made the hosted runner lose its
+/// control-plane heartbeat while swapping. Lean is still free to use its own
+/// internal parallelism. A greater width is an operator's explicit choice
+/// for a host with a known memory envelope, selected through the environment
+/// variable `LEXLEAN_VERIFY_PROCESS_WIDTH`; it is exercised in conformance on
+/// small projects only, never on Atlas in CI. An empty, zero, negative, or
+/// non-integer value is refused as `LLV7017` before any toolchain work.
+fn process_width() -> Result<usize, Diagnostic> {
+    match std::env::var_os("LEXLEAN_VERIFY_PROCESS_WIDTH") {
+        None => Ok(1),
+        Some(raw) => {
+            let text = raw.to_string_lossy();
+            text.parse::<usize>()
+                .ok()
+                .filter(|width| *width >= 1)
+                .ok_or_else(|| {
+                    Diagnostic::new(
+                        code!("LLV7017"),
+                        format!(
+                            "LEXLEAN_VERIFY_PROCESS_WIDTH is `{text}`: the operational verification process width must be a positive integer (SPEC.md §22.11)"
+                        ),
+                    )
+                })
+        }
+    }
+}
 
 /// Run one deterministic batch of independent verification processes. All
 /// workers are joined before an error is returned so no child can outlive a
@@ -782,6 +820,12 @@ pub fn run(
     checked: &CheckedProject,
     build: &mut RenderedBuild,
 ) -> Result<VerifyOutcome, LexLeanError> {
+    // The operational width and the CI telemetry sink are read before any
+    // semantic work or toolchain use. Both are execution resources (§22.11);
+    // an invalid width fails as `LLV7017` before anything else runs.
+    let width = process_width().map_err(fail)?;
+    let telemetry = Telemetry::from_env();
+
     let limits = project.config.limits;
 
     // Every production root is lowered before any Lean work, and before the
@@ -1174,27 +1218,30 @@ pub fn run(
     let probe_source = staging_utf8
         .join("probe")
         .join(format!("{probe_name}.lean"));
-    let probe_record = run_child(
-        &ChildSpec {
-            tool: "lean",
-            module: Some(probe_name.clone()),
-            program: &toolchain.lake.path,
-            executable_sha256: toolchain.lean.sha256,
-            argv: vec![
-                "env".to_owned(),
-                "lean".to_owned(),
-                probe_source.to_string(),
-            ],
-            cwd: &workspace_root,
-            extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
-            home: ChildHome::Toolchain {
-                toolchain_bin: &toolchain_bin,
-            },
-        },
-        &limits,
-        &normalizer,
-    )
-    .map_err(fail)?;
+    let probe_record = telemetry
+        .timed("probe", Some(&probe_name), || {
+            run_child(
+                &ChildSpec {
+                    tool: "lean",
+                    module: Some(probe_name.clone()),
+                    program: &toolchain.lake.path,
+                    executable_sha256: toolchain.lean.sha256,
+                    argv: vec![
+                        "env".to_owned(),
+                        "lean".to_owned(),
+                        probe_source.to_string(),
+                    ],
+                    cwd: &workspace_root,
+                    extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                    home: ChildHome::Toolchain {
+                        toolchain_bin: &toolchain_bin,
+                    },
+                },
+                &limits,
+                &normalizer,
+            )
+        })
+        .map_err(fail)?;
     if probe_record.exit_code != 0 {
         // Lean writes messages to stdout under `lake env lean`; both
         // normalized streams are reported, and every failing line is
@@ -1232,6 +1279,7 @@ pub fn run(
     // A topological frontier contains no dependency edges, so its members
     // may run concurrently without making an imported olean observable
     // before the process that owns it has completed successfully.
+    let elaboration_started = std::time::Instant::now();
     let mut placed: BTreeSet<String> = BTreeSet::new();
     let mut remaining: Vec<usize> = (0..build.modules.len()).collect();
     while !remaining.is_empty() {
@@ -1249,7 +1297,7 @@ pub fn run(
         if ready.is_empty() {
             return Err(fail(internal("module order did not converge")));
         }
-        for batch in ready.chunks(PROCESS_WIDTH) {
+        for batch in ready.chunks(width) {
             for &module_index in batch {
                 let module_path = build.modules[module_index].lean_module.replace('.', "/");
                 let olean = olean_root.join(format!("{module_path}.olean"));
@@ -1267,30 +1315,32 @@ pub fn run(
                 let module_path = module_name.replace('.', "/");
                 let source = src_root.join(format!("{module_path}.lean"));
                 let olean = olean_root.join(format!("{module_path}.olean"));
-                run_child(
-                    &ChildSpec {
-                        tool: "lean",
-                        module: Some(module_name.clone()),
-                        program: &toolchain.lake.path,
-                        executable_sha256: toolchain.lean.sha256,
-                        argv: vec![
-                            "env".to_owned(),
-                            "lean".to_owned(),
-                            "-R".to_owned(),
-                            src_root.to_string(),
-                            "-o".to_owned(),
-                            olean.to_string(),
-                            source.to_string(),
-                        ],
-                        cwd: &workspace_root,
-                        extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
-                        home: ChildHome::Toolchain {
-                            toolchain_bin: &toolchain_bin,
+                telemetry.timed("elaborate", Some(module_name.as_str()), || {
+                    run_child(
+                        &ChildSpec {
+                            tool: "lean",
+                            module: Some(module_name.clone()),
+                            program: &toolchain.lake.path,
+                            executable_sha256: toolchain.lean.sha256,
+                            argv: vec![
+                                "env".to_owned(),
+                                "lean".to_owned(),
+                                "-R".to_owned(),
+                                src_root.to_string(),
+                                "-o".to_owned(),
+                                olean.to_string(),
+                                source.to_string(),
+                            ],
+                            cwd: &workspace_root,
+                            extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                            home: ChildHome::Toolchain {
+                                toolchain_bin: &toolchain_bin,
+                            },
                         },
-                    },
-                    &limits,
-                    &normalizer,
-                )
+                        &limits,
+                        &normalizer,
+                    )
+                })
             })
             .map_err(fail)?;
             for (&module_index, record) in batch.iter().zip(records) {
@@ -1341,6 +1391,7 @@ pub fn run(
         }
         remaining.retain(|index| !ready.contains(index));
     }
+    telemetry.stage("elaboration", elaboration_started.elapsed());
 
     // Generated diagnostics have all been remapped and every canonical
     // build byte is already staged. Replay, audit, policy, and publication
@@ -1355,25 +1406,28 @@ pub fn run(
             .lean_module
             .cmp(&build.modules[*b].lean_module)
     });
-    for batch in sorted_modules.chunks(PROCESS_WIDTH) {
+    let replay_started = std::time::Instant::now();
+    for batch in sorted_modules.chunks(width) {
         let records = run_process_batch(batch, |module_index| {
             let module_name = &build.modules[module_index].lean_module;
-            leanchecker::replay_module(
-                &toolchain,
-                module_name,
-                &lean_path_env,
-                &workspace_root,
-                &limits,
-                &normalizer,
-            )
-            // A replay failure is about this module, so it points at the
-            // module's source rather than at the project manifest (§20.1).
-            .map_err(|diagnostic| {
-                module_spans
-                    .get(module_name)
-                    .map_or(diagnostic.clone(), |span| {
-                        diagnostic.with_span(span.clone())
-                    })
+            telemetry.timed("replay", Some(module_name.as_str()), || {
+                leanchecker::replay_module(
+                    &toolchain,
+                    module_name,
+                    &lean_path_env,
+                    &workspace_root,
+                    &limits,
+                    &normalizer,
+                )
+                // A replay failure is about this module, so it points at the
+                // module's source rather than at the project manifest (§20.1).
+                .map_err(|diagnostic| {
+                    module_spans
+                        .get(module_name)
+                        .map_or(diagnostic.clone(), |span| {
+                            diagnostic.with_span(span.clone())
+                        })
+                })
             })
         })
         .map_err(fail)?;
@@ -1387,6 +1441,7 @@ pub fn run(
             process_records.push(record);
         }
     }
+    telemetry.stage("replay", replay_started.elapsed());
 
     // Stage 9–10: process-sized audit modules and exact output parsing
     // (§18.9, §22.5). Each member imports one generated module, so the
@@ -1398,31 +1453,34 @@ pub fn run(
         write_staged(staging.path(), &source_relative, audit.text.as_bytes())?;
     }
     let audit_indices: Vec<usize> = (0..audit_modules.len()).collect();
-    for batch in audit_indices.chunks(PROCESS_WIDTH) {
+    let audit_started = std::time::Instant::now();
+    for batch in audit_indices.chunks(width) {
         let records = run_process_batch(batch, |audit_index| {
             let audit = &audit_modules[audit_index];
             let source_relative = format!("audit/{}.lean", audit.name);
             let audit_source = staging_utf8.join(&source_relative);
-            run_child(
-                &ChildSpec {
-                    tool: "lean",
-                    module: Some(audit.name.clone()),
-                    program: &toolchain.lake.path,
-                    executable_sha256: toolchain.lean.sha256,
-                    argv: vec![
-                        "env".to_owned(),
-                        "lean".to_owned(),
-                        audit_source.to_string(),
-                    ],
-                    cwd: &workspace_root,
-                    extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
-                    home: ChildHome::Toolchain {
-                        toolchain_bin: &toolchain_bin,
+            telemetry.timed("audit", Some(audit.name.as_str()), || {
+                run_child(
+                    &ChildSpec {
+                        tool: "lean",
+                        module: Some(audit.name.clone()),
+                        program: &toolchain.lake.path,
+                        executable_sha256: toolchain.lean.sha256,
+                        argv: vec![
+                            "env".to_owned(),
+                            "lean".to_owned(),
+                            audit_source.to_string(),
+                        ],
+                        cwd: &workspace_root,
+                        extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                        home: ChildHome::Toolchain {
+                            toolchain_bin: &toolchain_bin,
+                        },
                     },
-                },
-                &limits,
-                &normalizer,
-            )
+                    &limits,
+                    &normalizer,
+                )
+            })
         })
         .map_err(fail)?;
         for (&audit_index, audit_record) in batch.iter().zip(records) {
@@ -1461,6 +1519,7 @@ pub fn run(
             process_records.push(audit_record);
         }
     }
+    telemetry.stage("audit", audit_started.elapsed());
     if observed.len() != declaration_names.len() {
         return Err(fail(internal(format!(
             "axiom audit family observed {} of {} declarations",
@@ -1738,23 +1797,26 @@ pub fn run(
         let source = staging_utf8
             .join("extract")
             .join(format!("{}.lean", driver.name));
-        let record = run_child(
-            &ChildSpec {
-                tool: "lean",
-                module: Some(driver.name.clone()),
-                program: &toolchain.lake.path,
-                executable_sha256: toolchain.lean.sha256,
-                argv: vec!["env".to_owned(), "lean".to_owned(), source.to_string()],
-                cwd: &workspace_root,
-                extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
-                home: ChildHome::Toolchain {
-                    toolchain_bin: &toolchain_bin,
-                },
-            },
-            &limits,
-            &normalizer,
-        )
-        .map_err(fail)?;
+        let record = telemetry
+            .timed("extract", Some(driver.name.as_str()), || {
+                run_child(
+                    &ChildSpec {
+                        tool: "lean",
+                        module: Some(driver.name.clone()),
+                        program: &toolchain.lake.path,
+                        executable_sha256: toolchain.lean.sha256,
+                        argv: vec!["env".to_owned(), "lean".to_owned(), source.to_string()],
+                        cwd: &workspace_root,
+                        extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                        home: ChildHome::Toolchain {
+                            toolchain_bin: &toolchain_bin,
+                        },
+                    },
+                    &limits,
+                    &normalizer,
+                )
+            })
+            .map_err(fail)?;
         if record.exit_code != 0 {
             let combined = format!("{}{}", record.stdout, record.stderr);
             return Err(fail(rejection(lcnf::classify_failure(&driver, &combined))));
@@ -1919,22 +1981,24 @@ pub fn run(
                 argv.push(olean.to_string());
             }
             argv.push(source.to_string());
-            run_child(
-                &ChildSpec {
-                    tool: "lean",
-                    module: Some(file.module.clone()),
-                    program: &toolchain.lake.path,
-                    executable_sha256: toolchain.lean.sha256,
-                    argv,
-                    cwd: &workspace_root,
-                    extra_env: vec![("LEAN_PATH".to_owned(), preserve_path.clone())],
-                    home: ChildHome::Toolchain {
-                        toolchain_bin: &toolchain_bin,
+            telemetry.timed("preserve", Some(file.module.as_str()), || {
+                run_child(
+                    &ChildSpec {
+                        tool: "lean",
+                        module: Some(file.module.clone()),
+                        program: &toolchain.lake.path,
+                        executable_sha256: toolchain.lean.sha256,
+                        argv,
+                        cwd: &workspace_root,
+                        extra_env: vec![("LEAN_PATH".to_owned(), preserve_path.clone())],
+                        home: ChildHome::Toolchain {
+                            toolchain_bin: &toolchain_bin,
+                        },
                     },
-                },
-                &limits,
-                &normalizer,
-            )
+                    &limits,
+                    &normalizer,
+                )
+            })
         };
         for file in &stage.environment {
             let record = compile(file, true).map_err(fail)?;

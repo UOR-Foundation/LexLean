@@ -47,6 +47,11 @@ jobs:
     # hours; a shorter local-style timeout would turn complete proof coverage
     # into a CI failure mode.
     timeout-minutes: 360
+    env:
+      # Noncanonical performance telemetry (SPEC.md §22.11, VR-21): the
+      # verifier appends one row per child process here. It is CI evidence
+      # only — never read back, never hashed into any artifact or identity.
+      LEXLEAN_VERIFY_TELEMETRY: ${{ runner.temp }}/lexlean-telemetry.jsonl
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
@@ -74,18 +79,102 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ci-evidence
+          # Host-side samples for the CI-only memory telemetry: host memory and
+          # swap from /proc/meminfo, and the resident set of the proof
+          # processes (lean, leanchecker). Five-second sampling is enough to
+          # see the peaks without flooding the log.
           monitor_resources() {
             while true; do
-              date -u +'%Y-%m-%dT%H:%M:%SZ'
-              free -m
-              df -h "$RUNNER_TEMP"
-              sleep 60
+              ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+              mem=$(awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} /SwapTotal/{st=$2} /SwapFree/{sf=$2} END{printf "mem_total_kb=%s mem_available_kb=%s swap_total_kb=%s swap_used_kb=%s", t, a, st, st-sf}' /proc/meminfo)
+              rss=$(ps -eo rss=,comm= | awk '$2=="lean"||$2=="leanchecker"{s+=$1} END{print s+0}')
+              echo "$ts $mem proof_rss_kb=$rss"
+              sleep 5
             done
           }
-          monitor_resources > >(tee ci-evidence/resources.txt) &
+          monitor_resources > ci-evidence/resources.txt 2>&1 &
           monitor_pid=$!
           trap 'kill "$monitor_pid" 2>/dev/null || true; wait "$monitor_pid" 2>/dev/null || true' EXIT
-          just vv 2>&1 | tee ci-evidence/vv.txt
+          # `--timestamp` runs exactly the recipes `just vv` runs, stamping each
+          # command with its start time so per-recipe wall time is recoverable.
+          just --timestamp --timestamp-format '%Y-%m-%dT%H:%M:%S' vv 2>&1 | tee ci-evidence/vv.txt
+      # CI-only performance evidence, aggregated from the telemetry file, the
+      # resource samples, and the per-recipe timestamps (SPEC.md §9.4, §22.11).
+      # It never fails the gate: a missing or unreadable sample is reported as
+      # absent, never as a semantic result.
+      - name: Summarize performance evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          python3 - <<'PY' || true
+          import json, os, re, pathlib
+          from datetime import datetime
+
+          ev = pathlib.Path("ci-evidence")
+          evidence = {"runner": os.environ.get("RUNNER_NAME", ""), "commit": os.environ.get("GITHUB_SHA", "")}
+
+          # Per-recipe wall time from the `just --timestamp` lines.
+          stamp = re.compile(r"^\[(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)\] (.+)$")
+          seen = []
+          vv = ev / "vv.txt"
+          if vv.exists():
+              for line in vv.read_text(errors="replace").splitlines():
+                  m = stamp.match(line)
+                  if m:
+                      seen.append((m.group(1), m.group(2)))
+          def seconds(a, b):
+              return int((datetime.strptime(b, "%Y-%m-%dT%H:%M:%S") - datetime.strptime(a, "%Y-%m-%dT%H:%M:%S")).total_seconds())
+          evidence["recipes"] = [
+              {"command": cmd, "start": ts, "wall_s": (seconds(ts, seen[i + 1][0]) if i + 1 < len(seen) else None)}
+              for i, (ts, cmd) in enumerate(seen)
+          ]
+
+          # Verification telemetry: per-stage totals and the slowest modules.
+          stages, modules = {}, []
+          tel = os.environ.get("LEXLEAN_VERIFY_TELEMETRY", "")
+          if tel and pathlib.Path(tel).exists():
+              for line in pathlib.Path(tel).read_text(errors="replace").splitlines():
+                  if not line.strip():
+                      continue
+                  try:
+                      row = json.loads(line)
+                  except json.JSONDecodeError:
+                      continue
+                  stage = row.get("stage", "?")
+                  wall = int(row.get("wall_ms", 0))
+                  agg = stages.setdefault(stage, {"count": 0, "total_ms": 0, "max_ms": 0})
+                  agg["count"] += 1
+                  agg["total_ms"] += wall
+                  agg["max_ms"] = max(agg["max_ms"], wall)
+                  if row.get("kind") is None and row.get("module"):
+                      modules.append((wall, row["module"], stage))
+          modules.sort(reverse=True)
+          evidence["verification"] = {
+              "stages": stages,
+              "slowest_children": [{"module": m, "stage": s, "wall_ms": w} for w, m, s in modules[:20]],
+          }
+
+          # Host memory peaks from the resource samples.
+          memory = {"samples": 0, "min_mem_available_kb": None, "max_swap_used_kb": 0, "max_proof_rss_kb": 0}
+          resources = ev / "resources.txt"
+          if resources.exists():
+              for line in resources.read_text(errors="replace").splitlines():
+                  kv = dict(re.findall(r"(\w+)=(\d+)", line))
+                  if not kv:
+                      continue
+                  memory["samples"] += 1
+                  available = int(kv.get("mem_available_kb", 0))
+                  memory["min_mem_available_kb"] = available if memory["min_mem_available_kb"] is None else min(memory["min_mem_available_kb"], available)
+                  memory["max_swap_used_kb"] = max(memory["max_swap_used_kb"], int(kv.get("swap_used_kb", 0)))
+                  memory["max_proof_rss_kb"] = max(memory["max_proof_rss_kb"], int(kv.get("proof_rss_kb", 0)))
+          evidence["memory"] = memory
+
+          (ev / "performance.json").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
+          print("ci-evidence/performance.json:")
+          print(json.dumps(evidence, indent=2, sort_keys=True))
+          PY
+          test -s ci-evidence/performance.json || echo "performance evidence unavailable" > ci-evidence/performance.json
       # The example gate discovers Atlas rather than receiving an allow-list.
       # These assertions make its complete proof run visible as first-class CI
       # evidence without running the expensive verifier a second time.
@@ -139,5 +228,8 @@ jobs:
             exit 1
           fi
           echo "$host"
-      - run: cargo build --locked --workspace --all-features
+      # `cargo test` compiles the library, the binaries, and every test target,
+      # so a separate `cargo build` of the same profile is redundant: the §8.3
+      # property "builds and non-Lean tests pass" is established by the test
+      # run alone.
       - run: cargo test --locked --workspace --all-features

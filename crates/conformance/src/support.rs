@@ -3583,6 +3583,43 @@ pub fn imported_alias_project() -> P {
     project
 }
 
+/// Four modules with a diamond import frontier (VR-20): `Base`; `Left` and
+/// `Right`, each importing `Base`; and `Main`, importing both. The closure is
+/// `Base`, then the frontier `{Left, Right}`, then `Main`, so a process width
+/// above 1 runs `Left` and `Right` together while the topological barriers
+/// still force `Base` first and `Main` last.
+#[must_use]
+pub fn width_frontier_project() -> P {
+    let project = P::example();
+    let module = |name: &str, imports: &[&str], theorem: &str| {
+        let mut text =
+            format!("\\begin{{lexlean}}{{{name}}}\n\\useglossary{{lexlean.std.nat@1.0.0}}\n");
+        for import in imports {
+            text.push_str(&format!("\\importmodule{{{import}}}\n"));
+        }
+        text.push_str("\\title{Natural number addition}\n\n");
+        text.push_str(&format!(
+            "\\begin{{theorem}}{{{theorem}}}\n\\noaxioms\nFor every natural number \\(n\\), \\(n = n\\).\n\\begin{{proof}}\nClose the goal by reflexivity.\n\\end{{proof}}\n\\end{{theorem}}\n\\end{{lexlean}}\n"
+        ));
+        text
+    };
+    project.write("src/Base.lex.tex", &module("Base", &[], "base-reflexive"));
+    project.write(
+        "src/Left.lex.tex",
+        &module("Left", &["Base"], "left-reflexive"),
+    );
+    project.write(
+        "src/Right.lex.tex",
+        &module("Right", &["Base"], "right-reflexive"),
+    );
+    project.write(
+        "src/Main.lex.tex",
+        &module("Main", &["Left", "Right"], "main-reflexive"),
+    );
+    project.relock();
+    project
+}
+
 /// The module name [`underscore_module_project`] uses: §15.1 admits `_` in
 /// a Lean-name segment, and `\texttt{Main_x::zero-add}` would be a TeX
 /// error in math mode.

@@ -623,9 +623,9 @@ fmt-check   cargo fmt --all -- --check
 model       cargo xtask validate-model
 spec-links  cargo xtask validate-spec-links
 lint        cargo clippy --workspace --all-targets --all-features -- -D warnings
-test        cargo test --workspace --all-features
+test        cargo test --workspace --exclude repo-conformance --all-features
 features    cargo check --workspace --all-features --all-targets
-bdd         cargo test -p repo-conformance --test bdd
+bdd         cargo test -p repo-conformance --all-features
 examples    cargo xtask verify-examples
 golden      cargo xtask check-golden
 repro       cargo xtask check-reproducibility
@@ -633,7 +633,7 @@ deny        cargo deny --all-features check
 vv          all recipes above, in order
 ```
 
-`test` runs every test target of every workspace crate, the conformance tests of `repo-conformance` among them, and `bdd` runs that crate's meta-gate target alone, so that no conformance test runs twice in `vv`. `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
+`test` runs every test target of every workspace crate except `repo-conformance`, and `bdd` runs the complete `repo-conformance` test suite — its conformance tests and its honesty meta-gate — so that the two phases partition the workspace test surface and no test runs twice in `vv` (RP-13). `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
 
 ### 9.3 Development container
 
@@ -651,6 +651,8 @@ Its post-create command MUST install the pinned Lean toolchain explicitly and MU
 ### 9.4 Continuous integration
 
 `ci.yml` MUST run `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
+
+CI MAY record noncanonical performance evidence for the normative gate — per-recipe wall time (`just --timestamp`, which runs the same recipes `just vv` runs) and sampled host RSS and swap — under `ci-evidence/`. That evidence is CI-only: no timing, RSS, scheduling order, or runner identity enters a semantic ID, a build ID, a verified artifact, a normalized verification record, or an attestation identity (§22.11, R10).
 
 `honesty.yml` MUST run the model/honesty gate separately so claim drift is distinguishable from code failure.
 
@@ -6290,6 +6292,40 @@ driver, and its process record.
 
 ---
 
+### 22.11 Operational width and verification telemetry
+
+Two host-bound execution resources are read from the environment before any
+verification work. Neither is semantic input: neither enters a semantic ID, a
+build ID, a published verified artifact, a normalized verification record, or
+an attestation identity, and the canonical order of every record is fixed by
+item index, never by process completion order (I10, R10).
+
+The operational verification process width is selected by
+`LEXLEAN_VERIFY_PROCESS_WIDTH`. Its default is 1, the conservative width the
+normative `just vv` uses on the standard runner: a single Atlas environment
+approaches the runner's memory, so overlapping two is unsafe there. A greater
+positive integer is an operator's choice for a host with a known memory
+envelope and is exercised in conformance on small projects only, never on UOR
+Atlas in CI. An empty, zero, negative, or non-integer value is refused as
+`LLV7017` before any toolchain work. Topological import barriers remain
+mandatory for elaboration: a module elaborates only after every module it
+imports has succeeded, at any width, and `leanchecker` replay and axiom-audit
+members overlap only where they are independent per module.
+
+Verification telemetry is selected by `LEXLEAN_VERIFY_TELEMETRY`, naming a
+host-chosen file that receives one JSON row per verification child process —
+its stage, its module when the stage is per-module, and its wall time in
+milliseconds — and one row per measured stage. Telemetry is CI evidence: it is
+never read by the compiler, never hashed into any artifact or identity, and a
+write that fails disables its row without changing the verification's result
+(R2). Its file is not part of the verification artifact set (§22.8).
+
+The same multi-module project, verified at width 1 and at a greater width,
+produces the same semantic ID, build ID, and attestation ID and byte-identical
+published verified artifacts after platform normalization, with identical
+observed axiom sets and policy results (VR-20); a verified run with telemetry
+enabled publishes the same artifacts as one without it (VR-21).
+
 ## 23. Command-line interface
 
 ### 23.1 General form
@@ -6785,6 +6821,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7014` | Preservation environment drift (§17.17). |
 | `LLV7015` | Certificate B rejected (§17.17). |
 | `LLV7016` | Certificate E rejected (§17.17). |
+| `LLV7017` | The operational verification process width named by LEXLEAN_VERIFY_PROCESS_WIDTH is empty, zero, negative, or not a positive integer. |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -7486,6 +7523,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-10` | `repository` | The embedded compiler-semantics ID equals a clean recomputation from normative language and schema inputs. | §21.2 |
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
+| `RP-13` | `repository` | The workspace test phase and the dedicated bdd phase of the acceptance gate own their coverage exactly: test excludes the repo-conformance package, bdd is the sole owner of its complete test suite including the honesty meta-gate, their union equals the whole workspace test surface, their intersection is empty, and every conformance test runs exactly once in just vv. | §9.2 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -7676,6 +7714,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-17` | `verification` | Lean workspace configuration and manifest hashes must match the lock and all dependencies must be locally available. | §10.4, §22.2 |
 | `VR-18` | `verification` | Check and build results never claim verified or kernel-checked status. | §5.3 |
 | `VR-19` | `verification` | The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. | §10.4, §17.10, §22.2 |
+| `VR-20` | `verification` | The verifier's process width is an operational resource setting and never semantic input: the environment variable LEXLEAN_VERIFY_PROCESS_WIDTH selects a positive integer width whose default is 1, an empty, zero, negative, or non-integer value fails with LLV7017 before any toolchain work, topological import barriers remain mandatory for elaboration, and the same multi-module project with nontrivial import frontiers verified at width 1 and at a greater width produces the same semantic ID, build ID, and attestation ID, byte-identical canonical verified artifacts after platform normalization, and identical observed axiom sets and policy results. | §22.11 |
+| `VR-21` | `verification` | Verification telemetry is noncanonical CI evidence only: the environment variable LEXLEAN_VERIFY_TELEMETRY names a host-chosen file that receives one JSON row per verification child process with its stage, module, and wall time, the file is never read by the compiler and never enters any semantic ID, build ID, verified artifact, normalized record, or attestation identity, a verified run with telemetry enabled publishes byte-identical artifacts to one without, and a run that fails before any stage runs emits no telemetry row. | §22.11 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -7791,7 +7831,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RS-13` | `reasoning` | GNAF requests over forward-chaining plans of the clinical rule base charge rule search as execution in calculus steps and are answered over their declared plans, each plan computes on every patient of the request's domain the level the oracle's Triage derives from the same findings as the kernel decides, and a request whose search is charged nothing or whose universe is the candidates a search discovered is refused. | §17.15 |
 | `RS-14` | `reasoning` | The committed reasoning example verifies a multi-step clinical forward derivation with its invariant and termination, a generic terminating countdown, a deduplicating breadth-first planner, a depth-first search and a generate-and-verify reasoner over model-generated candidates, and an answer proved correct with its check erased, with every generated theorem kernel-checked, and planting a rule-threshold mutation in it is refused by verification. | §17.12, §28.6 |
 
-**Total required capability IDs:** 316.
+**Total required capability IDs:** 319.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -139,3 +139,20 @@ Feature: verification
     Then every native source module has exactly one generated Lean module
     And public imports stay within Init and the generated graph and the only backend-support import is Lean
     And no independently authored Atlas Lean source remains
+
+  @VR-20 @build
+  Scenario: The verifier's process width is an operational resource setting and never semantic input: the environment variable LEXLEAN_VERIFY_PROCESS_WIDTH selects a positive integer width whose default is 1, an empty, zero, negative, or non-integer value fails with LLV7017 before any toolchain work, topological import barriers remain mandatory for elaboration, and the same multi-module project with nontrivial import frontiers verified at width 1 and at a greater width produces the same semantic ID, build ID, and attestation ID, byte-identical canonical verified artifacts after platform normalization, and identical observed axiom sets and policy results.
+    Given a multi-module project with nontrivial import frontiers and the pinned Lean toolchain
+    When lexlean verify runs it at width 1 and then at a greater width
+    Then both runs publish byte-identical verified trees with the same semantic ID, build ID, and attestation ID
+    And both runs observe identical axiom sets and policy results
+    And an empty, zero, negative, or non-integer width fails with LLV7017 before any toolchain work
+
+  @VR-21 @build
+  Scenario: Verification telemetry is noncanonical CI evidence only: the environment variable LEXLEAN_VERIFY_TELEMETRY names a host-chosen file that receives one JSON row per verification child process with its stage, module, and wall time, the file is never read by the compiler and never enters any semantic ID, build ID, verified artifact, normalized record, or attestation identity, a verified run with telemetry enabled publishes byte-identical artifacts to one without, and a run that fails before any stage runs emits no telemetry row.
+    Given a project and the pinned Lean toolchain
+    When lexlean verify runs with LEXLEAN_VERIFY_TELEMETRY naming a host file and again with it unset
+    Then both runs publish byte-identical verified artifacts and the same attestation ID
+    And the named file receives one JSON row per verification child process with its stage, module, and wall time
+    And no telemetry row or telemetry path appears inside any published verified artifact
+    And a run that fails before any stage runs emits no telemetry row

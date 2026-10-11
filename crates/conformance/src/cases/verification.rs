@@ -1,4 +1,4 @@
-//! The `verification` suite: VR-01..VR-19.
+//! The `verification` suite: VR-01..VR-21.
 
 use lexlean::{Selection, VerifyRequest};
 
@@ -16,6 +16,18 @@ fn quoted_name(line: &str) -> String {
         })
         .unwrap_or("Demo.M.unknown")
         .to_owned()
+}
+
+/// Assert two published verified trees are byte-identical.
+fn assert_same_tree(left: &camino::Utf8Path, right: &camino::Utf8Path, what: &str) {
+    let a = support::file_set(left);
+    let b = support::file_set(right);
+    assert_eq!(a, b, "{what}: the published file sets differ");
+    for name in &a {
+        let l = std::fs::read(left.join(name).as_std_path()).expect("read");
+        let r = std::fs::read(right.join(name).as_std_path()).expect("read");
+        assert!(l == r, "{what}: {name} differs");
+    }
 }
 
 fn process_records(dir: &camino::Utf8Path) -> Vec<serde_json::Value> {
@@ -1224,6 +1236,163 @@ pub(crate) fn run(id: &str) {
                     !text.contains("UorAtlas"),
                     "{} is an independently authored Atlas Lean source",
                     entry.path().display()
+                );
+            }
+        }
+        // §22.11: the process width is operational, never semantic (VR-20).
+        "VR-20" => {
+            // Platform-independent: an invalid width is refused as LLV7017
+            // before any toolchain work, on every supported host.
+            for bad in ["", "0", "-1", "abc", "1.5", "999999999999999999999999999"] {
+                support::with_env(&[("LEXLEAN_VERIFY_PROCESS_WIDTH", Some(bad))], || {
+                    let project = P::example();
+                    let error = project
+                        .engine()
+                        .verify(VerifyRequest {
+                            selection: Selection::Entrypoints,
+                        })
+                        .err()
+                        .unwrap_or_else(|| panic!("width `{bad}` is refused"));
+                    support::expect_code(&error, "LLV7017");
+                });
+            }
+            if !support::lean_backed("VR-20") {
+                return;
+            }
+            // Lean-backed: a diamond import frontier verified at width 1 and
+            // at width 4 yields identical identities and published bytes.
+            let narrow = support::width_frontier_project();
+            let narrow = support::with_env(&[("LEXLEAN_VERIFY_PROCESS_WIDTH", Some("1"))], || {
+                narrow
+                    .engine()
+                    .verify(VerifyRequest {
+                        selection: Selection::Entrypoints,
+                    })
+                    .expect("width 1 verifies")
+            });
+            let wide = support::width_frontier_project();
+            let wide = support::with_env(&[("LEXLEAN_VERIFY_PROCESS_WIDTH", Some("4"))], || {
+                wide.engine()
+                    .verify(VerifyRequest {
+                        selection: Selection::Entrypoints,
+                    })
+                    .expect("width 4 verifies")
+            });
+            assert_eq!(narrow.semantic_id, wide.semantic_id, "semantic ID");
+            assert_eq!(narrow.build_id, wide.build_id, "build ID");
+            assert_eq!(narrow.attestation_id, wide.attestation_id, "attestation ID");
+            // The attestation body carries every process record, the observed
+            // axiom sets, and the policy results, so byte-identical published
+            // trees (the attestation among them) are identical evidence.
+            assert_same_tree(&narrow.root, &wide.root, "width 1 and width 4");
+        }
+        // §22.11: telemetry is noncanonical CI evidence, isolated from every
+        // identity and published artifact (VR-21).
+        "VR-21" => {
+            // Platform-independent: a run refused before any stage emits no
+            // telemetry row and publishes nothing.
+            let directory = tempfile::tempdir().expect("tempdir");
+            let refused_telemetry = directory.path().join("verify-telemetry-refused.jsonl");
+            let refused_path = refused_telemetry.to_string_lossy().into_owned();
+            let refused = P::example();
+            support::with_env(
+                &[
+                    ("LEXLEAN_VERIFY_PROCESS_WIDTH", Some("0")),
+                    ("LEXLEAN_VERIFY_TELEMETRY", Some(&refused_path)),
+                ],
+                || {
+                    let error = refused
+                        .engine()
+                        .verify(VerifyRequest {
+                            selection: Selection::Entrypoints,
+                        })
+                        .err()
+                        .expect("a zero width is refused");
+                    support::expect_code(&error, "LLV7017");
+                },
+            );
+            assert!(
+                !refused_telemetry.exists()
+                    || std::fs::read_to_string(&refused_telemetry)
+                        .expect("read")
+                        .trim()
+                        .is_empty(),
+                "a run refused before any stage emits no telemetry row"
+            );
+            assert!(
+                support::file_set(&refused.root.join(".lexlean/verified")).is_empty(),
+                "no verified directory is published"
+            );
+            if !support::lean_backed("VR-21") {
+                return;
+            }
+            // Lean-backed: a run with telemetry enabled publishes exactly the
+            // artifacts of one without it.
+            let without = P::example();
+            let without = support::with_env(&[("LEXLEAN_VERIFY_TELEMETRY", None)], || {
+                without
+                    .engine()
+                    .verify(VerifyRequest {
+                        selection: Selection::Entrypoints,
+                    })
+                    .expect("verifies without telemetry")
+            });
+            let observed_telemetry = directory.path().join("verify-telemetry.jsonl");
+            let observed_path = observed_telemetry.to_string_lossy().into_owned();
+            let observed = P::example();
+            let observed = support::with_env(
+                &[("LEXLEAN_VERIFY_TELEMETRY", Some(&observed_path))],
+                || {
+                    observed
+                        .engine()
+                        .verify(VerifyRequest {
+                            selection: Selection::Entrypoints,
+                        })
+                        .expect("verifies with telemetry")
+                },
+            );
+            assert_eq!(without.semantic_id, observed.semantic_id, "semantic ID");
+            assert_eq!(without.build_id, observed.build_id, "build ID");
+            assert_eq!(
+                without.attestation_id, observed.attestation_id,
+                "attestation ID"
+            );
+            assert_same_tree(&without.root, &observed.root, "telemetry on and off");
+
+            // The named file received rows, one per child, with a stage, and
+            // per-module rows carry a module.
+            let rows = std::fs::read_to_string(&observed_telemetry).expect("telemetry rows");
+            let rows: Vec<serde_json::Value> = rows
+                .lines()
+                .filter(|line| !line.trim().is_empty())
+                .map(|line| serde_json::from_str(line).expect("a telemetry row parses"))
+                .collect();
+            assert!(!rows.is_empty(), "telemetry records the child processes");
+            for row in &rows {
+                assert!(row["stage"].is_string(), "a row names its stage: {row}");
+                assert!(
+                    row["wall_ms"].is_u64(),
+                    "a row records its wall time: {row}"
+                );
+            }
+            assert!(
+                rows.iter()
+                    .any(|row| { row["stage"] == "elaborate" && row["module"].is_string() }),
+                "a per-module elaboration row is recorded"
+            );
+
+            // No telemetry row or telemetry path appears inside any published
+            // verified artifact.
+            for name in support::file_set(&observed.root) {
+                let bytes = std::fs::read(observed.root.join(&name).as_std_path()).expect("read");
+                let text = String::from_utf8_lossy(&bytes);
+                assert!(
+                    !text.contains("wall_ms"),
+                    "{name} carries telemetry content"
+                );
+                assert!(
+                    !text.contains(&observed_path),
+                    "{name} carries the telemetry path"
                 );
             }
         }

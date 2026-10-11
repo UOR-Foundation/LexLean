@@ -1,4 +1,4 @@
-//! The `repository` suite: RP-01..RP-12.
+//! The `repository` suite: RP-01..RP-13.
 
 use std::collections::BTreeSet;
 
@@ -33,6 +33,58 @@ fn just_recipes(justfile: &str) -> std::collections::BTreeMap<String, (String, V
         }
     }
     recipes
+}
+
+/// The workspace member package names, read from the root manifest and each
+/// member's own `[package] name`. Static on purpose: a nested `cargo` would
+/// deadlock on the target lock (see `repo_conformance::workspace_test_names`).
+fn workspace_members(root: &camino::Utf8Path) -> BTreeSet<String> {
+    fn directories(root: &camino::Utf8Path, pattern: &str) -> Vec<camino::Utf8PathBuf> {
+        match pattern.strip_suffix("/*") {
+            Some(prefix) => {
+                let mut dirs = Vec::new();
+                for entry in std::fs::read_dir(root.join(prefix).as_std_path())
+                    .unwrap_or_else(|error| panic!("{prefix}: {error}"))
+                {
+                    let entry = entry.expect("directory entry");
+                    if entry.file_type().expect("file type").is_dir() {
+                        dirs.push(
+                            root.join(prefix)
+                                .join(entry.file_name().to_string_lossy().as_ref()),
+                        );
+                    }
+                }
+                dirs
+            }
+            None => vec![root.join(pattern)],
+        }
+    }
+    let manifest: toml::Value =
+        toml::from_str(&root_file("Cargo.toml")).expect("the root manifest parses");
+    let patterns = manifest["workspace"]["members"]
+        .as_array()
+        .expect("§2.2: the workspace declares its members");
+    let mut members = BTreeSet::new();
+    for pattern in patterns {
+        let pattern = pattern.as_str().expect("a member pattern is a string");
+        for directory in directories(root, pattern) {
+            let manifest = directory.join("Cargo.toml");
+            if !manifest.as_std_path().is_file() {
+                continue;
+            }
+            let value: toml::Value = toml::from_str(
+                &std::fs::read_to_string(manifest.as_std_path()).expect("member manifest"),
+            )
+            .expect("member manifest parses");
+            members.insert(
+                value["package"]["name"]
+                    .as_str()
+                    .expect("a member names its package")
+                    .to_owned(),
+            );
+        }
+    }
+    members
 }
 
 /// The deferral markers §27.10 forbids in maintained source. Every
@@ -303,12 +355,15 @@ pub(crate) fn run(id: &str) {
                     "lint",
                     "cargo clippy --workspace --all-targets --all-features -- -D warnings",
                 ),
-                ("test", "cargo test --workspace --all-features"),
+                (
+                    "test",
+                    "cargo test --workspace --exclude repo-conformance --all-features",
+                ),
                 (
                     "features",
                     "cargo check --workspace --all-features --all-targets",
                 ),
-                ("bdd", "cargo test -p repo-conformance --test bdd"),
+                ("bdd", "cargo test -p repo-conformance --all-features"),
                 ("examples", "cargo xtask verify-examples"),
                 ("golden", "cargo xtask check-golden"),
                 ("repro", "cargo xtask check-reproducibility"),
@@ -866,6 +921,86 @@ pub(crate) fn run(id: &str) {
                 packaged, in_repo,
                 "the packaged crate reports the same version, language, semantics ID, and toolchain"
             );
+        }
+        // §9.2: the workspace test phase and the bdd phase own their coverage
+        // exactly (RP-13).
+        "RP-13" => {
+            let justfile = root_file("Justfile");
+            let recipes = just_recipes(&justfile);
+            for (name, command) in [
+                (
+                    "test",
+                    "cargo test --workspace --exclude repo-conformance --all-features",
+                ),
+                ("bdd", "cargo test -p repo-conformance --all-features"),
+            ] {
+                let (dependencies, lines) = recipes
+                    .get(name)
+                    .unwrap_or_else(|| panic!("§9.2: the Justfile defines `{name}`"));
+                assert!(dependencies.is_empty(), "§9.2: `{name}` is a leaf recipe");
+                assert_eq!(
+                    lines.as_slice(),
+                    [command.to_owned()],
+                    "§9.2: `{name}` runs exactly the specified command"
+                );
+            }
+
+            // The partition: `test` runs every workspace member but
+            // `repo-conformance`, and `bdd` runs `repo-conformance`; together
+            // they cover every member exactly once.
+            let members = workspace_members(&root);
+            assert!(
+                members.contains("repo-conformance") && members.contains("lexlean"),
+                "the workspace holds the conformance crate and the shipped crate: {members:?}"
+            );
+            let via_bdd: BTreeSet<&String> = members
+                .iter()
+                .filter(|member| member.as_str() == "repo-conformance")
+                .collect();
+            let via_test: BTreeSet<&String> = members
+                .iter()
+                .filter(|member| member.as_str() != "repo-conformance")
+                .collect();
+            assert_eq!(
+                via_test.len() + via_bdd.len(),
+                members.len(),
+                "the two phases cover every workspace member"
+            );
+            assert!(via_test.is_disjoint(&via_bdd), "and none twice");
+
+            // Every conformance test is defined in the repo-conformance
+            // package, so the bdd phase owns every one of them exactly once.
+            let (names, _) = crate::workspace_test_names_with_flags(root.as_std_path());
+            let conformance: Vec<&String> = names
+                .iter()
+                .filter(|name| name.starts_with("conformance_"))
+                .collect();
+            assert!(!conformance.is_empty(), "the register is populated");
+            let tests_file = std::fs::read_to_string(
+                root.join("crates/conformance/tests/conformance.rs")
+                    .as_std_path(),
+            )
+            .expect("the conformance test file reads");
+            for name in conformance {
+                assert!(
+                    tests_file.contains(&format!("fn {name}(")),
+                    "conformance test {name} is defined in the repo-conformance package"
+                );
+            }
+            // The honesty meta-gate targets are in the same package.
+            let meta_file =
+                std::fs::read_to_string(root.join("crates/conformance/tests/bdd.rs").as_std_path())
+                    .expect("the meta-gate test file reads");
+            for meta in [
+                "every_id_has_a_scenario_and_a_test",
+                "the_suites_are_inside_the_gherkin_subset",
+                "the_meta_gate_is_falsifiable",
+            ] {
+                assert!(
+                    meta_file.contains(&format!("fn {meta}(")),
+                    "the meta-gate target `{meta}` is in the repo-conformance package"
+                );
+            }
         }
         other => panic!("no repository case is wired for {other}"),
     }

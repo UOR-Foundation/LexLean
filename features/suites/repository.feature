@@ -86,3 +86,11 @@ Feature: repository
     Then release is refused and one refusal reason names source-tag
     And the criteria include source-tag, checksums, host-binaries, crate-package, semantics-id, conformance-doc, errors-doc, spec, licenses, sbom, and ci-evidence
     And the Justfile release recipe depends on vv and runs `cargo xtask release-check`
+
+  @RP-13 @build
+  Scenario: The workspace test phase and the dedicated bdd phase of the acceptance gate own their coverage exactly: test excludes the repo-conformance package, bdd is the sole owner of its complete test suite including the honesty meta-gate, their union equals the whole workspace test surface, their intersection is empty, and every conformance test runs exactly once in just vv.
+    Given the Justfile recipes for test and bdd
+    When the test recipe's workspace exclusion and the bdd recipe's package selection are read
+    Then test excludes repo-conformance and bdd selects the complete repo-conformance package
+    And their union is the whole workspace test surface and their intersection is empty
+    And every conformance test name appears in exactly one of the two phases

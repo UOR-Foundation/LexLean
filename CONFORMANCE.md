@@ -361,6 +361,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `RP-10` | `build` | The embedded compiler-semantics ID equals a clean recomputation from normative language and schema inputs. |
 | `RP-11` | `build` | Every public README capability claim is tied to a registered model ID and honesty level. |
 | `RP-12` | `build` | A release is refused unless the complete release criterion and all required artifacts are satisfied. |
+| `RP-13` | `build` | The workspace test phase and the dedicated bdd phase of the acceptance gate own their coverage exactly: test excludes the repo-conformance package, bdd is the sole owner of its complete test suite including the honesty meta-gate, their union equals the whole workspace test surface, their intersection is empty, and every conformance test runs exactly once in just vv. |
 
 ## rust-backend
 
@@ -449,6 +450,8 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `VR-17` | `build` | Lean workspace configuration and manifest hashes must match the lock and all dependencies must be locally available. |
 | `VR-18` | `build` | Check and build results never claim verified or kernel-checked status. |
 | `VR-19` | `build` | The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. |
+| `VR-20` | `build` | The verifier's process width is an operational resource setting and never semantic input: the environment variable LEXLEAN_VERIFY_PROCESS_WIDTH selects a positive integer width whose default is 1, an empty, zero, negative, or non-integer value fails with LLV7017 before any toolchain work, topological import barriers remain mandatory for elaboration, and the same multi-module project with nontrivial import frontiers verified at width 1 and at a greater width produces the same semantic ID, build ID, and attestation ID, byte-identical canonical verified artifacts after platform normalization, and identical observed axiom sets and policy results. |
+| `VR-21` | `build` | Verification telemetry is noncanonical CI evidence only: the environment variable LEXLEAN_VERIFY_TELEMETRY names a host-chosen file that receives one JSON row per verification child process with its stage, module, and wall time, the file is never read by the compiler and never enters any semantic ID, build ID, verified artifact, normalized record, or attestation identity, a verified run with telemetry enabled publishes byte-identical artifacts to one without, and a run that fails before any stage runs emits no telemetry row. |
 
 ## Cited authorities
 
