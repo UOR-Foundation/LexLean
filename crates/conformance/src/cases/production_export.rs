@@ -449,6 +449,10 @@ pub fn run(id: &str) {
                     "the stable-surface gate misses `{planted}`"
                 );
             }
+            // The exports need the pinned toolchain (§8.3).
+            if !support::lean_backed("PX-01") {
+                return;
+            }
             let this_compiler = lexlean::compiler_semantics_id_for(lexlean::LANGUAGE_1_2);
             let digests = digests();
             for example in harness::EXAMPLES {
@@ -891,6 +895,9 @@ pub fn run(id: &str) {
                     support::expect_code(&error, "LLC0201");
                 }
             }
+            if !support::lean_backed("PX-06") {
+                return;
+            }
             // Evidence that binds the root is recorded with the recomputed
             // verdict.
             let exported = harness::exported("production");
@@ -913,6 +920,9 @@ pub fn run(id: &str) {
         }
         // §24.7, W5: replay without the source.
         "PX-07" => {
+            if !support::lean_backed("PX-07") {
+                return;
+            }
             let exported = harness::exported("production");
             let report = production::verify_artifact(&exported.bundle()).expect("replays");
             assert_eq!(report, exported.report);
@@ -1068,6 +1078,9 @@ pub fn run(id: &str) {
         }
         // §24.7, D2: determinism across directories.
         "PX-08" => {
+            if !support::lean_backed("PX-08") {
+                return;
+            }
             let first = harness::exported("production");
             let second = offline();
             assert_eq!(second.run.0, 0, "the second export: {}", second.run.1);
@@ -1079,10 +1092,21 @@ pub fn run(id: &str) {
                     .as_str()
                     .expect("the bundle artifact"),
             );
-            assert_eq!(
-                harness::tree(&first.bundle()),
-                harness::tree(&bundle),
-                "the two bundles are byte-identical"
+            let digests = |root: &Utf8Path| -> BTreeMap<String, Sha256Digest> {
+                harness::tree(root)
+                    .into_iter()
+                    .map(|(path, bytes)| (path, sha(&bytes)))
+                    .collect()
+            };
+            let (left, right) = (digests(&first.bundle()), digests(&bundle));
+            let differing: BTreeSet<&String> = left
+                .keys()
+                .chain(right.keys())
+                .filter(|path| left.get(*path) != right.get(*path))
+                .collect();
+            assert!(
+                differing.is_empty(),
+                "the two bundles are byte-identical; these differ: {differing:?}"
             );
             assert_eq!(result_of(&bundle).result_id, first.output.result.result_id);
             let text = String::from_utf8(
@@ -1192,10 +1216,32 @@ pub fn run(id: &str) {
         }
         // §24.7: offline after setup.
         "PX-10" => {
-            #[cfg(not(unix))]
-            support::unix_only("PX-10", "`#!/bin/sh` git sentinel");
-            #[cfg(unix)]
-            {
+            // An unacquired package is refused, never fetched.
+            let project = P::copy_example("production");
+            project.edit(
+                "lexlean.toml",
+                "\n[limits]",
+                "\n[[lexicon_source]]\npackage = \"test.remote\"\nkind = \"git\"\nurl = \"https://example.invalid/repo.git\"\nrevision = \"0123456789abcdef0123456789abcdef01234567\"\nsubdirectory = \"pkg\"\n\n[limits]",
+            );
+            let error = production::build(
+                &engine(&project),
+                &request_for(&[("Production.Main.checkedSum", "pkg", &["rust-std"])]),
+            )
+            .expect_err("an unacquired package is refused");
+            let codes: Vec<&str> = error.diagnostics.iter().map(|d| d.code.as_str()).collect();
+            assert!(
+                codes
+                    .iter()
+                    .any(|code| *code == "LLC0102" || *code == "LLS8003"),
+                "refused without acquisition: {codes:?}"
+            );
+            assert!(
+                !project.root.join(".lexlean/cache").as_std_path().exists(),
+                "nothing was fetched"
+            );
+            // A set-up project exports with a git sentinel first on PATH,
+            // which never runs (§8.3: a POSIX shell and the toolchain).
+            if support::posix_shell_backed("PX-10") && support::lean_backed("PX-10") {
                 let second = offline();
                 assert_eq!(
                     second.run.0, 0,
@@ -1203,28 +1249,6 @@ pub fn run(id: &str) {
                     second.run.1, second.run.2
                 );
                 assert!(!second.sentinel_ran, "no git operation ran");
-                let project = P::copy_example("production");
-                project.edit(
-                    "lexlean.toml",
-                    "\n[limits]",
-                    "\n[[lexicon_source]]\npackage = \"test.remote\"\nkind = \"git\"\nurl = \"https://example.invalid/repo.git\"\nrevision = \"0123456789abcdef0123456789abcdef01234567\"\nsubdirectory = \"pkg\"\n\n[limits]",
-                );
-                let error = production::build(
-                    &engine(&project),
-                    &request_for(&[("Production.Main.checkedSum", "pkg", &["rust-std"])]),
-                )
-                .expect_err("an unacquired package is refused");
-                let codes: Vec<&str> = error.diagnostics.iter().map(|d| d.code.as_str()).collect();
-                assert!(
-                    codes
-                        .iter()
-                        .any(|code| *code == "LLC0102" || *code == "LLS8003"),
-                    "refused without acquisition: {codes:?}"
-                );
-                assert!(
-                    !project.root.join(".lexlean/cache").as_std_path().exists(),
-                    "nothing was fetched"
-                );
             }
         }
         // §24.7, D1: no source text is representable.
@@ -1330,13 +1354,11 @@ pub fn run(id: &str) {
             twice.push(twice[0].clone());
             assert!(schema_versions_hold(&schemas, &twice).is_err());
             // The produced values validate, and an unknown field does not.
-            let exported = harness::exported("production");
-            let result: serde_json::Value =
-                serde_json::from_slice(&exported.output.result.to_json()).expect("JSON");
+            let project = P::copy_example("production");
             let request: serde_json::Value = serde_json::from_slice(
                 &production_consumer::request(
                     &harness::application("production"),
-                    &production_consumer::setup(&exported.project.root.join("lexlean.toml"))
+                    &production_consumer::setup(&project.root.join("lexlean.toml"))
                         .expect("setup")
                         .1,
                     &[],
@@ -1347,15 +1369,23 @@ pub fn run(id: &str) {
             let document: serde_json::Value =
                 serde_json::from_slice(&production::targets_document().expect("document"))
                     .expect("JSON");
-            let replay: serde_json::Value =
-                serde_json::from_slice(&exported.report.to_json()).expect("JSON");
-            let values = [
+            let mut values = vec![
                 ("production-request", request),
-                ("production-result", result),
                 ("target-descriptor", document["targets"][0].clone()),
                 ("target-descriptors", document),
-                ("production-replay", replay),
             ];
+            // The result and the replay report need an export (§8.3).
+            if support::lean_backed("PX-12") {
+                let exported = harness::exported("production");
+                values.push((
+                    "production-result",
+                    serde_json::from_slice(&exported.output.result.to_json()).expect("JSON"),
+                ));
+                values.push((
+                    "production-replay",
+                    serde_json::from_slice(&exported.report.to_json()).expect("JSON"),
+                ));
+            }
             for (name, value) in values {
                 assert_valid(name, &value, name);
                 let mut unknown = value.clone();
@@ -1454,6 +1484,9 @@ pub fn cli() {
         );
     }
     // A published export reports its bundle and identities.
+    if !support::lean_backed("CL-23") {
+        return;
+    }
     let offline = offline();
     let (exit, stdout, _) = &offline.run;
     assert_eq!(*exit, 0, "{stdout}");

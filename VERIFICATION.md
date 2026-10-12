@@ -6446,3 +6446,89 @@ The summary reads a leg's end line as it reads any last stamped line, so no
 branch of `recipe_spans` is added for it and none could be planted;
 `a_leg_of_the_gate_ends_its_last_recipe_at_the_leg_s_own_line` fixes how a leg's
 log is timed.
+
+## Production export contract (Issue #28)
+
+SPEC.md §24.7; `PX-01`..`PX-12` and `CL-23`. The Lean-backed cases share three exports in one process (the consumer's exports of `examples/production` and `examples/production-coverage`, and a second, offline CLI export of `examples/production` from another directory): 4 min 08 s and 2.2 GB peak RSS for all thirteen cases together on the development host (`cargo test -p repo-conformance --test conformance -- conformance_px_ conformance_cl_23`). The committed packages under `tests/production-export/` are regenerated only by `just production-export-write`.
+
+### production export can fail
+
+The production export contract (§24.7, `PX-01`..`PX-12`, `CL-23`). Each record
+below is a defect planted in a clean tree at the commit that introduced the
+contract, the command run, and the failure observed (verbatim, paths
+shortened), after which the defect was removed.
+
+- **a forged certification field accepted.** `#[serde(deny_unknown_fields)]`
+  removed from `ProductionRequest` in `crates/lexlean/src/api/production.rs`,
+  so a request carrying `certification` deserializes.
+  `cargo test -p repo-conformance --test conformance -- conformance_px_06`:
+
+  ```text
+  panicked at crates/conformance/src/cases/production_export.rs:890:44:
+  a request with `certification` deserialized
+  ```
+
+- **a stale digest accepted.** The comparison of each pinned identity with the
+  project's made vacuous (`pinned != actual && pinned == Sha256Digest([0; 32])`).
+  `-- conformance_px_04` runs Lean on the stale request and then fails:
+
+  ```text
+  panicked at crates/conformance/src/cases/production_export.rs:126:9:
+  LLC0204: `.lexlean/build` was published
+  ```
+
+  The run after verification still refuses a changed source (the defence in
+  depth of `build_inner`), so what the plant lets through is the stale request
+  reaching Lean and publishing; the case requires that nothing is.
+
+- **a path escape accepted.** The evidence reader's `project.confined_file(relative)`
+  replaced by `project.root.join(relative)`. `-- conformance_px_09`: the
+  absolute evidence path outside the project is read, and the request fails
+  later, on the certificate, instead of at the escape:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:583:5:
+  expected LLS8001, found ["LLV7010"] (LLV7010: evidence `evidence/sum.certificate.json`: No such file or directory (os error 2))
+  ```
+
+  A first plant that removed only an explicit `is_project_relative` check in
+  front of `confined_file` was *not* detected (`conformance_px_09` passed):
+  `confined_file` already refuses an absolute or parent-relative path, so the
+  check was redundant and was deleted rather than kept untested.
+
+- **a schema drift without a version bump.** The `title` of
+  `api/schemas/production-result.schema.json` changed, `versions.toml` and the
+  spec string unchanged. `-- conformance_px_12`:
+
+  ```text
+  panicked at crates/conformance/src/cases/production_export.rs:1320:79:
+  production-result: the schema changed under `lexlean/production-result/1` (recorded 85dbe9bde4f190a693f20a53d3e7397bba5d449033f6630fb9753cf938c7334d, now 3272fe0d0c8545d69f6d8d08b20ca8ae07777dc554480be004f07f57bf9c7538); a changed schema needs a new spec version
+  ```
+
+- **a nondeterministic field in the result.** `compiler.version` set to the
+  crate version followed by the absolute project root. `-- conformance_px_08`
+  (two exports, from two absolute directories and two working directories):
+
+  ```text
+  panicked at crates/conformance/src/cases/production_export.rs:1094:13:
+  the two bundles are byte-identical; these differ: ["result.json", "result.json"]
+  ```
+
+  (The list was a chain of both sides' keys; it is a set since.)
+
+- **a reach into an internal module.** Armed in the case itself:
+  `conformance_px_01` appends each of `use lexlean::production::lower;`,
+  `lexlean::verify::run(`, `use lexlean::{Engine, calculus};`, and
+  `lexlean::api::render_build(` to the consumer's source and requires the
+  stable-surface gate to report it; the hidden-module list is read from
+  `lib.rs`, so a new internal module is covered without editing the gate.
+
+- **replay.** `conformance_px_07` is its own plant set: eleven single-byte
+  tampers (package library and manifest, crate, program, certificates A, B,
+  and E, attestation, compiler input, preservation record, result), fifteen
+  field tampers with the result identity recomputed (semantic, source,
+  attestation, and build IDs, compiler semantics, target digest, entry, root
+  index, package name, export name, a certificate theorem, the certificate
+  order, the axioms, an optimality claimed without evidence, the GNAF verdict),
+  an added file, and a removed file are each `LLV7102`, and a symlink is
+  `LLS8001`.

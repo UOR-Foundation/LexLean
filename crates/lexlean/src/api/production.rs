@@ -1054,13 +1054,9 @@ fn build_inner(
             .find(|evidence| evidence.root == wanted.root)
         {
             Some(evidence) => {
+                // Confinement refuses an absolute path, `..`, and any
+                // symlinked component (§25.1), as `LLS8001`.
                 let read = |relative: &str| -> Result<Vec<u8>, LexLeanError> {
-                    if !crate::config::is_project_relative(relative) {
-                        return Err(LexLeanError::from_diagnostic(Diagnostic::new(
-                            code!("LLS8001"),
-                            format!("evidence path `{relative}` escapes the project root"),
-                        )));
-                    }
                     let path = project
                         .confined_file(relative)
                         .map_err(LexLeanError::from_diagnostic)?;
