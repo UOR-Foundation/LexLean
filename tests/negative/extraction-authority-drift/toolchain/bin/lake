@@ -1,13 +1,15 @@
 #!/bin/sh
 # Passes every invocation to the pinned lake except `lake env lean` on the
-# extraction module, whose `Lean.Environment.find?` probe is rewritten to the
-# default value a drifted toolchain would declare; pinned Lean refuses the
-# probe (SPEC.md 22.10: authority drift).
+# extraction module, whose `Lean.Environment.find?` signature probe is
+# rewritten to the default value a drifted toolchain would declare; pinned Lean
+# refuses the probe (SPEC.md 22.10: authority drift). The probe is a declaration
+# of the generated module, `lexlean_signature Lean.Environment.find? : ...`, and
+# the sed matches the text the tooling backend renders for the type.
 real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
 if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   case "$3" in
     */extract/LexLeanExtract.*.lean)
-      sed -i 's/optParam Bool Bool.false → Option Lean.ConstantInfo/optParam Bool Bool.true → Option Lean.ConstantInfo/' "$3"
+      sed -i 's/(optParam Bool Bool.false) → (Option Lean.ConstantInfo)/(optParam Bool Bool.true) → (Option Lean.ConstantInfo)/' "$3"
       ;;
   esac
 fi

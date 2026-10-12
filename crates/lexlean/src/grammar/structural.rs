@@ -245,6 +245,9 @@ pub struct ModuleAst {
     /// A closed high-level language-1.1 semantic module, exclusive with
     /// ordinary blocks and `core`.
     pub semantic: Option<SemanticModuleAst>,
+    /// A closed compiler-tooling module (SPEC.md §17.20), exclusive with
+    /// ordinary blocks, `core`, and `semantic`.
+    pub tooling: Option<ToolingModuleAst>,
 }
 
 /// The structurally parsed `coremodule` environment.
@@ -262,6 +265,15 @@ pub struct SemanticModuleAst {
     /// Canonical `lexlean/semantic-module/1` JSON.
     pub data: BraceArg,
     /// The `\begin{semanticmodule}` atom.
+    pub begin: usize,
+}
+
+/// The structurally parsed `toolingmodule` environment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToolingModuleAst {
+    /// Canonical `lexlean/tooling-module/1` JSON.
+    pub data: BraceArg,
+    /// The `\begin{toolingmodule}` atom.
     pub begin: usize,
 }
 
@@ -296,6 +308,7 @@ fn control_entry(name: &str) -> &'static str {
         "\\bind" => "bind",
         "\\coredata" => "coredata",
         "\\semanticdata" => "semanticdata",
+        "\\toolingdata" => "toolingdata",
         "\\(" => "math-open",
         "\\)" => "math-close",
         "\\[" => "display-open",
@@ -1101,7 +1114,7 @@ pub fn parse_module(
         ));
     }
 
-    let (blocks, core, semantic) = if parser.at_begin_of("coremodule") {
+    let (blocks, core, semantic, tooling) = if parser.at_begin_of("coremodule") {
         let (begin, name) = parser.begin_env()?;
         debug_assert_eq!(name, "coremodule");
         parser.expect_control("\\coredata")?;
@@ -1109,7 +1122,7 @@ pub fn parse_module(
         parser.cover_payload(data.range, "coredata");
         parser.expect_end("coremodule")?;
         parser.expect_end("lexlean")?;
-        (Vec::new(), Some(CoreModuleAst { data, begin }), None)
+        (Vec::new(), Some(CoreModuleAst { data, begin }), None, None)
     } else if parser.at_begin_of("semanticmodule") {
         let (begin, name) = parser.begin_env()?;
         debug_assert_eq!(name, "semanticmodule");
@@ -1118,9 +1131,28 @@ pub fn parse_module(
         parser.cover_payload(data.range, "semanticdata");
         parser.expect_end("semanticmodule")?;
         parser.expect_end("lexlean")?;
-        (Vec::new(), None, Some(SemanticModuleAst { data, begin }))
+        (
+            Vec::new(),
+            None,
+            Some(SemanticModuleAst { data, begin }),
+            None,
+        )
+    } else if parser.at_begin_of("toolingmodule") {
+        let (begin, name) = parser.begin_env()?;
+        debug_assert_eq!(name, "toolingmodule");
+        parser.expect_control("\\toolingdata")?;
+        let data = parser.brace_arg_verbatim()?;
+        parser.cover_payload(data.range, "toolingdata");
+        parser.expect_end("toolingmodule")?;
+        parser.expect_end("lexlean")?;
+        (
+            Vec::new(),
+            None,
+            None,
+            Some(ToolingModuleAst { data, begin }),
+        )
     } else {
-        (parser.blocks("lexlean", 0)?, None, None)
+        (parser.blocks("lexlean", 0)?, None, None, None)
     };
     parser.skip_ws();
     if let Some(atom) = parser.peek() {
@@ -1139,5 +1171,6 @@ pub fn parse_module(
         blocks,
         core,
         semantic,
+        tooling,
     })
 }

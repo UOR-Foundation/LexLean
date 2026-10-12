@@ -1265,9 +1265,27 @@ fn dependency_roles(manifest: &str, spec: &str) -> Result<usize, Fail> {
 /// are compared by `check_model`; this audit proves every committed schema
 /// is canonical JSON with the expected identity.
 pub fn audit_generated(root: &Path) -> Result<(), Fail> {
-    let schema_dir = root.join("schemas");
+    let count = audit_schema_directory(&root.join("schemas"))?;
+    if count != 31 {
+        return Err(format!("§7 commits exactly 31 schemas, found {count}").into());
+    }
+    // The schema of the compiler-tooling language (§17.20) lies outside the
+    // compiler-semantics ID and is held to the same form.
+    let tooling = audit_schema_directory(&root.join("tooling").join("schemas"))?;
+    if tooling != 1 {
+        return Err(format!("§7 commits exactly 1 tooling schema, found {tooling}").into());
+    }
+    println!(
+        "audit-generated: {count} schemas and {tooling} tooling schema canonical and identified"
+    );
+    Ok(())
+}
+
+/// Every JSON file of a schema directory is canonical JSON naming its own
+/// `$id`; the number of files.
+fn audit_schema_directory(directory: &Path) -> Result<usize, Fail> {
     let mut count = 0usize;
-    for entry in std::fs::read_dir(&schema_dir)? {
+    for entry in std::fs::read_dir(directory)? {
         let path = entry?.path();
         if path.extension().is_none_or(|extension| extension != "json") {
             continue;
@@ -1295,11 +1313,7 @@ pub fn audit_generated(root: &Path) -> Result<(), Fail> {
             return Err(format!("{}: missing its $id `{identity}`", path.display()).into());
         }
     }
-    if count != 31 {
-        return Err(format!("§7 commits exactly 31 schemas, found {count}").into());
-    }
-    println!("audit-generated: {count} schemas canonical and identified");
-    Ok(())
+    Ok(count)
 }
 
 fn sorted(value: serde_json::Value) -> serde_json::Value {

@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Tooling declarations}
+\subsection*{\texttt{Lean.Compiler.LCNF.Purity}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Constructor: pure }\par
+\noindent \texttt{Constructor: impure }\par
+\subsection*{\texttt{Lean.Compiler.LCNF.Code}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\noindent \texttt{Constructor: let (decl : (Lean.Compiler.LCNF.LetDecl pu)) (k : (Lean.Compiler.LCNF.Code pu))}\par
+\noindent \texttt{Constructor: fun (decl : (Lean.Compiler.LCNF.FunDecl pu)) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.pure]}\par
+\noindent \texttt{Constructor: jp (decl : (Lean.Compiler.LCNF.FunDecl pu)) (k : (Lean.Compiler.LCNF.Code pu))}\par
+\noindent \texttt{Constructor: jmp (fvarId : Lean.FVarId) (args : (Array (Lean.Compiler.LCNF.Arg pu)))}\par
+\noindent \texttt{Constructor: cases (cases : (Lean.Compiler.LCNF.Cases pu))}\par
+\noindent \texttt{Constructor: return (fvarId : Lean.FVarId)}\par
+\noindent \texttt{Constructor: unreach (type : Lean.Expr)}\par
+\noindent \texttt{Constructor: oset (fvarId : Lean.FVarId) (i : Nat) (y : (Lean.Compiler.LCNF.Arg pu)) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: uset (fvarId : Lean.FVarId) (i : Nat) (y : Lean.FVarId) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: sset (fvarId : Lean.FVarId) (i : Nat) (offset : Nat) (y : Lean.FVarId) (ty : Lean.Expr) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: setTag (fvarId : Lean.FVarId) (cidx : Nat) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: inc (fvarId : Lean.FVarId) (n : Nat) (check : Bool) (persistent : Bool) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: dec (fvarId : Lean.FVarId) (n : Nat) (check : Bool) (persistent : Bool) (objs? : (Option Nat)) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: del (fvarId : Lean.FVarId) (k : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.FunDecl}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\noindent \texttt{Constructor: mk (fvarId : Lean.FVarId) (binderName : Lean.Name) (params : (Array (Lean.Compiler.LCNF.Param pu))) (type : Lean.Expr) (value : (Lean.Compiler.LCNF.Code pu))}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.Alt}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\noindent \texttt{Constructor: alt (ctorName : Lean.Name) (params : (Array (Lean.Compiler.LCNF.Param pu))) (code : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.pure]}\par
+\noindent \texttt{Constructor: ctorAlt (info : Lean.Compiler.LCNF.CtorInfo) (code : (Lean.Compiler.LCNF.Code pu)) [only at pu = Lean.Compiler.LCNF.Purity.impure]}\par
+\noindent \texttt{Constructor: default (code : (Lean.Compiler.LCNF.Code pu))}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.Cases}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\noindent \texttt{Constructor: mk (typeName : Lean.Name) (resultType : Lean.Expr) (discr : Lean.FVarId) (alts : (Array (Lean.Compiler.LCNF.Alt pu)))}\par
+\subsection*{\texttt{Array}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\noindent \texttt{Constructor: mk (toList : (List <U+03B1>))}\par
+\subsection*{\texttt{Bool}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructor: false }\par
+\noindent \texttt{Constructor: true }\par
+\subsection*{\texttt{Lean.Compiler.LCNF.Arg}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.LetDecl}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\subsection*{\texttt{Lean.Expr}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Expr.lean (7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.FVarId}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Expr.lean (7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Nat}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructor: zero }\par
+\noindent \texttt{Constructor: succ (n : Nat)}\par
+\subsection*{\texttt{Option}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\noindent \texttt{Constructor: none }\par
+\noindent \texttt{Constructor: some (val : <U+03B1>)}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.Param}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: pu : Lean.Compiler.LCNF.Purity}\par
+\subsection*{\texttt{Lean.Name}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.Compiler.LCNF.CtorInfo}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Compiler/LCNF/Basic.lean (58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{List}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\noindent \texttt{Constructor: nil }\par
+\noindent \texttt{Constructor: cons (head : <U+03B1>) (tail : (List <U+03B1>))}\par
+\subsection*{\texttt{Nat.add}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (Nat <U+2192> (Nat <U+2192> Nat))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Array.toList}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{<U+03B1> : (Type u)\} <U+2192> ((Array <U+03B1>) <U+2192> (List <U+03B1>)))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{List.foldl}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{<U+03B1> : (Type u)\} <U+2192> (\{<U+03B2> : (Type v)\} <U+2192> ((<U+03B1> <U+2192> (<U+03B2> <U+2192> <U+03B1>)) <U+2192> (<U+03B1> <U+2192> ((List <U+03B2>) <U+2192> <U+03B1>)))))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{plumbing}}
+\noindent Kind: \texttt{plumbing}.\par
+\noindent \texttt{Names: Bool.casesOn, Eq, Eq.casesOn, Eq.ndrec, Eq.refl, Eq.symm, False, False.elim, HEq, HEq.refl, Inhabited.default, Lean.Compiler.LCNF.Alt.casesOn, Lean.Compiler.LCNF.Arg.casesOn, Lean.Compiler.LCNF.Cases.casesOn, Lean.Compiler.LCNF.Code.casesOn, Lean.Compiler.LCNF.CtorInfo.casesOn, Lean.Compiler.LCNF.FunDecl.casesOn, Lean.Compiler.LCNF.Purity.ctorIdx, Lean.FVarId.casesOn, OfNat.ofNat, Option.casesOn, eq\_of\_heq, instInhabitedNat, instOfNatNat, noConfusion\_of\_Nat}\par
+\subsection*{\texttt{Traversal.code}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: partial; mutual group Code}\par
+\noindent \texttt{public meta partial def Traversal.code (c : (Lean.Compiler.LCNF.Code Lean.Compiler.LCNF.Purity.pure)) : Nat :=   (match c with | .<U+00AB>let<U+00BB> decl k => (Nat.add 1 (Traversal.code k)) | .<U+00AB>fun<U+00BB> decl k => (Nat.add (Traversal.funDecl decl) (Traversal.code k)) | .jp decl k => (Nat.add (Traversal.funDecl decl) (Traversal.code k)) | .jmp fvarId args => 0 | .cases cases => (Traversal.cases cases) | .<U+00AB>return<U+00BB> fvarId => 0 | .unreach type => 0)}\par
+\subsection*{\texttt{Traversal.funDecl}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: partial; mutual group Code}\par
+\noindent \texttt{public meta partial def Traversal.funDecl (d : (Lean.Compiler.LCNF.FunDecl Lean.Compiler.LCNF.Purity.pure)) : Nat :=   (match d with | .mk fvarId binderName params type value => (Traversal.code value))}\par
+\subsection*{\texttt{Traversal.cases}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: partial; mutual group Code}\par
+\noindent \texttt{public meta partial def Traversal.cases (cs : (Lean.Compiler.LCNF.Cases Lean.Compiler.LCNF.Purity.pure)) : Nat :=   (match cs with | .mk typeName resultType discr alts => (List.foldl (<U+03B1> := Nat) (<U+03B2> := (Lean.Compiler.LCNF.Alt Lean.Compiler.LCNF.Purity.pure)) (fun (acc : Nat) (x : (Lean.Compiler.LCNF.Alt Lean.Compiler.LCNF.Purity.pure)) => (Nat.add acc (Traversal.alt x))) 0 (Array.toList (<U+03B1> := (Lean.Compiler.LCNF.Alt Lean.Compiler.LCNF.Purity.pure)) alts)))}\par
+\subsection*{\texttt{Traversal.alt}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: partial; mutual group Code}\par
+\noindent \texttt{public meta partial def Traversal.alt (a : (Lean.Compiler.LCNF.Alt Lean.Compiler.LCNF.Purity.pure)) : Nat :=   (match a with | .alt ctorName params code => (Traversal.code code) | .default code => (Traversal.code code))}\par
+\end{document}

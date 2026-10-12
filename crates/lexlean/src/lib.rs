@@ -125,6 +125,11 @@ pub const LEAN_TOOLCHAIN: &str = "leanprover/lean4:v4.32.1";
 /// The Lean version a verification environment must report (SPEC.md §8.2).
 pub const LEAN_VERSION: &str = "4.32.1";
 
+/// The source commit of the pinned Lean release (SPEC.md §8.2). The tooling
+/// registry cites it and `conformance_tl_02` equates it with the pin in
+/// `model/authorities.toml`.
+pub const LEAN_GITHASH: &str = "f054605aea4b840552cca2e725580bffd1e1b704";
+
 /// The compiler crate version.
 pub const COMPILER_VERSION: &str = env!("CARGO_PKG_VERSION");
 

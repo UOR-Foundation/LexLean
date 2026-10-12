@@ -126,7 +126,13 @@ fn run_lean(text: &str) -> (i32, String) {
 }
 
 /// A hand-written module reaching every kind of constant the extraction
-/// classifies, and every LCNF form base-phase translation produces.
+/// classifies, and every LCNF form base-phase translation produces. Lean's
+/// own translation of a function with two join points orders them by the
+/// numbering of its fresh variables, which depends on everything the process
+/// elaborated before it (`twoJoins`, a `match` that continues into a product,
+/// does): the adapter starts every translation from the name generator's
+/// initial state, and `twoJoins` is how that is seen, while the oracle, which
+/// does not, is compared with it only on functions with one join point.
 const PROBE_MODULE: &str = "module
 public section
 namespace Probe.Main
@@ -141,6 +147,9 @@ unsafe def risky : Nat := 1
 def viaExternal (n : Nat) : Nat := external n
 def greeting : String := \"hi\"
 def joined (b : Bool) (n : Nat) : Nat :=
+  let x := if b then n + 1 else n + 2
+  x * x
+def twoJoins (b : Bool) (n : Nat) : Nat :=
   let x := match b with
     | true => n + 1
     | false => n + 2
@@ -161,54 +170,109 @@ end Probe.Main
 end
 ";
 
-/// Build `PROBE_MODULE` in a Lake workspace with pinned Lean and run the
-/// extraction driver for `roots` over it; the parsed raw record.
-fn probe_extraction(roots: &[&str]) -> serde_json::Value {
-    let _guard = support::env_shared();
-    let toolchain = toolchain();
-    let directory = tempfile::tempdir().expect("tempdir");
-    let root = directory.path();
-    std::fs::create_dir_all(root.join("Probe")).expect("module directory");
-    std::fs::write(
-        root.join("lakefile.toml"),
-        "name = \"probe\"\nversion = \"0.1.0\"\ndefaultTargets = [\"Probe\"]\n\n[[lean_lib]]\nname = \"Probe\"\nglobs = [\"Probe.+\"]\n",
-    )
-    .expect("lakefile");
-    std::fs::write(root.join("lean-toolchain"), "leanprover/lean4:v4.32.1\n").expect("toolchain");
-    std::fs::write(root.join("Probe/Main.lean"), PROBE_MODULE).expect("module");
-    let lake = |arguments: &[&str]| {
-        std::process::Command::new(toolchain.lake.path.as_std_path())
+/// `PROBE_MODULE` built in a Lake workspace with pinned Lean, in which an
+/// extraction module can be run.
+struct Probe {
+    directory: tempfile::TempDir,
+    toolchain: lexlean::verify::toolchain::Toolchain,
+}
+
+impl Probe {
+    fn lake(&self, arguments: &[&str]) -> std::process::Output {
+        std::process::Command::new(self.toolchain.lake.path.as_std_path())
             .args(arguments)
-            .current_dir(root)
+            .current_dir(self.directory.path())
             .env(
                 "PATH",
                 format!(
                     "{}:{}",
-                    toolchain.root.join("bin"),
+                    self.toolchain.root.join("bin"),
                     std::env::var("PATH").unwrap_or_default()
                 ),
             )
             .output()
             .expect("run lake")
+    }
+
+    fn new() -> Self {
+        let toolchain = toolchain();
+        let directory = tempfile::tempdir().expect("tempdir");
+        let root = directory.path();
+        std::fs::create_dir_all(root.join("Probe")).expect("module directory");
+        std::fs::write(
+            root.join("lakefile.toml"),
+            "name = \"probe\"\nversion = \"0.1.0\"\ndefaultTargets = [\"Probe\"]\n\n[[lean_lib]]\nname = \"Probe\"\nglobs = [\"Probe.+\"]\n",
+        )
+        .expect("lakefile");
+        std::fs::write(root.join("lean-toolchain"), "leanprover/lean4:v4.32.1\n")
+            .expect("toolchain");
+        std::fs::write(root.join("Probe/Main.lean"), PROBE_MODULE).expect("module");
+        let probe = Self {
+            directory,
+            toolchain,
+        };
+        let built = probe.lake(&["build"]);
+        assert!(
+            built.status.success(),
+            "{}",
+            String::from_utf8_lossy(&built.stdout)
+        );
+        probe
+    }
+
+    /// The standard output of an extraction module run over the workspace,
+    /// which must succeed and print one record and nothing else.
+    fn run(&self, text: &str) -> String {
+        std::fs::write(self.directory.path().join("Extract.lean"), text).expect("module");
+        let output = self.lake(&["env", "lean", "Extract.lean"]);
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert!(output.status.success(), "{stdout}");
+        assert_eq!(
+            stdout.lines().count(),
+            1,
+            "one record and nothing else: {stdout}"
+        );
+        stdout
+    }
+}
+
+/// The adapter's own extraction of `roots` over the probe module: the raw
+/// record.
+fn probe_record(probe: &Probe, roots: &[String]) -> String {
+    let driver = lcnf::driver(&"0".repeat(32), roots, &["Probe.Main".to_owned()]).expect("driver");
+    probe.run(&driver.text)
+}
+
+/// The handwritten oracle's extraction of the same roots: the adapter it
+/// replaced, run by the one line of Lean its driver was.
+fn oracle_record(probe: &Probe, roots: &[String]) -> String {
+    let names = |values: &[String]| {
+        values
+            .iter()
+            .map(|value| format!("\"{value}\".toName"))
+            .collect::<Vec<_>>()
+            .join(", ")
     };
-    let built = lake(&["build"]);
-    assert!(
-        built.status.success(),
-        "{}",
-        String::from_utf8_lossy(&built.stdout)
+    let oracle = std::fs::read_to_string(
+        support::repo_root()
+            .join("tests/lcnf/oracle/extract.lean")
+            .as_std_path(),
+    )
+    .expect("the oracle");
+    let text = format!(
+        "module\npublic meta import Lean\nimport all Probe.Main\nset_option linter.unusedVariables false\n{oracle}\n#eval LexLeanExtract.main #[{}] #[\"Probe.Main\".toName]\n",
+        names(roots)
     );
+    probe.run(&text)
+}
+
+/// Build `PROBE_MODULE` in a Lake workspace with pinned Lean and run the
+/// extraction driver for `roots` over it; the parsed raw record.
+fn probe_extraction(roots: &[&str]) -> serde_json::Value {
+    let _guard = support::env_shared();
+    let probe = Probe::new();
     let roots: Vec<String> = roots.iter().map(|root| (*root).to_owned()).collect();
-    let driver = lcnf::driver(&"0".repeat(32), &roots, &["Probe.Main".to_owned()]).expect("driver");
-    std::fs::write(root.join("Extract.lean"), &driver.text).expect("driver");
-    let output = lake(&["env", "lean", "Extract.lean"]);
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-    assert!(output.status.success(), "{stdout}");
-    assert_eq!(
-        stdout.lines().count(),
-        1,
-        "one record and nothing else: {stdout}"
-    );
-    serde_json::from_str(&stdout).expect("record JSON")
+    serde_json::from_str(&probe_record(&probe, &roots)).expect("record JSON")
 }
 
 /// Every `kind` tag the value carries, at any depth.
@@ -868,10 +932,10 @@ pub fn run(id: &str) {
         }
         // §22.10: the authority interface is closed, pinned, and probed.
         "NE-04" => {
-            let authority = lcnf::authority().expect("the authority registry");
-            assert_eq!(authority.lean_version, "4.32.1");
+            let adapter = lcnf::adapter().expect("the adapter");
+            assert_eq!(adapter.authority.lean_version, "4.32.1");
             assert_eq!(
-                authority.lean_githash,
+                adapter.authority.lean_githash,
                 "f054605aea4b840552cca2e725580bffd1e1b704"
             );
             let model =
@@ -882,8 +946,8 @@ pub fn run(id: &str) {
                     .authorities
                     .authority
                     .iter()
-                    .any(|row| row.id == authority.authority),
-                "the registry cites a model authority row"
+                    .any(|row| row.id == adapter.authority.id),
+                "the adapter cites a model authority row"
             );
             assert!(
                 model
@@ -891,30 +955,40 @@ pub fn run(id: &str) {
                     .claim
                     .iter()
                     .any(
-                        |claim| claim.authority.as_deref() == Some(authority.authority.as_str())
+                        |claim| claim.authority.as_deref() == Some(adapter.authority.id.as_str())
                             && claim.level == repo_model::registry::Level::SomeTrue
                     ),
                 "the authority's statement is a some-true ledger claim"
             );
-            let adapter = lcnf::adapter().expect("adapter");
+            let driver = lcnf::driver(&"0".repeat(32), &[], &[]).expect("driver");
             assert!(
-                !adapter.contains("--") && !adapter.contains("/-"),
-                "the adapter has no comment"
+                !driver.text.contains("--") && !driver.text.contains("/-"),
+                "the generated module has no comment"
             );
             // The only compiler operations are the base-phase translation,
             // the constructor type query, the code-generation query, and the
-            // monad runner; every other LCNF row is a structure field.
-            for call in &authority.call {
-                if call.name.starts_with("Lean.Compiler.LCNF.") {
-                    let segment = call.name.rsplit('.').next().expect("segment");
-                    assert!(
-                        ["toDecl", "toLCNFType", "shouldGenerateCode", "run"].contains(&segment)
-                            || call.role.starts_with("a field of the LCNF"),
-                        "`{}` is not a registered kind of compiler operation",
-                        call.name
-                    );
+            // monad runner; everything else of the LCNF is a type the
+            // registry states with its constructors, so the adapter can run
+            // no pass.
+            let mut operations = 0;
+            for declaration in &adapter.declarations {
+                if let lexlean::ir::tooling::ToolDeclaration::Call { name, .. } = declaration {
+                    if name.starts_with("Lean.Compiler.LCNF.") {
+                        operations += 1;
+                        assert!(
+                            [
+                                "Lean.Compiler.LCNF.toDecl",
+                                "Lean.Compiler.LCNF.toLCNFType",
+                                "Lean.Compiler.LCNF.shouldGenerateCode",
+                                "Lean.Compiler.LCNF.CompilerM.run",
+                            ]
+                            .contains(&name.as_str()),
+                            "`{name}` is not a registered kind of compiler operation"
+                        );
+                    }
                 }
             }
+            assert_eq!(operations, 4, "all four compiler operations are registered");
             // A Lean identity other than the pin is drift.
             let foreign = mutate(&committed_record(), |value| {
                 value["lean"]["githash"] = "0000000000000000000000000000000000000000".into();
@@ -923,118 +997,7 @@ pub fn run(id: &str) {
                 matches!(extract(&foreign), Err(Rejection::Drift(reason)) if reason.contains("pinned to 4.32.1"))
             );
             if support::lean_backed("NE-04") {
-                // Every source identity matches the pinned toolchain. It is
-                // resolved from `ELAN_HOME`, which a case that replaces it
-                // holds exclusively, so it is resolved under the shared lock.
-                let toolchain = {
-                    let _guard = support::env_shared();
-                    toolchain()
-                };
-                for (source, sha256) in authority
-                    .call
-                    .iter()
-                    .map(|call| (&call.source, &call.source_sha256))
-                    .chain(
-                        authority
-                            .types
-                            .iter()
-                            .map(|row| (&row.source, &row.source_sha256)),
-                    )
-                {
-                    let bytes = std::fs::read(toolchain.root.join(source).as_std_path())
-                        .expect("pinned source");
-                    assert_eq!(
-                        &lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex(),
-                        sha256,
-                        "{source}"
-                    );
-                }
-                // Every probe and the registry check pass under pinned Lean.
-                let driver = lcnf::driver("0".repeat(32).as_str(), &[], &[]).expect("driver");
-                let (exit, output) = run_lean(&driver.text);
-                assert_eq!(exit, 0, "{output}");
-                assert_eq!(
-                    output.lines().count(),
-                    1,
-                    "nothing but the record: {output}"
-                );
-                assert!(
-                    output.contains("\"spec\":\"lexlean/lcnf-extraction/2\""),
-                    "{output}"
-                );
-                let drift = |text: String, fragment: &str| {
-                    let drifted = lcnf::Driver {
-                        text,
-                        ..driver.clone()
-                    };
-                    assert_ne!(drifted.text, driver.text, "{fragment}");
-                    let (exit, output) = run_lean(&drifted.text);
-                    let classified = if exit == 0 {
-                        lcnf::compiler_input(&drifted, &output, &[], &[], &[])
-                            .expect_err("a drifted run is refused")
-                    } else {
-                        lcnf::classify_failure(&drifted, &output)
-                    };
-                    match classified {
-                        Rejection::Drift(reason) => {
-                            assert!(reason.contains(fragment), "{fragment:?} in {reason}");
-                        }
-                        other => panic!("expected drift naming {fragment:?}, got {other:?}"),
-                    }
-                };
-                // A changed result, default value, or binder kind is drift,
-                // though definitional equality would accept the last two.
-                drift(
-                    driver.text.replacen(
-                        "lexlean_signature Lean.Compiler.LCNF.shouldGenerateCode : Lean.Name → Lean.Core.CoreM Bool",
-                        "lexlean_signature Lean.Compiler.LCNF.shouldGenerateCode : Lean.Name → Lean.Core.CoreM Nat",
-                        1,
-                    ),
-                    "`Lean.Compiler.LCNF.shouldGenerateCode`",
-                );
-                drift(
-                    driver.text.replacen(
-                        "Lean.Name → optParam Bool Bool.false → Option Lean.ConstantInfo",
-                        "Lean.Name → optParam Bool Bool.true → Option Lean.ConstantInfo",
-                        1,
-                    ),
-                    "`Lean.Environment.find?`",
-                );
-                drift(
-                    driver.text.replacen(
-                        "lexlean_signature Lean.Elab.Command.liftCoreM : {α : Type}",
-                        "lexlean_signature Lean.Elab.Command.liftCoreM : (α : Type)",
-                        1,
-                    ),
-                    "`Lean.Elab.Command.liftCoreM`",
-                );
-                // A constructor list that is not Lean's is drift.
-                drift(
-                    driver.text.replacen(
-                        "#[\"alt\", \"ctorAlt\", \"default\"]",
-                        "#[\"alt\", \"default\"]",
-                        1,
-                    ),
-                    "`Lean.Compiler.LCNF.Alt` has constructors",
-                );
-                // A call the registry does not list is drift: an adapter
-                // that ran an LCNF pass would use one.
-                drift(
-                    driver
-                        .text
-                        .replacen("\"Lean.Compiler.LCNF.toDecl\".toName, ", "", 1),
-                    "`Lean.Compiler.LCNF.toDecl` is used as call but registered as unregistered",
-                );
-                // A warning inside the adapter is drift, though Lean exits
-                // successfully: the record must stand alone.
-                drift(
-                    driver.text.replacen(
-                        "meta def bool (value : Bool) : String",
-                        "@[deprecated \"probe\" (since := \"2020-01-01\")]\nmeta def bool (value : Bool) : String",
-                        1,
-                    ),
-                    "the pinned extraction adapter no longer elaborates cleanly",
-                );
+                ne_04_under_lean(adapter, &driver);
             }
         }
         // §22.10: a dependency dropped by either side is caught.
@@ -1188,4 +1151,312 @@ fn replace_sibling_return(code: serde_json::Value, bound: &str) -> serde_json::V
         ),
         other => other,
     }
+}
+
+/// The raw records of the adapter and of the handwritten oracle for one run
+/// of every kind of constant the extraction classifies, on real Lean.
+#[must_use]
+pub fn oracle_records() -> (String, String) {
+    let roots: Vec<String> = [
+        "viaOpaque",
+        "viaAxiom",
+        "viaPartial",
+        "risky",
+        "viaExternal",
+        "greeting",
+        "joined",
+        "impossible",
+        "ordinal",
+        "boxed",
+        "parsed",
+        "halver",
+    ]
+    .iter()
+    .map(|root| format!("Probe.Main.{root}"))
+    .collect();
+    let _guard = support::env_shared();
+    let probe = Probe::new();
+    (probe_record(&probe, &roots), oracle_record(&probe, &roots))
+}
+
+/// The adapter's record equals the handwritten oracle's on every kind of
+/// constant the extraction classifies, and on every base-phase form, up to
+/// the numbering of Lean's variables.
+///
+/// # Errors
+///
+/// The first difference between the two records.
+pub fn compare_with_oracle() -> Result<(), String> {
+    let (adapter_record, oracle) = oracle_records();
+    assert!(adapter_record.len() > 10_000, "a real record");
+    let (adapter_record, oracle) = (renumbered(&adapter_record), renumbered(&oracle));
+    if adapter_record != oracle {
+        let describe = |value: &serde_json::Value| serde_json::to_string(value).expect("JSON");
+        let (adapter_text, oracle_text) = (describe(&adapter_record), describe(&oracle));
+        let at = adapter_text
+            .bytes()
+            .zip(oracle_text.bytes())
+            .position(|(a, b)| a != b)
+            .unwrap_or_else(|| adapter_text.len().min(oracle_text.len()));
+        let window = |text: &str| {
+            let start = at.saturating_sub(160);
+            let end = (at + 160).min(text.len());
+            text.get(start..end).unwrap_or_default().to_owned()
+        };
+        return Err(format!(
+            "the tooling module's record is not the handwritten oracle's: the first difference is at byte {at}:\nadapter: {}\noracle:  {}",
+            window(&adapter_text),
+            window(&oracle_text)
+        ));
+    }
+    Ok(())
+}
+
+/// The adapter's record of `roots` does not depend on what the process
+/// elaborated before the extraction: the same driver with any number of
+/// definitions before its last evaluation gives the same bytes.
+///
+/// # Errors
+///
+/// The first padding that changes the record.
+pub fn counter_independence() -> Result<(), String> {
+    let _guard = support::env_shared();
+    let probe = Probe::new();
+    let roots = vec!["Probe.Main.twoJoins".to_owned()];
+    let driver = lcnf::driver(&"0".repeat(32), &roots, &["Probe.Main".to_owned()])
+        .map_err(|reason| reason.to_string())?;
+    let at = driver
+        .text
+        .rfind("\n#eval ")
+        .ok_or("the driver evaluates the roots last")?
+        + 1;
+    let mut first: Option<String> = None;
+    for padding in [0_usize, 1, 2, 3, 5, 7, 11, 13] {
+        let defined: String = (0..padding)
+            .map(|index| format!("def lexleanPadding{index} : Nat := {index}\n"))
+            .collect();
+        let text = format!("{}{defined}{}", &driver.text[..at], &driver.text[at..]);
+        let record = probe.run(&text);
+        match &first {
+            None => first = Some(record),
+            Some(expected) if *expected == record => {}
+            Some(_) => {
+                return Err(format!(
+                    "the record changes when {padding} definitions come before the extraction"
+                ))
+            }
+        }
+    }
+    Ok(())
+}
+
+/// A record with the variables of each constant renamed by their first
+/// appearance in it. Lean numbers a variable by a counter that depends on
+/// what the process did before, and the adapter starts that counter again for
+/// every translation, so only the structure of a constant is comparable.
+fn renumbered(record: &str) -> serde_json::Value {
+    fn rename(value: &mut serde_json::Value, seen: &mut std::collections::BTreeMap<String, usize>) {
+        match value {
+            serde_json::Value::String(text) if text.starts_with("_uniq.") => {
+                let next = seen.len();
+                let index = *seen.entry(text.clone()).or_insert(next);
+                *text = format!("_uniq.{index}");
+            }
+            serde_json::Value::Array(items) => {
+                items.iter_mut().for_each(|item| rename(item, seen));
+            }
+            serde_json::Value::Object(members) => {
+                members.values_mut().for_each(|member| rename(member, seen));
+            }
+            _ => {}
+        }
+    }
+    let mut value: serde_json::Value = serde_json::from_str(record).expect("record JSON");
+    for constant in value["constants"].as_array_mut().expect("constants") {
+        rename(constant, &mut std::collections::BTreeMap::new());
+    }
+    value
+}
+
+/// The half of NE-04 that runs the adapter on real Lean, for the embedded
+/// adapter, without the checks that need a current lock.
+pub fn ne_04_lean_half() {
+    let adapter = lcnf::adapter().expect("the adapter");
+    let driver = lcnf::driver(&"0".repeat(32), &[], &[]).expect("driver");
+    ne_04_under_lean(adapter, &driver);
+}
+
+/// NE-04 on real Lean: the registry is what Lean says, every probe and the
+/// registry check pass, and each drift is caught as drift.
+#[allow(clippy::too_many_lines)]
+fn ne_04_under_lean(adapter: &lexlean::ir::tooling::ToolingModule, driver: &lcnf::Driver) {
+    use lexlean::ir::tooling::ToolDeclaration;
+    let root = support::repo_root();
+    // Every source identity matches the pinned toolchain. It is resolved from
+    // `ELAN_HOME`, which a case that replaces it holds exclusively, so it is
+    // resolved under the shared lock.
+    let toolchain = {
+        let _guard = support::env_shared();
+        toolchain()
+    };
+    for declaration in &adapter.declarations {
+        let (ToolDeclaration::Type { source, .. } | ToolDeclaration::Call { source, .. }) =
+            declaration
+        else {
+            continue;
+        };
+        let bytes =
+            std::fs::read(toolchain.root.join(&source.file).as_std_path()).expect("pinned source");
+        assert_eq!(
+            lexlean::artifact::content_id::Sha256Digest::of(&bytes).to_hex(),
+            source.sha256,
+            "{}",
+            source.file
+        );
+    }
+    // The committed registry is the pinned Lean's own answer.
+    let (rows, plumbing) =
+        crate::lcnf_registry::derived(root.as_std_path()).expect("the registry derives");
+    let (committed_rows, committed_plumbing) =
+        crate::lcnf_registry::committed(root.as_std_path()).expect("the committed registry");
+    assert_eq!(
+        rows, committed_rows,
+        "the committed rows are the exporter's"
+    );
+    assert_eq!(
+        plumbing, committed_plumbing,
+        "the committed plumbing is the adapter's"
+    );
+    // Every probe and the registry check pass under pinned Lean.
+    let (exit, output) = run_lean(&driver.text);
+    assert_eq!(exit, 0, "{output}");
+    assert_eq!(
+        output.lines().count(),
+        1,
+        "nothing but the record: {output}"
+    );
+    assert!(
+        output.contains("\"spec\":\"lexlean/lcnf-extraction/2\""),
+        "{output}"
+    );
+    compare_with_oracle().unwrap_or_else(|reason| panic!("{reason}"));
+    counter_independence().unwrap_or_else(|reason| panic!("{reason}"));
+    let drift = |drifted: &lcnf::Driver, fragment: &str| {
+        assert_ne!(drifted.text, driver.text, "{fragment}");
+        let (exit, output) = run_lean(&drifted.text);
+        let classified = if exit == 0 {
+            lcnf::compiler_input(drifted, &output, &[], &[], &[])
+                .expect_err("a drifted run is refused")
+        } else {
+            lcnf::classify_failure(drifted, &output)
+        };
+        match classified {
+            Rejection::Drift(reason) => {
+                assert!(reason.contains(fragment), "{fragment:?} in {reason}");
+            }
+            other => panic!("expected drift naming {fragment:?}, got {other:?}"),
+        }
+    };
+    let planted = |edit: &dyn Fn(&mut lexlean::ir::tooling::ToolingModule)| {
+        let mut module = adapter.clone();
+        edit(&mut module);
+        lcnf::driver_of(module, &"0".repeat(32), &[], &[]).expect("a module that still checks")
+    };
+    // A changed default value is drift, though definitional equality would
+    // accept it and no term of the tool depends on it.
+    drift(
+        &planted(&|module| {
+            for declaration in &mut module.declarations {
+                if let ToolDeclaration::Call {
+                    name, signature, ..
+                } = declaration
+                {
+                    if name == "Lean.Environment.find?" {
+                        let text = serde_json::to_string(signature).expect("signature");
+                        assert!(text.contains("Bool.false"), "{text}");
+                        *signature =
+                            serde_json::from_str(&text.replacen("Bool.false", "Bool.true", 1))
+                                .expect("signature");
+                    }
+                }
+            }
+        }),
+        "`Lean.Environment.find?`",
+    );
+    // A changed binder kind is drift: an instance binder stated as an
+    // implicit one types the same for the tool and elaborates differently.
+    drift(
+        &planted(&|module| {
+            for declaration in &mut module.declarations {
+                if let ToolDeclaration::Call {
+                    name, signature, ..
+                } = declaration
+                {
+                    if name == "Lean.throwError" {
+                        let text = serde_json::to_string(signature).expect("signature");
+                        *signature = serde_json::from_str(&text.replacen(
+                            "\"info\":\"instance\"",
+                            "\"info\":\"implicit\"",
+                            1,
+                        ))
+                        .expect("signature");
+                    }
+                }
+            }
+        }),
+        "`Lean.throwError`",
+    );
+    // A constructor list that is not Lean's is drift: the same constructors
+    // in another order are consistent with every match of the tool.
+    drift(
+        &planted(&|module| {
+            for declaration in &mut module.declarations {
+                if let ToolDeclaration::Type {
+                    name, constructors, ..
+                } = declaration
+                {
+                    if name == "Lean.Compiler.LCNF.Alt" {
+                        constructors.reverse();
+                    }
+                }
+            }
+        }),
+        "`Lean.Compiler.LCNF.Alt` has constructors",
+    );
+    // A constant the registry does not list is drift: an adapter that ran an
+    // LCNF pass would use one.
+    drift(
+        &planted(&|module| {
+            for declaration in &mut module.declarations {
+                if let ToolDeclaration::Plumbing { names } = declaration {
+                    names.remove(0);
+                }
+            }
+        }),
+        "is used as",
+    );
+    drift(
+        &planted(&|module| {
+            for declaration in &mut module.declarations {
+                if let ToolDeclaration::Plumbing { names } = declaration {
+                    names.push("zzz.neverUsed".to_owned());
+                }
+            }
+        }),
+        "`zzz.neverUsed` is plumbing but unused",
+    );
+    // A warning inside the adapter is drift, though Lean exits successfully:
+    // the record must stand alone.
+    let warned = lcnf::Driver {
+        text: driver.text.replacen(
+            "meta def LexLeanExtract.bool (value : Bool) : String",
+            "@[deprecated \"probe\" (since := \"2020-01-01\")] meta def LexLeanExtract.bool (value : Bool) : String",
+            1,
+        ),
+        ..driver.clone()
+    };
+    drift(
+        &warned,
+        "the pinned extraction adapter no longer elaborates cleanly",
+    );
 }

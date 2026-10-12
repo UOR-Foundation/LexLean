@@ -1699,3 +1699,58 @@ fn conformance_or_07() {
 fn conformance_or_08() {
     repo_conformance::cases::run("OR-08");
 }
+
+#[test]
+fn conformance_tl_01() {
+    repo_conformance::cases::run("TL-01");
+}
+
+#[test]
+fn conformance_tl_02() {
+    repo_conformance::cases::run("TL-02");
+}
+
+#[test]
+fn conformance_tl_03() {
+    repo_conformance::cases::run("TL-03");
+}
+
+#[test]
+fn conformance_tl_04() {
+    repo_conformance::cases::run("TL-04");
+}
+
+#[test]
+fn conformance_tl_05() {
+    repo_conformance::cases::run("TL-05");
+}
+
+#[test]
+fn conformance_tl_06() {
+    repo_conformance::cases::run("TL-06");
+}
+
+#[test]
+fn conformance_tl_07() {
+    repo_conformance::cases::run("TL-07");
+}
+
+#[test]
+fn conformance_tl_08() {
+    repo_conformance::cases::run("TL-08");
+}
+
+#[test]
+fn conformance_tl_09() {
+    repo_conformance::cases::run("TL-09");
+}
+
+#[test]
+fn conformance_tl_10() {
+    repo_conformance::cases::run("TL-10");
+}
+
+#[test]
+fn conformance_tl_11() {
+    repo_conformance::cases::run("TL-11");
+}

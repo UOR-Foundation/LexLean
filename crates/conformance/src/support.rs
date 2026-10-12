@@ -319,6 +319,26 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of a committed tooling fixture (SPEC.md §17.20), without
+    /// build output or goldens. A tooling module is accepted only in a
+    /// project the compiler embeds, so a case checks it through
+    /// `Project::with_tooling` and never through the public API.
+    #[must_use]
+    pub fn tooling(name: &str) -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-tooling-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("tests/tooling").join(name);
+        assert!(
+            source.is_dir(),
+            "the committed tooling fixture `{name}` is required"
+        );
+        copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the `compiler` project, which defines the production
     /// realization calculus (§17.14), without build output or oracles.
     #[must_use]
@@ -2349,6 +2369,14 @@ pub fn schema(name: &str) -> serde_json::Value {
         .join(format!("{name}.schema.json"));
     serde_json::from_slice(&std::fs::read(path.as_std_path()).expect("schema exists"))
         .expect("schema parses")
+}
+
+/// The schema of the compiler-tooling language (SPEC.md §17.20), which lies
+/// outside `schemas/` and so outside the compiler-semantics ID.
+pub fn tooling_schema() -> serde_json::Value {
+    let path = repo_root().join("tooling/schemas/tooling-module.schema.json");
+    serde_json::from_slice(&std::fs::read(path.as_std_path()).expect("the tooling schema exists"))
+        .expect("the tooling schema parses")
 }
 
 /// Assert `instance` validates against `schemas/<name>.schema.json`,

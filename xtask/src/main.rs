@@ -81,13 +81,18 @@ fn main() -> ExitCode {
 /// the target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
 /// modules, the `Gnaf` model, the Rust packages and negative package
 /// manifests under `compiler/rust/`, and the project configuration) is
-/// exactly what its generator renders.
+/// exactly what its generator renders, and so is the extraction adapter's
+/// tooling project `language/lcnf-1.2/tooling/` over the registry
+/// `tests/lcnf/registry.json`, which `--write` first regenerates from the
+/// pinned Lean (§22.10).
 fn check_calculus(root: &Path, write: bool) -> Result<(), Fail> {
     let count = repo_conformance::calculus::check(root, write)?;
     if write {
         println!("check-calculus: wrote {count} generated files");
     } else {
-        println!("check-calculus: {count} generated files equal their generator (§17.14-§17.16)");
+        println!(
+            "check-calculus: {count} generated files equal their generator (§17.14-§17.16, §22.10)"
+        );
     }
     Ok(())
 }
@@ -486,6 +491,14 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
             files.len()
         );
     }
+    // The tooling fixtures cannot be built through the command line: a
+    // tooling module is accepted only in a project the compiler embeds.
+    let tooling = repo_conformance::tooling::check_golden(root, write)?;
+    if write {
+        println!("check-golden: wrote {tooling} tooling oracle files");
+    } else {
+        println!("check-golden: {tooling} tooling artifacts equal their oracles (R10)");
+    }
     Ok(())
 }
 
@@ -582,6 +595,10 @@ fn check_reproducibility(root: &Path) -> Result<(), Fail> {
             temp_b.path().display()
         );
     }
+    let tooling = repo_conformance::tooling::check_reproducibility(root)?;
+    println!(
+        "check-reproducibility: {tooling} tooling artifacts byte-identical across two directories (R10)"
+    );
     Ok(())
 }
 

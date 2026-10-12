@@ -27,6 +27,7 @@ use crate::ir::document::{Block, DocumentModule, Phrase, PhraseItem, Section};
 use crate::ir::proof::{CaseProof, Proof};
 use crate::ir::semantic::SemanticModule;
 use crate::ir::term::{Binder, ExternalConstRef, GlobalRef, LocalId, Term};
+use crate::ir::tooling::{AuthorityPin, ToolingModule};
 use crate::lexicon::lse::QualifiedId;
 use crate::lexicon::package::{LexiconPackage, PackageRef};
 use crate::lexicon::resolve::Closure;
@@ -712,6 +713,35 @@ fn check_project_inline(
         } else {
             None
         };
+        let tooling = if let Some(ast) = &load.ast.tooling {
+            let span = || span_of_range(&load.path, &load.atoms, ast.data.range);
+            if !project.tooling {
+                return Err(err(vec![Diagnostic::new(
+                    code!("LLT4013"),
+                    "phase link: a tooling module is accepted only in the tooling projects the compiler embeds, not in a user project",
+                )
+                .with_span(span())]));
+            }
+            Some(
+                ToolingModule::parse(
+                    &ast.data.text,
+                    &project.config.language,
+                    AuthorityPin {
+                        lean_version: crate::LEAN_VERSION,
+                        lean_githash: crate::LEAN_GITHASH,
+                    },
+                )
+                .map_err(|failure| {
+                    err(vec![Diagnostic::new(
+                        failure.code,
+                        format!("phase link: {}", failure.reason),
+                    )
+                    .with_span(span())])
+                })?,
+            )
+        } else {
+            None
+        };
         // §17.13: every production root is analysed over the linked
         // closure of this module and its imports before any backend runs.
         let production = match &semantic {
@@ -802,6 +832,7 @@ fn check_project_inline(
             blocks,
             core,
             semantic,
+            tooling,
         };
         ir_node_count = ir_node_count.saturating_add(count_ir_nodes(&document));
         if ir_node_count > limits.max_ir_nodes {
@@ -1774,7 +1805,14 @@ fn count_ir_nodes(document: &DocumentModule) -> u64 {
         .semantic
         .as_ref()
         .map_or(0, crate::ir::semantic::SemanticModule::node_count);
-    prose.saturating_add(core).saturating_add(semantic)
+    let tooling = document
+        .tooling
+        .as_ref()
+        .map_or(0, crate::ir::tooling::ToolingModule::node_count);
+    prose
+        .saturating_add(core)
+        .saturating_add(semantic)
+        .saturating_add(tooling)
 }
 
 /// Collect every external Lean entry a document references, keyed by

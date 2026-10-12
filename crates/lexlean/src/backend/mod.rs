@@ -8,6 +8,7 @@ pub mod lean;
 pub mod lean_tokens;
 pub mod pdf;
 pub mod semantic;
+pub mod tooling;
 
 use std::collections::BTreeMap;
 

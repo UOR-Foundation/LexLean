@@ -13,6 +13,7 @@ mod configuration_lock;
 mod declarations;
 mod examples;
 mod extraction;
+pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
 mod gnaf;
 mod grammar;
 mod latex_pdf;
@@ -30,6 +31,7 @@ mod repository;
 mod rust_backend;
 mod security;
 mod semantic_ir;
+mod tooling;
 mod typed_diagnostics;
 mod verification;
 
@@ -104,6 +106,7 @@ pub fn run(id: &str) {
         "OR" => oracle::run(id),
         "MD" => models::run(id),
         "RS" => reasoning::run(id),
+        "TL" => tooling::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

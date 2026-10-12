@@ -8,3 +8,5 @@ pub mod document;
 pub mod proof;
 pub mod semantic;
 pub mod term;
+pub mod tooling;
+pub mod tooling_check;

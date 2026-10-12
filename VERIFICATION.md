@@ -24,7 +24,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
-- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, every GNAF certificate fixture under `compiler/certificates/` and the schemas `schemas/gnaf-certificate.schema.json` and `schemas/gnaf-certificate-fixture.schema.json`, the generated `TargetFixtures`, `GnafFixtures`, and `GnafCertificates` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` and `Certification` models, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the models' definitions in `crates/conformance/src/gnaf_model.rs` and `crates/conformance/src/certification_model.rs`, and the renderer produce (§17.14, §17.15), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path.
+- `just calculus` (`cargo xtask check-calculus`) compares every committed target fixture under `compiler/fixtures/`, every GNAF request under `compiler/gnaf/`, the GNAF dependency manifest `compiler/gnaf.manifest.json` and schemas `schemas/gnaf-request.schema.json` and `schemas/gnaf-fixture.schema.json`, every GNAF certificate fixture under `compiler/certificates/` and the schemas `schemas/gnaf-certificate.schema.json` and `schemas/gnaf-certificate-fixture.schema.json`, the generated `TargetFixtures`, `GnafFixtures`, and `GnafCertificates` modules, the calculus modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`, and `Main`, the `Gnaf` and `Certification` models, the project configuration, and every fixture's Rust package under `compiler/rust/rust-core/` and `compiler/rust/rust-std/` and every negative package manifest under `compiler/rust/negative/` with what the hand-written fixture sets, the calculus's definition in `crates/conformance/src/calculus_source.rs`, the models' definitions in `crates/conformance/src/gnaf_model.rs` and `crates/conformance/src/certification_model.rs`, and the renderer produce (§17.14, §17.15), and the calculus modules shipped for certificates under `language/preservation-1.2/modules/` with the compiler project's golden modules (§17.17), and the extraction adapter's tooling project `language/lcnf-1.2/tooling/` with what `crates/conformance/src/lcnf_adapter.rs`, `lcnf_extract.rs`, and `lcnf_registry.rs` render over the registry `tests/lcnf/registry.json` (§22.10); `just test` enforces the same comparison through `conformance_tc_03` and `conformance_gn_01`. `just calculus-write` is the only rewrite path, and it first regenerates the registry from the pinned Lean (`tests/lcnf/export.lean`), so it needs the pinned toolchain.
 - `just verify-write` (`cargo xtask verify-examples --write`) is the only path that rewrites `examples/*/expected/verify/`.
 - `just release` runs `vv` and then `cargo xtask release-check` (RP-12): every §30.3 artifact by content, the §30.4 completion criteria, and the crate-packaging round trip (`cargo package`, extract, offline build, `--version` equal to the in-repository binary). It is refused until 1.0.0.
 
@@ -4714,6 +4714,362 @@ assertion `left == right` failed: reasoning-gnaf-goal computes Triage's levels
 
 Removed: the constant, the mutations, and the plan were restored; `conformance_rs_12` and `conformance_rs_13` pass.
 
+### compiler-tooling modules can fail (stage 1a of #27)
+
+A tooling module (SPEC.md §17.20, `TL-01`..`TL-11`) is a program over a typed
+registry of the external Lean interface, written as canonical JSON, whose Lean
+and LaTeX are both generated from the one linked value, so every claim that it
+is closed is a claim about the compiler's own checks and the evidence for it is
+what those checks refuse. The `tooling` suite plants one defect at a time in a
+copy of each of the three committed fixtures (`tests/tooling/core`, `commands`,
+`traversal`) and requires the registered code and the reason it names: 18 planted
+defects of the schema and the encoding (`TL-01`), 1 of the context and the
+refusals of the public API, the command line, language 1.1, and a configuration
+member (`TL-02`), 16 of the authority and the registry (`TL-03`), 13 of the type
+rules (`TL-04`), 11 of the typing of a call (`TL-05`), 20 of the term language
+(`TL-06`), 6 of recursion (`TL-07`), 9 of complete traversal (`TL-08`), and 12
+of commands, invocations, and evaluations (`TL-09`): 106 in all. The plants of
+`TL-04` to `TL-09` were first run with a reason that no message contains, so
+that the failure printed what the compiler said and the text each plant must
+name could be taken from it; none of the 106 was accepted, and each is refused
+with its own code and the text it names. The pinned Lean is the second check: it elaborates every
+committed module without a message (`TL-10`), refuses a registry that gives
+`Nat.pred` another arity while the tool uses it consistently with the
+misstatement (`Function expected`), refuses one that omits `Option.none` while
+the match is exhaustive over what it lists (`Missing cases`), and runs the
+committed command's elaborator, which refuses an invocation of a constant that
+does not exist (`TL-09`): none of the three can be seen by the compiler alone.
+`TL-01` also changes every single node of every fixture (the member removed, or
+replaced by `null`, `0`, `""`, `{}`, or `[]`, or the element repeated): 19761
+changes, 890 accepted and 18871 refused by `LLT4013`, `LLT4014`, or `LLT4015`,
+none panicking (R5), in 13 s.
+
+Two checks were found by reading the finished sources against the statements,
+and each has a plant of its own below. A traversal that mentioned a field but
+called its handler on the subject was accepted, because the check asked only
+that the branch call a handler of the right type somewhere; it now follows the
+value from the field through `let`, `match`, and the lambdas handed to the same
+call (`P04`, and the plant "a handler applied to the subject, not the field" of
+`TL-08`). An abbreviation of itself unfolds to itself, which the test for a
+fixed point did not tell from a type with nothing left to unfold (`P07`).
+A shadowing binder is refused so that what a name stands for is read from its
+one binding, which the traversal check depends on (`P03`).
+
+The first version of this change moved `schemas/tooling-module.schema.json` into
+the compiler-semantics ID like every schema of `schemas/`. Regenerating the
+goldens (`cargo xtask check-golden --write`) then showed that the same commit
+had changed the generated Lean of three existing examples (`models`,
+`reasoning`, and the `compiler` project): the shared declaration emitter had
+started to drop the blank rendering of a semantic declaration, which is the
+separator its neighbours carry. The emitter now skips a blank rendering only for
+a tooling module (`DeclarationSource::skip_blank`), the schema lies in
+`tooling/schemas/` where no identity reads it, and `check-golden --write` leaves
+every existing golden, lock, and verification record unchanged.
+
+Each of the 24 plants below was applied alone to the finished sources (to the
+schema file for `P24` and to a golden for `P23`), produced the failure quoted,
+and was removed. Command for each: `cargo test -p repo-conformance --test
+conformance -- <case> --exact`.
+
+Planted: a match that need not be exhaustive (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_06`, `conformance_tl_08`. Expected: a match that omits a constructor is accepted, and so is a registry that gains a constructor no branch handles.
+
+```text
+thread 'conformance_tl_06' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-06: 1 plants were not refused as named:
+a match that omits a constructor: the module was accepted
+```
+
+Planted: a match blind to the scrutinee's index (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_06`. Expected: the constructors that exist only at another index count as available, so a traversal of `Code .pure` no longer has a match it can satisfy (the fixture itself is refused).
+
+```text
+thread 'conformance_tl_06' (N) panicked at crates/conformance/src/cases/tooling.rs:126:44:
+traversal: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4015"), message: "phase link: the match on `Lean.Compiler.LCNF.Code` is not exhaustive: it omits oset, uset, sset, setTag, inc, dec, del", primary: Some(Span { path: "src/Main.lex.tex", byte_start: 125, byte_end: 19403, line_start: 5, column_start: 14, line_end: 5, column_end: 19274 }), labels: [], notes
+```
+
+Planted: shadowing allowed (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_06`. Expected: a binder that shadows a variable in scope is accepted.
+
+```text
+thread 'conformance_tl_06' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-06: 1 plants were not refused as named:
+a binder that shadows another: expected LLT4015 naming "`xs` shadows a variable in scope", found [("LLT4015", "phase link: the variable `h` is not in scope")]
+```
+
+Planted: a handler on any value counts as recursing into the field (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_08`. Expected: a handler applied to the subject, not to a value derived from the field, is taken for recursing into the field.
+
+```text
+thread 'conformance_tl_08' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-08: 1 plants were not refused as named:
+a handler applied to the subject, not the field: the module was accepted
+```
+
+Planted: a traversal with a default branch (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_08`. Expected: a traversal with a default branch is accepted.
+
+```text
+thread 'conformance_tl_08' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-08: 1 plants were not refused as named:
+a default branch: the module was accepted
+```
+
+Planted: a traversal that may skip a field (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_08`. Expected: a traversal that never mentions a field of its recursive family is accepted.
+
+```text
+thread 'conformance_tl_08' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-08: 1 plants were not refused as named:
+a skipped field: expected LLT4015 naming "the traversal `Traversal.code` skips the field `k` of `Lean.Compiler.LCNF.Code.fun`", found [("LLT4015", "phase link: the traversal `Traversal.code` does not recurse into `Lean.Compiler.LCNF.Code` for the field `k` of `Lean.Compiler.LCNF.Code.fun`: its branch calls no traversal of `Lean.Compiler.LCNF.Code` in the group on a value derived from the field")]
+```
+
+Planted: an abbreviation of itself (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_04`. Expected: an abbreviation of itself is accepted.
+
+```text
+thread 'conformance_tl_04' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-04: 1 plants were not refused as named:
+an abbreviation of itself: expected LLT4014 naming "abbreviates itself", found [("LLT4015", "phase link: `Commands.elab` is declared to return Lean.Elab.Command.CommandElab, its body has type (Lean.Syntax → (Lean.Elab.Command.CommandElabM Unit))")]
+```
+
+Planted: a self call without `partial` (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_07`. Expected: a self call of a function that is not partial is accepted.
+
+```text
+thread 'conformance_tl_07' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-07: 1 plants were not refused as named:
+a self call of a function that is not partial: the module was accepted
+```
+
+Planted: a mutual group that need not be one run (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_07`. Expected: a mutual group that is not one contiguous run is accepted.
+
+```text
+thread 'conformance_tl_07' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-07: 1 plants were not refused as named:
+a mutual group that is not one run: the module was accepted
+```
+
+Planted: the authority's commit is not compared (`crates/lexlean/src/ir/tooling.rs`). Cases: `conformance_tl_03`. Expected: an authority at another Lean commit is accepted.
+
+```text
+thread 'conformance_tl_03' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-03: 1 plants were not refused as named:
+an authority at another commit: the module was accepted
+```
+
+Planted: a digest of any length (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_03`. Expected: a source digest of any length is accepted.
+
+```text
+thread 'conformance_tl_03' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-03: 1 plants were not refused as named:
+a short digest: the module was accepted
+```
+
+Planted: a value that need not be canonical (`crates/lexlean/src/ir/tooling.rs`). Cases: `conformance_tl_01`. Expected: a value that is not its own canonical encoding is accepted.
+
+```text
+thread 'conformance_tl_01' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-01: 2 plants were not refused as named:
+members out of order: the module was accepted
+an escaped scalar: the module was accepted
+```
+
+Planted: every loaded project admits tooling (`crates/lexlean/src/project.rs`). Cases: `conformance_tl_02`. Expected: a tooling module is accepted in a user project.
+
+```text
+thread 'conformance_tl_02' (N) panicked at crates/conformance/src/support.rs:495:14:
+check fails
+```
+
+Planted: a tooling module not charged to max_ir_nodes (`crates/lexlean/src/link.rs`). Cases: `conformance_tl_01`. Expected: a tooling module is not charged to `max_ir_nodes`.
+
+```text
+thread 'conformance_tl_01' (N) panicked at crates/conformance/src/cases/tooling.rs:387:40:
+over the node limit
+```
+
+Planted: language 1.1 admitted (`crates/lexlean/src/ir/tooling.rs`). Cases: `conformance_tl_02`. Expected: a tooling module is accepted under language 1.1.
+
+```text
+thread 'conformance_tl_02' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-02: 1 plants were not refused as named:
+language 1.1: the module was accepted
+```
+
+Planted: an elaborator of the unfolded type accepted (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_09`. Expected: an elaborator of the unfolded type, which Lean's `command_elab` attribute would refuse, is accepted.
+
+```text
+thread 'conformance_tl_09' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-09: 1 plants were not refused as named:
+an elaborator of the unfolded type: the module was accepted
+```
+
+Planted: a missing argument accepted (`crates/lexlean/src/ir/tooling_check.rs`). Cases: `conformance_tl_05`. Expected: a call with a missing argument is accepted.
+
+```text
+thread 'conformance_tl_05' (N) panicked at crates/conformance/src/cases/tooling.rs:192:9:
+TL-05: 2 plants were not refused as named:
+a call with a missing argument: the module was accepted
+a required argument omitted before the defaults: the module was accepted
+```
+
+Planted: a comment in the generated Lean (`crates/lexlean/src/backend/tooling.rs`). Cases: `conformance_tl_10`. Expected: the generated Lean holds a comment.
+
+```text
+thread 'conformance_tl_10' (N) panicked at crates/conformance/src/cases/tooling.rs:1736:35:
+the project renders: render: LLI9001: phase lean-backend: a tooling rendering contains a comment token
+```
+
+Planted: `partial` not emitted (`crates/lexlean/src/backend/tooling.rs`). Cases: `conformance_tl_10`. Expected: the generated Lean omits `partial`, so Lean cannot show termination of the traversal.
+
+```text
+thread 'conformance_tl_10' (N) panicked at crates/conformance/src/cases/tooling.rs:1789:5:
+traversal: Lean exited 1 and said: $STAGING/Tool.lean:8:16: error: fail to show termination for
+  Traversal.code
+  Traversal.cases
+  Traversal.alt
+  Traversal.funDecl
+```
+
+Planted: a declaration without its own piece (`crates/lexlean/src/backend/semantic.rs`). Cases: `conformance_tl_10`. Expected: a declaration has no piece of its own (the LaTeX document, which shares the emitter, loses its entry too).
+
+```text
+thread 'conformance_tl_10' (N) panicked at crates/conformance/src/cases/tooling.rs:1932:9:
+assertion `left == right` failed: commands: one LaTeX entry per declaration
+  left: 35
+ right: 36
+```
+
+Planted: an entry that does not say its kind (`crates/lexlean/src/backend/tooling.rs`). Cases: `conformance_tl_10`. Expected: a LaTeX entry does not state its kind.
+
+```text
+thread 'conformance_tl_10' (N) panicked at crates/conformance/src/cases/tooling.rs:1947:9:
+assertion `left == right` failed: commands: each entry states its kind, in order
+  left: []
+ right: ["type", "type", "type", "type", "type", "type", "type", "type", "call", "call", "call", "call", "call", "call", "call", "call", "call", "type", "type", "type", "type", "type", "type", "type", "type", "type", "type", "plumbing", "function", "command", "function", "function", "function", "function", "invoke", "evaluate"]
+```
+
+Planted: output that depends on the process (`crates/lexlean/src/backend/tooling.rs`). Cases: `conformance_tl_11`. Expected: the LaTeX output depends on the process (its identifier is written into it).
+
+```text
+thread 'conformance_tl_11' (N) panicked at crates/conformance/src/cases/tooling.rs:2013:35:
+R10: commands: coverage/ToolingCommands/Main.coverage.json differs from its golden; run `cargo xtask check-golden --write`
+```
+
+Planted: a golden that differs by one byte (`tests/tooling/core/expected/build/modules/ToolingCore/Main.lean`). Cases: `conformance_tl_11`. Expected: a committed golden differs from the published build tree by one byte.
+
+```text
+thread 'conformance_tl_11' (N) panicked at crates/conformance/src/cases/tooling.rs:2013:35:
+R10: core: modules/ToolingCore/Main.lean differs from its golden; run `cargo xtask check-golden --write`
+```
+
+Planted: a schema that allows a default written out (`tooling/schemas/tooling-module.schema.json`). Cases: `conformance_tl_01`. Expected: the committed schema allows a member written with its default.
+
+```text
+thread 'conformance_tl_01' (N) panicked at crates/conformance/src/cases/tooling.rs:297:9:
+an opaque flag written with its default: the committed schema must refuse it
+```
+
+### the extraction adapter can fail (stage 1 of #27)
+
+The adapter of named-root extraction (SPEC.md §22.10) was handwritten Lean with a
+handwritten registry. It is now a tooling module, `language/lcnf-1.2/tooling/`,
+over a registry the pinned Lean gives, so that what the compiler claims of it is
+what the gates below refuse. Three of them check the files: `cargo xtask
+check-calculus` requires the committed project to equal what its generator
+(`crates/conformance/src/lcnf_adapter.rs`, `lcnf_extract.rs`, `lcnf_registry.rs`)
+renders over `tests/lcnf/registry.json`; `conformance_ne_04` requires that
+registry to equal a fresh derivation from the pinned toolchain (the exporter
+`tests/lcnf/export.lean` and the elaborated adapter's own constants) and every
+source digest to equal the file in the toolchain; and `conformance_tl_03`
+requires the module's authority to equal the compiler's pin. Three check the
+program: `conformance_ne_04` runs the handwritten adapter, kept as the oracle
+`tests/lcnf/oracle/extract.lean`, beside the module on every kind of constant
+the extraction classifies (12 roots, 23 constants, every base-phase form) and
+requires the same record up to the numbering of the variables of each constant;
+it requires the module's record to be the same bytes whatever number of
+definitions Lean elaborated before it (0, 1, 2, 3, 5, 7, 11, and 13); and it
+plants six drifts in a copy of the registry, each of which the pinned Lean
+refuses and the driver reads as `LLV7012` naming what drifted: a default value
+(`Lean.Environment.find?`), a binder kind (`Lean.throwError`, an instance binder
+stated as an implicit one, which types the same for the tool), a constructor
+order (`Lean.Compiler.LCNF.Alt`, consistent with every match of the tool), a
+plumbing constant removed, one that is never used, and a warning inside the
+adapter, which Lean prints on standard output with exit 0.
+
+Lean is not deterministic in what the oracle compared. Lean orders the join
+points of a function by the numbering of its fresh variables, and that numbering
+depends on everything the process elaborated before the translation: the oracle
+run with 0, 1, 5, 11, 100, or 301 definitions before it, and with 2, 3, 7, 50, or
+299, gives two programs for `match b with | true => n + 1 | false => n + 2`
+followed by `x * x`. The handwritten adapter therefore gave the compiler input
+its own Lean text happened to give. The module starts every translation from the
+name generator's initial state, so that its record does not depend on its own
+text (plant `N4`), and the probe module has a function with two join points
+(`twoJoins`) for that check and none in the comparison with the oracle. The
+canonical compiler inputs of the four examples with production roots, from the
+verification of each by the module and from the committed record of the oracle:
+`production` and `models` are byte-identical; `reasoning` differs in 6 of 166
+declarations (`Reasoning.Clinic.Triage.select`, `recommendationCheck`,
+`Grade.select`, `Plan.failure`, `Plan.searchStep`, `Screen.searchStep`) and
+`production-coverage` in 7 of 161 (`reachableFrom`, `natOps`, `options`,
+`checkedAddInt64`, `checkedQuotientInt64`, `checkedSubtractInt64`,
+`multiplyMagnitudeInt64`), each with the same nodes, in the order of two join
+points; their closures, externals, inductives, erased proofs, and roots are
+equal. Every project of language 1.2 was verified again with real Lean and
+`leanchecker`, and its `expected/verify` regenerated; the 1.0 and 1.1 projects
+were verified again and are byte-identical.
+
+Each plant is applied alone to the finished sources, the gate is run, and the
+tree is restored.
+
+Planted: a byte appended to the committed project (`language/lcnf-1.2/tooling/src/Extract.lex.tex`). Command: `cargo xtask check-calculus`. Cases: none (the gate). Expected: the committed project differs from its generator
+
+```text
+gate failed: language/lcnf-1.2/tooling/src/Extract.lex.tex differs from its generator; run `cargo xtask check-calculus --write`
+```
+
+Planted: a source digest of the registry changed by one hex digit (`tests/lcnf/registry.json`). Command: `cargo xtask check-calculus`. Cases: none (the gate). Expected: the project no longer equals what the registry renders
+
+```text
+gate failed: language/lcnf-1.2/tooling/src/Extract.lex.tex differs from its generator; run `cargo xtask check-calculus --write`
+```
+
+Planted: the same digest forged *consistently*, the project rewritten from the forged registry (`tests/lcnf/registry.json` and `language/lcnf-1.2/tooling/`). `cargo xtask check-calculus` passes (994 generated files equal their generator), because the project is what the forged registry renders; `conformance_ne_04` is the gate that sees it. Expected: the committed rows are not the exporter's.
+
+```text
+panicked at crates/conformance/src/cases/extraction.rs:1317:5:
+assertion `left == right` failed: the committed rows are the exporter's
+```
+
+Planted: an adapter that reports an opaque constant as a definition, the project regenerated (`crates/conformance/src/lcnf_extract.rs`). Command: the comparison of the two records, as `conformance_ne_04` makes it. Cases: `conformance_ne_04`. Expected: the record is not the oracle's
+
+```text
+the tooling module's record is not the handwritten oracle's: the first difference is at byte 4159:
+adapter: ...,"name":"Probe.Main.halver","original_kind":"definition"},{"computable":true,"declaration":{"level_parameters":[],"parameters":[],"safe":true,"type":{"kind":"const","levels":[],"name":"Nat"},"uses":["Inhabited","Nat","instInhabitedNat"],...
+oracle:  ...,"name":"Probe.Main.halver","original_kind":"definition"},{"computable":true,"declaration":null,"generates_code":true,"inductive":null,"internal":false,"kernel_uses":["Nat","instInhabitedNat","Inhabited.default"],"kind":"opaque",...
+```
+
+Planted: an adapter that does not restart the name generator, the project regenerated (`crates/conformance/src/lcnf_extract.rs`). Command: the counter check of `conformance_ne_04`. Cases: `conformance_ne_04`. Expected: the record changes with what Lean elaborated before it
+
+```text
+the record changes when 1 definitions come before the extraction
+```
+
+Planted: a registry check that finds every unregistered constant plumbing, the project regenerated (`crates/conformance/src/lcnf_extract.rs`). Command: the Lean half of `conformance_ne_04`. Cases: `conformance_ne_04`. Expected: a plumbing constant removed from the registry is drift
+
+```text
+thread 'main' (8351) panicked at crates/conformance/src/cases/extraction.rs:1344:18:
+a drifted run is refused: CompilerInput { spec: "lexlean/compiler-input/2", lean: LeanIdentity { version: "4.32.1", githash: "f054605aea4b840552cca2e725580bffd1e1b704" }, roots: [], closures: [], declarations: [], inductives: [], externals: [], erased: [] }
+```
+
+Planted: a driver that cannot tell where in its text Lean's message is (`crates/lexlean/src/production/lcnf.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_ne_04 --exact`. Cases: `conformance_ne_04`. Expected: a warning inside the adapter is drift
+
+```text
+thread 'conformance_ne_04' (10086) panicked at crates/conformance/src/cases/extraction.rs:1352:22:
+expected drift naming "the pinned extraction adapter no longer elaborates cleanly", got Rejected("the extraction printed more than its single JSON record")
+```
+
+Planted: a driver that does not evaluate the registry check (`crates/lexlean/src/production/lcnf.rs`). Command: `cargo test -p repo-conformance --test conformance -- conformance_ne_04 --exact`. Cases: `conformance_ne_04`. Expected: a registry that lists its constructors in another order is drift; without the check the driver's text does not change with the registry at all, so the plant of a constructor order produces the same text as the unplanted run and the case fails on that.
+
+```text
+panicked at crates/conformance/src/cases/extraction.rs:1340:9:
+assertion `left != right` failed: `Lean.Compiler.LCNF.Alt` has constructors
+```
+
 ## End-to-end Lean evidence
 
 The literal §29 example verifies against real `leanprover/lean4:v4.32.1`: probe elaboration, module compilation, separate-process `leanchecker` replay, exact `#print axioms` parsing, and the `\noaxioms` policy over an empty observed set (`conformance_ex_01`). The required §29.6 mutations are mechanized: a false proposition fails inside Lean and remaps to the source proof sentence (`conformance_ex_02`, `conformance_pf_18`); an undeclared title word fails lexical closure (`conformance_ex_03`); an indistinguishable same-surface entry is ambiguity, never priority (`conformance_ex_04`); an insufficient axiom allow-list fails policy checking with the observed excess recorded (`conformance_ex_05`, `conformance_vr_16`); and two clean builds in distinct paths publish byte-identical trees (`conformance_ex_06`, plus `just repro`).
@@ -4740,7 +5096,7 @@ Every upstream authority cited by LexLean (`model/authorities.toml`) is bound to
 - `LAKE-4-32-1`: Lake toolchain component (same source commit and acquired archive SHA-256).
 - `LEANCHECKER-4-32-1`: leanchecker kernel replay utility (same source commit and acquired archive SHA-256).
 - `PRINT-AXIOMS-4-32-1`: Lean `#print axioms` output behavior bound by toolchain revision and committed test vectors (`tests/golden/axiom-parser/`).
-- `LEAN-LCNF-4-32-1`: Lean's compiler front end (base-phase LCNF), bound by source revision and by the SHA-256 of the defining source file of every registered call and type in `language/lcnf-1.2/authority.toml`, re-checked against the pinned toolchain by `conformance_ne_04`.
+- `LEAN-LCNF-4-32-1`: Lean's compiler front end (base-phase LCNF), bound by source revision and by the SHA-256 of the defining source file of every registered call and type of the tooling project `language/lcnf-1.2/tooling/`, re-checked against the pinned toolchain by `conformance_ne_04`.
 - `RUSTC-1-97-1`: the Rust 1.97.1 compiler that `rust-toolchain.toml` pins (source revision `8bab26f4f68e0e26f0bb7960be334d5b520ea452`, source archive SHA-256 `622c2b429c53cbfdc0dd3a51d03554e91cd63ebec1912c1f5709640cdfef1a9d`), the oracle of the calculus's Rust renderings; `conformance_tc_07` refuses any other `rustc`.
 
 Oracle execution evidence binds positive and negative paths:

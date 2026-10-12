@@ -25,11 +25,11 @@ Feature: extraction
     And pinned Lean itself refuses an extraction module whose root does not exist
 
   @NE-04 @build
-  Scenario: Every constant the extraction adapter uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012.
-    Given the embedded registry `language/lcnf-1.2/authority.toml` and adapter `language/lcnf-1.2/extract.lean`
-    When the registry is compared with the adapter, the pinned toolchain sources, and pinned Lean
-    Then every call the adapter makes has a row whose source SHA-256 matches the toolchain, every probe elaborates, and the adapter has no comment and runs no LCNF pass
-    And a changed signature fails on its probe line and a foreign Lean commit fails with LLV7012
+  Scenario: The extraction adapter is a closed tooling module of the embedded project `language/lcnf-1.2/tooling/`, rendered to Lean by the compiler, and every constant it uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing, in a registry that is the pinned Lean's own answer; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, its record equals that of the handwritten oracle `tests/lcnf/oracle/extract.lean` and does not depend on what Lean elaborated before it, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012.
+    Given the embedded tooling project `language/lcnf-1.2/tooling/`, its registry `tests/lcnf/registry.json`, and the handwritten oracle `tests/lcnf/oracle/extract.lean`
+    When the registry is compared with a fresh export of the pinned toolchain and the adapter is rendered and run under pinned Lean beside the oracle
+    Then every row's source SHA-256 matches the toolchain, every probe elaborates, the adapter has no comment and runs no LCNF pass, its record equals the oracle's on every kind of constant, and its record is the same bytes whatever Lean elaborated before the extraction
+    And a changed signature, a changed constructor list, a constant the registry does not list, and a warning inside the adapter each fail with LLV7012 naming what drifted, and a foreign Lean commit fails with LLV7012
 
   @NE-05 @build
   Scenario: A dependency dropped from Lean's extracted facts or from the production-eligibility closure fails extraction with LLV7011 before any compiler input is published.

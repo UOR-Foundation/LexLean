@@ -1826,6 +1826,9 @@ pub fn render_module(checked: &CheckedModule, closure: &Closure) -> Result<Emitt
             .unwrap_or(&document.lean_module);
         return crate::backend::semantic::render_latex(checked, semantic, prefix);
     }
+    if let Some(tooling) = &document.tooling {
+        return crate::backend::tooling::render_latex(checked, tooling);
+    }
     let mut spellings = BTreeMap::new();
     collect_spellings_document(document, &mut spellings);
     for (id, spelling) in &checked.proof_spellings {

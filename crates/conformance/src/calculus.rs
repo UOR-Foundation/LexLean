@@ -3595,11 +3595,12 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
 }
 
 /// The directories whose every file, at any depth, is generated.
-const GENERATED_DIRECTORIES: [&str; 4] = [
+const GENERATED_DIRECTORIES: [&str; 5] = [
     "compiler/certificates",
     "compiler/fixtures",
     "compiler/gnaf",
     "compiler/rust",
+    "language/lcnf-1.2/tooling",
 ];
 
 /// Compare (or, with `write`, rewrite) the generated files of the calculus
@@ -3619,9 +3620,16 @@ pub fn check(root: &Path, write: bool) -> Result<usize, String> {
     } else {
         shipped_modules(root, false)?
     };
+    // The registry of the extraction adapter is the pinned Lean's own answer,
+    // so it is regenerated only where that Lean is, and compared against it by
+    // the extraction suite.
+    if write {
+        crate::lcnf_registry::regenerate(root)?;
+    }
     let mut files = files();
     files.extend(crate::gnaf::files());
     files.extend(crate::certification::files());
+    files.extend(crate::lcnf_registry::generated(root)?);
     for directory in GENERATED_DIRECTORIES {
         for entry in walkdir::WalkDir::new(root.join(directory))
             .into_iter()

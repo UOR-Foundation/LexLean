@@ -328,6 +328,24 @@ Unvalidated reasoning runtime boundary.
 
 Class: `language`. Exit code: 1.
 
+## `LLT4013` --- Tooling module malformed or out of context
+
+A tooling module is not canonical JSON of the closed schema lexlean/tooling-module/1, has a member the schema does not close, nests deeper than the decoder allows, or is not in a language-1.2 project the compiler embeds.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4014` --- Tooling authority registry invalid
+
+A tooling module pins an authority other than the compiler's Lean release, or its registry of types, calls, and plumbing is not closed: a name declared twice, a signature or field naming an unregistered constant or an unbound variable, a type whose parameters, constructors, index requirements, or abbreviation are inconsistent, a plumbing row that is empty, unsorted, or repeats a constant, or a source pin that is not a toolchain path with a SHA-256.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4015` --- Tooling term ill-typed or unlicensed
+
+A tooling term is not well typed: a call with the wrong type arguments or arguments, a match that is not exhaustive at its scrutinee's index, or a binder that shadows another; a function recurses without a licence (partial, or its contiguous mutual group); a command, invocation, or evaluation does not match its grammar; or a traversal does not recurse into every field of its recursive family.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

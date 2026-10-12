@@ -1,0 +1,164 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Tooling declarations}
+\subsection*{\texttt{Bool}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructor: false }\par
+\noindent \texttt{Constructor: true }\par
+\subsection*{\texttt{Lean.Syntax}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.Core.CoreM}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/CoreM.lean (0e94919972c60e8f2bdc73ecc9845a745c9a3373fce4069b9e27ae52560c0a7a)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\subsection*{\texttt{Lean.Elab.Command.CommandElabM}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Elab/Command.lean (6e04aef09ca96afa8464856ea5775136d1152360df0b6a41fe81bef035c9d609)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\subsection*{\texttt{Unit}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Pure}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: f : Type -> Type}\par
+\subsection*{\texttt{Bind}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: m : Type -> Type}\par
+\subsection*{\texttt{String}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Pure.pure}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{f : ((Type u) <U+2192> (Type v))\} <U+2192> ([self : (Pure f)] <U+2192> (\{<U+03B1> : (Type u)\} <U+2192> (<U+03B1> <U+2192> (f <U+03B1>)))))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Bind.bind}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{m : ((Type u) <U+2192> (Type v))\} <U+2192> ([self : (Bind m)] <U+2192> (\{<U+03B1> : (Type u)\} <U+2192> (\{<U+03B2> : (Type u)\} <U+2192> ((m <U+03B1>) <U+2192> ((<U+03B1> <U+2192> (m <U+03B2>)) <U+2192> (m <U+03B2>)))))))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Unit.unit}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: Unit}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Lean.getConstInfo}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{m : (Type <U+2192> Type)\} <U+2192> ([(Monad m)] <U+2192> ([(Lean.MonadEnv m)] <U+2192> ([(Lean.MonadError m)] <U+2192> (Lean.Name <U+2192> (m Lean.ConstantInfo))))))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Lean/MonadEnv.lean (1c168f46d68a62564d44a1996d856d19b41f0088f02f3f481be38580c907ef95)}\par
+\subsection*{\texttt{Lean.Elab.Command.liftCoreM}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{<U+03B1> : Type\} <U+2192> ((Lean.Core.CoreM <U+03B1>) <U+2192> (Lean.Elab.Command.CommandElabM <U+03B1>)))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Lean/Elab/Command.lean (6e04aef09ca96afa8464856ea5775136d1152360df0b6a41fe81bef035c9d609)}\par
+\subsection*{\texttt{Lean.Syntax.getId}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (Lean.Syntax <U+2192> Lean.Name)}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Lean.Syntax.getArg}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (Lean.Syntax <U+2192> (Nat <U+2192> Lean.Syntax))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\subsection*{\texttt{Lean.Name.toString}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (Lean.Name <U+2192> ((optParam Bool Bool.true) <U+2192> String))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Init/Data/ToString/Name.lean (42d30e6a2c249164b02cf8bc5d595dec698efc1906b5a1c1496e65064968500f)}\par
+\subsection*{\texttt{Lean.Meta.MetaM.run'}}
+\noindent Kind: \texttt{call}.\par
+\noindent \texttt{Signature: (\{<U+03B1> : Type\} <U+2192> ((Lean.Meta.MetaM <U+03B1>) <U+2192> ((optParam Lean.Meta.Context \{ \}) <U+2192> ((optParam Lean.Meta.State \{ \}) <U+2192> (Lean.Core.CoreM <U+03B1>)))))}\par
+\noindent \texttt{Role: authority}\par
+\noindent \texttt{Source: src/lean/Lean/Meta/Basic.lean (fc8a1b8f133d120f9261eae69d3ea372bfc2ea3df2abc60be25af28ae35deca6)}\par
+\subsection*{\texttt{Lean.ConstantInfo}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Declaration.lean (ca8ef13f4bb13725ebf7bc23c7de72ff1e0af75580a7007f5d3a7c69cc4004de)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.MonadEnv}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Environment.lean (100b207523d1005ae87f62f4e1693806854a35c59cd9b3210dfeeaa875d0ff98)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: m : Type -> Type}\par
+\subsection*{\texttt{Lean.MonadError}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Exception.lean (a06e8481b2b2928f79f49629356da24c812f870c60c9670a7d93fc84806e868b)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: m : Type -> Type}\par
+\subsection*{\texttt{Lean.Name}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Monad}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: m : Type -> Type}\par
+\subsection*{\texttt{Nat}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Init/Prelude.lean (44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.Meta.Context}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Meta/Basic.lean (fc8a1b8f133d120f9261eae69d3ea372bfc2ea3df2abc60be25af28ae35deca6)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.Meta.MetaM}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Meta/Basic.lean (fc8a1b8f133d120f9261eae69d3ea372bfc2ea3df2abc60be25af28ae35deca6)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\noindent \texttt{Parameters: <U+03B1> : Type}\par
+\subsection*{\texttt{Lean.Meta.State}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Meta/Basic.lean (fc8a1b8f133d120f9261eae69d3ea372bfc2ea3df2abc60be25af28ae35deca6)}\par
+\noindent \texttt{Constructors are not pinned (opaque)}\par
+\subsection*{\texttt{Lean.Elab.Command.CommandElab}}
+\noindent Kind: \texttt{type}.\par
+\noindent \texttt{Source: src/lean/Lean/Elab/Command.lean (6e04aef09ca96afa8464856ea5775136d1152360df0b6a41fe81bef035c9d609)}\par
+\noindent \texttt{Abbreviation of: (Lean.Syntax <U+2192> (Lean.Elab.Command.CommandElabM Unit))}\par
+\subsection*{\texttt{plumbing}}
+\noindent Kind: \texttt{plumbing}.\par
+\noindent \texttt{Names: Applicative.toPure, Array.mkEmpty, EIO, EmptyCollection.emptyCollection, IO.RealWorld, Inhabited.default, Lean.Core.Context, Lean.Core.State, Lean.Core.instAddMessageContextCoreM, Lean.Core.instMonadCoreM, Lean.Core.instMonadEnvCoreM, Lean.Core.instMonadRefCoreM, Lean.DelayedMetavarAssignment, Lean.Exception, Lean.Expr, Lean.Expr.instBEq, Lean.Expr.instHashable, Lean.FVarId, Lean.FVarIdMap, Lean.FVarIdSet, Lean.LMVarId, Lean.Level, Lean.LevelMetavarDecl, Lean.LocalContext.mk, Lean.LocalDecl, Lean.LocalInstance, Lean.MVarId, Lean.MessageData, Lean.Meta.AbstractMVarsResult, Lean.Meta.Cache.mk, Lean.Meta.Config, Lean.Meta.ConfigWithKey, Lean.Meta.Context.mk, Lean.Meta.DefEqCacheKey, Lean.Meta.DefEqContext, Lean.Meta.Diagnostics.mk, Lean.Meta.ExprConfigCacheKey, Lean.Meta.FunInfo, Lean.Meta.InfoCacheKey, Lean.Meta.PostponedEntry, Lean.Meta.State.mk, Lean.Meta.SynthInstanceCacheKey, Lean.Meta.instBEqDefEqCacheKey, Lean.Meta.instBEqExprConfigCacheKey, Lean.Meta.instBEqInfoCacheKey, Lean.Meta.instBEqSynthInstanceCacheKey, Lean.Meta.instHashableDefEqCacheKey, Lean.Meta.instHashableExprConfigCacheKey, Lean.Meta.instHashableInfoCacheKey, Lean.Meta.instHashableSynthInstanceCacheKey, Lean.Meta.instInhabitedConfigWithKey, Lean.MetavarContext.mk, Lean.MetavarDecl, Lean.MonadError.mk, Lean.Name.instBEq, Lean.Name.mkStr1, Lean.Name.mkStr2, Lean.ParserDescr, Lean.ParserDescr.binary, Lean.ParserDescr.cat, Lean.ParserDescr.const, Lean.ParserDescr.node, Lean.ParserDescr.symbol, Lean.PersistentArray.branching, Lean.PersistentArray.initShift, Lean.PersistentArray.mk, Lean.PersistentArrayNode, Lean.PersistentArrayNode.node, Lean.PersistentHashMap.Node.entries, Lean.PersistentHashMap.mk, Lean.PersistentHashMap.mkEmptyEntriesArray, Lean.instAddErrorMessageContextOfAddMessageContextOfMonad, Lean.instBEqFVarId, Lean.instBEqLevelMVarId, Lean.instBEqMVarId, Lean.instEmptyCollectionFVarIdMap, Lean.instEmptyCollectionFVarIdSet, Lean.instHashableFVarId, Lean.instHashableLevelMVarId, Lean.instHashableMVarId, Lean.instHashableName, Lean.instMonadExceptOfExceptionCoreM, List.nil, List.toArray, Monad.toBind, OfNat.ofNat, Option, Option.none, ReaderT.instApplicativeOfMonad, StateRefT', StateRefT'.instMonad, USize.toNat, instMonadEIO, instOfNatNat}\par
+\subsection*{\texttt{Commands.elab}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: total}\par
+\noindent \texttt{public meta def Commands.<U+00AB>elab<U+00BB> : Lean.Elab.Command.CommandElab :=   (fun (stx : Lean.Syntax) => (Lean.Elab.Command.liftCoreM (<U+03B1> := Unit) (Bind.bind (m := Lean.Core.CoreM) (<U+03B1> := Lean.ConstantInfo) (<U+03B2> := Unit) (Lean.getConstInfo (m := Lean.Core.CoreM) (Lean.Syntax.getId (Lean.Syntax.getArg stx 1))) (fun (info : Lean.ConstantInfo) => (Pure.pure (f := Lean.Core.CoreM) (<U+03B1> := Unit) (Unit.unit))))))}\par
+\subsection*{\texttt{Commands.require}}
+\noindent Kind: \texttt{command}.\par
+\noindent \texttt{syntax (name := Commands.require) "lexlean\_require " ident " : " term : command attribute [command\_elab Commands.require] Commands.<U+00AB>elab<U+00BB>}\par
+\subsection*{\texttt{Commands.run}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: total}\par
+\noindent \texttt{public meta def Commands.run : (Lean.Elab.Command.CommandElabM Unit) :=   (Lean.Elab.Command.liftCoreM (<U+03B1> := Unit) (Bind.bind (m := Lean.Core.CoreM) (<U+03B1> := Lean.ConstantInfo) (<U+03B2> := Unit) (Lean.getConstInfo (m := Lean.Core.CoreM) ``Nat.add) (fun (info : Lean.ConstantInfo) => (Pure.pure (f := Lean.Core.CoreM) (<U+03B1> := Unit) (Unit.unit)))))}\par
+\subsection*{\texttt{Commands.show}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: total}\par
+\noindent \texttt{public meta def Commands.<U+00AB>show<U+00BB> (n : Lean.Name) : String :=   (Lean.Name.toString n)}\par
+\subsection*{\texttt{Commands.showPlain}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: total}\par
+\noindent \texttt{public meta def Commands.showPlain (n : Lean.Name) : String :=   (Lean.Name.toString n (Bool.false))}\par
+\subsection*{\texttt{Commands.settle}}
+\noindent Kind: \texttt{function}.\par
+\noindent \texttt{Visibility: public; recursion: total}\par
+\noindent \texttt{public meta def Commands.settle : (Lean.Core.CoreM Unit) :=   (Lean.Meta.MetaM.run' (<U+03B1> := Unit) (Pure.pure (f := Lean.Meta.MetaM) (<U+03B1> := Unit) (Unit.unit)))}\par
+\subsection*{\texttt{Commands.require}}
+\noindent Kind: \texttt{invoke}.\par
+\noindent \texttt{lexlean\_require Nat.add : (Nat <U+2192> (Nat <U+2192> Nat))}\par
+\subsection*{\texttt{Commands.run}}
+\noindent Kind: \texttt{evaluate}.\par
+\noindent \texttt{\#eval Commands.run}\par
+\end{document}

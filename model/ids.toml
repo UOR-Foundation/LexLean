@@ -1566,7 +1566,7 @@ statement = "An unknown root, an opaque, axiomatic, unsafe, partial, or noncompu
 id = "NE-04"
 level = "build"
 suite = "extraction"
-statement = "Every constant the extraction adapter uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012."
+statement = "The extraction adapter is a closed tooling module of the embedded project `language/lcnf-1.2/tooling/`, rendered to Lean by the compiler, and every constant it uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing, in a registry that is the pinned Lean's own answer; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, its record equals that of the handwritten oracle `tests/lcnf/oracle/extract.lean` and does not depend on what Lean elaborated before it, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012."
 
 [[id]]
 id = "NE-05"
@@ -2041,3 +2041,69 @@ id = "OR-08"
 level = "build"
 suite = "oracle"
 statement = "The oracle is validation evidence and an input to no identity: no file the shipped crate, the language data, the schemas, the compiler project, the committed examples' records, or the authority and ledger files hold names the oracle, its pinned commit, or its digest, so that planting any of them in any of those places fails audit-oracle-isolation; no input of the compiler-semantics ID names it, an oracle field in a build manifest, a preservation record, an attestation, a snapshot, a compiler input, or a GNAF certificate fails its closed schema, and no module of the conformance crate but the oracle's own uses it, so that removing it changes none of them."
+
+[[id]]
+id = "TL-01"
+level = "build"
+suite = "tooling"
+statement = "A tooling module is the one `toolingmodule` environment of its module, holding one canonical `\\toolingdata` argument of the closed `lexlean/tooling-module/1` schema, and every committed fixture satisfies `tooling/schemas/tooling-module.schema.json`; a member, declaration, term, signature, or atom outside it, a member written with its default, a spec tag but the exact one, a value that is not its own canonical encoding, a repeated member, a value nested deeper than the decoder reads, and an unsorted import list fail with LLT4013, a module over `max_ir_nodes` fails with LLS8002, a second data argument or a second module form in the same module is a structural error that fails with LLP2003, and no change of any single node of a committed fixture panics the compiler, which accepts or refuses it with LLT4013, LLT4014, or LLT4015."
+
+[[id]]
+id = "TL-02"
+level = "build"
+suite = "tooling"
+statement = "A tooling module requires language 1.2 and a project the compiler itself embeds: a language-1.1 project, a user project, the check, build, and verify requests of the public API, and the command line refuse it with LLT4013 before either backend runs, no configuration member or option admits one, and a tooling module has no production root, no production eligibility report, and no semantic snapshot."
+
+[[id]]
+id = "TL-03"
+level = "build"
+suite = "tooling"
+statement = "A tooling module cites one authority, Lean at the compiler's pinned release and source commit, which equal the pins of `model/authorities.toml`, and its registry is closed: an authority that is not the pin, a name declared twice, a signature or field type naming a constant that no registry row declares, a variable a signature does not bind, an empty, unsorted, or repeated plumbing row, a plumbing constant that is also declared, and a source path outside the toolchain source or a digest that is not 64 lowercase hexadecimal digits fail with LLT4014, and every source digest equals the SHA-256 of that file in the pinned toolchain."
+
+[[id]]
+id = "TL-04"
+level = "build"
+suite = "tooling"
+statement = "A registered type states its parameters (a type, a type constructor, or an index drawn from a registered type whose constructors are all nullary), its complete constructor list in Lean's order with typed fields, and the one index a constructor exists at, an opaque type pins no constructors, and an abbreviation is the type it abbreviates wherever types are compared; an index of an unregistered or non-nullary type, a repeated constructor, a field naming an unregistered type, applying a type to the wrong number of arguments, or using a variable no parameter binds, a requirement that names no index parameter or a constructor of another type, an opaque type with constructors, and an abbreviation of itself or of a cycle fail with LLT4014."
+
+[[id]]
+id = "TL-05"
+level = "build"
+suite = "tooling"
+statement = "A call's exact signature (constants, variables, applications, arrows, explicit, implicit, and instance binders, `Type` and `Type u`, `optParam` defaults, natural literals, and the empty structure instance) is its typing: the implicit binders of types and type constructors are the type arguments every use states, any other implicit binder and every instance binder is inferred by Lean and never stated, trailing binders with a default are optional, and types are compared exactly after the unfolding of abbreviations; a use with a wrong number of type arguments or arguments, an argument or result of another type, or an unregistered callee fails with LLT4015."
+
+[[id]]
+id = "TL-06"
+level = "build"
+suite = "tooling"
+statement = "A tool is written in a closed typed term language with explicit binder types and type arguments, and its `match` is flat, one constructor per branch, and exhaustive at the scrutinee's index; a constructor available at the index without a branch, a branch for a constructor of another type or one that exists only at another index, a branch binding the wrong number of fields, a field of a type with several constructors, a condition that is not Bool, an unbound variable, a binder that shadows a variable in scope, and an ill-typed let, lambda, application, list, array, or constructor fail with LLT4015."
+
+[[id]]
+id = "TL-07"
+level = "build"
+suite = "tooling"
+statement = "A function calls only registered calls, functions defined before it, itself when it is partial, and the functions of its mutual group, a contiguous run of partial functions with one label; a self call of a function that is not partial, a forward call, a mutual group that is not one run, and a group with a member that is not partial fail with LLT4015."
+
+[[id]]
+id = "TL-08"
+level = "build"
+suite = "tooling"
+statement = "A traversal is a partial function that takes its subject first and is exactly a match on it, its group handles every type of the subject's recursive family, and each branch uses every field whose type lies in the family through the traversal of that type applied to a value derived from the field, so that a skipped field, a handler applied to the subject instead of the field, a handler that is not a traversal, a default branch, and a constructor that a registry gains and no branch handles fail with LLT4015, while a traversal of the real Lean `Code` family elaborates under the pinned Lean."
+
+[[id]]
+id = "TL-09"
+level = "build"
+suite = "tooling"
+statement = "A command declares its syntax kind, a grammar of a leading token, identifiers, and signature types, and an elaborator with no parameters whose type is the abbreviation `Lean.Elab.Command.CommandElab`, an invocation supplies one identifier or signature tree per non-token atom, and an evaluation runs a function of the module on typed arguments, all as semantic data; an elaborator with a parameter or another type, a grammar without a leading token, an invocation of an unregistered command or with a wrong argument count or kind, and an evaluation of an unregistered function or with ill-typed arguments fail with LLT4015, and the pinned Lean runs the committed elaborator, which accepts a constant that exists and refuses one that does not."
+
+[[id]]
+id = "TL-10"
+level = "build"
+suite = "tooling"
+statement = "Both backends traverse the one linked module: the Lean text begins with the fixed header, holds one rendering per function, command, invocation, and evaluation, and contains no comment, every declaration with output has one source-mapped piece, coverage is complete, the LaTeX document has one entry per declaration, and the pinned Lean elaborates every committed fixture without a message while refusing a registry that misstates an arity or a constructor list that the tool is consistent with."
+
+[[id]]
+id = "TL-11"
+level = "build"
+suite = "tooling"
+statement = "Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record."

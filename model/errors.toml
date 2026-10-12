@@ -379,6 +379,27 @@ title = "Unvalidated reasoning runtime boundary"
 statement = "Unvalidated reasoning runtime boundary."
 
 [[error]]
+code = "LLT4013"
+class = "language"
+exit = 1
+title = "Tooling module malformed or out of context"
+statement = "A tooling module is not canonical JSON of the closed schema lexlean/tooling-module/1, has a member the schema does not close, nests deeper than the decoder allows, or is not in a language-1.2 project the compiler embeds."
+
+[[error]]
+code = "LLT4014"
+class = "language"
+exit = 1
+title = "Tooling authority registry invalid"
+statement = "A tooling module pins an authority other than the compiler's Lean release, or its registry of types, calls, and plumbing is not closed: a name declared twice, a signature or field naming an unregistered constant or an unbound variable, a type whose parameters, constructors, index requirements, or abbreviation are inconsistent, a plumbing row that is empty, unsorted, or repeats a constant, or a source pin that is not a toolchain path with a SHA-256."
+
+[[error]]
+code = "LLT4015"
+class = "language"
+exit = 1
+title = "Tooling term ill-typed or unlicensed"
+statement = "A tooling term is not well typed: a call with the wrong type arguments or arguments, a match that is not exhaustive at its scrutinee's index, or a binder that shadows another; a function recurses without a licence (partial, or its contiguous mutual group); a command, invocation, or evaluation does not match its grammar; or a traversal does not recurse into every field of its recursive family."
+
+[[error]]
 code = "LLV7001"
 class = "environment"
 exit = 3

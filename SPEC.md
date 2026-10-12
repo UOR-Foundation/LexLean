@@ -409,8 +409,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── production-1.2.toml
 │   ├── renderer-tokens.toml
 │   ├── lcnf-1.2/
-│   │   ├── authority.toml
-│   │   └── extract.lean
+│   │   └── tooling/
 │   ├── preservation-1.2/
 │   │   ├── library.toml
 │   │   ├── library/
@@ -479,7 +478,11 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── fixtures/
 │   ├── golden/
 │   ├── negative/
-│   └── oracle/
+│   ├── oracle/
+│   └── tooling/
+├── tooling/
+│   └── schemas/
+│       └── tooling-module.schema.json
 └── xtask/
     ├── Cargo.toml
     └── src/
@@ -492,6 +495,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 `CONFORMANCE.md` and `ERRORS.md` are generated and committed. Their committed bytes MUST equal regeneration from `model/*.toml`.
 
 `language/` is the compiler's versioned built-in language data. It is distinct from `model/`, which records claims about the repository.
+
+`tooling/schemas/` holds the schema of the compiler-tooling language (§17.20). It is not part of the compiler-semantics ID (§21.2) and is not embedded: a tooling module is accepted only in a project the compiler itself embeds, whose source is language data and so is hashed into that ID, so a change of the tooling language that matters changes that source and its ID, while a change that alters no embedded source changes no existing identity. The audit of generated documents checks that the schema is canonical JSON with its own `$id`, like the schemas of `schemas/`.
 
 ---
 
@@ -5770,6 +5775,187 @@ They are `build` evidence that LexLean and the oracle agree where the tables
 say they do, and a measurement of where they do not; they are no proof of
 either.
 
+### 17.20 Compiler-tooling modules
+
+A compiler that consumes another system's interface needs a program that
+speaks it, and that program must be as closed as every other source of the
+repository: no Lean text, no template, and no name that the compiler has not
+typed. A *tooling module* is that program. It is one more module form, beside
+the ordinary declaration environments (§15), the native `coremodule` (§17.10),
+and the `semanticmodule` (§17.11, §17.12): after the module header and title it
+is exactly one `\begin{toolingmodule}` environment containing exactly one
+`\toolingdata{...}` argument, canonical JSON of the closed schema
+`lexlean/tooling-module/1` (`tooling/schemas/tooling-module.schema.json`). A module
+never mixes two forms.
+
+**Context.** A tooling module requires language 1.2 and a project the compiler
+itself embeds (§22.10). A user project, a language-1.1 project, and every
+request of the public API and of the command line are refused with `LLT4013`:
+no configuration member, option, or request field makes a project accept one.
+A tooling module has no production root, is never analysed for production
+eligibility (§17.13), and appears in no semantic snapshot.
+
+**Encoding.** The data is JSON that must equal its own canonical encoding
+(§21.7), so a member out of order, an escaped scalar, or a repeated member is
+refused with `LLT4013`; the grammar drops whitespace outside strings, so a
+re-indented value is the same value. The decoder reads at most 128 levels of
+nesting and refuses a deeper value with `LLT4013`, so no input overflows the
+stack. A member, declaration, term, signature, or atom the schema does not
+state, and a member written with its default (`opaque` or `traversal` as
+`false`), is refused with `LLT4013`. Every node of the module is charged to
+`max_ir_nodes` (`LLS8002`), like every other module's IR.
+
+**Registry.** The module names one external authority, Lean at one release, by
+its authority row, version, and source commit; version and commit equal the
+compiler's pin (`LEAN_VERSION`, `LEAN_GITHASH`) or the module is refused with
+`LLT4014`. Its registry is declarations, and nothing in a tool names a Lean
+constant that the registry does not:
+
+- a `type` states the full name of a Lean type, its parameters (a type, a type
+  constructor, or an index drawn from a registered type whose constructors are
+  all nullary, such as `Purity`), its complete constructor list in Lean's order
+  with every field typed, and for a constructor that exists only at one index
+  (Lean's `h : pu = Purity.pure` proof field) the requirement it states; a
+  type is *opaque* when the tool never matches, constructs, or projects it, and
+  then it pins no constructors; a type may instead state that it abbreviates
+  another (`Lean.Elab.Command.CommandElab`), and either spelling is the other
+  everywhere it is checked, so an abbreviation is acyclic and one of itself or
+  of a cycle is refused;
+- a `call` states the full name of a Lean constant and its *exact signature* as
+  a tree: constants, variables, applications, arrows, dependent binders marked
+  explicit, implicit, or instance, `Type` and `Type u`, `optParam` defaults
+  (which may name other constants, as `Array.foldl`'s `Array.size as`), natural
+  literals, and the empty structure instance `{ }`. Binder kinds, defaults, and
+  universes are parts of it, so a change of any of them is a different
+  signature;
+- `plumbing` names the constants Lean's elaborator inserts that no term names
+  (instances, matchers, recursors, projections, and core-library data),
+  sorted, distinct, and non-empty, and no constant is plumbing in two rows or
+  plumbing and declared;
+- every type and call carries the toolchain source file that defines it and the
+  SHA-256 of that file, and a source path that leaves the toolchain source or a
+  digest that is not 64 lowercase hexadecimal digits is refused.
+
+A name is declared once, and the rows are a set: a row may name a constant that
+a row after it declares. Every constant a signature or a field names is a
+registered type, call, constructor, or plumbing constant, a type applied to
+the wrong number of arguments or a variable that no parameter binds is not a
+type of a field, and every variable a signature uses is bound by it. A registry
+that breaks any of these is refused with `LLT4014`.
+
+**Typing of a call.** A call's signature gives its typing and nothing else
+does: the implicit binders that bind a type or a type constructor, in order,
+are the type arguments that *every* use states, each by the callee's own name
+for it; the explicit binders are its arguments, trailing ones that carry a
+default being optional; an instance binder, and an implicit binder of any
+other kind (the instances a structure type carries as parameters, such as the
+`BEq` and `Hashable` of `Std.HashMap`), is not stated, because Lean
+synthesizes or infers it. A signature that applies a registered type to more
+arguments than the type has parameters, as Lean's own types do with their
+instances, is read at the type's parameters. A use that gives a wrong number of type arguments or
+arguments, or an argument of another type, is refused with `LLT4015`. Types
+are compared exactly, after the unfolding of abbreviations.
+
+**Terms.** A tool is written in a closed term language in which every binder is
+typed and every type argument is explicit, so that nothing depends on
+inference: a variable; a natural number, string, or character literal; a name
+literal, which Lean resolves when it elaborates the generated text; a call; a
+constructor of a registered type; the field of a value whose type has exactly
+one constructor; a list or an array with its element type; `let`; a lambda;
+the application of a function value; `if` on a `Bool`; and `match`. A match
+is flat, one constructor per branch, and exhaustive at its scrutinee's index:
+every constructor available at that index has a branch, a constructor that
+exists only at another index has none, and a final default branch may stand
+for the rest. A name is bound once along any path: a function parameter, a
+`let`, a lambda parameter, or a branch binder that shadows a variable in scope
+is refused with `LLT4015`, so that what a name stands for is read from its one
+binding. Monadic sequencing, effects, and every other operation are calls
+of registered constants (`Bind.bind`, `Pure.pure`); there is no `do` and no
+mutable variable.
+
+**Recursion.** A function may call a registered call, a function defined before
+it, itself when it is declared `partial`, and the functions of its mutual group:
+a run of contiguous functions with one label, every member `partial`. Any other
+forward or recursive call, and a mutual group that is not one run, is refused
+with `LLT4015`. `partial` is Lean's own: such a function has no termination
+argument and no proof, and a tooling module claims no theorem.
+
+**Complete traversal.** A function declared a *traversal* is `partial`, takes
+the value it traverses as its first parameter, and is exactly a `match` on it
+with no default branch. The recursive family of a type is the set of
+registered types that reach it and are reached from it through constructor
+fields (the strongly connected component of the type graph). Every branch
+uses each field whose type mentions a type of the family, and recurses into
+it: it calls, for each such type, a traversal of that type in its own mutual
+group (or itself) *on a value derived from the field*, which is the field, a
+field of a derived value, a name a `let` binds to a term that mentions one, a
+branch binder of a `match` on one, or a parameter of a lambda handed to the
+same call as one (a fold over `alts` hands the elements of `alts` to its
+function). A handler applied to the subject or to a constant leaves the field
+unvisited even when the branch mentions it, and is refused. Every other type
+of the family has a traversal in that group. A traversal therefore cannot skip
+a constructor (an unmatched one is a registry disagreement), a field (a
+skipped one is refused), or a type (a family member without a handler is
+refused), and a registry that gains a constructor or a field makes the tool
+fail to link and not silently omit it, with `LLT4015`.
+
+**Commands.** A `command` registers the syntax kind `name`, a grammar of
+atoms (a token, an identifier, a type written as a registered signature, the
+first atom a token) and an elaborator: a public function with no parameters
+whose type is `Lean.Elab.Command.CommandElab`, the abbreviation of
+`Lean.Syntax → Lean.Elab.Command.CommandElabM Unit` that Lean's
+`command_elab` attribute requires by name. An `invoke` applies a registered
+command to one argument per non-token atom, an identifier or a signature tree,
+and an `evaluate` runs a function of the module that is a command action on
+terms of the right types; both are checked against the command's grammar and
+the function's typing. A host builds its invocations as semantic data and
+never as text.
+
+**Backends.** Both backends traverse the one linked module. The Lean backend
+emits `module`, `public meta import Lean`, one `import all` per generated
+project module of the module's imports, the fixed options
+`set_option autoImplicit false` and `set_option linter.unusedVariables false`,
+a `universe` declaration of the universe variables the signatures name, and then
+one rendering per declaration in order: a function as `[public ]meta
+[partial ]def`, a mutual group inside one `mutual ... end`, a command as
+`syntax (name := ...)` and `attribute [command_elab ...]`, an invocation as the
+command's own syntax, an evaluation as `#eval`. A type, a call, and plumbing
+have no Lean of their own: they are the registry that Lean checks when it
+elaborates the uses (a signature or a constructor list that the tool is
+consistent with and Lean is not is refused there, never by the compiler alone),
+and the rows from which the extraction probes and registry check of §22.10 are
+built. Every type argument is named by the callee's own
+binder name, every constructor in a pattern is written after the dot, and a
+reserved word is quoted, so that the text means exactly the node. The text
+contains no comment. The LaTeX backend emits one entry per declaration with its
+kind and the same types, signatures, and terms spelled by the same printer.
+Each declaration that has output has one mapped piece for its own object of the
+source, the rest of the output belongs to the module, and output coverage is
+complete (§19.6, §20.5). The pinned Lean elaborates the generated fixtures
+without a message.
+
+**Fixtures.** `tests/tooling/core`, `tests/tooling/commands`, and
+`tests/tooling/traversal` are committed tooling projects: the term language,
+recursion, and mutual groups over `Nat`, `List`, `Option`, `Prod`, and `Array`;
+a command with its elaborator, invocation, and evaluation, calls with trailing
+defaults and the empty structure instance, and the abbreviation `CommandElab`;
+and a mutual traversal of the real `Lean.Compiler.LCNF.Code` family with its
+`Purity` index. Their registry rows are the pinned Lean's own (constructor
+lists, signatures, index requirements, and the toolchain source file and
+digest that define each), and the constants Lean's elaboration uses beyond the
+declared ones are their `plumbing`. A fixture commits its published build tree
+under `expected/build/`, which `cargo xtask check-golden` compares and
+`cargo xtask check-reproducibility` rebuilds in two directories (§28.3,
+§28.4); `check-golden --write` is the only writer. A project that holds a
+tooling module is never built through the command line, so these gates render
+it with tooling enabled.
+
+**Identity.** A tooling module's decoded value is part of the linked IR hashed
+into its project's semantic ID. `tooling/schemas/tooling-module.schema.json` is
+not a file of the compiler-semantics ID (§7, §21.2): the tooling language is
+internal to the compiler, so adding it changes no existing identity, and the
+tooling source the compiler embeds is language data, hashed into that ID.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -6627,56 +6813,90 @@ Lean's own compiler front end, at one explicit authority boundary. Lean's
 behavior there is an external authority (`LEAN-LCNF-4-32-1`), cited and pinned,
 never a LexLean-proved fact.
 
-**Authority interface.** `language/lcnf-1.2/authority.toml`
-(`lexlean/lcnf-authority/2`) is the closed registry of every constant the
-adapter's own definitions use, each in exactly one class:
+**Authority interface.** The adapter is a *tooling module* (§17.20): the one
+module of the embedded project `language/lcnf-1.2/tooling/`, whose registry is
+the closed interface of every constant the adapter's own definitions use. Each
+is exactly one row, in one class:
 
 - a *call* (a definition of Lean's `Lean` namespace other than a projection,
   recursor, instance, or matcher) names its exact signature at Lean 4.32.1
   (`f054605aea4b840552cca2e725580bffd1e1b704`), the defining source file at
   that revision with its SHA-256, and its role;
-- a *type* of the `Lean` namespace names its complete constructor list in
-  Lean's order;
-- *plumbing* lists every other used constant by name: constructors,
-  projections, recursors, instances, matchers, and core-library data, whose
-  meaning the calls and types fix.
+- a *type* names its complete constructor list in Lean's order with every
+  field typed, or is *opaque* when no definition of the adapter matches,
+  constructs, or projects it, and then pins no constructors;
+- *plumbing* lists every other used constant by name: structural constants,
+  instances, matchers, recursors, and core-library data, whose meaning the
+  calls and types fix.
 
-The registry and the adapter are in the language-1.2 partition (§21.2), so
-both are part of the compiler-semantics ID. No user source can supply LCNF, a
-Lean expression, or a root name: roots are the linked production roots
-(§17.13).
+The registry is not written by hand. `tests/lcnf/export.lean` reads the
+pinned Lean's type of every constant the adapter's terms name and the
+constructors of every type they match, construct, or project, closes the set
+over what those signatures and fields mention, and states each as a row; the
+elaborated adapter's own constants complete it, and what no row declares is
+plumbing. `tests/lcnf/registry.json` is that output, `cargo xtask
+check-calculus` requires the committed project to equal what its generator
+renders over it, and `conformance_ne_04` requires the registry to equal a
+fresh derivation from the pinned toolchain.
 
-**Adapter.** `language/lcnf-1.2/extract.lean` is the only Lean the extraction
-runs, and it reports facts, not decisions. Its code contains no comment and
-no optimization or application policy. From the roots it follows the code of
-every translated definition: a constant of the project's generated modules
-(the fixed runtime namespaces `<module>.LexLeanRuntime` and
-`<module>.LexLeanCollections` included) that is a computable definition Lean
-generates code for is translated with `Lean.Compiler.LCNF.toDecl` in the base
-phase, and no LCNF pass runs afterwards. It records, for every project
-constant reached through code or named by a reached kernel value, its kind,
-the kind it was declared with (`Lean.getOriginalConstKind?`), defining
-module, computability, whether code is generated for it, whether it is a
-compiler-generated helper, and the constants its kernel value names; for a
-translated definition, its safety, universe parameters, LCNF type,
-parameters, code, and the constants that code names; for a project inductive,
-its constructors with their LCNF types; and, for every other constant
-translated code names, the same facts and whether Lean's compiler holds code
-for it (`Lean.IR.findEnvDecl`). Universe levels are recorded wherever a
-constant is instantiated. An LCNF type's only metadata, the `borrowed`
-annotation `toLCNFType` places on the domain of an arrow whose parameter is
-borrowed (`Lean/Compiler/LCNF/Types.lean`), is recorded as such; any other
-metadata is recorded as an unsupported form. It prints one
+The project is in the language-1.2 partition (§21.2), so it is part of the
+compiler-semantics ID. No user source can supply LCNF, a Lean expression, or a
+root name: roots are the linked production roots (§17.13).
+
+**Adapter.** The adapter is the only Lean the extraction runs, and it
+is not written as Lean: its functions are terms of the closed tooling language
+over that registry, and the compiler renders them, so that the Lean it runs
+contains no comment, no hand-written definition, and no template. It reports
+facts, not decisions, and contains no optimization or application policy. From
+the roots it follows the code of every translated definition: a constant of
+the project's generated modules (the fixed runtime namespaces
+`<module>.LexLeanRuntime` and `<module>.LexLeanCollections` included) that is
+a computable definition Lean generates code for is translated with
+`Lean.Compiler.LCNF.toDecl` in the base phase, and no LCNF pass runs
+afterwards. It records, for every project constant reached through code or
+named by a reached kernel value, its kind, the kind it was declared with
+(`Lean.getOriginalConstKind?`), defining module, computability, whether code is
+generated for it, whether it is a compiler-generated helper, and the constants
+its kernel value names; for a translated definition, its safety, universe
+parameters, LCNF type, parameters, code, and the constants that code names; for
+a project inductive, its constructors with their LCNF types; and, for every
+other constant translated code names, the same facts and whether Lean's
+compiler holds code for it (`Lean.IR.findEnvDecl`). Universe levels are
+recorded wherever a constant is instantiated. An LCNF type's only metadata,
+the `borrowed` annotation `toLCNFType` places on the domain of an arrow whose
+parameter is borrowed (`Lean/Compiler/LCNF/Types.lean`), is recorded as such;
+any other metadata is recorded as an unsupported form. It prints one
 `lexlean/lcnf-extraction/2` record.
 
+Lean orders the join points of a function by the numbering of its fresh
+variables, and that numbering depends on everything the process elaborated
+before the translation, the adapter's own text included. The adapter therefore
+starts each translation from the name generator's initial state (a
+`Lean.NameGenerator` with its defaults), so that its record is a function of
+the project and the pinned Lean and not of the adapter: `conformance_ne_04`
+requires the same bytes whatever number of definitions Lean elaborated before
+the extraction.
+
+The adapter replaced a handwritten Lean file, which is kept as the *oracle*
+`tests/lcnf/oracle/extract.lean`, outside the language data and so outside the
+compiler-semantics ID: `conformance_ne_04` runs both over every kind of
+constant the extraction classifies, in a function with at most one join point
+(the oracle does not restart Lean's numbering, so it may order two otherwise),
+and requires the same record, up to the numbering of the variables of each
+constant. The oracle is a validation of the adapter, evidence at the `build`
+level, and takes no part in any build.
+
 **Driver.** Verification generates the module `LexLeanExtract.X<hex32>` (the
-first 32 hex digits of the semantic ID; a reserved module name) with exactly:
-`module`, `public meta import Lean`, one `import all` per generated module, the
-fixed option `set_option linter.unusedVariables false`, the adapter, a
-`universe` declaration of the universe variables the registered signatures
-name, one `lexlean_signature <name> : <signature>` per registry call in
-registry order, one `#eval` of the registry check, and one `#eval` naming the
-roots and the modules. It is elaborated with `lake env lean` against the
+first 32 hex digits of the semantic ID; a reserved module name) by rendering
+the adapter's tooling module with the declarations the compiler appends to
+it, which it checks against the adapter's registry like any other use of a
+tooling module: `module`, `public meta import Lean`, one `import all` per
+generated module, the fixed options, the adapter, a `universe` declaration of
+the universe variables the registered signatures name, one invocation of the
+adapter's `lexlean_signature` command per registry call in registry order, one
+evaluation of the registry check, and one evaluation naming the roots and the
+modules. Roots and modules are text the adapter reads as names, so no Lean
+syntax is written for them. It is elaborated with `lake env lean` against the
 staged module outputs, after policy enforcement (stage 12, §22.1).
 
 - `lexlean_signature` fails unless the constant's type equals the registered
@@ -6685,11 +6905,13 @@ staged module outputs, after policy enforcement (stage 12, §22.1).
   equality would hide it.
 - The registry check fails unless the adapter's own definitions use exactly
   the registered constants, each in its registered class, and every registered
-  type has exactly its registered constructors.
-- Any Lean message on a probe line, on the registry check, or inside the
-  adapter, and any message the adapter raises as drift, is authority drift
-  (`LLV7012`), whether or not Lean exits successfully; Lean reports messages
-  on standard output, so a warning is never mistaken for part of the record.
+  type that lists constructors has exactly them, in Lean's order.
+- Any Lean message on a probe, on the registry check, or inside the adapter,
+  and any message the adapter raises as drift, is authority drift (`LLV7012`),
+  whether or not Lean exits successfully; Lean reports messages on standard
+  output, so a warning is never mistaken for part of the record. Which part a
+  message belongs to is read from where the compiler placed each declaration
+  in the text it generated.
 - An error the adapter raises by name (an unknown root, an unresolved
   constant) is a rejection (`LLV7011`).
 
@@ -7292,6 +7514,9 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4010` | Reasoning interface or obligation mismatch (§17.12). |
 | `LLT4011` | Unbounded reasoning or missing termination evidence (§17.12). |
 | `LLT4012` | Unvalidated reasoning runtime boundary (§17.12). |
+| `LLT4013` | Tooling module malformed or out of context (§17.20). |
+| `LLT4014` | Tooling authority registry invalid (§17.20). |
+| `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -8263,7 +8488,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `NE-01` | `extraction` | Verifying a project with production roots extracts every root through Lean's compiler front end into one canonical compiler input whose bytes and ID are schema-valid, recorded in the attestation, and identical from distinct project directories, and a project without a production root publishes none. | §22.10, §26.3 |
 | `NE-02` | `extraction` | Each root's extracted closure is exactly its computational dependencies, equals its production-eligibility closure, carries its runtime members and monomorphization instances, names every constant its code uses, marks recursion from the use graph, and records proof-only dependencies as erased and never as runtime members. | §22.10, §26.3 |
 | `NE-03` | `extraction` | An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates. | §22.10, §26.3 |
-| `NE-04` | `extraction` | Every constant the extraction adapter uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012. | §22.10, §26.3 |
+| `NE-04` | `extraction` | The extraction adapter is a closed tooling module of the embedded project `language/lcnf-1.2/tooling/`, rendered to Lean by the compiler, and every constant it uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing, in a registry that is the pinned Lean's own answer; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, its record equals that of the handwritten oracle `tests/lcnf/oracle/extract.lean` and does not depend on what Lean elaborated before it, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012. | §22.10, §26.3 |
 | `NE-05` | `extraction` | A dependency dropped from Lean's extracted facts or from the production-eligibility closure fails extraction with LLV7011 before any compiler input is published. | §22.10, §26.3 |
 | `NE-06` | `extraction` | A proof-only dependency presented as a runtime closure member fails extraction with LLV7011 before any compiler input is published. | §22.10, §26.3 |
 | `TC-01` | `calculus` | Hand-constructed target programs have canonical bytes and a SHA-256 content identity, alpha-equivalent programs canonicalize to identical bytes and identity, an ill-typed program has neither, and every committed fixture validates against the target schemas. | §17.14, §21.7 |
@@ -8343,8 +8568,19 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `OR-06` | `oracle` | The differential compares outcomes, contracts, and resources and never bytes: a rendering that is deliberately better than LexLean's and semantically equivalent to it, a loop for a recursion and a closed form for an iteration, byte-different from LexLean's rendering and from the oracle's, is accepted on every input, and a rendering that differs in one result on one input, that takes a parameter of another width, that does more work than LexLean's as its own runtime counts it, or that allocates more as an allocator it cannot reach counts it is refused. | §17.16, §17.19 |
 | `OR-07` | `oracle` | An oracle that was not acquired, whose checkout is not the pin, that did not build, that crashed, was killed, overran its time (and with it everything it started), wrote nothing or an IR defining nothing, or whose generator failed without refusing a program, a fetch that fails leaving nothing that a later run takes for a checkout, a cache that is not the pin discarded and fetched once more, a transient failure of the network tried again twice and a permanent one not, and a comparison over no root or no case, are each unavailable and never validated, which fails the gate on the normative host and is reported as not validated elsewhere, while the oracle's own structured refusals are answers and a tool that is not meant to overrun its time is given a generous one; and a disagreement fails closed with a record of both sides' evidence for every difference. | §17.19 |
 | `OR-08` | `oracle` | The oracle is validation evidence and an input to no identity: no file the shipped crate, the language data, the schemas, the compiler project, the committed examples' records, or the authority and ledger files hold names the oracle, its pinned commit, or its digest, so that planting any of them in any of those places fails audit-oracle-isolation; no input of the compiler-semantics ID names it, an oracle field in a build manifest, a preservation record, an attestation, a snapshot, a compiler input, or a GNAF certificate fails its closed schema, and no module of the conformance crate but the oracle's own uses it, so that removing it changes none of them. | §17.19, §27.2 |
+| `TL-01` | `tooling` | A tooling module is the one `toolingmodule` environment of its module, holding one canonical `\toolingdata` argument of the closed `lexlean/tooling-module/1` schema, and every committed fixture satisfies `tooling/schemas/tooling-module.schema.json`; a member, declaration, term, signature, or atom outside it, a member written with its default, a spec tag but the exact one, a value that is not its own canonical encoding, a repeated member, a value nested deeper than the decoder reads, and an unsorted import list fail with LLT4013, a module over `max_ir_nodes` fails with LLS8002, a second data argument or a second module form in the same module is a structural error that fails with LLP2003, and no change of any single node of a committed fixture panics the compiler, which accepts or refuses it with LLT4013, LLT4014, or LLT4015. | §17.20, §21.2 |
+| `TL-02` | `tooling` | A tooling module requires language 1.2 and a project the compiler itself embeds: a language-1.1 project, a user project, the check, build, and verify requests of the public API, and the command line refuse it with LLT4013 before either backend runs, no configuration member or option admits one, and a tooling module has no production root, no production eligibility report, and no semantic snapshot. | §17.20, §22.10 |
+| `TL-03` | `tooling` | A tooling module cites one authority, Lean at the compiler's pinned release and source commit, which equal the pins of `model/authorities.toml`, and its registry is closed: an authority that is not the pin, a name declared twice, a signature or field type naming a constant that no registry row declares, a variable a signature does not bind, an empty, unsorted, or repeated plumbing row, a plumbing constant that is also declared, and a source path outside the toolchain source or a digest that is not 64 lowercase hexadecimal digits fail with LLT4014, and every source digest equals the SHA-256 of that file in the pinned toolchain. | §17.20, §8.2 |
+| `TL-04` | `tooling` | A registered type states its parameters (a type, a type constructor, or an index drawn from a registered type whose constructors are all nullary), its complete constructor list in Lean's order with typed fields, and the one index a constructor exists at, an opaque type pins no constructors, and an abbreviation is the type it abbreviates wherever types are compared; an index of an unregistered or non-nullary type, a repeated constructor, a field naming an unregistered type, applying a type to the wrong number of arguments, or using a variable no parameter binds, a requirement that names no index parameter or a constructor of another type, an opaque type with constructors, and an abbreviation of itself or of a cycle fail with LLT4014. | §17.20 |
+| `TL-05` | `tooling` | A call's exact signature (constants, variables, applications, arrows, explicit, implicit, and instance binders, `Type` and `Type u`, `optParam` defaults, natural literals, and the empty structure instance) is its typing: the implicit binders of types and type constructors are the type arguments every use states, any other implicit binder and every instance binder is inferred by Lean and never stated, trailing binders with a default are optional, and types are compared exactly after the unfolding of abbreviations; a use with a wrong number of type arguments or arguments, an argument or result of another type, or an unregistered callee fails with LLT4015. | §17.20 |
+| `TL-06` | `tooling` | A tool is written in a closed typed term language with explicit binder types and type arguments, and its `match` is flat, one constructor per branch, and exhaustive at the scrutinee's index; a constructor available at the index without a branch, a branch for a constructor of another type or one that exists only at another index, a branch binding the wrong number of fields, a field of a type with several constructors, a condition that is not Bool, an unbound variable, a binder that shadows a variable in scope, and an ill-typed let, lambda, application, list, array, or constructor fail with LLT4015. | §17.20 |
+| `TL-07` | `tooling` | A function calls only registered calls, functions defined before it, itself when it is partial, and the functions of its mutual group, a contiguous run of partial functions with one label; a self call of a function that is not partial, a forward call, a mutual group that is not one run, and a group with a member that is not partial fail with LLT4015. | §17.20 |
+| `TL-08` | `tooling` | A traversal is a partial function that takes its subject first and is exactly a match on it, its group handles every type of the subject's recursive family, and each branch uses every field whose type lies in the family through the traversal of that type applied to a value derived from the field, so that a skipped field, a handler applied to the subject instead of the field, a handler that is not a traversal, a default branch, and a constructor that a registry gains and no branch handles fail with LLT4015, while a traversal of the real Lean `Code` family elaborates under the pinned Lean. | §17.20 |
+| `TL-09` | `tooling` | A command declares its syntax kind, a grammar of a leading token, identifiers, and signature types, and an elaborator with no parameters whose type is the abbreviation `Lean.Elab.Command.CommandElab`, an invocation supplies one identifier or signature tree per non-token atom, and an evaluation runs a function of the module on typed arguments, all as semantic data; an elaborator with a parameter or another type, a grammar without a leading token, an invocation of an unregistered command or with a wrong argument count or kind, and an evaluation of an unregistered function or with ill-typed arguments fail with LLT4015, and the pinned Lean runs the committed elaborator, which accepts a constant that exists and refuses one that does not. | §17.20 |
+| `TL-10` | `tooling` | Both backends traverse the one linked module: the Lean text begins with the fixed header, holds one rendering per function, command, invocation, and evaluation, and contains no comment, every declaration with output has one source-mapped piece, coverage is complete, the LaTeX document has one entry per declaration, and the pinned Lean elaborates every committed fixture without a message while refusing a registry that misstates an arity or a constructor list that the tool is consistent with. | §17.20, §18, §19.6, §20.5 |
+| `TL-11` | `tooling` | Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record. | §17.20, §21.2, §28.3, §28.4 |
 
-**Total required capability IDs:** 339.
+**Total required capability IDs:** 350.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

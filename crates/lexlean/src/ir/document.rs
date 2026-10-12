@@ -9,6 +9,7 @@ use crate::ir::core::CoreModule;
 use crate::ir::declaration::Declaration;
 use crate::ir::semantic::SemanticModule;
 use crate::ir::term::{Binder, Renumber, Term};
+use crate::ir::tooling::ToolingModule;
 use crate::lexicon::lse::QualifiedId;
 
 /// One item of a title or heading phrase (§15.3).
@@ -108,6 +109,9 @@ pub struct DocumentModule {
     /// A high-level language-1.1 semantic module, exclusively present when
     /// `blocks` is empty and `core` is absent.
     pub semantic: Option<SemanticModule>,
+    /// A compiler-tooling module (SPEC.md §17.20), exclusively present when
+    /// `blocks` is empty and `core` and `semantic` are absent.
+    pub tooling: Option<ToolingModule>,
 }
 
 impl DocumentModule {
@@ -209,6 +213,16 @@ impl DocumentModule {
                         .expect("semantic module serializes to canonical JSON domain"),
                 )
                 .expect("semantic module uses canonical JSON values"),
+            ));
+        }
+        if let Some(tooling) = &self.tooling {
+            fields.push((
+                "tooling",
+                Json::parse(
+                    &serde_json::to_vec(tooling)
+                        .expect("tooling module serializes to canonical JSON domain"),
+                )
+                .expect("tooling module uses canonical JSON values"),
             ));
         }
         Json::object(fields)

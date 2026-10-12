@@ -245,8 +245,8 @@ impl SemanticDataContext {
                 self.depth = 1;
                 self.awaiting_open = false;
             } else {
-                self.awaiting_open =
-                    atom.class == AtomClass::Control && atom.text == "\\semanticdata";
+                self.awaiting_open = atom.class == AtomClass::Control
+                    && matches!(atom.text.as_str(), "\\semanticdata" | "\\toolingdata");
             }
             return;
         }

@@ -51,6 +51,11 @@ pub struct Project {
     pub config: ProjectConfig,
     /// The raw configuration bytes as read.
     pub config_bytes: Vec<u8>,
+    /// Whether this project may hold tooling modules (SPEC.md §17.20). Only
+    /// the compiler's own embedded tooling projects and its tests set it,
+    /// through [`Project::with_tooling`]; no configuration member, command
+    /// line option, request field, or environment variable can.
+    pub tooling: bool,
 }
 
 /// The selection modes (SPEC.md §24.2).
@@ -129,6 +134,14 @@ enum Expect {
 }
 
 impl Project {
+    /// This project, accepting tooling modules (SPEC.md §17.20). The compiler
+    /// calls it for the tooling projects it embeds; a user project never is.
+    #[must_use]
+    pub fn with_tooling(mut self) -> Self {
+        self.tooling = true;
+        self
+    }
+
     /// Load a project from its configuration file path.
     pub fn load(config_path: &Utf8Path) -> Result<Self, LexLeanError> {
         // Messages name the configuration as the user gave it when that is
@@ -186,6 +199,7 @@ impl Project {
             config_name,
             config,
             config_bytes,
+            tooling: false,
         };
         // The build root must resolve within the project and no component
         // of it may be a symlink (§10.1, §25.1); the same holds for the

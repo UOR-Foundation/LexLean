@@ -1,12 +1,13 @@
 //! Named-root extraction through Lean's compiler front end (SPEC.md §22.10).
 //!
 //! Lean is the authority for how a verified generated declaration compiles.
-//! The pinned adapter `language/lcnf-1.2/extract.lean` reports facts and
-//! nothing else: for everything reachable from the roots, each constant's
-//! kind, module, computability, and kernel-level uses, and, for every
-//! code-generating definition of the project's own modules reached through
-//! code, its base-phase LCNF. This module owns every decision about those
-//! facts: the driver that pins the adapter, probes every authority signature
+//! The adapter, a closed tooling module (§17.20) of the embedded project
+//! `language/lcnf-1.2/tooling/`, reports facts and nothing else: for
+//! everything reachable from the roots, each constant's kind, module,
+//! computability, and kernel-level uses, and, for every code-generating
+//! definition of the project's own modules reached through code, its
+//! base-phase LCNF. This module owns every decision about those facts: the
+//! driver that renders the adapter, probes every registered signature
 //! exactly, and checks the adapter's own constants against the closed
 //! registry; the closed reading of the record; each root's computational
 //! closure, its runtime members, and its erased proofs; the fail-closed
@@ -22,12 +23,11 @@ use serde::{Deserialize, Serialize};
 
 use super::ModuleReport;
 use crate::artifact::content_id::Sha256Digest;
+use crate::ir::tooling::{InvokeArgument, ToolDeclaration, ToolTerm, ToolType, ToolingModule};
 
-/// The embedded adapter, hashed into the language-1.2 compiler semantics ID.
-pub const ADAPTER_PATH: &str = "language/lcnf-1.2/extract.lean";
-
-/// The embedded authority registry, hashed into the same ID.
-pub const AUTHORITY_PATH: &str = "language/lcnf-1.2/authority.toml";
+/// The embedded tooling project that is the adapter, hashed into the
+/// language-1.2 compiler semantics ID with the rest of the language data.
+pub const TOOLING_DIR: &str = "language/lcnf-1.2/tooling";
 
 /// The tag of the adapter's raw output.
 pub const EXTRACTION_SPEC: &str = "lexlean/lcnf-extraction/2";
@@ -39,162 +39,109 @@ pub const INPUT_SPEC: &str = "lexlean/compiler-input/2";
 /// carry, below the module's own name.
 pub const RUNTIME_NAMESPACES: [&str; 2] = ["LexLeanRuntime", "LexLeanCollections"];
 
-/// One Lean operation the adapter calls.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AuthorityCall {
-    pub name: String,
-    pub signature: String,
-    pub source: String,
-    pub source_sha256: String,
-    pub role: String,
-}
+/// The syntax kind of the signature probe the adapter registers.
+const PROBE_COMMAND: &str = "LexLeanExtract.signatureCommand";
 
-/// One Lean data type the adapter matches exhaustively.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AuthorityType {
-    pub name: String,
-    pub source: String,
-    pub source_sha256: String,
-    pub constructors: Vec<String>,
-}
+/// The adapter's entry points the driver evaluates.
+const CHECK_FUNCTION: &str = "LexLeanExtract.checkAuthority";
+const RUN_FUNCTION: &str = "LexLeanExtract.main";
 
-/// The closed compiler-front-end interface: every constant the adapter's
-/// own definitions use is exactly one call, one type, or one plumbing name.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Authority {
-    pub spec: String,
-    pub authority: String,
-    pub lean_version: String,
-    pub lean_githash: String,
-    /// Structural plumbing the adapter elaborates to: constructors,
-    /// projections, recursors, instances, and core-library data, whose
-    /// meaning is fixed by the types and calls registered beside them.
-    pub plumbing: Vec<String>,
-    pub call: Vec<AuthorityCall>,
-    #[serde(rename = "type")]
-    pub types: Vec<AuthorityType>,
-}
-
-fn embedded_text(path: &str) -> Result<&'static str, String> {
-    crate::embedded::FILES
-        .iter()
-        .find(|(candidate, _)| *candidate == path)
-        .and_then(|(_, bytes)| std::str::from_utf8(bytes).ok())
-        .ok_or_else(|| format!("embedded `{path}` is missing"))
-}
-
-/// The embedded adapter source.
+/// The adapter: the one module of the embedded tooling project, loaded,
+/// linked, and checked by the compiler like any other, in a scratch
+/// directory that exists only while it loads. The tooling language is
+/// accepted nowhere but here (§17.20).
 ///
 /// # Errors
 ///
-/// Returns the reason the embedded adapter is missing.
-pub fn adapter() -> Result<&'static str, String> {
-    embedded_text(ADAPTER_PATH)
-}
-
-/// The embedded authority registry.
-///
-/// # Errors
-///
-/// Returns the reason the embedded registry is missing or malformed; the
-/// conformance suite parses it, so a malformed registry never ships.
-pub fn authority() -> Result<&'static Authority, String> {
-    static AUTHORITY: OnceLock<Result<Authority, String>> = OnceLock::new();
-    AUTHORITY
-        .get_or_init(|| {
-            let text = embedded_text(AUTHORITY_PATH)?;
-            let authority: Authority =
-                toml::from_str(text).map_err(|error| format!("{AUTHORITY_PATH}: {error}"))?;
-            if authority.spec != "lexlean/lcnf-authority/2" {
-                return Err(format!(
-                    "{AUTHORITY_PATH}: unsupported spec `{}`",
-                    authority.spec
-                ));
-            }
-            let mut seen = BTreeSet::new();
-            for name in authority
-                .call
-                .iter()
-                .map(|call| &call.name)
-                .chain(authority.types.iter().map(|row| &row.name))
-                .chain(&authority.plumbing)
-            {
-                if !seen.insert(name.clone()) {
-                    return Err(format!("{AUTHORITY_PATH}: `{name}` is registered twice"));
-                }
-            }
-            Ok(authority)
-        })
+/// Returns the reason the embedded project is missing, or the first
+/// diagnostic the compiler gives it; the conformance suite checks it, so a
+/// project that does not check never ships.
+pub fn adapter() -> Result<&'static ToolingModule, String> {
+    static ADAPTER: OnceLock<Result<ToolingModule, String>> = OnceLock::new();
+    ADAPTER
+        .get_or_init(load_adapter)
         .as_ref()
         .map_err(Clone::clone)
 }
 
-/// A Lean name literal that survives any segment spelling: the name is
-/// rebuilt from its string, so no source quoting rule is involved.
-fn name_literal(name: &str) -> String {
-    let escaped: String = name
-        .chars()
-        .flat_map(|character| match character {
-            '"' => vec!['\\', '"'],
-            '\\' => vec!['\\', '\\'],
-            other => vec![other],
-        })
-        .collect();
-    format!("\"{escaped}\".toName")
-}
-
-/// A Lean string literal.
-fn string_literal(text: &str) -> String {
-    let escaped: String = text
-        .chars()
-        .flat_map(|character| match character {
-            '"' => vec!['\\', '"'],
-            '\\' => vec!['\\', '\\'],
-            other => vec![other],
-        })
-        .collect();
-    format!("\"{escaped}\"")
-}
-
-/// The universe variables (`u_1`, `u_2`, …) a registered signature names,
-/// which the driver declares so the signature elaborates as written.
-fn signature_universes(signature: &str, out: &mut BTreeSet<String>) {
-    let bytes = signature.as_bytes();
-    let mut index = 0;
-    while let Some(offset) = signature[index..].find("u_") {
-        let start = index + offset;
-        let mut end = start + 2;
-        while end < bytes.len() && bytes[end].is_ascii_digit() {
-            end += 1;
+fn load_adapter() -> Result<ToolingModule, String> {
+    let prefix = format!("{TOOLING_DIR}/");
+    let scratch = tempfile::Builder::new()
+        .prefix("lexlean-adapter-")
+        .tempdir()
+        .map_err(|error| format!("the adapter's scratch directory: {error}"))?;
+    let mut present = false;
+    for (path, bytes) in crate::embedded::FILES {
+        let Some(relative) = path.strip_prefix(&prefix) else {
+            continue;
+        };
+        let target = scratch.path().join(relative);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| format!("the adapter's scratch directory: {error}"))?;
         }
-        let bounded = start == 0
-            || !(bytes[start - 1].is_ascii_alphanumeric()
-                || bytes[start - 1] == b'_'
-                || bytes[start - 1] == b'.');
-        if bounded && end > start + 2 {
-            out.insert(signature[start..end].to_owned());
-        }
-        index = end.max(start + 2);
+        std::fs::write(&target, bytes)
+            .map_err(|error| format!("the adapter's scratch directory: {error}"))?;
+        present = true;
     }
+    if !present {
+        return Err(format!("embedded `{TOOLING_DIR}` is missing"));
+    }
+    let config = camino::Utf8PathBuf::from_path_buf(scratch.path().join("lexlean.toml"))
+        .map_err(|bad| format!("the adapter's scratch directory {}", bad.display()))?;
+    let project = crate::project::Project::load(&config)
+        .map_err(|error| format!("{TOOLING_DIR}: {error}"))?
+        .with_tooling();
+    let (lock, packages) = crate::lock::compute_lock(&project, false)
+        .map_err(|diagnostics| format!("{TOOLING_DIR}: the lock: {diagnostics:?}"))?;
+    let checked = crate::link::check_project(
+        &project,
+        &crate::project::Selection::Entrypoints,
+        &lock,
+        packages,
+    )
+    .map_err(|error| format!("{TOOLING_DIR}: {error}"))?;
+    let mut modules = checked
+        .modules
+        .values()
+        .filter_map(|module| module.document.tooling.clone());
+    let module = modules
+        .next()
+        .ok_or_else(|| format!("{TOOLING_DIR} holds no tooling module"))?;
+    if modules.next().is_some() {
+        return Err(format!("{TOOLING_DIR} holds more than one tooling module"));
+    }
+    Ok(module)
 }
 
-/// The generated extraction module: fixed header, the pinned adapter, one
-/// exact signature probe per authority call, the check that the adapter's
-/// constants are exactly the registry's, and one command naming the roots.
+/// What a part of the generated extraction module is: how Lean's messages
+/// on it are told.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Part {
+    /// The module header and the imports of the project's modules.
+    Header,
+    /// A definition or command registration of the adapter, by name.
+    Adapter(String),
+    /// The signature probe of one registered call.
+    Probe(String),
+    /// The check of the adapter's constants against the registry.
+    Registry,
+    /// The extraction of the roots.
+    Roots,
+}
+
+/// The generated extraction module: the adapter as the compiler renders it,
+/// one exact signature probe per registered call, the check that the
+/// adapter's constants are exactly the registry's, and one evaluation naming
+/// the roots and the modules.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Driver {
     /// The reserved module name (`LexLeanExtract.X<hex32>`).
     pub name: String,
+    /// The module's text.
     pub text: String,
-    /// The 1-based line of each call probe, by call name.
-    pub probe_lines: BTreeMap<usize, String>,
-    /// The 1-based line of the registry closure check.
-    pub authority_line: usize,
-    /// The 1-based lines the pinned adapter occupies.
-    pub adapter_lines: (usize, usize),
+    /// The byte range of each part of the text, in order.
+    pub parts: Vec<(usize, usize, Part)>,
 }
 
 /// The reserved extraction module name for a semantic ID prefix.
@@ -213,93 +160,194 @@ pub fn is_runtime_member(name: &str, modules: &BTreeSet<String>) -> bool {
     })
 }
 
-/// Generate the extraction module.
+fn texts(values: &[String]) -> ToolTerm {
+    ToolTerm::Array {
+        element: ToolType::Const {
+            name: "String".to_owned(),
+            arguments: Vec::new(),
+        },
+        elements: values
+            .iter()
+            .map(|value| ToolTerm::String {
+                value: value.clone(),
+            })
+            .collect(),
+    }
+}
+
+/// Generate the extraction module: the adapter, then declarations the
+/// compiler checks against the adapter's own registry like every other use
+/// of a tooling module, so that nothing of the driver is Lean text written
+/// beside the adapter.
 ///
 /// # Errors
 ///
-/// Returns the reason the embedded adapter or registry is unavailable.
+/// Returns the reason the embedded adapter is unavailable or the driver's
+/// declarations do not check.
 pub fn driver(
     semantic_hex32: &str,
     roots: &[String],
     modules: &[String],
 ) -> Result<Driver, String> {
-    let authority = authority()?;
-    let adapter = adapter()?;
-    let mut text = String::from("module\npublic meta import Lean\n");
-    // `import all` exposes the private kernel values, so a proof reached
-    // only through a compiler-generated helper is still recorded.
-    for module in modules {
-        text.push_str(&format!("import all {module}\n"));
+    driver_of(adapter()?.clone(), semantic_hex32, roots, modules)
+}
+
+/// The extraction module of a given adapter. The compiler's own is
+/// [`driver`]'s; this is the same construction over any module, so that a
+/// registry or a term that no longer matches Lean can be rendered and run to
+/// see the drift it is caught as (§22.10).
+///
+/// # Errors
+///
+/// Returns the reason the driver's declarations do not check against the
+/// module, or the module does not render.
+pub fn driver_of(
+    mut module: ToolingModule,
+    semantic_hex32: &str,
+    roots: &[String],
+    modules: &[String],
+) -> Result<Driver, String> {
+    let mut probes = Vec::new();
+    let (mut calls, mut plumbing, mut opaques) = (Vec::new(), Vec::new(), Vec::new());
+    let mut types = Vec::new();
+    for declaration in &module.declarations {
+        match declaration {
+            ToolDeclaration::Call {
+                name, signature, ..
+            } => {
+                calls.push(name.clone());
+                probes.push(ToolDeclaration::Invoke {
+                    command: PROBE_COMMAND.to_owned(),
+                    arguments: vec![
+                        InvokeArgument::Ident {
+                            value: name.clone(),
+                        },
+                        InvokeArgument::Type {
+                            value: signature.clone(),
+                        },
+                    ],
+                });
+            }
+            ToolDeclaration::Type {
+                name,
+                constructors,
+                opaque,
+                alias,
+                ..
+            } => {
+                if *opaque || alias.is_some() {
+                    opaques.push(name.clone());
+                } else {
+                    types.push((
+                        name.clone(),
+                        constructors
+                            .iter()
+                            .map(|constructor| constructor.name.clone())
+                            .collect::<Vec<_>>(),
+                    ));
+                }
+            }
+            ToolDeclaration::Plumbing { names } => plumbing.extend(names.iter().cloned()),
+            _ => {}
+        }
     }
-    // Lean reports every message on standard output, where the record must
-    // stand alone; a registered signature binds instance arguments by name.
-    text.push_str("set_option linter.unusedVariables false\n");
-    let adapter_start = text.lines().count() + 1;
-    text.push_str(adapter);
-    if !text.ends_with('\n') {
-        text.push('\n');
-    }
-    let adapter_end = text.lines().count();
-    let mut universes = BTreeSet::new();
-    for call in &authority.call {
-        signature_universes(&call.signature, &mut universes);
-    }
-    if !universes.is_empty() {
-        text.push_str(&format!(
-            "universe {}\n",
-            universes.into_iter().collect::<Vec<_>>().join(" ")
-        ));
-    }
-    let mut probe_lines = BTreeMap::new();
-    for call in &authority.call {
-        probe_lines.insert(text.lines().count() + 1, call.name.clone());
-        text.push_str(&format!(
-            "lexlean_signature {} : {}\n",
-            call.name, call.signature
-        ));
-    }
-    let list = |names: &mut dyn Iterator<Item = &String>| {
-        format!(
-            "#[{}]",
-            names
-                .map(|name| name_literal(name))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
+    let first_driver_declaration = module.declarations.len();
+    module.declarations.extend(probes);
+    let string_array = ToolType::Const {
+        name: "Array".to_owned(),
+        arguments: vec![ToolType::Const {
+            name: "String".to_owned(),
+            arguments: Vec::new(),
+        }],
     };
-    let types = authority
-        .types
-        .iter()
-        .map(|row| {
-            format!(
-                "({}, #[{}])",
-                name_literal(&row.name),
-                row.constructors
-                    .iter()
-                    .map(|constructor| string_literal(constructor))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
-    let authority_line = text.lines().count() + 1;
-    text.push_str(&format!(
-        "#eval LexLeanExtract.checkAuthority {} #[{types}] {}\n",
-        list(&mut authority.call.iter().map(|call| &call.name)),
-        list(&mut authority.plumbing.iter())
+    let row_type = ToolType::Const {
+        name: "Prod".to_owned(),
+        arguments: vec![
+            ToolType::Const {
+                name: "String".to_owned(),
+                arguments: Vec::new(),
+            },
+            string_array,
+        ],
+    };
+    let rows = ToolTerm::Array {
+        element: row_type,
+        elements: types
+            .iter()
+            .map(|(name, constructors)| ToolTerm::Construct {
+                constructor: "Prod.mk".to_owned(),
+                type_arguments: vec![
+                    ToolType::Const {
+                        name: "String".to_owned(),
+                        arguments: Vec::new(),
+                    },
+                    ToolType::Const {
+                        name: "Array".to_owned(),
+                        arguments: vec![ToolType::Const {
+                            name: "String".to_owned(),
+                            arguments: Vec::new(),
+                        }],
+                    },
+                ],
+                arguments: vec![
+                    ToolTerm::String {
+                        value: name.clone(),
+                    },
+                    texts(constructors),
+                ],
+            })
+            .collect(),
+    };
+    module.declarations.push(ToolDeclaration::Evaluate {
+        function: CHECK_FUNCTION.to_owned(),
+        arguments: vec![texts(&calls), rows, texts(&opaques), texts(&plumbing)],
+    });
+    module.declarations.push(ToolDeclaration::Evaluate {
+        function: RUN_FUNCTION.to_owned(),
+        arguments: vec![texts(roots), texts(modules)],
+    });
+    crate::ir::tooling_check::check(&module)
+        .map_err(|failure| format!("the extraction module: {}", failure.reason))?;
+    let rendered = crate::backend::tooling::lean_text(&module, modules, "")
+        .map_err(|diagnostic| format!("the extraction module: {}", diagnostic.message))?;
+    let mut parts = Vec::new();
+    parts.push((
+        0,
+        rendered.starts.first().copied().unwrap_or(rendered.end),
+        Part::Header,
     ));
-    text.push_str(&format!(
-        "#eval LexLeanExtract.main {} {}\n",
-        list(&mut roots.iter()),
-        list(&mut modules.iter())
-    ));
+    for (index, declaration) in module.declarations.iter().enumerate() {
+        let start = rendered.starts[index];
+        let end = rendered
+            .starts
+            .get(index + 1)
+            .copied()
+            .unwrap_or(rendered.end);
+        if start == end {
+            continue;
+        }
+        let part = match declaration {
+            ToolDeclaration::Invoke { arguments, .. } if index >= first_driver_declaration => {
+                match arguments.first() {
+                    Some(InvokeArgument::Ident { value }) => Part::Probe(value.clone()),
+                    _ => Part::Adapter("a probe".to_owned()),
+                }
+            }
+            ToolDeclaration::Evaluate { function, .. } if function == CHECK_FUNCTION => {
+                Part::Registry
+            }
+            ToolDeclaration::Evaluate { .. } => Part::Roots,
+            ToolDeclaration::Function { name, .. } | ToolDeclaration::Command { name, .. } => {
+                Part::Adapter(name.clone())
+            }
+            other => Part::Adapter(other.kind().to_owned()),
+        };
+        parts.push((start, end, part));
+    }
     Ok(Driver {
         name: driver_name(semantic_hex32),
-        text,
-        probe_lines,
-        authority_line,
-        adapter_lines: (adapter_start, adapter_end),
+        text: rendered.text,
+        parts,
     })
 }
 
@@ -313,23 +361,47 @@ pub enum Rejection {
     Rejected(String),
 }
 
-/// The drift a Lean message shows, if any: any message on a probe line, on
-/// the registry check, or inside the pinned adapter, and any message the
-/// adapter raises as drift.
+/// The part of the generated module a 1-based line of its text lies in.
+fn part_at(driver: &Driver, line: usize) -> Option<&Part> {
+    let offset: usize = driver
+        .text
+        .split_inclusive('\n')
+        .take(line.saturating_sub(1))
+        .map(str::len)
+        .sum();
+    driver
+        .parts
+        .iter()
+        .find(|(start, end, _)| (*start..*end).contains(&offset))
+        .map(|(_, _, part)| part)
+}
+
+/// The drift a Lean message shows, if any: any message on a probe, on the
+/// registry check, or inside the adapter, and any message the adapter raises
+/// as drift.
 fn drift_of(driver: &Driver, message: &crate::verify::LeanMessage) -> Option<String> {
-    if let Some(call) = driver.probe_lines.get(&message.line) {
-        return Some(format!(
-            "the signature of `{call}` no longer matches the pinned registry: {}",
-            message.message
-        ));
+    match part_at(driver, message.line) {
+        Some(Part::Probe(call)) => {
+            return Some(format!(
+                "the signature of `{call}` no longer matches the pinned registry: {}",
+                message.message
+            ));
+        }
+        Some(Part::Registry) => {
+            return Some(format!(
+                "the adapter's constants no longer match the pinned registry: {}",
+                message.message
+            ));
+        }
+        _ => {}
     }
-    if message.line == driver.authority_line || message.message.contains("lexlean-extract-drift") {
+    if message.message.contains("lexlean-extract-drift") {
         return Some(format!(
             "the adapter's constants no longer match the pinned registry: {}",
             message.message
         ));
     }
-    if (driver.adapter_lines.0..=driver.adapter_lines.1).contains(&message.line) {
+    if matches!(part_at(driver, message.line), Some(Part::Adapter(_))) {
         return Some(format!(
             "the pinned extraction adapter no longer elaborates cleanly: {}",
             message.message
@@ -1263,7 +1335,6 @@ fn compiler_input_nested(
     modules: &[String],
     reports: &[&ModuleReport],
 ) -> Result<CompilerInput, Rejection> {
-    let authority = authority().map_err(Rejection::Drift)?;
     if let Some(rejection) = stray_output(driver, output) {
         return Err(rejection);
     }
@@ -1283,10 +1354,13 @@ fn compiler_input_nested(
             raw.spec
         )));
     }
-    if raw.lean.version != authority.lean_version || raw.lean.githash != authority.lean_githash {
+    if raw.lean.version != crate::LEAN_VERSION || raw.lean.githash != crate::LEAN_GITHASH {
         return Err(Rejection::Drift(format!(
             "Lean reports version {} at {}, but the authority is pinned to {} at {}",
-            raw.lean.version, raw.lean.githash, authority.lean_version, authority.lean_githash
+            raw.lean.version,
+            raw.lean.githash,
+            crate::LEAN_VERSION,
+            crate::LEAN_GITHASH
         )));
     }
     if raw.roots != roots {

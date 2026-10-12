@@ -20,6 +20,9 @@ pub mod fixtures;
 pub mod gnaf;
 pub mod gnaf_model;
 pub mod inventory;
+pub mod lcnf_adapter;
+pub mod lcnf_extract;
+pub mod lcnf_registry;
 mod lx;
 pub mod machine;
 pub mod meta;
@@ -36,6 +39,8 @@ pub mod rust_packages;
 pub mod rust_source;
 pub mod schema;
 pub mod stress;
+pub mod tl;
+pub mod tooling;
 
 pub mod support;
 

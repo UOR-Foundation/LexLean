@@ -1870,10 +1870,12 @@ fn skip_value(bytes: &[u8], mut position: usize) -> Option<usize> {
 }
 
 /// The byte range of every element of the `declarations` array of the
-/// module's semantic data in the normalized source, in order.
-fn declaration_spans(source: &str) -> Option<Vec<(usize, usize)>> {
+/// module's data under the control `control` (`\semanticdata{`, or
+/// `\toolingdata{` for a tooling module, SPEC.md §17.20) in the normalized
+/// source, in order.
+pub(crate) fn declaration_spans_in(source: &str, control: &str) -> Option<Vec<(usize, usize)>> {
     let bytes = source.as_bytes();
-    let data = source.find("\\semanticdata{")? + "\\semanticdata{".len();
+    let data = source.find(control)? + control.len();
     let mut position = skip_whitespace(bytes, data);
     if bytes.get(position) != Some(&b'{') {
         return None;
@@ -1926,7 +1928,49 @@ fn emit_declarations(
     starts: &[usize],
     end: usize,
 ) -> Result<Emitter, Diagnostic> {
-    let spans = declaration_spans(&checked.normalized)
+    emit_declarations_for(
+        checked,
+        text,
+        kind,
+        starts,
+        end,
+        &DeclarationSource {
+            control: "\\semanticdata{",
+            owner: "lexlean.core::semanticdata",
+            node: "semantic-declaration",
+            skip_blank: false,
+        },
+    )
+}
+
+/// Which data control a module's declarations are written under, and what
+/// their mapping rows are called.
+pub(crate) struct DeclarationSource<'a> {
+    /// The control that opens the data, with its brace.
+    pub control: &'a str,
+    /// The coverage owner of the metadata rows.
+    pub owner: &'a str,
+    /// The kind of each declaration's mapping node.
+    pub node: &'a str,
+    /// Whether a declaration whose rendering is blank has no piece. A
+    /// semantic module's blank rendering is the separator its neighbours
+    /// carry, and it is output like any other, so it keeps its piece.
+    pub skip_blank: bool,
+}
+
+/// [`emit_declarations`] for any module kind whose declarations are the
+/// elements of a `declarations` array under `source.control`. A declaration
+/// whose rendering is empty (a registry row that has no Lean of its own)
+/// has no piece.
+pub(crate) fn emit_declarations_for(
+    checked: &CheckedModule,
+    text: &str,
+    kind: &str,
+    starts: &[usize],
+    end: usize,
+    source: &DeclarationSource<'_>,
+) -> Result<Emitter, Diagnostic> {
+    let spans = declaration_spans_in(&checked.normalized, source.control)
         .filter(|spans| spans.len() == starts.len())
         .ok_or_else(|| {
             Diagnostic::new(
@@ -1935,7 +1979,7 @@ fn emit_declarations(
             )
         })?;
     let origin = || Origin::Metadata {
-        owner: "lexlean.core::semanticdata".to_owned(),
+        owner: source.owner.to_owned(),
     };
     let whole = EmitSource::File(0, checked.normalized.len());
     let mut emitter = Emitter::new();
@@ -1951,7 +1995,10 @@ fn emit_declarations(
     );
     for (index, (start, span)) in starts.iter().zip(&spans).enumerate() {
         let stop = starts.get(index + 1).copied().unwrap_or(end);
-        let node = emitter.node("semantic-declaration");
+        if source.skip_blank && text[*start..stop].trim().is_empty() {
+            continue;
+        }
+        let node = emitter.node(source.node);
         emitter.piece(
             &text[*start..stop],
             kind,
@@ -2689,7 +2736,7 @@ pub fn render_lean(
     }
 }
 
-fn tex_escape(text: &str) -> String {
+pub(crate) fn tex_escape(text: &str) -> String {
     let mut out = String::new();
     for character in text.chars() {
         match character {
@@ -3544,7 +3591,11 @@ pub fn render_latex(
 
 #[cfg(test)]
 mod declaration_span_tests {
-    use super::declaration_spans;
+    use super::declaration_spans_in;
+
+    fn declaration_spans(source: &str) -> Option<Vec<(usize, usize)>> {
+        declaration_spans_in(source, "\\semanticdata{")
+    }
 
     #[test]
     fn spans_are_the_declaration_objects_whatever_the_layout() {
