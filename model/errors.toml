@@ -496,3 +496,10 @@ class = "environment"
 exit = 3
 title = "Invalid verification resource profile"
 statement = "The operational verification process width the environment selects is not a decimal integer from 1 to 64."
+
+[[error]]
+code = "LLV7018"
+class = "environment"
+exit = 3
+title = "Child start refused or child ended by the embedding host"
+statement = "The program that embeds the library ended the live child processes (§24.6): a child that was running was ended by it, or a child was not started because the library was in the shutdown state that call enters and the host had not allowed new children again."

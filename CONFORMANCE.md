@@ -75,6 +75,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `CL-19` | `build` | Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend. |
 | `CL-20` | `build` | Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module. |
 | `CL-21` | `build` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. |
+| `CL-22` | `build` | A host that embeds the library ends every child process group the library started and has not seen exit by calling lexlean::verify::end_live_children, which reports each group as ended, already gone, or not ended with the OS error, installs no signal handler, changes no signal disposition, never signals the host's own process or process group, and refuses every later child start with LLV7018 until the host calls allow_new_children; no child started before or concurrently with the call survives it, and the executable's interrupt thread ends its children through the same function, the only code that ends a process group or tree. |
 
 ## configuration-lock
 

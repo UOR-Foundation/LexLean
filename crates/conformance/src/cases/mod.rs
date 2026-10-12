@@ -15,6 +15,7 @@ mod examples;
 mod extraction;
 mod gnaf;
 mod grammar;
+mod host_children;
 mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;

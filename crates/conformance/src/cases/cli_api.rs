@@ -1,4 +1,4 @@
-//! The `cli-api` suite: CL-01..CL-21.
+//! The `cli-api` suite: CL-01..CL-22.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -1004,6 +1004,8 @@ pub(crate) fn run(id: &str) {
             }
         }
         "CL-21" => super::typed_diagnostics::run(),
+        // §17.17, §24.6: the host-driven end of the library's children.
+        "CL-22" => super::host_children::run(),
         other => panic!("no cli-api case is wired for {other}"),
     }
 }

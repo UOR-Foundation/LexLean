@@ -429,3 +429,9 @@ Class: `language`. Exit code: 1.
 The operational verification process width the environment selects is not a decimal integer from 1 to 64.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7018` --- Child start refused or child ended by the embedding host
+
+The program that embeds the library ended the live child processes (§24.6): a child that was running was ended by it, or a child was not started because the library was in the shutdown state that call enters and the host had not allowed new children again.
+
+Class: `environment`. Exit code: 3.

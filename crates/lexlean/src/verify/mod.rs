@@ -52,6 +52,11 @@ use crate::verify::child::{run as run_child, ChildHome, ChildRecord, ChildSpec, 
 use crate::verify::operational::Operational;
 use crate::verify::toolchain::Toolchain;
 
+/// The host-driven end of the children the library started (§24.6).
+pub use crate::verify::lifeline::{
+    allow_new_children, end_live_children, EndReport, EndedGroup, GroupOutcome,
+};
+
 /// The outcome of a successful verification.
 pub struct VerifyOutcome {
     /// The attestation ID.

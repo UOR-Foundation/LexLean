@@ -15,6 +15,28 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- A public, host-driven end of the children the library started (SPEC.md
+  §17.17, §22.3, §24.6, `CL-22`, new `LLV7018`). A program that embeds the
+  library and is interrupted or shut down used to leave its `lean` (or `lake`,
+  `leanchecker`, `git`) running, because each child leads a process group of
+  its own and only the executable's interrupt thread could end them.
+  `lexlean::verify::end_live_children` now ends every child process group the
+  library has started in the process and not seen exit, and reports each as
+  `Ended`, `AlreadyGone`, or `Failed` with the operating system's error, never
+  a bare success. The call enters a shutdown state under the lock a child start
+  registers under, so a start concurrent with it is either ended by it or
+  refused, and every later start is refused with `LLV7018` until
+  `allow_new_children`; a run whose child was ended returns `LLV7018` rather
+  than the tool's failure. The library still installs no signal handler,
+  changes no disposition, and never signals the host's process or group; the
+  function is callable from any ordinary thread and is not async-signal-safe.
+  The executable's interrupt thread calls the same function, and a child's
+  timeout reaches the same `end_groups`, so one implementation ends a group or
+  tree. On Windows a failing `taskkill` is `AlreadyGone` only when `tasklist`
+  no longer lists the process (`taskkill` exits 128 for a missing process and
+  for a denied one alike). No output, semantic ID, build ID, verified
+  artifact, attestation, or golden changes. The register has 339 conformance
+  IDs and 71 codes.
 - Differential validation oracle (SPEC.md §17.19, `OR-01`..`OR-08`, no new
   diagnostic code): the independent Lean 4 to Rust generator `lean4-prod`
   (`https://github.com/auser/lean4-prod`) is pinned in

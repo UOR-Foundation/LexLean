@@ -20,9 +20,11 @@ walkdir = { workspace = true }
 
 # A timeout ends the process group of the oracle's tools (`lake` starts
 # `lean`, `cargo` starts `rustc`); `rustix` signals a group without unsafe
-# code and without a `kill` executable.
+# code and without a `kill` executable. `signal-hook` is the CL-22 host's own
+# handling of SIGINT and SIGTERM, beside which the library must install none.
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true }
+signal-hook = { workspace = true }
 
 [lints]
 workspace = true

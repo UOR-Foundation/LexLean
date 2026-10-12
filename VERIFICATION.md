@@ -5818,3 +5818,138 @@ was removed.
 - **a malformed width.** `invalid-verify-width` (`LEXLEAN_VERIFY_WIDTH=0`) is a
   negative fixture of §28.5: `verify` exits 3 with `LLV7017` before the build is
   published, on every host.
+
+## Ending the children a host started (Issue #67)
+
+A program that embeds the library used to have no way to end the children it
+started through it: each child leads a process group of its own (Issue #25), so
+the host's Ctrl-C does not reach it, and only the executable's interrupt thread
+could end the groups. `lexlean::verify::end_live_children` (SPEC.md §24.6) is
+now that way, and the executable's thread is its first user.
+
+`crates/lexlean/src/verify/lifeline.rs` holds the registry of live children and
+the shutdown state under one lock. `spawn` takes the lock, refuses in the
+shutdown state, starts the child, and registers it before releasing it;
+`end_live_children` takes the lock, enters the shutdown state, marks every
+registered child as ended by the host, and ends the groups through
+`end_groups`, the one implementation of ending a group (unix: `SIGKILL` to the
+group through `rustix`, then a wait of two seconds at most in which a zombie
+counts as ended and the zombies that are this process's children, other than
+the leader, are reaped by `waitpid` of their ID) or a tree (windows:
+`taskkill /T /F`, and `tasklist` when it fails). A child's timeout (`child::stop`)
+reaches the same `end_groups`, and the thread the executable's `main` arms calls
+`end_live_children` and nothing else. `child::run` reports a start refused in the
+shutdown state, and a child the host ended, as `LLV7018` (environment, exit 3).
+
+`conformance_cl_22` (`crates/conformance/src/cases/host_children.rs`) runs each
+scenario as a host of its own, a second run of the conformance binary in a
+separate process, because the shutdown state belongs to the process and the
+binary's other cases start children: a host that calls `lexlean::cli::run`
+(`lock --allow-network` with a `git` that starts a long-running `sleep` in its
+group) and ends it from an ordinary thread; hosts that register their own
+`SIGINT` and `SIGTERM` handling, are sent the real signal, call the function
+from the thread their handler wakes, and then clean up and exit with their own
+status, one leading its process group and one a member of a group a shell
+leads; and a host that ends a running child, finds a second call idempotent,
+is refused a start, is allowed again, and then runs rounds in which eight
+threads start children at a barrier while it calls the function. Every host
+compares its process ID, its process group, and the signals it catches and
+ignores (`SigCgt` and `SigIgn` of `/proc/self/status`, or the `caught` and
+`ignored` columns of `ps` by its absolute path, an error where there is
+neither) before and after, and keeps a process of its own group that must
+outlive the call. The process table is `/proc` or `ps`, so the case is not
+vacuous on macOS. On windows the child is the conformance binary again, which
+starts a leaf that records its process ID; the unix scenarios are compiled
+out, and the outcome of `taskkill` is a unit test. The case then reads the
+shipped crate and requires that a process group is signalled only in
+`signal_group`, a tree is ended only in `end_tree`, no shipped code signals a
+single process, `end_groups` is reached only from `stop` and
+`end_live_children`, and the interrupt thread calls `end_live_children` and no
+kill of its own. Its stress rounds pass without a timing assumption: a run
+that is still going 20 seconds after the call is a survivor, which a correct
+registry never leaves, and every wait is a bounded wait for a condition.
+
+The unit tests in `lifeline.rs` are `a_signal_error_is_the_outcome` (`EPERM` is
+`Failed` with the operating system's error, `ESRCH` is `AlreadyGone`, and a
+report with a failure is not `all_ended`), `the_hosts_own_group_is_never_signalled`,
+and `a_failing_taskkill_is_reported` (moved from `child.rs`; a `taskkill` that
+exits 128 is `AlreadyGone` only when the process is not listed).
+
+Runs. Linux x86-64 (Ubuntu under WSL 2): `conformance_cl_22` passes in about
+one second and adds no Lean invocation; ten consecutive runs passed, and in each
+the 96 concurrent starts of the stress rounds split between children the call
+ended (18 to 49) and starts it refused (47 to 78), so both sides of the race are
+exercised every time. Windows x86-64 (built with the `x86_64-pc-windows-gnu`
+toolchain, the host having no MSVC linker): the case passes in 3.7 seconds,
+its 12 concurrent starts split 3 ended and 9 refused, and `cargo clippy
+-p lexlean -p repo-conformance --all-targets -- -D warnings` is clean, as on
+Linux. macOS was not run locally; the host matrix of CI runs it, where the
+process table and the dispositions are read through `ps`.
+
+### the host-driven end can fail
+
+Each record is a defect planted on a copy of the branch, the command run, and
+the failure observed (paths shortened), after which the defect was removed.
+
+- **only the direct child is ended.** `kill_process_group(group, …)` replaced by
+  `kill_process(group, …)` in `signal_group`. `cargo test -p repo-conformance
+  --test conformance -- --exact conformance_cl_22`:
+
+  ```text
+  thread 'conformance_cl_22' panicked at crates/conformance/src/cases/host_children.rs:476:9:
+  EndReport { groups: [EndedGroup { group: 6772, outcome: Failed(Custom { kind: TimedOut, error: "processes of group 6772 still existed 2000 ms after SIGKILL" }) }] }
+  ```
+
+  (in the stress host, which then fails the case: `the stress host failed`).
+- **the host's own group is signalled.** `kill_process_group(host_group, …)` in
+  `signal_group`. Same command:
+
+  ```text
+  thread 'conformance_cl_22' panicked at crates/conformance/src/cases/host_children.rs:246:5:
+  the stress host failed (ExitStatus(unix_wait_status(9))): []
+  ```
+
+  The host was killed by its own group's `SIGKILL` before it could report.
+  `the_hosts_own_group_is_never_signalled` holds the refusal of the host's own
+  group in `signal_group` itself.
+- **a failing end is taken for success.** In `after_signal`, every error but
+  `ESRCH` made `AlreadyGone`. `cargo test -p lexlean --lib lifeline`:
+  `thread 'verify::lifeline::tests::a_signal_error_is_the_outcome' panicked at
+  crates/lexlean/src/verify/lifeline.rs:730:17: EPERM is a failure`. In
+  `taskkill_outcome`, a `taskkill` that ran and failed made `Ended`: `thread
+  'verify::lifeline::tests::a_failing_taskkill_is_reported' panicked at
+  crates/lexlean/src/verify/lifeline.rs:798:17: exit 128 with the process listed
+  (Some(true)) is a failure`.
+- **the executable's thread has a kill path of its own.** The thread's
+  `end_live_children()` replaced by a loop that signals every registered group
+  itself. `conformance_cl_22`:
+
+  ```text
+  thread 'conformance_cl_22' panicked at crates/conformance/src/cases/host_children.rs:104:5:
+    left: [("verify/lifeline.rs", "install"), ("verify/lifeline.rs", "signal_group")]
+   right: [("verify/lifeline.rs", "signal_group")]
+  ```
+
+  `cargo test -p lexlean --test interrupt` still passes with this defect (the
+  bypass ends the groups too), which is why the single path is checked on the
+  source.
+- **the shutdown state is dropped.** The refusal removed from `spawn`.
+  `conformance_cl_22`, after 20 seconds:
+
+  ```text
+  thread 'conformance_cl_22' panicked at crates/conformance/src/cases/host_children.rs:306:17:
+  a child started in the shutdown state
+  ```
+
+- **the registration lock is removed.** `spawn` releases the lock after reading
+  the state and takes it again to register the child it started. `conformance_cl_22`
+  failed on each of five runs, in rounds 1, 1, 0, 7, and 0:
+
+  ```text
+  thread 'conformance_cl_22' panicked at crates/conformance/src/cases/host_children.rs:518:21:
+  round 1: a child started concurrently with the call survived it: ["5496 sleep 1000.5462 ", "5497 sleep 1000.5462 ", "5498 sleep 1000.5462 ", "5499 sleep 1000.5462 ", "5500 sleep 1000.5462 ", "5502 sleep 1000.5462 ", "5513 sleep 1000.5462 "]
+  ```
+
+  Detection of this defect depends on an interleaving and is not certain on
+  every run; a pass of the unplanted case does not, since a correct registry
+  leaves no survivor in any interleaving.

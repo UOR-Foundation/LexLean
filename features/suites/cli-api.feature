@@ -158,3 +158,11 @@ Feature: cli-api
     And exact package identities and validated reverse import reachability distinguish connected and disconnected packages independent of source order
     And module, denotation, binder, notation, and segmentation failures are not misclassified
     And repaired and explicitly qualified projects pass while existing diagnostic JSON bytes remain unchanged
+
+  @CL-22 @build
+  Scenario: A host that embeds the library ends every child process group the library started and has not seen exit by calling lexlean::verify::end_live_children, which reports each group as ended, already gone, or not ended with the OS error, installs no signal handler, changes no signal disposition, never signals the host's own process or process group, and refuses every later child start with LLV7018 until the host calls allow_new_children; no child started before or concurrently with the call survives it, and the executable's interrupt thread ends its children through the same function, the only code that ends a process group or tree.
+    Given a host process that embeds the library, registers its own SIGINT and SIGTERM handling, and runs `lexlean::cli::run` for a project whose child tool starts a long-running grandchild in the child's process group
+    When the host calls `lexlean::verify::end_live_children` from an ordinary thread, from its own handler's thread after a real SIGINT or SIGTERM, with no child live, twice, and while several threads start children at once
+    Then no process of any group the library started is left running, every group is reported ended or already gone, and the interrupted run returns LLV7018 instead of hanging
+    And the host survives to run its own cleanup and exit status with its pid, process group, a sibling of its group, and every signal disposition unchanged, whether or not it leads its group
+    And every child start after the call is refused with LLV7018 until `allow_new_children`, a signal error such as EPERM and a failing taskkill are reported with the OS error, and the shipped crate ends a process group or tree only in `end_group`, which the executable's interrupt thread reaches through `end_live_children`

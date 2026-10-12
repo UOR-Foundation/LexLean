@@ -4590,20 +4590,30 @@ that is a zombie is ended, not running (a compiler that runs as PID 1, as the
 shipped image does, is the parent of the grandchildren it killed, reaps the
 ones it can, and does not wait for the rest). A child in a group of its
 own is not reached by the terminal's Ctrl-C, nor by the `SIGTERM` that
-`timeout(1)` or a service manager sends to the compiler alone, so the
-`lexlean` executable (and no embedding host: the library never installs a
-signal handler, and a host that calls `lexlean::cli::run` keeps its own
-signals and its own termination) watches for `SIGINT`, `SIGTERM`, `SIGHUP`,
-and `SIGQUIT` from the first child on, kills every live child group when one
-arrives, and then lets the signal end the process as it would have (the exit
-status is the signal's). A signal that the process was started ignoring (what
+`timeout(1)` or a service manager sends to the process that started it alone,
+so the library registers every child it starts until it has seen it exit, and
+the public function `lexlean::verify::end_live_children` (§24.6) ends every
+registered group, reports what became of each, and refuses later child starts
+until the host allows them again. That function and the timeout above end a
+group through one implementation; nothing else in the compiler ends a process
+group or tree. The `lexlean` executable is the function's first user: it
+watches for `SIGINT`, `SIGTERM`, `SIGHUP`, and `SIGQUIT` from the first child
+on, calls the function when one arrives, and then lets the signal end the
+process as it would have (the exit status is the signal's). A program that
+embeds the library calls the function itself, from its own signal handling,
+its own shutdown path, or a timeout of its own: the library installs no signal
+handler for it, changes no signal disposition, and never signals or terminates
+it or its process group (§24.6). A signal that the process was started ignoring (what
 `nohup` does to `SIGHUP`, and a non-interactive shell to `SIGINT` and
 `SIGQUIT` of a background job) is not watched and stays ignored; on a host that
 can report neither `/proc/self/status` nor `ps -o ignored`, `SIGHUP` is not
 watched. The test suite of the crate runs the real `lexlean` and sends it each, while a child
 is running, and requires that nothing the child started is left, that an
 ignored signal ends neither the run nor its child, and that an embedded run
-leaves the host's `SIGTERM` handling alone (`SIGKILL` cannot be caught by any
+leaves the host's `SIGTERM` handling alone; `conformance_cl_22` runs programs
+that embed the library and end their children through the function from an
+ordinary thread, from the thread of their own `SIGINT` and `SIGTERM` handling,
+and while other threads start children (`SIGKILL` cannot be caught by any
 process, so a compiler killed that way leaves its children). The staging
 directories of `verify` (`<build_root>/verified/.staging-*`), which an
 interrupted or killed run cannot remove, are removed by the next `verify` of
@@ -6466,6 +6476,8 @@ LexLean does not request or include `.ilean`. Editor-information artifacts are n
 
 Any nonzero exit, warning, unknown informational message, missing `.olean`, or output overflow fails verification.
 
+Each compilation, like every child of `verify`, leads a process group of its own and is registered until it has been seen to exit (§17.17): a timeout ends its group, and so does `lexlean::verify::end_live_children` when the program that embeds the library, or the executable's interrupt, calls it (§24.6). A compilation ended that way fails verification with `LLV7018`, and nothing is published.
+
 ### 22.4 `leanchecker`
 
 For each generated module, sorted by full module name, LexLean invokes the pinned `leanchecker` in a separate process with that module prefix.
@@ -7114,6 +7126,95 @@ change or a claim of unchanged struct-literal source compatibility.
 
 No public function panics for malformed user input, filesystem races, child failure, invalid UTF-8 input, invalid TOML/JSON, or unexpected external output.
 
+### 24.6 Ending the children a host started
+
+A program that embeds the library ends the child processes it started through
+it with two functions of `lexlean::verify`, part of the embedding surface and
+versioned with it:
+
+```rust
+pub fn end_live_children() -> EndReport;
+pub fn allow_new_children();
+
+pub struct EndReport {
+    pub groups: Vec<EndedGroup>,
+}
+
+impl EndReport {
+    pub fn all_ended(&self) -> bool;
+    pub fn failures(&self) -> impl Iterator<Item = &EndedGroup>;
+}
+
+pub struct EndedGroup {
+    pub group: u32,
+    pub outcome: GroupOutcome,
+}
+
+pub enum GroupOutcome {
+    Ended,
+    AlreadyGone,
+    Failed(std::io::Error),
+}
+```
+
+**Contract.** `end_live_children` ends every child process group (unix) or
+process tree (windows) that the library has started in this process and has
+not yet seen exit, whichever thread started it and whatever entry point
+(`Engine`, `cli::run`) did. It returns one `EndedGroup` per such group, in the
+order they were started: `group` is the process ID of the child the library
+started, which leads the group; `Ended` when it was signalled and no process
+of it is running any more; `AlreadyGone` when nothing of it was running when
+the call came; `Failed` with the operating system's error when it could not be
+ended (the group could not be signalled, `EPERM` for example; it was still
+there two seconds after `SIGKILL`; or `taskkill` failed or could not be run),
+in which case its processes may still be running. A failure is never reported
+as an end, and `all_ended` is false while any group failed. A call with no live
+child signals nothing and returns no group; a second call finds what the first
+ended gone, or no longer registered. These two functions are the exception to
+§24.5: ending is per group and cannot fail as a whole, so the result is the
+report rather than a `LexLeanError`.
+
+**The host is left alone.** The library installs no signal handler for this
+and changes no signal disposition: the host decides when its children end,
+from its own signal handling, its own shutdown path, or a timeout of its own.
+The function never signals or terminates the calling process or its process
+group, whether or not the host leads its group: a registered group that is the
+host's own is refused with `PermissionDenied` and not signalled. A process of a
+group that is a zombie has ended; the zombies of a group that are children of
+the calling process are reaped by process ID, never by a wait for any child,
+and never the child that leads the group, which the thread that started it
+waits for, so a host that waits for its own children is not disturbed.
+
+**Thread safety.** Both functions may be called from any ordinary thread,
+concurrently with child starts and with each other. They are not
+async-signal-safe (they take a lock, allocate, and may run `ps` or
+`taskkill`) and must not be called from inside a signal handler; a host that
+ends its children on a signal calls `end_live_children` from a thread its
+handler wakes, as the `lexlean` executable does (§17.17).
+
+**Shutdown state.** `end_live_children` enters a shutdown state before it ends
+anything, under the lock that a child start holds while it checks the state,
+starts the child, and registers it. A start that took the lock first is
+registered and is ended by the call; a start that comes after it is refused.
+In the shutdown state every child start is refused with `LLV7018` and no
+process is created, until the host calls `allow_new_children`, which leaves the
+state and has no other effect. A run whose child the call ended returns
+`LLV7018` too, rather than the tool's own failure. No child started before or
+concurrently with the call is left running after it. The `lexlean` executable
+never calls `allow_new_children`: the signal that made it end its children
+ends it.
+
+**Platforms.** On unix every group is sent `SIGKILL` directly through the
+audited signalling dependency (§8.5; no `kill` executable, no `PATH`), and all
+are then awaited for two seconds at most; the process table is `/proc` where
+the host has one and `ps` by its absolute path otherwise. On windows the tree
+of each child is ended with `taskkill /PID <id> /T /F`, and `Ended` means that
+`taskkill` succeeded (it begins the termination of each process of the tree,
+which the system completes); since `taskkill` exits 128 both for a process that
+is gone and for one it was denied, a failing `taskkill` is `AlreadyGone` only
+when `tasklist` no longer lists the process, and `Failed` with the failure
+otherwise.
+
 ---
 
 ## 25. Security and operational behavior
@@ -7281,6 +7382,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7015` | Certificate B rejected (§17.17). |
 | `LLV7016` | Certificate E rejected (§17.17). |
 | `LLV7017` | Invalid verification resource profile (§22.11). |
+| `LLV7018` | Child start refused or child ended by the embedding host (§17.17, §24.6). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -8194,6 +8296,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-19` | `cli-api` | Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend. | §24.1 |
 | `CL-20` | `cli-api` | Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module. | §23.4 |
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
+| `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit by calling lexlean::verify::end_live_children, which reports each group as ended, already gone, or not ended with the OS error, installs no signal handler, changes no signal disposition, never signals the host's own process or process group, and refuses every later child start with LLV7018 until the host calls allow_new_children; no child started before or concurrently with the call survives it, and the executable's interrupt thread ends its children through the same function, the only code that ends a process group or tree. | §17.17, §24.6 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -8305,7 +8408,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `OR-07` | `oracle` | An oracle that was not acquired, whose checkout is not the pin, that did not build, that crashed, was killed, overran its time (and with it everything it started), wrote nothing or an IR defining nothing, or whose generator failed without refusing a program, a fetch that fails leaving nothing that a later run takes for a checkout, a cache that is not the pin discarded and fetched once more, a transient failure of the network tried again twice and a permanent one not, and a comparison over no root or no case, are each unavailable and never validated, which fails the gate on the normative host and is reported as not validated elsewhere, while the oracle's own structured refusals are answers and a tool that is not meant to overrun its time is given a generous one; and a disagreement fails closed with a record of both sides' evidence for every difference. | §17.19 |
 | `OR-08` | `oracle` | The oracle is validation evidence and an input to no identity: no file the shipped crate, the language data, the schemas, the compiler project, the committed examples' records, or the authority and ledger files hold names the oracle, its pinned commit, or its digest, so that planting any of them in any of those places fails audit-oracle-isolation; no input of the compiler-semantics ID names it, an oracle field in a build manifest, a preservation record, an attestation, a snapshot, a compiler input, or a GNAF certificate fails its closed schema, and no module of the conformance crate but the oracle's own uses it, so that removing it changes none of them. | §17.19, §27.2 |
 
-**Total required capability IDs:** 338.
+**Total required capability IDs:** 339.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
