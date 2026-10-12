@@ -1148,6 +1148,7 @@ pub(crate) fn run(id: &str) {
             );
             assert_eq!(row.exit, 3, "LLV7018 exits 3");
         }
+        "CL-23" => super::production_export::cli(),
         other => panic!("no cli-api case is wired for {other}"),
     }
 }

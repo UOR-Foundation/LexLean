@@ -25,6 +25,7 @@ mod operational;
 mod oracle;
 mod preservation;
 mod production;
+mod production_export;
 mod proofs;
 mod reasoning;
 mod repository;
@@ -97,6 +98,7 @@ pub fn run(id: &str) {
         "SE" => security::run(id),
         "EX" => examples::run(id),
         "PD" => production::run(id),
+        "PX" => production_export::run(id),
         "NE" => extraction::run(id),
         "TC" => calculus::run(id),
         "RB" => rust_backend::run(id),

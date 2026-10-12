@@ -1151,6 +1151,11 @@ fn conformance_cl_22() {
 }
 
 #[test]
+fn conformance_cl_23() {
+    repo_conformance::cases::run("CL-23");
+}
+
+#[test]
 fn conformance_se_01() {
     repo_conformance::cases::run("SE-01");
 }
@@ -1698,6 +1703,66 @@ fn conformance_or_07() {
 #[test]
 fn conformance_or_08() {
     repo_conformance::cases::run("OR-08");
+}
+
+#[test]
+fn conformance_px_01() {
+    repo_conformance::cases::run("PX-01");
+}
+
+#[test]
+fn conformance_px_02() {
+    repo_conformance::cases::run("PX-02");
+}
+
+#[test]
+fn conformance_px_03() {
+    repo_conformance::cases::run("PX-03");
+}
+
+#[test]
+fn conformance_px_04() {
+    repo_conformance::cases::run("PX-04");
+}
+
+#[test]
+fn conformance_px_05() {
+    repo_conformance::cases::run("PX-05");
+}
+
+#[test]
+fn conformance_px_06() {
+    repo_conformance::cases::run("PX-06");
+}
+
+#[test]
+fn conformance_px_07() {
+    repo_conformance::cases::run("PX-07");
+}
+
+#[test]
+fn conformance_px_08() {
+    repo_conformance::cases::run("PX-08");
+}
+
+#[test]
+fn conformance_px_09() {
+    repo_conformance::cases::run("PX-09");
+}
+
+#[test]
+fn conformance_px_10() {
+    repo_conformance::cases::run("PX-10");
+}
+
+#[test]
+fn conformance_px_11() {
+    repo_conformance::cases::run("PX-11");
+}
+
+#[test]
+fn conformance_px_12() {
+    repo_conformance::cases::run("PX-12");
 }
 
 #[test]

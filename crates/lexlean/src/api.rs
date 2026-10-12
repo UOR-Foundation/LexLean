@@ -19,6 +19,11 @@ use crate::project::Project;
 pub use crate::project::Selection;
 use crate::source::coverage::Coverage;
 
+// The production export contract (§24.7): the stable façade through which a
+// consumer compiles production roots to certified Rust packages and replays
+// the result without the source.
+pub mod production;
+
 /// The stable engine (§24.1).
 pub struct Engine {
     project: Project,
@@ -510,9 +515,28 @@ pub fn publish_build(
 fn publish_build_locked(
     project: &Project,
     build: &RenderedBuild,
+    guard: &MutationGuard,
+) -> Result<Utf8PathBuf, LexLeanError> {
+    publish_tree(
+        project,
+        "build",
+        &build.build_id.to_hex(),
+        &build.files,
+        guard,
+    )
+}
+
+/// Publish `files` atomically at `<build_root>/<area>/<name>`, a
+/// content-addressed directory (§21.8): staging, fsync, validate-before-reuse,
+/// rename. The build directory and the production bundle (§24.7) share it.
+fn publish_tree(
+    project: &Project,
+    area: &str,
+    name: &str,
+    files: &[(String, Vec<u8>)],
     _guard: &MutationGuard,
 ) -> Result<Utf8PathBuf, LexLeanError> {
-    let build_root_relative = format!("{}/build", project.config.build_root);
+    let build_root_relative = format!("{}/{area}", project.config.build_root);
     let build_root = project
         .confined_creatable(&build_root_relative)
         .map_err(LexLeanError::from_diagnostic)?;
@@ -522,8 +546,8 @@ fn publish_build_locked(
             format!("{build_root_relative}: {io_error}"),
         ))
     })?;
-    let target_relative = format!("{build_root_relative}/{}", build.build_id.to_hex());
-    let target = build_root.join(build.build_id.to_hex());
+    let target_relative = format!("{build_root_relative}/{name}");
+    let target = build_root.join(name);
     if std::fs::symlink_metadata(target.as_std_path()).is_ok() {
         // Existing content-addressed output is reused only after every
         // file validates against the new manifest and no extra file is
@@ -532,7 +556,7 @@ fn publish_build_locked(
         project
             .confined_dir(&target_relative)
             .map_err(LexLeanError::from_diagnostic)?;
-        for (relative, bytes) in &build.files {
+        for (relative, bytes) in files {
             let existing = std::fs::read(target.join(relative).as_std_path());
             match existing {
                 Ok(found) if found == *bytes => {}
@@ -540,14 +564,13 @@ fn publish_build_locked(
                     return Err(LexLeanError::from_diagnostic(Diagnostic::new(
                         code!("LLB6003"),
                         format!(
-                            "existing build directory {target_relative} does not validate against the manifest at `{relative}`; refusing to overwrite unexplained bytes"
+                            "existing {area} directory {target_relative} does not validate against the manifest at `{relative}`; refusing to overwrite unexplained bytes"
                         ),
                     )));
                 }
             }
         }
-        let expected: BTreeSet<&str> = build
-            .files
+        let expected: BTreeSet<&str> = files
             .iter()
             .map(|(relative, _)| relative.as_str())
             .collect();
@@ -567,7 +590,7 @@ fn publish_build_locked(
                 return Err(LexLeanError::from_diagnostic(Diagnostic::new(
                     code!("LLB6003"),
                     format!(
-                        "existing build directory {target_relative} holds the unexplained extra file `{relative}`; refusing to reuse it"
+                        "existing {area} directory {target_relative} holds the unexplained extra file `{relative}`; refusing to reuse it"
                     ),
                 )));
             }
@@ -588,7 +611,7 @@ fn publish_build_locked(
         use std::os::unix::fs::PermissionsExt;
         let _ = std::fs::set_permissions(staging.path(), std::fs::Permissions::from_mode(0o700));
     }
-    for (relative, bytes) in &build.files {
+    for (relative, bytes) in files {
         let destination = staging.path().join(relative);
         if let Some(parent) = destination.parent() {
             std::fs::create_dir_all(parent).map_err(|io_error| {

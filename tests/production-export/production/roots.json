@@ -1,0 +1,56 @@
+{
+  "roots": [
+    {
+      "name": "checked_sum",
+      "root": "Production.Main.checkedSum",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "halvings",
+      "root": "Production.Main.halvings",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "head_or",
+      "root": "Production.Main.headOr",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "quadruple",
+      "root": "Production.Main.quadruple",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "shape_area",
+      "root": "Production.Main.shapeArea",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sum_all",
+      "root": "Production.Main.sumAll",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

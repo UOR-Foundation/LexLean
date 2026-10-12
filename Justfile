@@ -58,6 +58,12 @@ inventory:
 calculus:
     cargo xtask check-calculus
 
+# §24.7: the production consumer's exported packages equal the committed
+# packages under tests/production-export. `just bdd` enforces the same
+# comparison through `conformance_px_01`; this recipe is the direct report.
+production-export:
+    cargo xtask check-production-export
+
 # §28.6: every example directory formats, locks, checks, builds, and verifies.
 examples:
     cargo xtask verify-examples
@@ -92,6 +98,11 @@ fixtures:
 # The only path that rewrites fixture expectations (§28.3). Never part of `vv`.
 fixtures-write:
     cargo xtask check-fixtures --write
+
+# §24.7: the only path that rewrites the expected production packages. Never
+# part of `vv`.
+production-export-write:
+    cargo xtask check-production-export --write
 
 # §17.14: the only path that rewrites the generated target fixtures. Never part
 # of `vv`.

@@ -130,11 +130,42 @@ enum CommandKind {
         /// The diagnostic code.
         code: String,
     },
+    /// Export production roots to certified Rust packages (§24.7).
+    Production {
+        #[command(subcommand)]
+        action: ProductionAction,
+    },
+}
+
+/// The production export actions (§24.7), mirroring `api::production`.
+#[derive(Subcommand)]
+enum ProductionAction {
+    /// Print the canonical target-descriptor document.
+    Targets,
+    /// Verify the project and publish the bundle a request names.
+    Build {
+        /// The `lexlean/production-request/1` file.
+        #[arg(long)]
+        request: Utf8PathBuf,
+    },
+    /// Replay a published bundle without the source, Lean, or the network.
+    VerifyArtifact {
+        /// The bundle directory.
+        bundle: Utf8PathBuf,
+    },
 }
 
 /// The command names, in the order of §23.4.
-const COMMAND_NAMES: [&str; 8] = [
-    "init", "lock", "check", "build", "verify", "fmt", "clean", "explain",
+const COMMAND_NAMES: [&str; 9] = [
+    "init",
+    "lock",
+    "check",
+    "build",
+    "verify",
+    "fmt",
+    "clean",
+    "explain",
+    "production",
 ];
 
 /// The embedded diagnostic registry, for `explain` (§23.4). The registry
@@ -473,6 +504,30 @@ pub fn run(
             stderr,
         );
     };
+    // The target descriptors are the compiler's, not a project's: like
+    // `--version`, they print one document in either mode (§24.7).
+    if matches!(
+        command,
+        CommandKind::Production {
+            action: ProductionAction::Targets
+        }
+    ) {
+        return match crate::api::production::targets_document() {
+            Ok(document) => {
+                let _ = stdout.write_all(&document);
+                0
+            }
+            Err(error) => emit(
+                json_mode,
+                color,
+                "production",
+                &Outcome::default(),
+                Err(error),
+                stdout,
+                stderr,
+            ),
+        };
+    }
     let command_name = match &command {
         CommandKind::Init { .. } => "init",
         CommandKind::Lock { .. } => "lock",
@@ -482,6 +537,7 @@ pub fn run(
         CommandKind::Fmt { .. } => "fmt",
         CommandKind::Clean => "clean",
         CommandKind::Explain { .. } => "explain",
+        CommandKind::Production { .. } => "production",
     };
 
     let mut outcome = Outcome::default();
@@ -495,6 +551,24 @@ pub fn run(
                 "`{requested}` is not a registered diagnostic code"
             ))),
         },
+        // Replay needs no project: the bundle is self-contained.
+        CommandKind::Production {
+            action: ProductionAction::VerifyArtifact { bundle },
+        } => {
+            let path = if bundle.is_relative() {
+                working_directory.join(&bundle)
+            } else {
+                bundle.clone()
+            };
+            let report = crate::api::production::verify_artifact(&path)?;
+            outcome.summary = format!(
+                "replayed result {}: {} outputs, bindings verified; not re-run: {}\n",
+                report.result_id.to_hex(),
+                report.outputs,
+                report.not_rechecked.join(", ")
+            );
+            Ok(())
+        }
         CommandKind::Init {
             path,
             name,
@@ -614,7 +688,36 @@ pub fn run(
                     };
                     Ok(())
                 }
-                CommandKind::Init { .. } | CommandKind::Explain { .. } => {
+                CommandKind::Production {
+                    action: ProductionAction::Build { request },
+                } => {
+                    let path = if request.is_relative() {
+                        working_directory.join(&request)
+                    } else {
+                        request.clone()
+                    };
+                    let bytes = std::fs::read(path.as_std_path()).map_err(|io_error| {
+                        usage_error(format!("production request {request}: {io_error}"))
+                    })?;
+                    let parsed = crate::api::production::ProductionRequest::from_json(&bytes)?;
+                    let output = crate::api::production::build(&engine, &parsed)?;
+                    let result = &output.result;
+                    outcome.ids.source_id = Some(result.source.source_id);
+                    outcome.ids.semantic_id = Some(result.source.semantic_id);
+                    outcome.ids.build_id = Some(result.verification.build_id);
+                    outcome.ids.attestation_id = Some(result.verification.attestation_id);
+                    outcome.artifacts.push(output.bundle.to_string());
+                    let packages: usize = result.roots.iter().map(|root| root.outputs.len()).sum();
+                    outcome.summary = format!(
+                        "exported {packages} packages at {}; result {}\n",
+                        output.bundle,
+                        result.result_id.to_hex()
+                    );
+                    Ok(())
+                }
+                CommandKind::Init { .. }
+                | CommandKind::Explain { .. }
+                | CommandKind::Production { .. } => {
                     unreachable!("handled above")
                 }
             }

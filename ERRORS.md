@@ -88,6 +88,30 @@ Duplicate module or case-folded path collision.
 
 Class: `cli-configuration`. Exit code: 2.
 
+## `LLC0201` --- Production request malformed
+
+A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0202` --- Requested root is not a production root
+
+A production request names a root that is not a linked production root of the project's entrypoint closure.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0203` --- Unknown or mismatched production target
+
+A production request names a target that is not registered, that its root does not declare, or whose descriptor digest is not the registered target's.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0204` --- Stale production expectation
+
+The source ID, semantic ID, or lock digest a production request pins differs from the project's, or the project changed while it was being exported.
+
+Class: `cli-configuration`. Exit code: 2.
+
 ## `LLF5001` --- Invalid definition form, self head, or recursion
 
 Invalid definition form, self head, or recursion.
@@ -453,3 +477,15 @@ Class: `environment`. Exit code: 3.
 A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7101` --- Certificate evidence does not certify the root
+
+Certificate evidence a production request supplies is not the certificate whose identity it pins, earns a refused verdict for its request, or is for a request whose reference program is not the root's lowered program.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7102` --- Production artifact replay rejected
+
+A production bundle does not replay: its result identity, a file digest, a binding between the result, the attestation, the preservation record, and its packages, a re-rendered package, a target descriptor, the producing compiler's semantics, or a recomputed certificate verdict disagrees with what the bundle states, or the bundle holds a file it does not state.
+
+Class: `language`. Exit code: 1.

@@ -31,6 +31,8 @@ pub mod oracle_corpus;
 pub mod oracle_differential;
 pub mod oracle_seeds;
 pub mod preservation;
+pub mod production_consumer;
+pub mod production_export;
 pub mod runner;
 pub mod rust_build;
 pub mod rust_differential;

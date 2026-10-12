@@ -1,0 +1,291 @@
+{
+  "roots": [
+    {
+      "name": "grove_root",
+      "root": "Coverage.Boundary.groveRoot",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "folds",
+      "root": "Coverage.Colls.folds",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "graphs",
+      "root": "Coverage.Colls.graphs",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "iterations",
+      "root": "Coverage.Colls.iterations",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "key_types",
+      "root": "Coverage.Colls.keyTypes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "literals",
+      "root": "Coverage.Colls.literals",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_folding",
+      "root": "Coverage.Colls.mapFolding",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_ops",
+      "root": "Coverage.Colls.mapOps",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_ops",
+      "root": "Coverage.Colls.setOps",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "string_graph",
+      "root": "Coverage.Colls.stringGraph",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "builders",
+      "root": "Coverage.Main.builders",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "higher",
+      "root": "Coverage.Main.higher",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "int_ops",
+      "root": "Coverage.Main.intOps",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "mapped",
+      "root": "Coverage.Main.mapped",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "nat_ops",
+      "root": "Coverage.Main.natOps",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "options",
+      "root": "Coverage.Main.options",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "pairs",
+      "root": "Coverage.Main.pairs",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parity",
+      "root": "Coverage.Main.parity",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "records",
+      "root": "Coverage.Main.records",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "shapes",
+      "root": "Coverage.Main.shapes",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "tree_total",
+      "root": "Coverage.Main.treeTotal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "bits",
+      "root": "Coverage.Prims.bits",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "conversions",
+      "root": "Coverage.Prims.conversions",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "decimals",
+      "root": "Coverage.Prims.decimals",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fixed_middle",
+      "root": "Coverage.Prims.fixedMiddle",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fixed_small",
+      "root": "Coverage.Prims.fixedSmall",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fixed_wide",
+      "root": "Coverage.Prims.fixedWide",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "formats",
+      "root": "Coverage.Prims.formats",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sequences",
+      "root": "Coverage.Prims.sequences",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "text",
+      "root": "Coverage.Prims.text",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "rewrite",
+      "root": "Coverage.RecRoots.rewrite",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "rose_total",
+      "root": "Coverage.RecRoots.roseTotal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "syntax_total",
+      "root": "Coverage.RecRoots.syntaxTotal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "well_founded",
+      "root": "Coverage.RecRoots.wellFounded",
+      "targets": [
+        "rust-core",
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

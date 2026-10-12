@@ -1,0 +1,28 @@
+# api/schemas/versions.toml --- the released version of every production
+# export schema (SPEC.md §24.7, PX-12). A row is never edited once released:
+# a changed schema raises its spec version and adds a row.
+
+[[version]]
+schema = "production-request"
+spec = "lexlean/production-request/1"
+sha256 = "96eba5b3ffa041b4d7a1c0a70aa562143130f5ee99fb933759df37754225e949"
+
+[[version]]
+schema = "production-result"
+spec = "lexlean/production-result/1"
+sha256 = "85dbe9bde4f190a693f20a53d3e7397bba5d449033f6630fb9753cf938c7334d"
+
+[[version]]
+schema = "target-descriptor"
+spec = "lexlean/target-descriptor/1"
+sha256 = "1af1e2cd10896f963b1ff71743cf2461577a25906980bd59cf35d8c34d381363"
+
+[[version]]
+schema = "target-descriptors"
+spec = "lexlean/target-descriptors/1"
+sha256 = "48d06540ba3e95094ebbbdc2daa9056c38ebb1e96242682561420f0d3df477d5"
+
+[[version]]
+schema = "production-replay"
+spec = "lexlean/production-replay/1"
+sha256 = "8c9d9a25c8863ca13638cc3bd525b3a4c19b1a269acabcc7c647e170a7df4c97"

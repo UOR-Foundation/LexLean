@@ -97,6 +97,39 @@ versions, and the entries below say what each tag does and does not claim.
   whole. The gate's wall time becomes the longer leg, about 2 h 40 min where the
   last full run took 3 h 16 min (an estimate from that run's timings). Each leg
   uploads its own `acceptance-gate-evidence-<leg>`.
+- Production export contract (SPEC.md §24.7, `PX-01`..`PX-12`, `CL-23`,
+  `LLC0201`..`LLC0204`, `LLV7101`, `LLV7102`): a stable, versioned façade,
+  `lexlean::api::production`, through which a consumer such as PrismPM
+  compiles production roots to certified Rust packages without the hidden
+  compiler modules, the build or verification directories, generated Lean, or
+  a backend. A closed `lexlean/production-request/1` names roots, targets by
+  registered ID and descriptor digest (`production::targets`), the source,
+  semantic, and lock identities pinned at setup, and GNAF evidence to be
+  re-checked; it has no field for a certification, an optimality claim, Lean,
+  a program, or Rust. Every request, root, target, pin, evidence, path, and
+  package defect is refused before Lean runs; the project is then verified by
+  the unchanged §22 pipeline, and each root's package is rendered from the
+  verified lowered program exporting only its recorded entry as `run`, its
+  library beginning with the crate certificates B and E are about. The bundle
+  is published at `<build_root>/production/<result-id>/` with the attestation,
+  compiler input, preservation record, programs, crates, and certificates, and
+  a `lexlean/production-result/1` binding every output to the source,
+  semantic, lock, compiler-semantics, target, compiler-input, preservation,
+  and certificate identities with the closed status `kernel-checked`
+  (preservation, never optimality) and optimality `not-claimed` or the GNAF
+  verdict the host checker recomputes. `production::verify_artifact` replays a
+  bundle without the source, Lean, or the network and reports
+  `bindings-verified`, naming the four stages it does not re-run. The CLI
+  mirrors it as `lexlean production targets | build --request | verify-artifact`.
+  The five envelope schemas live under `api/schemas/`, outside the
+  compiler-semantics ID, each recorded under its spec version in
+  `api/schemas/versions.toml`. A public-surface consumer
+  (`crates/conformance/src/production_consumer.rs`) exports
+  `examples/production` and `examples/production-coverage`, and its 59
+  packages are committed under `tests/production-export/`
+  (`just production-export`, `just production-export-write`). No 1.0, 1.1, or
+  1.2 output, semantic ID, attestation, or golden changes.
+
 - Differential validation oracle (SPEC.md §17.19, `OR-01`..`OR-08`, no new
   diagnostic code): the independent Lean 4 to Rust generator `lean4-prod`
   (`https://github.com/auser/lean4-prod`) is pinned in

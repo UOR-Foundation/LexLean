@@ -166,3 +166,10 @@ Feature: cli-api
     Then `end_live_children` and `allow_children` are public at `lexlean::verify` with the documented per-group outcome type
     And the process group is signalled in exactly one place and the executable's interrupt thread ends the live groups through the public function
     And LLV7018 is registered in the environment class with exit code 3
+
+  @CL-23 @build
+  Scenario: lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class.
+    Given the production example and the lexlean executable
+    When each production subcommand runs in human and JSON mode on valid and refused inputs
+    Then the descriptor document, the command results, and the replay summary are exact
+    And each refusal exits with the code of its registered class

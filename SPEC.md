@@ -299,6 +299,14 @@ The completed repository MUST have this layout. Additional files are allowed onl
 ├── lean-toolchain
 ├── rust-toolchain.toml
 ├── rustfmt.toml
+├── api/
+│   └── schemas/
+│       ├── production-replay.schema.json
+│       ├── production-request.schema.json
+│       ├── production-result.schema.json
+│       ├── target-descriptor.schema.json
+│       ├── target-descriptors.schema.json
+│       └── versions.toml
 ├── compiler/
 │   ├── certificates/
 │   ├── expected/
@@ -479,6 +487,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── golden/
 │   ├── negative/
 │   ├── oracle/
+│   ├── production-export/
 │   └── tooling/
 ├── tooling/
 │   └── schemas/
@@ -7123,6 +7132,16 @@ lexlean explain <DIAGNOSTIC-CODE>
 
 Prints the generated `ERRORS.md` entry for one registered code. Unknown codes exit as CLI misuse.
 
+#### `production`
+
+```text
+lexlean production targets
+lexlean production build --request <REQUEST>
+lexlean production verify-artifact <BUNDLE>
+```
+
+The production export contract of §24.7. `targets` prints the canonical `lexlean/target-descriptors/1` document in either output mode; like `--version` it is not a project command and emits no command-result object. `build` reads a `lexlean/production-request/1` file, verifies the project by §22, and publishes the bundle; its command result names the bundle directory and the source, semantic, build, and attestation IDs. `verify-artifact` replays a bundle and needs no project. Both report failures through the command result with the exit code of their registered class.
+
 ### 23.5 Formatting
 
 Canonical source formatting:
@@ -7373,6 +7392,36 @@ at `lexlean::verify`, part of the embedding surface versioned with the stable co
 - On unix the group is signalled directly through the audited process-group signalling dependency (§8.5); no `kill` executable is looked up on `PATH`. On Windows the process tree is ended with `taskkill /PID <pid> /T /F`; its exit status is 128 alike for a tree that is gone, a process that has exited with its handle still open, and access denied, so a `taskkill` that fails is classified by whether `tasklist` still lists the root process: not listed is `AlreadyGone`, and listed, or `tasklist` unable to say, is reported in the row like a group that could not be ended.
 - The `lexlean` executable's interrupt thread (§17.17) ends the live groups through this same function: exactly one implementation of "end the live groups" exists, and the executable is its first user. So does a run that ends its own child at its timeout (§17.17): ending the group a child leads, or the tree it roots, and confirming it is one function (`verify::lifeline::end_leader`), and a process group is signalled, and a process tree ended, in no other place of the library; `conformance_cl_22` counts the sites across every source file of the library, so a second kill path in any module is a failure of the register and not a review comment. The library still installs no handler for an embedding host, and its tests show it in a host process of its own, twice. Where the host can report its signal dispositions (`SigCgt` and `SigIgn` of `/proc/self/status`, or the `caught` and `ignored` columns of `ps`) a host that has registered its own handling of `SIGINT` and `SIGTERM` reads them before the library starts a child, after it has started one, and after it has ended it, and they must be equal; a host with `/proc` can always report them, and its case requires it. On every host, including macOS whose `ps` has neither column, a host that handles no signal is sent `SIGQUIT` while a child that the library started is running: it must die of the signal by its default action, and the child must still be running, which a handler that the library had installed for the signals the executable watches would have ended first.
 
+### 24.7 Production export
+
+A consumer compiles a project's production roots (§17.13) to certified Rust packages through one stable, versioned, fail-closed boundary, `lexlean::api::production`, and its CLI mirror (§23.4), and never through the hidden compiler modules, the build or verification directories, generated Lean, or a backend. `api::production` is a module of the stable `api` (§24.1); the `Engine` entry points are unchanged.
+
+```rust
+pub fn targets() -> Result<Vec<TargetDescriptor>, LexLeanError>;
+pub fn targets_document() -> Result<Vec<u8>, LexLeanError>;
+impl ProductionRequest { pub fn from_json(bytes: &[u8]) -> Result<Self, LexLeanError>; }
+pub fn build(engine: &Engine, request: &ProductionRequest) -> Result<ProductionOutput, LexLeanError>;
+pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError>;
+```
+
+**Setup, then offline.** Setup is explicit and is the only step that may use the network: `Engine::lock` with `allow_network` acquires packages, the Lake workspace is provisioned, and `targets` gives the descriptor digests a consumer pins. `build` takes no network option: a stale lock is `LLC0102`, a missing Lake dependency `LLV7007`, and an acquisition `LLS8003` (§25.3).
+
+**Target descriptors.** `lexlean/target-descriptor/1` states one registered target (`language/production-1.2.toml`): its ID, statement, allocation, natural and integer widths, the SHA-256 of the runtime its profile carries, and the renderer digest (`language/semantics-1.2.toml`). Its `digest` is SHA-256 over `"lexlean-target-descriptor-v1"` and `frame("descriptor", canonical_json(descriptor without digest))`.
+
+**Request.** `lexlean/production-request/1` is closed: `roots`, non-empty and strictly ascending by name, each a fully qualified production root of the project's entrypoint closure with a crate `name` and `version` of the §17.16 package forms and `targets` strictly ascending by ID, each a registered ID with its descriptor digest; an optional `expect` pinning the source ID, the semantic ID, and the SHA-256 of the lock file; and optional `evidence`, strictly ascending by root, each a requested root, the kind `gnaf`, project-relative paths of a `lexlean/gnaf-request/1` and a `lexlean/gnaf-certificate/1` document, and the certificate identity the caller means. No field states a certification, an optimality claim, a preservation result, a certificate verdict, Lean, LCNF, a program, or Rust, and an unknown field does not deserialize. A root name is looked up, never interpreted, and one that cannot be a Lean name is refused by form.
+
+**Run.** `build` refuses, before any Lean process runs and before anything is published: a malformed request (`LLC0201`); a root that is not a production root (`LLC0202`); an unregistered or undeclared target or another digest (`LLC0203`); a pin the project no longer matches (`LLC0204`); an evidence path that escapes the project or a symlinked bundle area (`LLS8001`); malformed evidence (`LLB6006`, `LLB6007`); evidence whose certificate is not the pinned one, earns a `refused` verdict, or is for a request whose reference program is not the root's lowered program (`LLV7101`); and a package the renderer refuses (`LLB6005`). Every check and eligibility failure of the project fails as it does for `check`. The project is then verified by the unchanged §22 pipeline over the entrypoint selection, so every production root of the project is certified; a project edited during the run is `LLC0204`. For each requested root and target, `build` renders the exporting package `verify` does not assemble (§17.17): the renderer of §17.16 over the verified lowered program, exporting the recorded entry alone as `run` with every parameter owned, with `sources` the semantic ID; its `src/lib.rs` begins with the certified crate's bytes. The bundle is published atomically, content-addressed, at `<build_root>/production/<result-id>/`; there is no output-directory option.
+
+**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lean` for certificates A, B, and E, and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered.
+
+**Result.** `lexlean/production-result/1` binds the compiler (its version, the language-1.2 compiler-semantics ID of §21.2, read as an opaque digest, and the Lean toolchain); the source, semantic, and lock identities; the build and attestation IDs and the attestation, compiler input (whose SHA-256 is the compiler-input ID, §22.10), and preservation record; and per root its index `R<i>`, program, and optimality, and per target the target ID and digest, the package's name, version, directory, export, and files, the crate, the entry, and the certification. Every file is stated by bundle-relative path, byte length, and SHA-256. The certification status is the closed `kernel-checked`: certificates A, B, and E compiled silently under the pinned Lean, replayed through `leanchecker`, and their root theorems depend on exactly the stated axioms (§17.17). It is preservation, at level `build`, and never optimality. Optimality is `not-claimed`, or `gnaf` with the certificate identity, the universe identity, the two documents, and the verdict the host checker of §17.18 recomputes, `certified` or `incomplete`; a `refused` verdict is never recorded. `result_id` is SHA-256 over `"lexlean-production-result-v1"` and `frame("result-body", canonical_json(result without result_id))`. The result holds no absolute path, environment value, or time; because it binds the attestation, which records the host and executable hashes (§22.9), it is identical across project locations and working directories on one host and toolchain, not across hosts.
+
+**Replay.** `verify_artifact` reads a bundle without the source, Lean, or the network. A symlink or special file in it is `LLS8001`. It recomputes the result identity and requires the canonical bytes, every stated file and no other, the producing compiler's semantics and toolchain, the attestation identity recomputed from its body, the attestation's source, semantic, and build IDs and its compiler-input and preservation digests, the preservation record's program, crate, entry, and certificate rows for every output, the registered target digests, each package re-rendered from its manifest byte for byte with the manifest the façade would write, its library beginning with the bound crate, and each GNAF verdict recomputed; any disagreement is `LLV7102`. It reports `lexlean/production-replay/1` with status `bindings-verified` and the stages it does not re-run: Lean elaboration, the `leanchecker` replay, the axiom audit, and named-root extraction, which need the generated modules and the pinned toolchain; the attestation is the record that they ran. Replay detects any disagreement between the bundle's parts; a bundle whose attestation, preservation record, and certificates are forged consistently together is detected only by verifying the source again or by a signature, which §22.9 leaves to release automation.
+
+**Schemas and versions.** The five schemas are `api/schemas/production-request`, `production-result`, `target-descriptor`, `target-descriptors`, and `production-replay`. They are outside `schemas/` and outside the compiler-semantics ID (§21.2): the envelope changes nothing the compiler computes from a source. `api/schemas/versions.toml` records each schema's SHA-256 under its exact spec; a released row is never edited, and a changed schema raises its spec version and adds a row.
+
+**Boundary.** No application semantics of a consumer enter the compiler: the consumer's own record of which roots it ships, under which names, is its own.
+
 ---
 
 ## 25. Security and operational behavior
@@ -7484,6 +7533,10 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLC0102` | Missing, stale, or noncanonical lock file. |
 | `LLC0103` | Unsupported schema or language version. |
 | `LLC0104` | Duplicate module or case-folded path collision. |
+| `LLC0201` | Production request malformed (§24.7). |
+| `LLC0202` | Requested root is not a production root (§24.7). |
+| `LLC0203` | Unknown or mismatched production target (§24.7). |
+| `LLC0204` | Stale production expectation (§24.7). |
 | `LLL1001` | Invalid UTF-8, forbidden scalar, or line-ending form. |
 | `LLL1002` | Forbidden comment, raw percent, tab, or TeX escape. |
 | `LLL1003` | Non-NFC or noncanonical source requiring formatting. |
@@ -7544,6 +7597,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7016` | Certificate E rejected (§17.17). |
 | `LLV7017` | Invalid verification resource profile (§22.11). |
 | `LLV7018` | Child start refused after the host ended the live children (§24.6). |
+| `LLV7101` | Certificate evidence does not certify the root (§24.7). |
+| `LLV7102` | Production artifact replay rejected (§24.7). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
 | `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
 | `LLS8003` | Network operation attempted outside permitted lock acquisition. |
@@ -8458,6 +8513,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-20` | `cli-api` | Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module. | §23.4 |
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
+| `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -8568,6 +8624,19 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `OR-06` | `oracle` | The differential compares outcomes, contracts, and resources and never bytes: a rendering that is deliberately better than LexLean's and semantically equivalent to it, a loop for a recursion and a closed form for an iteration, byte-different from LexLean's rendering and from the oracle's, is accepted on every input, and a rendering that differs in one result on one input, that takes a parameter of another width, that does more work than LexLean's as its own runtime counts it, or that allocates more as an allocator it cannot reach counts it is refused. | §17.16, §17.19 |
 | `OR-07` | `oracle` | An oracle that was not acquired, whose checkout is not the pin, that did not build, that crashed, was killed, overran its time (and with it everything it started), wrote nothing or an IR defining nothing, or whose generator failed without refusing a program, a fetch that fails leaving nothing that a later run takes for a checkout, a cache that is not the pin discarded and fetched once more, a transient failure of the network tried again twice and a permanent one not, and a comparison over no root or no case, are each unavailable and never validated, which fails the gate on the normative host and is reported as not validated elsewhere, while the oracle's own structured refusals are answers and a tool that is not meant to overrun its time is given a generous one; and a disagreement fails closed with a record of both sides' evidence for every difference. | §17.19 |
 | `OR-08` | `oracle` | The oracle is validation evidence and an input to no identity: no file the shipped crate, the language data, the schemas, the compiler project, the committed examples' records, or the authority and ledger files hold names the oracle, its pinned commit, or its digest, so that planting any of them in any of those places fails audit-oracle-isolation; no input of the compiler-semantics ID names it, an oracle field in a build manifest, a preservation record, an attestation, a snapshot, a compiler input, or a GNAF certificate fails its closed schema, and no module of the conformance crate but the oracle's own uses it, so that removing it changes none of them. | §17.19, §27.2 |
+
+| `PX-01` | `production-export` | A consumer that names only lexlean::api::production and the stable crate-root types exports every production root of examples/production and examples/production-coverage through production::build into a bundle whose every Rust package is byte-identical to its committed expected package and renders the certified crate followed by one export, run, of the root's recorded entry, and whose result binds every output to the project's source, semantic, and lock identities, the compiler-semantics ID, its target ID and descriptor digest, the compiler input and preservation record the attestation binds, certificates A, B, and E, and the certification status kernel-checked, with optimality not-claimed. | §24.7 |
+| `PX-02` | `production-export` | A production request naming an unknown root, a declaration that is not a production root, or a formal-only theorem fails with LLC0202 before any Lean process runs and publishes no build, verification, or production directory. | §24.7 |
+| `PX-03` | `production-export` | A production request naming an unregistered target, a registered target its root does not declare, or a registered target with any other descriptor digest fails with LLC0203 before any Lean process runs and publishes nothing, and production::targets returns each registered target's descriptor with a digest that changes with any field of it. | §24.7 |
+| `PX-04` | `production-export` | A production request pinning a source ID, semantic ID, or lock digest that a later edit of a source module or of the lock no longer matches fails with LLC0204 before any Lean process runs and publishes nothing, and a lock made stale by an edit of the project configuration fails with LLC0102. | §24.7 |
+| `PX-05` | `production-export` | Every committed production-refusal fixture of tests/negative fails through production::build with its committed diagnostic code before any Lean process runs and publishes no production directory. | §24.7 |
+| `PX-06` | `production-export` | GNAF evidence whose certificate has another identity than the request pins, earns a refused verdict, or is for a request whose reference program is not the root's lowered program fails with LLV7101, a malformed request or certificate fails with LLB6006 or LLB6007, each before any Lean process runs, a request carrying a certification, optimality, preservation, certificate, Lean, program, or crate field fails with LLC0201, and evidence that binds the root is recorded with the identity, universe, and verdict the host checker recomputes. | §24.7 |
+| `PX-07` | `production-export` | verify_artifact accepts an untouched bundle with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink. | §24.7 |
+| `PX-08` | `production-export` | Exporting one request from two copies of a project in distinct absolute directories and from distinct working directories yields byte-identical bundles under one result ID, and the result holds no absolute path, environment value, or time. | §24.7 |
+| `PX-09` | `production-export` | Evidence paths that are absolute, contain .., or pass through a symlink leaving the project fail with LLS8001 before any Lean process runs, and a symlinked production area under the build root is refused with LLS8001 rather than followed. | §24.7 |
+| `PX-10` | `production-export` | After setup, production::build takes no network option and starts no network or git operation: with a git sentinel first on PATH and an unreachable proxy in the environment it exports the project and the sentinel never runs, and a project whose lock needs an unacquired Git package fails closed with a registered code without acquiring it. | §24.7 |
+| `PX-11` | `production-export` | No production request type can carry Lean, LCNF, a target program, or Rust: every field is a root name, a crate name and version, a registered target ID with a digest, a pinned digest, or a project-relative evidence path, as an exhaustive destructuring of each request type shows, and a root name, crate name, or version carrying Lean or Rust text fails with LLC0201, while evidence naming a Lean file fails as a malformed GNAF document. | §24.7 |
+| `PX-12` | `production-export` | Each production export schema under api/schemas validates the values the façade produces and refuses an unknown field, and its SHA-256 is recorded under its exact spec version in api/schemas/versions.toml, so that a schema changed without a new version fails the gate. | §24.7 |
 | `TL-01` | `tooling` | A tooling module is the one `toolingmodule` environment of its module, holding one canonical `\toolingdata` argument of the closed `lexlean/tooling-module/1` schema, and every committed fixture satisfies `tooling/schemas/tooling-module.schema.json`; a member, declaration, term, signature, or atom outside it, a member written with its default, a spec tag but the exact one, a value that is not its own canonical encoding, a repeated member, a value nested deeper than the decoder reads, and an unsorted import list fail with LLT4013, a module over `max_ir_nodes` fails with LLS8002, a second data argument or a second module form in the same module is a structural error that fails with LLP2003, and no change of any single node of a committed fixture panics the compiler, which accepts or refuses it with LLT4013, LLT4014, or LLT4015. | §17.20, §21.2 |
 | `TL-02` | `tooling` | A tooling module requires language 1.2 and a project the compiler itself embeds: a language-1.1 project, a user project, the check, build, and verify requests of the public API, and the command line refuse it with LLT4013 before either backend runs, no configuration member or option admits one, and a tooling module has no production root, no production eligibility report, and no semantic snapshot. | §17.20, §22.10 |
 | `TL-03` | `tooling` | A tooling module cites one authority, Lean at the compiler's pinned release and source commit, which equal the pins of `model/authorities.toml`, and its registry is closed: an authority that is not the pin, a name declared twice, a signature or field type naming a constant that no registry row declares, a variable a signature does not bind, an empty, unsorted, or repeated plumbing row, a plumbing constant that is also declared, and a source path outside the toolchain source or a digest that is not 64 lowercase hexadecimal digits fail with LLT4014, and every source digest equals the SHA-256 of that file in the pinned toolchain. | §17.20, §8.2 |
@@ -8580,7 +8649,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TL-10` | `tooling` | Both backends traverse the one linked module: the Lean text begins with the fixed header, holds one rendering per function, command, invocation, and evaluation, and contains no comment, every declaration with output has one source-mapped piece, coverage is complete, the LaTeX document has one entry per declaration, and the pinned Lean elaborates every committed fixture without a message while refusing a registry that misstates an arity or a constructor list that the tool is consistent with. | §17.20, §18, §19.6, §20.5 |
 | `TL-11` | `tooling` | Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record. | §17.20, §21.2, §28.3, §28.4 |
 
-**Total required capability IDs:** 350.
+**Total required capability IDs:** 363.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
