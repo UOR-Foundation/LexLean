@@ -47,11 +47,6 @@ jobs:
     # hours; a shorter local-style timeout would turn complete proof coverage
     # into a CI failure mode.
     timeout-minutes: 360
-    env:
-      # Noncanonical performance telemetry (SPEC.md §22.11, VR-21): the
-      # verifier appends one row per child process here. It is CI evidence
-      # only — never read back, never hashed into any artifact or identity.
-      LEXLEAN_VERIFY_TELEMETRY: ${{ runner.temp }}/lexlean-telemetry.jsonl
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
@@ -76,6 +71,13 @@ jobs:
           swapon --show
       - name: Run the normative acceptance gate
         shell: bash
+        env:
+          # Noncanonical performance telemetry (SPEC.md §22.11, VR-21): the
+          # verifier appends one row per child process here. It is CI evidence
+          # only — never read back, never hashed into any artifact or identity.
+          # Set at step level, not job level: `runner` is not among the
+          # contexts GitHub allows in `jobs.<job_id>.env`.
+          LEXLEAN_VERIFY_TELEMETRY: ${{ runner.temp }}/lexlean-telemetry.jsonl
         run: |
           set -euo pipefail
           mkdir -p ci-evidence
@@ -105,6 +107,8 @@ jobs:
       - name: Summarize performance evidence
         if: ${{ !cancelled() }}
         shell: bash
+        env:
+          LEXLEAN_VERIFY_TELEMETRY: ${{ runner.temp }}/lexlean-telemetry.jsonl
         run: |
           set -uo pipefail
           python3 - <<'PY' || true

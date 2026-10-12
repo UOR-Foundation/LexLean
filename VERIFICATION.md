@@ -4935,7 +4935,8 @@ and publishes nothing, and that a verified run with telemetry enabled publishes
 byte-identical artifacts (and the same attestation ID) to one without, with no
 row or telemetry path inside any published artifact.
 
-`ci.yml` sets `LEXLEAN_VERIFY_TELEMETRY` under `ci-evidence` and runs
+`ci.yml` enables `LEXLEAN_VERIFY_TELEMETRY`, naming a file in the runner's
+temporary directory so the raw rows stay out of the checkout, and runs
 `just --timestamp vv` — the same recipes `just vv` runs — then a summarize step
 writes `ci-evidence/performance.json`: per-recipe wall time from the
 timestamps, per-stage and slowest-module verification wall time from the
