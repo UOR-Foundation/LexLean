@@ -65,7 +65,15 @@ production-export:
     cargo xtask check-production-export
 
 # §28.6: every example directory formats, locks, checks, builds, and verifies.
+# The default skips uor-atlas (the Atlas verify is the gate's longest pole,
+# §9.4): developers get the gate's shape without its hours; `just atlas` is
+# the normative §28.6 run with nothing skipped.
 examples:
+    cargo xtask verify-examples --skip uor-atlas
+
+# §28.6: every example directory, including uor-atlas. The normative run;
+# `just vv`'s CI gate uses this recipe in place of `examples`.
+atlas:
     cargo xtask verify-examples
 
 # §28.3: golden output changes only through the explicit write recipe below.

@@ -29,7 +29,7 @@ fn main() -> ExitCode {
     let result = match task.as_str() {
         "validate-model" => codegen::check_model(&root, write),
         "validate-spec-links" => spec_links::validate(&root),
-        "verify-examples" => verify_examples(&root, write),
+        "verify-examples" => verify_examples(&root, write, &skip_arguments()),
         "check-golden" => check_golden(&root, write),
         "check-reproducibility" => check_reproducibility(&root),
         "check-fixtures" => check_fixtures(&root, write),
@@ -155,8 +155,39 @@ fn engine_for(dir: &Path) -> Result<lexlean::Engine, Fail> {
 /// `expected/verify/`, the normalized verification records (audit output,
 /// probe and audit modules, process records with the platform-bound fields
 /// normalized) must equal it, and `--write` regenerates them.
-fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
-    let dirs = example_dirs(root)?;
+/// The `--skip <name>` arguments of the run, repetition allowed. A skipped
+/// example is not verified: the slice is for a developer feedback loop, not
+/// the gate (SPEC.md §9.4 runs the normative `just vv`, which names none).
+fn skip_arguments() -> Vec<String> {
+    let mut skips = Vec::new();
+    let mut arguments = std::env::args().peekable();
+    while let Some(argument) = arguments.next() {
+        if argument == "--skip" {
+            let name = arguments.next().unwrap_or_else(|| {
+                eprintln!("cargo xtask verify-examples --skip needs a directory name");
+                std::process::exit(2);
+            });
+            skips.push(name);
+        }
+    }
+    skips
+}
+
+fn verify_examples(root: &Path, write: bool, skips: &[String]) -> Result<(), Fail> {
+    let dirs: Vec<PathBuf> = example_dirs(root)?
+        .into_iter()
+        .filter(|dir| {
+            let name = dir.file_name().unwrap_or_default().to_string_lossy();
+            !skips.iter().any(|skip| skip == name.as_ref())
+        })
+        .collect();
+    if !skips.is_empty() {
+        println!(
+            "verify-examples: {} skipped by argument ({} remain)",
+            skips.join(", "),
+            dirs.len()
+        );
+    }
     for dir in dirs {
         let started = std::time::Instant::now();
         let name = dir

@@ -4,10 +4,12 @@
 # `just vv` is the single gate, run from a clean checkout on Linux x86-64 with
 # the exact pinned toolchains and no build cache: §9.4 says "from a clean
 # checkout", and a restored target directory is not one. CI runs its twelve
-# recipes as two legs at once, each its own clean checkout: `examples`, whose
-# native Atlas verification is most of the gate's time, and the other eleven in
-# the order of `vv`. Together they run every recipe of `vv` exactly once, so the
-# gate is the same and the wall time is the longer leg rather than the sum.
+# recipes as two legs at once, each its own clean checkout: the `atlas` leg,
+# whose native Atlas verification is most of the gate's time, and the other
+# recipes of `vv` (with `examples` reduced to everything but the Atlas itself)
+# in the order of `vv`. Together they run every recipe of `vv` exactly once,
+# so the gate is the same and the wall time is the longer leg rather than the
+# sum.
 # `honesty` is split out so a claim that has drifted from its evidence reads
 # differently from broken code.
 #
@@ -55,7 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { part: examples, recipes: "examples" }
+          - { part: examples, recipes: "atlas" }
           - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny" }
     runs-on: ubuntu-24.04
     # Native Atlas elaboration, per-module kernel replay, and per-module axiom
@@ -135,14 +137,14 @@ jobs:
       # The example gate discovers Atlas rather than receiving an allow-list.
       # These assertions make its complete proof run visible as first-class CI
       # evidence without running the expensive verifier a second time.
-      # The leg that runs `examples` is chosen by the matrix, not by the log,
+      # The leg that runs `atlas` is chosen by the matrix, not by the log,
       # so a leg that should have verified Atlas and did not fails here.
       - name: Assert native Atlas was verified by the acceptance gate
         shell: bash
         run: |
           set -euo pipefail
           case " ${{ matrix.recipes }} " in
-            *" examples "*)
+            *" atlas "*)
               grep -F "verify-examples: uor-atlas verified (attestation " ci-evidence/vv.txt
               grep -F "verify-examples: uor-atlas: 267 normalized verification records equal expected/verify (§29.5)" ci-evidence/vv.txt
               ;;
