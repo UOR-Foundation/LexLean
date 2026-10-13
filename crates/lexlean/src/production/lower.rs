@@ -2322,6 +2322,32 @@ impl Lowerer<'_> {
                             claims: _,
                             executable: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Tokenizer {
+                            name: _,
+                            type_parameters: _,
+                            scheme: _,
+                            vocabulary: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::ContextWindow {
+                            name: _,
+                            capacity: _,
+                            overflow: _,
+                        }
+                        | SemanticDeclaration::TextGenerator {
+                            name: _,
+                            tokenizer: _,
+                            window: _,
+                            scorer: _,
+                            max_tokens: _,
+                            stop: _,
+                            policy: _,
+                        }
+                        | SemanticDeclaration::TextClassifier {
+                            name: _,
+                            tokenizer: _,
+                            model: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not a definition")),
@@ -2498,6 +2524,32 @@ impl Lowerer<'_> {
                             claims: _,
                             executable: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Tokenizer {
+                            name: _,
+                            type_parameters: _,
+                            scheme: _,
+                            vocabulary: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::ContextWindow {
+                            name: _,
+                            capacity: _,
+                            overflow: _,
+                        }
+                        | SemanticDeclaration::TextGenerator {
+                            name: _,
+                            tokenizer: _,
+                            window: _,
+                            scorer: _,
+                            max_tokens: _,
+                            stop: _,
+                            policy: _,
+                        }
+                        | SemanticDeclaration::TextClassifier {
+                            name: _,
+                            tokenizer: _,
+                            model: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not an instance")),

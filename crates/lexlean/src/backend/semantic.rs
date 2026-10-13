@@ -2701,11 +2701,15 @@ pub fn render_lean(
                 | SemanticDeclaration::Logic { .. }
                 | SemanticDeclaration::InferenceRule { .. }
                 | SemanticDeclaration::Verifier { .. }
-                | SemanticDeclaration::Reasoner { .. } => {
+                | SemanticDeclaration::Reasoner { .. }
+                | SemanticDeclaration::Tokenizer { .. }
+                | SemanticDeclaration::ContextWindow { .. }
+                | SemanticDeclaration::TextGenerator { .. }
+                | SemanticDeclaration::TextClassifier { .. } => {
                     return Err(Diagnostic::new(
                         code!("LLI9001"),
                         format!(
-                            "phase lean-backend: model or reasoning declaration `{}` was not elaborated",
+                            "phase lean-backend: model, reasoning, or text declaration `{}` was not elaborated",
                             declaration.name()
                         ),
                     ));
@@ -3292,6 +3296,10 @@ fn latex_model(
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. }
         | SemanticDeclaration::Theorem { .. } => {}
     }
     for obligation in module.elaboration.obligations(index) {
@@ -3577,6 +3585,18 @@ pub fn render_latex(
             | SemanticDeclaration::Verifier { .. }
             | SemanticDeclaration::Reasoner { .. } => {
                 reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::Tokenizer { .. }
+            | SemanticDeclaration::ContextWindow { .. }
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {
+                return Err(Diagnostic::new(
+                    code!("LLI9001"),
+                    format!(
+                        "phase latex-backend: text declaration `{}` was not elaborated",
+                        declaration.name()
+                    ),
+                ));
             }
         }
     }

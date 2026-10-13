@@ -80,7 +80,11 @@ fn terms_of(declaration: &SemanticDeclaration) -> Vec<&SemanticTerm> {
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => {}
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
     out
 }
@@ -234,7 +238,11 @@ fn types_of(declaration: &SemanticDeclaration) -> Vec<&SemanticType> {
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => {}
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
     out
 }
@@ -296,7 +304,11 @@ pub(super) fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => {}
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
 }
 
@@ -385,7 +397,11 @@ pub(super) fn source_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => 0,
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => 0,
     };
     types.saturating_add(terms).saturating_add(shape)
 }
@@ -500,12 +516,13 @@ impl ArtifactStore {
     }
 }
 
-/// The kind of a model or reasoning declaration: a declaration linking
-/// elaborates into ordinary declarations (§17.12).
+/// The kind of a model, reasoning, or text declaration: a declaration
+/// linking elaborates into ordinary declarations (§17.12).
 #[must_use]
 pub fn elaborated_construct(declaration: &SemanticDeclaration) -> Option<&'static str> {
     declaration_construct(declaration)
         .or_else(|| super::reasoning::declaration_construct(declaration))
+        .or_else(|| super::language_model::declaration_construct(declaration))
 }
 
 /// The kind of a model declaration, for diagnostics and the closed list of
@@ -527,7 +544,11 @@ pub fn declaration_construct(declaration: &SemanticDeclaration) -> Option<&'stat
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => None,
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => None,
     }
 }
 
@@ -5188,7 +5209,11 @@ pub(super) fn type_scope(declaration: &SemanticDeclaration) -> BTreeSet<String> 
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => &[],
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => &[],
     };
     parameters.iter().cloned().collect()
 }
@@ -5242,7 +5267,11 @@ fn lower_terms(
             | SemanticDeclaration::Logic { .. }
             | SemanticDeclaration::InferenceRule { .. }
             | SemanticDeclaration::Verifier { .. }
-            | SemanticDeclaration::Reasoner { .. } => {}
+            | SemanticDeclaration::Reasoner { .. }
+            | SemanticDeclaration::Tokenizer { .. }
+            | SemanticDeclaration::ContextWindow { .. }
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {}
         }
         drop(terms);
         for term in &outer {
@@ -5291,7 +5320,11 @@ pub(super) fn lower_ordinary(
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => false,
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => false,
     };
     // The elaborated copy is checked admitting generated binders, so every
     // source binder is checked as source first: no source name begins with
@@ -5340,7 +5373,11 @@ pub(super) fn check_declaration(
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => Lowering::default(),
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => Lowering::default(),
     };
     let name = declaration.name();
     for derived in &lowering.declarations {

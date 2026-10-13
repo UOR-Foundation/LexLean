@@ -1157,6 +1157,32 @@ impl<'a> Walk<'a> {
                             claims: _,
                             executable: _,
                             axioms: _,
+                        }
+                        | SemanticDeclaration::Tokenizer {
+                            name: _,
+                            type_parameters: _,
+                            scheme: _,
+                            vocabulary: _,
+                            axioms: _,
+                        }
+                        | SemanticDeclaration::ContextWindow {
+                            name: _,
+                            capacity: _,
+                            overflow: _,
+                        }
+                        | SemanticDeclaration::TextGenerator {
+                            name: _,
+                            tokenizer: _,
+                            window: _,
+                            scorer: _,
+                            max_tokens: _,
+                            stop: _,
+                            policy: _,
+                        }
+                        | SemanticDeclaration::TextClassifier {
+                            name: _,
+                            tokenizer: _,
+                            model: _,
                         },
                     )
                     | None => {
@@ -1370,6 +1396,32 @@ impl<'a> Walk<'a> {
                     statement: _,
                     proof: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Tokenizer {
+                    name: _,
+                    type_parameters: _,
+                    scheme: _,
+                    vocabulary: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::ContextWindow {
+                    name: _,
+                    capacity: _,
+                    overflow: _,
+                }
+                | SemanticDeclaration::TextGenerator {
+                    name: _,
+                    tokenizer: _,
+                    window: _,
+                    scorer: _,
+                    max_tokens: _,
+                    stop: _,
+                    policy: _,
+                }
+                | SemanticDeclaration::TextClassifier {
+                    name: _,
+                    tokenizer: _,
+                    model: _,
                 } => continue,
             };
             for derived in linked.semantic.elaboration.lowered(index) {
@@ -1646,6 +1698,32 @@ impl<'a> Walk<'a> {
                 claims: _,
                 executable: _,
                 axioms: _,
+            }
+            | SemanticDeclaration::Tokenizer {
+                name: _,
+                type_parameters: _,
+                scheme: _,
+                vocabulary: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::ContextWindow {
+                name: _,
+                capacity: _,
+                overflow: _,
+            }
+            | SemanticDeclaration::TextGenerator {
+                name: _,
+                tokenizer: _,
+                window: _,
+                scorer: _,
+                max_tokens: _,
+                stop: _,
+                policy: _,
+            }
+            | SemanticDeclaration::TextClassifier {
+                name: _,
+                tokenizer: _,
+                model: _,
             } => {
                 self.violation(
                     site,
@@ -2218,6 +2296,32 @@ impl<'a> Walk<'a> {
                 constructors: _,
                 mutual: _,
             }) => "declaration.inductive",
+            Some(SemanticDeclaration::Tokenizer {
+                name: _,
+                type_parameters: _,
+                scheme: _,
+                vocabulary: _,
+                axioms: _,
+            }) => "declaration.tokenizer",
+            Some(SemanticDeclaration::ContextWindow {
+                name: _,
+                capacity: _,
+                overflow: _,
+            }) => "declaration.context_window",
+            Some(SemanticDeclaration::TextGenerator {
+                name: _,
+                tokenizer: _,
+                window: _,
+                scorer: _,
+                max_tokens: _,
+                stop: _,
+                policy: _,
+            }) => "declaration.text_generator",
+            Some(SemanticDeclaration::TextClassifier {
+                name: _,
+                tokenizer: _,
+                model: _,
+            }) => "declaration.text_classifier",
             None => "declaration.definition",
         };
         // A declaration elaborated from a model declaration is that
@@ -2440,6 +2544,32 @@ impl<'a> Walk<'a> {
                     parameters: _,
                     constructors: _,
                     mutual: _,
+                }
+                | SemanticDeclaration::Tokenizer {
+                    name: _,
+                    type_parameters: _,
+                    scheme: _,
+                    vocabulary: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::ContextWindow {
+                    name: _,
+                    capacity: _,
+                    overflow: _,
+                }
+                | SemanticDeclaration::TextGenerator {
+                    name: _,
+                    tokenizer: _,
+                    window: _,
+                    scorer: _,
+                    max_tokens: _,
+                    stop: _,
+                    policy: _,
+                }
+                | SemanticDeclaration::TextClassifier {
+                    name: _,
+                    tokenizer: _,
+                    model: _,
                 },
             ) => {
                 self.construct(&site, construct, None);
@@ -2630,6 +2760,32 @@ fn inductive_group(
                 claims: _,
                 executable: _,
                 axioms: _,
+            }
+            | SemanticDeclaration::Tokenizer {
+                name: _,
+                type_parameters: _,
+                scheme: _,
+                vocabulary: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::ContextWindow {
+                name: _,
+                capacity: _,
+                overflow: _,
+            }
+            | SemanticDeclaration::TextGenerator {
+                name: _,
+                tokenizer: _,
+                window: _,
+                scorer: _,
+                max_tokens: _,
+                stop: _,
+                policy: _,
+            }
+            | SemanticDeclaration::TextClassifier {
+                name: _,
+                tokenizer: _,
+                model: _,
             } => {}
         }
     }
@@ -3263,6 +3419,32 @@ pub fn analyse_module(
                 claims: _,
                 executable: _,
                 axioms: _,
+            }
+            | SemanticDeclaration::Tokenizer {
+                name: _,
+                type_parameters: _,
+                scheme: _,
+                vocabulary: _,
+                axioms: _,
+            }
+            | SemanticDeclaration::ContextWindow {
+                name: _,
+                capacity: _,
+                overflow: _,
+            }
+            | SemanticDeclaration::TextGenerator {
+                name: _,
+                tokenizer: _,
+                window: _,
+                scorer: _,
+                max_tokens: _,
+                stop: _,
+                policy: _,
+            }
+            | SemanticDeclaration::TextClassifier {
+                name: _,
+                tokenizer: _,
+                model: _,
             } => {}
         }
     }
