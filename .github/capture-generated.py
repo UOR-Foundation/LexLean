@@ -18,7 +18,7 @@ import tempfile
 
 
 SCOPES = ("examples", "compiler", "language/preservation-1.2/modules",
-          "tests/fixtures", "tests/negative")
+          "tests/fixtures", "tests/negative", "tests/tooling")
 CAP = 64 * 1024 * 1024
 MAX_ENTRIES = 30000
 MAX_TOTAL = 512 * 1024 * 1024
@@ -113,6 +113,10 @@ def generated_roots(baseline):
             directories.add(path[:-len("case.toml")] + "expected")
         if path.startswith("tests/negative/") and path.endswith("/project/lexlean.toml"):
             files.add(path[:-len("lexlean.toml")] + "lexlean.lock")
+        # A tooling project publishes its generated tree under its own
+        # expected/ directory exactly as an example does.
+        if path.startswith("tests/tooling/") and parts[-1] == "lexlean.toml":
+            directories.add("/".join(parts[:3]) + "/expected")
     return sorted(directories), sorted(files)
 
 
