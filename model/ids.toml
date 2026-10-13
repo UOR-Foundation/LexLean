@@ -2209,3 +2209,88 @@ id = "TL-11"
 level = "build"
 suite = "tooling"
 statement = "Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[[id]]
+id = "LM-01"
+level = "build"
+suite = "language-models"
+statement = "A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`)."
+
+[[id]]
+id = "LM-02"
+level = "build"
+suite = "language-models"
+statement = "A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification."
+
+[[id]]
+id = "LM-03"
+level = "build"
+suite = "language-models"
+statement = "Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded."
+
+[[id]]
+id = "LM-04"
+level = "build"
+suite = "language-models"
+statement = "A `context_window` has a capacity of at least one and an overflow disposition of `refuse` or `keep_last`, elaborating to a stateful #29 contract and realization over `list uint32` whose invariant is that the length does not exceed the capacity, with a preservation theorem, a suffix theorem and an exactness theorem; the window composes with the other stateful stages, `scan` included, a capacity below one is refused, and a context that overflows a `refuse` window is refused before any state is built."
+
+[[id]]
+id = "LM-05"
+level = "build"
+suite = "language-models"
+statement = "A `text_generator` takes a tokenizer, a window and a scorer, which is a #29 model from `list uint32` to `list int` whose width is the vocabulary size, and it requires `max_tokens` and `stop`; its loop is `iterate_until`, running out of fuel is `exhausted`, and its policy `greedy` takes the first maximum and has no seed parameter, so it is deterministic by type."
+
+[[id]]
+id = "LM-06"
+level = "build"
+suite = "language-models"
+statement = "The policy `sample` samples only through closed members: the generator is `xorshift32` and the distribution `proportional`, the seed is an explicit input and the next seed an explicit output, the arithmetic is checked fixed-width with no wrapping primitive added, and a generation request that samples without that explicit contract is refused; no claim is made about the quality of the randomness."
+
+[[id]]
+id = "LM-07"
+level = "build"
+suite = "language-models"
+statement = "A `text_classifier` takes token-count features from the tokenizer and feeds them to a #29 model that produces the label, so classification is deterministic for a deterministic model and a label outside the model's closed label enumeration is refused."
+
+[[id]]
+id = "LM-08"
+level = "build"
+suite = "language-models"
+statement = "Text components compose like any other language-1.2 declarations, and adapters add no new kind: an adapter is a #29 model whose realization is one of these elaborations, with a contract over the text types and `satisfies_contract` evidence, and a composition or an adapter whose interface does not match is refused rather than coerced."
+
+[[id]]
+id = "LM-09"
+level = "build"
+suite = "language-models"
+statement = "No free-form prompt string is semantic code, by construction: `string` is data, the primitive set has no string-to-code member, and a prompt reaches a model only as `encodeText`; a conformance case audits the registries for a string-to-code row and plants one, and a declaration offering prompt text as its semantic content is refused as a schema violation (`LLT4001`)."
+
+[[id]]
+id = "LM-10"
+level = "build"
+suite = "language-models"
+statement = "Text components are production-eligible in `rust-std` only and refused in `rust-core` with `LLT4005`, because strings and bytes allocate; the production evidence for a text root carries the differential comparison and certificates A, B and E, and the eligibility report gains `text_rows`, which record the nondeterminism contract of each production root as the reasoning rows do."
+
+[[id]]
+id = "LM-11"
+level = "build"
+suite = "language-models"
+statement = "The committed `examples/text-models` example builds its pipeline from the closed components alone — tokenizer, window, scorer, and a generator or classifier — verifies with every claim kernel-checked, and detects a planted mutation."
+
+[[id]]
+id = "LM-12"
+level = "build"
+suite = "language-models"
+statement = "Every fixed helper the text components are elaborated through is covered by a conformance case, so that a helper added without a case is a failure of the register rather than an untested path."
