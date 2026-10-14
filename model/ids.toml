@@ -2294,3 +2294,9 @@ id = "LM-12"
 level = "build"
 suite = "language-models"
 statement = "Every fixed helper the text components are elaborated through is covered by a conformance case, so that a helper added without a case is a failure of the register rather than an untested path."
+
+[[id]]
+id = "LM-13"
+level = "build"
+suite = "language-models"
+statement = "The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text."

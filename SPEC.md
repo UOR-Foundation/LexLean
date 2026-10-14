@@ -6525,7 +6525,7 @@ nested partition of the embedded tree. The language-1.2 ID covers the whole
 tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `language/bootstrap-1.2.toml`, `language/semantics-1.2.toml`,
 `language/production-1.2.toml`, `language/lcnf-1.2/`,
-`language/preservation-1.2/`, `language/core-1.2/`,
+`language/preservation-1.2/`, `language/text-1.2/`, `language/core-1.2/`,
 `language/std/{bool,int,nat}-1.2/`, `schemas/attestation-v2.schema.json`,
 `schemas/build-manifest-v2.schema.json`,
 `schemas/compiler-input.schema.json`, `schemas/core-module-v2.schema.json`,
@@ -8748,8 +8748,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-10` | `language-models` | Text components are production-eligible in `rust-std` only and refused in `rust-core` with `LLT4005`, because strings and bytes allocate; the production evidence for a text root carries the differential comparison and certificates A, B and E, and the eligibility report gains `text_rows`, which record the nondeterminism contract of each production root as the reasoning rows do. | §17.12 |
 | `LM-11` | `language-models` | The committed `examples/text-models` example builds its pipeline from the closed components alone — tokenizer, window, scorer, and a generator or classifier — verifies with every claim kernel-checked, and detects a planted mutation. | §17.12 |
 | `LM-12` | `language-models` | Every fixed helper the text components are elaborated through is covered by a conformance case, so that a helper added without a case is a failure of the register rather than an untested path. | §17.12 |
+| `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 379.
+**Total required capability IDs:** 380.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

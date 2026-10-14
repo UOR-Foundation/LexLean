@@ -2408,6 +2408,13 @@ pub fn render_lean(
             identifier(&format!("{module_prefix}.{import}"))
         ));
     }
+    // §17.12 (text): the elaboration's own imports — the sealed laws
+    // library a text declaration means. They are written here, once, and
+    // the laws themselves are never spliced into the module: the import is
+    // what a text declaration elaborates to.
+    for import in module.elaboration.imports() {
+        text.push_str(&format!("public import {}\n", identifier(import)));
+    }
     // Large closed byte constants incur Lean compiler work beyond its small
     // interactive defaults. Match the fixed finite closed-core budgets; the
     // project still bounds child elapsed time and captured output, and every

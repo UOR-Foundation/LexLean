@@ -87,3 +87,10 @@ Feature: language-models
     When the conformance cases are enumerated
     Then every helper has a case of its own
     And a helper added without a case fails the register
+
+  @LM-13 @build
+  Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.
+    Given the embedded text library that states a tokenizer's laws, and the register
+    When the release tree is searched for an independently authored implementation of those laws
+    Then the native module is the only source of the laws and the library project holds no Lean file
+    And a module that declares a text component imports the generated module rather than splicing any Lean text

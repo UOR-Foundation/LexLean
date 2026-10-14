@@ -643,6 +643,11 @@ pub struct Elaboration {
     pub(crate) obligations: Vec<Vec<Obligation>>,
     pub(crate) required: Vec<Vec<ModelCheck>>,
     pub(crate) theorems: Vec<Vec<super::reasoning::GeneratedTheorem>>,
+    /// The Lean modules a generated module must import for what the
+    /// elaboration states elsewhere: the laws library of a text declaration
+    /// (§17.12), in first-use order. Never serialized; a function of the
+    /// declarations, the embedded library, and the compiler semantics.
+    pub(crate) imports: Vec<String>,
     /// The model interfaces this module declares, keyed by local name.
     pub(crate) models: Models,
     /// The reasoning interfaces this module declares, keyed by local name.
@@ -685,10 +690,12 @@ impl Builder {
         declarations: &[SemanticDeclaration],
         models: Models,
         reasoning: super::reasoning::Reasoning,
+        imports: Vec<String>,
     ) -> Result<Elaboration, SemanticFailure> {
         let mut elaboration = Elaboration {
             models,
             reasoning,
+            imports,
             ..Elaboration::default()
         };
         for (declaration, lowering) in declarations.iter().zip(self.pending) {
@@ -812,6 +819,13 @@ impl Elaboration {
     #[must_use]
     pub fn all_theorems(&self) -> Vec<&super::reasoning::GeneratedTheorem> {
         self.theorems.iter().flatten().collect()
+    }
+
+    /// Every Lean module the elaboration adds to a generated module's
+    /// imports, in first-use order.
+    #[must_use]
+    pub fn imports(&self) -> &[String] {
+        &self.imports
     }
 
     /// The runtime checks executable code must apply to the model declared

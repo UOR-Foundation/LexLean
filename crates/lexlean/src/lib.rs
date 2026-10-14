@@ -53,6 +53,8 @@ pub mod project;
 #[doc(hidden)]
 pub mod source;
 #[doc(hidden)]
+pub mod text_laws;
+#[doc(hidden)]
 pub mod verify;
 
 pub use api::{
@@ -173,6 +175,7 @@ fn is_v1_2_file(path: &str) -> bool {
         || path == crate::production::REGISTRY_PATH
         || path.starts_with("language/lcnf-1.2/")
         || path.starts_with("language/preservation-1.2/")
+        || path.starts_with("language/text-1.2/")
         || path == "schemas/compiler-input.schema.json"
         || path == "schemas/gnaf-certificate-fixture.schema.json"
         || path == "schemas/gnaf-certificate.schema.json"

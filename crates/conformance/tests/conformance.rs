@@ -1899,3 +1899,8 @@ fn conformance_lm_11() {
 fn conformance_lm_12() {
     repo_conformance::cases::run("LM-12");
 }
+
+#[test]
+fn conformance_lm_13() {
+    repo_conformance::cases::run("LM-13");
+}
