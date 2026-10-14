@@ -149,8 +149,14 @@ const TOP_KEYS: [&str; 7] = [
     "invocation",
     "environment",
 ];
-/// The environment variables a fixture may set (§23.1, §28.2).
-const OPERATIONAL_VARIABLES: [&str; 1] = ["LEXLEAN_VERIFY_WIDTH"];
+/// The environment variables a fixture may set (§23.1, §28.2). The three of
+/// the verification resource profile (§22.11): a fixture that exercises the
+/// scheduling hints or the memory budget states them exactly as a job does.
+const OPERATIONAL_VARIABLES: [&str; 3] = [
+    "LEXLEAN_VERIFY_WIDTH",
+    "LEXLEAN_VERIFY_HINTS",
+    "LEXLEAN_VERIFY_MEMORY_KIB",
+];
 const INVOCATION_KEYS: [&str; 5] = [
     "step",
     "command",
