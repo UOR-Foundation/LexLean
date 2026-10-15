@@ -1120,6 +1120,69 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### certificate E is kernel-term data and a defect in it is refused
+
+Certificate E of a root is a native core module the compiler builds
+(`production/certificate/data.rs` over `production/kernel.rs`), so a defect is
+planted in the data and must be seen where the kernel checks it, or before,
+where the data is audited. `conformance_sp_14` builds every certificate E of the
+four corpora as data, reads each record back from its notation, verifies the
+production example under the pinned Lean, and then plants five defects in the
+data of one certificate E of that example, each refused. The plants below are
+what the case runs; their outputs were recorded on Linux x86-64 with Lean
+4.32.1. Command: `cargo test -p repo-conformance --test conformance --
+conformance_sp_14 --nocapture`.
+
+Planted (a), a wrong lemma: the first scalar well-typedness lemma the
+certificate applies (`LexLeanPreservation.Rust.wt_u32` in the root's `wtl_cons`
+chain) renamed to `LexLeanPreservation.Rust.wt_bool` in every constant node
+that names it. Expected: the kernel refuses the row, since the lemma's type is
+not the argument's.
+
+```text
+WRONG_LEMMA
+```
+
+Planted (b), a changed statement: the constant node of the fallibility flag
+(`Bool.true`, shared by the statement and the proof) renamed to `Bool.false`.
+Expected: the restated theorem claims the other result shape of the crate's
+root, and `compose`'s equation on `fnFallible` no longer holds by `Eq.refl`.
+
+```text
+CHANGED_STATEMENT
+```
+
+Planted (c), a forged crate reference: the constant node `<module_b>.krate`
+renamed to `<module_b>.flags`. Expected: the kernel refuses the row, since
+certificate B's root theorem is about the crate, not the flags.
+
+```text
+FORGED_CRATE
+```
+
+Planted (d), an added axiom: a constant node `sorryAx` appended to the DAG and
+made the `root` row's proof. Expected: the data audit refuses the module
+before any Lean runs, naming the forbidden constant.
+
+```text
+ADDED_AXIOM
+```
+
+Planted (e), a lying policy: the `root` row's policy changed from the three
+certificate axioms to `exact{axioms: []}`. Expected: Lean accepts the module
+(the proof is unchanged), and the audit module, which prints the axioms of
+every row of a data certificate, refuses the row whose policy does not state
+what Lean prints.
+
+```text
+LYING_POLICY
+```
+
+Removed: the plants are mutations of a clone of the generated data inside the
+case; nothing is restored. The case passes on the unplanted data, and the
+committed records of the four corpora are its notation, read back to the data
+byte for byte.
+
 ### certificate generation is bounded
 
 `lexlean verify` of a project whose root instantiates the generic chain
