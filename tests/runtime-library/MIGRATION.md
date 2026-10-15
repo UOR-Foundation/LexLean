@@ -31,8 +31,8 @@ code generator compiled 115 of the 371 declarations, which the data records.
 
 ## How
 
-The one-time conversion is the oracle of the checkpoint commit that adds
-`tests/runtime-library/oracle/` (removed from the release tree by the commit
+The one-time conversion is the oracle of checkpoint commit `34d940f8a164cc7b488233292ae27bef749303db`
+(`tests/runtime-library/oracle/`, removed from the release tree by the commit
 that follows it). It reuses the exporter, `flags.lean`, `probe.lean`,
 `canon.py` and `compare.py` of the preservation library's migration, with the
 runtime's module list:
