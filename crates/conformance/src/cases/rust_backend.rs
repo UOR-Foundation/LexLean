@@ -1494,6 +1494,104 @@ pub fn run(id: &str) {
                 String::from_utf8_lossy(&ran.stderr)
             );
         }
+        // §17.16: the runtime's library surface is closed, and each name on
+        // it is a primitive, stated over primitives, or an AST construct.
+        "RB-09" => {
+            use lexlean::calculus::rust::runtime::{CORE, STD};
+            use lexlean::calculus::rust_library::{
+                audit, audit_runtime, Kind, Primitive, Role, LIBRARY, PRIMITIVES,
+            };
+            audit_runtime().expect("the runtime keeps to its library table");
+            let primitives = LIBRARY
+                .iter()
+                .filter(|(_, _, role)| matches!(role, Role::Primitive(_)))
+                .count();
+            assert!(
+                primitives > 0 && LIBRARY.len() > primitives && PRIMITIVES.len() > 1,
+                "an empty table refuses nothing"
+            );
+            let runtime = format!("{CORE}{STD}");
+            let refused = |text: &str,
+                           library: &[(Kind, &str, Role)],
+                           primitives: &[Primitive],
+                           expected: &str| {
+                let error = audit(text, library, primitives).expect_err(expected);
+                assert!(error.contains(expected), "{error}");
+            };
+            // A library function the table does not list.
+            refused(
+                &format!("{runtime}pub fn planted(a: u64) -> u64 {{ a.wrapping_add(1) }}\n"),
+                LIBRARY,
+                PRIMITIVES,
+                "the runtime uses the method `wrapping_add`",
+            );
+            // A path, a macro, and a type outside the table.
+            for (planted, expected) in [
+                (
+                    "pub fn planted() { std::process::abort() }\n",
+                    "the path `std::process::abort`",
+                ),
+                (
+                    "pub fn planted() -> u64 { 0 }\nconst _: () = assert!(true);\n",
+                    "the macro `assert`",
+                ),
+                ("pub fn planted(_: Box<u64>) {}\n", "the name `Box`"),
+            ] {
+                refused(
+                    &format!("{runtime}{planted}"),
+                    LIBRARY,
+                    PRIMITIVES,
+                    expected,
+                );
+            }
+            // A row removed: what it covered is now outside the table.
+            let without: Vec<_> = LIBRARY
+                .iter()
+                .copied()
+                .filter(|(kind, name, _)| !(*kind == Kind::Path && *name == "Vec::new"))
+                .collect();
+            assert_eq!(without.len() + 1, LIBRARY.len(), "the row exists");
+            refused(
+                &runtime,
+                &without,
+                PRIMITIVES,
+                "the runtime uses the path `Vec::new`",
+            );
+            // A row the runtime does not use.
+            let mut extra = LIBRARY.to_vec();
+            extra.push((Kind::Method, "wrapping_mul", Role::Stated(&["checked_mul"])));
+            refused(
+                &runtime,
+                &extra,
+                PRIMITIVES,
+                "the method row `wrapping_mul` names nothing the runtime uses",
+            );
+            // A role citing a name that is not a primitive.
+            let mut stated = LIBRARY.to_vec();
+            let row = stated
+                .iter_mut()
+                .find(|(_, name, _)| *name == "saturating_sub")
+                .expect("the row exists");
+            row.2 = Role::Stated(&["wrapping_sub"]);
+            refused(
+                &runtime,
+                &stated,
+                PRIMITIVES,
+                "the method row `saturating_sub` cites `wrapping_sub`, which is not a primitive",
+            );
+            // A primitive no row cites.
+            let mut unused = PRIMITIVES.to_vec();
+            unused.push(Primitive {
+                name: "checked_pow",
+                meaning: "planted",
+            });
+            refused(
+                &runtime,
+                LIBRARY,
+                &unused,
+                "the primitive `checked_pow` is cited by no row",
+            );
+        }
         other => panic!("no Rust backend case is wired for {other}"),
     }
 }

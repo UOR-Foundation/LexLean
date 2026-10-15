@@ -1683,6 +1683,12 @@ suite = "rust-backend"
 statement = "A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused."
 
 [[id]]
+id = "RB-09"
+level = "build"
+suite = "rust-backend"
+statement = "Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused."
+
+[[id]]
 id = "GN-01"
 level = "build"
 suite = "gnaf"

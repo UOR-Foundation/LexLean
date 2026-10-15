@@ -157,6 +157,18 @@ versions, and the entries below say what each tag does and does not claim.
   width 1. On the standard runner's 16 GB, 22 of Atlas's 66 modules peak above
   8 GiB, so the modelled gain is small: about 13 min of Atlas's 169, from main's
   telemetry. The CI run of this change is the measurement.
+  `fmt` writes the notation canonically (a module written as data stays as it
+  is). No diagnostic code is new: a malformed text is `LLP2001`, and nothing
+  embedded in the compiler-semantics ID changes.
+- Rust runtime library boundary (SPEC.md §17.16, `RB-09`, no new
+  diagnostic code), stage 1 of #91. `rust_library::PRIMITIVES` states the
+  machine primitives the runtime may use, each by its meaning, and
+  `rust_library::LIBRARY` lists every name the runtime text takes from
+  Rust's library with its role: part of a primitive, stated in the closed AST
+  over primitives, or a construct of the closed AST. The audit reads the
+  text and refuses a name outside the table, a row the text does not use,
+  a row citing a non-primitive, and a primitive no row cites. The runtime
+  text is unchanged, so no runtime digest, package, or semantic ID changes.
 - `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
   no new diagnostic code). A read of a binding that nothing after it reads
   is a move and a projection of a pair component that nothing after it
