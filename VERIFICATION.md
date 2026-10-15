@@ -1168,6 +1168,7 @@ carries the header of the lifted budgets), and the derivation bound of
 `tests/negative/certificate-generation-limit` (5 285 358 bytes before, 4 259 854
 after: the chain is shorter than the literal Lean splits under binders, and the
 root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
+
 ### certificate E is kernel-term data and a defect in it is refused
 
 Certificate E of a root is a native core module the compiler builds

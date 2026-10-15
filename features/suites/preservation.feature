@@ -92,6 +92,7 @@ Feature: preservation
     When the certificates of each root are generated and the list literals they write are counted, and each root is verified with the pinned Lean
     Then no certificate writes a list literal of more than 32 elements
     And every root verifies, certificate B included
+
   @SP-14 @build
   Scenario: Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused.
     Given every production root of the committed examples, the lowered programs, and the native preservation library
