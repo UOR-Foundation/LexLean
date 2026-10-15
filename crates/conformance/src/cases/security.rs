@@ -772,6 +772,21 @@ pub(crate) fn run(id: &str) {
                 ] {
                     assert!(error.message.contains(needle), "{}", error.message);
                 }
+                // The deadline also bounds output inherited by a live
+                // descendant after its leader has exited and been reaped.
+                std::fs::write(&sleeper, "#!/bin/sh\nsleep 3 2>/dev/null &\nexit 0\n")
+                    .expect("write");
+                let error = lexlean::verify::child::run(&spec(&sleeper, cwd), &limits, &normalizer)
+                    .expect_err("an inherited output pipe cannot outlive the child timeout");
+                assert_eq!(error.code.as_str(), "LLS8002");
+                for needle in [
+                    "child_timeout_ms",
+                    "`stub`",
+                    "phase Probe",
+                    "configured 200",
+                ] {
+                    assert!(error.message.contains(needle), "{}", error.message);
+                }
             }
         }
         // §25.6: confined staging, removed on success and failure, and
