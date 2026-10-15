@@ -1904,3 +1904,23 @@ fn conformance_au_11() {
 fn conformance_au_12() {
     repo_conformance::cases::run("AU-12");
 }
+
+#[test]
+fn conformance_rt_01() {
+    repo_conformance::cases::run("RT-01");
+}
+
+#[test]
+fn conformance_rt_02() {
+    repo_conformance::cases::run("RT-02");
+}
+
+#[test]
+fn conformance_rt_03() {
+    repo_conformance::cases::run("RT-03");
+}
+
+#[test]
+fn conformance_rt_04() {
+    repo_conformance::cases::run("RT-04");
+}

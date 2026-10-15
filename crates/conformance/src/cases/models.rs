@@ -981,10 +981,25 @@ fn md_03() {
     assert!(lean.contains(
         "public theorem DigitContract.postcondition_complete : LexLeanModels.Complete2 ((Models.Recognizer.recognizesCheck)) ((Models.Recognizer.Recognizes)) := Models.Recognizer.recognizes_check_complete"
     ));
-    for helper in ["def Sound1", "def Sound2", "def Complete1", "def Complete2"] {
+    // The fixed model semantics is the model runtime module (§17.12,
+    // *Runtime modules*), which the module imports.
+    assert!(
+        lean.contains(&format!(
+            "public import {}\n",
+            lexlean::backend::runtime::MODELS
+        )),
+        "a module with a model declaration imports the model runtime"
+    );
+    let runtime = lexlean::backend::runtime::modules()
+        .expect("the shipped runtime")
+        .iter()
+        .find(|module| module.name == lexlean::backend::runtime::MODELS)
+        .expect("the model runtime");
+    for helper in ["Sound1", "Sound2", "Complete1", "Complete2"] {
+        let name = format!("LexLeanModels.{helper}");
         assert!(
-            lean.contains(helper),
-            "the fixed model runtime defines `{helper}`"
+            runtime.declarations.iter().any(|(row, _)| *row == name),
+            "the fixed model runtime defines `{name}`"
         );
     }
     let snapshot = snapshot(&project);
@@ -2984,15 +2999,23 @@ fn md_12() {
     project.fmt_check_ok();
     // The inventory: every claim and link form of the fixed model semantics
     // is produced by a declaration of the committed example. The names are
-    // read from the emitted runtime itself, so a new form is covered or this
+    // read from the model runtime module itself (§17.12, *Runtime modules*),
+    // which the example's modules import, so a new form is covered or this
     // case fails.
     let build = support::rendered(&project);
     let lean = support::lean_text(&build, "Ledger");
-    let runtime = lean
-        .split("namespace LexLeanModels\n")
-        .nth(1)
-        .and_then(|rest| rest.split("end LexLeanModels").next())
-        .expect("the emitted model runtime");
+    assert!(
+        lean.contains(&format!(
+            "public import {}\n",
+            lexlean::backend::runtime::MODELS
+        )),
+        "a module with a model declaration imports the model runtime"
+    );
+    let runtime = lexlean::backend::runtime::modules()
+        .expect("the shipped runtime")
+        .iter()
+        .find(|module| module.name == lexlean::backend::runtime::MODELS)
+        .expect("the model runtime");
     let decoders = BTreeSet::from([
         "encodeInt",
         "inRange",
@@ -3001,10 +3024,10 @@ fn md_12() {
         "utf8Char",
     ]);
     let forms: BTreeSet<String> = runtime
-        .lines()
-        .filter_map(|line| line.split("public def ").nth(1))
-        .filter_map(|rest| rest.split_whitespace().next())
-        .filter(|name| !decoders.contains(name))
+        .declarations
+        .iter()
+        .filter_map(|(name, _)| name.strip_prefix("LexLeanModels."))
+        .filter(|name| !name.contains('.') && !decoders.contains(name))
         .map(str::to_owned)
         .collect();
     assert!(forms.len() >= 20, "{forms:?}");

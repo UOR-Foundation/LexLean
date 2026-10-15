@@ -1207,6 +1207,16 @@ pub(crate) fn run(id: &str) {
                         );
                     }
                 }
+                // The one Lean text beside the module's data is the decoder of
+                // core module 1: the released bytes of language 1.0, held as
+                // the frozen data the backend reads (SPEC.md §17.12, RT-02).
+                assert_eq!(
+                    text.matches(lexlean::backend::runtime::frozen_core_decoder())
+                        .count(),
+                    1,
+                    "{} carries the frozen decoder of core module 1 exactly once",
+                    entry.path().display()
+                );
             }
 
             for entry in walkdir::WalkDir::new(root.as_std_path())

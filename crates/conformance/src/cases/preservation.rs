@@ -1562,6 +1562,18 @@ pub fn run(id: &str) {
                 preserve::LIBRARY_PREFIX,
                 "tests/preservation-library/oracle",
             );
+            // The one Lean text beside a module's data is the decoder of core
+            // module 2, which loads native modules (SPEC.md §17.12, RT-04).
+            for module in &library.modules {
+                assert_eq!(
+                    preserve::module_text(module)
+                        .expect("the generated library module")
+                        .matches(lexlean::backend::core_v2::LEAN_CORE_DECODER_V2)
+                        .count(),
+                    1,
+                    "`{module}` carries the decoder of core module 2 exactly once"
+                );
+            }
             // The library is LexLean source, one native module per listed
             // module, and nothing else: no module without a source, no
             // source without a module, and no Lean file the compiler did
