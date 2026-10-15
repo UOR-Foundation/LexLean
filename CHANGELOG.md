@@ -1318,6 +1318,11 @@ versions, and the entries below say what each tag does and does not claim.
   instead. The scratch copy now allows 900 s, so the case again states only
   what Lean said about the planted module. The committed `compiler` project,
   its limits, and `verified_compiler()` are unchanged.
+- The start-order case of the verifier pool no longer reads the scheduler
+  (#148; test hardening, no compiler change). It recorded the order in which
+  four workers ran, not the order in which they claimed their items, and
+  failed 82 of 600 runs beside eight busy loops and once on an Intel macOS
+  host leg; it now observes the claims through two workers.
 
 ## 0.3.0
 
