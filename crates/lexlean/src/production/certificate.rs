@@ -447,7 +447,7 @@ pub fn certificate_e(
     let data = generator
         .compose_data(root_module, root_name, module_a, module_b, module, fallible)
         .map_err(failure)?;
-    let text = crate::backend::core::lean_text_legacy(&data)
+    let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| internal(diagnostic.message))?;
     generator.within(text.len()).map_err(failure)?;
     let source = record_source(module, &data).map_err(internal)?;

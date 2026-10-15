@@ -3096,9 +3096,9 @@ pub fn run(id: &str) {
                 planted
             };
             let refused = |label: &str, planted: &lexlean::ir::core::CoreModule| {
-                let text = lexlean::backend::core::lean_text_legacy(planted)
-                    .expect("the planted module renders");
                 let module = format!("{}Plant{label}", composed.module);
+                let text = lexlean::backend::core::lean_text_legacy(planted, &module)
+                    .expect("the planted module renders");
                 let output = preservation::compile_text(root.path(), &module, &text);
                 let joined = format!(
                     "{}{}",
@@ -3178,8 +3178,9 @@ pub fn run(id: &str) {
             }
             let mut lying_certificate = composed.clone();
             lying_certificate.module = format!("{}PlantLyingPolicy", composed.module);
-            lying_certificate.text = lexlean::backend::core::lean_text_legacy(&lying)
-                .expect("the planted module renders");
+            lying_certificate.text =
+                lexlean::backend::core::lean_text_legacy(&lying, &lying_certificate.module)
+                    .expect("the planted module renders");
             lying_certificate.data = Some(lying);
             let output = preservation::compile_text(
                 root.path(),

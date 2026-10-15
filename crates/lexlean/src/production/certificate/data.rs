@@ -2062,7 +2062,6 @@ impl Composer<'_, '_> {
     }
 }
 
-
 /// The field types of a container's constructors other than the container
 /// itself: the element of a list, set, or map (its entries), the value of an
 /// option, the two components of a pair, and the error then the value of a
