@@ -642,15 +642,21 @@ mod tests {
         assert_eq!(ordered, vec![3, 1, 0, 2], "longest and largest first");
         let starts = Mutex::new(Vec::new());
         let mut consumed = Vec::new();
+        // A job records itself on its own thread after its claim, so with
+        // as many workers as items the order of the records is the
+        // scheduler's, not the claims' (#148). Two workers make the claims
+        // observable: item 3 holds one worker for the whole run, so the
+        // other claims 0 and then 2 one after the other, and the first two
+        // claims are 3 and 1 in whichever order their threads record them.
         run_ordered_with(
-            4,
+            2,
             &items,
             Some(&hints),
             None,
             &label,
             &|item: usize| {
                 starts.lock().expect("lock").push(item);
-                std::thread::sleep(Duration::from_millis(20));
+                std::thread::sleep(Duration::from_millis(if item == 3 { 500 } else { 50 }));
                 item
             },
             &|_: &usize| false,
@@ -660,12 +666,11 @@ mod tests {
             },
         )
         .expect("all items");
-        let firsts: Vec<usize> = starts.lock().expect("lock").clone();
-        assert_eq!(
-            &firsts[..3],
-            &[3, 1, 0],
-            "the hinted heaviest was started first"
-        );
+        let started: Vec<usize> = starts.lock().expect("lock").clone();
+        let mut firsts = started[..2].to_vec();
+        firsts.sort_unstable();
+        assert_eq!(firsts, [1, 3], "the hinted heaviest were started first");
+        assert_eq!(&started[2..], &[0, 2], "then the rest, in hint order");
         assert_eq!(consumed, [0, 1, 2, 3], "consumed in item order");
     }
 
