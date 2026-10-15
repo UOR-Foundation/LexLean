@@ -762,35 +762,14 @@ impl<'g, 'a> Composer<'g, 'a> {
             let proof = self.wt_apply(ty, *value)?;
             items.push((encoded, target, proof));
         }
-        let value_ty = self.syntax("Value");
-        let ty_ty = self.syntax("Ty");
-        let fs: Vec<Term> = items.iter().map(|item| item.0).collect();
-        let tys: Vec<Term> = items.iter().map(|item| item.1).collect();
-        let fs = self.b.list(value_ty, &fs);
-        let tys = self.b.list(ty_ty, &tys);
-        let hf = self.wtl(&items)?;
-        let (p, c, a) = (self.p, self.c, self.a);
-        let i = self.b.nat(index);
-        let k = self.b.nat(constructor);
-        self.rust_lemma(
-            "wt_adt",
-            &[
-                Arg::Term(p),
-                Arg::Term(c),
-                Arg::Term(a),
-                Arg::Term(i),
-                Arg::Term(k),
-                Arg::Term(fs),
-                Arg::Term(tys),
-                Arg::Refl,
-                Arg::Term(hf),
-            ],
-        )
+        self.wt_adt_items(index, constructor, &items)
     }
 
-    /// The row `__wt_k` of document type `index`: every value of the type
-    /// encodes to a well-typed value of `Ty.adt index`.
-    fn wt_row(&mut self, index: u64, recursive: bool) -> Result<Row, String> {
+    /// The row `__wt_k` of a document type `index` outside every recursive
+    /// group: every value of the type encodes to a well-typed value of
+    /// `Ty.adt index`, by the projections of a structure or by cases on an
+    /// inductive.
+    fn wt_row(&mut self, index: u64) -> Result<Row, String> {
         let adt = &self.gen.layout.adts[index as usize];
         let ty = adt.ty.clone();
         let shape = self.gen.source.document(&ty)?;
@@ -831,23 +810,13 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
         };
         let owner = self.document_name(&member)?;
-        let binder = if shape.kind == "inductive" || recursive {
-            "__v"
-        } else {
-            "__s"
-        };
+        let binder = if shape.kind == "inductive" { "__v" } else { "__s" };
         // The statement: ∀ (v : T), WT p c A (A.__enc_k v) (.adt k).
         let v = self.b.bvar(0);
         let encoder = self.of_a(&format!("__enc_{index}"));
         let encoded = self.b.app(encoder, v);
         let body = self.wt_statement(encoded, index);
         let statement = self.b.pi(binder, CoreBinderInfo::Explicit, lean, body);
-        if recursive {
-            return Err(format!(
-                "`{}` is recursive: its well-typedness theorem is a recursor term, which stage 1 of #89 does not yet write",
-                self.gen.source.type_text(&ty)
-            ));
-        }
         let value = if shape.kind == "inductive" {
             // By cases on the value: T.casesOn params motive v minors.
             let motive = self.b.lam(binder, CoreBinderInfo::Explicit, lean, body);
@@ -1300,8 +1269,16 @@ impl<'g, 'a> Composer<'g, 'a> {
                             .get(index)
                             .is_some_and(|edges| edges.contains(index))
                 });
-            for index in component {
-                let row = self.wt_row(index, recursive)?;
+            let built = if recursive {
+                self.group_rows(&component)?
+            } else {
+                let mut built = Vec::new();
+                for index in component {
+                    built.push(self.wt_row(index)?);
+                }
+                built
+            };
+            for row in built {
                 self.row_axioms
                     .insert(row.name.clone(), row.axioms.clone());
                 rows.push(row);
@@ -1325,6 +1302,751 @@ impl<'g, 'a> Composer<'g, 'a> {
         };
         module.validate(crate::LANGUAGE_1_2)?;
         Ok(module)
+    }
+}
+
+
+/// A container the kernel nests in a recursive group of document types: an
+/// auxiliary inductive type of the group's recursors, with its own motive.
+struct Aux {
+    /// The container as the source writes it, which certificate A's nested
+    /// auxiliary encoder is registered under.
+    original: SemanticType,
+    /// The container as Lean sees it: a set as a list, a map as a list of
+    /// pairs.
+    canonical: SemanticType,
+    kind: AuxKind,
+    /// Certificate A's auxiliary for the container (`__items_n`, `__aux_n`).
+    nested_index: u64,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AuxKind {
+    List,
+    Option,
+    Prod,
+    Except,
+}
+
+/// Where a type stands among the motives of a group's recursors.
+#[derive(Clone, Copy)]
+enum Position {
+    Block(usize),
+    Aux(usize),
+}
+
+/// A recursive group: its document types in Lean's declaration order (the
+/// order of the mutual block) and the containers nested in them, in the
+/// order the kernel creates their auxiliary types: every nested container of
+/// the block's constructors, then those found inside the auxiliaries, each in
+/// turn.
+struct Group {
+    block: Vec<u64>,
+    aux: Vec<Aux>,
+}
+
+/// A type as Lean's kernel sees it: a set is a list, a map a list of pairs,
+/// a contract violation or reasoning failure a pair of Booleans.
+fn canonical(ty: &SemanticType) -> SemanticType {
+    match ty {
+        SemanticType::Set { element } | SemanticType::List { element } => SemanticType::List {
+            element: Box::new(canonical(element)),
+        },
+        SemanticType::Map { key, value } => SemanticType::List {
+            element: Box::new(SemanticType::Product {
+                left: Box::new(canonical(key)),
+                right: Box::new(canonical(value)),
+            }),
+        },
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
+            SemanticType::Product {
+                left: Box::new(SemanticType::Bool),
+                right: Box::new(SemanticType::Bool),
+            }
+        }
+        SemanticType::Option { value } => SemanticType::Option {
+            value: Box::new(canonical(value)),
+        },
+        SemanticType::Product { left, right } => SemanticType::Product {
+            left: Box::new(canonical(left)),
+            right: Box::new(canonical(right)),
+        },
+        SemanticType::Result { ok, error } => SemanticType::Result {
+            ok: Box::new(canonical(ok)),
+            error: Box::new(canonical(error)),
+        },
+        SemanticType::Named { member, arguments } => SemanticType::Named {
+            member: member.clone(),
+            arguments: arguments.iter().map(canonical).collect(),
+        },
+        SemanticType::Function {
+            parameters: _,
+            result: _,
+        }
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering => ty.clone(),
+    }
+}
+
+/// One field of a constructor as a minor premise sees it: its type, the
+/// variable holding it, and its induction hypothesis when it is recursive.
+struct Field {
+    ty: SemanticType,
+    var: Term,
+    hypothesis: Option<Term>,
+}
+
+impl Composer<'_, '_> {
+    /// The recursive group of one strongly connected component of the ADT
+    /// graph.
+    fn group(&self, component: &[u64]) -> Result<Group, String> {
+        let mut ordered = Vec::new();
+        for &index in component {
+            let ty = &self.gen.layout.adts[index as usize].ty;
+            let member = named_member(ty)?;
+            let module = member.module.clone().ok_or("an unanchored document type")?;
+            let position = self
+                .gen
+                .source
+                .declaration_position(&module, &member.name)
+                .ok_or_else(|| format!("`{}` is not declared in `{module}`", member.name))?;
+            ordered.push((position, index));
+        }
+        ordered.sort_unstable();
+        let block: Vec<u64> = ordered.into_iter().map(|(_, index)| index).collect();
+        let block_keys: BTreeSet<String> = block
+            .iter()
+            .map(|&index| self.key(&self.gen.layout.adts[index as usize].ty))
+            .collect();
+        let mut aux: Vec<Aux> = Vec::new();
+        let mut seen: BTreeSet<String> = BTreeSet::new();
+        for &index in &block {
+            let shape = self.gen.source.document(&self.gen.layout.adts[index as usize].ty)?;
+            for fields in &shape.fields {
+                for field in fields {
+                    self.register_aux(field, &block_keys, &mut aux, &mut seen)?;
+                }
+            }
+        }
+        let mut next = 0;
+        while next < aux.len() {
+            for field in self.aux_fields(&aux[next])? {
+                self.register_aux(&field, &block_keys, &mut aux, &mut seen)?;
+            }
+            next += 1;
+        }
+        Ok(Group { block, aux })
+    }
+
+    /// The key of a type among a group's positions: its canonical spelling as
+    /// Lean sees it.
+    fn key(&self, ty: &SemanticType) -> String {
+        self.gen.source.type_text(&canonical(ty))
+    }
+
+    /// Whether a canonical type mentions a type of the block.
+    fn mentions(&self, ty: &SemanticType, block_keys: &BTreeSet<String>) -> bool {
+        match ty {
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => block_keys.contains(&self.gen.source.type_text(ty)),
+            SemanticType::List { element } | SemanticType::Option { value: element } => {
+                self.mentions(element, block_keys)
+            }
+            SemanticType::Product { left, right }
+            | SemanticType::Result {
+                ok: left,
+                error: right,
+            } => self.mentions(left, block_keys) || self.mentions(right, block_keys),
+            SemanticType::Set { element: _ }
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering => false,
+        }
+    }
+
+    /// Register the container `original` as an auxiliary of the group when
+    /// it nests a type of the block and is not yet registered.
+    fn register_aux(
+        &self,
+        original: &SemanticType,
+        block_keys: &BTreeSet<String>,
+        aux: &mut Vec<Aux>,
+        seen: &mut BTreeSet<String>,
+    ) -> Result<(), String> {
+        let canonical = canonical(original);
+        if !self.mentions(&canonical, block_keys) {
+            return Ok(());
+        }
+        let kind = match &canonical {
+            SemanticType::List { element: _ } => AuxKind::List,
+            SemanticType::Option { value: _ } => AuxKind::Option,
+            SemanticType::Product { left: _, right: _ } => AuxKind::Prod,
+            SemanticType::Result { ok: _, error: _ } => AuxKind::Except,
+            SemanticType::Named {
+                member: _,
+                arguments: _,
+            } => return Ok(()),
+            SemanticType::Set { element: _ }
+            | SemanticType::Map { key: _, value: _ }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure
+            | SemanticType::Function {
+                parameters: _,
+                result: _,
+            }
+            | SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Parameter { name: _ }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering => return Ok(()),
+        };
+        let key = self.gen.source.type_text(&canonical);
+        if !seen.insert(key) {
+            return Ok(());
+        }
+        let text = self.gen.source.type_text(original);
+        let nested_index = self
+            .gen
+            .nested
+            .get(&text)
+            .map(|nested| nested.index)
+            .ok_or_else(|| {
+                format!("`{text}` is nested in a recursive group, but certificate A has no auxiliary encoder for it")
+            })?;
+        aux.push(Aux {
+            original: original.clone(),
+            canonical,
+            kind,
+            nested_index,
+        });
+        Ok(())
+    }
+
+    /// The field types of an auxiliary's constructors other than itself: the
+    /// element of a list, the value of an option, the components of a pair,
+    /// the error and the value of a result.
+    fn aux_fields(&self, aux: &Aux) -> Result<Vec<SemanticType>, String> {
+        Ok(match aux.kind {
+            AuxKind::List => vec![super::element_of(&aux.original)?],
+            AuxKind::Option => match &aux.original {
+                SemanticType::Option { value } => vec![value.as_ref().clone()],
+                _ => return Err("an option auxiliary of a non-option".to_owned()),
+            },
+            AuxKind::Prod => match &aux.original {
+                SemanticType::Product { left, right } => {
+                    vec![left.as_ref().clone(), right.as_ref().clone()]
+                }
+                SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
+                    vec![SemanticType::Bool, SemanticType::Bool]
+                }
+                _ => return Err("a pair auxiliary of a non-pair".to_owned()),
+            },
+            AuxKind::Except => match &aux.original {
+                SemanticType::Result { ok, error } => {
+                    vec![error.as_ref().clone(), ok.as_ref().clone()]
+                }
+                _ => return Err("a result auxiliary of a non-result".to_owned()),
+            },
+        })
+    }
+
+    /// The position of a type among the group's motives, if it has one.
+    fn position(&self, group: &Group, ty: &SemanticType) -> Option<Position> {
+        let key = self.key(ty);
+        if let Some(index) = group
+            .block
+            .iter()
+            .position(|&index| self.key(&self.gen.layout.adts[index as usize].ty) == key)
+        {
+            return Some(Position::Block(index));
+        }
+        group
+            .aux
+            .iter()
+            .position(|aux| self.gen.source.type_text(&aux.canonical) == key)
+            .map(Position::Aux)
+    }
+
+    /// The body of a motive, over `#0` for the value: the statement each
+    /// row of the group proves.
+    fn motive_body(&mut self, group: &Group, position: Position) -> Result<Term, String> {
+        let v = self.b.bvar(0);
+        match position {
+            Position::Block(block_position) => {
+                let index = group.block[block_position];
+                let encoder = self.of_a(&format!("__enc_{index}"));
+                let encoded = self.b.app(encoder, v);
+                Ok(self.wt_statement(encoded, index))
+            }
+            Position::Aux(aux_position) => {
+                let aux = &group.aux[aux_position];
+                let n = aux.nested_index;
+                let (p, c, a) = (self.p, self.c, self.a);
+                match aux.kind {
+                    AuxKind::List => {
+                        let element = super::element_of(&aux.original)?;
+                        let items = self.of_a(&format!("__items_{n}"));
+                        let items = self.b.app(items, v);
+                        let t = self.encoded_ty(&element)?;
+                        let wt_all = self.rust("WTAll");
+                        Ok(self.b.apps(wt_all, &[p, c, a, items, t]))
+                    }
+                    AuxKind::Option | AuxKind::Prod | AuxKind::Except => {
+                        let aux_encoder = self.of_a(&format!("__aux_{n}"));
+                        let encoded = self.b.app(aux_encoder, v);
+                        let t = self.encoded_ty(&aux.original.clone())?;
+                        let wt = self.rust("WT");
+                        Ok(self.b.apps(wt, &[p, c, a, encoded, t]))
+                    }
+                }
+            }
+        }
+    }
+
+    /// The Lean type of the values a position's motive ranges over.
+    fn position_type(&mut self, group: &Group, position: Position) -> Result<Term, String> {
+        match position {
+            Position::Block(block_position) => {
+                let ty = self.gen.layout.adts[group.block[block_position] as usize]
+                    .ty
+                    .clone();
+                self.lean_type(&ty)
+            }
+            Position::Aux(aux_position) => {
+                let ty = group.aux[aux_position].canonical.clone();
+                self.lean_type(&ty)
+            }
+        }
+    }
+
+    /// The well-typedness proof of a field inside a minor premise: its
+    /// induction hypothesis when it is recursive, else the proof of
+    /// [`Self::wt_apply`].
+    fn wt_field(&mut self, group: &Group, field: &Field) -> Result<Term, String> {
+        let Some(hypothesis) = field.hypothesis else {
+            return self.wt_apply(&field.ty, field.var);
+        };
+        match self.position(group, &field.ty) {
+            Some(Position::Aux(aux_position)) if group.aux[aux_position].kind == AuxKind::List => {
+                let n = group.aux[aux_position].nested_index;
+                let element = super::element_of(&group.aux[aux_position].original)?;
+                let items = self.of_a(&format!("__items_{n}"));
+                let items = self.b.app(items, field.var);
+                let t = self.encoded_ty(&element)?;
+                let (p, c, a) = (self.p, self.c, self.a);
+                self.rust_lemma(
+                    "wt_list",
+                    &[
+                        Arg::Term(p),
+                        Arg::Term(c),
+                        Arg::Term(a),
+                        Arg::Term(items),
+                        Arg::Term(t),
+                        Arg::Term(hypothesis),
+                    ],
+                )
+            }
+            Some(Position::Block(_) | Position::Aux(_)) => Ok(hypothesis),
+            None => Err(format!(
+                "`{}` has an induction hypothesis but no motive",
+                self.gen.source.type_text(&field.ty)
+            )),
+        }
+    }
+
+    /// A minor premise: `fun fields… hypotheses… => body`, the hypotheses
+    /// for the recursive fields in field order, `body` built over the fields.
+    fn minor(
+        &mut self,
+        group: &Group,
+        fields: &[SemanticType],
+        body: &dyn Fn(&mut Self, &[Field]) -> Result<Term, String>,
+    ) -> Result<Term, String> {
+        let positions: Vec<Option<Position>> = fields
+            .iter()
+            .map(|field| self.position(group, field))
+            .collect();
+        let m = fields.len();
+        let r = positions.iter().filter(|position| position.is_some()).count();
+        let mut bound = Vec::new();
+        let mut k = 0;
+        for (j, field) in fields.iter().enumerate() {
+            let var = self.b.bvar(m + r - 1 - j);
+            let hypothesis = positions[j].map(|_| {
+                let term = self.b.bvar(r - 1 - k);
+                k += 1;
+                term
+            });
+            bound.push(Field {
+                ty: field.clone(),
+                var,
+                hypothesis,
+            });
+        }
+        let mut term = body(self, &bound)?;
+        // The hypotheses, innermost first: the k-th binds at depth m + k,
+        // where field j is #(m + k - 1 - j).
+        let recursive: Vec<(usize, Position)> = positions
+            .iter()
+            .enumerate()
+            .filter_map(|(j, position)| position.map(|position| (j, position)))
+            .collect();
+        for (k, (j, position)) in recursive.iter().enumerate().rev() {
+            let var = self.b.bvar(m + k - 1 - j);
+            let motive = self.motive_body(group, *position)?;
+            let domain = self.b.instantiate(motive, var);
+            term = self.b.lam(&format!("__ih{k}"), CoreBinderInfo::Explicit, domain, term);
+        }
+        for (j, field) in fields.iter().enumerate().rev() {
+            let domain = self.lean_type(field)?;
+            term = self.b.lam(&format!("__x{j}"), CoreBinderInfo::Explicit, domain, term);
+        }
+        Ok(term)
+    }
+
+    /// The minor premises of the group's recursors: the block's constructors
+    /// in order, then each auxiliary's.
+    fn minors(&mut self, group: &Group) -> Result<Vec<Term>, String> {
+        let mut out = Vec::new();
+        for &index in &group.block {
+            let ty = self.gen.layout.adts[index as usize].ty.clone();
+            let shape = self.gen.source.document(&ty)?;
+            for (constructor, fields) in shape.fields.iter().enumerate() {
+                let constructor = constructor as u64;
+                let minor = self.minor(group, fields, &|this, bound| {
+                    let mut items = Vec::new();
+                    for field in bound {
+                        let encoded = this.encode(&field.ty, field.var)?;
+                        let target = this.encoded_ty(&field.ty)?;
+                        let proof = this.wt_field(group, field)?;
+                        items.push((encoded, target, proof));
+                    }
+                    this.wt_adt_items(index, constructor, &items)
+                })?;
+                out.push(minor);
+            }
+        }
+        for aux_position in 0..group.aux.len() {
+            let aux = &group.aux[aux_position];
+            let original = aux.original.clone();
+            let n = aux.nested_index;
+            let (p, c, a) = (self.p, self.c, self.a);
+            match aux.kind {
+                AuxKind::List => {
+                    let element = super::element_of(&original)?;
+                    let t = self.encoded_ty(&element)?;
+                    out.push(self.rust_lemma(
+                        "wtAll_nil",
+                        &[Arg::Term(p), Arg::Term(c), Arg::Term(a), Arg::Term(t)],
+                    )?);
+                    let fields = [element.clone(), original.clone()];
+                    out.push(self.minor(group, &fields, &|this, bound| {
+                        let head = &bound[0];
+                        let tail = &bound[1];
+                        let v = this.encode(&head.ty, head.var)?;
+                        let items = this.of_a(&format!("__items_{n}"));
+                        let vs = this.b.app(items, tail.var);
+                        let t = this.encoded_ty(&head.ty)?;
+                        let h = this.wt_field(group, head)?;
+                        let hs = tail
+                            .hypothesis
+                            .ok_or("a list auxiliary whose tail has no hypothesis")?;
+                        this.rust_lemma(
+                            "wtAll_cons",
+                            &[
+                                Arg::Term(p),
+                                Arg::Term(c),
+                                Arg::Term(a),
+                                Arg::Term(v),
+                                Arg::Term(vs),
+                                Arg::Term(t),
+                                Arg::Term(h),
+                                Arg::Term(hs),
+                            ],
+                        )
+                    })?);
+                }
+                AuxKind::Option => {
+                    let inner = match &original {
+                        SemanticType::Option { value } => value.as_ref().clone(),
+                        _ => return Err("an option auxiliary of a non-option".to_owned()),
+                    };
+                    let t = self.encoded_ty(&inner)?;
+                    out.push(self.rust_lemma(
+                        "wt_noneV",
+                        &[Arg::Term(p), Arg::Term(c), Arg::Term(a), Arg::Term(t)],
+                    )?);
+                    let fields = [inner];
+                    out.push(self.minor(group, &fields, &|this, bound| {
+                        let val = &bound[0];
+                        let v = this.encode(&val.ty, val.var)?;
+                        let t = this.encoded_ty(&val.ty)?;
+                        let h = this.wt_field(group, val)?;
+                        this.rust_lemma(
+                            "wt_someV",
+                            &[
+                                Arg::Term(p),
+                                Arg::Term(c),
+                                Arg::Term(a),
+                                Arg::Term(v),
+                                Arg::Term(t),
+                                Arg::Term(h),
+                            ],
+                        )
+                    })?);
+                }
+                AuxKind::Prod => {
+                    let fields = self.aux_fields(aux)?;
+                    out.push(self.minor(group, &fields, &|this, bound| {
+                        let (left, right) = (&bound[0], &bound[1]);
+                        let va = this.encode(&left.ty, left.var)?;
+                        let vb = this.encode(&right.ty, right.var)?;
+                        let s = this.encoded_ty(&left.ty)?;
+                        let t = this.encoded_ty(&right.ty)?;
+                        let ha = this.wt_field(group, left)?;
+                        let hb = this.wt_field(group, right)?;
+                        this.rust_lemma(
+                            "wt_pairV",
+                            &[
+                                Arg::Term(p),
+                                Arg::Term(c),
+                                Arg::Term(a),
+                                Arg::Term(va),
+                                Arg::Term(vb),
+                                Arg::Term(s),
+                                Arg::Term(t),
+                                Arg::Term(ha),
+                                Arg::Term(hb),
+                            ],
+                        )
+                    })?);
+                }
+                AuxKind::Except => {
+                    let (ok, error) = match &original {
+                        SemanticType::Result { ok, error } => {
+                            (ok.as_ref().clone(), error.as_ref().clone())
+                        }
+                        _ => return Err("a result auxiliary of a non-result".to_owned()),
+                    };
+                    let s = self.encoded_ty(&ok)?;
+                    let t = self.encoded_ty(&error)?;
+                    let error_fields = [error.clone()];
+                    out.push(self.minor(group, &error_fields, &|this, bound| {
+                        let field = &bound[0];
+                        let v = this.encode(&field.ty, field.var)?;
+                        let h = this.wt_field(group, field)?;
+                        this.rust_lemma(
+                            "wt_errorV",
+                            &[
+                                Arg::Term(p),
+                                Arg::Term(c),
+                                Arg::Term(a),
+                                Arg::Term(v),
+                                Arg::Term(s),
+                                Arg::Term(t),
+                                Arg::Term(h),
+                            ],
+                        )
+                    })?);
+                    let ok_fields = [ok.clone()];
+                    out.push(self.minor(group, &ok_fields, &|this, bound| {
+                        let field = &bound[0];
+                        let v = this.encode(&field.ty, field.var)?;
+                        let h = this.wt_field(group, field)?;
+                        this.rust_lemma(
+                            "wt_okV",
+                            &[
+                                Arg::Term(p),
+                                Arg::Term(c),
+                                Arg::Term(a),
+                                Arg::Term(v),
+                                Arg::Term(s),
+                                Arg::Term(t),
+                                Arg::Term(h),
+                            ],
+                        )
+                    })?);
+                }
+            }
+        }
+        Ok(out)
+    }
+
+    /// `wt_adt` from the encoded fields, their types, and their proofs.
+    fn wt_adt_items(
+        &mut self,
+        index: u64,
+        constructor: u64,
+        items: &[(Term, Term, Term)],
+    ) -> Result<Term, String> {
+        let value_ty = self.syntax("Value");
+        let ty_ty = self.syntax("Ty");
+        let fs: Vec<Term> = items.iter().map(|item| item.0).collect();
+        let tys: Vec<Term> = items.iter().map(|item| item.1).collect();
+        let fs = self.b.list(value_ty, &fs);
+        let tys = self.b.list(ty_ty, &tys);
+        let hf = self.wtl(items)?;
+        let (p, c, a) = (self.p, self.c, self.a);
+        let i = self.b.nat(index);
+        let k = self.b.nat(constructor);
+        self.rust_lemma(
+            "wt_adt",
+            &[
+                Arg::Term(p),
+                Arg::Term(c),
+                Arg::Term(a),
+                Arg::Term(i),
+                Arg::Term(k),
+                Arg::Term(fs),
+                Arg::Term(tys),
+                Arg::Refl,
+                Arg::Term(hf),
+            ],
+        )
+    }
+
+    /// The rows of a recursive group: one per document type and one per
+    /// nested container, each the group's recursor at the motives and minor
+    /// premises the group shares (`T.rec` for a document type, `T.rec_j` of
+    /// the block's first type for the `j`-th auxiliary).
+    fn group_rows(&mut self, component: &[u64]) -> Result<Vec<Row>, String> {
+        let group = self.group(component)?;
+        let first = &self.gen.layout.adts[group.block[0] as usize].ty;
+        let (first_member, first_arguments) = match first {
+            SemanticType::Named { member, arguments } => (member.clone(), arguments.clone()),
+            _ => return Err("a recursive group of a non-document type".to_owned()),
+        };
+        let first_name = self.document_name(&first_member)?;
+        let mut params = Vec::new();
+        for argument in &first_arguments {
+            params.push(self.lean_type(argument)?);
+        }
+        let mut positions: Vec<Position> = (0..group.block.len()).map(Position::Block).collect();
+        positions.extend((0..group.aux.len()).map(Position::Aux));
+        let mut motives = Vec::new();
+        let mut bodies = Vec::new();
+        for &position in &positions {
+            let domain = self.position_type(&group, position)?;
+            let body = self.motive_body(&group, position)?;
+            motives.push(self.b.lam("__v", CoreBinderInfo::Explicit, domain, body));
+            bodies.push((domain, body));
+        }
+        let minors = self.minors(&group)?;
+        let axioms = self.axioms()?;
+        let mut rows = Vec::new();
+        for (ordinal, &position) in positions.iter().enumerate() {
+            let (domain, body) = bodies[ordinal];
+            let (recursor, name) = match position {
+                Position::Block(block_position) => {
+                    let index = group.block[block_position];
+                    let member = named_member(&self.gen.layout.adts[index as usize].ty)?;
+                    let owner = self.document_name(&member)?;
+                    (format!("{owner}.rec"), format!("__wt_{index}"))
+                }
+                Position::Aux(aux_position) => {
+                    let aux = &group.aux[aux_position];
+                    let name = match aux.kind {
+                        AuxKind::List => format!("__wtItems_{}", aux.nested_index),
+                        AuxKind::Option | AuxKind::Prod | AuxKind::Except => {
+                            format!("__wtAux_{}", aux.nested_index)
+                        }
+                    };
+                    (format!("{first_name}.rec_{}", aux_position + 1), name)
+                }
+            };
+            let recursor = self.b.konst0(&recursor);
+            let v = self.b.bvar(0);
+            let mut args = params.clone();
+            args.extend(motives.iter().copied());
+            args.extend(minors.iter().copied());
+            args.push(v);
+            let applied = self.b.apps(recursor, &args);
+            let value = self.b.lam("__v", CoreBinderInfo::Explicit, domain, applied);
+            let statement = self.b.pi("__v", CoreBinderInfo::Explicit, domain, body);
+            rows.push(Row {
+                name: format!("{}.{name}", self.name),
+                ty: statement,
+                value,
+                axioms: axioms.clone(),
+            });
+        }
+        // Every auxiliary certificate A registered for the group has a row,
+        // or a proof somewhere else would name a theorem that is not there.
+        for nested in self.gen.nested.values() {
+            if component.contains(&nested.group)
+                && !group.aux.iter().any(|aux| aux.nested_index == nested.index)
+            {
+                return Err(format!(
+                    "`{}` is an auxiliary of the group but the kernel nests no such type",
+                    self.gen.source.type_text(&nested.ty)
+                ));
+            }
+        }
+        Ok(rows)
+    }
+}
+
+/// The member a document type names.
+fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
+    match ty {
+        SemanticType::Named {
+            member,
+            arguments: _,
+        } => Ok(member.clone()),
+        _ => Err("a document type that is not named".to_owned()),
     }
 }
 

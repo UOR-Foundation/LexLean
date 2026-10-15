@@ -2928,6 +2928,93 @@ pub fn run(id: &str) {
         }
         // §17.17: certificate E is kernel-term data, recorded in the notation.
         "SP-14" => {
+            // Every certificate E of the four corpora is built as a core
+            // module: the record reads back to the data byte for byte, the
+            // data audit admits it, and every row pins its axioms exactly.
+            let mut built = 0usize;
+            let mut notation_bytes = 0usize;
+            let mut failures: Vec<String> = Vec::new();
+            for (name, project) in certified_projects() {
+                let checked = support::checked_project(&project);
+                let limits = support::limits(&project);
+                let linked = linked_modules(&checked);
+                let hex = checked.semantic_id.to_hex()[..32].to_owned();
+                for (index, root) in roots(&checked).expect("the reports").iter().enumerate() {
+                    let lowered =
+                        lower_root(&linked, &root.module, &root.name, root.report, &limits)
+                            .expect("the root lowers");
+                    let module = format!("LexLeanPreserve.C{hex}.R{index}");
+                    let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
+                        .expect("the fallible functions")[lowered.entry() as usize];
+                    for row in &root.report.targets {
+                        let module_b =
+                            lexlean::production::rust_cert::module_for(&module, &row.target)
+                                .expect("a Rust target");
+                        let module_e = lexlean::production::rust_cert::module_for(
+                            &format!("{module}.Compose"),
+                            &row.target,
+                        )
+                        .expect("a Rust target");
+                        let composed = lexlean::production::certificate::certificate_e(
+                            &linked,
+                            &root.module,
+                            &root.name,
+                            &lowered,
+                            &module,
+                            &module_b,
+                            &module_e,
+                            fallible,
+                            limits.max_file_bytes,
+                        );
+                        let certificate = match composed {
+                            Ok(certificate) => certificate,
+                            Err(diagnostic) => {
+                                failures.push(format!(
+                                    "{name} R{index} {}: {}",
+                                    row.target, diagnostic.message
+                                ));
+                                continue;
+                            }
+                        };
+                        let data = certificate.data.as_ref().expect("certificate E is data");
+                        let source = certificate
+                            .source
+                            .as_ref()
+                            .expect("certificate E is recorded in the notation");
+                        let read = lexlean::sdk::read_module(source).expect("the record reads");
+                        let canonical = serde_json::to_value(data).expect("the data is JSON");
+                        assert_eq!(read, canonical, "{module_e}: the record reads back to the data");
+                        let environment: BTreeSet<String> = [
+                            module.clone(),
+                            module_b.clone(),
+                            "LexLeanPreservation.Compose".to_owned(),
+                        ]
+                        .into_iter()
+                        .collect();
+                        preserve::audit_core(data, &environment).expect("the data audit admits it");
+                        for declaration in &data.declarations {
+                            assert!(
+                                matches!(
+                                    declaration.policy,
+                                    lexlean::ir::core::CoreAxiomPolicy::Exact(_)
+                                ),
+                                "{module_e}: `{}` pins its axioms exactly",
+                                declaration.name
+                            );
+                        }
+                        built += 1;
+                        notation_bytes += source.len();
+                    }
+                }
+            }
+            eprintln!(
+                "SP-14: {built} certificates E built as data, {notation_bytes} bytes of notation"
+            );
+            assert!(
+                failures.is_empty(),
+                "every certificate E is built as data:\n{}",
+                failures.join("\n")
+            );
             for (name, _) in certified_projects() {
                 let base = repo_root()
                     .join("examples")
