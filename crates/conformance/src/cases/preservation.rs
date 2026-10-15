@@ -1763,15 +1763,29 @@ pub fn run(id: &str) {
                             .as_std_path(),
                         )
                         .expect("the published certificate E");
-                        let invoked: BTreeSet<u64> = composed
-                            .match_indices("Rust.fnIdent ")
-                            .map(|(at, found)| {
-                                composed[at + found.len()..]
-                                    .chars()
-                                    .take_while(char::is_ascii_digit)
-                                    .collect::<String>()
-                                    .parse()
-                                    .expect("a function number")
+                        // The record is kernel data: the function E states is the
+                        // argument of every `fnIdent` node, and an entry is stated
+                        // through its `entry_accepts` theorem.
+                        let data: lexlean::ir::core::CoreModule = serde_json::from_value(
+                            lexlean::sdk::read_module(&composed).expect("the record reads"),
+                        )
+                        .expect("the record is a core module");
+                        let invoked: BTreeSet<u64> = data
+                            .nodes
+                            .iter()
+                            .filter_map(|node| match node {
+                                lexlean::ir::core::CoreNode::App { f, x } => {
+                                    match (&data.nodes[*f], &data.nodes[*x]) {
+                                        (
+                                            lexlean::ir::core::CoreNode::Const { n, .. },
+                                            lexlean::ir::core::CoreNode::Nat { v },
+                                        ) if n == "LexLeanPreservation.Rust.fnIdent" => {
+                                            Some(v.parse().expect("a function number"))
+                                        }
+                                        _ => None,
+                                    }
+                                }
+                                _ => None,
                             })
                             .collect();
                         assert_eq!(
@@ -1779,8 +1793,11 @@ pub fn run(id: &str) {
                             BTreeSet::from([function]),
                             "{example} R{index} {target}: E states the function the record names"
                         );
+                        let has_entry = data.nodes.iter().any(|node| {
+                            matches!(node, lexlean::ir::core::CoreNode::Const { n, .. } if n.ends_with(".entry_accepts"))
+                        });
                         assert_eq!(
-                            composed.contains("entry_accepts"),
+                            has_entry,
                             function != 0,
                             "{example} R{index} {target}: E has an entry exactly when the record names one"
                         );
@@ -3198,9 +3215,19 @@ pub fn run(id: &str) {
                 .iter()
                 .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
                 .collect();
+            // The planted E is staged after the A and B it imports, as the
+            // root's certificates are.
+            let mut planted_set = vec![certified[0].certificate.clone()];
+            planted_set.extend(
+                certified[0]
+                    .renderings
+                    .iter()
+                    .filter(|(rendered_target, _)| rendered_target == target)
+                    .map(|(_, b)| b.clone()),
+            );
+            planted_set.push(lying_certificate.clone());
             let planted_workspace =
-                preserve::workspace(&user, std::slice::from_ref(&lying_certificate))
-                    .expect("the planted workspace stages");
+                preserve::workspace(&user, &planted_set).expect("the planted workspace stages");
             let audit_output = preservation::compile_text(
                 root.path(),
                 &format!("{}Plant", preserve::AUDIT_MODULE),
