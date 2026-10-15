@@ -2716,6 +2716,20 @@ fn planted_verification() -> &'static Vec<String> {
     static ERROR: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
     ERROR.get_or_init(|| {
         let project = P::compiler();
+        // The case asks which diagnostic Lean's refusal carries, not how
+        // long Lean takes. The planted module elaborates in 26 s to 73 s,
+        // yet a runner that stalled (every Lean child in the run, of every
+        // project, took about 5 to 20 times its usual time for several
+        // minutes) pushed it past the default 300 s and reported `LLS8002`,
+        // which is a different claim (#145). Three times the default
+        // leaves a slowdown of more than 12 times harmless and still ends
+        // a hung child.
+        project.edit(
+            "lexlean.toml",
+            "child_timeout_ms = 300000",
+            "child_timeout_ms = 900000",
+        );
+        project.relock();
         project.write(
             "src/ReasoningFixtures.lex.tex",
             &crate::calculus::reasoning_fixtures_module(&planted_transcriptions()),
