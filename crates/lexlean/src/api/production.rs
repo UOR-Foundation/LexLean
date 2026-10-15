@@ -743,11 +743,62 @@ fn parse_preservation(bytes: &[u8]) -> Result<Preservation, String> {
 /// recomputed from its body (§22.9).
 struct AttestationFacts {
     attestation_id: Sha256Digest,
+    compiler_version: String,
+    compiler_semantics: Sha256Digest,
     source_id: Sha256Digest,
     semantic_id: Sha256Digest,
     build_id: Sha256Digest,
     compiler_input: (u64, Sha256Digest),
     preservation: (u64, Sha256Digest),
+}
+
+fn reports_pinned_lean_version(tool: &str, banner: &str) -> bool {
+    if banner.contains(['\n', '\r']) {
+        return false;
+    }
+    // Lake's own version does not identify Lean; only the whole enclosed
+    // Lean version field can establish the pin the result states.
+    let version = match tool {
+        "lean" => banner
+            .strip_prefix("Lean (version ")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .and_then(|rest| rest.split_once(", "))
+            .filter(|(_, details)| !details.is_empty())
+            .map(|(version, _)| version),
+        "lake" => banner
+            .strip_prefix("Lake version ")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .and_then(|rest| rest.split_once(" (Lean version "))
+            .filter(|(lake, _)| !lake.is_empty() && !lake.contains(char::is_whitespace))
+            .map(|(_, version)| version),
+        _ => None,
+    };
+    version == Some(crate::LEAN_VERSION)
+}
+
+fn require_attested_toolchain(body: &BTreeMap<String, Json>) -> Result<(), String> {
+    let Some(Json::Obj(toolchain)) = body.get("toolchain") else {
+        return Err("attestation.json states no `toolchain` object".to_owned());
+    };
+    for tool in ["lean", "lake"] {
+        let Some(Json::Obj(record)) = toolchain.get(tool) else {
+            return Err(format!(
+                "attestation.json states no `toolchain.{tool}` object"
+            ));
+        };
+        let Some(Json::Str(banner)) = record.get("version_output") else {
+            return Err(format!(
+                "attestation.json states no string `toolchain.{tool}.version_output`"
+            ));
+        };
+        if !reports_pinned_lean_version(tool, banner) {
+            return Err(format!(
+                "attestation.json `toolchain.{tool}.version_output` does not report Lean {}",
+                crate::LEAN_VERSION
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn attestation_facts(bytes: &[u8]) -> Result<AttestationFacts, String> {
@@ -766,6 +817,28 @@ fn attestation_facts(bytes: &[u8]) -> Result<AttestationFacts, String> {
             "attestation.json states {stated}, its body hashes to {recomputed}"
         ));
     }
+    for (field, expected) in [("spec", "lexlean/attestation/2"), ("status", "verified")] {
+        if !matches!(body.get(field), Some(Json::Str(value)) if value == expected) {
+            return Err(format!(
+                "attestation.json requires `{field}` = `{expected}`"
+            ));
+        }
+    }
+    let Some(Json::Obj(compiler)) = body.get("lexlean") else {
+        return Err("attestation.json states no `lexlean` compiler object".to_owned());
+    };
+    let Some(Json::Str(compiler_version)) = compiler.get("version") else {
+        return Err("attestation.json states no string `lexlean.version`".to_owned());
+    };
+    if compiler_version.is_empty() {
+        return Err("attestation.json states an empty `lexlean.version`".to_owned());
+    }
+    let Some(Json::Str(compiler_semantics)) = compiler.get("compiler_semantics") else {
+        return Err("attestation.json states no string `lexlean.compiler_semantics`".to_owned());
+    };
+    let compiler_semantics = Sha256Digest::from_hex(compiler_semantics)
+        .map_err(|reason| format!("attestation.json `lexlean.compiler_semantics`: {reason}"))?;
+    require_attested_toolchain(&body)?;
     let digest = |name: &str| -> Result<Sha256Digest, String> {
         match body.get(name) {
             Some(Json::Str(hex)) => Sha256Digest::from_hex(hex),
@@ -790,12 +863,63 @@ fn attestation_facts(bytes: &[u8]) -> Result<AttestationFacts, String> {
     };
     Ok(AttestationFacts {
         attestation_id: stated,
+        compiler_version: compiler_version.clone(),
+        compiler_semantics,
         source_id: digest("source_id")?,
         semantic_id: digest("semantic_id")?,
         build_id: digest("build_id")?,
         compiler_input: row("compiler_input")?,
         preservation: row("preservation")?,
     })
+}
+
+fn deserialize_object<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    struct ObjectVisitor<T>(std::marker::PhantomData<T>);
+
+    impl<'de, T: Deserialize<'de>> serde::de::Visitor<'de> for ObjectVisitor<T> {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a JSON object")
+        }
+
+        fn visit_map<A: serde::de::MapAccess<'de>>(self, map: A) -> Result<T, A::Error> {
+            T::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+        }
+    }
+
+    deserializer.deserialize_map(ObjectVisitor(std::marker::PhantomData))
+}
+
+fn require_compiler_input_identity(bytes: &[u8]) -> Result<(), String> {
+    #[derive(Deserialize)]
+    struct Header {
+        #[serde(deserialize_with = "deserialize_object")]
+        lean: crate::production::lcnf::LeanIdentity,
+    }
+    // The LCNF payload can nest beyond the JSON parser's ordinary limit.
+    // Deserialize only the identity: ignored fields are skipped iteratively.
+    // Require objects while preserving the derived readers' duplicate checks.
+    let mut reader = serde_json::Deserializer::from_slice(bytes);
+    let header: Header = deserialize_object(&mut reader)
+        .map_err(|error| format!("compiler-input.json Lean identity: {error}"))?;
+    reader
+        .end()
+        .map_err(|error| format!("compiler-input.json Lean identity: {error}"))?;
+    if header.lean.version != crate::LEAN_VERSION || header.lean.githash != crate::LEAN_GITHASH {
+        return Err(format!(
+            "compiler-input.json reports Lean {} at {}, expected {} at {}",
+            header.lean.version,
+            header.lean.githash,
+            crate::LEAN_VERSION,
+            crate::LEAN_GITHASH
+        ));
+    }
+    Ok(())
 }
 
 /// The verified-directory path of a certificate module.
@@ -1363,6 +1487,10 @@ fn replay_error(message: impl Into<String>) -> LexLeanError {
 /// `LLS8001` for a symlink or special file in the bundle, `LLV7102` for any
 /// disagreement, and `LLV7010` for an unreadable file.
 pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError> {
+    replay_files(&collect_bundle(bundle)?)
+}
+
+fn collect_bundle(bundle: &Utf8Path) -> Result<Vec<(String, Vec<u8>)>, LexLeanError> {
     let security =
         |message: String| LexLeanError::from_diagnostic(Diagnostic::new(code!("LLS8001"), message));
     let metadata = std::fs::symlink_metadata(bundle.as_std_path()).map_err(|io_error| {
@@ -1379,22 +1507,37 @@ pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError> 
         let entry = entry.map_err(|error| {
             LexLeanError::from_diagnostic(Diagnostic::new(code!("LLV7010"), error.to_string()))
         })?;
-        let relative = entry
+        let relative_path = entry
             .path()
             .strip_prefix(bundle.as_std_path())
-            .map(|path| path.to_string_lossy().replace('\\', "/"))
-            .unwrap_or_default();
+            .map_err(|error| replay_error(format!("bundle path is outside its root: {error}")))?;
         let kind = entry.file_type();
         if kind.is_symlink() {
-            return Err(security(format!("`{relative}` in the bundle is a symlink")));
+            return Err(security(format!(
+                "`{}` in the bundle is a symlink",
+                relative_path.display()
+            )));
         }
+        if !kind.is_dir() && !kind.is_file() {
+            return Err(security(format!(
+                "`{}` in the bundle is a special file",
+                relative_path.display()
+            )));
+        }
+        // Only actual path separators become `/`: on Unix a backslash
+        // belongs to its filename and must not alias a different file.
+        let relative = relative_path
+            .components()
+            .map(|component| {
+                component
+                    .as_os_str()
+                    .to_str()
+                    .ok_or_else(|| replay_error("a bundle filename is not valid UTF-8"))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .join("/");
         if kind.is_dir() {
             continue;
-        }
-        if !kind.is_file() {
-            return Err(security(format!(
-                "`{relative}` in the bundle is a special file"
-            )));
         }
         let bytes = std::fs::read(entry.path()).map_err(|io_error| {
             LexLeanError::from_diagnostic(Diagnostic::new(
@@ -1405,15 +1548,19 @@ pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError> 
         files.push((relative, bytes));
     }
     files.sort_by(|left, right| left.0.cmp(&right.0));
-    replay_files(&files)
+    Ok(files)
 }
 
 #[allow(clippy::too_many_lines)]
 fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanError> {
-    let by_path: BTreeMap<&str, &[u8]> = files
-        .iter()
-        .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
-        .collect();
+    let mut by_path: BTreeMap<&str, &[u8]> = BTreeMap::new();
+    for (path, bytes) in files {
+        if by_path.insert(path.as_str(), bytes.as_slice()).is_some() {
+            return Err(replay_error(format!(
+                "the bundle inventory contains duplicate path `{path}`"
+            )));
+        }
+    }
     let result_bytes = by_path
         .get(RESULT_FILE)
         .ok_or_else(|| replay_error("the bundle has no result.json"))?;
@@ -1484,6 +1631,14 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
         attestation.attestation_id == result.verification.attestation_id,
     )?;
     bind(
+        "the compiler version",
+        attestation.compiler_version == result.compiler.version,
+    )?;
+    bind(
+        "the compiler semantics",
+        attestation.compiler_semantics == result.compiler.semantics,
+    )?;
+    bind(
         "the source ID",
         attestation.source_id == result.source.source_id,
     )?;
@@ -1503,6 +1658,7 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                 Sha256Digest::of(compiler_input),
             ),
     )?;
+    require_compiler_input_identity(compiler_input).map_err(replay_error)?;
     bind(
         "the preservation record the attestation binds",
         attestation.preservation
@@ -1764,5 +1920,370 @@ impl ReplayReport {
     #[must_use]
     pub fn to_json(&self) -> Vec<u8> {
         canonical_bytes(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::{attestation_facts, collect_bundle, replay_files, require_compiler_input_identity};
+    use crate::artifact::canonical_json::Json;
+    use crate::artifact::content_id::{attestation_id, Sha256Digest};
+    use camino::Utf8Path;
+
+    fn compiler_with_version(version: Json) -> Json {
+        Json::object(vec![
+            ("version", version),
+            (
+                "compiler_semantics",
+                Json::Str(Sha256Digest::of(b"compiler semantics fixture").to_hex()),
+            ),
+        ])
+    }
+
+    fn hashed_attestation(mut body: BTreeMap<String, Json>) -> Vec<u8> {
+        body.remove("attestation_id");
+        let id = attestation_id(&Json::Obj(body.clone()).to_canonical_string());
+        body.insert("attestation_id".to_owned(), Json::Str(id.to_hex()));
+        Json::Obj(body).to_file_bytes()
+    }
+
+    fn attestation_with_compiler(compiler: Option<Json>) -> Vec<u8> {
+        let digest = Sha256Digest::of(b"attestation fixture").to_hex();
+        let row = || {
+            Json::object(vec![
+                ("byte_length", Json::Int(1)),
+                ("sha256", Json::Str(digest.clone())),
+            ])
+        };
+        let mut fields = vec![
+            ("spec", Json::Str("lexlean/attestation/2".to_owned())),
+            ("status", Json::Str("verified".to_owned())),
+            ("source_id", Json::Str(digest.clone())),
+            ("semantic_id", Json::Str(digest.clone())),
+            ("build_id", Json::Str(digest.clone())),
+            ("compiler_input", row()),
+            ("preservation", row()),
+            (
+                "toolchain",
+                Json::object(vec![
+                    (
+                        "lean",
+                        Json::object(vec![(
+                            "version_output",
+                            Json::Str("Lean (version 4.32.1, release)".to_owned()),
+                        )]),
+                    ),
+                    (
+                        "lake",
+                        Json::object(vec![(
+                            "version_output",
+                            Json::Str("Lake version 5.0.0 (Lean version 4.32.1)".to_owned()),
+                        )]),
+                    ),
+                ]),
+            ),
+        ];
+        if let Some(compiler) = compiler {
+            fields.push(("lexlean", compiler));
+        }
+        hashed_attestation(
+            fields
+                .into_iter()
+                .map(|(key, value)| (key.to_owned(), value))
+                .collect(),
+        )
+    }
+
+    fn edited_attestation(path: &[&str], value: Option<Json>) -> Vec<u8> {
+        let bytes =
+            attestation_with_compiler(Some(compiler_with_version(Json::Str("0.0.1".to_owned()))));
+        let Json::Obj(mut body) = Json::parse(&bytes).expect("fixture JSON") else {
+            panic!("fixture object");
+        };
+        let (field, parents) = path.split_last().expect("a field path");
+        let mut object = &mut body;
+        for parent in parents {
+            let Some(Json::Obj(child)) = object.get_mut(*parent) else {
+                panic!("fixture object {parent}");
+            };
+            object = child;
+        }
+        if let Some(value) = value {
+            object.insert((*field).to_owned(), value);
+        } else {
+            object.remove(*field);
+        }
+        hashed_attestation(body)
+    }
+
+    #[test]
+    fn attestation_facts_refuses_missing_compiler_version() {
+        for compiler in [None, Some(Json::object(Vec::new()))] {
+            assert!(
+                attestation_facts(&attestation_with_compiler(compiler)).is_err(),
+                "a hash-correct attestation must state its producing compiler version"
+            );
+        }
+    }
+
+    #[test]
+    fn attestation_facts_refuses_non_string_compiler_version() {
+        let compiler = compiler_with_version(Json::Int(1));
+        assert!(
+            attestation_facts(&attestation_with_compiler(Some(compiler))).is_err(),
+            "a hash-correct attestation's producing compiler version must be a string"
+        );
+    }
+
+    #[test]
+    fn attestation_facts_refuses_empty_compiler_version() {
+        let compiler = compiler_with_version(Json::Str(String::new()));
+        assert!(
+            attestation_facts(&attestation_with_compiler(Some(compiler))).is_err(),
+            "a hash-correct attestation's producing compiler version must not be empty"
+        );
+    }
+
+    #[test]
+    fn attestation_facts_accepts_a_producing_compiler_version() {
+        let compiler = compiler_with_version(Json::Str("0.0.1".to_owned()));
+        let facts = attestation_facts(&attestation_with_compiler(Some(compiler)))
+            .expect("the producing version may differ from this compiler's version");
+        assert_eq!(facts.compiler_version, "0.0.1");
+    }
+
+    #[test]
+    fn attestation_facts_refuses_missing_or_malformed_compiler_semantics() {
+        for value in [
+            None,
+            Some(Json::Int(1)),
+            Some(Json::Str(String::new())),
+            Some(Json::Str("not a digest".to_owned())),
+            Some(Json::Str("A".repeat(64))),
+        ] {
+            let bytes = edited_attestation(&["lexlean", "compiler_semantics"], value.clone());
+            assert!(
+                attestation_facts(&bytes).is_err(),
+                "a hash-correct attestation needs a compiler-semantics digest: {value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn attestation_facts_refuses_missing_or_malformed_verification_envelope() {
+        for (field, wrong) in [("spec", "lexlean/attestation/1"), ("status", "unverified")] {
+            for value in [None, Some(Json::Int(1)), Some(Json::Str(wrong.to_owned()))] {
+                let bytes = edited_attestation(&[field], value.clone());
+                assert!(
+                    attestation_facts(&bytes).is_err(),
+                    "a hash-correct attestation needs its verification envelope: {field} = {value:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn attestation_facts_refuses_missing_or_malformed_toolchain_facts() {
+        let paths: &[&[&str]] = &[
+            &["toolchain"],
+            &["toolchain", "lean"],
+            &["toolchain", "lake"],
+            &["toolchain", "lean", "version_output"],
+            &["toolchain", "lake", "version_output"],
+        ];
+        for path in paths {
+            for value in [None, Some(Json::Int(1)), Some(Json::object(Vec::new()))] {
+                let bytes = edited_attestation(path, value.clone());
+                assert!(
+                    attestation_facts(&bytes).is_err(),
+                    "a hash-correct attestation needs toolchain facts: {path:?} = {value:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn attestation_facts_refuses_foreign_or_colliding_lean_versions() {
+        for (tool, banner) in [
+            ("lean", ""),
+            ("lean", "unrecognized banner 4.32.1"),
+            ("lean", "Lean (version 4.32.10, release)"),
+            ("lean", "Lean (version 4.32.1-rc1, release)"),
+            ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
+            ("lean", "Lean (version 4.32.1, release"),
+            ("lean", "Lean (version 4.32.1, release)\nextra output"),
+            ("lake", ""),
+            ("lake", "unrecognized banner 4.32.1"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
+            ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.1"),
+            (
+                "lake",
+                "Lake version 5.0.0 (Lean version 4.32.1)\nextra output",
+            ),
+        ] {
+            let bytes = edited_attestation(
+                &["toolchain", tool, "version_output"],
+                Some(Json::Str(banner.to_owned())),
+            );
+            assert!(
+                attestation_facts(&bytes).is_err(),
+                "a hash-correct attestation needs the pinned Lean version: {tool}: {banner:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn compiler_input_identity_refuses_missing_malformed_or_foreign_facts() {
+        for value in [
+            serde_json::json!({}),
+            serde_json::json!([{"version": crate::LEAN_VERSION, "githash": crate::LEAN_GITHASH}]),
+            serde_json::json!({"lean": [crate::LEAN_VERSION, crate::LEAN_GITHASH]}),
+            serde_json::json!({"lean": 1}),
+            serde_json::json!({"lean": {"version": crate::LEAN_VERSION}}),
+            serde_json::json!({"lean": {"githash": crate::LEAN_GITHASH}}),
+            serde_json::json!({"lean": {"version": 1, "githash": crate::LEAN_GITHASH}}),
+            serde_json::json!({"lean": {"version": crate::LEAN_VERSION, "githash": 1}}),
+            serde_json::json!({"lean": {"version": "4.32.10", "githash": crate::LEAN_GITHASH}}),
+            serde_json::json!({"lean": {"version": crate::LEAN_VERSION, "githash": "0".repeat(40)}}),
+        ] {
+            let bytes = serde_json::to_vec(&value).expect("JSON");
+            assert!(
+                require_compiler_input_identity(&bytes).is_err(),
+                "a compiler input needs the pinned Lean identity: {value}"
+            );
+        }
+        let version = serde_json::to_string(crate::LEAN_VERSION).expect("JSON string");
+        let githash = serde_json::to_string(crate::LEAN_GITHASH).expect("JSON string");
+        let lean = format!("{{\"version\":{version},\"githash\":{githash}}}");
+        for bytes in [
+            format!("{{\"lean\":{lean}}} null"),
+            format!("{{\"lean\":{lean},\"lean\":{lean}}}"),
+            format!("{{\"lean\":{{\"version\":{version},\"version\":{version},\"githash\":{githash}}}}}"),
+            format!("{{\"lean\":{{\"version\":{version},\"githash\":{githash},\"githash\":{githash}}}}}"),
+        ] {
+            assert!(
+                require_compiler_input_identity(bytes.as_bytes()).is_err(),
+                "a compiler input needs one unambiguous Lean identity: {bytes}"
+            );
+        }
+    }
+
+    #[test]
+    fn compiler_input_identity_skips_deep_payloads_before_and_after_lean() {
+        let lean = serde_json::json!({
+            "version": crate::LEAN_VERSION,
+            "githash": crate::LEAN_GITHASH,
+        })
+        .to_string();
+        for depth in [129, 257, 2048] {
+            let nested = format!("{}0{}", "[".repeat(depth), "]".repeat(depth));
+            for bytes in [
+                format!("{{\"payload\":{nested},\"lean\":{lean}}}"),
+                format!("{{\"lean\":{lean},\"payload\":{nested}}}"),
+            ] {
+                require_compiler_input_identity(bytes.as_bytes())
+                    .expect("reading the identity does not impose a payload nesting limit");
+            }
+        }
+    }
+
+    fn literal_backslashes() -> bool {
+        if std::path::Path::new("evidence\\attestation.json")
+            .components()
+            .count()
+            == 1
+        {
+            true
+        } else {
+            eprintln!("bundle inventory: this host treats backslashes as path separators; literal-backslash assertions did not run (§8.3)");
+            false
+        }
+    }
+
+    #[test]
+    fn bundle_collection_preserves_literal_backslash_filenames() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let bundle = Utf8Path::from_path(directory.path()).expect("UTF-8 tempdir");
+        std::fs::create_dir(bundle.join("evidence")).expect("mkdir");
+        std::fs::write(bundle.join("evidence/attestation.json"), b"canonical").expect("write");
+        assert_eq!(
+            collect_bundle(bundle).expect("collect"),
+            [(
+                "evidence/attestation.json".to_owned(),
+                b"canonical".to_vec()
+            )]
+        );
+        if literal_backslashes() {
+            std::fs::write(bundle.join("evidence\\attestation.json"), b"alias").expect("write");
+            assert_eq!(
+                collect_bundle(bundle).expect("collect"),
+                [
+                    (
+                        "evidence/attestation.json".to_owned(),
+                        b"canonical".to_vec()
+                    ),
+                    ("evidence\\attestation.json".to_owned(), b"alias".to_vec()),
+                ]
+            );
+        }
+    }
+
+    #[test]
+    fn bundle_collection_does_not_restore_a_moved_canonical_filename() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let bundle = Utf8Path::from_path(directory.path()).expect("UTF-8 tempdir");
+        std::fs::create_dir(bundle.join("evidence")).expect("mkdir");
+        let canonical = bundle.join("evidence/attestation.json");
+        std::fs::write(&canonical, b"canonical").expect("write");
+        assert_eq!(collect_bundle(bundle).expect("collect").len(), 1);
+        if literal_backslashes() {
+            std::fs::rename(&canonical, bundle.join("evidence\\attestation.json")).expect("rename");
+            assert_eq!(
+                collect_bundle(bundle).expect("collect"),
+                [(
+                    "evidence\\attestation.json".to_owned(),
+                    b"canonical".to_vec()
+                )]
+            );
+        }
+    }
+
+    #[test]
+    fn bundle_collection_refuses_non_utf8_filenames() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let bundle = Utf8Path::from_path(directory.path()).expect("UTF-8 tempdir");
+        std::fs::write(bundle.join("canonical.json"), b"canonical").expect("write");
+        assert_eq!(collect_bundle(bundle).expect("collect").len(), 1);
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStrExt;
+
+            let invalid = std::ffi::OsStr::from_bytes(b"invalid\xff.json");
+            if std::fs::write(directory.path().join(invalid), b"invalid").is_ok() {
+                let error = collect_bundle(bundle).expect_err("non-UTF-8 filenames are refused");
+                assert_eq!(error.diagnostics[0].code.as_str(), "LLV7102");
+                assert!(error.diagnostics[0].message.contains("UTF-8"));
+                return;
+            }
+        }
+        eprintln!("bundle inventory: this host's filesystem refuses non-UTF-8 filenames; only the portable assertions ran (§8.3)");
+    }
+
+    #[test]
+    fn replay_inventory_refuses_duplicate_paths_before_reading_the_result() {
+        let files = vec![
+            ("evidence/attestation.json".to_owned(), b"same".to_vec()),
+            ("evidence/attestation.json".to_owned(), b"same".to_vec()),
+        ];
+        let error = replay_files(&files).expect_err("duplicate inventory paths are refused");
+        assert_eq!(error.diagnostics[0].code.as_str(), "LLV7102");
+        assert!(error.diagnostics[0].message.contains("duplicate"));
+        assert!(error.diagnostics[0]
+            .message
+            .contains("evidence/attestation.json"));
     }
 }

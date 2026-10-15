@@ -41,6 +41,110 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### production bundle inventory can fail
+
+Before the correction for #133, `cargo test --offline --locked -p lexlean
+--lib api::production::tests -- --nocapture` ran four tests and all four
+failed. Collection reported both `evidence/attestation.json` and the literal
+filename `evidence\attestation.json` under the slash-separated key; moving the
+canonical file to the literal filename still reported the canonical key. A
+non-UTF-8 filename was accepted with a replacement character, and duplicate
+inventory keys reached the missing-`result.json` check instead of being
+refused as duplicates.
+
+Collection now encodes actual path components without changing their text
+and refuses a component outside UTF-8 with `LLV7102`; replay refuses duplicate
+keys before reading the result. The existing `PX-07` case also copies and
+moves a real attestation to the literal-backslash filename and adds a
+non-UTF-8 filename on a filesystem that accepts it, reusing its existing
+export without another Lean invocation. Valid bundle bytes and identities
+are unchanged.
+
+### production compiler identity can fail
+
+Before the correction for #136, `cargo test --offline --locked -p lexlean
+--lib api::production::tests::attestation_facts -- --nocapture` ran four
+Lean-free tests: the historical producing version passed, and all three
+malformed-version cases failed. Hash-correct attestation bodies were accepted
+with no compiler version, an empty version, or a numeric version, contrary to
+the tests' explicit version requirements.
+
+Replay now reads a non-empty string from the hash-checked attestation's
+`lexlean.version` and requires the result's `compiler.version` to equal it.
+The comparison uses the producing attestation, so it does not restrict replay
+to this running crate's version. `PX-07` changes the result's version and
+recomputes its identity within the existing tamper matrix, reusing the same
+export without another verification run.
+
+After both corrections, all eight Lean-free replay unit cases pass, and
+`cargo test -p repo-conformance --test conformance conformance_px_07 -- --exact --test-threads=1`
+passes in 195.15 seconds, including the untouched bundle and every existing
+tamper. Formatting, workspace/all-target Clippy with warnings denied, and
+the model/spec-link audits pass (380 IDs and 80 registered codes).
+
+Before the correction for #142, `cargo test -p lexlean --lib
+api::production::tests::attestation_facts` ran eight filtered tests in 0.00
+seconds: the four existing tests passed and all four new tests failed. The
+new tests require the producing compiler-semantics digest, a verified
+`lexlean/attestation/2` envelope, and exact pinned Lean-version fields in
+both the Lean and Lake records, including refusals of missing or malformed
+facts, wrong patches, prereleases, and unrelated occurrences of the pin.
+Compilation took 41.22 seconds; these are helper tests without Lean work.
+
+Replay now checks those facts after recomputing the attestation identity
+and binds its compiler semantics to the result. The compiler version stays
+a comparison with the producing attestation, preserving historical versions;
+the existing requirement that replay use the producing semantics and pinned
+Lean toolchain is unchanged.
+
+The expanded `PX-07` matrix changes the attestation's compiler semantics,
+Lean and Lake version facts, schema tag, and verification status. It
+refreshes the attestation identity, its file length and SHA-256, and both
+enclosing result bindings, so the assertions target consistency rather than
+an outdated digest. It shares its existing export and retains a
+self-consistent historical compiler-version case. The Lean-backed matrix
+belongs to `just bdd` and uses that existing export, without a second
+verification for these regressions.
+
+The bundled compiler input also states a Lean identity: `lean.version` and
+`lean.githash`, whose file digests replay checked without reading those
+fields. Replay now reads only that header
+through the existing `LeanIdentity` type and compares its two strings with
+the pin after checking the file's result and attestation bindings. Unknown
+top-level payloads are skipped by the JSON reader rather than read as LCNF;
+no extraction or full compiler-input schema validation is performed, and
+`not_rechecked` is unchanged.
+
+Focused cases cover missing, malformed, and foreign identity fields, and
+skipped payloads nested 129, 257, and 2048 levels before or after the identity.
+`PX-07` changes each scalar pin while refreshing the input's file digest,
+the attestation's matching input digest, and both enclosing content
+identities.
+
+The filtered
+`compiler_input_identity_refuses_missing_malformed_or_foreign_facts` run
+then failed in 0.00 seconds on a top-level array containing the pinned
+identity object: derived struct readers also accept sequence forms, although
+the compiler-input identity requires named objects. Compilation took 1 minute
+21 seconds, including Cargo lock contention. The matrix also rejects an array
+in `lean`. Replay now requires an object at both levels through map readers
+that preserve duplicate-field rejection and iterative ignored-payload skips;
+the existing test also covers trailing JSON and duplicate `lean`, `version`,
+and `githash` fields.
+
+After all corrections, `cargo test -p lexlean --lib
+api::production::tests` passes all fourteen helper and inventory tests in
+0.01 seconds. Formatting, workspace/all-target Clippy with warnings denied,
+and the model/spec-link audits pass (380 IDs and 80 registered codes).
+
+The expanded `cargo test -p repo-conformance --all-features --test
+conformance conformance_px_07 -- --exact --test-threads=1 --nocapture`
+passes in 180.42 seconds with `LEXLEAN_VERIFY_WIDTH=1`. It retains every
+previous path, byte, and result-field tamper, adds 24 fully rehashed
+attestation/compiler-input fact tampers, and accepts the untouched bundle
+and the self-consistent historical-version pair. All share the same real
+production export; none of the added tampers invokes another verification.
+
 ### release inventory can fail
 
 `release-artifacts` derives the tree manifest directly from the captured crate
@@ -76,6 +180,36 @@ CI run `36343661044` caught a hidden-test registration: an outer Unix `cfg`
 hid the path-refusal test on other hosts. The test now always runs its portable
 inventory assertions; its Unix-specific assertions use the repository's
 explicit host-reporting convention. No test or release-gate exemption was added.
+
+### configured paths reject Windows drive prefixes (Issue #138)
+
+The project-relative path validator previously accepted `C:`, `C:/outside`,
+`c:../outside`, and a drive prefix inside a slash-separated path. On Windows,
+such a segment can replace the project root when pushed onto a host path
+([`PathBuf::push`](https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.push)).
+Every segment now rejects an ASCII letter followed by a colon before any
+path join, on every host. Other colon names keep their existing policy.
+
+Before the fix, `cargo test --offline --locked -p lexlean --test unit
+path_rules_are_strict -- --exact --nocapture` ran one test and failed in
+0.00 seconds at `crates/lexlean/tests/unit.rs:146`:
+
+```text
+"C:" escapes the project
+```
+
+The unit regression covers bare, absolute, drive-relative, lower-case and
+nested prefixes, and retains ordinary relative paths and non-prefix colon
+names. The existing `SE-01` case also checks configuration rejection for
+`build_root`, `lockfile`, and `lean_workspace` by calling `parse_project`
+alone. These checks exercise the shared policy before host path handling
+and never access an outside path or run cleanup on one. No Windows execution
+is established by the Linux failure above.
+
+After the fix, all thirteen unit tests pass in 0.80 seconds, including the
+expanded path matrix; `conformance_se_01` passes in 0.40 seconds. Formatting,
+workspace/all-target Clippy with warnings denied, and the model/spec-link
+audits pass (380 IDs and 80 registered codes).
 
 ### release workflow validation can fail
 
