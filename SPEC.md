@@ -5229,6 +5229,35 @@ encoders are, with the library's lemmas for every primitive and container
 value. A certificate E that does not compile silently, fails its replay,
 or whose theorem's axioms are not exactly the three above is `LLV7016`.
 
+**Certificate E as data.** Certificate E is not Lean text. The compiler
+builds it as a native core module of schema `lexlean/core-module/2`
+(§17.10): the terms above as kernel terms, every argument and universe level
+written. A lemma's type is read from the native preservation library and
+instantiated one binder at a time, so the implicit program, crate, and flags
+of every lemma, the element types and encoders of the container lemmas, the
+field values and types of a document, and the environment the entry binds
+are all stated, and an `rfl` is `Eq.refl` at the equation the binder states.
+The well-typedness theorems of a recursive group are the group's recursor
+(`T.rec` for each of its document types and `T.rec_j` of the block's first
+type for the `j`-th container the kernel nests, in the order it nests them),
+an induction hypothesis standing where the text recursed. The one core
+backend renders the module to the Lean verification compiles, with `import`
+lines and no `module` header while certificates A and B are Lean text (a
+`module` cannot import them), and the verify record holds the module in the
+authoring notation (§17.21.8), at the module's path with the extension
+`.lex.tex`, which reads back to the data byte for byte; `preservation.json`
+binds those bytes. A certificate held as data is audited row by row and
+never as text: it imports only modules of the environment, declares only
+safe theorems, definitions, and abbreviations, each pinning its axioms
+exactly (the registry's for the library lemmas a row applies, the three
+above for the composition), and names no forbidden constant in any
+spelling; the audit module prints the axioms of every row of such a
+certificate, and a row whose policy does not state what Lean prints is
+`LLV7016`. `conformance_sp_14` builds every certificate E of the four
+corpora this way, reads each record back to its data, verifies the
+production example under the pinned Lean, and plants a wrong lemma, a changed
+statement, a forged crate reference, and an added axiom, each refused.
+
 **Evidence.** The conformance suite certifies every production root of
 `examples/production`, `examples/production-coverage`, `examples/models`, and
 `examples/reasoning`, and verification checks every example's certificates as part of its
@@ -7239,6 +7268,7 @@ extract/<extraction-module>.lean           # when a production root exists
 extract/process.json                       # when a production root exists
 production/compiler-input.json             # when a production root exists
 preserve/LexLeanPreserve/*/*.lean          # when a production root exists
+preserve/LexLeanPreserve/*/*/Compose/*.lex.tex  # certificate E, as data (§17.17)
 preserve/program/R<i>.json                 # when a production root exists
 preserve/crate/R<i>.<target>.rs            # when a production root exists
 preserve/audit.txt                         # when a production root exists

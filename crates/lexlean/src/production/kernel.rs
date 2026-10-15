@@ -263,22 +263,12 @@ impl Builder {
                 let x = self.lift_memo(x, n, cutoff, memo);
                 self.app(f, x)
             }
-            CoreNode::Lambda {
-                n: name,
-                b,
-                t,
-                v,
-            } => {
+            CoreNode::Lambda { n: name, b, t, v } => {
                 let t = self.lift_memo(t, n, cutoff, memo);
                 let v = self.lift_memo(v, n, cutoff + 1, memo);
                 self.lam(&name, b, t, v)
             }
-            CoreNode::Forall {
-                n: name,
-                b,
-                t,
-                v,
-            } => {
+            CoreNode::Forall { n: name, b, t, v } => {
                 let t = self.lift_memo(t, n, cutoff, memo);
                 let v = self.lift_memo(v, n, cutoff + 1, memo);
                 self.pi(&name, b, t, v)
@@ -570,7 +560,10 @@ mod tests {
         let (head, parts) = b.spine(result);
         assert!(matches!(b.node(head), CoreNode::Const { n, .. } if n == "Eq"));
         assert_eq!(parts[1], zero, "x became the literal");
-        assert!(matches!(b.node(parts[2]), CoreNode::BVar { i: 0 }), "y is still #0");
+        assert!(
+            matches!(b.node(parts[2]), CoreNode::BVar { i: 0 }),
+            "y is still #0"
+        );
         assert_eq!(applied.term, b.app(f, zero));
     }
 

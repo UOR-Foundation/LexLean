@@ -482,8 +482,7 @@ pub fn audit_core(
     }
     for node in &module.nodes {
         if let CoreNode::Const { n, .. } = node {
-            if n
-                .split('.')
+            if n.split('.')
                 .any(|segment| FORBIDDEN_CONSTANTS.contains(&segment))
             {
                 return Err(format!("the forbidden constant `{n}`"));

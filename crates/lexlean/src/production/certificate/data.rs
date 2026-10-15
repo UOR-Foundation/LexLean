@@ -143,15 +143,6 @@ impl<'g, 'a> Composer<'g, 'a> {
             .map_err(|reason| format!("`{name}`: {reason}"))
     }
 
-    /// A library lemma applied to `args`, with the resulting type.
-    fn apply_typed(&mut self, name: &str, args: &[Arg]) -> Result<(Term, Term), String> {
-        let (head, ty) = self.lemma(name)?;
-        self.b
-            .apply_pi(head, ty, args)
-            .map(|applied| (applied.term, applied.ty))
-            .map_err(|reason| format!("`{name}`: {reason}"))
-    }
-
     fn rust_lemma(&mut self, name: &str, args: &[Arg]) -> Result<Term, String> {
         self.apply(&format!("{RUST}.{name}"), args)
     }
@@ -810,7 +801,11 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
         };
         let owner = self.document_name(&member)?;
-        let binder = if shape.kind == "inductive" { "__v" } else { "__s" };
+        let binder = if shape.kind == "inductive" {
+            "__v"
+        } else {
+            "__s"
+        };
         // The statement: ∀ (v : T), WT p c A (A.__enc_k v) (.adt k).
         let v = self.b.bvar(0);
         let encoder = self.of_a(&format!("__enc_{index}"));
@@ -930,7 +925,9 @@ impl<'g, 'a> Composer<'g, 'a> {
             Some((entry, _)) => (entry, self.environment(entry, &args)?),
             None => (0, self.environment(0, &args)?),
         };
-        let fallible_term = self.b.konst(if fallible { "Bool.true" } else { "Bool.false" });
+        let fallible_term = self
+            .b
+            .konst(if fallible { "Bool.true" } else { "Bool.false" });
         let vars: Vec<Term> = applied_names.iter().map(|(_, var)| *var).collect();
         // The function the crate's root is, `fn` of `compose`: the entry of
         // the program, read out of the program's function list.
@@ -940,9 +937,10 @@ impl<'g, 'a> Composer<'g, 'a> {
         let entry_index = self.b.nat(entry);
         let default_function = self.default_function();
         let get_d = self.b.konst0("List.getD");
-        let function = self
-            .b
-            .apps(get_d, &[function_ty, functions, entry_index, default_function]);
+        let function = self.b.apps(
+            get_d,
+            &[function_ty, functions, entry_index, default_function],
+        );
         // hB : ∀ n, FunSem p c A n f, from certificate B's root theorem.
         let nat = self.b.konst("Nat");
         let b_root = self.b.konst(&format!("{}.root", self.module_b));
@@ -1088,9 +1086,10 @@ impl<'g, 'a> Composer<'g, 'a> {
                 let hc = self.b.apps(and_right, &[realizes_obs, rci_ro, hand]);
                 let obs_ty = self.library("Obs");
                 let motive = {
+                    // Under o: hand is #1 and ro is #2.
                     let o = self.b.bvar(0);
-                    let ro3 = self.b.bvar(3);
-                    let body = self.b.apps(realizes, &[fallible_term, o, ro3]);
+                    let ro2 = self.b.bvar(2);
+                    let body = self.b.apps(realizes, &[fallible_term, o, ro2]);
                     self.b.lam("__e_o", CoreBinderInfo::Explicit, obs_ty, body)
                 };
                 let eq_subst = self.b.konst1("Eq.subst");
@@ -1109,9 +1108,9 @@ impl<'g, 'a> Composer<'g, 'a> {
                     let target = self.b.lift(accepted_obs, 3, 0);
                     let hr3 = self.b.lift(hr, 1, 0);
                     let motive3 = self.b.lift(motive, 1, 0);
-                    let rewritten =
-                        self.b
-                            .apps(eq_subst, &[obs_ty, motive3, obs3, target, equation, hr3]);
+                    let rewritten = self
+                        .b
+                        .apps(eq_subst, &[obs_ty, motive3, obs3, target, equation, hr3]);
                     self.b
                         .lam("__e_h", CoreBinderInfo::Explicit, accepted2, rewritten)
                 };
@@ -1125,9 +1124,9 @@ impl<'g, 'a> Composer<'g, 'a> {
                     let target = self.b.lift(refused_obs, 3, 0);
                     let hr3 = self.b.lift(hr, 1, 0);
                     let motive3 = self.b.lift(motive, 1, 0);
-                    let rewritten =
-                        self.b
-                            .apps(eq_subst, &[obs_ty, motive3, obs3, target, equation, hr3]);
+                    let rewritten = self
+                        .b
+                        .apps(eq_subst, &[obs_ty, motive3, obs3, target, equation, hr3]);
                     self.b
                         .lam("__e_h", CoreBinderInfo::Explicit, refused2, rewritten)
                 };
@@ -1145,7 +1144,12 @@ impl<'g, 'a> Composer<'g, 'a> {
                 let tail_ty = self.b.apps(and, &[implies_accepted2, implies_refused2]);
                 let tail = self.b.apps(
                     and_intro,
-                    &[implies_accepted2, implies_refused2, accepted_proof, refused_proof],
+                    &[
+                        implies_accepted2,
+                        implies_refused2,
+                        accepted_proof,
+                        refused_proof,
+                    ],
                 );
                 let witness = self.b.apps(and_intro, &[rci_ro, tail_ty, hc, tail]);
                 let exists_intro = self.b.konst1("Exists.intro");
@@ -1162,7 +1166,9 @@ impl<'g, 'a> Composer<'g, 'a> {
                     let _ = hand_ty;
                     self.b.apps(and, &[realizes1, rci1])
                 };
-                let inner = self.b.lam("__e_hand", CoreBinderInfo::Explicit, hand_ty, intro);
+                let inner = self
+                    .b
+                    .lam("__e_hand", CoreBinderInfo::Explicit, hand_ty, intro);
                 let elim_fn = self.b.lam("__e_ro", CoreBinderInfo::Explicit, r_out, inner);
                 let exists_elim = self.b.konst1("Exists.elim");
                 self.b.apps(
@@ -1184,17 +1190,32 @@ impl<'g, 'a> Composer<'g, 'a> {
             let statement = self.b.apps(exists, &[r_out, predicate]);
             (statement, composed)
         };
-        // Close the binders: the parameters, then __e_hrep.
+        // Close the binders: the parameters, then __e_hrep, whose type is
+        // stated under the parameters alone, one binder above the body.
         let representable = self.rust("RepresentableL");
-        let hrep_ty = self.b.app(representable, args_list);
-        let mut statement = self.b.pi("__e_hrep", CoreBinderInfo::Explicit, hrep_ty, statement_body);
-        let mut value = self.b.lam("__e_hrep", CoreBinderInfo::Explicit, hrep_ty, proof);
-        for (position, SemanticParameter { name, r#type: _ }) in
-            parameters.iter().enumerate().rev()
+        let mut outer_args = Vec::new();
+        for (position, SemanticParameter { name: _, r#type }) in parameters.iter().enumerate() {
+            let var = self.b.bvar(count - 1 - position);
+            outer_args.push(self.encode(r#type, var)?);
+        }
+        let outer_args = self.b.list(value_ty, &outer_args);
+        let hrep_ty = self.b.app(representable, outer_args);
+        let mut statement = self.b.pi(
+            "__e_hrep",
+            CoreBinderInfo::Explicit,
+            hrep_ty,
+            statement_body,
+        );
+        let mut value = self
+            .b
+            .lam("__e_hrep", CoreBinderInfo::Explicit, hrep_ty, proof);
+        for (position, SemanticParameter { name, r#type: _ }) in parameters.iter().enumerate().rev()
         {
             let domain = domains[position];
             let binder = binder_name(name);
-            statement = self.b.pi(&binder, CoreBinderInfo::Explicit, domain, statement);
+            statement = self
+                .b
+                .pi(&binder, CoreBinderInfo::Explicit, domain, statement);
             value = self.b.lam(&binder, CoreBinderInfo::Explicit, domain, value);
         }
         let mut axioms = self.axioms()?;
@@ -1264,10 +1285,11 @@ impl<'g, 'a> Composer<'g, 'a> {
         for component in components(&graph) {
             let recursive = component.len() > 1
                 || component.iter().any(|index| {
-                    self.gen.nested.values().any(|nested| nested.group == *index)
-                        || graph
-                            .get(index)
-                            .is_some_and(|edges| edges.contains(index))
+                    self.gen
+                        .nested
+                        .values()
+                        .any(|nested| nested.group == *index)
+                        || graph.get(index).is_some_and(|edges| edges.contains(index))
                 });
             let built = if recursive {
                 self.group_rows(&component)?
@@ -1279,12 +1301,21 @@ impl<'g, 'a> Composer<'g, 'a> {
                 built
             };
             for row in built {
-                self.row_axioms
-                    .insert(row.name.clone(), row.axioms.clone());
+                self.row_axioms.insert(row.name.clone(), row.axioms.clone());
                 rows.push(row);
             }
         }
         rows.push(self.root_row(root_module, root_name, fallible)?);
+        // Every row is closed: a loose variable is a generator error, named
+        // here rather than by the kernel.
+        for row in &rows {
+            if self.b.has_loose(row.ty, 0) || self.b.has_loose(row.value, 0) {
+                return Err(format!(
+                    "the row `{}` of certificate E has a loose bound variable",
+                    row.name
+                ));
+            }
+        }
         let declarations = rows
             .into_iter()
             .map(|row| theorem_row(row.name, row.ty, row.value, &row.axioms))
@@ -1304,7 +1335,6 @@ impl<'g, 'a> Composer<'g, 'a> {
         Ok(module)
     }
 }
-
 
 /// A container the kernel nests in a recursive group of document types: an
 /// auxiliary inductive type of the group's recursors, with its own motive.
@@ -1358,12 +1388,10 @@ fn canonical(ty: &SemanticType) -> SemanticType {
                 right: Box::new(canonical(value)),
             }),
         },
-        SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
-            SemanticType::Product {
-                left: Box::new(SemanticType::Bool),
-                right: Box::new(SemanticType::Bool),
-            }
-        }
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => SemanticType::Product {
+            left: Box::new(SemanticType::Bool),
+            right: Box::new(SemanticType::Bool),
+        },
         SemanticType::Option { value } => SemanticType::Option {
             value: Box::new(canonical(value)),
         },
@@ -1437,7 +1465,10 @@ impl Composer<'_, '_> {
         let mut aux: Vec<Aux> = Vec::new();
         let mut seen: BTreeSet<String> = BTreeSet::new();
         for &index in &block {
-            let shape = self.gen.source.document(&self.gen.layout.adts[index as usize].ty)?;
+            let shape = self
+                .gen
+                .source
+                .document(&self.gen.layout.adts[index as usize].ty)?;
             for fields in &shape.fields {
                 for field in fields {
                     self.register_aux(field, &block_keys, &mut aux, &mut seen)?;
@@ -1720,7 +1751,10 @@ impl Composer<'_, '_> {
             .map(|field| self.position(group, field))
             .collect();
         let m = fields.len();
-        let r = positions.iter().filter(|position| position.is_some()).count();
+        let r = positions
+            .iter()
+            .filter(|position| position.is_some())
+            .count();
         let mut bound = Vec::new();
         let mut k = 0;
         for (j, field) in fields.iter().enumerate() {
@@ -1748,11 +1782,15 @@ impl Composer<'_, '_> {
             let var = self.b.bvar(m + k - 1 - j);
             let motive = self.motive_body(group, *position)?;
             let domain = self.b.instantiate(motive, var);
-            term = self.b.lam(&format!("__ih{k}"), CoreBinderInfo::Explicit, domain, term);
+            term = self
+                .b
+                .lam(&format!("__ih{k}"), CoreBinderInfo::Explicit, domain, term);
         }
         for (j, field) in fields.iter().enumerate().rev() {
             let domain = self.lean_type(field)?;
-            term = self.b.lam(&format!("__x{j}"), CoreBinderInfo::Explicit, domain, term);
+            term = self
+                .b
+                .lam(&format!("__x{j}"), CoreBinderInfo::Explicit, domain, term);
         }
         Ok(term)
     }
