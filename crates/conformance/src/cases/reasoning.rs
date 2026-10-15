@@ -42,33 +42,14 @@ fn module_path(module: &str) -> String {
     format!("src/{module}.lex.tex")
 }
 
-fn data_bounds(text: &str) -> (usize, usize) {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    (start, end)
-}
-
 fn module_data(project: &P, module: &str) -> Json {
-    let text = project.read(&module_path(module));
-    let (start, end) = data_bounds(&text);
-    serde_json::from_str(&text[start..end]).expect("module data")
+    crate::support::module_json(&project.read(&module_path(module)))
 }
 
 fn write_module_data(project: &P, module: &str, data: &Json) {
     let path = module_path(module);
     let text = project.read(&path);
-    let (start, end) = data_bounds(&text);
-    project.write(
-        &path,
-        &format!(
-            "{}{}{}",
-            &text[..start],
-            serde_json::to_string(data).expect("serializes"),
-            &text[end..]
-        ),
-    );
+    project.write(&path, &crate::support::with_module_json(&text, data));
 }
 
 fn declarations_mut(data: &mut Json) -> &mut Vec<Json> {
@@ -2760,8 +2741,7 @@ fn rs_12() {
             .unwrap_or_else(|error| panic!("{path}: {error}"))
     };
     let declarations = |text: &str| -> Vec<Json> {
-        let (start, end) = data_bounds(text);
-        serde_json::from_str::<Json>(&text[start..end]).expect("module data")["declarations"]
+        support::module_json(text)["declarations"]
             .as_array()
             .expect("declarations")
             .clone()
@@ -2943,7 +2923,7 @@ fn rs_12() {
         );
         let id = crate::calculus::identifier(&case.fixture.name);
         assert!(
-            fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
+            support::declares(&fixtures_text, &format!("{id}Agrees")),
             "{id}Agrees is stated"
         );
         let Outcome::Value {
@@ -3260,7 +3240,7 @@ fn rs_13() {
         );
         let id = crate::calculus::identifier(name);
         assert!(
-            fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
+            support::declares(&fixtures_text, &format!("{id}Agrees")),
             "{id}Agrees is stated"
         );
         let Outcome::Value { value, .. } = &case.fixture.expected else {

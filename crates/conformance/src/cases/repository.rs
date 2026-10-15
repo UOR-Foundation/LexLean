@@ -411,7 +411,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 380, "§31 has 380 rows");
+            assert_eq!(table.len(), 394, "§31 has 394 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -558,7 +558,7 @@ pub(crate) fn run(id: &str) {
                 .iter()
                 .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
                 .collect();
-            let recomputed = lexlean::artifact::content_id::tree_digest(&borrowed);
+            let recomputed = support::identity_tree_digest(&borrowed);
             assert_eq!(
                 recomputed,
                 lexlean::compiler_semantics_id_for(lexlean::LATEST_LANGUAGE_VERSION),
@@ -623,7 +623,7 @@ pub(crate) fn run(id: &str) {
                     .copied()
                     .filter(|(path, _)| !excluded(path, lists))
                     .collect();
-                lexlean::artifact::content_id::tree_digest(&kept)
+                support::identity_tree_digest(&kept)
             };
             let eleven = filtered(&[&only_1_2]);
             let ten = filtered(&[&only_1_2, &only_1_1]);
@@ -1003,11 +1003,28 @@ pub(crate) fn run(id: &str) {
                 ci.contains("    runs-on: ubuntu-24.04\n    # Native Atlas"),
                 "the normative job runs on the standard runner"
             );
-            for variable in ["LEXLEAN_VERIFY_WIDTH", "vars.", "inputs."] {
+            for variable in ["vars.", "inputs."] {
                 assert!(
                     !ci.contains(variable),
-                    "the gate selects no runner and no width: `{variable}`"
+                    "the gate selects no runner and no profile from outside the file: `{variable}`"
                 );
+            }
+            // The resource profile (§22.11) is chosen by the leg's matrix row
+            // and by nothing else: each variable is set once, on the gate job,
+            // from the row.
+            for (variable, line) in [
+                ("LEXLEAN_VERIFY_WIDTH", "      LEXLEAN_VERIFY_WIDTH: ${{ matrix.width }}\n"),
+                (
+                    "LEXLEAN_VERIFY_MEMORY_KIB",
+                    "      LEXLEAN_VERIFY_MEMORY_KIB: ${{ matrix.memory_kib }}\n",
+                ),
+                (
+                    "LEXLEAN_VERIFY_HINTS",
+                    "      LEXLEAN_VERIFY_HINTS: ${{ matrix.hints && format('{0}/{1}', github.workspace, matrix.hints) || '' }}\n",
+                ),
+            ] {
+                assert_eq!(ci.matches(variable).count(), 1, "§9.4: `{variable}` is set once");
+                assert!(ci.contains(line), "§9.4: `{variable}` is read from the matrix row");
             }
             assert!(ci.contains("timeout-minutes: 360"));
             // The gate is one matrix job whose legs run the recipes of `vv`
@@ -1021,15 +1038,66 @@ pub(crate) fn run(id: &str) {
                 .map(str::to_owned)
                 .collect();
             let job = &ci[..ci.find("\n  host-matrix:").expect("the host matrix")];
-            let legs: Vec<Vec<String>> = job
+            // A matrix row: `- { part: <name>, recipes: "...", width: "...",
+            // memory_kib: "...", hints: "..." }`.
+            let field = |row: &str, name: &str| -> Option<String> {
+                let start = row.find(&format!(" {name}: \""))? + name.len() + 4;
+                Some(row[start..start + row[start..].find('"')?].to_owned())
+            };
+            let rows: Vec<&str> = job
                 .lines()
-                .filter_map(|line| {
-                    let leg = line.trim().strip_prefix("- { part: ")?;
-                    let recipes = leg.split_once(", recipes: \"")?.1.strip_suffix("\" }")?;
+                .filter(|line| line.trim().starts_with("- { part: "))
+                .collect();
+            let legs: Vec<Vec<String>> = rows
+                .iter()
+                .filter_map(|row| {
+                    let recipes = field(row, "recipes")?;
                     Some(recipes.split_whitespace().map(str::to_owned).collect())
                 })
                 .collect();
+            assert_eq!(
+                legs.len(),
+                rows.len(),
+                "every leg names its recipes: {rows:?}"
+            );
             assert!(legs.len() >= 2, "the gate runs in legs: {legs:?}");
+            // The leg that runs `examples` verifies at width 2 with the
+            // committed hints and a 12 GiB budget; every other leg names no
+            // profile, which is the default (§9.4, §22.11). The values are the
+            // verifier's to accept: a width it refuses, or hints it cannot
+            // read, would fail the gate as `LLV7017` before any stage ran, so
+            // they are parsed here with the verifier's own functions.
+            for (row, leg) in rows.iter().zip(&legs) {
+                let profile = ["width", "memory_kib", "hints"].map(|name| {
+                    field(row, name).unwrap_or_else(|| panic!("§9.4: the row {row} names `{name}`"))
+                });
+                if leg.iter().any(|recipe| recipe == "examples") {
+                    assert_eq!(
+                        profile,
+                        ["2", "12582912", ".github/verify-hints.json"].map(str::to_owned),
+                        "§9.4: the examples leg's profile"
+                    );
+                    assert_eq!(
+                        lexlean::verify::operational::Operational::parse_width(Some(&profile[0]))
+                            .expect("the width is one the verifier accepts"),
+                        2
+                    );
+                    let hints = lexlean::verify::operational::Operational::parse_hints(&root_file(
+                        &profile[2],
+                    ))
+                    .expect("the committed hints are a hints file the verifier reads");
+                    assert!(
+                        hints.contains_key("LexLeanExample.CensusCert4"),
+                        "the hints cover the Atlas module that dominates the leg"
+                    );
+                } else {
+                    assert_eq!(
+                        profile,
+                        ["", "", ""].map(str::to_owned),
+                        "§9.4: a leg that does not run examples names no profile: {row}"
+                    );
+                }
+            }
             let mut ran: Vec<&String> = legs.iter().flatten().collect();
             for leg in &legs {
                 let positions: Vec<usize> = leg

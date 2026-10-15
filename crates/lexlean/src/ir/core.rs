@@ -694,10 +694,34 @@ impl CoreModule {
         Ok(module)
     }
 
+    /// Read a module written in the authoring notation (SPEC.md §17.21.8),
+    /// which is language 1.2's, and enforce the closed schema invariants.
+    pub fn from_notation(text: &str, language: &str) -> Result<Self, String> {
+        if language != crate::LANGUAGE_1_2 {
+            return Err(format!(
+                "the authoring notation of a coremodule is language 1.2; write `\\coredata` under language {language}"
+            ));
+        }
+        let module = crate::surface::core::parse_module(text).map_err(|failure| {
+            format!(
+                "invalid core notation: {} (at byte {})",
+                failure.message, failure.offset
+            )
+        })?;
+        module.validate(language)?;
+        Ok(module)
+    }
+
     /// Decode the module of a native `.lex.tex` source: the one `\coredata`
-    /// argument between the module's `coremodule` markers.
+    /// argument between the module's `coremodule` markers, or the module in
+    /// the authoring notation.
     pub fn from_source(source: &str, language: &str) -> Result<Self, String> {
         const MARKER: &str = "\\coredata{";
+        if let Some(located) = crate::surface::module::locate(source)
+            .filter(|found| found.kind.is(&crate::surface::module::CORE) && found.data.is_none())
+        {
+            return Self::from_notation(&source[located.body.0..located.body.1], language);
+        }
         if source.matches(MARKER).count() != 1 {
             return Err("a native core source holds exactly one core payload".to_owned());
         }
@@ -742,8 +766,10 @@ impl CoreModule {
         }
     }
 
+    /// Enforce the closed schema invariants of either schema version; core
+    /// module 2 is accepted only under language 1.2.
     #[allow(clippy::too_many_lines)]
-    fn validate(&self, language: &str) -> Result<(), String> {
+    pub fn validate(&self, language: &str) -> Result<(), String> {
         if self.spec != CORE_SPEC_1 && self.spec != CORE_SPEC_2 {
             return Err(format!("unsupported core-module schema `{}`", self.spec));
         }

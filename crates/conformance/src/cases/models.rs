@@ -55,34 +55,15 @@ fn module_path(module: &str) -> String {
     format!("src/{module}.lex.tex")
 }
 
-fn data_bounds(text: &str) -> (usize, usize) {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    (start, end)
-}
-
 /// The semantic data of one module of a project copy.
 fn module_data(project: &P, module: &str) -> Json {
-    let text = project.read(&module_path(module));
-    let (start, end) = data_bounds(&text);
-    serde_json::from_str(&text[start..end]).expect("module data")
+    crate::support::module_json(&project.read(&module_path(module)))
 }
 
 fn write_module_data(project: &P, module: &str, data: &Json) {
     let path = module_path(module);
     let text = project.read(&path);
-    let (start, end) = data_bounds(&text);
-    project.write(
-        &path,
-        &format!(
-            "{}{}{}",
-            &text[..start],
-            serde_json::to_string(data).expect("serializes"),
-            &text[end..]
-        ),
-    );
+    project.write(&path, &crate::support::with_module_json(&text, data));
 }
 
 fn declaration_mut<'a>(data: &'a mut Json, name: &str) -> &'a mut Json {
@@ -2682,24 +2663,11 @@ fn md_10() {
     let original = id(&base);
     // A reformatted module is the same semantic module.
     let reformatted = P::copy_example(EXAMPLE);
-    let data = module_data(&reformatted, "Recognizer");
     let path = module_path("Recognizer");
     let text = reformatted.read(&path);
-    let (start, end) = data_bounds(&text);
-    let pretty = serde_json::to_string_pretty(&data).expect("serializes");
-    reformatted.write(
-        &path,
-        &format!("{}{}{}", &text[..start], pretty, &text[end..]),
-    );
-    if reformatted
-        .engine()
-        .check(CheckRequest {
-            selection: Selection::Entrypoints,
-        })
-        .is_ok()
-    {
-        assert_eq!(id(&reformatted), original, "layout is not semantics");
-    }
+    reformatted.write(&path, &support::squeezed_notation(&text));
+    reformatted.check_ok();
+    assert_eq!(id(&reformatted), original, "layout is not semantics");
     let mut ids = vec![original];
     // An artifact byte, with its declared digest.
     let bytes = P::copy_example(EXAMPLE);

@@ -2,6 +2,12 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"var","name":"offset"}},"captures":["offset"],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},"executable":true,"kind":"definition","name":"adder","parameters":[{"name":"offset","type":{"kind":"nat"}}],"result":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: adder,
+  parameters: [offset : Nat],
+  result: (Fn (Nat) Nat),
+  body: (fun [offset] (value : Nat) => (value + offset)),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

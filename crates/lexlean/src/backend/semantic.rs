@@ -1918,6 +1918,41 @@ pub(crate) fn declaration_spans_in(source: &str, control: &str) -> Option<Vec<(u
     }
 }
 
+/// The byte range in the normalized source of every declaration of a module
+/// of the environment `environment` (`semanticmodule` or `toolingmodule`)
+/// written in the authoring notation, in order; `None` for a module written
+/// as data.
+pub(crate) fn notation_declaration_spans(
+    normalized: &str,
+    environment: &str,
+) -> Option<Vec<(usize, usize)>> {
+    let begin = format!("\\begin{{{environment}}}");
+    let end = format!("\\end{{{environment}}}");
+    let body_start = normalized.find(&begin)? + begin.len();
+    let body = normalized.get(body_start..normalized.rfind(&end)?)?;
+    let tooling = environment == "toolingmodule";
+    let data_control = if tooling {
+        "\\toolingdata"
+    } else {
+        "\\semanticdata"
+    };
+    if body.trim_start().starts_with(data_control) {
+        return None;
+    }
+    let spans = if tooling {
+        crate::surface::tooling::declaration_spans(body)
+    } else {
+        crate::surface::semantic::declaration_spans(body)
+    }
+    .ok()?;
+    Some(
+        spans
+            .into_iter()
+            .map(|(start, end)| (body_start + start, body_start + end))
+            .collect(),
+    )
+}
+
 /// Language 1.2: one mapping node per declaration, relating its generated
 /// text to its own object in the source, inside the module node that
 /// relates the preamble and closing to the whole module.
@@ -1937,6 +1972,8 @@ fn emit_declarations(
         &DeclarationSource {
             control: "\\semanticdata{",
             owner: "lexlean.core::semanticdata",
+            environment: "semanticmodule",
+            notation_owner: "lexlean.core::semanticsource",
             node: "semantic-declaration",
             skip_blank: false,
         },
@@ -1950,6 +1987,12 @@ pub(crate) struct DeclarationSource<'a> {
     pub control: &'a str,
     /// The coverage owner of the metadata rows.
     pub owner: &'a str,
+    /// The environment the module is written in, which the authoring
+    /// notation of the same module fills instead of the control's argument.
+    pub environment: &'a str,
+    /// The coverage owner of the metadata rows of a module written in the
+    /// notation.
+    pub notation_owner: &'a str,
     /// The kind of each declaration's mapping node.
     pub node: &'a str,
     /// Whether a declaration whose rendering is blank has no piece. A
@@ -1970,7 +2013,17 @@ pub(crate) fn emit_declarations_for(
     end: usize,
     source: &DeclarationSource<'_>,
 ) -> Result<Emitter, Diagnostic> {
-    let spans = declaration_spans_in(&checked.normalized, source.control)
+    // A module written in the authoring notation (§17.21) maps each
+    // declaration to its own text there, as one written as data maps it to
+    // its object.
+    let notation = notation_declaration_spans(&checked.normalized, source.environment);
+    let owner = if notation.is_some() {
+        source.notation_owner
+    } else {
+        source.owner
+    };
+    let spans = notation
+        .or_else(|| declaration_spans_in(&checked.normalized, source.control))
         .filter(|spans| spans.len() == starts.len())
         .ok_or_else(|| {
             Diagnostic::new(
@@ -1979,7 +2032,7 @@ pub(crate) fn emit_declarations_for(
             )
         })?;
     let origin = || Origin::Metadata {
-        owner: source.owner.to_owned(),
+        owner: owner.to_owned(),
     };
     let whole = EmitSource::File(0, checked.normalized.len());
     let mut emitter = Emitter::new();

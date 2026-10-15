@@ -2,6 +2,679 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"fields":[{"name":"temperature","type":{"kind":"nat"}},{"name":"heartRate","type":{"kind":"nat"}},{"name":"respiratoryRate","type":{"kind":"nat"}},{"name":"whiteCells","type":{"kind":"nat"}},{"name":"systolic","type":{"kind":"nat"}},{"name":"infection","type":{"kind":"nat"}}],"kind":"structure","name":"Vitals","parameters":[],"type_parameters":[]},{"fields":[{"name":"vitals","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"fever","type":{"kind":"nat"}},{"name":"tachycardia","type":{"kind":"nat"}},{"name":"tachypnea","type":{"kind":"nat"}},{"name":"leukocytosis","type":{"kind":"nat"}},{"name":"sirs","type":{"kind":"nat"}},{"name":"sepsis","type":{"kind":"nat"}},{"name":"shock","type":{"kind":"nat"}},{"name":"level","type":{"kind":"nat"}}],"kind":"structure","name":"Chart","parameters":[],"type_parameters":[]},{"body":{"kind":"blt","left":{"kind":"nat","value":"380"},"right":{"field":"temperature","kind":"project","value":{"kind":"var","name":"v"}}},"executable":true,"kind":"definition","name":"feverish","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"bool"}},{"body":{"kind":"blt","left":{"kind":"nat","value":"90"},"right":{"field":"heartRate","kind":"project","value":{"kind":"var","name":"v"}}},"executable":true,"kind":"definition","name":"tachycardic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"bool"}},{"body":{"kind":"blt","left":{"kind":"nat","value":"20"},"right":{"field":"respiratoryRate","kind":"project","value":{"kind":"var","name":"v"}}},"executable":true,"kind":"definition","name":"tachypneic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"bool"}},{"body":{"kind":"blt","left":{"kind":"nat","value":"12"},"right":{"field":"whiteCells","kind":"project","value":{"kind":"var","name":"v"}}},"executable":true,"kind":"definition","name":"leukocytic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"bool"}},{"body":{"kind":"blt","left":{"field":"systolic","kind":"project","value":{"kind":"var","name":"v"}},"right":{"kind":"nat","value":"90"}},"executable":true,"kind":"definition","name":"hypotensive","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"bool"}},{"body":{"kind":"lt","left":{"kind":"nat","value":"380"},"right":{"field":"temperature","kind":"project","value":{"kind":"var","name":"v"}}},"kind":"definition","name":"Febrile","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"prop"}},{"body":{"kind":"lt","left":{"kind":"nat","value":"90"},"right":{"field":"heartRate","kind":"project","value":{"kind":"var","name":"v"}}},"kind":"definition","name":"Tachycardic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"prop"}},{"body":{"kind":"lt","left":{"kind":"nat","value":"20"},"right":{"field":"respiratoryRate","kind":"project","value":{"kind":"var","name":"v"}}},"kind":"definition","name":"Tachypneic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"prop"}},{"body":{"kind":"lt","left":{"kind":"nat","value":"12"},"right":{"field":"whiteCells","kind":"project","value":{"kind":"var","name":"v"}}},"kind":"definition","name":"Leukocytic","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"prop"}},{"body":{"kind":"lt","left":{"field":"systolic","kind":"project","value":{"kind":"var","name":"v"}},"right":{"kind":"nat","value":"90"}},"kind":"definition","name":"Hypotensive","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"result":{"kind":"prop"}},{"body":{"kind":"prop_and","left":{"kind":"le","left":{"field":"level","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"3"}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"eq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"kind":"implies","premise":{"kind":"eq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"eq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"kind":"implies","premise":{"kind":"eq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"2"}}},"right":{"conclusion":{"kind":"eq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"kind":"implies","premise":{"kind":"eq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"3"}}}}}},"kind":"definition","name":"Warranted","parameters":[{"name":"c","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"result":{"kind":"prop"}},{"body":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"temperature","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"temperature","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"heartRate","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"heartRate","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"respiratoryRate","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"respiratoryRate","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"whiteCells","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"whiteCells","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"systolic","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"systolic","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"fever","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}],"function":{"name":"Febrile"},"kind":"call"}},"kind":"implies","premise":{"kind":"lt","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"fever","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}],"function":{"name":"Tachycardic"},"kind":"call"}},"kind":"implies","premise":{"kind":"lt","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}],"function":{"name":"Tachypneic"},"kind":"call"}},"kind":"implies","premise":{"kind":"lt","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}],"function":{"name":"Leukocytic"},"kind":"call"}},"kind":"implies","premise":{"kind":"lt","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"sirs","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"le","left":{"kind":"nat","value":"2"},"right":{"kind":"add","left":{"kind":"add","left":{"kind":"add","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"t"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"t"}}}}},"kind":"implies","premise":{"kind":"lt","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"sirs","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"eq","left":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"nat","value":"1"}}}},"kind":"implies","premise":{"kind":"lt","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"shock","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"kind":"prop_and","left":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"t"}}],"function":{"name":"Hypotensive"},"kind":"call"}}},"kind":"implies","premise":{"kind":"lt","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"shock","kind":"project","value":{"kind":"var","name":"t"}}}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"level","kind":"project","value":{"kind":"var","name":"t"}}},"right":{"conclusion":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"add","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"arguments":[{"kind":"var","name":"t"}],"function":{"name":"Warranted"},"kind":"call"}},"kind":"implies","premise":{"kind":"lt","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"level","kind":"project","value":{"kind":"var","name":"t"}}}}}}}}}}}}}}}}}}}}}}}}},"kind":"definition","name":"Justified","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"result":{"kind":"prop"}},{"body":{"kind":"prop_and","left":{"kind":"le","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"kind":"le","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"le","left":{"field":"level","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"3"}}}}}}}}},"kind":"definition","name":"Consistent","parameters":[{"name":"c","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"result":{"kind":"prop"}},{"body":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"fever","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"sirs","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"sepsis","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"nat","value":"1"},{"field":"shock","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"nat","value":"3"},{"field":"level","kind":"project","value":{"kind":"var","name":"c"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}}}}}}}},"kind":"definition","name":"Pending","parameters":[{"name":"c","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"result":{"kind":"nat"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"consistent_preserved","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"t"}],"function":{"name":"Consistent"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"function":{"name":"Justified"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"invariant":{"predicate":{"name":"Consistent"},"preserves":{"name":"consistent_preserved"}},"kind":"logic","name":"Findings","ranking":{"name":"Pending"},"relation":{"name":"Justified"},"state":{"name":"s","next":"t","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"fever_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"kind":"nat","value":"1"}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"feverish"},"kind":"call"}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"fever_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"kind":"nat","value":"1"}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"feverish"},"kind":"call"}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"kind":"nat","value":"1"}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"feverish"},"kind":"call"}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Fever","progress":{"name":"fever_progress"},"soundness":{"name":"fever_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"tachycardia_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"kind":"nat","value":"1"}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachycardic"},"kind":"call"}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"tachycardia_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"kind":"nat","value":"1"}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachycardic"},"kind":"call"}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"kind":"nat","value":"1"}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachycardic"},"kind":"call"}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Tachycardia","progress":{"name":"tachycardia_progress"},"soundness":{"name":"tachycardia_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"tachypnea_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"kind":"nat","value":"1"}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachypneic"},"kind":"call"}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"tachypnea_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"kind":"nat","value":"1"}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachypneic"},"kind":"call"}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"kind":"nat","value":"1"}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"tachypneic"},"kind":"call"}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Tachypnea","progress":{"name":"tachypnea_progress"},"soundness":{"name":"tachypnea_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"leukocytosis_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"kind":"nat","value":"1"}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"leukocytic"},"kind":"call"}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"leukocytosis_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"kind":"nat","value":"1"}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"leukocytic"},"kind":"call"}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"kind":"nat","value":"1"}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"leukocytic"},"kind":"call"}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Leukocytosis","progress":{"name":"leukocytosis_progress"},"soundness":{"name":"leukocytosis_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"sirs_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"kind":"nat","value":"1"}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"ble","left":{"kind":"nat","value":"2"},"right":{"kind":"add","left":{"kind":"add","left":{"kind":"add","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"sirs_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"kind":"nat","value":"1"}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"ble","left":{"kind":"nat","value":"2"},"right":{"kind":"add","left":{"kind":"add","left":{"kind":"add","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"kind":"nat","value":"1"}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"ble","left":{"kind":"nat","value":"2"},"right":{"kind":"add","left":{"kind":"add","left":{"kind":"add","left":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}},"right":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}}}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Sirs","progress":{"name":"sirs_progress"},"soundness":{"name":"sirs_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"sepsis_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"kind":"nat","value":"1"}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"nat","value":"1"}}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"sepsis_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"kind":"nat","value":"1"}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"nat","value":"1"}}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"kind":"nat","value":"1"}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"infection","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"nat","value":"1"}}}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Sepsis","progress":{"name":"sepsis_progress"},"soundness":{"name":"sepsis_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"shock_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"kind":"nat","value":"1"}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"hypotensive"},"kind":"call"}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"shock_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"kind":"nat","value":"1"}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"hypotensive"},"kind":"call"}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"kind":"nat","value":"1"}},{"field":"level","value":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}],"function":{"name":"hypotensive"},"kind":"call"}}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Shock","progress":{"name":"shock_progress"},"soundness":{"name":"shock_sound"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"escalate_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Justified"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"Warranted"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"kind":"add","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}},"right":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"escalate_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Chart"}}}],"proof":{"definitions":[{"name":"Consistent"},{"name":"Pending"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"kind":"add","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}},"right":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Consistent"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"conclusion":{"fields":[{"field":"vitals","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"fever","value":{"field":"fever","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachycardia","value":{"field":"tachycardia","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"tachypnea","value":{"field":"tachypnea","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"leukocytosis","value":{"field":"leukocytosis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sirs","value":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"sepsis","value":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"shock","value":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"level","value":{"kind":"add","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}],"kind":"record","type":{"name":"Chart"}},"executable":true,"guard":{"kind":"and","left":{"kind":"blt","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"0"}},"right":{"kind":"beq","left":{"field":"sirs","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"or","left":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"beq","left":{"field":"sepsis","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"level","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}},"right":{"kind":"beq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}}}}},"kind":"inference_rule","logic":{"member":{"name":"Findings"}},"name":"Escalate","progress":{"name":"escalate_progress"},"soundness":{"name":"escalate_sound"}},{"body":{"kind":"prop_and","left":{"kind":"le","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"conclusion":{"kind":"eq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"kind":"implies","premise":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"Hypotensive"},"kind":"call"},"right":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"infection","kind":"project","value":{"kind":"var","name":"v"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"Febrile"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"Tachycardic"},"kind":"call"}}}}}},"kind":"definition","name":"Indicated","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"and","left":{"kind":"ble","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"beq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"kind":"not","value":{"kind":"and","left":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"hypotensive"},"kind":"call"},"right":{"kind":"and","left":{"kind":"beq","left":{"field":"infection","kind":"project","value":{"kind":"var","name":"v"}},"right":{"kind":"nat","value":"1"}},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"feverish"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"tachycardic"},"kind":"call"}}}}}}},"executable":true,"kind":"definition","name":"recommendationCheck","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"recommendation_sound","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Indicated"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"recommendationCheck"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Indicated"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"recommendationCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"recommendation_complete","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Febrile"},{"name":"Hypotensive"},{"name":"Indicated"},{"name":"Leukocytic"},{"name":"Tachycardic"},{"name":"Tachypneic"},{"name":"feverish"},{"name":"hypotensive"},{"name":"leukocytic"},{"name":"recommendationCheck"},{"name":"tachycardic"},{"name":"tachypneic"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"recommendationCheck"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Indicated"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"recommendationCheck"},"complete":{"name":"recommendation_complete"},"kind":"verifier","name":"Recommendation","sound":{"name":"recommendation_sound"},"specification":{"name":"Indicated"},"subject":{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}},{"body":{"kind":"eq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"0"}},"kind":"definition","name":"Discharged","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"beq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"0"}},"executable":true,"kind":"definition","name":"dischargeCheck","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"discharge_sound","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Discharged"},{"name":"dischargeCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Discharged"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"dischargeCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"dischargeCheck"},"kind":"verifier","name":"Outpatient","sound":{"name":"discharge_sound"},"specification":{"name":"Discharged"},"subject":{"name":"v","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"admitted_consistent","parameters":[{"name":"patient","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"proof":{"definitions":[{"name":"Consistent"}],"kind":"linear_arithmetic"},"statement":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"patient"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Consistent"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"admitted_pending","parameters":[{"name":"patient","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}}],"proof":{"definitions":[{"name":"Pending"}],"kind":"linear_arithmetic"},"statement":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"patient"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Chart"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"kind":"nat","value":"11"}}},{"answer":{"name":"chart","type":{"kind":"nat"},"value":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Classical.choice","Quot.sound","propext"],"claims":[{"kind":"initial_invariant","theorem":{"name":"admitted_consistent"}},{"kind":"terminates","theorem":{"name":"admitted_pending"}}],"executable":true,"kind":"reasoner","logic":{"member":{"name":"Findings"}},"name":"Triage","observation":{"name":"patient","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},"observe":{"fields":[{"field":"vitals","value":{"kind":"var","name":"patient"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Chart"}},"rules":[{"member":{"name":"Fever"}},{"member":{"name":"Tachycardia"}},{"member":{"name":"Tachypnea"}},{"member":{"name":"Leukocytosis"}},{"member":{"name":"Sirs"}},{"member":{"name":"Sepsis"}},{"member":{"name":"Shock"}},{"member":{"name":"Escalate"}}],"strategy":{"fuel":{"kind":"nat","value":"11"},"kind":"forward"},"verifier":{"member":{"name":"Recommendation"}}},{"answer":{"name":"chart","type":{"kind":"nat"},"value":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Classical.choice","Quot.sound","propext"],"executable":true,"kind":"reasoner","logic":{"member":{"name":"Findings"}},"name":"Review","observation":{"name":"patient","type":{"arguments":[],"kind":"named","member":{"name":"Vitals"}}},"observe":{"fields":[{"field":"vitals","value":{"kind":"var","name":"patient"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Chart"}},"rules":[{"member":{"name":"Fever"}},{"member":{"name":"Tachycardia"}},{"member":{"name":"Tachypnea"}},{"member":{"name":"Leukocytosis"}},{"member":{"name":"Sirs"}},{"member":{"name":"Sepsis"}},{"member":{"name":"Shock"}},{"member":{"name":"Escalate"}}],"strategy":{"fuel":{"kind":"nat","value":"6"},"kind":"forward"},"verifier":{"member":{"name":"Outpatient"}}}],"spec":"lexlean/semantic-module/2"}}
+structure{
+  name: Vitals,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: temperature, type: Nat},
+    {name: heartRate, type: Nat},
+    {name: respiratoryRate, type: Nat},
+    {name: whiteCells, type: Nat},
+    {name: systolic, type: Nat},
+    {name: infection, type: Nat}
+  ]
+}
+
+structure{
+  name: Chart,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: vitals, type: Vitals},
+    {name: fever, type: Nat},
+    {name: tachycardia, type: Nat},
+    {name: tachypnea, type: Nat},
+    {name: leukocytosis, type: Nat},
+    {name: sirs, type: Nat},
+    {name: sepsis, type: Nat},
+    {name: shock, type: Nat},
+    {name: level, type: Nat}
+  ]
+}
+
+definition{
+  name: feverish,
+  parameters: [v : Vitals],
+  result: Bool,
+  body: (380 <? (project v temperature)),
+  executable: true
+}
+
+definition{
+  name: tachycardic,
+  parameters: [v : Vitals],
+  result: Bool,
+  body: (90 <? (project v heartRate)),
+  executable: true
+}
+
+definition{
+  name: tachypneic,
+  parameters: [v : Vitals],
+  result: Bool,
+  body: (20 <? (project v respiratoryRate)),
+  executable: true
+}
+
+definition{
+  name: leukocytic,
+  parameters: [v : Vitals],
+  result: Bool,
+  body: (12 <? (project v whiteCells)),
+  executable: true
+}
+
+definition{
+  name: hypotensive,
+  parameters: [v : Vitals],
+  result: Bool,
+  body: ((project v systolic) <? 90),
+  executable: true
+}
+
+definition{
+  name: Febrile,
+  parameters: [v : Vitals],
+  result: Prop,
+  body: (380 < (project v temperature))
+}
+
+definition{
+  name: Tachycardic,
+  parameters: [v : Vitals],
+  result: Prop,
+  body: (90 < (project v heartRate))
+}
+
+definition{
+  name: Tachypneic,
+  parameters: [v : Vitals],
+  result: Prop,
+  body: (20 < (project v respiratoryRate))
+}
+
+definition{
+  name: Leukocytic,
+  parameters: [v : Vitals],
+  result: Prop,
+  body: (12 < (project v whiteCells))
+}
+
+definition{
+  name: Hypotensive,
+  parameters: [v : Vitals],
+  result: Prop,
+  body: ((project v systolic) < 90)
+}
+
+definition{
+  name: Warranted,
+  parameters: [c : Chart],
+  result: Prop,
+  body: (((project c level) <= 3) /\ ((((project c level) = 1) -> ((project c sirs) = 1)) /\ ((((project c level) = 2) -> ((project c sepsis) = 1)) /\ (((project c level) = 3) -> ((project c shock) = 1)))))
+}
+
+definition{
+  name: Justified,
+  parameters: [s : Chart, t : Chart],
+  result: Prop,
+  body: (((project (project t vitals) temperature) = (project (project s vitals) temperature)) /\ (((project (project t vitals) heartRate) = (project (project s vitals) heartRate)) /\ (((project (project t vitals) respiratoryRate) = (project (project s vitals) respiratoryRate)) /\ (((project (project t vitals) whiteCells) = (project (project s vitals) whiteCells)) /\ (((project (project t vitals) systolic) = (project (project s vitals) systolic)) /\ (((project (project t vitals) infection) = (project (project s vitals) infection)) /\ (((project s fever) <= (project t fever)) /\ ((((project s fever) < (project t fever)) -> (((project t fever) = 1) /\ (Febrile (project t vitals)))) /\ (((project s tachycardia) <= (project t tachycardia)) /\ ((((project s tachycardia) < (project t tachycardia)) -> (((project t tachycardia) = 1) /\ (Tachycardic (project t vitals)))) /\ (((project s tachypnea) <= (project t tachypnea)) /\ ((((project s tachypnea) < (project t tachypnea)) -> (((project t tachypnea) = 1) /\ (Tachypneic (project t vitals)))) /\ (((project s leukocytosis) <= (project t leukocytosis)) /\ ((((project s leukocytosis) < (project t leukocytosis)) -> (((project t leukocytosis) = 1) /\ (Leukocytic (project t vitals)))) /\ (((project s sirs) <= (project t sirs)) /\ ((((project s sirs) < (project t sirs)) -> (((project t sirs) = 1) /\ (2 <= ((((project t fever) + (project t tachycardia)) + (project t tachypnea)) + (project t leukocytosis))))) /\ (((project s sepsis) <= (project t sepsis)) /\ ((((project s sepsis) < (project t sepsis)) -> (((project t sepsis) = 1) /\ (((project t sirs) = 1) /\ ((project (project t vitals) infection) = 1)))) /\ (((project s shock) <= (project t shock)) /\ ((((project s shock) < (project t shock)) -> (((project t shock) = 1) /\ (((project t sepsis) = 1) /\ (Hypotensive (project t vitals))))) /\ (((project s level) <= (project t level)) /\ (((project s level) < (project t level)) -> (((project t level) = ((project s level) + 1)) /\ (Warranted t))))))))))))))))))))))))
+}
+
+definition{
+  name: Consistent,
+  parameters: [c : Chart],
+  result: Prop,
+  body: (((project c fever) <= 1) /\ (((project c tachycardia) <= 1) /\ (((project c tachypnea) <= 1) /\ (((project c leukocytosis) <= 1) /\ (((project c sirs) <= 1) /\ (((project c sepsis) <= 1) /\ (((project c shock) <= 1) /\ ((project c level) <= 3))))))))
+}
+
+definition{
+  name: Pending,
+  parameters: [c : Chart],
+  result: Nat,
+  body: ((prim subtract 1 (project c fever) : Nat) + ((prim subtract 1 (project c tachycardia) : Nat) + ((prim subtract 1 (project c tachypnea) : Nat) + ((prim subtract 1 (project c leukocytosis) : Nat) + ((prim subtract 1 (project c sirs) : Nat) + ((prim subtract 1 (project c sepsis) : Nat) + ((prim subtract 1 (project c shock) : Nat) + (prim subtract 3 (project c level) : Nat))))))))
+}
+
+theorem{
+  name: consistent_preserved,
+  parameters: [s : Chart, t : Chart],
+  statement: ((Consistent s) -> ((Justified s t) -> (Consistent t))),
+  proof: linear_arithmetic{
+    definitions: [
+      Consistent,
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+logic{
+  name: Findings,
+  axioms: [Classical.choice, Quot.sound, propext],
+  invariant: {predicate: Consistent, preserves: consistent_preserved},
+  ranking: Pending,
+  relation: Justified,
+  state: {name: s, type: Chart, next: t}
+}
+
+theorem{
+  name: fever_sound,
+  parameters: [s : Chart],
+  statement: (((((project s fever) =? 0) && (feverish (project s vitals))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := 1, tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: fever_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s fever) =? 0) && (feverish (project s vitals))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := 1, tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Fever,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := 1, tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s fever) =? 0) && (feverish (project s vitals))),
+  logic: {member: Findings},
+  progress: fever_progress,
+  soundness: fever_sound
+}
+
+theorem{
+  name: tachycardia_sound,
+  parameters: [s : Chart],
+  statement: (((((project s tachycardia) =? 0) && (tachycardic (project s vitals))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := 1, tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: tachycardia_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s tachycardia) =? 0) && (tachycardic (project s vitals))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := 1, tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Tachycardia,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := 1, tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s tachycardia) =? 0) && (tachycardic (project s vitals))),
+  logic: {member: Findings},
+  progress: tachycardia_progress,
+  soundness: tachycardia_sound
+}
+
+theorem{
+  name: tachypnea_sound,
+  parameters: [s : Chart],
+  statement: (((((project s tachypnea) =? 0) && (tachypneic (project s vitals))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := 1, leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: tachypnea_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s tachypnea) =? 0) && (tachypneic (project s vitals))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := 1, leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Tachypnea,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := 1, leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s tachypnea) =? 0) && (tachypneic (project s vitals))),
+  logic: {member: Findings},
+  progress: tachypnea_progress,
+  soundness: tachypnea_sound
+}
+
+theorem{
+  name: leukocytosis_sound,
+  parameters: [s : Chart],
+  statement: (((((project s leukocytosis) =? 0) && (leukocytic (project s vitals))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := 1, sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: leukocytosis_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s leukocytosis) =? 0) && (leukocytic (project s vitals))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := 1, sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Leukocytosis,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := 1, sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s leukocytosis) =? 0) && (leukocytic (project s vitals))),
+  logic: {member: Findings},
+  progress: leukocytosis_progress,
+  soundness: leukocytosis_sound
+}
+
+theorem{
+  name: sirs_sound,
+  parameters: [s : Chart],
+  statement: (((((project s sirs) =? 0) && (2 <=? ((((project s fever) + (project s tachycardia)) + (project s tachypnea)) + (project s leukocytosis)))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := 1, sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: sirs_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s sirs) =? 0) && (2 <=? ((((project s fever) + (project s tachycardia)) + (project s tachypnea)) + (project s leukocytosis)))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := 1, sepsis := (project s sepsis), shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Sirs,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := 1, sepsis := (project s sepsis), shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s sirs) =? 0) && (2 <=? ((((project s fever) + (project s tachycardia)) + (project s tachypnea)) + (project s leukocytosis)))),
+  logic: {member: Findings},
+  progress: sirs_progress,
+  soundness: sirs_sound
+}
+
+theorem{
+  name: sepsis_sound,
+  parameters: [s : Chart],
+  statement: (((((project s sepsis) =? 0) && (((project s sirs) =? 1) && ((project (project s vitals) infection) =? 1))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := 1, shock := (project s shock), level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: sepsis_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s sepsis) =? 0) && (((project s sirs) =? 1) && ((project (project s vitals) infection) =? 1))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := 1, shock := (project s shock), level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Sepsis,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := 1, shock := (project s shock), level := (project s level)}),
+  executable: true,
+  guard: (((project s sepsis) =? 0) && (((project s sirs) =? 1) && ((project (project s vitals) infection) =? 1))),
+  logic: {member: Findings},
+  progress: sepsis_progress,
+  soundness: sepsis_sound
+}
+
+theorem{
+  name: shock_sound,
+  parameters: [s : Chart],
+  statement: (((((project s shock) =? 0) && (((project s sepsis) =? 1) && (hypotensive (project s vitals)))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := 1, level := (project s level)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: shock_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s shock) =? 0) && (((project s sepsis) =? 1) && (hypotensive (project s vitals)))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := 1, level := (project s level)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Shock,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := 1, level := (project s level)}),
+  executable: true,
+  guard: (((project s shock) =? 0) && (((project s sepsis) =? 1) && (hypotensive (project s vitals)))),
+  logic: {member: Findings},
+  progress: shock_progress,
+  soundness: shock_sound
+}
+
+theorem{
+  name: escalate_sound,
+  parameters: [s : Chart],
+  statement: (((((project s level) <? 3) && ((((project s level) =? 0) && ((project s sirs) =? 1)) || ((((project s level) =? 1) && ((project s sepsis) =? 1)) || (((project s level) =? 2) && ((project s shock) =? 1))))) = true) -> (Justified s (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := ((project s level) + 1)}))),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Justified,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      Warranted,
+      feverish,
+      hypotensive,
+      leukocytic,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: escalate_progress,
+  parameters: [s : Chart],
+  statement: ((Consistent s) -> (((((project s level) <? 3) && ((((project s level) =? 0) && ((project s sirs) =? 1)) || ((((project s level) =? 1) && ((project s sepsis) =? 1)) || (((project s level) =? 2) && ((project s shock) =? 1))))) = true) -> ((Pending (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := ((project s level) + 1)})) < (Pending s)))),
+  proof: linear_arithmetic{
+    definitions: [Consistent, Pending, feverish, hypotensive, leukocytic, tachycardic, tachypneic]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Escalate,
+  axioms: [Classical.choice, Quot.sound, propext],
+  conclusion: (record Chart {vitals := (project s vitals), fever := (project s fever), tachycardia := (project s tachycardia), tachypnea := (project s tachypnea), leukocytosis := (project s leukocytosis), sirs := (project s sirs), sepsis := (project s sepsis), shock := (project s shock), level := ((project s level) + 1)}),
+  executable: true,
+  guard: (((project s level) <? 3) && ((((project s level) =? 0) && ((project s sirs) =? 1)) || ((((project s level) =? 1) && ((project s sepsis) =? 1)) || (((project s level) =? 2) && ((project s shock) =? 1))))),
+  logic: {member: Findings},
+  progress: escalate_progress,
+  soundness: escalate_sound
+}
+
+definition{
+  name: Indicated,
+  parameters: [v : Vitals, r : Nat],
+  result: Prop,
+  body: ((r <= 3) /\ (((Hypotensive v) /\ (((project v infection) = 1) /\ ((Febrile v) /\ (Tachycardic v)))) -> (r = 3)))
+}
+
+definition{
+  name: recommendationCheck,
+  parameters: [v : Vitals, r : Nat],
+  result: Bool,
+  body: ((r <=? 3) && ((r =? 3) || (not ((hypotensive v) && (((project v infection) =? 1) && ((feverish v) && (tachycardic v))))))),
+  executable: true
+}
+
+theorem{
+  name: recommendation_sound,
+  parameters: [v : Vitals, r : Nat],
+  statement: (((recommendationCheck v r) = true) -> (Indicated v r)),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Indicated,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      feverish,
+      hypotensive,
+      leukocytic,
+      recommendationCheck,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: recommendation_complete,
+  parameters: [v : Vitals, r : Nat],
+  statement: ((Indicated v r) -> ((recommendationCheck v r) = true)),
+  proof: linear_arithmetic{
+    definitions: [
+      Febrile,
+      Hypotensive,
+      Indicated,
+      Leukocytic,
+      Tachycardic,
+      Tachypneic,
+      feverish,
+      hypotensive,
+      leukocytic,
+      recommendationCheck,
+      tachycardic,
+      tachypneic
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+verifier{
+  name: Recommendation,
+  axioms: [Classical.choice, Quot.sound, propext],
+  candidate: {name: r, type: Nat},
+  check: recommendationCheck,
+  complete: recommendation_complete,
+  sound: recommendation_sound,
+  specification: Indicated,
+  subject: {name: v, type: Vitals}
+}
+
+definition{name: Discharged, parameters: [v : Vitals, r : Nat], result: Prop, body: (r = 0)}
+
+definition{
+  name: dischargeCheck,
+  parameters: [v : Vitals, r : Nat],
+  result: Bool,
+  body: (r =? 0),
+  executable: true
+}
+
+theorem{
+  name: discharge_sound,
+  parameters: [v : Vitals, r : Nat],
+  statement: (((dischargeCheck v r) = true) -> (Discharged v r)),
+  proof: linear_arithmetic{definitions: [Discharged, dischargeCheck]},
+  axioms: [propext]
+}
+
+verifier{
+  name: Outpatient,
+  axioms: [propext],
+  candidate: {name: r, type: Nat},
+  check: dischargeCheck,
+  sound: discharge_sound,
+  specification: Discharged,
+  subject: {name: v, type: Vitals}
+}
+
+theorem{
+  name: admitted_consistent,
+  parameters: [patient : Vitals],
+  statement: (Consistent (record Chart {vitals := patient, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})),
+  proof: linear_arithmetic{definitions: [Consistent]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: admitted_pending,
+  parameters: [patient : Vitals],
+  statement: ((Pending (record Chart {vitals := patient, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})) < 11),
+  proof: linear_arithmetic{definitions: [Pending]},
+  axioms: [Quot.sound, propext]
+}
+
+reasoner{
+  name: Triage,
+  axioms: [Classical.choice, Quot.sound, propext],
+  answer: {name: chart, type: Nat, value: (ctor Option.some [Nat] (project chart level))},
+  claims: [initial_invariant{theorem: admitted_consistent}, terminates{theorem: admitted_pending}],
+  executable: true,
+  logic: {member: Findings},
+  observation: {name: patient, type: Vitals},
+  observe: (record Chart {vitals := patient, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0}),
+  rules: [
+    {member: Fever},
+    {member: Tachycardia},
+    {member: Tachypnea},
+    {member: Leukocytosis},
+    {member: Sirs},
+    {member: Sepsis},
+    {member: Shock},
+    {member: Escalate}
+  ],
+  strategy: forward{fuel: 11},
+  verifier: {member: Recommendation}
+}
+
+reasoner{
+  name: Review,
+  axioms: [Classical.choice, Quot.sound, propext],
+  answer: {name: chart, type: Nat, value: (ctor Option.some [Nat] (project chart level))},
+  executable: true,
+  logic: {member: Findings},
+  observation: {name: patient, type: Vitals},
+  observe: (record Chart {vitals := patient, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0}),
+  rules: [
+    {member: Fever},
+    {member: Tachycardia},
+    {member: Tachypnea},
+    {member: Leukocytosis},
+    {member: Sirs},
+    {member: Sepsis},
+    {member: Shock},
+    {member: Escalate}
+  ],
+  strategy: forward{fuel: 6},
+  verifier: {member: Outpatient}
+}
 \end{semanticmodule}
 \end{lexlean}

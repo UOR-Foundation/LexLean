@@ -11,10 +11,17 @@
 # `honesty` is split out so a claim that has drifted from its evidence reads
 # differently from broken code.
 #
-# The gate runs on the standard GitHub-hosted runner at the verifier's default
-# width of 1 (SPEC.md §9.4, §22.11); no larger runner and no wider width is part
-# of it. What the run cost, by recipe, stage, and module, is written to
-# `ci-evidence/` (§22.12) and uploaded with the log.
+# The gate runs on the standard GitHub-hosted runner (SPEC.md §9.4); no larger
+# runner is part of it. The `examples` leg verifies at the resource profile its
+# matrix row names (§22.11): width 2, the scheduling hints committed in
+# `.github/verify-hints.json`, and a 12 GiB budget for the summed expected
+# peaks of the proof processes running at once. A profile changes the order and
+# overlap of processes and nothing they prove: the directory a project
+# publishes is byte for byte the one of width 1, and the leg compares every
+# example's records with `expected/verify` as it always did. The other leg
+# names no profile, so it runs at the default. What the run cost, by recipe,
+# stage, and module, is written to `ci-evidence/` (§22.12) and uploaded with
+# the log.
 #
 # Every version this file needs is read from the file that pins it —
 # `rust-toolchain.toml` through `rustup toolchain install`, `lean-toolchain`
@@ -55,8 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { part: examples, recipes: "examples" }
-          - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny" }
+          - { part: examples, recipes: "examples", width: "2", memory_kib: "12582912", hints: ".github/verify-hints.json" }
+          - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny", width: "", memory_kib: "", hints: "" }
     runs-on: ubuntu-24.04
     # Native Atlas elaboration, per-module kernel replay, and per-module axiom
     # audit are intentionally the long pole. GitHub-hosted jobs permit six
@@ -67,6 +74,12 @@ jobs:
       # Operational only (SPEC.md §22.12): no artifact records it, and the
       # telemetry directory is CI evidence, uploaded below.
       LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/ci-evidence
+      # The leg's resource profile (§22.11), read from its matrix row; an empty
+      # value is the default. Operational only, like the telemetry: no artifact
+      # records it and no identity contains it.
+      LEXLEAN_VERIFY_WIDTH: ${{ matrix.width }}
+      LEXLEAN_VERIFY_MEMORY_KIB: ${{ matrix.memory_kib }}
+      LEXLEAN_VERIFY_HINTS: ${{ matrix.hints && format('{0}/{1}', github.workspace, matrix.hints) || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
@@ -180,7 +193,12 @@ jobs:
           - { os: macos-15, target: aarch64-apple-darwin }
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    # The Intel macOS runner takes 51 to 61 minutes for this job, which is the
+    # limit it used to have: a leg cancelled at the limit says nothing about the
+    # code, and the only defence against it was to run the leg again. Twice the
+    # slowest observed time leaves the limit a bound on a hung job, not a race
+    # with the runner's speed.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain

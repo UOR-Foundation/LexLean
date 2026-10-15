@@ -38,10 +38,10 @@ Feature: calculus
     And the mutated instance fails its `Agrees` theorem under pinned Lean
 
   @TC-06 @build
-  Scenario: Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits.
+  Scenario: Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits.
     Given the production registry's runtime rows and the realization table
-    When the table is checked against the registry, each row's allocation is compared with its realization's, and every element and typed (primitive, width) pair the fixtures use is collected
-    Then the table and the runtime rows are in bijection, every reference exists, and every row's allocation equals its realization's
+    When the table is checked against the registry, each row's allocation and recursion are compared with its realization's, and every element and typed (primitive, width) pair the fixtures use is collected
+    Then the table and the runtime rows are in bijection, every reference exists, and every row's allocation and recursion equal its realization's
     And no calculus element and no admitted (primitive, width) pair is left unexercised, and a missing or extra row is rejected
 
   @TC-07 @build

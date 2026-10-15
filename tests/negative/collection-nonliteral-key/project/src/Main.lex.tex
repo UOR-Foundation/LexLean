@@ -2,6 +2,11 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"entries":[{"key":{"kind":"var","name":"key"},"value":{"kind":"bool","value":true}}],"key":{"kind":"nat"},"kind":"map_literal","value":{"kind":"bool"}},"kind":"definition","name":"table","parameters":[{"name":"key","type":{"kind":"nat"}}],"result":{"key":{"kind":"nat"},"kind":"map","value":{"kind":"bool"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: table,
+  parameters: [key : Nat],
+  result: (Map Nat Bool),
+  body: map_literal{entries: [{key: key, value: true}], key: Nat, value: Bool}
+}
 \end{semanticmodule}
 \end{lexlean}

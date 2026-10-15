@@ -253,8 +253,12 @@ pub struct ModuleAst {
 /// The structurally parsed `coremodule` environment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoreModuleAst {
-    /// The canonical JSON payload.
+    /// The canonical JSON payload, or, when `surface` is set, the verbatim
+    /// text of the environment: the module in the authoring notation
+    /// (SPEC.md §17.21.8).
     pub data: BraceArg,
+    /// Whether `data` is the notation rather than JSON.
+    pub surface: bool,
     /// The `\begin{coremodule}` atom.
     pub begin: usize,
 }
@@ -262,8 +266,12 @@ pub struct CoreModuleAst {
 /// The structurally parsed `semanticmodule` environment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemanticModuleAst {
-    /// Canonical `lexlean/semantic-module/1` JSON.
+    /// Canonical `lexlean/semantic-module/1` JSON, or, when `surface` is
+    /// set, the verbatim text of the environment: declarations in the
+    /// authoring notation (SPEC.md §17.21).
     pub data: BraceArg,
+    /// Whether `data` is the notation rather than JSON.
+    pub surface: bool,
     /// The `\begin{semanticmodule}` atom.
     pub begin: usize,
 }
@@ -271,8 +279,12 @@ pub struct SemanticModuleAst {
 /// The structurally parsed `toolingmodule` environment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolingModuleAst {
-    /// Canonical `lexlean/tooling-module/1` JSON.
+    /// Canonical `lexlean/tooling-module/1` JSON, or the verbatim body of the
+    /// authoring notation (SPEC.md §17.21) when `surface`.
     pub data: BraceArg,
+    /// Whether `data` is the authoring notation rather than the JSON argument
+    /// of `\toolingdata`.
+    pub surface: bool,
     /// The `\begin{toolingmodule}` atom.
     pub begin: usize,
 }
@@ -522,6 +534,28 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
+            self.at += 1;
+        }
+    }
+
+    /// The text of an environment whose body is the authoring notation: every
+    /// atom, whitespace included, up to the next `\end` control. The
+    /// notation writes a backslash only inside a string, escaped as `\\`, so
+    /// the first `\end` control atom closes the environment.
+    fn verbatim_body(&mut self) -> PResult<BraceArg> {
+        let start = self.at;
+        let mut text = String::new();
+        loop {
+            let Some(atom) = self.atoms.get(self.at) else {
+                return Err(self.fail(code!("LLP2003"), "unclosed environment".to_owned()));
+            };
+            if atom.class == AtomClass::Control && atom.text == "\\end" {
+                return Ok(BraceArg {
+                    range: (start, self.at),
+                    text,
+                });
+            }
+            text.push_str(&atom.text);
             self.at += 1;
         }
     }
@@ -1117,39 +1151,83 @@ pub fn parse_module(
     let (blocks, core, semantic, tooling) = if parser.at_begin_of("coremodule") {
         let (begin, name) = parser.begin_env()?;
         debug_assert_eq!(name, "coremodule");
-        parser.expect_control("\\coredata")?;
-        let data = parser.brace_arg_verbatim()?;
-        parser.cover_payload(data.range, "coredata");
+        // The data form is `\coredata{…}`; anything else is the notation,
+        // which runs verbatim to the closing `\end{coremodule}`.
+        let (data, surface) = if parser.at_control("\\coredata") {
+            parser.expect_control("\\coredata")?;
+            let data = parser.brace_arg_verbatim()?;
+            parser.cover_payload(data.range, "coredata");
+            (data, false)
+        } else {
+            let data = parser.verbatim_body()?;
+            parser.cover_payload(data.range, "coresource");
+            (data, true)
+        };
         parser.expect_end("coremodule")?;
         parser.expect_end("lexlean")?;
-        (Vec::new(), Some(CoreModuleAst { data, begin }), None, None)
+        (
+            Vec::new(),
+            Some(CoreModuleAst {
+                data,
+                surface,
+                begin,
+            }),
+            None,
+            None,
+        )
     } else if parser.at_begin_of("semanticmodule") {
         let (begin, name) = parser.begin_env()?;
         debug_assert_eq!(name, "semanticmodule");
-        parser.expect_control("\\semanticdata")?;
-        let data = parser.brace_arg_verbatim()?;
-        parser.cover_payload(data.range, "semanticdata");
+        // The data form is `\semanticdata{…}`; anything else is the notation,
+        // which runs verbatim to the closing `\end{semanticmodule}`.
+        let (data, surface) = if parser.at_control("\\semanticdata") {
+            parser.expect_control("\\semanticdata")?;
+            let data = parser.brace_arg_verbatim()?;
+            parser.cover_payload(data.range, "semanticdata");
+            (data, false)
+        } else {
+            let data = parser.verbatim_body()?;
+            parser.cover_payload(data.range, "semanticsource");
+            (data, true)
+        };
         parser.expect_end("semanticmodule")?;
         parser.expect_end("lexlean")?;
         (
             Vec::new(),
             None,
-            Some(SemanticModuleAst { data, begin }),
+            Some(SemanticModuleAst {
+                data,
+                surface,
+                begin,
+            }),
             None,
         )
     } else if parser.at_begin_of("toolingmodule") {
         let (begin, name) = parser.begin_env()?;
         debug_assert_eq!(name, "toolingmodule");
-        parser.expect_control("\\toolingdata")?;
-        let data = parser.brace_arg_verbatim()?;
-        parser.cover_payload(data.range, "toolingdata");
+        // As a semantic module: `\toolingdata{…}`, or the notation, which runs
+        // verbatim to the closing `\end{toolingmodule}`.
+        let (data, surface) = if parser.at_control("\\toolingdata") {
+            parser.expect_control("\\toolingdata")?;
+            let data = parser.brace_arg_verbatim()?;
+            parser.cover_payload(data.range, "toolingdata");
+            (data, false)
+        } else {
+            let data = parser.verbatim_body()?;
+            parser.cover_payload(data.range, "toolingsource");
+            (data, true)
+        };
         parser.expect_end("toolingmodule")?;
         parser.expect_end("lexlean")?;
         (
             Vec::new(),
             None,
             None,
-            Some(ToolingModuleAst { data, begin }),
+            Some(ToolingModuleAst {
+                data,
+                surface,
+                begin,
+            }),
         )
     } else {
         (parser.blocks("lexlean", 0)?, None, None, None)

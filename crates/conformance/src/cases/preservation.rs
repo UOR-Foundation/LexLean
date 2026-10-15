@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 use lexlean::calculus::Outcome;
 use lexlean::production::lower::{linked_modules, lower_root, roots};
 use lexlean::production::preserve::{self, audit, audit_tokens};
+use serde_json::Value as Json;
 
 use crate::preservation::{self, Mutation, Report};
 use crate::support::{self, repo_root, P};
@@ -296,6 +297,65 @@ fn numbers_are_read_as_lean_reads_them() {
 /// the limit it is given, and that programs whose certificates fit the
 /// default limits are not refused. Returns how far certificate B went
 /// beyond A and E at most.
+/// The most elements of any `[…]` or `#[…]` literal in `text`, counted at
+/// the literal's own depth, outside string literals and comments.
+fn longest_literal(text: &str) -> usize {
+    // One entry per open bracket: its closing character and, for a list
+    // literal, the elements seen so far.
+    let mut open: Vec<(char, Option<usize>)> = Vec::new();
+    let mut longest = 0;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                while let Some(c) = chars.next() {
+                    match c {
+                        '\\' => {
+                            chars.next();
+                        }
+                        '"' => break,
+                        _ => {}
+                    }
+                }
+            }
+            '/' if chars.peek() == Some(&'-') => {
+                let mut previous = ' ';
+                for c in chars.by_ref() {
+                    if previous == '-' && c == '/' {
+                        break;
+                    }
+                    previous = c;
+                }
+            }
+            '-' if chars.peek() == Some(&'-') => {
+                for c in chars.by_ref() {
+                    if c == '\n' {
+                        break;
+                    }
+                }
+            }
+            '[' => open.push((']', Some(0))),
+            '(' => open.push((')', None)),
+            '{' => open.push(('}', None)),
+            '⟨' => open.push(('⟩', None)),
+            ',' => {
+                if let Some((_, Some(elements))) = open.last_mut() {
+                    *elements += 1;
+                }
+            }
+            ']' | ')' | '}' | '⟩' => {
+                if let Some((_, Some(commas))) = open.pop() {
+                    // A literal with any content has one more element than
+                    // separators; `[]` has none.
+                    longest = longest.max(commas + 1);
+                }
+            }
+            _ => {}
+        }
+    }
+    longest
+}
+
 fn stress_estimates() -> u64 {
     // The families are independent of one another and take minutes of one
     // core each, so they are certified on every core: one at a time they were
@@ -775,7 +835,7 @@ fn user_names(project: &P) -> BTreeSet<String> {
         if !entry.file_type().is_file() {
             continue;
         }
-        let text = std::fs::read_to_string(entry.path()).expect("a source");
+        let text = support::as_data_text(&std::fs::read_to_string(entry.path()).expect("a source"));
         let parts: Vec<&str> = text.split('"').collect();
         // Odd parts are the strings of the JSON; one followed by a colon is a
         // key.
@@ -1242,24 +1302,36 @@ pub fn run(id: &str) {
             .expect("the fixture runs");
             assert_eq!(observed.codes, ["LLS8002"]);
             // The pinned Lean's heartbeat budgets are lifted by the
-            // certificates A and B of a program whose widest match has more
-            // than 100 arms, and by no other: the budgets of a wrong
-            // certificate of a small program stay what they are, and a wrong
-            // certificate of a wide match ends at the wall clock.
-            for (arms, lifted) in [(100, false), (101, true)] {
+            // certificates A, B and E of every program, narrow or wide: a
+            // budget exhausted in the middle of a proof blames a valid
+            // certificate, and the bound that remains is the wall clock.
+            // Certificate B's program and crate terms are data the proofs
+            // unfold and nothing runs, so they are not compiled either.
+            for arms in [2, 100, 101] {
                 for entry in preservation::certificates(&crate::stress::wide_match_default(arms)) {
                     let texts = std::iter::once(&entry.certificate)
-                        .chain(entry.renderings.iter().map(|(_, b)| b));
+                        .chain(entry.renderings.iter().map(|(_, b)| b))
+                        .chain(entry.composed.iter().map(|(_, e)| e));
                     for certificate in texts {
                         for option in [
                             "set_option maxHeartbeats 0\n",
                             "set_option synthInstance.maxHeartbeats 0\n",
                         ] {
-                            assert_eq!(
+                            assert!(
                                 certificate.text.contains(option),
-                                lifted,
-                                "{arms} arms: `{}` and `{option}`",
+                                "{arms} arms: `{}` lacks `{option}`",
                                 certificate.module
+                            );
+                        }
+                    }
+                    for (_, rendering) in &entry.renderings {
+                        for term in ["program", "krate"] {
+                            assert!(
+                                rendering
+                                    .text
+                                    .contains(&format!("noncomputable def {term} :")),
+                                "{arms} arms: `{}` compiles its {term} term",
+                                rendering.module
                             );
                         }
                     }
@@ -1446,8 +1518,13 @@ pub fn run(id: &str) {
             // name, and a planted weakening of an exact policy are refused.
             let first_module = library.modules[0].clone();
             let first_path = preserve::native_source_path(&first_module).expect("a path");
-            let original = std::fs::read_to_string(repo_root().join(&first_path).as_std_path())
-                .expect("a native source");
+            // The source as its data form, the canonical JSON the plants below
+            // quote, whichever form the committed source is written in.
+            let original = lexlean::sdk::to_data_form(
+                &std::fs::read_to_string(repo_root().join(&first_path).as_std_path())
+                    .expect("a native source"),
+            )
+            .expect("the data form of a native source");
             let planted = |edit: &dyn Fn(&str) -> String| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
@@ -1674,8 +1751,13 @@ pub fn run(id: &str) {
             // inexact policy is refused.
             let first_module = library.modules[0].clone();
             let first_path = preserve::native_source_path(&first_module).expect("a path");
-            let original = std::fs::read_to_string(repo_root().join(&first_path).as_std_path())
-                .expect("a native source");
+            // The source as its data form, the canonical JSON the plants below
+            // quote, whichever form the committed source is written in.
+            let original = lexlean::sdk::to_data_form(
+                &std::fs::read_to_string(repo_root().join(&first_path).as_std_path())
+                    .expect("a native source"),
+            )
+            .expect("the data form of a native source");
             let planted = |edit: &dyn Fn(&str) -> Option<String>| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
@@ -1700,6 +1782,41 @@ pub fn run(id: &str) {
                 planted(&|text| Some(text.replace("\"kind\":\"exact\"", "\"kind\":\"allow\"")))
                     .expect_err("an inexact policy is refused");
             assert!(error.contains("does not pin its axioms exactly"), "{error}");
+        }
+        // §17.17: a list of any length is a term Lean elaborates without
+        // binders, in every list position of a witness.
+        "SP-13" => {
+            let projects =
+                crate::stress::long_lists(lexlean::production::lean_list::LITERAL_MAX + 1);
+            for (shape, project) in &projects {
+                for certified in preservation::certificates(project) {
+                    for certificate in certified.all() {
+                        let longest = longest_literal(&certificate.text);
+                        assert!(
+                            longest <= lexlean::production::lean_list::LITERAL_MAX,
+                            "{shape}: `{}` writes a list literal of {longest} elements, which Lean splits under `let` binders",
+                            certificate.module
+                        );
+                    }
+                }
+            }
+            if !support::lean_backed("SP-13") {
+                return;
+            }
+            let threads: Vec<_> = projects
+                .into_iter()
+                .map(|(shape, project)| {
+                    std::thread::spawn(move || {
+                        support::verify_ok(&project);
+                        shape
+                    })
+                })
+                .collect();
+            for thread in threads {
+                thread
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            }
         }
         // §17.17, §22.8, §22.9: certificate A in verification.
         "SP-05" => {
@@ -1915,11 +2032,40 @@ pub fn run(id: &str) {
         }
         // §17.16, §17.17: the declared Rust machine.
         "SP-07" => {
-            for (path, bytes) in crate::rust_source::files() {
-                let committed =
-                    std::fs::read(repo_root().join(&path).as_std_path()).expect("a source");
-                assert_eq!(committed, bytes, "{path} equals its generator");
+            // The compiler project is configured as the production example,
+            // under its own name (§17.14): the same toolchain, lexicon
+            // source, and limits.
+            let production = |file: &str| {
+                std::fs::read_to_string(
+                    repo_root()
+                        .join("examples/production")
+                        .join(file)
+                        .as_std_path(),
+                )
+                .unwrap_or_else(|error| panic!("examples/production/{file}: {error}"))
+            };
+            let compiler = |file: &str| {
+                std::fs::read_to_string(repo_root().join("compiler").join(file).as_std_path())
+                    .unwrap_or_else(|error| panic!("compiler/{file}: {error}"))
+            };
+            assert_eq!(
+                compiler("lexlean.toml"),
+                production("lexlean.toml")
+                    .replace("name = \"production\"", "name = \"compiler\"")
+                    .replace(
+                        "module_prefix = \"Production\"",
+                        "module_prefix = \"LexLeanTarget\""
+                    ),
+                "compiler/lexlean.toml is the production example's under its own name"
+            );
+            for file in ["lakefile.toml", "lake-manifest.json"] {
+                assert_eq!(
+                    compiler(file),
+                    production(file).replace("production_host", "compiler_host"),
+                    "compiler/{file} is the production example's under its own name"
+                );
             }
+            assert_eq!(compiler("lean-toolchain"), production("lean-toolchain"));
             assert_eq!(
                 crate::calculus::shipped_modules(repo_root().as_std_path(), false)
                     .expect("the shipped modules equal the compiler golden"),
@@ -1929,8 +2075,57 @@ pub fn run(id: &str) {
             // The machine declares exactly the renderer's runtime items, with
             // the renderer's failure and heap classes; a width is the
             // constructor's argument.
-            let declared = crate::rust_source::item_constructors();
-            let mut named: Vec<&str> = Vec::new();
+            // The machine is read from the committed modules, which are its
+            // source: `RustSyntax` declares the items, and `RustSemantics`
+            // states the class of each.
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("the closed Rust AST"),
+            );
+            let semantics = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSemantics.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("the declared Rust machine"),
+            );
+            let declaration = |module: &Json, name: &str| -> Json {
+                module["declarations"]
+                    .as_array()
+                    .and_then(|all| all.iter().find(|declaration| declaration["name"] == name))
+                    .unwrap_or_else(|| panic!("`{name}` is declared"))
+                    .clone()
+            };
+            let declared: Vec<(String, usize)> = declaration(&syntax, "Item")["constructors"]
+                .as_array()
+                .expect("the constructors of Item")
+                .iter()
+                .map(|constructor| {
+                    (
+                        constructor["name"].as_str().expect("a name").to_owned(),
+                        constructor["fields"].as_array().expect("fields").len(),
+                    )
+                })
+                .collect();
+            // The class a table of the machine states for an item: the body
+            // of the branch that names the constructor.
+            let class = |table: &str, item: &str| -> Option<bool> {
+                let body = &declaration(&semantics, table)["body"];
+                body["branches"].as_array()?.iter().find_map(|branch| {
+                    (branch["constructor"]["name"] == format!("Item.{item}"))
+                        .then(|| branch["body"]["value"].as_bool())
+                        .flatten()
+                })
+            };
+            let classes = |item: &str| -> Option<(bool, bool)> {
+                Some((class("itemFallible", item)?, class("itemHeap", item)?))
+            };
+            let mut named: Vec<String> = Vec::new();
             for item in lexlean::calculus::rust::runtime::Item::all() {
                 let term = lexlean::production::rust_term::item(item);
                 let spelled = term
@@ -1941,19 +2136,19 @@ pub fn run(id: &str) {
                     .expect("a constructor");
                 let (name, fields) = declared
                     .iter()
-                    .find(|(name, _)| *name == spelled)
+                    .find(|(name, _)| name == spelled)
                     .unwrap_or_else(|| panic!("{item:?} (`{term}`) is declared"));
-                assert_eq!(fields.len(), usize::from(term.starts_with('(')), "{name}");
+                assert_eq!(*fields, usize::from(term.starts_with('(')), "{name}");
                 assert_eq!(
-                    crate::rust_source::item_classes(name),
+                    classes(name),
                     Some((item.fallible(), item.heap())),
                     "{name}: the machine's classes equal the renderer's"
                 );
                 if !named.contains(name) {
-                    named.push(name);
+                    named.push(name.clone());
                 }
             }
-            let mut order: Vec<&str> = declared.iter().map(|(name, _)| *name).collect();
+            let mut order: Vec<String> = declared.iter().map(|(name, _)| name.clone()).collect();
             named.sort_unstable();
             order.sort_unstable();
             assert_eq!(
@@ -1998,11 +2193,7 @@ pub fn run(id: &str) {
                 );
             }
             // A drifted class is reported.
-            assert_ne!(
-                crate::rust_source::item_classes("natSub"),
-                Some((true, false)),
-                "natSub cannot fail"
-            );
+            assert_ne!(classes("natSub"), Some((true, false)), "natSub cannot fail");
             if !support::lean_backed("SP-07") {
                 return;
             }

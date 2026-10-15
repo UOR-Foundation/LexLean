@@ -125,24 +125,11 @@ fn bytes(json: &Json) -> Vec<u8> {
 
 /// The semantic data of a committed `compiler/src` module.
 fn module_data(text: &str) -> Json {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    serde_json::from_str(&text[start..end]).expect("module data")
+    crate::support::module_json(text)
 }
 
 fn with_module_data(text: &str, data: &Json) -> String {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    format!(
-        "{}{}{}",
-        &text[..start],
-        serde_json::to_string(data).expect("serializes"),
-        &text[end..]
-    )
+    crate::support::with_module_json(text, data)
 }
 
 fn model_text() -> String {
@@ -726,12 +713,12 @@ fn gn_02() {
         let id = crate::calculus::identifier(&fixture.name);
         for theorem in ["Request", "Universe", "Answer"] {
             assert!(
-                module.contains(&format!("\"name\":\"{id}{theorem}\"")),
+                crate::support::declares(&module, &format!("{id}{theorem}")),
                 "{id}{theorem}"
             );
         }
         assert_eq!(
-            module.contains(&format!("\"name\":\"{id}Statuses\"")),
+            crate::support::declares(&module, &format!("{id}Statuses")),
             !matches!(fixture.expected, Answer::Rejected { .. }),
             "{id}: every answered request states its systems' statuses"
         );

@@ -5,9 +5,9 @@
 //! Every request is written here, by hand; its expected answer is computed
 //! by the host transcription `lexlean::gnaf::answer`. The committed
 //! `compiler/gnaf/<name>.json` files, `compiler/gnaf.manifest.json`, the
-//! `compiler/src/GnafFixtures` module, and the `Gnaf` model it imports
-//! ([`crate::gnaf_model`]) are exactly what [`files`] renders, which
-//! `cargo xtask check-calculus` enforces. In the module, each request is a
+//! `compiler/src/GnafFixtures` module are exactly what [`files`] renders,
+//! which `cargo xtask check-calculus` enforces; the `Gnaf` model it imports is
+//! source, written in `.lex.tex` (SPEC.md §17.15). In the module, each request is a
 //! `Gnaf.Request` definition with theorems that the kernel reduces its
 //! universe, its systems' statuses, and its answer to what the host
 //! computes, so the model, not the transcription, is the oracle.
@@ -22,6 +22,10 @@ use lexlean::gnaf::{
 };
 use lexlean::Sha256Digest;
 use serde_json::{json, Value as Json};
+
+/// The axioms Lean's `#print axioms` reports for a definition that runs the
+/// model: all three of its standard axioms.
+pub const RUN_AXIOMS: [&str; 3] = ["Classical.choice", "Quot.sound", "propext"];
 
 pub mod reasoning;
 
@@ -987,7 +991,7 @@ fn stated(name: &str, function: &str, request: &str, axioms: &[&str], expected: 
 /// request is.
 #[must_use]
 pub fn fixture_declarations(fixture: &Fixture) -> Vec<Json> {
-    let run_axioms = crate::gnaf_model::RUN_AXIOMS;
+    let run_axioms = RUN_AXIOMS;
     let id = crate::calculus::identifier(&fixture.name);
     let request_name = format!("{id}Request");
     let selector_t = term::named(MODEL, "Selector");
@@ -1049,7 +1053,7 @@ pub fn fixture_declarations(fixture: &Fixture) -> Vec<Json> {
 /// another order is, and the componentwise minima are attained by no
 /// system.
 fn pareto_envelope_rejections(fixture: &Fixture, request_name: &str) -> Vec<Json> {
-    let run_axioms = crate::gnaf_model::RUN_AXIOMS;
+    let run_axioms = RUN_AXIOMS;
     let Answer::Frontier { members } = &fixture.expected else {
         panic!("{PARETO_ENVELOPE} has a frontier")
     };
@@ -1493,10 +1497,6 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     out.insert(
         format!("compiler/src/{FIXTURES_MODULE}.lex.tex"),
         fixtures_module(&fixtures).into_bytes(),
-    );
-    out.insert(
-        crate::gnaf_model::PATH.to_owned(),
-        crate::gnaf_model::module().into_bytes(),
     );
     out.insert(MANIFEST_PATH.to_owned(), gnaf::to_file_bytes(&manifest()));
     for (path, schema) in schemas() {

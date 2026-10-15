@@ -90,7 +90,7 @@ statement = "The ordinary workspace test phase excludes repo-conformance, the bd
 id = "RP-14"
 level = "build"
 suite = "repository"
-statement = "The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner at the default verifier width 1, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence."
+statement = "The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence."
 
 [[id]]
 id = "CF-01"
@@ -1626,7 +1626,7 @@ statement = "Every realization library template has a fixture whose outcome the 
 id = "TC-06"
 level = "build"
 suite = "calculus"
-statement = "Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits."
+statement = "Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits."
 
 [[id]]
 id = "TC-07"
@@ -1681,6 +1681,12 @@ id = "RB-08"
 level = "build"
 suite = "rust-backend"
 statement = "A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused."
+
+[[id]]
+id = "RB-09"
+level = "build"
+suite = "rust-backend"
+statement = "Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused."
 
 [[id]]
 id = "GN-01"
@@ -1867,6 +1873,12 @@ id = "SP-12"
 level = "build"
 suite = "preservation"
 statement = "The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from."
+
+[[id]]
+id = "SP-13"
+level = "build"
+suite = "preservation"
+statement = "Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements."
 
 [[id]]
 id = "MD-01"
@@ -2210,18 +2222,79 @@ level = "build"
 suite = "tooling"
 statement = "Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record."
 
+[[id]]
+id = "AU-01"
+level = "build"
+suite = "authoring"
+statement = "Every value of the closed semantic-module schema has one notation and the notation reads back to the value: every alternative of the declaration, term, type, and proof unions, with and without its optional members, is written and read back equal, a node that no readable form carries exactly is written generically, the notation is its own canonical form, and every committed semantic module is written and read back equal to its data."
+
+[[id]]
+id = "AU-02"
+level = "build"
+suite = "authoring"
+statement = "A language-1.2 semantic module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; fmt writes a module written as data in the notation, to the committed bytes, and leaves the notation unchanged, and the notation under language 1.1 is refused with LLP2003."
+
+[[id]]
+id = "AU-03"
+level = "build"
+suite = "authoring"
+statement = "Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it."
+
+[[id]]
+id = "AU-04"
+level = "build"
+suite = "authoring"
+statement = "No language-1.2 source of the product is written as data: every committed language-1.2 source with a semantic, tooling, or core module, in the compiler, the language libraries, the examples, and the positive fixtures, is written in the authoring notation and is canonical, the data form remains only under language 1.0 and 1.1 and in refused fixtures whose payload the notation cannot spell, and a refused fixture whose payload the notation can spell is a defect."
+
+[[id]]
+id = "AU-05"
+level = "build"
+suite = "authoring"
+statement = "A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics."
 
 
+[[id]]
+id = "AU-06"
+level = "build"
+suite = "authoring"
+statement = "The compiler-semantics ID does not depend on the form a module of the embedded tree is written in: a semantic, tooling, or core module in the authoring notation contributes its data form, so the committed tree and the same tree with every such module written as data have one ID, a change to a module's meaning changes the ID in either form, the identity a preservation record states for the native library is over the same data forms, so it is the committed one, and the embedded tree holds at least one module written in the notation."
+
+[[id]]
+id = "AU-07"
+level = "build"
+suite = "authoring"
+statement = "No product source is the output of a generator: every `.lex.tex` source of `compiler/`, `language/`, and `examples/` is written and edited as source, and no writer of the repository (the generators `cargo xtask check-calculus` compares and rewrites) emits one of them except the four fixture modules of `compiler/` (`TargetFixtures`, `ReasoningFixtures`, `GnafFixtures`, `GnafCertificates`), generated from committed fixtures, requests, and certificates, and the extraction adapter's module, generated from the registry the pinned Lean answers; a source emitted by any other writer is a defect."
 
 
+[[id]]
+id = "AU-08"
+level = "build"
+suite = "authoring"
+statement = "The authoring API reads, writes, converts, and assembles the source of a module without a project: for every committed semantic and tooling source and every core source of at most twelve megabytes it reads the module it links to, writes it back in the form it has and in the other form, assembles the source from its header and data to the canonical notation, and is idempotent in each; and a source that is not a module, or whose notation is malformed, is an error with a position in the source and never a panic."
 
+[[id]]
+id = "AU-09"
+level = "build"
+suite = "authoring"
+statement = "Every core module of the closed schema has one notation and the notation reads back to the module and to its data form: every committed core module reads back equal from its notation, its canonical JSON is the canonical JSON the compiler accepts and is, for a module written as data, byte for byte the data it was read from, the notation is its own canonical form, a node is written inside the node that uses it exactly when it is used once by the node after it and every other node is a statement, and a module that carries every kind of node, level, annotation, and declaration member is written and read back equal."
 
+[[id]]
+id = "AU-10"
+level = "build"
+suite = "authoring"
+statement = "A language-1.2 core module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that name the notation; fmt writes a core module written as data as the notation and leaves the notation unchanged; and the notation under language 1.0 and 1.1 is refused with LLP2003."
 
+[[id]]
+id = "AU-11"
+level = "build"
+suite = "authoring"
+statement = "Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes."
 
-
-
-
-
+[[id]]
+id = "AU-12"
+level = "build"
+suite = "authoring"
+statement = "A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position."
 
 [[id]]
 id = "LM-01"

@@ -185,3 +185,95 @@ pub fn ci_summary(root: &Path, arguments: &[String]) -> Result<(), Fail> {
     );
     Ok(())
 }
+
+/// The scheduling hints of SPEC.md §22.11, derived from a verifier telemetry
+/// file (§22.12): one entry per module of an elaboration or replay process,
+/// keyed by its full Lean module name, holding the largest `wall_ms` and
+/// `peak_rss_kib` observed under that name in any project or stage. The
+/// largest is the conservative choice: a module name that two examples share
+/// is scheduled as the heavier of the two. Keys are sorted, so the same
+/// telemetry always gives the same bytes.
+pub fn hints_from_telemetry(telemetry: &str) -> Result<String, Fail> {
+    let mut hints: std::collections::BTreeMap<String, (u64, u64)> = Default::default();
+    for (number, line) in telemetry.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: Value = serde_json::from_str(line)
+            .map_err(|error| format!("telemetry line {}: {error}", number + 1))?;
+        if event["event"] != "process"
+            || !matches!(event["stage"].as_str(), Some("elaboration" | "replay"))
+        {
+            continue;
+        }
+        let (Some(module), Some(wall_ms)) = (event["module"].as_str(), event["wall_ms"].as_u64())
+        else {
+            continue;
+        };
+        let peak = event["peak_rss_kib"].as_u64().unwrap_or(0);
+        let entry = hints.entry(module.to_owned()).or_default();
+        *entry = (entry.0.max(wall_ms), entry.1.max(peak));
+    }
+    let object: serde_json::Map<String, Value> = hints
+        .into_iter()
+        .map(|(module, (wall_ms, peak_rss_kib))| {
+            (
+                module,
+                serde_json::json!({ "peak_rss_kib": peak_rss_kib, "wall_ms": wall_ms }),
+            )
+        })
+        .collect();
+    Ok(serde_json::to_string_pretty(&Value::Object(object))? + "\n")
+}
+
+/// Write the scheduling hints that `--from` (a `verify-telemetry.jsonl`)
+/// gives to `--out` (SPEC.md §22.11). The file is a schedule input of the
+/// examples leg and nothing else: a stale hint reorders, it never refuses.
+pub fn ci_hints(arguments: &[String]) -> Result<(), Fail> {
+    let from = option(arguments, "--from").ok_or("ci-hints: --from <verify-telemetry.jsonl>")?;
+    let out = option(arguments, "--out").ok_or("ci-hints: --out <hints.json>")?;
+    let hints = hints_from_telemetry(&std::fs::read_to_string(&from)?)?;
+    lexlean::verify::operational::Operational::parse_hints(&hints).map_err(|diagnostic| {
+        format!("ci-hints: the derived hints do not parse: {diagnostic:?}")
+    })?;
+    std::fs::write(&out, &hints)?;
+    println!(
+        "ci-hints: {} modules from {from} written to {out}",
+        hints.matches("\"wall_ms\"").count()
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hints_from_telemetry;
+
+    #[test]
+    fn hints_keep_the_heaviest_observation_of_each_module() {
+        let telemetry = [
+            r#"{"event":"process","module":"A.M","peak_rss_kib":10,"stage":"elaboration","wall_ms":5}"#,
+            r#"{"event":"process","module":"A.M","peak_rss_kib":30,"stage":"replay","wall_ms":2}"#,
+            r#"{"event":"process","module":"B.M","peak_rss_kib":7,"stage":"elaboration","wall_ms":9}"#,
+            r#"{"event":"process","module":"A.M","peak_rss_kib":99,"stage":"probe","wall_ms":99}"#,
+            r#"{"event":"stage","stage":"elaboration","wall_ms":100}"#,
+        ]
+        .join("\n");
+        let hints = hints_from_telemetry(&telemetry).expect("hints");
+        let parsed =
+            lexlean::verify::operational::Operational::parse_hints(&hints).expect("parses");
+        assert_eq!(parsed.len(), 2, "{hints}");
+        assert_eq!(
+            (parsed["A.M"].wall_ms, parsed["A.M"].peak_rss_kib),
+            (5, Some(30))
+        );
+        assert_eq!(
+            (parsed["B.M"].wall_ms, parsed["B.M"].peak_rss_kib),
+            (9, Some(7))
+        );
+        assert_eq!(
+            hints,
+            hints_from_telemetry(&telemetry).expect("hints"),
+            "deterministic"
+        );
+    }
+}

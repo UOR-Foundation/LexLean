@@ -409,23 +409,13 @@ pub fn graph_theorems() -> Vec<Value> {
 /// The collections example with `theorems` appended to its `Main` module.
 pub fn with_theorems(project: &crate::support::P, theorems: Vec<Value>) {
     let source = project.read("src/Main.lex.tex");
-    let open = "\\semanticdata{";
-    let start = source.find(open).map(|index| index + open.len());
-    let end = source.find("}\n\\end{semanticmodule}");
-    let (Some(start), Some(end)) = (start, end) else {
-        panic!("the collections Main module carries one semantic block");
-    };
-    let mut module: Value = serde_json::from_str(&source[start..end]).expect("semantic JSON");
+    let mut module = crate::support::module_json(&source);
     module["declarations"]
         .as_array_mut()
         .expect("declarations")
         .extend(theorems);
-    let text = serde_json::to_string(&module).expect("module serializes");
-    let canonical = lexlean::artifact::canonical_json::Json::parse(text.as_bytes())
-        .expect("module JSON")
-        .to_canonical_string();
     project.write(
         "src/Main.lex.tex",
-        &format!("{}{canonical}{}", &source[..start], &source[end..]),
+        &crate::support::with_module_json(&source, &module),
     );
 }

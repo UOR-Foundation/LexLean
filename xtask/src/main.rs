@@ -38,6 +38,7 @@ fn main() -> ExitCode {
         "check-package" => check_package(&root),
         "check-test-inventory" => ci::check_test_inventory(&root),
         "ci-summary" => ci::ci_summary(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
+        "ci-hints" => ci::ci_hints(&std::env::args().skip(2).collect::<Vec<_>>()),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
@@ -60,6 +61,8 @@ fn main() -> ExitCode {
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
                  check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests\n\
                  ci-summary              §9.4: summarize ci-evidence/ (recipe, stage, module times; memory)\n\
+                 ci-hints                §22.11: scheduling hints from a verifier telemetry file\n\
+                                         (--from verify-telemetry.jsonl --out hints.json)\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
                  validate                validate-model then validate-spec-links\n\
@@ -80,14 +83,14 @@ fn main() -> ExitCode {
     }
 }
 
-/// §17.14-§17.16: the committed `compiler` project (the calculus modules,
-/// the target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
+/// §17.14-§17.16: the generated files of the committed `compiler` project (the
+/// target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
 /// modules, the `Gnaf` model, the Rust packages and negative package
-/// manifests under `compiler/rust/`, and the project configuration) is
-/// exactly what its generator renders, and so is the extraction adapter's
-/// tooling project `language/lcnf-1.2/tooling/` over the registry
-/// `tests/lcnf/registry.json`, which `--write` first regenerates from the
-/// pinned Lean (§22.10).
+/// manifests under `compiler/rust/`) are exactly what their generator
+/// renders, and so is the extraction adapter's tooling project
+/// `language/lcnf-1.2/tooling/` over the registry `tests/lcnf/registry.json`,
+/// which `--write` first regenerates from the pinned Lean (§22.10). The
+/// calculus and the Rust machine are sources, not generated files.
 fn check_calculus(root: &Path, write: bool) -> Result<(), Fail> {
     let count = repo_conformance::calculus::check(root, write)?;
     if write {

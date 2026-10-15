@@ -992,6 +992,28 @@ pub fn declared_names() -> P {
     project(&declarations)
 }
 
+/// Roots whose certificates hold a list of `width` elements in each list
+/// position of a witness (SP-13), under the default limits: the parameters of
+/// a function and the operands of a call to it, the fields of a record
+/// copy, and the arms of a match that binds a field in each.
+#[must_use]
+pub fn long_lists(width: usize) -> Vec<(String, P)> {
+    vec![
+        (
+            format!("a call of {width} operands to a function of {width} parameters"),
+            project_limited(&many_parameters(width, 2), false),
+        ),
+        (
+            format!("a copy of a record of {width} fields"),
+            project_limited(&record_copy(width, width), false),
+        ),
+        (
+            format!("a match on {width} constructors of one field"),
+            project_limited(&enumeration(width, 1), false),
+        ),
+    ]
+}
+
 /// A root matching a value of an enumeration of `constructors` constructors
 /// without fields, one arm each, under limits lifted far enough for it.
 #[must_use]

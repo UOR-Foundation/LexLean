@@ -760,6 +760,8 @@ pub fn run(
 ) -> Result<VerifyOutcome, LexLeanError> {
     let limits = project.config.limits;
     let width = operational.width();
+    let hints = operational.hints();
+    let memory_kib = operational.memory_kib();
     let telemetry_run = telemetry::Run::begin(operational, &project.config.name);
     let mut stages = telemetry_run.stages();
     stages.enter("certificate-generation");
@@ -1259,9 +1261,12 @@ pub fn run(
         // The members of a frontier import nothing from each other, so up
         // to `width` of them run together; their results are consumed in
         // module order whichever finishes first (§22.11).
-        pool::run_ordered(
+        pool::run_ordered_with(
             width,
             &ready,
+            hints,
+            memory_kib,
+            &|module_index: usize| lean_names[module_index].clone(),
             &|module_index: usize| {
                 let module_name = &lean_names[module_index];
                 let module_path = module_name.replace('.', "/");
@@ -1366,9 +1371,12 @@ pub fn run(
             .lean_module
             .cmp(&build.modules[*b].lean_module)
     });
-    pool::run_ordered(
+    pool::run_ordered_with(
         width,
         &sorted_modules,
+        hints,
+        memory_kib,
+        &|module_index: usize| lean_names[module_index].clone(),
         &|module_index: usize| {
             let module_name = &lean_names[module_index];
             leanchecker::replay_module(
@@ -1413,10 +1421,17 @@ pub fn run(
         let source_relative = format!("audit/{}.lean", audit.name);
         write_staged(staging.path(), &source_relative, audit.text.as_bytes())?;
     }
+    let audit_names: Vec<String> = audit_modules
+        .iter()
+        .map(|audit| audit.name.clone())
+        .collect();
     let audit_indices: Vec<usize> = (0..audit_modules.len()).collect();
-    pool::run_ordered(
+    pool::run_ordered_with(
         width,
         &audit_indices,
+        hints,
+        memory_kib,
+        &|audit_index: usize| audit_names[audit_index].clone(),
         &|audit_index: usize| {
             let audit = &audit_modules[audit_index];
             let source_relative = format!("audit/{}.lean", audit.name);

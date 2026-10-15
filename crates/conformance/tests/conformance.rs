@@ -1401,6 +1401,11 @@ fn conformance_rb_08() {
 }
 
 #[test]
+fn conformance_rb_09() {
+    repo_conformance::cases::run("RB-09");
+}
+
+#[test]
 fn conformance_gn_01() {
     repo_conformance::cases::run("GN-01");
 }
@@ -1553,6 +1558,11 @@ fn conformance_sp_11() {
 #[test]
 fn conformance_sp_12() {
     repo_conformance::cases::run("SP-12");
+}
+
+#[test]
+fn conformance_sp_13() {
+    repo_conformance::cases::run("SP-13");
 }
 
 #[test]
@@ -1903,4 +1913,61 @@ fn conformance_lm_12() {
 #[test]
 fn conformance_lm_13() {
     repo_conformance::cases::run("LM-13");
+fn conformance_au_01() {
+    repo_conformance::cases::run("AU-01");
+}
+
+#[test]
+fn conformance_au_02() {
+    repo_conformance::cases::run("AU-02");
+}
+
+#[test]
+fn conformance_au_03() {
+    repo_conformance::cases::run("AU-03");
+}
+
+#[test]
+fn conformance_au_04() {
+    repo_conformance::cases::run("AU-04");
+}
+
+#[test]
+fn conformance_au_05() {
+    repo_conformance::cases::run("AU-05");
+}
+
+#[test]
+fn conformance_au_06() {
+    repo_conformance::cases::run("AU-06");
+}
+
+#[test]
+fn conformance_au_07() {
+    repo_conformance::cases::run("AU-07");
+}
+
+#[test]
+fn conformance_au_08() {
+    repo_conformance::cases::run("AU-08");
+}
+
+#[test]
+fn conformance_au_09() {
+    repo_conformance::cases::run("AU-09");
+}
+
+#[test]
+fn conformance_au_10() {
+    repo_conformance::cases::run("AU-10");
+}
+
+#[test]
+fn conformance_au_11() {
+    repo_conformance::cases::run("AU-11");
+}
+
+#[test]
+fn conformance_au_12() {
+    repo_conformance::cases::run("AU-12");
 }

@@ -3,6 +3,237 @@
 \useglossary{models.titles@1.0.0}
 \title{Triage scoring}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[],"name":"p0"},{"fields":[],"name":"p1"},{"fields":[],"name":"p2"},{"fields":[],"name":"p3"},{"fields":[],"name":"p4"},{"fields":[],"name":"p5"},{"fields":[],"name":"p6"},{"fields":[],"name":"p7"}],"kind":"inductive","name":"Presentation","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"routine"},{"fields":[],"name":"urgent"},{"fields":[],"name":"emergency"}],"kind":"inductive","name":"Level","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p0"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p1"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p2"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p3"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p4"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p5"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p6"}},{"binders":[],"body":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"1"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}},"constructor":{"name":"Presentation.p7"}}],"kind":"match","scrutinee":{"kind":"var","name":"presentation"}},"executable":true,"kind":"definition","name":"features","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"result":{"element":{"kind":"int"},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Presentation.p0"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p1"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p2"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p3"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p4"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p5"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p6"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p7"}}],"kind":"match","scrutinee":{"kind":"var","name":"presentation"}},"executable":true,"kind":"definition","name":"hasSymptom","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Presentation.p0"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Presentation.p1"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Presentation.p2"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Presentation.p3"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p4"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p5"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p6"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Presentation.p7"}}],"kind":"match","scrutinee":{"kind":"var","name":"presentation"}},"executable":true,"kind":"definition","name":"isBreathless","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Level.routine"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Level.urgent"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Level.emergency"}}],"kind":"match","scrutinee":{"kind":"var","name":"level"}},"executable":true,"kind":"definition","name":"isEmergency","parameters":[{"name":"level","type":{"arguments":[],"kind":"named","member":{"name":"Level"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Level.routine"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Level.urgent"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Level.emergency"}}],"kind":"match","scrutinee":{"kind":"var","name":"level"}},"executable":true,"kind":"definition","name":"isRoutine","parameters":[{"name":"level","type":{"arguments":[],"kind":"named","member":{"name":"Level"}}}],"result":{"kind":"bool"}},{"body":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"hasSymptom"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"definition","name":"Symptomatic","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"result":{"kind":"prop"}},{"body":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"hasSymptom"},"kind":"call"},"executable":true,"kind":"definition","name":"symptomaticCheck","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"result":{"kind":"bool"}},{"kind":"theorem","name":"symptomatic_check_sound","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"proof":{"branches":[{"binders":[],"constructor":"p0","proof":{"kind":"decide"}},{"binders":[],"constructor":"p1","proof":{"kind":"decide"}},{"binders":[],"constructor":"p2","proof":{"kind":"decide"}},{"binders":[],"constructor":"p3","proof":{"kind":"decide"}},{"binders":[],"constructor":"p4","proof":{"kind":"decide"}},{"binders":[],"constructor":"p5","proof":{"kind":"decide"}},{"binders":[],"constructor":"p6","proof":{"kind":"decide"}},{"binders":[],"constructor":"p7","proof":{"kind":"decide"}}],"kind":"cases","scrutinee":"presentation"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"Symptomatic"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"symptomaticCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"body":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"level"}],"function":{"name":"isEmergency"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"isBreathless"},"kind":"call"},"right":{"kind":"bool","value":true}}},"kind":"definition","name":"Safe","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}},{"name":"level","type":{"arguments":[],"kind":"named","member":{"name":"Level"}}}],"result":{"kind":"prop"}},{"kind":"artifact","length":18,"name":"triageWeights","role":"parameters","schema":{"element":"int16","kind":"int_tensor","shape":[3,3]},"sha256":"7a1039fea753fdbab50d96e9b180fb5f987c6ba688d847da0e209608c5c0f58e","type":{"element":{"element":{"kind":"int"},"kind":"list"},"kind":"list"}},{"kind":"artifact","length":6,"name":"triageBias","role":"parameters","schema":{"element":"int16","kind":"int_tensor","shape":[3]},"sha256":"34b5d0d734084832dea276360f994018f4e6eb7921334265e58217b360a2a79d","type":{"element":{"kind":"int"},"kind":"list"}},{"input":{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}},"kind":"contract","name":"TriageContract","output":{"name":"level","type":{"arguments":[],"kind":"named","member":{"name":"Level"}}},"postcondition":{"name":"Safe"},"precondition":{"name":"Symptomatic"},"validators":[{"predicate":"precondition","sound":{"name":"symptomatic_check_sound"},"validator":{"name":"symptomaticCheck"}}]},{"kind":"theorem","name":"triage_width","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"proof":{"branches":[{"binders":[],"constructor":"p0","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p1","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p2","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p3","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p4","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p5","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p6","proof":{"kind":"reflexivity"}},{"binders":[],"constructor":"p7","proof":{"kind":"reflexivity"}}],"kind":"cases","scrutinee":"presentation"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"features"},"kind":"call"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"kind":"nat","value":"3"}}},{"axioms":["propext"],"descriptor":{"bias":{"name":"triageBias"},"features":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"features"},"kind":"call"},"kind":"statistical","labels":[{"arguments":[],"constructor":{"name":"Level.routine"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Level.urgent"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Level.emergency"},"kind":"constructor"}],"scheme":"linear_scoring","weights":{"name":"triageWeights"},"width":3,"width_evidence":{"name":"triage_width"}},"executable":true,"input":{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}},"kind":"realization","name":"TriageScore","output":{"arguments":[],"kind":"named","member":{"name":"Level"}}},{"axioms":["propext"],"kind":"theorem","name":"triage_safe","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"name":"Presentation"}}}],"proof":{"branches":[{"binders":[],"constructor":"p0","proof":{"kind":"decide"}},{"binders":[],"constructor":"p1","proof":{"kind":"decide"}},{"binders":[],"constructor":"p2","proof":{"kind":"decide"}},{"binders":[],"constructor":"p3","proof":{"kind":"decide"}},{"binders":[],"constructor":"p4","proof":{"kind":"decide"}},{"binders":[],"constructor":"p5","proof":{"kind":"decide"}},{"binders":[],"constructor":"p6","proof":{"kind":"decide"}},{"binders":[],"constructor":"p7","proof":{"kind":"decide"}}],"kind":"cases","scrutinee":"presentation"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"presentation"},{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"TriageScore"},"kind":"call"}],"function":{"name":"Safe"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"presentation"}],"function":{"name":"Symptomatic"},"kind":"call"}}},{"axioms":["propext"],"claims":[{"kind":"satisfies_contract","theorem":{"name":"triage_safe"}}],"contract":{"member":{"name":"TriageContract"}},"kind":"evidence","name":"TriageEvidence","realization":{"member":{"name":"TriageScore"}}},{"axioms":["propext"],"contract":{"member":{"name":"TriageContract"}},"evidence":[{"member":{"name":"TriageEvidence"}}],"kind":"model","name":"TriageModel","realization":{"member":{"name":"TriageScore"}}}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Presentation,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: p0, fields: []},
+    {name: p1, fields: []},
+    {name: p2, fields: []},
+    {name: p3, fields: []},
+    {name: p4, fields: []},
+    {name: p5, fields: []},
+    {name: p6, fields: []},
+    {name: p7, fields: []}
+  ]
+}
+
+inductive{
+  name: Level,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: routine, fields: []},
+    {name: urgent, fields: []},
+    {name: emergency, fields: []}
+  ]
+}
+
+definition{
+  name: features,
+  parameters: [presentation : Presentation],
+  result: (List Int),
+  body: (match presentation
+    | Presentation.p0 => (cons (0 : Int) (cons (0 : Int) (cons (0 : Int) (nil Int))))
+    | Presentation.p1 => (cons (1 : Int) (cons (0 : Int) (cons (0 : Int) (nil Int))))
+    | Presentation.p2 => (cons (0 : Int) (cons (1 : Int) (cons (0 : Int) (nil Int))))
+    | Presentation.p3 => (cons (1 : Int) (cons (1 : Int) (cons (0 : Int) (nil Int))))
+    | Presentation.p4 => (cons (0 : Int) (cons (0 : Int) (cons (1 : Int) (nil Int))))
+    | Presentation.p5 => (cons (1 : Int) (cons (0 : Int) (cons (1 : Int) (nil Int))))
+    | Presentation.p6 => (cons (0 : Int) (cons (1 : Int) (cons (1 : Int) (nil Int))))
+    | Presentation.p7 => (cons (1 : Int) (cons (1 : Int) (cons (1 : Int) (nil Int))))),
+  executable: true
+}
+
+definition{
+  name: hasSymptom,
+  parameters: [presentation : Presentation],
+  result: Bool,
+  body: (match presentation
+    | Presentation.p0 => false
+    | Presentation.p1 => true
+    | Presentation.p2 => true
+    | Presentation.p3 => true
+    | Presentation.p4 => true
+    | Presentation.p5 => true
+    | Presentation.p6 => true
+    | Presentation.p7 => true),
+  executable: true
+}
+
+definition{
+  name: isBreathless,
+  parameters: [presentation : Presentation],
+  result: Bool,
+  body: (match presentation
+    | Presentation.p0 => false
+    | Presentation.p1 => false
+    | Presentation.p2 => false
+    | Presentation.p3 => false
+    | Presentation.p4 => true
+    | Presentation.p5 => true
+    | Presentation.p6 => true
+    | Presentation.p7 => true),
+  executable: true
+}
+
+definition{
+  name: isEmergency,
+  parameters: [level : Level],
+  result: Bool,
+  body: (match level | Level.routine => false | Level.urgent => false | Level.emergency => true),
+  executable: true
+}
+
+definition{
+  name: isRoutine,
+  parameters: [level : Level],
+  result: Bool,
+  body: (match level | Level.routine => true | Level.urgent => false | Level.emergency => false),
+  executable: true
+}
+
+definition{
+  name: Symptomatic,
+  parameters: [presentation : Presentation],
+  result: Prop,
+  body: ((hasSymptom presentation) = true)
+}
+
+definition{
+  name: symptomaticCheck,
+  parameters: [presentation : Presentation],
+  result: Bool,
+  body: (hasSymptom presentation),
+  executable: true
+}
+
+theorem{
+  name: symptomatic_check_sound,
+  parameters: [presentation : Presentation],
+  statement: (((symptomaticCheck presentation) = true) -> (Symptomatic presentation)),
+  proof: cases{
+    branches: [
+      {proof: decide{}, binders: [], constructor: p0},
+      {proof: decide{}, binders: [], constructor: p1},
+      {proof: decide{}, binders: [], constructor: p2},
+      {proof: decide{}, binders: [], constructor: p3},
+      {proof: decide{}, binders: [], constructor: p4},
+      {proof: decide{}, binders: [], constructor: p5},
+      {proof: decide{}, binders: [], constructor: p6},
+      {proof: decide{}, binders: [], constructor: p7}
+    ],
+    scrutinee: presentation
+  }
+}
+
+definition{
+  name: Safe,
+  parameters: [presentation : Presentation, level : Level],
+  result: Prop,
+  body: (((isBreathless presentation) = true) -> ((isEmergency level) = true))
+}
+
+artifact{
+  name: triageWeights,
+  type: (List (List Int)),
+  length: 18,
+  role: parameters,
+  schema: int_tensor{element: int16, shape: [3, 3]},
+  sha256: "7a1039fea753fdbab50d96e9b180fb5f987c6ba688d847da0e209608c5c0f58e"
+}
+
+artifact{
+  name: triageBias,
+  type: (List Int),
+  length: 6,
+  role: parameters,
+  schema: int_tensor{element: int16, shape: [3]},
+  sha256: "34b5d0d734084832dea276360f994018f4e6eb7921334265e58217b360a2a79d"
+}
+
+contract{
+  name: TriageContract,
+  input: {name: presentation, type: Presentation},
+  output: {name: level, type: Level},
+  postcondition: Safe,
+  precondition: Symptomatic,
+  validators: [
+    {predicate: precondition, sound: symptomatic_check_sound, validator: symptomaticCheck}
+  ]
+}
+
+theorem{
+  name: triage_width,
+  parameters: [presentation : Presentation],
+  statement: ((prim length (features presentation) : Nat) = 3),
+  proof: cases{
+    branches: [
+      {proof: reflexivity{}, binders: [], constructor: p0},
+      {proof: reflexivity{}, binders: [], constructor: p1},
+      {proof: reflexivity{}, binders: [], constructor: p2},
+      {proof: reflexivity{}, binders: [], constructor: p3},
+      {proof: reflexivity{}, binders: [], constructor: p4},
+      {proof: reflexivity{}, binders: [], constructor: p5},
+      {proof: reflexivity{}, binders: [], constructor: p6},
+      {proof: reflexivity{}, binders: [], constructor: p7}
+    ],
+    scrutinee: presentation
+  }
+}
+
+realization{
+  name: TriageScore,
+  axioms: [propext],
+  descriptor: statistical{
+    bias: triageBias,
+    features: (features presentation),
+    labels: [(ctor Level.routine), (ctor Level.urgent), (ctor Level.emergency)],
+    scheme: linear_scoring,
+    weights: triageWeights,
+    width: 3,
+    width_evidence: triage_width
+  },
+  executable: true,
+  input: {name: presentation, type: Presentation},
+  output: Level
+}
+
+theorem{
+  name: triage_safe,
+  parameters: [presentation : Presentation],
+  statement: ((Symptomatic presentation) -> (Safe presentation (TriageScore presentation))),
+  proof: cases{
+    branches: [
+      {proof: decide{}, binders: [], constructor: p0},
+      {proof: decide{}, binders: [], constructor: p1},
+      {proof: decide{}, binders: [], constructor: p2},
+      {proof: decide{}, binders: [], constructor: p3},
+      {proof: decide{}, binders: [], constructor: p4},
+      {proof: decide{}, binders: [], constructor: p5},
+      {proof: decide{}, binders: [], constructor: p6},
+      {proof: decide{}, binders: [], constructor: p7}
+    ],
+    scrutinee: presentation
+  },
+  axioms: [propext]
+}
+
+evidence{
+  name: TriageEvidence,
+  axioms: [propext],
+  claims: [satisfies_contract{theorem: triage_safe}],
+  contract: {member: TriageContract},
+  realization: {member: TriageScore}
+}
+
+model{
+  name: TriageModel,
+  axioms: [propext],
+  contract: {member: TriageContract},
+  evidence: [{member: TriageEvidence}],
+  realization: {member: TriageScore}
+}
 \end{semanticmodule}
 \end{lexlean}

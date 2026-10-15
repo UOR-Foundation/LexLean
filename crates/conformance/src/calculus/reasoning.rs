@@ -1437,35 +1437,6 @@ pub fn encoders() -> Vec<Json> {
     out
 }
 
-/// `declarations` with every reference to module `from` made to module `to`,
-/// and the definitions a proof unfolds in their key order again, which the
-/// module's name is part of.
-fn renamed_module(declarations: &mut Json, from: &str, to: &str) {
-    match declarations {
-        Json::Object(object) => {
-            if object.get("module").is_some_and(|module| module == from) {
-                object.insert("module".to_owned(), Json::String(to.to_owned()));
-            }
-            for value in object.values_mut() {
-                renamed_module(value, from, to);
-            }
-            if let Some(Json::Array(definitions)) = object.get_mut("definitions") {
-                let key = |member: &Json| match member["module"].as_str() {
-                    Some(module) => format!("{module}::{}", member["name"].as_str().unwrap_or("")),
-                    None => member["name"].as_str().unwrap_or("").to_owned(),
-                };
-                definitions.sort_by_key(key);
-            }
-        }
-        Json::Array(items) => {
-            for item in items {
-                renamed_module(item, from, to);
-            }
-        }
-        _ => {}
-    }
-}
-
 /// The index of the transcribed function `name` of engine `engine`
 /// (`spend`, `plan`, `screen`, or `dose`).
 ///
@@ -1475,54 +1446,6 @@ fn renamed_module(declarations: &mut Json, from: &str, to: &str) {
 #[must_use]
 pub fn function_index(engine: &str, name: &str) -> usize {
     engines::function_index(engine, name)
-}
-
-/// The oracle modules, by name: each states exactly the declarations of the
-/// example module it names (those it selects, when it selects), with the
-/// module it imports under the oracle's name for it.
-///
-/// # Panics
-///
-/// Panics if an example source is missing, states no semantic data, or
-/// lacks a declaration an oracle selects.
-#[must_use]
-pub fn oracle_modules() -> Vec<(&'static str, String)> {
-    ORACLES
-        .iter()
-        .map(|spec| {
-            let path = crate::support::repo_root().join(spec.source);
-            let source =
-                std::fs::read_to_string(path.as_std_path()).expect("the reasoning example");
-            let mut declarations = crate::rust_packages::declarations(&source)
-                .unwrap_or_else(|reason| panic!("{}: {reason}", spec.source));
-            if let Some(names) = spec.select {
-                declarations.retain(|declaration| {
-                    declaration["name"]
-                        .as_str()
-                        .is_some_and(|name| names.contains(&name))
-                });
-                assert_eq!(
-                    declarations.len(),
-                    names.len(),
-                    "{} states every declaration {} selects",
-                    spec.source,
-                    spec.module
-                );
-            }
-            let mut declarations = Json::Array(declarations);
-            let imports: Vec<&str> = spec.import.iter().map(|(_, oracle)| *oracle).collect();
-            if let Some((from, to)) = spec.import {
-                renamed_module(&mut declarations, from, to);
-            }
-            let Json::Array(declarations) = declarations else {
-                unreachable!("an array")
-            };
-            (
-                spec.module,
-                lx::module_tex(spec.module, &imports, declarations),
-            )
-        })
-        .collect()
 }
 
 /// The patient values of a reasoning fixture's argument, for a test.

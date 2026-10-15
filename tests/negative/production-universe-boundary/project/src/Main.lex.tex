@@ -2,6 +2,13 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"kind":"nat","value":"0"},"executable":true,"kind":"definition","name":"pick","parameters":[{"name":"carrier","type":{"kind":"type"}}],"production":{"effects":[],"targets":["rust-std"]},"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: pick,
+  parameters: [carrier : Type],
+  result: Nat,
+  body: 0,
+  executable: true,
+  production: {effects: [], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

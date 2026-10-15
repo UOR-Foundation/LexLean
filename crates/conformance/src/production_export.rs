@@ -210,6 +210,9 @@ impl Exported {
 ///
 /// The contract's failure, as text.
 pub fn export(example: &str) -> Result<Exported, String> {
+    // The export reads the environment (the toolchain, `PATH`), which a case
+    // that sets it for a moment must not change under it.
+    let _environment = support::env_shared();
     let project = P::copy_example(example);
     let gnaf = (example == "production").then(|| gnaf_evidence(&project));
     let mut evidence = Vec::new();

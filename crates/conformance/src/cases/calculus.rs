@@ -977,13 +977,20 @@ pub fn run(id: &str) {
         // states every fixture's outcome.
         "TC-03" => {
             let cases = fixtures::cases();
-            let module =
-                fixtures::fixtures_module(&cases) + &fixtures::reasoning_fixtures_module(&cases);
+            let modules = [
+                fixtures::fixtures_module(&cases),
+                fixtures::reasoning_fixtures_module(&cases),
+            ];
+            let stated = |name: &str| {
+                modules
+                    .iter()
+                    .any(|module| crate::support::declares(module, name))
+            };
             let mut opaque = 0;
             for case in &cases {
                 let id = fixtures::identifier(&case.fixture.name);
-                assert!(module.contains(&format!("\"name\":\"{id}Run\"")), "{id}Run");
-                let theorem = module.contains(&format!("\"name\":\"{id}Outcome\""));
+                assert!(stated(&format!("{id}Run")), "{id}Run");
+                let theorem = stated(&format!("{id}Outcome"));
                 assert_eq!(
                     theorem,
                     fixtures::kernel_reducible(&case.fixture),
@@ -1123,9 +1130,12 @@ pub fn run(id: &str) {
                     case.fixture.name
                 );
                 let id = fixtures::identifier(&case.fixture.name);
-                assert!((fixtures::fixtures_module(&cases)
-                    + &fixtures::reasoning_fixtures_module(&cases))
-                    .contains(&format!("\"name\":\"{id}Agrees\"")));
+                assert!([
+                    fixtures::fixtures_module(&cases),
+                    fixtures::reasoning_fixtures_module(&cases)
+                ]
+                .iter()
+                .any(|module| crate::support::declares(module, &format!("{id}Agrees"))));
             }
             assert_eq!(
                 covered.len(),
@@ -1193,6 +1203,27 @@ pub fn run(id: &str) {
             assert!(
                 disagreements.is_empty(),
                 "allocation disagreements: {disagreements:#?}"
+            );
+            // A construct implies recursion exactly when its realization
+            // does: a library template calls itself, so a primitive it
+            // realizes carries the effect, while a runtime item is a loop
+            // (§17.13, §17.14).
+            let disagreements: Vec<String> = registry["construct"]
+                .as_array()
+                .expect("constructs")
+                .iter()
+                .filter(|row| row["disposition"].as_str() == Some("runtime"))
+                .filter_map(|row| {
+                    let key = row["key"].as_str().expect("key");
+                    let registered = row["recursion"].as_bool().expect("recursion");
+                    let realized = realization::construct_recurses(key).expect("realization");
+                    (registered != realized)
+                        .then(|| format!("{key}: registry {registered}, realization {realized}"))
+                })
+                .collect();
+            assert!(
+                disagreements.is_empty(),
+                "recursion disagreements: {disagreements:#?}"
             );
             // A dropped row and an unknown reference are both caught.
             let mut short = runtime.clone();

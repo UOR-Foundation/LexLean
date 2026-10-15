@@ -2,6 +2,50 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"element":{"kind":"nat"},"kind":"set"},{"element":{"arguments":[],"kind":"named","member":{"name":"Grove"}},"kind":"list"},{"key":{"kind":"string"},"kind":"map","value":{"kind":"int"}},{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Grove"}}},{"element":{"kind":"product","left":{"kind":"nat"},"right":{"arguments":[],"kind":"named","member":{"name":"Grove"}}},"kind":"list"}],"name":"node"},{"fields":[{"key":{"kind":"nat"},"kind":"map","value":{"kind":"int"}}],"name":"leaf"},{"fields":[{"error":{"kind":"nat"},"kind":"result","ok":{"arguments":[],"kind":"named","member":{"name":"Grove"}}}],"name":"settled"}],"kind":"inductive","name":"Grove","parameters":[],"type_parameters":[]},{"fields":[{"name":"entries","type":{"key":{"kind":"string"},"kind":"map","value":{"kind":"int"}}},{"name":"owner","type":{"kind":"string"}}],"kind":"structure","name":"Ledger","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":["tags","children","labels","spare","paired"],"body":{"arguments":[{"kind":"var","name":"tags"}],"kind":"primitive","operation":"set_size","result":{"kind":"nat"}},"constructor":{"name":"Grove.node"}},{"binders":["weights"],"body":{"arguments":[{"kind":"var","name":"weights"}],"kind":"primitive","operation":"map_size","result":{"kind":"nat"}},"constructor":{"name":"Grove.leaf"}},{"binders":["outcome"],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Grove.settled"}}],"kind":"match","scrutinee":{"kind":"var","name":"g"}},"executable":true,"kind":"definition","name":"groveTags","parameters":[{"name":"g","type":{"arguments":[],"kind":"named","member":{"name":"Grove"}}}],"result":{"kind":"nat"}},{"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"g"}],"function":{"name":"groveTags"},"kind":"call"},"right":{"kind":"pair","left":{"kind":"var","name":"ledger"},"right":{"kind":"pair","left":{"kind":"var","name":"picks"},"right":{"kind":"var","name":"spare"}}}},"executable":true,"kind":"definition","name":"groveRoot","parameters":[{"name":"g","type":{"arguments":[],"kind":"named","member":{"name":"Grove"}}},{"name":"ledger","type":{"arguments":[],"kind":"named","member":{"name":"Ledger"}}},{"name":"picks","type":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"set"}}},{"name":"spare","type":{"element":{"key":{"kind":"nat"},"kind":"map","value":{"kind":"bool"}},"kind":"list"}}],"production":{"effects":["allocation"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"product","left":{"arguments":[],"kind":"named","member":{"name":"Ledger"}},"right":{"kind":"product","left":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"key":{"kind":"nat"},"kind":"map","value":{"kind":"bool"}},"kind":"list"}}}}}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Grove,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {
+      name: node,
+      fields: [(Set Nat), (List Grove), (Map String Int), (Option Grove), (List (Nat * Grove))]
+    },
+    {name: leaf, fields: [(Map Nat Int)]},
+    {name: settled, fields: [(Result Grove Nat)]}
+  ]
+}
+
+structure{
+  name: Ledger,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: entries, type: (Map String Int)}, {name: owner, type: String}]
+}
+
+definition{
+  name: groveTags,
+  parameters: [g : Grove],
+  result: Nat,
+  body: (match g
+    | Grove.node tags children labels spare paired => (prim set_size tags : Nat)
+    | Grove.leaf weights => (prim map_size weights : Nat)
+    | Grove.settled outcome => 0),
+  executable: true
+}
+
+definition{
+  name: groveRoot,
+  parameters: [
+    g : Grove,
+    ledger : Ledger,
+    picks : (Option (Set Nat)),
+    spare : (List (Map Nat Bool))
+  ],
+  result: (Nat * (Ledger * ((Option (Set Nat)) * (List (Map Nat Bool))))),
+  body: ((groveTags g), (ledger, (picks, spare))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

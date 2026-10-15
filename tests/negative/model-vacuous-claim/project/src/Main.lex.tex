@@ -2,6 +2,69 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"kind":"le","left":{"kind":"nat","value":"1"},"right":{"kind":"var","name":"x"}},"kind":"definition","name":"Positive","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"nat","value":"1"},"right":{"kind":"var","name":"x"}},"executable":true,"kind":"definition","name":"positiveCheck","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"kind":"theorem","name":"positive_check_sound","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Positive"},{"name":"positiveCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Positive"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"positiveCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"body":{"kind":"eq","left":{"kind":"var","name":"y"},"right":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"var","name":"x"}}},"kind":"definition","name":"Doubles","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"input":{"name":"x","type":{"kind":"nat"}},"kind":"contract","name":"DoubleContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Doubles"},"precondition":{"name":"Positive"},"validators":[{"predicate":"precondition","sound":{"name":"positive_check_sound"},"validator":{"name":"positiveCheck"}}]},{"descriptor":{"body":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"var","name":"x"}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Doubler","output":{"kind":"nat"}},{"kind":"theorem","name":"doubler_doubles","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Doubler"},{"name":"Doubles"},{"name":"Positive"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"x"},{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Doubler"},"kind":"call"}],"function":{"name":"Doubles"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Positive"},"kind":"call"}}},{"claims":[{"kind":"preserves_invariant","theorem":{"name":"doubler_doubles"}}],"contract":{"member":{"name":"DoubleContract"}},"kind":"evidence","name":"DoubleEvidence","realization":{"member":{"name":"Doubler"}}},{"contract":{"member":{"name":"DoubleContract"}},"evidence":[{"member":{"name":"DoubleEvidence"}}],"kind":"model","name":"DoubleModel","realization":{"member":{"name":"Doubler"}}},{"body":{"arguments":[{"kind":"var","name":"x"}],"checks":["precondition"],"kind":"checked_apply","model":{"name":"DoubleModel"}},"executable":true,"kind":"definition","name":"run","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{name: Positive, parameters: [x : Nat], result: Prop, body: (1 <= x)}
+
+definition{
+  name: positiveCheck,
+  parameters: [x : Nat],
+  result: Bool,
+  body: (1 <=? x),
+  executable: true
+}
+
+theorem{
+  name: positive_check_sound,
+  parameters: [x : Nat],
+  statement: (((positiveCheck x) = true) -> (Positive x)),
+  proof: linear_arithmetic{definitions: [Positive, positiveCheck]}
+}
+
+definition{name: Doubles, parameters: [x : Nat, y : Nat], result: Prop, body: (y = (x + x))}
+
+contract{
+  name: DoubleContract,
+  input: {name: x, type: Nat},
+  output: {name: y, type: Nat},
+  postcondition: Doubles,
+  precondition: Positive,
+  validators: [{predicate: precondition, sound: positive_check_sound, validator: positiveCheck}]
+}
+
+realization{
+  name: Doubler,
+  descriptor: deterministic{body: (x + x)},
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat
+}
+
+theorem{
+  name: doubler_doubles,
+  parameters: [x : Nat],
+  statement: ((Positive x) -> (Doubles x (Doubler x))),
+  proof: linear_arithmetic{definitions: [Doubler, Doubles, Positive]}
+}
+
+evidence{
+  name: DoubleEvidence,
+  claims: [preserves_invariant{theorem: doubler_doubles}],
+  contract: {member: DoubleContract},
+  realization: {member: Doubler}
+}
+
+model{
+  name: DoubleModel,
+  contract: {member: DoubleContract},
+  evidence: [{member: DoubleEvidence}],
+  realization: {member: Doubler}
+}
+
+definition{
+  name: run,
+  parameters: [x : Nat],
+  result: (Result Nat ContractViolation),
+  body: (checked DoubleModel x with [precondition]),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

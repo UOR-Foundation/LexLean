@@ -757,28 +757,28 @@ key = "primitive.map_insert"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_remove"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_lookup"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_contains"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_size"
@@ -792,14 +792,14 @@ key = "primitive.map_keys"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_values"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.map_entries"
@@ -813,28 +813,28 @@ key = "primitive.map_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_insert"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_remove"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_contains"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_size"
@@ -855,70 +855,70 @@ key = "primitive.set_union"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_intersection"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_difference"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.set_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.list_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.iterate"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.iterate_until"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.graph_successors"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.graph_reachable"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.graph_topological"
 disposition = "runtime"
 allocation = true
 overflow = []
-recursion = false
+recursion = true
 
 [[construct]]
 key = "primitive.less_than"

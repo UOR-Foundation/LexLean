@@ -3,6 +3,74 @@
 \importmodule{TargetSyntax}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"item"}],"constructor":{"module":"TargetSyntax","name":"Value.nat"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeNats"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeNats","parameters":[{"name":"items","type":{"element":{"kind":"nat"},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"item"}],"constructor":{"module":"TargetSyntax","name":"Value.int"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeInts"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeInts","parameters":[{"name":"items","type":{"element":{"kind":"int"},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"item"}],"constructor":{"module":"TargetSyntax","name":"Value.i8"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeI8s"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeI8s","parameters":[{"name":"items","type":{"element":{"kind":"int8"},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"item"}],"constructor":{"module":"TargetSyntax","name":"Value.bool"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeBools"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeBools","parameters":[{"name":"items","type":{"element":{"kind":"bool"},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"item"}],"constructor":{"module":"TargetSyntax","name":"Value.string"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeStrings"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeStrings","parameters":[{"name":"items","type":{"element":{"kind":"string"},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"arguments":[{"kind":"first","value":{"kind":"var","name":"item"}}],"constructor":{"module":"TargetSyntax","name":"Value.nat"},"kind":"constructor"},{"arguments":[{"kind":"second","value":{"kind":"var","name":"item"}}],"constructor":{"module":"TargetSyntax","name":"Value.string"},"kind":"constructor"}],"constructor":{"module":"TargetSyntax","name":"Value.pair"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeNatStrings"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeNatStrings","parameters":[{"name":"items","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["item","rest"],"body":{"head":{"arguments":[{"arguments":[{"kind":"first","value":{"kind":"var","name":"item"}}],"constructor":{"module":"TargetSyntax","name":"Value.nat"},"kind":"constructor"},{"arguments":[{"arguments":[{"kind":"second","value":{"kind":"var","name":"item"}}],"function":{"name":"encodeNats"},"kind":"call"}],"constructor":{"module":"TargetSyntax","name":"Value.list"},"kind":"constructor"}],"constructor":{"module":"TargetSyntax","name":"Value.pair"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"encodeAdjacency"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"encodeAdjacency","parameters":[{"name":"items","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}}],"recursive_argument":"items","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: encodeNats,
+  parameters: [items : (List Nat)],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.nat item) (encodeNats rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeInts,
+  parameters: [items : (List Int)],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.int item) (encodeInts rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeI8s,
+  parameters: [items : (List Int8)],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.i8 item) (encodeI8s rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeBools,
+  parameters: [items : (List Bool)],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.bool item) (encodeBools rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeStrings,
+  parameters: [items : (List String)],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.string item) (encodeStrings rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeNatStrings,
+  parameters: [items : (List (Nat * String))],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.nat (first item)) (ctor TargetSyntax::Value.string (second item))) (encodeNatStrings rest))),
+  recursive_argument: items
+}
+
+definition{
+  name: encodeAdjacency,
+  parameters: [items : (List (Nat * (List Nat)))],
+  result: (List TargetSyntax::Value),
+  body: (match items
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons item rest => (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.nat (first item)) (ctor TargetSyntax::Value.list (encodeNats (second item)))) (encodeAdjacency rest))),
+  recursive_argument: items
+}
 \end{semanticmodule}
 \end{lexlean}

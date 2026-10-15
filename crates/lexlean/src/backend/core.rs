@@ -20,29 +20,37 @@ fn internal(message: impl Into<String>) -> Diagnostic {
     )
 }
 
-fn source_range(checked: &CheckedModule) -> (usize, usize) {
+/// The payload of the module in its source: where it is, and what owns it
+/// (the data form or the authoring notation, SPEC.md §17.21.8).
+fn source_range(checked: &CheckedModule) -> (usize, usize, &'static str) {
     let mut start = usize::MAX;
     let mut end = 0;
+    let mut owner = "lexlean.core::coredata";
     for row in &checked.coverage_source {
-        if matches!(&row.binding, Origin::Metadata { owner } if owner == "lexlean.core::coredata") {
-            start = start.min(row.byte_start);
-            end = end.max(row.byte_end);
+        if let Origin::Metadata { owner: row_owner } = &row.binding {
+            if row_owner == "lexlean.core::coredata" || row_owner == "lexlean.core::coresource" {
+                if row_owner == "lexlean.core::coresource" {
+                    owner = "lexlean.core::coresource";
+                }
+                start = start.min(row.byte_start);
+                end = end.max(row.byte_end);
+            }
         }
     }
     if start == usize::MAX {
-        (0, checked.normalized.len())
+        (0, checked.normalized.len(), owner)
     } else {
-        (start, end)
+        (start, end, owner)
     }
 }
 
 fn emit_chunk(emitter: &mut Emitter, checked: &CheckedModule, node: usize, text: &str, kind: &str) {
-    let (start, end) = source_range(checked);
+    let (start, end, owner) = source_range(checked);
     emitter.piece(
         text,
         kind,
         Origin::Metadata {
-            owner: "lexlean.core::coredata".to_owned(),
+            owner: owner.to_owned(),
         },
         EmitSource::File(start, end),
         MapRole::Declaration,

@@ -5,6 +5,1073 @@
 \importmodule{Gnaf}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[],"name":"collapse"},{"fields":[],"name":"specializeSmall"},{"fields":[],"name":"specializeLarge"}],"kind":"inductive","name":"Schema","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"nat"}],"name":"excluded"},{"fields":[{"element":{"kind":"nat"},"kind":"list"}],"name":"paysAtLeast"},{"fields":[],"name":"measured"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Schema"}}],"name":"reduced"}],"kind":"inductive","name":"Premise","parameters":[],"type_parameters":[]},{"fields":[{"name":"slope","type":{"kind":"nat"}},{"name":"offset","type":{"kind":"nat"}}],"kind":"structure","name":"Bridge","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"nat"},{"element":{"kind":"nat"},"kind":"list"}],"name":"lowerBound"},{"fields":[{"element":{"kind":"nat"},"kind":"list"}],"name":"frontierCover"},{"fields":[],"name":"reduction"},{"fields":[{"kind":"nat"},{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Bridge"}}}],"name":"representation"},{"fields":[{"kind":"nat"}],"name":"normality"}],"kind":"inductive","name":"Route","parameters":[],"type_parameters":[]},{"fields":[{"name":"verifier","type":{"kind":"string"}},{"name":"universe","type":{"kind":"string"}},{"name":"objective","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Objective"}}},{"name":"claim","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"ClaimClass"}}},{"name":"scope","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Scope"}}},{"name":"route","type":{"arguments":[],"kind":"named","member":{"name":"Route"}}},{"name":"premises","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Premise"}},"kind":"list"}}],"kind":"structure","name":"Certificate","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"inadmissible"},{"fields":[{"kind":"nat"},{"kind":"nat"}],"name":"admitted"},{"fields":[{"kind":"nat"},{"kind":"nat"}],"name":"atLeast"},{"fields":[{"kind":"nat"}],"name":"reduces"},{"fields":[],"name":"unresolved"},{"fields":[],"name":"unproven"}],"kind":"inductive","name":"Fact","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"verifierMismatch"},{"fields":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Rejection"}}],"name":"requestRejected"},{"fields":[],"name":"universeMismatch"},{"fields":[],"name":"objectiveMismatch"},{"fields":[],"name":"claimMismatch"},{"fields":[],"name":"scopeMismatch"},{"fields":[],"name":"routeIncompatible"},{"fields":[{"kind":"nat"}],"name":"missingPremise"},{"fields":[{"kind":"nat"}],"name":"extraPremise"}],"kind":"inductive","name":"Refusal","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"nat"}],"name":"unresolvedMember"},{"fields":[{"kind":"nat"}],"name":"memberUnproven"},{"fields":[{"kind":"nat"}],"name":"memberBelowBound"},{"fields":[{"kind":"nat"}],"name":"attainerOmitted"},{"fields":[{"kind":"nat"}],"name":"attainerUnmeasured"},{"fields":[{"kind":"nat"}],"name":"attainerInadmissible"},{"fields":[{"kind":"nat"}],"name":"attainerAboveBound"},{"fields":[],"name":"attainersMalformed"},{"fields":[],"name":"boundUnattained"},{"fields":[{"kind":"nat"}],"name":"frontierMemberUnmeasured"},{"fields":[{"kind":"nat"}],"name":"frontierMemberDominated"},{"fields":[{"kind":"nat"}],"name":"frontierMemberOmitted"},{"fields":[{"kind":"nat"}],"name":"reductionIncomplete"},{"fields":[],"name":"noAdmittedMember"},{"fields":[],"name":"bridgeMissing"},{"fields":[{"kind":"nat"}],"name":"bridgeViolated"},{"fields":[{"kind":"nat"}],"name":"bridgeUnproved"},{"fields":[],"name":"normalOutOfRange"},{"fields":[{"kind":"nat"}],"name":"normalNotMinimal"},{"fields":[],"name":"normalUnmeasured"},{"fields":[],"name":"optimalityUnproved"},{"fields":[],"name":"systemNotNormal"}],"kind":"inductive","name":"Obligation","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"notCertified"},{"fields":[{"kind":"nat"},{"kind":"nat"},{"kind":"nat"}],"name":"correctOnly"},{"fields":[{"kind":"nat"}],"name":"locallyNormalized"},{"fields":[{"kind":"nat"},{"kind":"nat"}],"name":"representationMinimal"}],"kind":"inductive","name":"Established","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"element":{"kind":"nat"},"kind":"list"},{"kind":"nat"}],"name":"optimum"},{"fields":[{"element":{"kind":"nat"},"kind":"list"},{"kind":"nat"}],"name":"argmin"},{"fields":[{"element":{"kind":"nat"},"kind":"list"}],"name":"frontier"}],"kind":"inductive","name":"Certified","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Refusal"}}],"name":"refused"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Certified"}}],"name":"certified"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}},{"arguments":[],"kind":"named","member":{"name":"Established"}}],"name":"incomplete"}],"kind":"inductive","name":"Verdict","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"condition":{"arguments":[{"kind":"var","name":"selector"},{"kind":"var","name":"head"}],"function":{"module":"Gnaf","name":"selectorEq"},"kind":"call"},"else_value":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"selector"},{"kind":"add","left":{"kind":"var","name":"next"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"positionOf"},"kind":"call"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"next"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"selectors"}},"kind":"definition","name":"positionOf","parameters":[{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"next","type":{"kind":"nat"}}],"recursive_argument":"selectors","result":{"kind":"option","value":{"kind":"nat"}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"head"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"name":"Nat.zero"}},{"binders":["remaining"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"remaining"}],"function":{"name":"selectorAt"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"index"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"selectorAt","parameters":[{"name":"items","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"index","type":{"kind":"nat"}}],"recursive_argument":"items","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"head"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}]},"constructor":{"name":"Nat.zero"}},{"binders":["remaining"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"remaining"}],"function":{"name":"valueAt"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"index"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"valueAt","parameters":[{"name":"items","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"name":"index","type":{"kind":"nat"}}],"recursive_argument":"items","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Fact"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"head"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Fact"}}]},"constructor":{"name":"Nat.zero"}},{"binders":["remaining"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"remaining"}],"function":{"name":"factAt"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"index"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"factAt","parameters":[{"name":"items","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"index","type":{"kind":"nat"}}],"recursive_argument":"items","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Fact"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"head"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"name":"Nat.zero"}},{"binders":["remaining"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"remaining"}],"function":{"name":"natAt"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"index"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"items"}},"kind":"definition","name":"natAt","parameters":[{"name":"items","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"index","type":{"kind":"nat"}}],"recursive_argument":"items","result":{"kind":"option","value":{"kind":"nat"}}},{"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["wanted","later"],"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"wanted"},"right":{"kind":"var","name":"index"}},"else_value":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"index"},"right":{"kind":"nat","value":"1"}},{"kind":"var","name":"positions"}],"function":{"name":"pickFrom"},"kind":"call"},"kind":"if","then_value":{"head":{"kind":"var","name":"head"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"index"},"right":{"kind":"nat","value":"1"}},{"kind":"var","name":"later"}],"function":{"name":"pickFrom"},"kind":"call"}}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"positions"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"pickFrom","parameters":[{"name":"values","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"name":"index","type":{"kind":"nat"}},{"name":"positions","type":{"element":{"kind":"nat"},"kind":"list"}}],"recursive_argument":"values","result":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"kind":"ble","left":{"kind":"var","name":"lower"},"right":{"kind":"var","name":"head"}},"right":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"head"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"ascending"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"positions"}},"kind":"definition","name":"ascending","parameters":[{"name":"positions","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"lower","type":{"kind":"nat"}}],"recursive_argument":"positions","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"kind":"blt","left":{"kind":"var","name":"head"},"right":{"kind":"var","name":"bound"}},"right":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"bound"}],"function":{"name":"allBelow"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"positions"}},"kind":"definition","name":"allBelow","parameters":[{"name":"positions","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"bound","type":{"kind":"nat"}}],"recursive_argument":"positions","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.unit"}},{"binders":["ignored1"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bool"}},{"binders":["ignored2"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.nat"}},{"binders":["ignored3"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.int"}},{"binders":["ignored4"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u8"}},{"binders":["ignored5"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u16"}},{"binders":["ignored6"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u32"}},{"binders":["ignored7"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u64"}},{"binders":["ignored8"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i8"}},{"binders":["ignored9"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i16"}},{"binders":["ignored10"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i32"}},{"binders":["ignored11"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i64"}},{"binders":["ignored12"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.string"}},{"binders":["ignored13"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bytes"}},{"binders":["ignored14"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ordering"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.none"}},{"binders":["ignored15"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.some"}},{"binders":["ignored16"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ok"}},{"binders":["ignored17"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.error"}},{"binders":["items"],"body":{"kind":"bool","value":true},"constructor":{"module":"TargetSyntax","name":"Value.list"}},{"binders":["ignored18","ignored19"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.pair"}},{"binders":["ignored20","ignored21"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.adt"}},{"binders":["ignored22","ignored23"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.closure"}}],"kind":"match","scrutinee":{"kind":"var","name":"value"}},"kind":"definition","name":"isList","parameters":[{"name":"value","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}},{"name":"limit","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.unit"}},{"binders":["ignored24"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bool"}},{"binders":["ignored25"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.nat"}},{"binders":["ignored26"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.int"}},{"binders":["ignored27"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u8"}},{"binders":["ignored28"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u16"}},{"binders":["ignored29"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u32"}},{"binders":["ignored30"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u64"}},{"binders":["ignored31"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i8"}},{"binders":["ignored32"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i16"}},{"binders":["ignored33"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i32"}},{"binders":["ignored34"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i64"}},{"binders":["ignored35"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.string"}},{"binders":["ignored36"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bytes"}},{"binders":["ignored37"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ordering"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.none"}},{"binders":["ignored38"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.some"}},{"binders":["ignored39"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ok"}},{"binders":["ignored40"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.error"}},{"binders":["items"],"body":{"kind":"blt","left":{"arguments":[{"kind":"var","name":"items"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"kind":"var","name":"limit"}},"constructor":{"module":"TargetSyntax","name":"Value.list"}},{"binders":["ignored41","ignored42"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.pair"}},{"binders":["ignored43","ignored44"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.adt"}},{"binders":["ignored45","ignored46"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.closure"}}],"kind":"match","scrutinee":{"kind":"var","name":"value"}},"kind":"definition","name":"isShorter","parameters":[{"name":"value","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}},{"name":"limit","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.unit"}},{"binders":["ignored47"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bool"}},{"binders":["ignored48"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.nat"}},{"binders":["ignored49"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.int"}},{"binders":["ignored50"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u8"}},{"binders":["ignored51"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u16"}},{"binders":["ignored52"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u32"}},{"binders":["ignored53"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.u64"}},{"binders":["ignored54"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i8"}},{"binders":["ignored55"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i16"}},{"binders":["ignored56"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i32"}},{"binders":["ignored57"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.i64"}},{"binders":["ignored58"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.string"}},{"binders":["ignored59"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.bytes"}},{"binders":["ignored60"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ordering"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.none"}},{"binders":["ignored61"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.some"}},{"binders":["ignored62"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.ok"}},{"binders":["ignored63"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.error"}},{"binders":["items"],"body":{"kind":"ble","left":{"kind":"var","name":"limit"},"right":{"arguments":[{"kind":"var","name":"items"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"constructor":{"module":"TargetSyntax","name":"Value.list"}},{"binders":["ignored64","ignored65"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.pair"}},{"binders":["ignored66","ignored67"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.adt"}},{"binders":["ignored68","ignored69"],"body":{"kind":"bool","value":false},"constructor":{"module":"TargetSyntax","name":"Value.closure"}}],"kind":"match","scrutinee":{"kind":"var","name":"value"}},"kind":"definition","name":"isLong","parameters":[{"name":"value","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}},{"name":"limit","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"head"},{"kind":"var","name":"limit"}],"function":{"name":"isList"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"limit"}],"function":{"name":"allLists"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"allLists","parameters":[{"name":"values","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"name":"limit","type":{"kind":"nat"}}],"recursive_argument":"values","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"head"},{"kind":"var","name":"limit"}],"function":{"name":"isShorter"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"limit"}],"function":{"name":"allShorter"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"allShorter","parameters":[{"name":"values","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"name":"limit","type":{"kind":"nat"}}],"recursive_argument":"values","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"head"},{"kind":"var","name":"limit"}],"function":{"name":"isLong"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"limit"}],"function":{"name":"allLong"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"allLong","parameters":[{"name":"values","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},{"name":"limit","type":{"kind":"nat"}}],"recursive_argument":"values","result":{"kind":"bool"}},{"body":{"branches":[{"binders":["ignored70","ignored71"],"body":{"kind":"bool","value":true},"constructor":{"module":"TargetSyntax","name":"Expr.value"}},{"binders":["ignored72"],"body":{"kind":"bool","value":true},"constructor":{"module":"TargetSyntax","name":"Expr.var"}},{"binders":["ignored73","ignored74","bound","body"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"bound"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"body"}],"function":{"name":"exprIsolated"},"kind":"call"}}},"constructor":{"module":"TargetSyntax","name":"Expr.let"}},{"binders":["condition","thenBranch","elseBranch"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"condition"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"thenBranch"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"elseBranch"}],"function":{"name":"exprIsolated"},"kind":"call"}}}},"constructor":{"module":"TargetSyntax","name":"Expr.cond"}},{"binders":["ignored75","scrutinee","arms"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"scrutinee"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"arms"}],"function":{"name":"armsIsolated"},"kind":"call"}}},"constructor":{"module":"TargetSyntax","name":"Expr.match"}},{"binders":["ignored76","ignored77","operands"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"operands"}],"function":{"name":"exprsIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.build"}},{"binders":["function","operands"],"body":{"kind":"and","left":{"kind":"not","value":{"kind":"beq","left":{"kind":"var","name":"function"},"right":{"kind":"nat","value":"0"}}},"right":{"arguments":[{"kind":"var","name":"operands"}],"function":{"name":"exprsIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.call"}},{"binders":["function","operands"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"operands"}],"function":{"name":"exprsIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.closure"}},{"binders":["target","operands"],"body":{"kind":"and","left":{"kind":"bool","value":false},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"target"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"operands"}],"function":{"name":"exprsIsolated"},"kind":"call"}}},"constructor":{"module":"TargetSyntax","name":"Expr.apply"}},{"binders":["ignored78","operands"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"operands"}],"function":{"name":"exprsIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.prim"}},{"binders":["inner"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"inner"}],"function":{"name":"exprIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.first"}},{"binders":["inner"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"inner"}],"function":{"name":"exprIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.second"}},{"binders":["inner","ignored79"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"inner"}],"function":{"name":"exprIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Expr.field"}}],"kind":"match","scrutinee":{"kind":"var","name":"expression"}},"kind":"definition","mutual":"ExpressionIsolation","name":"exprIsolated","parameters":[{"name":"expression","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Expr"}}}],"recursive_argument":"expression","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"head"}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"exprsIsolated"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"expressions"}},"kind":"definition","mutual":"ExpressionIsolation","name":"exprsIsolated","parameters":[{"name":"expressions","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Expr"}},"kind":"list"}}],"recursive_argument":"expressions","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"head"}],"function":{"name":"armIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"armsIsolated"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"arms"}},"kind":"definition","mutual":"ExpressionIsolation","name":"armsIsolated","parameters":[{"name":"arms","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Arm"}},"kind":"list"}}],"recursive_argument":"arms","result":{"kind":"bool"}},{"body":{"branches":[{"binders":["ignored80","ignored81","body"],"body":{"kind":"and","left":{"kind":"bool","value":true},"right":{"arguments":[{"kind":"var","name":"body"}],"function":{"name":"exprIsolated"},"kind":"call"}},"constructor":{"module":"TargetSyntax","name":"Arm.arm"}}],"kind":"match","scrutinee":{"kind":"var","name":"arm"}},"kind":"definition","mutual":"ExpressionIsolation","name":"armIsolated","parameters":[{"name":"arm","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Arm"}}}],"recursive_argument":"arm","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["plan","rest"],"body":{"kind":"and","left":{"arguments":[{"field":"body","kind":"project","value":{"field":"function","kind":"project","value":{"kind":"var","name":"plan"}}}],"function":{"name":"exprIsolated"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"plansIsolated"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"plans"}},"kind":"definition","name":"plansIsolated","parameters":[{"name":"plans","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Plan"}},"kind":"list"}}],"recursive_argument":"plans","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"branches":[{"binders":["ignored82"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"module":"Gnaf","name":"Selector.fixed"}},{"binders":["ignored83","small","large"],"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"small"},"right":{"kind":"var","name":"large"}},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"small"}],"constructor":{"module":"Gnaf","name":"Selector.fixed"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]}},"constructor":{"module":"Gnaf","name":"Selector.dispatch"}}],"kind":"match","scrutinee":{"kind":"var","name":"selector"}},"constructor":{"name":"Schema.collapse"}},{"binders":[],"body":{"branches":[{"binders":["ignored84"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"module":"Gnaf","name":"Selector.fixed"}},{"binders":["ignored85","small","large"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"small"}],"constructor":{"module":"Gnaf","name":"Selector.fixed"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"module":"Gnaf","name":"Selector.dispatch"}}],"kind":"match","scrutinee":{"kind":"var","name":"selector"}},"constructor":{"name":"Schema.specializeSmall"}},{"binders":[],"body":{"branches":[{"binders":["ignored86"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"module":"Gnaf","name":"Selector.fixed"}},{"binders":["ignored87","small","large"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"large"}],"constructor":{"module":"Gnaf","name":"Selector.fixed"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}]},"constructor":{"module":"Gnaf","name":"Selector.dispatch"}}],"kind":"match","scrutinee":{"kind":"var","name":"selector"}},"constructor":{"name":"Schema.specializeLarge"}}],"kind":"match","scrutinee":{"kind":"var","name":"schema"}},"kind":"definition","name":"rewrite","parameters":[{"name":"schema","type":{"arguments":[],"kind":"named","member":{"name":"Schema"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}},{"body":{"kind":"and","left":{"arguments":[{"field":"plans","kind":"project","value":{"kind":"var","name":"grammar"}}],"function":{"name":"plansIsolated"},"kind":"call"},"right":{"branches":[{"binders":["ignored88"],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Selector.fixed"}},{"binders":["threshold","small","large"],"body":{"branches":[{"binders":[],"body":{"kind":"and","left":{"kind":"beq","left":{"kind":"var","name":"small"},"right":{"kind":"var","name":"large"}},"right":{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"nat","value":"0"}],"function":{"name":"allLists"},"kind":"call"}},"constructor":{"name":"Schema.collapse"}},{"binders":[],"body":{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"var","name":"threshold"}],"function":{"name":"allShorter"},"kind":"call"},"constructor":{"name":"Schema.specializeSmall"}},{"binders":[],"body":{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"var","name":"threshold"}],"function":{"name":"allLong"},"kind":"call"},"constructor":{"name":"Schema.specializeLarge"}}],"kind":"match","scrutinee":{"kind":"var","name":"schema"}},"constructor":{"module":"Gnaf","name":"Selector.dispatch"}}],"kind":"match","scrutinee":{"kind":"var","name":"selector"}}},"kind":"definition","name":"eligible","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"schema","type":{"arguments":[],"kind":"named","member":{"name":"Schema"}}}],"result":{"kind":"bool"}},{"body":{"binder":{"name":"system","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Program"}}},"body":{"arguments":[{"field":"functions","kind":"project","value":{"kind":"var","name":"system"}},{"arguments":[{"field":"functions","kind":"project","value":{"kind":"var","name":"system"}}],"function":{"module":"Gnaf","name":"reachable"},"kind":"call"}],"function":{"module":"Gnaf","name":"reachableSize"},"kind":"call"},"kind":"let","value":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"module":"Gnaf","name":"realize"},"kind":"call"}},"kind":"definition","name":"staticSize","parameters":[{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"nat"}},{"body":{"binder":{"name":"system","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Program"}}},"body":{"arguments":[{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},{"arguments":[{"field":"actions","kind":"project","value":{"field":"machine","kind":"project","value":{"kind":"var","name":"request"}}},{"field":"plans","kind":"project","value":{"kind":"var","name":"grammar"}},{"arguments":[{"field":"functions","kind":"project","value":{"kind":"var","name":"system"}}],"function":{"module":"Gnaf","name":"reachable"},"kind":"call"}],"function":{"module":"Gnaf","name":"reachableCharge"},"kind":"call"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"kind":"let","value":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"module":"Gnaf","name":"realize"},"kind":"call"}},"kind":"definition","name":"staticCharge","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Option.none"}},{"binders":["target"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"schema"}],"function":{"name":"eligible"},"kind":"call"},"right":{"kind":"and","left":{"kind":"ble","left":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"target"}],"function":{"name":"staticSize"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"staticSize"},"kind":"call"}},"right":{"kind":"ble","left":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"target"}],"function":{"name":"staticCharge"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"staticCharge"},"kind":"call"}}}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"schema"},{"kind":"var","name":"selector"}],"function":{"name":"rewrite"},"kind":"call"}},"kind":"definition","name":"improves","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"schema","type":{"arguments":[],"kind":"named","member":{"name":"Schema"}}}],"result":{"kind":"bool"}},{"body":{"kind":"and","left":{"kind":"not","value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"arguments":[],"constructor":{"name":"Schema.collapse"},"kind":"constructor"}],"function":{"name":"improves"},"kind":"call"}},"right":{"kind":"and","left":{"kind":"not","value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"arguments":[],"constructor":{"name":"Schema.specializeSmall"},"kind":"constructor"}],"function":{"name":"improves"},"kind":"call"}},"right":{"kind":"not","value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"arguments":[],"constructor":{"name":"Schema.specializeLarge"},"kind":"constructor"}],"function":{"name":"improves"},"kind":"call"}}}},"kind":"definition","name":"isNormal","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"binder":{"name":"system","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Program"}}},"body":{"branches":[{"binders":["position"],"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["argument"],"body":{"branches":[{"binders":["ignored89","ignored90"],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.inadmissible"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"system"},{"field":"reference","kind":"project","value":{"kind":"var","name":"request"}},{"field":"fuel","kind":"project","value":{"field":"machine","kind":"project","value":{"kind":"var","name":"request"}}},{"head":{"kind":"var","name":"argument"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"}}],"function":{"module":"Gnaf","name":"statusOn"},"kind":"call"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"var","name":"position"}],"function":{"name":"valueAt"},"kind":"call"}},"constructor":{"name":"Premise.excluded"}},{"binders":["positions"],"body":{"binder":{"name":"picked","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}},"body":{"condition":{"kind":"and","left":{"kind":"beq","left":{"arguments":[{"kind":"var","name":"picked"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"positions"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"right":{"arguments":[{"kind":"var","name":"positions"},{"kind":"nat","value":"0"}],"function":{"name":"ascending"},"kind":"call"}},"else_value":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"kind":"if","then_value":{"branches":[{"binders":["steps","ignored91"],"body":{"arguments":[{"kind":"add","left":{"kind":"var","name":"steps"},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"staticCharge"},"kind":"call"}},{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"staticSize"},"kind":"call"}],"constructor":{"name":"Fact.atLeast"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"system"},{"field":"reference","kind":"project","value":{"kind":"var","name":"request"}},{"field":"fuel","kind":"project","value":{"field":"machine","kind":"project","value":{"kind":"var","name":"request"}}},{"kind":"var","name":"picked"}],"function":{"module":"Gnaf","name":"statusOn"},"kind":"call"}}},"kind":"let","value":{"arguments":[{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"nat","value":"0"},{"kind":"var","name":"positions"}],"function":{"name":"pickFrom"},"kind":"call"}},"constructor":{"name":"Premise.paysAtLeast"}},{"binders":[],"body":{"branches":[{"binders":["cost","size"],"body":{"arguments":[{"kind":"var","name":"cost"},{"kind":"var","name":"size"}],"constructor":{"name":"Fact.admitted"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.inadmissible"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unresolved"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"module":"Gnaf","name":"status"},"kind":"call"}},"constructor":{"name":"Premise.measured"}},{"binders":["schema"],"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["target"],"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["targetPosition"],"body":{"condition":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"schema"}],"function":{"name":"improves"},"kind":"call"},"else_value":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"targetPosition"}],"constructor":{"name":"Fact.reduces"},"kind":"constructor"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"selectors"},{"kind":"var","name":"target"},{"kind":"nat","value":"0"}],"function":{"name":"positionOf"},"kind":"call"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"schema"},{"kind":"var","name":"selector"}],"function":{"name":"rewrite"},"kind":"call"}},"constructor":{"name":"Premise.reduced"}}],"kind":"match","scrutinee":{"kind":"var","name":"premise"}},"kind":"let","value":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"module":"Gnaf","name":"realize"},"kind":"call"}},"kind":"definition","name":"premiseFact","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"premise","type":{"arguments":[],"kind":"named","member":{"name":"Premise"}}}],"result":{"arguments":[],"kind":"named","member":{"name":"Fact"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["selector","rest"],"body":{"branches":[{"binders":[],"body":{"head":{"arguments":[],"constructor":{"name":"Fact.unproven"},"kind":"constructor"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"all"},{"kind":"var","name":"rest"},{"kind":"var","name":"premises"}],"function":{"name":"factsOf"},"kind":"call"}},"constructor":{"name":"List.nil"}},{"binders":["premise","later"],"body":{"head":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"all"},{"kind":"var","name":"selector"},{"kind":"var","name":"premise"}],"function":{"name":"premiseFact"},"kind":"call"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"all"},{"kind":"var","name":"rest"},{"kind":"var","name":"later"}],"function":{"name":"factsOf"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"premises"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"selectors"}},"kind":"definition","name":"factsOf","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"all","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"premises","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Premise"}},"kind":"list"}}],"recursive_argument":"selectors","result":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"kind":"nat"},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["selector","rest"],"body":{"head":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"staticSize"},"kind":"call"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"rest"}],"function":{"name":"sizesOf"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"selectors"}},"kind":"definition","name":"sizesOf","parameters":[{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}}],"recursive_argument":"selectors","result":{"element":{"kind":"nat"},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"head":{"kind":"pair","left":{"kind":"var","name":"position"},"right":{"head":{"kind":"var","name":"cost"},"kind":"cons","tail":{"head":{"kind":"var","name":"size"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"}},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored92","ignored93"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored94"],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"factRows"},"kind":"call"},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"head"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"facts"}},"kind":"definition","name":"factRows","parameters":[{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"facts","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},{"body":{"branches":[{"binders":[],"body":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["row","rest"],"body":{"condition":{"arguments":[{"kind":"first","value":{"kind":"var","name":"row"}},{"kind":"var","name":"members"}],"function":{"module":"Gnaf","name":"natIn"},"kind":"call"},"else_value":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"members"}],"function":{"name":"rowsOfMembers"},"kind":"call"},"kind":"if","then_value":{"head":{"kind":"var","name":"row"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"members"}],"function":{"name":"rowsOfMembers"},"kind":"call"}}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"rows"}},"kind":"definition","name":"rowsOfMembers","parameters":[{"name":"rows","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},{"name":"members","type":{"element":{"kind":"nat"},"kind":"list"}}],"recursive_argument":"rows","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"module":"Gnaf","name":"realize"},"kind":"call"},{"field":"reference","kind":"project","value":{"kind":"var","name":"request"}},{"kind":"var","name":"fuel"},{"head":{"kind":"var","name":"argument"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"nil"}}],"function":{"module":"Gnaf","name":"statusOn"},"kind":"call"},"kind":"definition","name":"argumentStatus","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"fuel","type":{"kind":"nat"}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"argument","type":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}}}],"result":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Status"}}},{"body":{"branches":[{"binders":["ignored95","ignored97"],"body":{"branches":[{"binders":["ignored96","ignored98"],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"kind":"var","name":"after"}},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"kind":"var","name":"before"}},"kind":"definition","name":"keepsObservation","parameters":[{"name":"before","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Status"}}},{"name":"after","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Status"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":["cost","ignored99"],"body":{"branches":[{"binders":["cheaper","ignored100"],"body":{"kind":"blt","left":{"kind":"var","name":"cheaper"},"right":{"kind":"var","name":"cost"}},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"kind":"var","name":"after"}},"constructor":{"module":"Gnaf","name":"Status.admitted"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Status.inadmissible"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Status.unresolved"}}],"kind":"match","scrutinee":{"kind":"var","name":"before"}},"kind":"definition","name":"cheaperObservation","parameters":[{"name":"before","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Status"}}},{"name":"after","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Status"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["argument","rest"],"body":{"kind":"and","left":{"arguments":[{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"selector"},{"kind":"var","name":"argument"}],"function":{"name":"argumentStatus"},"kind":"call"},{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"target"},{"kind":"var","name":"argument"}],"function":{"name":"argumentStatus"},"kind":"call"}],"function":{"name":"keepsObservation"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"selector"},{"kind":"var","name":"target"},{"kind":"var","name":"rest"}],"function":{"name":"sameObservationsAt"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"arguments"}},"kind":"definition","name":"sameObservationsAt","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"fuel","type":{"kind":"nat"}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"target","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"arguments","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}}],"recursive_argument":"arguments","result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["argument","rest"],"body":{"kind":"and","left":{"arguments":[{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"selector"},{"kind":"var","name":"argument"}],"function":{"name":"argumentStatus"},"kind":"call"},{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"target"},{"kind":"var","name":"argument"}],"function":{"name":"argumentStatus"},"kind":"call"}],"function":{"name":"cheaperObservation"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"fuel"},{"kind":"var","name":"selector"},{"kind":"var","name":"target"},{"kind":"var","name":"rest"}],"function":{"name":"strictlyCheaperAt"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"arguments"}},"kind":"definition","name":"strictlyCheaperAt","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"fuel","type":{"kind":"nat"}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"target","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"arguments","type":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Value"}},"kind":"list"}}],"recursive_argument":"arguments","result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"field":"fuel","kind":"project","value":{"field":"machine","kind":"project","value":{"kind":"var","name":"request"}}},{"kind":"var","name":"selector"},{"kind":"var","name":"target"},{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}}],"function":{"name":"sameObservationsAt"},"kind":"call"},"kind":"definition","name":"sameObservations","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"target","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"field":"fuel","kind":"project","value":{"field":"machine","kind":"project","value":{"kind":"var","name":"request"}}},{"kind":"var","name":"selector"},{"kind":"var","name":"target"},{"field":"domain","kind":"project","value":{"kind":"var","name":"request"}}],"function":{"name":"strictlyCheaperAt"},"kind":"call"},"kind":"definition","name":"strictlyCheaper","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"target","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Option.none"}},{"binders":["target"],"body":{"kind":"and","left":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"schema"}],"function":{"name":"improves"},"kind":"call"},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"target"}],"function":{"name":"sameObservations"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"target"}],"function":{"name":"strictlyCheaper"},"kind":"call"}}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"schema"},{"kind":"var","name":"selector"}],"function":{"name":"rewrite"},"kind":"call"}},"kind":"definition","name":"preserves","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selector","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}}},{"name":"schema","type":{"arguments":[],"kind":"named","member":{"name":"Schema"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":["grammar"],"body":{"binder":{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Option.none"}},{"binders":["left"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Option.none"}},{"binders":["right"],"body":{"condition":{"kind":"var","name":"cheaper"},"else_value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"left"},{"kind":"var","name":"right"}],"function":{"name":"sameObservations"},"kind":"call"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"left"},{"kind":"var","name":"right"}],"function":{"name":"strictlyCheaper"},"kind":"call"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"selectors"},{"kind":"var","name":"second"}],"function":{"name":"selectorAt"},"kind":"call"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"selectors"},{"kind":"var","name":"first"}],"function":{"name":"selectorAt"},"kind":"call"}},"kind":"let","value":{"arguments":[{"kind":"var","name":"grammar"}],"function":{"module":"Gnaf","name":"expand"},"kind":"call"}},"constructor":{"module":"Gnaf","name":"Carrier.grammar"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.internalPlans"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.optimizerOutput"}},{"binders":["ignored101"],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.discovered"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.cached"}}],"kind":"match","scrutinee":{"field":"carrier","kind":"project","value":{"kind":"var","name":"request"}}},"kind":"definition","name":"pairRelation","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"first","type":{"kind":"nat"}},{"name":"second","type":{"kind":"nat"}},{"name":"cheaper","type":{"kind":"bool"}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["selector","rest"],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"List.nil"}},{"binders":["premise","later"],"body":{"kind":"and","left":{"branches":[{"binders":["ignored102"],"body":{"kind":"bool","value":true},"constructor":{"name":"Premise.excluded"}},{"binders":["ignored103"],"body":{"kind":"bool","value":true},"constructor":{"name":"Premise.paysAtLeast"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Premise.measured"}},{"binders":["schema"],"body":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"},{"kind":"var","name":"schema"}],"function":{"name":"preserves"},"kind":"call"},"constructor":{"name":"Premise.reduced"}}],"kind":"match","scrutinee":{"kind":"var","name":"premise"}},"right":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"rest"},{"kind":"var","name":"later"}],"function":{"name":"reductionsPreserve"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"premises"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"selectors"}},"kind":"definition","name":"reductionsPreserve","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"premises","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Premise"}},"kind":"list"}}],"recursive_argument":"selectors","result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"branches":[{"binders":["grammar"],"body":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"arguments":[{"kind":"var","name":"grammar"}],"function":{"module":"Gnaf","name":"expand"},"kind":"call"},{"field":"premises","kind":"project","value":{"kind":"var","name":"certificate"}}],"function":{"name":"reductionsPreserve"},"kind":"call"},"constructor":{"module":"Gnaf","name":"Carrier.grammar"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.internalPlans"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.optimizerOutput"}},{"binders":["ignored104"],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.discovered"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Carrier.cached"}}],"kind":"match","scrutinee":{"field":"carrier","kind":"project","value":{"kind":"var","name":"request"}}},"kind":"definition","name":"certificateReductionsPreserve","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"certificate","type":{"arguments":[],"kind":"named","member":{"name":"Certificate"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"condition":{"kind":"var","name":"attainer"},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.attainerInadmissible"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","ignored105"],"body":{"condition":{"kind":"var","name":"attainer"},"else_value":{"condition":{"kind":"blt","left":{"kind":"var","name":"cost"},"right":{"kind":"var","name":"bound"}},"else_value":{"condition":{"kind":"and","left":{"kind":"var","name":"strict"},"right":{"kind":"beq","left":{"kind":"var","name":"cost"},"right":{"kind":"var","name":"bound"}}},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.attainerOmitted"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberBelowBound"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"kind":"if","then_value":{"condition":{"kind":"beq","left":{"kind":"var","name":"cost"},"right":{"kind":"var","name":"bound"}},"else_value":{"condition":{"kind":"blt","left":{"kind":"var","name":"cost"},"right":{"kind":"var","name":"bound"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.attainerAboveBound"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberBelowBound"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}}},"constructor":{"name":"Fact.admitted"}},{"binders":["cost","ignored106"],"body":{"condition":{"kind":"var","name":"attainer"},"else_value":{"condition":{"kind":"var","name":"strict"},"else_value":{"condition":{"kind":"ble","left":{"kind":"var","name":"bound"},"right":{"kind":"var","name":"cost"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"kind":"if","then_value":{"condition":{"kind":"blt","left":{"kind":"var","name":"bound"},"right":{"kind":"var","name":"cost"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}}},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.attainerUnmeasured"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored107"],"body":{"condition":{"kind":"var","name":"attainer"},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.attainerUnmeasured"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.unresolvedMember"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"fact"}},"kind":"definition","name":"lowerPosition","parameters":[{"name":"strict","type":{"kind":"bool"}},{"name":"bound","type":{"kind":"nat"}},{"name":"attainer","type":{"kind":"bool"}},{"name":"fact","type":{"arguments":[],"kind":"named","member":{"name":"Fact"}}},{"name":"position","type":{"kind":"nat"}}],"result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"strict"},{"kind":"var","name":"bound"},{"kind":"var","name":"attainers"},{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"scanLower"},"kind":"call"},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"strict"},{"kind":"var","name":"bound"},{"arguments":[{"kind":"var","name":"position"},{"kind":"var","name":"attainers"}],"function":{"module":"Gnaf","name":"natIn"},"kind":"call"},{"kind":"var","name":"head"},{"kind":"var","name":"position"}],"function":{"name":"lowerPosition"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"facts"}},"kind":"definition","name":"scanLower","parameters":[{"name":"strict","type":{"kind":"bool"}},{"name":"bound","type":{"kind":"nat"}},{"name":"attainers","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"facts","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"List.nil"}},{"binders":["head","ignored108"],"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["found"],"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"arguments":[{"kind":"var","name":"head"},{"kind":"var","name":"cost"},{"kind":"var","name":"size"}],"constructor":{"name":"Established.correctOnly"},"kind":"constructor"},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored109","ignored110"],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored111"],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"found"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"facts"},{"kind":"var","name":"head"}],"function":{"name":"factAt"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"attainers"}},"kind":"definition","name":"establishedFrom","parameters":[{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"attainers","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Established"}}},{"body":{"condition":{"kind":"not","value":{"kind":"and","left":{"arguments":[{"kind":"var","name":"attainers"},{"kind":"nat","value":"0"}],"function":{"name":"ascending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"attainers"},{"arguments":[{"kind":"var","name":"facts"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}],"function":{"name":"allBelow"},"kind":"call"}}},"else_value":{"branches":[{"binders":[],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.boundUnattained"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"List.nil"}},{"binders":["ignored112","ignored113"],"body":{"condition":{"kind":"var","name":"strict"},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"attainers"},{"kind":"var","name":"bound"}],"constructor":{"name":"Certified.optimum"},"kind":"constructor"}],"constructor":{"name":"Verdict.certified"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"attainers"},{"kind":"var","name":"bound"}],"constructor":{"name":"Certified.argmin"},"kind":"constructor"}],"constructor":{"name":"Verdict.certified"},"kind":"constructor"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"attainers"}},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"},{"arguments":[{"kind":"var","name":"facts"},{"kind":"var","name":"attainers"}],"function":{"name":"establishedFrom"},"kind":"call"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"strict"},{"kind":"var","name":"bound"},{"kind":"var","name":"attainers"},{"kind":"var","name":"facts"},{"kind":"nat","value":"0"}],"function":{"name":"scanLower"},"kind":"call"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.attainersMalformed"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"}},"kind":"definition","name":"lowerVerdict","parameters":[{"name":"strict","type":{"kind":"bool"}},{"name":"bound","type":{"kind":"nat"}},{"name":"attainers","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}},{"body":{"condition":{"kind":"var","name":"member"},"else_value":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"condition":{"arguments":[{"head":{"kind":"var","name":"cost"},"kind":"cons","tail":{"head":{"kind":"var","name":"size"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}},{"kind":"var","name":"memberRows"}],"function":{"module":"Gnaf","name":"dominatedIn"},"kind":"call","type_arguments":[{"kind":"nat"}]},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.frontierMemberOmitted"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.admitted"}},{"binders":["cost","size"],"body":{"condition":{"arguments":[{"head":{"kind":"var","name":"cost"},"kind":"cons","tail":{"head":{"kind":"var","name":"size"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}},{"kind":"var","name":"memberRows"}],"function":{"module":"Gnaf","name":"dominatedIn"},"kind":"call","type_arguments":[{"kind":"nat"}]},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored117"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.unresolvedMember"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"fact"}},"kind":"if","then_value":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.frontierMemberUnmeasured"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"condition":{"arguments":[{"head":{"kind":"var","name":"cost"},"kind":"cons","tail":{"head":{"kind":"var","name":"size"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}},{"kind":"var","name":"memberRows"}],"function":{"module":"Gnaf","name":"dominatedIn"},"kind":"call","type_arguments":[{"kind":"nat"}]},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.frontierMemberDominated"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored114","ignored115"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.frontierMemberUnmeasured"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored116"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.frontierMemberUnmeasured"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.unresolvedMember"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.memberUnproven"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"fact"}}},"kind":"definition","name":"frontierPosition","parameters":[{"name":"member","type":{"kind":"bool"}},{"name":"memberRows","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},{"name":"fact","type":{"arguments":[],"kind":"named","member":{"name":"Fact"}}},{"name":"position","type":{"kind":"nat"}}],"result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"members"},{"kind":"var","name":"memberRows"},{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"scanFrontier"},"kind":"call"},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"arguments":[{"kind":"var","name":"position"},{"kind":"var","name":"members"}],"function":{"module":"Gnaf","name":"natIn"},"kind":"call"},{"kind":"var","name":"memberRows"},{"kind":"var","name":"head"},{"kind":"var","name":"position"}],"function":{"name":"frontierPosition"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"facts"}},"kind":"definition","name":"scanFrontier","parameters":[{"name":"members","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"memberRows","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"facts","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"binder":{"name":"memberRows","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},"body":{"condition":{"kind":"not","value":{"kind":"and","left":{"arguments":[{"kind":"var","name":"members"},{"kind":"nat","value":"0"}],"function":{"name":"ascending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"members"},{"arguments":[{"kind":"var","name":"facts"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}],"function":{"name":"allBelow"},"kind":"call"}}},"else_value":{"branches":[{"binders":[],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.noAdmittedMember"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"List.nil"}},{"binders":["ignored118","ignored119"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"members"}],"constructor":{"name":"Certified.frontier"},"kind":"constructor"}],"constructor":{"name":"Verdict.certified"},"kind":"constructor"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"members"}},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"members"},{"kind":"var","name":"memberRows"},{"kind":"var","name":"facts"},{"kind":"nat","value":"0"}],"function":{"name":"scanFrontier"},"kind":"call"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.attainersMalformed"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"}},"kind":"let","value":{"arguments":[{"arguments":[{"kind":"var","name":"facts"},{"kind":"nat","value":"0"}],"function":{"name":"factRows"},"kind":"call"},{"kind":"var","name":"members"}],"function":{"name":"rowsOfMembers"},"kind":"call"}},"kind":"definition","name":"frontierVerdict","parameters":[{"name":"members","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"rest"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"scanReduction"},"kind":"call"},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.inadmissible"}},{"binders":["ignored120","ignored121"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored123","ignored124"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.reductionIncomplete"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored122"],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.unresolvedMember"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.reductionIncomplete"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"head"}}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"facts"}},"kind":"definition","name":"scanReduction","parameters":[{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"facts","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"binder":{"name":"rows","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}},"kind":"list"}},"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"shape"},"right":{"kind":"nat","value":"3"}},"else_value":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.noAdmittedMember"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"List.nil"}},{"binders":["ignored125","ignored126"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"rows"}],"function":{"module":"Gnaf","name":"frontier"},"kind":"call","type_arguments":[{"kind":"nat"}]},{"kind":"var","name":"facts"}],"function":{"name":"frontierVerdict"},"kind":"call"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"rows"}},"kind":"if","then_value":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.noAdmittedMember"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["found"],"body":{"arguments":[{"kind":"beq","left":{"kind":"var","name":"shape"},"right":{"kind":"nat","value":"2"}},{"kind":"second","value":{"kind":"var","name":"found"}},{"kind":"first","value":{"kind":"var","name":"found"}},{"kind":"var","name":"facts"}],"function":{"name":"lowerVerdict"},"kind":"call"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"arguments":[{"kind":"var","name":"rows"}],"function":{"module":"Gnaf","name":"scalarRows"},"kind":"call"}],"function":{"module":"Gnaf","name":"argmin"},"kind":"call","type_arguments":[{"kind":"nat"}]}}},"kind":"let","value":{"arguments":[{"kind":"var","name":"facts"},{"kind":"nat","value":"0"}],"function":{"name":"factRows"},"kind":"call"}},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"facts"},{"kind":"nat","value":"0"}],"function":{"name":"scanReduction"},"kind":"call"}},"kind":"definition","name":"reductionVerdict","parameters":[{"name":"shape","type":{"kind":"nat"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","ignored127"],"body":{"condition":{"kind":"ble","left":{"kind":"add","left":{"arguments":[{"field":"slope","kind":"project","value":{"kind":"var","name":"bridge"}},{"kind":"var","name":"measuredSize"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"field":"offset","kind":"project","value":{"kind":"var","name":"bridge"}}},"right":{"kind":"var","name":"cost"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.bridgeViolated"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.admitted"}},{"binders":["cost","ignored128"],"body":{"condition":{"kind":"ble","left":{"kind":"add","left":{"arguments":[{"field":"slope","kind":"project","value":{"kind":"var","name":"bridge"}},{"kind":"var","name":"measuredSize"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"field":"offset","kind":"project","value":{"kind":"var","name":"bridge"}}},"right":{"kind":"var","name":"cost"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.bridgeUnproved"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]}},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored129"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.bridgeUnproved"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.unresolvedMember"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.bridgeUnproved"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"fact"}},"kind":"definition","name":"bridgePosition","parameters":[{"name":"bridge","type":{"arguments":[],"kind":"named","member":{"name":"Bridge"}}},{"name":"fact","type":{"arguments":[],"kind":"named","member":{"name":"Fact"}}},{"name":"measuredSize","type":{"kind":"nat"}},{"name":"position","type":{"kind":"nat"}}],"result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"head"},"right":{"kind":"var","name":"limit"}},"else_value":{"arguments":[{"kind":"var","name":"rest"},{"kind":"var","name":"limit"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"firstSmaller"},"kind":"call"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"sizes"}},"kind":"definition","name":"firstSmaller","parameters":[{"name":"sizes","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"limit","type":{"kind":"nat"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"sizes","result":{"kind":"option","value":{"kind":"nat"}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"List.nil"}},{"binders":["head","rest"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[{"kind":"var","name":"position"}],"constructor":{"name":"Obligation.bridgeUnproved"},"kind":"constructor"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"List.nil"}},{"binders":["measuredSize","laterSizes"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"kind":"var","name":"bridge"},{"kind":"var","name":"rest"},{"kind":"var","name":"laterSizes"},{"kind":"add","left":{"kind":"var","name":"position"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"scanBridge"},"kind":"call"},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"name":"Obligation"}}]},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"bridge"},{"kind":"var","name":"head"},{"kind":"var","name":"measuredSize"},{"kind":"var","name":"position"}],"function":{"name":"bridgePosition"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"sizes"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"facts"}},"kind":"definition","name":"scanBridge","parameters":[{"name":"bridge","type":{"arguments":[],"kind":"named","member":{"name":"Bridge"}}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"sizes","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"position","type":{"kind":"nat"}}],"recursive_argument":"facts","result":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Obligation"}}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalOutOfRange"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["normalSize"],"body":{"branches":[{"binders":[],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.bridgeMissing"},"kind":"constructor"},{"arguments":[{"kind":"var","name":"normal"},{"kind":"var","name":"normalSize"}],"constructor":{"name":"Established.representationMinimal"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["given"],"body":{"binder":{"name":"bridge","type":{"arguments":[],"kind":"named","member":{"name":"Bridge"}}},"body":{"branches":[{"binders":[],"body":{"binder":{"name":"limit","type":{"kind":"nat"}},"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["found"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"cost"},"right":{"kind":"var","name":"limit"}},"else_value":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.boundUnattained"},"kind":"constructor"},{"arguments":[{"kind":"var","name":"normal"},{"kind":"var","name":"cost"},{"kind":"var","name":"size"}],"constructor":{"name":"Established.correctOnly"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"arguments":[{"head":{"kind":"var","name":"normal"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}},{"kind":"var","name":"cost"}],"constructor":{"name":"Certified.optimum"},"kind":"constructor"}],"constructor":{"name":"Verdict.certified"},"kind":"constructor"}},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored130","ignored131"],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored132"],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"found"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"facts"},{"kind":"var","name":"normal"}],"function":{"name":"factAt"},"kind":"call"}},"kind":"let","value":{"kind":"add","left":{"arguments":[{"field":"slope","kind":"project","value":{"kind":"var","name":"bridge"}},{"kind":"var","name":"normalSize"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"field":"offset","kind":"project","value":{"kind":"var","name":"bridge"}}}},"constructor":{"name":"Option.none"}},{"binders":["obligation"],"body":{"arguments":[{"kind":"var","name":"obligation"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"bridge"},{"kind":"var","name":"facts"},{"kind":"var","name":"sizes"},{"kind":"nat","value":"0"}],"function":{"name":"scanBridge"},"kind":"call"}},"kind":"let","value":{"kind":"var","name":"given"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"kind":"var","name":"bridgeOption"}},"constructor":{"name":"Option.none"}},{"binders":["smaller"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"smaller"}],"constructor":{"name":"Obligation.normalNotMinimal"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"sizes"},{"kind":"var","name":"normalSize"},{"kind":"nat","value":"0"}],"function":{"name":"firstSmaller"},"kind":"call"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"sizes"},{"kind":"var","name":"normal"}],"function":{"name":"natAt"},"kind":"call"}},"kind":"definition","name":"representationVerdict","parameters":[{"name":"normal","type":{"kind":"nat"}},{"name":"bridgeOption","type":{"kind":"option","value":{"arguments":[],"kind":"named","member":{"name":"Bridge"}}}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},{"name":"sizes","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}},{"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["found"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.inadmissible"}},{"binders":["cost","size"],"body":{"branches":[{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalOutOfRange"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Option.none"}},{"binders":["selector"],"body":{"condition":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selector"}],"function":{"name":"isNormal"},"kind":"call"},"else_value":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.systemNotNormal"},"kind":"constructor"},{"arguments":[{"kind":"var","name":"normal"},{"kind":"var","name":"cost"},{"kind":"var","name":"size"}],"constructor":{"name":"Established.correctOnly"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.optimalityUnproved"},"kind":"constructor"},{"arguments":[{"kind":"var","name":"normal"}],"constructor":{"name":"Established.locallyNormalized"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"selectors"},{"kind":"var","name":"normal"}],"function":{"name":"selectorAt"},"kind":"call"}},"constructor":{"name":"Fact.admitted"}},{"binders":["ignored133","ignored134"],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.atLeast"}},{"binders":["ignored135"],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.reduces"}},{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.unresolved"}},{"binders":[],"body":{"arguments":[{"arguments":[],"constructor":{"name":"Obligation.normalUnmeasured"},"kind":"constructor"},{"arguments":[],"constructor":{"name":"Established.notCertified"},"kind":"constructor"}],"constructor":{"name":"Verdict.incomplete"},"kind":"constructor"},"constructor":{"name":"Fact.unproven"}}],"kind":"match","scrutinee":{"kind":"var","name":"found"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"facts"},{"kind":"var","name":"normal"}],"function":{"name":"factAt"},"kind":"call"}},"kind":"definition","name":"normalityVerdict","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"grammar","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Grammar"}}},{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},{"name":"normal","type":{"kind":"nat"}},{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.exact"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.normalForm"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.canonical"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.representationMinimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.comparisonTheorem"}},{"binders":["ignored137","ignored138","ignored139"],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.profileDefinedComparison"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.inputTotal"}},{"binders":[],"body":{"kind":"nat","value":"1"},"constructor":{"module":"Gnaf","name":"ClaimClass.globalOptimal"}},{"binders":[],"body":{"kind":"nat","value":"2"},"constructor":{"module":"Gnaf","name":"ClaimClass.argminComplete"}},{"binders":[],"body":{"kind":"nat","value":"3"},"constructor":{"module":"Gnaf","name":"ClaimClass.paretoOptimal"}},{"binders":[],"body":{"kind":"nat","value":"4"},"constructor":{"module":"Gnaf","name":"ClaimClass.frontierComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.pointwiseEnvelopeComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.queryFamilyAnswerComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.useCaseGlobalOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.workloadArgminComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.workloadParetoOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.workloadFrontierComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.familyOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.competitiveBound"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.competitiveOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.asymptoticBound"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.asymptoticOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.useCaseClassComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.useCaseClassAnswerComplete"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.maintainedUseCaseClass"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.restrictedUniverseOptimal"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.revisionPreserved"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.bestKnown"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.measuredBestAmongTested"}},{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.heuristicSelected"}},{"binders":["ignored140","ignored141"],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Gnaf","name":"ClaimClass.instanceOptimal"}}],"kind":"match","scrutinee":{"kind":"var","name":"claim"}},"kind":"definition","name":"claimShape","parameters":[{"name":"claim","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"ClaimClass"}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Objective.scalar"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Objective.vector"}}],"kind":"match","scrutinee":{"kind":"var","name":"right"}},"constructor":{"module":"Gnaf","name":"Objective.scalar"}},{"binders":[],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Objective.scalar"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Objective.vector"}}],"kind":"match","scrutinee":{"kind":"var","name":"right"}},"constructor":{"module":"Gnaf","name":"Objective.vector"}}],"kind":"match","scrutinee":{"kind":"var","name":"left"}},"kind":"definition","name":"sameObjective","parameters":[{"name":"left","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Objective"}}},{"name":"right","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Objective"}}}],"result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Scope.grammarUniverse"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.calculusPrograms"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.rustPrograms"}}],"kind":"match","scrutinee":{"kind":"var","name":"right"}},"constructor":{"module":"Gnaf","name":"Scope.grammarUniverse"}},{"binders":[],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.grammarUniverse"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Scope.calculusPrograms"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.rustPrograms"}}],"kind":"match","scrutinee":{"kind":"var","name":"right"}},"constructor":{"module":"Gnaf","name":"Scope.calculusPrograms"}},{"binders":[],"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.grammarUniverse"}},{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"module":"Gnaf","name":"Scope.calculusPrograms"}},{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"module":"Gnaf","name":"Scope.rustPrograms"}}],"kind":"match","scrutinee":{"kind":"var","name":"right"}},"constructor":{"module":"Gnaf","name":"Scope.rustPrograms"}}],"kind":"match","scrutinee":{"kind":"var","name":"left"}},"kind":"definition","name":"sameScope","parameters":[{"name":"left","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Scope"}}},{"name":"right","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Scope"}}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"condition":{"kind":"not","value":{"arguments":[{"field":"verifier","kind":"project","value":{"kind":"var","name":"certificate"}},{"kind":"string","value":"lexlean/gnaf-certification/1"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}},"else_value":{"branches":[{"binders":[],"body":{"branches":[{"binders":["grammar"],"body":{"condition":{"kind":"not","value":{"arguments":[{"field":"universe","kind":"project","value":{"kind":"var","name":"certificate"}},{"field":"universe","kind":"project","value":{"kind":"var","name":"request"}}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}},"else_value":{"condition":{"kind":"not","value":{"arguments":[{"field":"objective","kind":"project","value":{"kind":"var","name":"certificate"}},{"field":"objective","kind":"project","value":{"kind":"var","name":"request"}}],"function":{"name":"sameObjective"},"kind":"call"}},"else_value":{"condition":{"kind":"not","value":{"kind":"and","left":{"kind":"not","value":{"kind":"beq","left":{"arguments":[{"field":"claim","kind":"project","value":{"kind":"var","name":"certificate"}}],"function":{"name":"claimShape"},"kind":"call"},"right":{"kind":"nat","value":"0"}}},"right":{"kind":"beq","left":{"arguments":[{"field":"claim","kind":"project","value":{"kind":"var","name":"certificate"}}],"function":{"name":"claimShape"},"kind":"call"},"right":{"arguments":[{"field":"claim","kind":"project","value":{"kind":"var","name":"request"}}],"function":{"name":"claimShape"},"kind":"call"}}}},"else_value":{"condition":{"kind":"not","value":{"arguments":[{"field":"scope","kind":"project","value":{"kind":"var","name":"certificate"}},{"field":"scope","kind":"project","value":{"kind":"var","name":"request"}}],"function":{"name":"sameScope"},"kind":"call"}},"else_value":{"binder":{"name":"selectors","type":{"element":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Selector"}},"kind":"list"}},"body":{"binder":{"name":"count","type":{"kind":"nat"}},"body":{"binder":{"name":"given","type":{"kind":"nat"}},"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"given"},"right":{"kind":"var","name":"count"}},"else_value":{"condition":{"kind":"blt","left":{"kind":"var","name":"count"},"right":{"kind":"var","name":"given"}},"else_value":{"binder":{"name":"facts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Fact"}},"kind":"list"}},"body":{"binder":{"name":"shape","type":{"kind":"nat"}},"body":{"branches":[{"binders":["bound","attainers"],"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"shape"},"right":{"kind":"nat","value":"3"}},"else_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.routeIncompatible"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"kind":"beq","left":{"kind":"var","name":"shape"},"right":{"kind":"nat","value":"2"}},{"kind":"var","name":"bound"},{"kind":"var","name":"attainers"},{"kind":"var","name":"facts"}],"function":{"name":"lowerVerdict"},"kind":"call"}},"constructor":{"name":"Route.lowerBound"}},{"binders":["members"],"body":{"condition":{"kind":"ble","left":{"kind":"nat","value":"3"},"right":{"kind":"var","name":"shape"}},"else_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.routeIncompatible"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"members"},{"kind":"var","name":"facts"}],"function":{"name":"frontierVerdict"},"kind":"call"}},"constructor":{"name":"Route.frontierCover"}},{"binders":[],"body":{"arguments":[{"kind":"var","name":"shape"},{"kind":"var","name":"facts"}],"function":{"name":"reductionVerdict"},"kind":"call"},"constructor":{"name":"Route.reduction"}},{"binders":["normal","bridge"],"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"shape"},"right":{"kind":"nat","value":"1"}},"else_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.routeIncompatible"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"normal"},{"kind":"var","name":"bridge"},{"kind":"var","name":"facts"},{"arguments":[{"kind":"var","name":"grammar"},{"kind":"var","name":"selectors"}],"function":{"name":"sizesOf"},"kind":"call"}],"function":{"name":"representationVerdict"},"kind":"call"}},"constructor":{"name":"Route.representation"}},{"binders":["normal"],"body":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selectors"},{"kind":"var","name":"normal"},{"kind":"var","name":"facts"}],"function":{"name":"normalityVerdict"},"kind":"call"},"constructor":{"name":"Route.normality"}}],"kind":"match","scrutinee":{"field":"route","kind":"project","value":{"kind":"var","name":"certificate"}}},"kind":"let","value":{"arguments":[{"field":"claim","kind":"project","value":{"kind":"var","name":"certificate"}}],"function":{"name":"claimShape"},"kind":"call"}},"kind":"let","value":{"arguments":[{"kind":"var","name":"request"},{"kind":"var","name":"grammar"},{"kind":"var","name":"selectors"},{"kind":"var","name":"selectors"},{"field":"premises","kind":"project","value":{"kind":"var","name":"certificate"}}],"function":{"name":"factsOf"},"kind":"call"}},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"count"}],"constructor":{"name":"Refusal.extraPremise"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"if","then_value":{"arguments":[{"arguments":[{"kind":"var","name":"given"}],"constructor":{"name":"Refusal.missingPremise"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"let","value":{"arguments":[{"field":"premises","kind":"project","value":{"kind":"var","name":"certificate"}}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"kind":"let","value":{"arguments":[{"kind":"var","name":"selectors"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"kind":"let","value":{"arguments":[{"kind":"var","name":"grammar"}],"function":{"module":"Gnaf","name":"expand"},"kind":"call"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.scopeMismatch"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.claimMismatch"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.objectiveMismatch"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.universeMismatch"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"constructor":{"module":"Gnaf","name":"Carrier.grammar"}},{"binders":[],"body":{"arguments":[{"arguments":[{"arguments":[],"constructor":{"module":"Gnaf","name":"Rejection.internalPlanUniverse"},"kind":"constructor"}],"constructor":{"name":"Refusal.requestRejected"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Carrier.internalPlans"}},{"binders":[],"body":{"arguments":[{"arguments":[{"arguments":[],"constructor":{"module":"Gnaf","name":"Rejection.optimizerDefinedUniverse"},"kind":"constructor"}],"constructor":{"name":"Refusal.requestRejected"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Carrier.optimizerOutput"}},{"binders":["ignored136"],"body":{"arguments":[{"arguments":[{"arguments":[],"constructor":{"module":"Gnaf","name":"Rejection.discoveredUniverse"},"kind":"constructor"}],"constructor":{"name":"Refusal.requestRejected"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Carrier.discovered"}},{"binders":[],"body":{"arguments":[{"arguments":[{"arguments":[],"constructor":{"module":"Gnaf","name":"Rejection.cachedUniverse"},"kind":"constructor"}],"constructor":{"name":"Refusal.requestRejected"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"constructor":{"module":"Gnaf","name":"Carrier.cached"}}],"kind":"match","scrutinee":{"field":"carrier","kind":"project","value":{"kind":"var","name":"request"}}},"constructor":{"name":"Option.none"}},{"binders":["rejection"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"rejection"}],"constructor":{"name":"Refusal.requestRejected"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"request"}],"function":{"module":"Gnaf","name":"validate"},"kind":"call"}},"kind":"if","then_value":{"arguments":[{"arguments":[],"constructor":{"name":"Refusal.verifierMismatch"},"kind":"constructor"}],"constructor":{"name":"Verdict.refused"},"kind":"constructor"}},"kind":"definition","name":"check","parameters":[{"name":"request","type":{"arguments":[],"kind":"named","member":{"module":"Gnaf","name":"Request"}}},{"name":"certificate","type":{"arguments":[],"kind":"named","member":{"name":"Certificate"}}}],"result":{"arguments":[],"kind":"named","member":{"name":"Verdict"}}}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Schema,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: collapse, fields: []},
+    {name: specializeSmall, fields: []},
+    {name: specializeLarge, fields: []}
+  ]
+}
+
+inductive{
+  name: Premise,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: excluded, fields: [Nat]},
+    {name: paysAtLeast, fields: [(List Nat)]},
+    {name: measured, fields: []},
+    {name: reduced, fields: [Schema]}
+  ]
+}
+
+structure{
+  name: Bridge,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: slope, type: Nat}, {name: offset, type: Nat}]
+}
+
+inductive{
+  name: Route,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: lowerBound, fields: [Nat, (List Nat)]},
+    {name: frontierCover, fields: [(List Nat)]},
+    {name: reduction, fields: []},
+    {name: representation, fields: [Nat, (Option Bridge)]},
+    {name: normality, fields: [Nat]}
+  ]
+}
+
+structure{
+  name: Certificate,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: verifier, type: String},
+    {name: universe, type: String},
+    {name: objective, type: Gnaf::Objective},
+    {name: claim, type: Gnaf::ClaimClass},
+    {name: scope, type: Gnaf::Scope},
+    {name: route, type: Route},
+    {name: premises, type: (List Premise)}
+  ]
+}
+
+inductive{
+  name: Fact,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: inadmissible, fields: []},
+    {name: admitted, fields: [Nat, Nat]},
+    {name: atLeast, fields: [Nat, Nat]},
+    {name: reduces, fields: [Nat]},
+    {name: unresolved, fields: []},
+    {name: unproven, fields: []}
+  ]
+}
+
+inductive{
+  name: Refusal,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: verifierMismatch, fields: []},
+    {name: requestRejected, fields: [Gnaf::Rejection]},
+    {name: universeMismatch, fields: []},
+    {name: objectiveMismatch, fields: []},
+    {name: claimMismatch, fields: []},
+    {name: scopeMismatch, fields: []},
+    {name: routeIncompatible, fields: []},
+    {name: missingPremise, fields: [Nat]},
+    {name: extraPremise, fields: [Nat]}
+  ]
+}
+
+inductive{
+  name: Obligation,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unresolvedMember, fields: [Nat]},
+    {name: memberUnproven, fields: [Nat]},
+    {name: memberBelowBound, fields: [Nat]},
+    {name: attainerOmitted, fields: [Nat]},
+    {name: attainerUnmeasured, fields: [Nat]},
+    {name: attainerInadmissible, fields: [Nat]},
+    {name: attainerAboveBound, fields: [Nat]},
+    {name: attainersMalformed, fields: []},
+    {name: boundUnattained, fields: []},
+    {name: frontierMemberUnmeasured, fields: [Nat]},
+    {name: frontierMemberDominated, fields: [Nat]},
+    {name: frontierMemberOmitted, fields: [Nat]},
+    {name: reductionIncomplete, fields: [Nat]},
+    {name: noAdmittedMember, fields: []},
+    {name: bridgeMissing, fields: []},
+    {name: bridgeViolated, fields: [Nat]},
+    {name: bridgeUnproved, fields: [Nat]},
+    {name: normalOutOfRange, fields: []},
+    {name: normalNotMinimal, fields: [Nat]},
+    {name: normalUnmeasured, fields: []},
+    {name: optimalityUnproved, fields: []},
+    {name: systemNotNormal, fields: []}
+  ]
+}
+
+inductive{
+  name: Established,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: notCertified, fields: []},
+    {name: correctOnly, fields: [Nat, Nat, Nat]},
+    {name: locallyNormalized, fields: [Nat]},
+    {name: representationMinimal, fields: [Nat, Nat]}
+  ]
+}
+
+inductive{
+  name: Certified,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: optimum, fields: [(List Nat), Nat]},
+    {name: argmin, fields: [(List Nat), Nat]},
+    {name: frontier, fields: [(List Nat)]}
+  ]
+}
+
+inductive{
+  name: Verdict,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: refused, fields: [Refusal]},
+    {name: certified, fields: [Certified]},
+    {name: incomplete, fields: [Obligation, Established]}
+  ]
+}
+
+definition{
+  name: positionOf,
+  parameters: [selectors : (List Gnaf::Selector), selector : Gnaf::Selector, next : Nat],
+  result: (Option Nat),
+  body: (match selectors
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons head rest => (if (Gnaf::selectorEq selector head) then (ctor Option.some [Nat] next) else (positionOf rest selector (next + 1)))),
+  recursive_argument: selectors
+}
+
+definition{
+  name: selectorAt,
+  parameters: [items : (List Gnaf::Selector), index : Nat],
+  result: (Option Gnaf::Selector),
+  body: (match items
+    | List.nil => (ctor Option.none [Gnaf::Selector])
+    | List.cons head rest => (match index
+      | Nat.zero => (ctor Option.some [Gnaf::Selector] head)
+      | Nat.succ remaining => (selectorAt rest remaining))),
+  recursive_argument: items
+}
+
+definition{
+  name: valueAt,
+  parameters: [items : (List TargetSyntax::Value), index : Nat],
+  result: (Option TargetSyntax::Value),
+  body: (match items
+    | List.nil => (ctor Option.none [TargetSyntax::Value])
+    | List.cons head rest => (match index
+      | Nat.zero => (ctor Option.some [TargetSyntax::Value] head)
+      | Nat.succ remaining => (valueAt rest remaining))),
+  recursive_argument: items
+}
+
+definition{
+  name: factAt,
+  parameters: [items : (List Fact), index : Nat],
+  result: (Option Fact),
+  body: (match items
+    | List.nil => (ctor Option.none [Fact])
+    | List.cons head rest => (match index
+      | Nat.zero => (ctor Option.some [Fact] head)
+      | Nat.succ remaining => (factAt rest remaining))),
+  recursive_argument: items
+}
+
+definition{
+  name: natAt,
+  parameters: [items : (List Nat), index : Nat],
+  result: (Option Nat),
+  body: (match items
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons head rest => (match index
+      | Nat.zero => (ctor Option.some [Nat] head)
+      | Nat.succ remaining => (natAt rest remaining))),
+  recursive_argument: items
+}
+
+definition{
+  name: pickFrom,
+  parameters: [values : (List TargetSyntax::Value), index : Nat, positions : (List Nat)],
+  result: (List TargetSyntax::Value),
+  body: (match values
+    | List.nil => (nil TargetSyntax::Value)
+    | List.cons head rest => (match positions
+      | List.nil => (nil TargetSyntax::Value)
+      | List.cons wanted later => (if (wanted =? index) then (cons head (pickFrom rest (index + 1) later)) else (pickFrom rest (index + 1) positions)))),
+  recursive_argument: values
+}
+
+definition{
+  name: ascending,
+  parameters: [positions : (List Nat), lower : Nat],
+  result: Bool,
+  body: (match positions
+    | List.nil => true
+    | List.cons head rest => ((lower <=? head) && (ascending rest (head + 1)))),
+  recursive_argument: positions
+}
+
+definition{
+  name: allBelow,
+  parameters: [positions : (List Nat), bound : Nat],
+  result: Bool,
+  body: (match positions
+    | List.nil => true
+    | List.cons head rest => ((head <? bound) && (allBelow rest bound))),
+  recursive_argument: positions
+}
+
+definition{
+  name: isList,
+  parameters: [value : TargetSyntax::Value, limit : Nat],
+  result: Bool,
+  body: (match value
+    | TargetSyntax::Value.unit => false
+    | TargetSyntax::Value.bool ignored1 => false
+    | TargetSyntax::Value.nat ignored2 => false
+    | TargetSyntax::Value.int ignored3 => false
+    | TargetSyntax::Value.u8 ignored4 => false
+    | TargetSyntax::Value.u16 ignored5 => false
+    | TargetSyntax::Value.u32 ignored6 => false
+    | TargetSyntax::Value.u64 ignored7 => false
+    | TargetSyntax::Value.i8 ignored8 => false
+    | TargetSyntax::Value.i16 ignored9 => false
+    | TargetSyntax::Value.i32 ignored10 => false
+    | TargetSyntax::Value.i64 ignored11 => false
+    | TargetSyntax::Value.string ignored12 => false
+    | TargetSyntax::Value.bytes ignored13 => false
+    | TargetSyntax::Value.ordering ignored14 => false
+    | TargetSyntax::Value.none => false
+    | TargetSyntax::Value.some ignored15 => false
+    | TargetSyntax::Value.ok ignored16 => false
+    | TargetSyntax::Value.error ignored17 => false
+    | TargetSyntax::Value.list items => true
+    | TargetSyntax::Value.pair ignored18 ignored19 => false
+    | TargetSyntax::Value.adt ignored20 ignored21 => false
+    | TargetSyntax::Value.closure ignored22 ignored23 => false)
+}
+
+definition{
+  name: isShorter,
+  parameters: [value : TargetSyntax::Value, limit : Nat],
+  result: Bool,
+  body: (match value
+    | TargetSyntax::Value.unit => false
+    | TargetSyntax::Value.bool ignored24 => false
+    | TargetSyntax::Value.nat ignored25 => false
+    | TargetSyntax::Value.int ignored26 => false
+    | TargetSyntax::Value.u8 ignored27 => false
+    | TargetSyntax::Value.u16 ignored28 => false
+    | TargetSyntax::Value.u32 ignored29 => false
+    | TargetSyntax::Value.u64 ignored30 => false
+    | TargetSyntax::Value.i8 ignored31 => false
+    | TargetSyntax::Value.i16 ignored32 => false
+    | TargetSyntax::Value.i32 ignored33 => false
+    | TargetSyntax::Value.i64 ignored34 => false
+    | TargetSyntax::Value.string ignored35 => false
+    | TargetSyntax::Value.bytes ignored36 => false
+    | TargetSyntax::Value.ordering ignored37 => false
+    | TargetSyntax::Value.none => false
+    | TargetSyntax::Value.some ignored38 => false
+    | TargetSyntax::Value.ok ignored39 => false
+    | TargetSyntax::Value.error ignored40 => false
+    | TargetSyntax::Value.list items => ((prim length items : Nat) <? limit)
+    | TargetSyntax::Value.pair ignored41 ignored42 => false
+    | TargetSyntax::Value.adt ignored43 ignored44 => false
+    | TargetSyntax::Value.closure ignored45 ignored46 => false)
+}
+
+definition{
+  name: isLong,
+  parameters: [value : TargetSyntax::Value, limit : Nat],
+  result: Bool,
+  body: (match value
+    | TargetSyntax::Value.unit => false
+    | TargetSyntax::Value.bool ignored47 => false
+    | TargetSyntax::Value.nat ignored48 => false
+    | TargetSyntax::Value.int ignored49 => false
+    | TargetSyntax::Value.u8 ignored50 => false
+    | TargetSyntax::Value.u16 ignored51 => false
+    | TargetSyntax::Value.u32 ignored52 => false
+    | TargetSyntax::Value.u64 ignored53 => false
+    | TargetSyntax::Value.i8 ignored54 => false
+    | TargetSyntax::Value.i16 ignored55 => false
+    | TargetSyntax::Value.i32 ignored56 => false
+    | TargetSyntax::Value.i64 ignored57 => false
+    | TargetSyntax::Value.string ignored58 => false
+    | TargetSyntax::Value.bytes ignored59 => false
+    | TargetSyntax::Value.ordering ignored60 => false
+    | TargetSyntax::Value.none => false
+    | TargetSyntax::Value.some ignored61 => false
+    | TargetSyntax::Value.ok ignored62 => false
+    | TargetSyntax::Value.error ignored63 => false
+    | TargetSyntax::Value.list items => (limit <=? (prim length items : Nat))
+    | TargetSyntax::Value.pair ignored64 ignored65 => false
+    | TargetSyntax::Value.adt ignored66 ignored67 => false
+    | TargetSyntax::Value.closure ignored68 ignored69 => false)
+}
+
+definition{
+  name: allLists,
+  parameters: [values : (List TargetSyntax::Value), limit : Nat],
+  result: Bool,
+  body: (match values
+    | List.nil => true
+    | List.cons head rest => ((isList head limit) && (allLists rest limit))),
+  recursive_argument: values
+}
+
+definition{
+  name: allShorter,
+  parameters: [values : (List TargetSyntax::Value), limit : Nat],
+  result: Bool,
+  body: (match values
+    | List.nil => true
+    | List.cons head rest => ((isShorter head limit) && (allShorter rest limit))),
+  recursive_argument: values
+}
+
+definition{
+  name: allLong,
+  parameters: [values : (List TargetSyntax::Value), limit : Nat],
+  result: Bool,
+  body: (match values
+    | List.nil => true
+    | List.cons head rest => ((isLong head limit) && (allLong rest limit))),
+  recursive_argument: values
+}
+
+definition{
+  name: exprIsolated,
+  parameters: [expression : TargetSyntax::Expr],
+  result: Bool,
+  body: (match expression
+    | TargetSyntax::Expr.value ignored70 ignored71 => true
+    | TargetSyntax::Expr.var ignored72 => true
+    | TargetSyntax::Expr.let ignored73 ignored74 bound body => (true && ((exprIsolated bound) && (exprIsolated body)))
+    | TargetSyntax::Expr.cond condition thenBranch elseBranch => (true && ((exprIsolated condition) && ((exprIsolated thenBranch) && (exprIsolated elseBranch))))
+    | TargetSyntax::Expr.match ignored75 scrutinee arms => (true && ((exprIsolated scrutinee) && (armsIsolated arms)))
+    | TargetSyntax::Expr.build ignored76 ignored77 operands => (true && (exprsIsolated operands))
+    | TargetSyntax::Expr.call function operands => ((not (function =? 0)) && (exprsIsolated operands))
+    | TargetSyntax::Expr.closure function operands => (true && (exprsIsolated operands))
+    | TargetSyntax::Expr.apply target operands => (false && ((exprIsolated target) && (exprsIsolated operands)))
+    | TargetSyntax::Expr.prim ignored78 operands => (true && (exprsIsolated operands))
+    | TargetSyntax::Expr.first inner => (true && (exprIsolated inner))
+    | TargetSyntax::Expr.second inner => (true && (exprIsolated inner))
+    | TargetSyntax::Expr.field inner ignored79 => (true && (exprIsolated inner))),
+  mutual: ExpressionIsolation,
+  recursive_argument: expression
+}
+
+definition{
+  name: exprsIsolated,
+  parameters: [expressions : (List TargetSyntax::Expr)],
+  result: Bool,
+  body: (match expressions
+    | List.nil => true
+    | List.cons head rest => ((exprIsolated head) && (exprsIsolated rest))),
+  mutual: ExpressionIsolation,
+  recursive_argument: expressions
+}
+
+definition{
+  name: armsIsolated,
+  parameters: [arms : (List TargetSyntax::Arm)],
+  result: Bool,
+  body: (match arms
+    | List.nil => true
+    | List.cons head rest => ((armIsolated head) && (armsIsolated rest))),
+  mutual: ExpressionIsolation,
+  recursive_argument: arms
+}
+
+definition{
+  name: armIsolated,
+  parameters: [arm : TargetSyntax::Arm],
+  result: Bool,
+  body: (match arm
+    | TargetSyntax::Arm.arm ignored80 ignored81 body => (true && (exprIsolated body))),
+  mutual: ExpressionIsolation,
+  recursive_argument: arm
+}
+
+definition{
+  name: plansIsolated,
+  parameters: [plans : (List Gnaf::Plan)],
+  result: Bool,
+  body: (match plans
+    | List.nil => true
+    | List.cons plan rest => ((exprIsolated (project (project plan function) body)) && (plansIsolated rest))),
+  recursive_argument: plans
+}
+
+definition{
+  name: rewrite,
+  parameters: [schema : Schema, selector : Gnaf::Selector],
+  result: (Option Gnaf::Selector),
+  body: (match schema
+    | Schema.collapse => (match selector
+      | Gnaf::Selector.fixed ignored82 => (ctor Option.none [Gnaf::Selector])
+      | Gnaf::Selector.dispatch ignored83 small large => (if (small =? large) then (ctor Option.some [Gnaf::Selector] (ctor Gnaf::Selector.fixed small)) else (ctor Option.none [Gnaf::Selector])))
+    | Schema.specializeSmall => (match selector
+      | Gnaf::Selector.fixed ignored84 => (ctor Option.none [Gnaf::Selector])
+      | Gnaf::Selector.dispatch ignored85 small large => (ctor Option.some [Gnaf::Selector] (ctor Gnaf::Selector.fixed small)))
+    | Schema.specializeLarge => (match selector
+      | Gnaf::Selector.fixed ignored86 => (ctor Option.none [Gnaf::Selector])
+      | Gnaf::Selector.dispatch ignored87 small large => (ctor Option.some [Gnaf::Selector] (ctor Gnaf::Selector.fixed large))))
+}
+
+definition{
+  name: eligible,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selector : Gnaf::Selector,
+    schema : Schema
+  ],
+  result: Bool,
+  body: ((plansIsolated (project grammar plans)) && (match selector
+    | Gnaf::Selector.fixed ignored88 => false
+    | Gnaf::Selector.dispatch threshold small large => (match schema
+      | Schema.collapse => ((small =? large) && (allLists (project request domain) 0))
+      | Schema.specializeSmall => (allShorter (project request domain) threshold)
+      | Schema.specializeLarge => (allLong (project request domain) threshold))))
+}
+
+definition{
+  name: staticSize,
+  parameters: [grammar : Gnaf::Grammar, selector : Gnaf::Selector],
+  result: Nat,
+  body: (let system : TargetSyntax::Program := (Gnaf::realize grammar selector); (Gnaf::reachableSize (project system functions) (Gnaf::reachable (project system functions))))
+}
+
+definition{
+  name: staticCharge,
+  parameters: [request : Gnaf::Request, grammar : Gnaf::Grammar, selector : Gnaf::Selector],
+  result: Nat,
+  body: (let system : TargetSyntax::Program := (Gnaf::realize grammar selector); (prim multiply (prim length (project request domain) : Nat) (Gnaf::reachableCharge (project (project request machine) actions) (project grammar plans) (Gnaf::reachable (project system functions))) : Nat))
+}
+
+definition{
+  name: improves,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selector : Gnaf::Selector,
+    schema : Schema
+  ],
+  result: Bool,
+  body: (match (rewrite schema selector)
+    | Option.none => false
+    | Option.some target => ((eligible request grammar selector schema) && (((staticSize grammar target) <=? (staticSize grammar selector)) && ((staticCharge request grammar target) <=? (staticCharge request grammar selector)))))
+}
+
+definition{
+  name: isNormal,
+  parameters: [request : Gnaf::Request, grammar : Gnaf::Grammar, selector : Gnaf::Selector],
+  result: Bool,
+  body: ((not (improves request grammar selector (ctor Schema.collapse))) && ((not (improves request grammar selector (ctor Schema.specializeSmall))) && (not (improves request grammar selector (ctor Schema.specializeLarge)))))
+}
+
+definition{
+  name: premiseFact,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selectors : (List Gnaf::Selector),
+    selector : Gnaf::Selector,
+    premise : Premise
+  ],
+  result: Fact,
+  body: (let system : TargetSyntax::Program := (Gnaf::realize grammar selector); (match premise
+    | Premise.excluded position => (match (valueAt (project request domain) position)
+      | Option.none => (ctor Fact.unproven)
+      | Option.some argument => (match (Gnaf::statusOn system (project request reference) (project (project request machine) fuel) (cons argument (nil TargetSyntax::Value)))
+        | Gnaf::Status.admitted ignored89 ignored90 => (ctor Fact.unproven)
+        | Gnaf::Status.inadmissible => (ctor Fact.inadmissible)
+        | Gnaf::Status.unresolved => (ctor Fact.unproven)))
+    | Premise.paysAtLeast positions => (let picked : (List TargetSyntax::Value) := (pickFrom (project request domain) 0 positions); (if (((prim length picked : Nat) =? (prim length positions : Nat)) && (ascending positions 0)) then (match (Gnaf::statusOn system (project request reference) (project (project request machine) fuel) picked)
+      | Gnaf::Status.admitted steps ignored91 => (ctor Fact.atLeast (steps + (staticCharge request grammar selector)) (staticSize grammar selector))
+      | Gnaf::Status.inadmissible => (ctor Fact.unproven)
+      | Gnaf::Status.unresolved => (ctor Fact.unproven)) else (ctor Fact.unproven)))
+    | Premise.measured => (match (Gnaf::status request grammar selector)
+      | Gnaf::Status.admitted cost size => (ctor Fact.admitted cost size)
+      | Gnaf::Status.inadmissible => (ctor Fact.inadmissible)
+      | Gnaf::Status.unresolved => (ctor Fact.unresolved))
+    | Premise.reduced schema => (match (rewrite schema selector)
+      | Option.none => (ctor Fact.unproven)
+      | Option.some target => (match (positionOf selectors target 0)
+        | Option.none => (ctor Fact.unproven)
+        | Option.some targetPosition => (if (improves request grammar selector schema) then (ctor Fact.reduces targetPosition) else (ctor Fact.unproven)))))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: factsOf,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    all : (List Gnaf::Selector),
+    selectors : (List Gnaf::Selector),
+    premises : (List Premise)
+  ],
+  result: (List Fact),
+  body: (match selectors
+    | List.nil => (nil Fact)
+    | List.cons selector rest => (match premises
+      | List.nil => (cons (ctor Fact.unproven) (factsOf request grammar all rest premises))
+      | List.cons premise later => (cons (premiseFact request grammar all selector premise) (factsOf request grammar all rest later)))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  recursive_argument: selectors
+}
+
+definition{
+  name: sizesOf,
+  parameters: [grammar : Gnaf::Grammar, selectors : (List Gnaf::Selector)],
+  result: (List Nat),
+  body: (match selectors
+    | List.nil => (nil Nat)
+    | List.cons selector rest => (cons (staticSize grammar selector) (sizesOf grammar rest))),
+  recursive_argument: selectors
+}
+
+definition{
+  name: factRows,
+  parameters: [facts : (List Fact), position : Nat],
+  result: (List (Nat * (List Nat))),
+  body: (match facts
+    | List.nil => (nil (Nat * (List Nat)))
+    | List.cons head rest => (match head
+      | Fact.inadmissible => (factRows rest (position + 1))
+      | Fact.admitted cost size => (cons (position, (cons cost (cons size (nil Nat)))) (factRows rest (position + 1)))
+      | Fact.atLeast ignored92 ignored93 => (factRows rest (position + 1))
+      | Fact.reduces ignored94 => (factRows rest (position + 1))
+      | Fact.unresolved => (factRows rest (position + 1))
+      | Fact.unproven => (factRows rest (position + 1)))),
+  recursive_argument: facts
+}
+
+definition{
+  name: rowsOfMembers,
+  parameters: [rows : (List (Nat * (List Nat))), members : (List Nat)],
+  result: (List (Nat * (List Nat))),
+  body: (match rows
+    | List.nil => (nil (Nat * (List Nat)))
+    | List.cons row rest => (if (Gnaf::natIn (first row) members) then (cons row (rowsOfMembers rest members)) else (rowsOfMembers rest members))),
+  recursive_argument: rows
+}
+
+definition{
+  name: argumentStatus,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    fuel : Nat,
+    selector : Gnaf::Selector,
+    argument : TargetSyntax::Value
+  ],
+  result: Gnaf::Status,
+  body: (Gnaf::statusOn (Gnaf::realize grammar selector) (project request reference) fuel (cons argument (nil TargetSyntax::Value))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: keepsObservation,
+  parameters: [before : Gnaf::Status, after : Gnaf::Status],
+  result: Bool,
+  body: (match before
+    | Gnaf::Status.admitted ignored95 ignored97 => (match after
+      | Gnaf::Status.admitted ignored96 ignored98 => true
+      | Gnaf::Status.inadmissible => false
+      | Gnaf::Status.unresolved => false)
+    | Gnaf::Status.inadmissible => true
+    | Gnaf::Status.unresolved => true)
+}
+
+definition{
+  name: cheaperObservation,
+  parameters: [before : Gnaf::Status, after : Gnaf::Status],
+  result: Bool,
+  body: (match before
+    | Gnaf::Status.admitted cost ignored99 => (match after
+      | Gnaf::Status.admitted cheaper ignored100 => (cheaper <? cost)
+      | Gnaf::Status.inadmissible => false
+      | Gnaf::Status.unresolved => false)
+    | Gnaf::Status.inadmissible => true
+    | Gnaf::Status.unresolved => true)
+}
+
+definition{
+  name: sameObservationsAt,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    fuel : Nat,
+    selector : Gnaf::Selector,
+    target : Gnaf::Selector,
+    arguments : (List TargetSyntax::Value)
+  ],
+  result: Bool,
+  body: (match arguments
+    | List.nil => true
+    | List.cons argument rest => ((keepsObservation (argumentStatus request grammar fuel selector argument) (argumentStatus request grammar fuel target argument)) && (sameObservationsAt request grammar fuel selector target rest))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  recursive_argument: arguments
+}
+
+definition{
+  name: strictlyCheaperAt,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    fuel : Nat,
+    selector : Gnaf::Selector,
+    target : Gnaf::Selector,
+    arguments : (List TargetSyntax::Value)
+  ],
+  result: Bool,
+  body: (match arguments
+    | List.nil => true
+    | List.cons argument rest => ((cheaperObservation (argumentStatus request grammar fuel selector argument) (argumentStatus request grammar fuel target argument)) && (strictlyCheaperAt request grammar fuel selector target rest))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  recursive_argument: arguments
+}
+
+definition{
+  name: sameObservations,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selector : Gnaf::Selector,
+    target : Gnaf::Selector
+  ],
+  result: Bool,
+  body: (sameObservationsAt request grammar (project (project request machine) fuel) selector target (project request domain)),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: strictlyCheaper,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selector : Gnaf::Selector,
+    target : Gnaf::Selector
+  ],
+  result: Bool,
+  body: (strictlyCheaperAt request grammar (project (project request machine) fuel) selector target (project request domain)),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: preserves,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selector : Gnaf::Selector,
+    schema : Schema
+  ],
+  result: Bool,
+  body: (match (rewrite schema selector)
+    | Option.none => false
+    | Option.some target => ((improves request grammar selector schema) && ((sameObservations request grammar selector target) && (strictlyCheaper request grammar selector target)))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: pairRelation,
+  parameters: [request : Gnaf::Request, first : Nat, second : Nat, cheaper : Bool],
+  result: Bool,
+  body: (match (project request carrier)
+    | Gnaf::Carrier.grammar grammar => (let selectors : (List Gnaf::Selector) := (Gnaf::expand grammar); (match (selectorAt selectors var{
+        name: first
+      })
+      | Option.none => false
+      | Option.some left => (match (selectorAt selectors var{name: second})
+        | Option.none => false
+        | Option.some right => (if cheaper then (strictlyCheaper request grammar left right) else (sameObservations request grammar left right)))))
+    | Gnaf::Carrier.internalPlans => false
+    | Gnaf::Carrier.optimizerOutput => false
+    | Gnaf::Carrier.discovered ignored101 => false
+    | Gnaf::Carrier.cached => false),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: reductionsPreserve,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selectors : (List Gnaf::Selector),
+    premises : (List Premise)
+  ],
+  result: Bool,
+  body: (match selectors
+    | List.nil => true
+    | List.cons selector rest => (match premises
+      | List.nil => true
+      | List.cons premise later => ((match premise
+        | Premise.excluded ignored102 => true
+        | Premise.paysAtLeast ignored103 => true
+        | Premise.measured => true
+        | Premise.reduced schema => (preserves request grammar selector schema)) && (reductionsPreserve request grammar rest later)))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  recursive_argument: selectors
+}
+
+definition{
+  name: certificateReductionsPreserve,
+  parameters: [request : Gnaf::Request, certificate : Certificate],
+  result: Bool,
+  body: (match (project request carrier)
+    | Gnaf::Carrier.grammar grammar => (reductionsPreserve request grammar (Gnaf::expand grammar) (project certificate premises))
+    | Gnaf::Carrier.internalPlans => false
+    | Gnaf::Carrier.optimizerOutput => false
+    | Gnaf::Carrier.discovered ignored104 => false
+    | Gnaf::Carrier.cached => false),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: lowerPosition,
+  parameters: [strict : Bool, bound : Nat, attainer : Bool, fact : Fact, position : Nat],
+  result: (Option Obligation),
+  body: (match fact
+    | Fact.inadmissible => (if attainer then (ctor Option.some [Obligation] (ctor Obligation.attainerInadmissible position)) else (ctor Option.none [Obligation]))
+    | Fact.admitted cost ignored105 => (if attainer then (if (cost =? bound) then (ctor Option.none [Obligation]) else (if (cost <? bound) then (ctor Option.some [Obligation] (ctor Obligation.memberBelowBound position)) else (ctor Option.some [Obligation] (ctor Obligation.attainerAboveBound position)))) else (if (cost <? bound) then (ctor Option.some [Obligation] (ctor Obligation.memberBelowBound position)) else (if (strict && (cost =? bound)) then (ctor Option.some [Obligation] (ctor Obligation.attainerOmitted position)) else (ctor Option.none [Obligation]))))
+    | Fact.atLeast cost ignored106 => (if attainer then (ctor Option.some [Obligation] (ctor Obligation.attainerUnmeasured position)) else (if strict then (if (bound <? cost) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position))) else (if (bound <=? cost) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position)))))
+    | Fact.reduces ignored107 => (if attainer then (ctor Option.some [Obligation] (ctor Obligation.attainerUnmeasured position)) else (ctor Option.none [Obligation]))
+    | Fact.unresolved => (ctor Option.some [Obligation] (ctor Obligation.unresolvedMember position))
+    | Fact.unproven => (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position)))
+}
+
+definition{
+  name: scanLower,
+  parameters: [
+    strict : Bool,
+    bound : Nat,
+    attainers : (List Nat),
+    facts : (List Fact),
+    position : Nat
+  ],
+  result: (Option Obligation),
+  body: (match facts
+    | List.nil => (ctor Option.none [Obligation])
+    | List.cons head rest => (match (lowerPosition strict bound (Gnaf::natIn position attainers) head position)
+      | Option.none => (scanLower strict bound attainers rest (position + 1))
+      | Option.some obligation => (ctor Option.some [Obligation] obligation))),
+  recursive_argument: facts
+}
+
+definition{
+  name: establishedFrom,
+  parameters: [facts : (List Fact), attainers : (List Nat)],
+  result: Established,
+  body: (match attainers
+    | List.nil => (ctor Established.notCertified)
+    | List.cons head ignored108 => (match (factAt facts head)
+      | Option.none => (ctor Established.notCertified)
+      | Option.some found => (match found
+        | Fact.inadmissible => (ctor Established.notCertified)
+        | Fact.admitted cost size => (ctor Established.correctOnly head cost size)
+        | Fact.atLeast ignored109 ignored110 => (ctor Established.notCertified)
+        | Fact.reduces ignored111 => (ctor Established.notCertified)
+        | Fact.unresolved => (ctor Established.notCertified)
+        | Fact.unproven => (ctor Established.notCertified))))
+}
+
+definition{
+  name: lowerVerdict,
+  parameters: [strict : Bool, bound : Nat, attainers : (List Nat), facts : (List Fact)],
+  result: Verdict,
+  body: (if (not ((ascending attainers 0) && (allBelow attainers (prim length facts : Nat)))) then (ctor Verdict.incomplete (ctor Obligation.attainersMalformed) (ctor Established.notCertified)) else (match (scanLower strict bound attainers facts 0)
+    | Option.none => (match attainers
+      | List.nil => (ctor Verdict.incomplete (ctor Obligation.boundUnattained) (ctor Established.notCertified))
+      | List.cons ignored112 ignored113 => (if strict then (ctor Verdict.certified (ctor Certified.argmin attainers bound)) else (ctor Verdict.certified (ctor Certified.optimum attainers bound))))
+    | Option.some obligation => (ctor Verdict.incomplete obligation (establishedFrom facts attainers))))
+}
+
+definition{
+  name: frontierPosition,
+  parameters: [member : Bool, memberRows : (List (Nat * (List Nat))), fact : Fact, position : Nat],
+  result: (Option Obligation),
+  body: (if member then (match fact
+    | Fact.inadmissible => (ctor Option.some [Obligation] (ctor Obligation.frontierMemberUnmeasured position))
+    | Fact.admitted cost size => (if (Gnaf::dominatedIn [Nat] (cons cost (cons size (nil Nat))) memberRows) then (ctor Option.some [Obligation] (ctor Obligation.frontierMemberDominated position)) else (ctor Option.none [Obligation]))
+    | Fact.atLeast ignored114 ignored115 => (ctor Option.some [Obligation] (ctor Obligation.frontierMemberUnmeasured position))
+    | Fact.reduces ignored116 => (ctor Option.some [Obligation] (ctor Obligation.frontierMemberUnmeasured position))
+    | Fact.unresolved => (ctor Option.some [Obligation] (ctor Obligation.unresolvedMember position))
+    | Fact.unproven => (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position))) else (match fact
+    | Fact.inadmissible => (ctor Option.none [Obligation])
+    | Fact.admitted cost size => (if (Gnaf::dominatedIn [Nat] (cons cost (cons size (nil Nat))) memberRows) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.frontierMemberOmitted position)))
+    | Fact.atLeast cost size => (if (Gnaf::dominatedIn [Nat] (cons cost (cons size (nil Nat))) memberRows) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position)))
+    | Fact.reduces ignored117 => (ctor Option.none [Obligation])
+    | Fact.unresolved => (ctor Option.some [Obligation] (ctor Obligation.unresolvedMember position))
+    | Fact.unproven => (ctor Option.some [Obligation] (ctor Obligation.memberUnproven position))))
+}
+
+definition{
+  name: scanFrontier,
+  parameters: [
+    members : (List Nat),
+    memberRows : (List (Nat * (List Nat))),
+    facts : (List Fact),
+    position : Nat
+  ],
+  result: (Option Obligation),
+  body: (match facts
+    | List.nil => (ctor Option.none [Obligation])
+    | List.cons head rest => (match (frontierPosition (Gnaf::natIn position members) memberRows head position)
+      | Option.none => (scanFrontier members memberRows rest (position + 1))
+      | Option.some obligation => (ctor Option.some [Obligation] obligation))),
+  recursive_argument: facts
+}
+
+definition{
+  name: frontierVerdict,
+  parameters: [members : (List Nat), facts : (List Fact)],
+  result: Verdict,
+  body: (let memberRows : (List (Nat * (List Nat))) := (rowsOfMembers (factRows facts 0) members); (if (not ((ascending members 0) && (allBelow members (prim length facts : Nat)))) then (ctor Verdict.incomplete (ctor Obligation.attainersMalformed) (ctor Established.notCertified)) else (match (scanFrontier members memberRows facts 0)
+    | Option.none => (match members
+      | List.nil => (ctor Verdict.incomplete (ctor Obligation.noAdmittedMember) (ctor Established.notCertified))
+      | List.cons ignored118 ignored119 => (ctor Verdict.certified (ctor Certified.frontier members)))
+    | Option.some obligation => (ctor Verdict.incomplete obligation (ctor Established.notCertified)))))
+}
+
+definition{
+  name: scanReduction,
+  parameters: [facts : (List Fact), position : Nat],
+  result: (Option Obligation),
+  body: (match facts
+    | List.nil => (ctor Option.none [Obligation])
+    | List.cons head rest => (match (match head
+        | Fact.inadmissible => (ctor Option.none [Obligation])
+        | Fact.admitted ignored120 ignored121 => (ctor Option.none [Obligation])
+        | Fact.atLeast ignored123 ignored124 => (ctor Option.some [Obligation] (ctor Obligation.reductionIncomplete position))
+        | Fact.reduces ignored122 => (ctor Option.none [Obligation])
+        | Fact.unresolved => (ctor Option.some [Obligation] (ctor Obligation.unresolvedMember position))
+        | Fact.unproven => (ctor Option.some [Obligation] (ctor Obligation.reductionIncomplete position)))
+      | Option.none => (scanReduction rest (position + 1))
+      | Option.some obligation => (ctor Option.some [Obligation] obligation))),
+  recursive_argument: facts
+}
+
+definition{
+  name: reductionVerdict,
+  parameters: [shape : Nat, facts : (List Fact)],
+  result: Verdict,
+  body: (match (scanReduction facts 0)
+    | Option.none => (let rows : (List (Nat * (List Nat))) := (factRows facts 0); (if (shape <? 3) then (match (Gnaf::argmin [Nat] (Gnaf::scalarRows rows))
+      | Option.none => (ctor Verdict.incomplete (ctor Obligation.noAdmittedMember) (ctor Established.notCertified))
+      | Option.some found => (lowerVerdict (shape =? 2) (second found) (first found) facts)) else (match rows
+      | List.nil => (ctor Verdict.incomplete (ctor Obligation.noAdmittedMember) (ctor Established.notCertified))
+      | List.cons ignored125 ignored126 => (frontierVerdict (Gnaf::frontier [Nat] rows) facts))))
+    | Option.some obligation => (ctor Verdict.incomplete obligation (ctor Established.notCertified)))
+}
+
+definition{
+  name: bridgePosition,
+  parameters: [bridge : Bridge, fact : Fact, measuredSize : Nat, position : Nat],
+  result: (Option Obligation),
+  body: (match fact
+    | Fact.inadmissible => (ctor Option.none [Obligation])
+    | Fact.admitted cost ignored127 => (if (((prim multiply (project bridge slope) measuredSize : Nat) + (project bridge offset)) <=? cost) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.bridgeViolated position)))
+    | Fact.atLeast cost ignored128 => (if (((prim multiply (project bridge slope) measuredSize : Nat) + (project bridge offset)) <=? cost) then (ctor Option.none [Obligation]) else (ctor Option.some [Obligation] (ctor Obligation.bridgeUnproved position)))
+    | Fact.reduces ignored129 => (ctor Option.some [Obligation] (ctor Obligation.bridgeUnproved position))
+    | Fact.unresolved => (ctor Option.some [Obligation] (ctor Obligation.unresolvedMember position))
+    | Fact.unproven => (ctor Option.some [Obligation] (ctor Obligation.bridgeUnproved position)))
+}
+
+definition{
+  name: firstSmaller,
+  parameters: [sizes : (List Nat), limit : Nat, position : Nat],
+  result: (Option Nat),
+  body: (match sizes
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons head rest => (if (head <? limit) then (ctor Option.some [Nat] position) else (firstSmaller rest limit (position + 1)))),
+  recursive_argument: sizes
+}
+
+definition{
+  name: scanBridge,
+  parameters: [bridge : Bridge, facts : (List Fact), sizes : (List Nat), position : Nat],
+  result: (Option Obligation),
+  body: (match facts
+    | List.nil => (ctor Option.none [Obligation])
+    | List.cons head rest => (match sizes
+      | List.nil => (ctor Option.some [Obligation] (ctor Obligation.bridgeUnproved position))
+      | List.cons measuredSize laterSizes => (match (bridgePosition bridge head measuredSize position)
+        | Option.none => (scanBridge bridge rest laterSizes (position + 1))
+        | Option.some obligation => (ctor Option.some [Obligation] obligation)))),
+  recursive_argument: facts
+}
+
+definition{
+  name: representationVerdict,
+  parameters: [
+    normal : Nat,
+    bridgeOption : (Option Bridge),
+    facts : (List Fact),
+    sizes : (List Nat)
+  ],
+  result: Verdict,
+  body: (match (natAt sizes normal)
+    | Option.none => (ctor Verdict.incomplete (ctor Obligation.normalOutOfRange) (ctor Established.notCertified))
+    | Option.some normalSize => (match (firstSmaller sizes normalSize 0)
+      | Option.none => (match bridgeOption
+        | Option.none => (ctor Verdict.incomplete (ctor Obligation.bridgeMissing) (ctor Established.representationMinimal normal normalSize))
+        | Option.some given => (let bridge : Bridge := given; (match (scanBridge bridge facts sizes 0)
+          | Option.none => (let limit : Nat := ((prim multiply (project bridge slope) normalSize : Nat) + (project bridge offset)); (match (factAt facts normal)
+            | Option.none => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+            | Option.some found => (match found
+              | Fact.inadmissible => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+              | Fact.admitted cost size => (if (cost =? limit) then (ctor Verdict.certified (ctor Certified.optimum (cons normal (nil Nat)) cost)) else (ctor Verdict.incomplete (ctor Obligation.boundUnattained) (ctor Established.correctOnly normal cost size)))
+              | Fact.atLeast ignored130 ignored131 => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+              | Fact.reduces ignored132 => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+              | Fact.unresolved => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+              | Fact.unproven => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified)))))
+          | Option.some obligation => (ctor Verdict.incomplete obligation (ctor Established.notCertified)))))
+      | Option.some smaller => (ctor Verdict.incomplete (ctor Obligation.normalNotMinimal smaller) (ctor Established.notCertified))))
+}
+
+definition{
+  name: normalityVerdict,
+  parameters: [
+    request : Gnaf::Request,
+    grammar : Gnaf::Grammar,
+    selectors : (List Gnaf::Selector),
+    normal : Nat,
+    facts : (List Fact)
+  ],
+  result: Verdict,
+  body: (match (factAt facts normal)
+    | Option.none => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+    | Option.some found => (match found
+      | Fact.inadmissible => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+      | Fact.admitted cost size => (match (selectorAt selectors normal)
+        | Option.none => (ctor Verdict.incomplete (ctor Obligation.normalOutOfRange) (ctor Established.notCertified))
+        | Option.some selector => (if (isNormal request grammar selector) then (ctor Verdict.incomplete (ctor Obligation.optimalityUnproved) (ctor Established.locallyNormalized normal)) else (ctor Verdict.incomplete (ctor Obligation.systemNotNormal) (ctor Established.correctOnly normal cost size))))
+      | Fact.atLeast ignored133 ignored134 => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+      | Fact.reduces ignored135 => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+      | Fact.unresolved => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))
+      | Fact.unproven => (ctor Verdict.incomplete (ctor Obligation.normalUnmeasured) (ctor Established.notCertified))))
+}
+
+definition{
+  name: claimShape,
+  parameters: [claim : Gnaf::ClaimClass],
+  result: Nat,
+  body: (match claim
+    | Gnaf::ClaimClass.exact => 0
+    | Gnaf::ClaimClass.normalForm => 0
+    | Gnaf::ClaimClass.canonical => 0
+    | Gnaf::ClaimClass.representationMinimal => 0
+    | Gnaf::ClaimClass.comparisonTheorem => 0
+    | Gnaf::ClaimClass.profileDefinedComparison ignored137 ignored138 ignored139 => 0
+    | Gnaf::ClaimClass.inputTotal => 0
+    | Gnaf::ClaimClass.globalOptimal => 1
+    | Gnaf::ClaimClass.argminComplete => 2
+    | Gnaf::ClaimClass.paretoOptimal => 3
+    | Gnaf::ClaimClass.frontierComplete => 4
+    | Gnaf::ClaimClass.pointwiseEnvelopeComplete => 0
+    | Gnaf::ClaimClass.queryFamilyAnswerComplete => 0
+    | Gnaf::ClaimClass.useCaseGlobalOptimal => 0
+    | Gnaf::ClaimClass.workloadArgminComplete => 0
+    | Gnaf::ClaimClass.workloadParetoOptimal => 0
+    | Gnaf::ClaimClass.workloadFrontierComplete => 0
+    | Gnaf::ClaimClass.familyOptimal => 0
+    | Gnaf::ClaimClass.competitiveBound => 0
+    | Gnaf::ClaimClass.competitiveOptimal => 0
+    | Gnaf::ClaimClass.asymptoticBound => 0
+    | Gnaf::ClaimClass.asymptoticOptimal => 0
+    | Gnaf::ClaimClass.useCaseClassComplete => 0
+    | Gnaf::ClaimClass.useCaseClassAnswerComplete => 0
+    | Gnaf::ClaimClass.maintainedUseCaseClass => 0
+    | Gnaf::ClaimClass.restrictedUniverseOptimal => 0
+    | Gnaf::ClaimClass.revisionPreserved => 0
+    | Gnaf::ClaimClass.bestKnown => 0
+    | Gnaf::ClaimClass.measuredBestAmongTested => 0
+    | Gnaf::ClaimClass.heuristicSelected => 0
+    | Gnaf::ClaimClass.instanceOptimal ignored140 ignored141 => 0)
+}
+
+definition{
+  name: sameObjective,
+  parameters: [left : Gnaf::Objective, right : Gnaf::Objective],
+  result: Bool,
+  body: (match left
+    | Gnaf::Objective.scalar => (match right
+      | Gnaf::Objective.scalar => true
+      | Gnaf::Objective.vector => false)
+    | Gnaf::Objective.vector => (match right
+      | Gnaf::Objective.scalar => false
+      | Gnaf::Objective.vector => true))
+}
+
+definition{
+  name: sameScope,
+  parameters: [left : Gnaf::Scope, right : Gnaf::Scope],
+  result: Bool,
+  body: (match left
+    | Gnaf::Scope.grammarUniverse => (match right
+      | Gnaf::Scope.grammarUniverse => true
+      | Gnaf::Scope.calculusPrograms => false
+      | Gnaf::Scope.rustPrograms => false)
+    | Gnaf::Scope.calculusPrograms => (match right
+      | Gnaf::Scope.grammarUniverse => false
+      | Gnaf::Scope.calculusPrograms => true
+      | Gnaf::Scope.rustPrograms => false)
+    | Gnaf::Scope.rustPrograms => (match right
+      | Gnaf::Scope.grammarUniverse => false
+      | Gnaf::Scope.calculusPrograms => false
+      | Gnaf::Scope.rustPrograms => true))
+}
+
+definition{
+  name: check,
+  parameters: [request : Gnaf::Request, certificate : Certificate],
+  result: Verdict,
+  body: (if (not (prim equal (project certificate verifier) "lexlean/gnaf-certification/1" : Bool)) then (ctor Verdict.refused (ctor Refusal.verifierMismatch)) else (match (Gnaf::validate request)
+    | Option.none => (match (project request carrier)
+      | Gnaf::Carrier.grammar grammar => (if (not (prim equal (project certificate universe) (project request universe) : Bool)) then (ctor Verdict.refused (ctor Refusal.universeMismatch)) else (if (not (sameObjective (project certificate objective) (project request objective))) then (ctor Verdict.refused (ctor Refusal.objectiveMismatch)) else (if (not ((not ((claimShape (project certificate claim)) =? 0)) && ((claimShape (project certificate claim)) =? (claimShape (project request claim))))) then (ctor Verdict.refused (ctor Refusal.claimMismatch)) else (if (not (sameScope (project certificate scope) (project request scope))) then (ctor Verdict.refused (ctor Refusal.scopeMismatch)) else (let selectors : (List Gnaf::Selector) := (Gnaf::expand grammar); (let count : Nat := (prim length selectors : Nat); (let given : Nat := (prim length (project certificate premises) : Nat); (if (given <? count) then (ctor Verdict.refused (ctor Refusal.missingPremise given)) else (if (count <? given) then (ctor Verdict.refused (ctor Refusal.extraPremise count)) else (let facts : (List Fact) := (factsOf request grammar selectors selectors (project certificate premises)); (let shape : Nat := (claimShape (project certificate claim)); (match (project certificate route)
+        | Route.lowerBound bound attainers => (if (shape <? 3) then (lowerVerdict (shape =? 2) bound attainers facts) else (ctor Verdict.refused (ctor Refusal.routeIncompatible)))
+        | Route.frontierCover members => (if (3 <=? shape) then (frontierVerdict members facts) else (ctor Verdict.refused (ctor Refusal.routeIncompatible)))
+        | Route.reduction => (reductionVerdict shape facts)
+        | Route.representation normal bridge => (if (shape =? 1) then (representationVerdict normal bridge facts (sizesOf grammar selectors)) else (ctor Verdict.refused (ctor Refusal.routeIncompatible)))
+        | Route.normality normal => (normalityVerdict request grammar selectors normal facts)))))))))))))
+      | Gnaf::Carrier.internalPlans => (ctor Verdict.refused (ctor Refusal.requestRejected (ctor Gnaf::Rejection.internalPlanUniverse)))
+      | Gnaf::Carrier.optimizerOutput => (ctor Verdict.refused (ctor Refusal.requestRejected (ctor Gnaf::Rejection.optimizerDefinedUniverse)))
+      | Gnaf::Carrier.discovered ignored136 => (ctor Verdict.refused (ctor Refusal.requestRejected (ctor Gnaf::Rejection.discoveredUniverse)))
+      | Gnaf::Carrier.cached => (ctor Verdict.refused (ctor Refusal.requestRejected (ctor Gnaf::Rejection.cachedUniverse))))
+    | Option.some rejection => (ctor Verdict.refused (ctor Refusal.requestRejected rejection)))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
 \end{semanticmodule}
 \end{lexlean}

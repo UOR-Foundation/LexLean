@@ -2,6 +2,38 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"kind":"parameter","name":"Item"},{"element":{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Rose"}},"kind":"list"}],"name":"node"}],"kind":"inductive","name":"Rose","parameters":[],"type_parameters":["Item"]},{"constructors":[{"fields":[{"kind":"nat"}],"name":"literal"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"plus"},{"fields":[{"element":{"arguments":[],"kind":"named","member":{"name":"Stmt"}},"kind":"list"},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"block"}],"kind":"inductive","mutual":"Syntax","name":"Expr","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"string"},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"assign"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Stmt"}},{"arguments":[],"kind":"named","member":{"name":"Stmt"}}],"name":"sequence"}],"kind":"inductive","mutual":"Syntax","name":"Stmt","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"nat"}],"name":"literal"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Term"}},{"arguments":[],"kind":"named","member":{"name":"Term"}}],"name":"plus"}],"kind":"inductive","name":"Term","parameters":[],"type_parameters":[]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Rose,
+  type_parameters: [Item],
+  parameters: [],
+  constructors: [{name: node, fields: ['Item, (List (Rose 'Item))]}]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: literal, fields: [Nat]},
+    {name: plus, fields: [Expr, Expr]},
+    {name: block, fields: [(List Stmt), Expr]}
+  ],
+  mutual: Syntax
+}
+
+inductive{
+  name: Stmt,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: assign, fields: [String, Expr]}, {name: sequence, fields: [Stmt, Stmt]}],
+  mutual: Syntax
+}
+
+inductive{
+  name: Term,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: literal, fields: [Nat]}, {name: plus, fields: [Term, Term]}]
+}
 \end{semanticmodule}
 \end{lexlean}

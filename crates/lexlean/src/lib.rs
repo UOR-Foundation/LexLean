@@ -14,6 +14,10 @@
 pub mod api;
 pub mod diagnostic;
 pub mod error;
+// The authoring API (§24.8): the programmatic form of the authoring
+// surface, versioned with the engine because a program that writes a
+// module's source depends on it exactly as a program that checks one does.
+pub mod sdk;
 
 // Unstable internals. They are `pub` because the repository's conformance
 // runner and `xtask` drive the compiler stage by stage, but they are
@@ -54,6 +58,7 @@ pub mod project;
 pub mod source;
 #[doc(hidden)]
 pub mod text_laws;
+pub mod surface;
 #[doc(hidden)]
 pub mod verify;
 
@@ -187,6 +192,61 @@ fn is_v1_2_file(path: &str) -> bool {
         || path == "schemas/rust-provenance.schema.json"
 }
 
+/// What a file of the embedded tree contributes to a compiler-semantics ID
+/// (SPEC.md §21.2): its bytes, except that a semantic or tooling module
+/// written in the authoring notation (§17.21) contributes the same module
+/// written as data. The notation and the data form read to one module, so the
+/// form a source is written in is not a part of what the compiler means.
+/// Repository tests recompute the digest from disk through this function.
+#[doc(hidden)]
+#[must_use]
+pub fn identity_bytes<'a>(path: &str, bytes: &'a [u8]) -> std::borrow::Cow<'a, [u8]> {
+    surface::identity::data_form(path, bytes).map_or(std::borrow::Cow::Borrowed(bytes), |data| {
+        std::borrow::Cow::Owned(data)
+    })
+}
+
+/// The §11.5 tree digest of the files of the embedded tree selected by `keep`.
+fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
+    let selected: Vec<(&'static str, &'static [u8])> = embedded::FILES
+        .iter()
+        .filter(|(path, _)| keep(path))
+        .map(|(path, bytes)| (*path, *bytes))
+        .collect();
+    // A library of kernel terms written in the notation is read to its data
+    // form here, which takes longer than hashing it, so the files are read on
+    // as many threads as there are cores; the rows keep the files' order.
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let slots: Vec<std::sync::OnceLock<std::borrow::Cow<'static, [u8]>>> = selected
+        .iter()
+        .map(|_| std::sync::OnceLock::new())
+        .collect();
+    let workers = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(8);
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| loop {
+                let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let Some((path, bytes)) = selected.get(at) else {
+                    break;
+                };
+                let _ = slots[at].set(identity_bytes(path, bytes));
+            });
+        }
+    });
+    let rows: Vec<(&str, std::borrow::Cow<'static, [u8]>)> = selected
+        .iter()
+        .zip(slots)
+        .map(|((path, _), slot)| (*path, slot.into_inner().expect("every file is read")))
+        .collect();
+    let files: Vec<(&str, &[u8])> = rows
+        .iter()
+        .map(|(path, bytes)| (*path, bytes.as_ref()))
+        .collect();
+    tree_digest(&files)
+}
+
 /// The compiler-semantics ID for one selected language. Language 1.0 excludes
 /// all files introduced solely for 1.1 and 1.2, and Language 1.1 excludes
 /// all files introduced solely for 1.2, preserving historical identities.
@@ -197,26 +257,11 @@ pub fn compiler_semantics_id_for(language: &str) -> Sha256Digest {
     static V1_1: OnceLock<Sha256Digest> = OnceLock::new();
     static V1_2: OnceLock<Sha256Digest> = OnceLock::new();
     match language {
-        LANGUAGE_VERSION => *V1_0.get_or_init(|| {
-            let files: Vec<(&str, &[u8])> = embedded::FILES
-                .iter()
-                .copied()
-                .filter(|(path, _)| !is_v1_1_file(path) && !is_v1_2_file(path))
-                .collect();
-            tree_digest(&files)
-        }),
-        LANGUAGE_1_1 => *V1_1.get_or_init(|| {
-            let files: Vec<(&str, &[u8])> = embedded::FILES
-                .iter()
-                .copied()
-                .filter(|(path, _)| !is_v1_2_file(path))
-                .collect();
-            tree_digest(&files)
-        }),
-        LANGUAGE_1_2 => *V1_2.get_or_init(|| {
-            let files: Vec<(&str, &[u8])> = embedded::FILES.to_vec();
-            tree_digest(&files)
-        }),
+        LANGUAGE_VERSION => {
+            *V1_0.get_or_init(|| embedded_digest(|path| !is_v1_1_file(path) && !is_v1_2_file(path)))
+        }
+        LANGUAGE_1_1 => *V1_1.get_or_init(|| embedded_digest(|path| !is_v1_2_file(path))),
+        LANGUAGE_1_2 => *V1_2.get_or_init(|| embedded_digest(|_| true)),
         // An unsupported language never shares an identity with a supported
         // one; configuration rejects it before any identity is published.
         other => Sha256Digest::of(format!("unsupported-language\0{other}").as_bytes()),

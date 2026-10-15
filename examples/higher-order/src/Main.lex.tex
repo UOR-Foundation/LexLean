@@ -3,6 +3,108 @@
 \importmodule{Combinators}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"var","name":"offset"}},"captures":["offset"],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"var","name":"values"}],"function":{"module":"Combinators","name":"mapList"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"}]},"executable":true,"kind":"definition","name":"addAll","parameters":[{"name":"offset","type":{"kind":"nat"}},{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"element":{"kind":"nat"},"kind":"list"}},{"body":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"sum"},"right":{"kind":"var","name":"value"}},"captures":[],"kind":"lambda","parameters":[{"name":"sum","type":{"kind":"nat"}},{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"0"},{"kind":"var","name":"values"}],"function":{"module":"Combinators","name":"foldList"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"}]},"executable":true,"kind":"definition","name":"total","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"kind":"nat"}},{"body":{"arguments":[{"function":{"module":"Combinators","name":"increment"},"kind":"function_ref"},{"kind":"var","name":"values"}],"function":{"module":"Combinators","name":"mapList"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"}]},"executable":true,"kind":"definition","name":"bumpAll","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"element":{"kind":"nat"},"kind":"list"}},{"body":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"var","name":"value"}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"function":{"module":"Combinators","name":"increment"},"kind":"function_ref"}],"function":{"module":"Combinators","name":"compose"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"},{"kind":"nat"}]},"kind":"definition","name":"addThenDouble","parameters":[],"result":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}},{"body":{"fields":[{"field":"onLiteral","value":{"body":{"kind":"var","name":"value"},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]}},{"field":"onPlus","value":{"body":{"kind":"add","left":{"kind":"var","name":"left"},"right":{"kind":"var","name":"right"}},"captures":[],"kind":"lambda","parameters":[{"name":"left","type":{"kind":"nat"}},{"name":"right","type":{"kind":"nat"}}]}},{"field":"onTwice","value":{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"var","name":"value"}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]}}],"kind":"record","type":{"module":"Combinators","name":"Visitor"}},"kind":"definition","name":"evaluator","parameters":[],"result":{"arguments":[],"kind":"named","member":{"module":"Combinators","name":"Visitor"}}},{"kind":"theorem","name":"add_all","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"10"},{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}],"function":{"name":"addAll"},"kind":"call"},"right":{"head":{"kind":"nat","value":"11"},"kind":"cons","tail":{"head":{"kind":"nat","value":"12"},"kind":"cons","tail":{"head":{"kind":"nat","value":"13"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}},{"kind":"theorem","name":"total_sum","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"head":{"kind":"nat","value":"4"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}],"function":{"name":"total"},"kind":"call"},"right":{"kind":"nat","value":"10"}}},{"kind":"theorem","name":"bump_all","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"head":{"kind":"nat","value":"0"},"kind":"cons","tail":{"head":{"kind":"nat","value":"4"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}],"function":{"name":"bumpAll"},"kind":"call"},"right":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"5"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}},{"kind":"theorem","name":"composed","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"4"}],"function":{"arguments":[],"function":{"name":"addThenDouble"},"kind":"call"},"kind":"apply"},"right":{"kind":"nat","value":"10"}}},{"kind":"theorem","name":"visitor_agrees","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[],"function":{"name":"evaluator"},"kind":"call"},{"arguments":[{"arguments":[{"kind":"nat","value":"2"}],"constructor":{"module":"Combinators","name":"Arith.literal"},"kind":"constructor"},{"arguments":[{"arguments":[{"kind":"nat","value":"3"}],"constructor":{"module":"Combinators","name":"Arith.literal"},"kind":"constructor"}],"constructor":{"module":"Combinators","name":"Arith.twice"},"kind":"constructor"}],"constructor":{"module":"Combinators","name":"Arith.plus"},"kind":"constructor"}],"function":{"module":"Combinators","name":"visit"},"kind":"call"},"right":{"arguments":[{"arguments":[{"arguments":[{"kind":"nat","value":"2"}],"constructor":{"module":"Combinators","name":"Arith.literal"},"kind":"constructor"},{"arguments":[{"arguments":[{"kind":"nat","value":"3"}],"constructor":{"module":"Combinators","name":"Arith.literal"},"kind":"constructor"}],"constructor":{"module":"Combinators","name":"Arith.twice"},"kind":"constructor"}],"constructor":{"module":"Combinators","name":"Arith.plus"},"kind":"constructor"}],"function":{"module":"Combinators","name":"evaluate"},"kind":"call"}}},{"axioms":["propext"],"kind":"theorem","name":"map_identity","parameters":[{"name":"values","type":{"element":{"kind":"parameter","name":"Input"},"kind":"list"}}],"proof":{"branches":[{"binders":[],"constructor":"nil","proof":{"definitions":[{"module":"Combinators","name":"mapList"}],"kind":"simplify"}},{"binders":["head","tail","hypothesis"],"constructor":"cons","proof":{"definitions":[{"name":"hypothesis"},{"module":"Combinators","name":"mapList"}],"kind":"simplify"}}],"kind":"induction","scrutinee":"values"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"kind":"var","name":"value"},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"parameter","name":"Input"}}]},{"kind":"var","name":"values"}],"function":{"module":"Combinators","name":"mapList"},"kind":"call","type_arguments":[{"kind":"parameter","name":"Input"},{"kind":"parameter","name":"Input"}]},"right":{"kind":"var","name":"values"}},"type_parameters":["Input"]},{"axioms":["propext"],"kind":"theorem","name":"map_identity_numbers","parameters":[],"proof":{"arguments":[{"head":{"kind":"nat","value":"7"},"kind":"cons","tail":{"head":{"kind":"nat","value":"8"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}],"kind":"apply","theorem":{"name":"map_identity"},"type_arguments":[{"kind":"nat"}]},"statement":{"kind":"eq","left":{"arguments":[{"body":{"kind":"var","name":"value"},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"head":{"kind":"nat","value":"7"},"kind":"cons","tail":{"head":{"kind":"nat","value":"8"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}],"function":{"module":"Combinators","name":"mapList"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"}]},"right":{"head":{"kind":"nat","value":"7"},"kind":"cons","tail":{"head":{"kind":"nat","value":"8"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: addAll,
+  parameters: [offset : Nat, values : (List Nat)],
+  result: (List Nat),
+  body: (Combinators::mapList [Nat, Nat] (fun [offset] (value : Nat) => (value + offset)) values),
+  executable: true
+}
+
+definition{
+  name: total,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (Combinators::foldList [Nat, Nat] (fun (sum : Nat) (value : Nat) => (sum + value)) 0 values),
+  executable: true
+}
+
+definition{
+  name: bumpAll,
+  parameters: [values : (List Nat)],
+  result: (List Nat),
+  body: (Combinators::mapList [Nat, Nat] (ref Combinators::increment) values),
+  executable: true
+}
+
+definition{
+  name: addThenDouble,
+  parameters: [],
+  result: (Fn (Nat) Nat),
+  body: (Combinators::compose [Nat, Nat, Nat] (fun (value : Nat) => (value + value)) (ref Combinators::increment))
+}
+
+definition{
+  name: evaluator,
+  parameters: [],
+  result: Combinators::Visitor,
+  body: (record Combinators::Visitor {onLiteral := (fun (value : Nat) => value), onPlus := (fun (left : Nat) (right : Nat) => (left + right)), onTwice := (fun (value : Nat) => (value + value))})
+}
+
+theorem{
+  name: add_all,
+  parameters: [],
+  statement: ((addAll 10 (cons 1 (cons 2 (cons 3 (nil Nat))))) = (cons 11 (cons 12 (cons 13 (nil Nat))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: total_sum,
+  parameters: [],
+  statement: ((total (cons 1 (cons 2 (cons 3 (cons 4 (nil Nat)))))) = 10),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: bump_all,
+  parameters: [],
+  statement: ((bumpAll (cons 0 (cons 4 (nil Nat)))) = (cons 1 (cons 5 (nil Nat)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: composed,
+  parameters: [],
+  statement: ((apply (addThenDouble) 4) = 10),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: visitor_agrees,
+  parameters: [],
+  statement: ((Combinators::visit (evaluator) (ctor Combinators::Arith.plus (ctor Combinators::Arith.literal 2) (ctor Combinators::Arith.twice (ctor Combinators::Arith.literal 3)))) = (Combinators::evaluate (ctor Combinators::Arith.plus (ctor Combinators::Arith.literal 2) (ctor Combinators::Arith.twice (ctor Combinators::Arith.literal 3))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: map_identity,
+  type_parameters: [Input],
+  parameters: [values : (List 'Input)],
+  statement: ((Combinators::mapList ['Input, 'Input] (fun (value : 'Input) => value) values) = values),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [Combinators::mapList]}, binders: [], constructor: nil},
+      {
+        proof: simplify{definitions: [hypothesis, Combinators::mapList]},
+        binders: [head, tail, hypothesis],
+        constructor: cons
+      }
+    ],
+    scrutinee: values
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: map_identity_numbers,
+  parameters: [],
+  statement: ((Combinators::mapList [Nat, Nat] (fun (value : Nat) => value) (cons 7 (cons 8 (nil Nat)))) = (cons 7 (cons 8 (nil Nat)))),
+  proof: apply{
+    arguments: [(cons 7 (cons 8 (nil Nat)))],
+    theorem: map_identity,
+    type_arguments: [Nat]
+  },
+  axioms: [propext]
+}
 \end{semanticmodule}
 \end{lexlean}

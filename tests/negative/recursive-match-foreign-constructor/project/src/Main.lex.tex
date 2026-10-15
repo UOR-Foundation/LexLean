@@ -2,6 +2,25 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[],"name":"leaf"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Tree"}},{"arguments":[],"kind":"named","member":{"name":"Tree"}}],"name":"node"}],"kind":"inductive","name":"Tree","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"red"},{"fields":[],"name":"green"}],"kind":"inductive","name":"Color","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Color.red"}},{"binders":[],"body":{"kind":"nat","value":"1"},"constructor":{"name":"Color.green"}}],"kind":"match","scrutinee":{"kind":"var","name":"tree"}},"kind":"definition","name":"shade","parameters":[{"name":"tree","type":{"arguments":[],"kind":"named","member":{"name":"Tree"}}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Tree,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: leaf, fields: []}, {name: node, fields: [Tree, Tree]}]
+}
+
+inductive{
+  name: Color,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: red, fields: []}, {name: green, fields: []}]
+}
+
+definition{
+  name: shade,
+  parameters: [tree : Tree],
+  result: Nat,
+  body: (match tree | Color.red => 0 | Color.green => 1)
+}
 \end{semanticmodule}
 \end{lexlean}

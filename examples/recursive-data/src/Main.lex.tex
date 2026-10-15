@@ -3,6 +3,131 @@
 \importmodule{Types}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Types","name":"Tree.leaf"}},{"binders":["left","value","right"],"body":{"kind":"add","left":{"kind":"add","left":{"arguments":[{"kind":"var","name":"left"}],"function":{"name":"treeSize"},"kind":"call"},"right":{"kind":"nat","value":"1"}},"right":{"arguments":[{"kind":"var","name":"right"}],"function":{"name":"treeSize"},"kind":"call"}},"constructor":{"module":"Types","name":"Tree.node"}}],"kind":"match","scrutinee":{"kind":"var","name":"tree"}},"kind":"definition","name":"treeSize","parameters":[{"name":"tree","type":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Tree"}}}],"recursive_argument":"tree","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"arguments":[],"constructor":{"module":"Types","name":"Tree.leaf"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"module":"Types","name":"Tree.leaf"}},{"binders":["left","value","right"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"right"}],"function":{"name":"mirror"},"kind":"call"},{"kind":"var","name":"value"},{"arguments":[{"kind":"var","name":"left"}],"function":{"name":"mirror"},"kind":"call"}],"constructor":{"module":"Types","name":"Tree.node"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"constructor":{"module":"Types","name":"Tree.node"}}],"kind":"match","scrutinee":{"kind":"var","name":"tree"}},"kind":"definition","name":"mirror","parameters":[{"name":"tree","type":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Tree"}}}],"recursive_argument":"tree","result":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Tree"}}},{"body":{"arguments":[{"arguments":[{"arguments":[],"constructor":{"module":"Types","name":"Tree.leaf"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},{"kind":"nat","value":"1"},{"arguments":[],"constructor":{"module":"Types","name":"Tree.leaf"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}],"constructor":{"module":"Types","name":"Tree.node"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},{"kind":"nat","value":"2"},{"arguments":[],"constructor":{"module":"Types","name":"Tree.leaf"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}],"constructor":{"module":"Types","name":"Tree.node"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"definition","name":"sampleTree","parameters":[],"result":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Tree"}}},{"kind":"theorem","name":"sample_tree_size","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[],"function":{"name":"sampleTree"},"kind":"call"}],"function":{"name":"treeSize"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"axioms":["propext"],"kind":"theorem","name":"mirror_involutive","parameters":[{"name":"tree","type":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Tree"}}}],"proof":{"branches":[{"binders":[],"constructor":"leaf","proof":{"definitions":[{"name":"mirror"}],"kind":"simplify"}},{"binders":["left","value","right","leftHypothesis","rightHypothesis"],"constructor":"node","proof":{"definitions":[{"name":"leftHypothesis"},{"name":"mirror"},{"name":"rightHypothesis"}],"kind":"simplify"}}],"kind":"induction","scrutinee":"tree"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"var","name":"tree"}],"function":{"name":"mirror"},"kind":"call"}],"function":{"name":"mirror"},"kind":"call"},"right":{"kind":"var","name":"tree"}}},{"body":{"branches":[{"binders":["label","children"],"body":{"kind":"var","name":"label"},"constructor":{"module":"Types","name":"Rose.node"}}],"kind":"match","scrutinee":{"kind":"var","name":"rose"}},"kind":"definition","name":"roseLabel","parameters":[{"name":"rose","type":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Rose"}}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"rose_label","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"7"},{"element":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Rose"}},"kind":"nil"}],"constructor":{"module":"Types","name":"Rose.node"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}],"function":{"name":"roseLabel"},"kind":"call"},"right":{"kind":"nat","value":"7"}}},{"body":{"branches":[{"binders":["value"],"body":{"kind":"bool","value":true},"constructor":{"module":"Types","name":"Expr.literal"}},{"binders":["left","right"],"body":{"kind":"bool","value":false},"constructor":{"module":"Types","name":"Expr.plus"}},{"binders":["statements","result"],"body":{"kind":"bool","value":false},"constructor":{"module":"Types","name":"Expr.block"}}],"kind":"match","scrutinee":{"kind":"var","name":"expression"}},"kind":"definition","name":"isLiteral","parameters":[{"name":"expression","type":{"arguments":[],"kind":"named","member":{"module":"Types","name":"Expr"}}}],"result":{"kind":"bool"}},{"kind":"theorem","name":"block_is_not_literal","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"arguments":[{"kind":"string","value":"x"},{"arguments":[{"kind":"nat","value":"1"}],"constructor":{"module":"Types","name":"Expr.literal"},"kind":"constructor"}],"constructor":{"module":"Types","name":"Stmt.assign"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Types","name":"Stmt"}},"kind":"nil"}},{"arguments":[{"kind":"nat","value":"0"}],"constructor":{"module":"Types","name":"Expr.literal"},"kind":"constructor"}],"constructor":{"module":"Types","name":"Expr.block"},"kind":"constructor"}],"function":{"name":"isLiteral"},"kind":"call"},"right":{"kind":"bool","value":false}}},{"body":{"branches":[{"binders":["reason"],"body":{"kind":"nat","value":"0"},"constructor":{"module":"Types","name":"Outcome.failure"}},{"binders":["value"],"body":{"kind":"var","name":"value"},"constructor":{"module":"Types","name":"Outcome.success"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"kind":"definition","name":"outcomeOrZero","parameters":[{"name":"outcome","type":{"arguments":[{"kind":"string"},{"kind":"nat"}],"kind":"named","member":{"module":"Types","name":"Outcome"}}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"success_value","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"}],"constructor":{"module":"Types","name":"Outcome.success"},"kind":"constructor","type_arguments":[{"kind":"string"},{"kind":"nat"}]}],"function":{"name":"outcomeOrZero"},"kind":"call"},"right":{"kind":"nat","value":"5"}}},{"body":{"kind":"pair","left":{"kind":"second","value":{"kind":"var","name":"pair"}},"right":{"kind":"first","value":{"kind":"var","name":"pair"}}},"kind":"definition","name":"swap","parameters":[{"name":"pair","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}}],"result":{"kind":"product","left":{"kind":"bool"},"right":{"kind":"nat"}}},{"body":{"branches":[{"binders":["left","right"],"body":{"kind":"add","left":{"kind":"var","name":"left"},"right":{"kind":"var","name":"right"}},"constructor":{"name":"Prod.mk"}}],"kind":"match","scrutinee":{"kind":"var","name":"pair"}},"kind":"definition","name":"sumPair","parameters":[{"name":"pair","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"swap_twice_first","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"first","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"bool","value":true}}],"function":{"name":"swap"},"kind":"call"}},"right":{"kind":"bool","value":true}}},{"kind":"theorem","name":"sum_pair","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"4"}}],"function":{"name":"sumPair"},"kind":"call"},"right":{"kind":"nat","value":"7"}}},{"kind":"theorem","name":"located_row","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"first","value":{"field":"position","kind":"project","value":{"fields":[{"field":"value","value":{"kind":"bool","value":true}},{"field":"position","value":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"2"}}}],"kind":"record","type":{"module":"Types","name":"Located"},"type_arguments":[{"kind":"bool"}]}}},"right":{"kind":"nat","value":"1"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: treeSize,
+  parameters: [tree : (Types::Tree Nat)],
+  result: Nat,
+  body: (match tree
+    | Types::Tree.leaf => 0
+    | Types::Tree.node left value right => (((treeSize left) + 1) + (treeSize right))),
+  recursive_argument: tree
+}
+
+definition{
+  name: mirror,
+  parameters: [tree : (Types::Tree Nat)],
+  result: (Types::Tree Nat),
+  body: (match tree
+    | Types::Tree.leaf => (ctor Types::Tree.leaf [Nat])
+    | Types::Tree.node left value right => (ctor Types::Tree.node [Nat] (mirror right) value (mirror left))),
+  recursive_argument: tree
+}
+
+definition{
+  name: sampleTree,
+  parameters: [],
+  result: (Types::Tree Nat),
+  body: (ctor Types::Tree.node [Nat] (ctor Types::Tree.node [Nat] (ctor Types::Tree.leaf [Nat]) 1 (ctor Types::Tree.leaf [Nat])) 2 (ctor Types::Tree.leaf [Nat]))
+}
+
+theorem{
+  name: sample_tree_size,
+  parameters: [],
+  statement: ((treeSize (sampleTree)) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: mirror_involutive,
+  parameters: [tree : (Types::Tree Nat)],
+  statement: ((mirror (mirror tree)) = tree),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [mirror]}, binders: [], constructor: leaf},
+      {
+        proof: simplify{definitions: [leftHypothesis, mirror, rightHypothesis]},
+        binders: [left, value, right, leftHypothesis, rightHypothesis],
+        constructor: node
+      }
+    ],
+    scrutinee: tree
+  },
+  axioms: [propext]
+}
+
+definition{
+  name: roseLabel,
+  parameters: [rose : (Types::Rose Nat)],
+  result: Nat,
+  body: (match rose | Types::Rose.node label children => label)
+}
+
+theorem{
+  name: rose_label,
+  parameters: [],
+  statement: ((roseLabel (ctor Types::Rose.node [Nat] 7 (nil (Types::Rose Nat)))) = 7),
+  proof: reflexivity{}
+}
+
+definition{
+  name: isLiteral,
+  parameters: [expression : Types::Expr],
+  result: Bool,
+  body: (match expression
+    | Types::Expr.literal value => true
+    | Types::Expr.plus left right => false
+    | Types::Expr.block statements result => false)
+}
+
+theorem{
+  name: block_is_not_literal,
+  parameters: [],
+  statement: ((isLiteral (ctor Types::Expr.block (cons (ctor Types::Stmt.assign "x" (ctor Types::Expr.literal 1)) (nil Types::Stmt)) (ctor Types::Expr.literal 0))) = false),
+  proof: reflexivity{}
+}
+
+definition{
+  name: outcomeOrZero,
+  parameters: [outcome : (Types::Outcome String Nat)],
+  result: Nat,
+  body: (match outcome | Types::Outcome.failure reason => 0 | Types::Outcome.success value => value)
+}
+
+theorem{
+  name: success_value,
+  parameters: [],
+  statement: ((outcomeOrZero (ctor Types::Outcome.success [String, Nat] 5)) = 5),
+  proof: reflexivity{}
+}
+
+definition{
+  name: swap,
+  parameters: [pair : (Nat * Bool)],
+  result: (Bool * Nat),
+  body: ((second pair), (first pair))
+}
+
+definition{
+  name: sumPair,
+  parameters: [pair : (Nat * Nat)],
+  result: Nat,
+  body: (match pair | Prod.mk left right => (left + right))
+}
+
+theorem{
+  name: swap_twice_first,
+  parameters: [],
+  statement: ((first (swap (3, true))) = true),
+  proof: reflexivity{}
+}
+
+theorem{name: sum_pair, parameters: [], statement: ((sumPair (3, 4)) = 7), proof: reflexivity{}}
+
+theorem{
+  name: located_row,
+  parameters: [],
+  statement: ((first (project (record Types::Located [Bool] {value := true, position := (1, 2)}) position)) = 1),
+  proof: reflexivity{}
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -3566,7 +3566,8 @@ pub fn reasoning_fixtures_module(cases: &[Case]) -> String {
 }
 
 /// Every generated file of the `compiler` project, by path relative to the
-/// repository root: the fixtures, their module, and the calculus itself.
+/// repository root: the fixtures, their module, and the Rust packages. The
+/// calculus and the machine themselves are sources, written in `.lex.tex`.
 #[must_use]
 pub fn files() -> BTreeMap<String, Vec<u8>> {
     let cases = cases();
@@ -3589,8 +3590,6 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     // negative package manifests, so a change to a rendering is a reviewed
     // change to committed bytes.
     out.extend(crate::rust_packages::files());
-    out.extend(crate::calculus_source::files());
-    out.extend(crate::rust_source::files());
     out
 }
 

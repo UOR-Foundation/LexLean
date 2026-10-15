@@ -2,6 +2,22 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"element":{"kind":"parameter","name":"Output"},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"head":{"arguments":[{"kind":"var","name":"head"}],"function":{"kind":"var","name":"transform"},"kind":"apply"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"transform"},{"kind":"var","name":"tail"}],"function":{"name":"mapList"},"kind":"call","type_arguments":[{"kind":"parameter","name":"Input"},{"kind":"parameter","name":"Output"}]}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"mapList","parameters":[{"name":"transform","type":{"kind":"function","parameters":[{"kind":"parameter","name":"Input"}],"result":{"kind":"parameter","name":"Output"}}},{"name":"values","type":{"element":{"kind":"parameter","name":"Input"},"kind":"list"}}],"recursive_argument":"values","result":{"element":{"kind":"parameter","name":"Output"},"kind":"list"},"type_parameters":["Input","Output"]},{"body":{"arguments":[{"body":{"kind":"nat","value":"0"},"captures":[],"kind":"lambda","parameters":[{"name":"flag","type":{"kind":"bool"}}]},{"kind":"var","name":"values"}],"function":{"name":"mapList"},"kind":"call","type_arguments":[{"kind":"nat"},{"kind":"nat"}]},"kind":"definition","name":"bad","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"element":{"kind":"nat"},"kind":"list"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: mapList,
+  type_parameters: [Input, Output],
+  parameters: [transform : (Fn ('Input) 'Output), values : (List 'Input)],
+  result: (List 'Output),
+  body: (match values
+    | List.nil => (nil 'Output)
+    | List.cons head tail => (cons (apply transform head) (mapList ['Input, 'Output] transform tail))),
+  recursive_argument: values
+}
+
+definition{
+  name: bad,
+  parameters: [values : (List Nat)],
+  result: (List Nat),
+  body: (mapList [Nat, Nat] (fun (flag : Bool) => 0) values)
+}
 \end{semanticmodule}
 \end{lexlean}

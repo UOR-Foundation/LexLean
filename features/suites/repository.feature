@@ -96,9 +96,10 @@ Feature: repository
     And a test recipe that includes repo-conformance, or a bdd recipe that runs fewer targets, fails the inventory
 
   @RP-14 @build
-  Scenario: The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner at the default verifier width 1, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence.
+  Scenario: The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence.
     Given .github/workflows/ci.yml
     When the runner, the environment, and the job steps are read
-    Then the job runs on ubuntu-24.04 with the verifier width left at its default and the 360-minute limit
+    Then the job runs on ubuntu-24.04 with the 360-minute limit, and each verification profile variable is set once, from the leg's matrix row
+    And the leg that runs examples names width 2, a 12 GiB budget, and the committed hints, which the verifier parses, and the other leg names no profile
     And its two legs run the recipes of vv, each exactly once, in the order of vv within a leg, and the leg that runs examples asserts that Atlas verified
     And the vv job has no path filter, no cache action, no condition on a recipe, and each leg uploads its ci-evidence under a name of its own

@@ -15,6 +15,159 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Certificates write a list of any length as a term Lean elaborates without
+  binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
+  `[…]` macro splits a literal of more than 32 elements in halves under
+  `let` binders, and certificate B's witnesses, whose elements Lean
+  postpones to metavariables, did not unify through them: a valid
+  certificate B of a root calling a function of 33 or more parameters was
+  rejected with `LLV7015`. One helper (`production::lean_list`) now writes
+  every list and array of the three certificate writers: a literal up to 32
+  elements, byte-identical to before, and the `List.cons` chain the macro
+  writes for a short one beyond that. The 100-parameter project of
+  `tests/negative/certificate-heartbeat-rejected` verifies without its
+  shim. The certificates of `examples/models` and `examples/reasoning` that
+  hold such a list change, and their verification records are regenerated,
+  as are the sizes `certificate-resource-exhausted` and
+  `certificate-generation-limit` quote.
+  `SP-13` brings the register to 380 IDs.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
+- Core modules in the authoring notation (SPEC.md §17.21.8, `AU-09`..`AU-12`;
+  stages 3c and 3d of #93). A native `coremodule` of schema `lexlean/core-module/2`
+  can be written as text instead of one `\coredata{…}` argument of canonical
+  JSON: an `imports` line, the declarations (`theorem Name.{u} : @41 := @77 {…}`,
+  the other members in the generic notation), and the table of shared
+  expressions, one statement per node that is not written inside the node that
+  uses it (`@14 := fun (n : @12) => Nat.succ n`), in a Lean-like syntax of
+  explicit arguments, universe levels, and binders. The numbering of the nodes
+  is the order of the text, so the notation reads back to the module, and the
+  canonical JSON it reads to is byte for byte the data the module had: the
+  committed libraries (`compiler/proofs`, 13 modules, and
+  `language/preservation-1.2/library`, 13 modules, 48 MB of data) are written in
+  the notation at about three quarters of the size, and the compiler-semantics
+  ID of language 1.2 (`464235ad…`) is unchanged, because a source of the
+  embedded tree written in the notation contributes its data form (§21.2). The
+  Atlas (language 1.0, schema 1) stays as `\coredata`: languages 1.0 and 1.1
+  accept the data form only, and the notation under either is `LLP2003`. `fmt`
+  writes the notation, `lexlean::sdk` reads, writes, and assembles it
+  (`ModuleKind::Core`), and the core backend's coverage names
+  `lexlean.core::coresource`. No diagnostic code is new. A bound variable is
+  written by the name of its binder when no nearer binder has the name, a
+  constant a binder in scope is named like is written `const "…"`, and a
+  statement may be written `@name := …` and named `@name`, which `fmt` numbers
+  (`AU-12`; stage 3d of #93): a person adds a theorem to a library by writing
+  its declaration and the statements of its type and value, with every
+  argument and level explicit, as a kernel term has them, and counting nothing.
+  The certification library gains the first one written that way,
+  `LexLeanCertification.authored_eq_symm` (symmetry of `Eq` by `Eq.rec`), which
+  the pinned Lean's kernel checks with the rest of the library. Reading the identity of
+  language 1.2 now reads the embedded libraries from the notation, on as many
+  threads as there are cores: 0.8 s on four cores in a release build, and
+  nothing for language 1.0 and 1.1.
+- The authoring API (`lexlean::sdk`, SPEC.md §24.8, `AU-08`; stage 3e of #93):
+  `read_module`, `write_module`, `to_data_form`, `to_notation`,
+  `declaration_spans`, and `assemble` read, rewrite, convert, and assemble the
+  `.lex.tex` source of a semantic or tooling module without a project, with the
+  data as canonical JSON and the offset of an error in the source. The
+  formatter, the identity of the embedded tree, and the conformance suite's own
+  editing of committed sources are written over the same table of module kinds.
+  `AU-07` is the permanent gate that no writer of the repository emits a
+  product source but five named records (the four fixture modules of
+  `compiler/` and the extraction adapter's module, each generated from an input
+  that is not a source); it is shown to fail on a planted writer output.
+- The calculus and the Rust machine are source (SPEC.md §17.14; stage 3e of #93).
+  `compiler/src/{TargetSyntax,TargetSemantics,TargetOracle,RustSyntax,RustSemantics,Main}`,
+  the reasoning oracles, and the project configuration are written and edited as
+  `.lex.tex`: the Rust builders that rendered them (`calculus_source`,
+  `rust_source`, 5,300 lines) and the check that compared them with their own
+  output are removed; so are the builders of the GNAF model and the
+  certification model (`gnaf_model`, `certification_model`, 7,000 lines), whose
+  committed `Gnaf` and `Certification` are source too. `check-calculus` still compares the generated files (the
+  fixtures and the modules that state them, the Rust packages, the shipped
+  copies of the calculus modules), and `conformance_sp_07` now reads the
+  machine's runtime items and their failure and heap classes from the committed
+  `RustSyntax` and `RustSemantics`, and the compiler project's configuration
+  from the production example. No file of the repository changes by this: it
+  is a change of who owns them.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-08`; stage 3
+- Certificate budgets (SPEC.md §22.6, `SP-02`, no new diagnostic code).
+  Every certificate now lifts both of the pinned Lean's heartbeat budgets, as
+  only the certificates of a program with a match of more than 100 arms did,
+  and certificate B declares its `program` and `krate` terms `noncomputable`.
+  A root whose program carries its parameters as data (`UOR-Foundation/MNIST`
+  at its model root: 243 KB of crate, int_tensor artifacts decoded into
+  literals) was refused twice by a valid certificate: the code generator
+  exhausted its 200 000 heartbeats compiling the crate term, which nothing
+  runs, and then `isDefEq` exhausted the same budget on the function holding
+  the literal. The bound that remains is the wall clock, `child_timeout_ms`,
+  as the specification already said. Every certificate text changes by its
+  header, so the committed certificate records of the examples and the
+  fixture expectations that quote certificate sizes are regenerated. The
+  fixtures `certificate-heartbeat-rejected` and
+  `certificate-resource-exhausted` model an exhausted Lean by a substituted
+  `lake` that set a budget of one heartbeat after `autoImplicit`; it now
+  overrides the lifted budget instead. With the budget lifted, their
+  100-parameter project reaches certificate B for the first time, which
+  refuses it for a reason of its own (#97): Lean elaborates a list literal
+  of more than 32 elements under `let` binders, and a certificate witness
+  with postponed holes in such a list does not unify.
+
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
+  of #27, #93). A `semanticmodule` can be written as readable text instead of
+  `\semanticdata{…}` JSON: declarations in a fixed grammar, read from the
+  schema, with readable forms for types (`(List Nat)`, `(A * B)`), terms
+  (`(let x : Nat := 1; (x + x))`, `(match s | C x => …)`) and members
+  (`Module::name`), and a generic form `kind{…}` for every other value. The
+  notation and the canonical JSON are in bijection, so a module in the notation
+  has the semantic ID and the generated Lean and LaTeX of its data form, and
+  `fmt` writes the notation canonically and writes a module out of its data
+  form (`fmt --check` reports a language-1.2 module still written as data as
+  `LLL1003`). Every language-1.2 source of the repository is written in the
+  notation: the compiler project, the language libraries, the examples, the
+  fixtures, and every refused fixture the notation can spell (287 sources;
+  `AU-04` keeps the data form to language 1.0 and 1.1 and to refused fixtures
+  that test the data form's own refusal, and the conformance helpers that edit
+  a module's data read and write it in whichever form the source has). No
+  diagnostic code is new: a malformed text is `LLP2001`. Compiler-tooling
+  modules (`toolingmodule`, §17.20) are written in the generic notation of the
+  same family (one object without its `spec`, declarations as `type{…}`,
+  `call{…}`, `function{…}`), `fmt` writes them out of `\toolingdata`, their
+  four committed sources (the embedded extraction adapter and three fixtures)
+  are migrated, and a source map names each declaration's text (`AU-05`). A
+  source of the embedded tree written in the notation contributes its data form
+  to the compiler-semantics ID (§21.2, `AU-06`), so moving the adapter's source
+  to the notation changes no identity. Nothing a build or a
+  verification derives from a module changes, so no compiler-semantics ID, no
+  generated Lean or LaTeX byte, and no verified record changes; the source IDs,
+  the source maps, the coverage records, and the spans of the fixtures'
+  diagnostics, which name the source's own bytes, are regenerated.
+- The verifier's resource profile gains scheduling hints and a memory budget,
+  and the gate's `examples` leg uses it (SPEC.md §9.4, §22.11, `RP-14`, no new
+  ID or code; LexLean #83). `LEXLEAN_VERIFY_HINTS` names a JSON object of
+  per-module `wall_ms` and `peak_rss_kib`, which start the heaviest processes
+  of a stage first; `LEXLEAN_VERIFY_MEMORY_KIB` stops a worker from starting a
+  process whose expected peak would push the running total past the budget, and
+  a process whose expected peak alone passes it runs alone. Neither enters an
+  artifact or an identity; the published directory is byte for byte that of
+  width 1 (`VR-21`). `cargo xtask ci-hints` derives the hints from a run's
+  telemetry. In `ci.yml`, the `examples` leg verifies at width 2 with
+  `.github/verify-hints.json` and a 12 GiB budget, read from its matrix row,
+  and the other leg names no profile; `release.yml` still runs `just vv` at
+  width 1. On the standard runner's 16 GB, 22 of Atlas's 66 modules peak above
+  8 GiB, so the modelled gain is small: about 13 min of Atlas's 169, from main's
+  telemetry. The CI run of this change is the measurement.
+  `fmt` writes the notation canonically (a module written as data stays as it
+  is). No diagnostic code is new: a malformed text is `LLP2001`, and nothing
+  embedded in the compiler-semantics ID changes.
+- Rust runtime library boundary (SPEC.md §17.16, `RB-09`, no new
+  diagnostic code), stage 1 of #91. `rust_library::PRIMITIVES` states the
+  machine primitives the runtime may use, each by its meaning, and
+  `rust_library::LIBRARY` lists every name the runtime text takes from
+  Rust's library with its role: part of a primitive, stated in the closed AST
+  over primitives, or a construct of the closed AST. The audit reads the
+  text and refuses a name outside the table, a row the text does not use,
+  a row citing a non-primitive, and a primitive no row cites. The runtime
+  text is unchanged, so no runtime digest, package, or semantic ID changes.
 - `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
   no new diagnostic code). A read of a binding that nothing after it reads
   is a move and a projection of a pair component that nothing after it
@@ -1120,6 +1273,22 @@ versions, and the entries below say what each tag does and does not claim.
     `true_and`, and `Option.some.injEq`. The eligibility report gains
     per-root `reasoning` rows, and its schema now admits the model and
     reasoning construct keys. The snapshot elaboration gains `theorems`.
+- A production root that applies a collection, fold, iteration, or graph
+  primitive now admits `recursion` (SPEC.md §17.13, `TC-06`; #105). Those
+  primitives are realized by library templates that call themselves, so the
+  stack depth of the rendered Rust is bounded only by the input (a scan of an
+  80,000-byte name aborted on an 8 MiB stack), yet their registry rows said
+  `recursion = false` and no root declared the effect. The rows are corrected,
+  and `conformance_tc_06` derives each runtime row's `recursion` from its
+  realization (the call graph of a template's instance, or the structural
+  `recursion` reference) instead of trusting the row. The language-1.2
+  compiler-semantics ID changes with the registry; `examples/reasoning` and
+  `examples/production-coverage` declare the effect on the roots that use these
+  primitives.
+- The host legs of CI may run for 120 minutes, where they were cut off at 60:
+  the Intel macOS leg takes 51 to 61 minutes, and a leg cancelled at its limit
+  is not a result about the code.
+
 ## 0.3.0
 
 - Support exhaustive Boolean matches and keep imported list construction

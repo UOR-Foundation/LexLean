@@ -10,6 +10,7 @@
 pub mod certificate;
 pub mod eligibility;
 pub mod lcnf;
+pub mod lean_list;
 pub mod lower;
 pub mod preserve;
 pub mod rust_cert;

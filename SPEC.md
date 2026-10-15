@@ -681,7 +681,7 @@ Its post-create command MUST install the pinned Lean toolchain explicitly and MU
 
 The job runs the recipes as two legs of one matrix, at once, each from its own clean checkout: `examples` alone, and the other eleven recipes in the order of `vv`. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. Together the legs run every recipe of `vv` exactly once, and the gate passes only when both legs pass, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longer leg rather than the sum (on the runner, `examples` is about 77% of the recipes' time). `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
 
-Both legs run on the standard GitHub-hosted runner, `ubuntu-24.04`, at the default verification process width (§22.11), which is 1: no larger runner, no wider width, and no variable that selects either is part of the gate. It has no path filter, no cache of a build directory, object, verification tree, attestation, or proof result, and no condition that skips a recipe of `just vv`; it starts from a clean checkout with the exact pinned toolchains. Each leg writes its performance telemetry (§22.12) to `ci-evidence/` and uploads that directory as the artifact named after it: the gate log (`just --timestamp` stamps each recipe's first command, which is how a recipe is timed without changing it), the host's memory and swap sampled every five seconds, the verifier's telemetry, and a summary of the wall time of each recipe and verification stage, the slowest modules and audit members, and the peak resident set and swap of the proof processes. The summary step also prints that summary to the job log and appends it to the step summary, and runs when `just vv` failed, because an uploaded artifact cannot be read from the log; each table lists only its slowest rows and the part appended to the step summary is cut at 512 KiB, half of what GitHub accepts. None of it is an input of any recipe, and a timing is never a claim about a semantic property.
+Both legs run on the standard GitHub-hosted runner, `ubuntu-24.04`; no larger runner is part of the gate. The verification resource profile (§22.11) of each leg is named by its matrix row and by nothing else, no repository or workflow variable and no input: the `examples` leg verifies at width 2, with the scheduling hints committed in `.github/verify-hints.json` (derived from a run's telemetry by `cargo xtask ci-hints`) and a memory budget of 12 GiB (12582912 KiB) for the summed expected peaks of the proof processes running at once; the other leg names no profile and runs at the default. A profile is a schedule and never a verdict: every elaboration, replay, and audit member still runs on the pinned toolchain, the directory each project publishes is byte for byte the one of width 1 without hints or a budget (§22.11), and the leg still requires every example's normalized verification records to equal `expected/verify` (§29.5), so a profile that changed a byte would fail the gate rather than pass a different one. A stale hint reorders processes and never skips one. Width 1 is still verified whole on UOR Atlas by `release.yml`, which runs `just vv` with no profile. The budget is below the runner's 16 GB, with the 4 GiB swap file of the job as overflow, so two processes run together only when their expected peaks fit, and a process whose expected peak alone passes the budget runs alone. The gate has no path filter, no cache of a build directory, object, verification tree, attestation, or proof result, and no condition that skips a recipe of `just vv`; it starts from a clean checkout with the exact pinned toolchains. Each leg writes its performance telemetry (§22.12) to `ci-evidence/` and uploads that directory as the artifact named after it: the gate log (`just --timestamp` stamps each recipe's first command, which is how a recipe is timed without changing it), the host's memory and swap sampled every five seconds, the verifier's telemetry, and a summary of the wall time of each recipe and verification stage, the slowest modules and audit members, and the peak resident set and swap of the proof processes. The summary step also prints that summary to the job log and appends it to the step summary, and runs when `just vv` failed, because an uploaded artifact cannot be read from the log; each table lists only its slowest rows and the part appended to the step summary is cut at 512 KiB, half of what GitHub accepts. None of it is an input of any recipe, and a timing is never a claim about a semantic property.
 
 `honesty.yml` MUST run the model/honesty gate separately so claim drift is distinguishable from code failure.
 
@@ -2337,7 +2337,9 @@ This form exists for lossless migration of already elaborated formal
 libraries. A one-time conversion implementation can establish byte-exact
 migration evidence, but it is not an input to either backend and is absent from
 the release tree. Once committed, the native `.lex.tex` module is the source of
-coverage and both generated artifacts.
+coverage and both generated artifacts. Under language 1.2 a module of schema
+`lexlean/core-module/2` is written in the authoring notation (§17.21.8) instead
+of one `\coredata{…}` argument, and the two read to one module.
 
 Language 1.2 additionally accepts the schema `lexlean/core-module/2`
 (`schemas/core-module-v2.schema.json`); languages 1.0 and 1.1 accept only
@@ -2410,6 +2412,8 @@ after the ordinary module header and title, is exclusive with prose blocks
 and `coremodule`, and contains exactly one `\semanticdata{...}` canonical JSON
 value with schema `lexlean/semantic-module/1`. It is semantic declaration
 data, never Lean or LaTeX source. Language 1.0 rejects the environment.
+Language 1.2 also admits the authoring notation of §17.21 as the body of the
+environment, which is read to the same data.
 
 Accepted semantic identifiers retain their exact names in generated Lean.
 Each segment matching the pinned toolchain's reserved-token table is quoted
@@ -3770,15 +3774,20 @@ that reaches it:
    effects are `allocation` when the closure requires allocation on a target
    that provides it, `overflow` for every construct whose registry row names
    the representation of its result, and `recursion` for every recursive
-   definition.
+   definition and every construct whose registry row implies it.
 
 Two realization obligations follow from these rules and bind every later
 production stage. A `Nat` or `Int` value crossing a root boundary is
 represented in the target width, so a caller cannot supply a value outside it,
 and every value the realization computes outside it is the `overflow`
-failure, never a wrapped or truncated value. Primitive operations are
-realized without recursion; only recursive definitions of the closure carry
-the `recursion` effect.
+failure, never a wrapped or truncated value. A primitive realized by a
+runtime item is a loop and carries no recursion; a primitive realized by a
+library template (§17.14: the map, set, fold, iteration, and graph
+primitives) carries it, because a template calls itself and so the depth of
+its calls is bounded only by its input. The registry states exactly that, and
+`conformance_tc_06` derives it from the realization table rather than
+trusting the row. A root whose closure applies such a primitive admits
+`recursion`, as does a root with a recursive definition.
 
 The analysis is a conservative over-approximation of effects: it may require a
 root to admit an effect its realization never exhibits, and it never admits a
@@ -3837,6 +3846,19 @@ fixtures, so neither module outgrows the project's file limit). Lean
 elaborates, replays, and axiom-audits these modules like any other
 LexLean program, and `compiler/` passes the verify, golden, and
 reproducibility gates of §28.6. No meaning is read from rendered Rust text.
+
+**Source.** The calculus and the machine of §17.16 are source: the committed
+`.lex.tex` modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`,
+`RustSyntax`, `RustSemantics`, the reasoning oracles, and `Main`, and the
+project's configuration (which is the production example's under its own name,
+checked against it), are written and edited as `.lex.tex` (§17.21). No program
+generates or compares them with its own output. What is generated from them,
+and compared byte for byte by `cargo xtask check-calculus`, are the fixtures and
+the modules that state them, the Rust packages, and the shipped copies of the
+calculus modules; and what is checked against them are the renderer's own
+tables: `conformance_sp_07` reads the runtime items and their failure and heap
+classes from the committed `RustSyntax` and `RustSemantics` and equates them
+with `lexlean::calculus::rust::runtime::Item`.
 
 **Programs.** A program (`lexlean/target-program/1`,
 `schemas/target-program.schema.json`) is a list of algebraic data types, each
@@ -4032,7 +4054,10 @@ axiom-audits. It defines the request, its fail-closed validation, the
 universe and the theorem that it is complete, and the answer the request's
 universe has under the calculus denotation of §17.14. It imports only
 `TargetSyntax` and `TargetSemantics`, and nothing in it calls, cites, or is
-computed from an optimizer.
+computed from an optimizer. The model is source, written and edited as
+`.lex.tex` (§17.21); no program generates it, and what `cargo xtask
+check-calculus` generates are the requests, the manifest, and the module that
+states their answers.
 
 **Request.** A request (`lexlean/gnaf-request/1`,
 `schemas/gnaf-request.schema.json`) names:
@@ -4381,6 +4406,28 @@ and no call to it propagates. The length of a sequence cannot exceed
    test is negated as its complement, and the printer parenthesizes any
    comparison under `!`.
 
+**Runtime boundary.** The runtime both profiles carry is a closed text
+(`rust::runtime`), and what it may take from Rust's library is closed too.
+`rust_library::PRIMITIVES` lists the *machine primitives*: the checked
+integer operations at each width (`checked_add`, `checked_sub`,
+`checked_mul`, `checked_div`, `checked_rem`, `checked_neg`, `checked_shl`,
+`checked_shr`), conversion between integer widths, the order of two
+scalars, the work counter, a growable buffer (creation with a capacity,
+`push` and `truncate` by its only holder, length), a shared immutable copy of
+a slice, the unique-holder test and release of a shared value, replacement
+of a place's value, and the UTF-8 view and check of a text. Each is stated
+by its meaning, and these, with Rust's integer and Boolean operators, are
+the only operations the runtime may use that no runtime source defines.
+`rust_library::LIBRARY` lists every name the runtime text takes from the
+library (an import, a path, a method, a macro, or a capitalized type, trait,
+or constructor; an integer type in a path is written `<int>`), each with its
+role: part of a primitive; *stated*, meaning the closed AST states what it
+computes over the primitives the row cites, or over its own constructs
+alone when it cites none; or a construct of the closed AST. The audit
+(`rust_library::audit`) reads the text as tokens and refuses a name the
+table does not list, a row the text does not use or lists twice, a row
+citing a name that is not a primitive, and a primitive no row cites.
+
 **Packages.** A package manifest (`lexlean/rust-package/1`,
 `schemas/rust-package.schema.json`) names a crate and its version (three
 canonical decimals, each at most `2^64 - 1`, as Cargo reads them; the schema
@@ -4673,11 +4720,15 @@ constructors 200, and one on 440 constructors does not finish in 15 minutes),
 and a certificate A of 23 bytes for each pair of arms takes 59 seconds at 200
 constructors. Its default budgets are exhausted well before: 100 constructors
 are checked within `maxHeartbeats` 200 000 and `synthInstance.maxHeartbeats`
-20 000, 160 exhaust the second, 200 the first, and exhausting either in the
-middle of a proof ends as `Application type mismatch`, an error that blames a
-valid certificate. The certificates of a program whose widest match has more
-than 100 arms therefore set both budgets to 0, and the limit that remains is
-the wall clock: `child_timeout_ms` (300 seconds by default) bounds every Lean
+20 000, 160 exhaust the second, 200 the first, a function returning a
+large literal (a program carrying its parameters as data) costs `isDefEq` as
+much again, and exhausting either in the middle of a proof ends as
+`Application type mismatch`, an error that blames a valid certificate. Every
+certificate therefore sets both budgets to 0, and certificate B declares its
+program and crate terms `noncomputable`, since they are the statement's data,
+unfolded by the proofs and run by nothing, and compiling a large crate term
+alone exhausted the code generator's budget. The limit that remains is the
+wall clock: `child_timeout_ms` (300 seconds by default) bounds every Lean
 process, and its exhaustion is `LLS8002`. Each child process (`lake`, which
 starts `lean`, and the PDF provider: every child of `verify` is started the
 same way) leads a process group of its own, and on a
@@ -5010,6 +5061,17 @@ the library's declarations, not for those records. The roots `LexLeanTarget`,
 `LexLeanPreservation`, and `LexLeanPreserve` belong to the certificate
 environment; a generated module under one of them is an environment conflict.
 
+**Lists.** Certificate text writes every list and array, of any length, as a
+term the pinned Lean elaborates without binders (`production::lean_list`):
+one of at most 32 elements as the literal `[…]` or `#[…]`, and a longer one as
+the chain `(a₀ :: a₁ :: … :: [])` or `List.toArray` of it, which is the term
+Lean's list macro writes for a short literal. The macro writes a literal of
+more than 32 elements as `%[… | List.nil]`, which Lean splits in halves under
+`let` binders, and a witness whose elements are postponed to metavariables,
+such as the operands of a call in a certificate B derivation, does not unify
+through them: a valid certificate would be rejected (`LLV7015`). The chain is
+as deep as the list, which `maxRecDepth` 100000 covers.
+
 **Checking.** A project's certificates compile with the pinned Lean beside
 the library, the shipped calculus modules, and the project's generated
 modules. Each is replayed by `leanchecker`, which shares Lean's kernel
@@ -5319,7 +5381,9 @@ offered for each system of `U_sys`, and a claim holds because the evidence
 covers every system, not because every system was run. The module
 `Certification` of `compiler/` is the normative model of that certification:
 a LexLean definition that Lean elaborates, replays, and axiom-audits, over
-the request model `Gnaf` of §17.15 and the calculus denotation of §17.14. A
+the request model `Gnaf` of §17.15 and the calculus denotation of §17.14; like
+`Gnaf` it is source, written and edited as `.lex.tex`, and the certificates,
+their module, and the schemas are what `cargo xtask check-calculus` generates. A
 library of proofs, `compiler/proofs/`, written as native core modules
 (§17.10) from which the compiler generates the Lean, proves the model sound
 against `Gnaf`'s own definitions. GNAF-normality is a status of
@@ -5876,8 +5940,9 @@ the ordinary declaration environments (§15), the native `coremodule` (§17.10),
 and the `semanticmodule` (§17.11, §17.12): after the module header and title it
 is exactly one `\begin{toolingmodule}` environment containing exactly one
 `\toolingdata{...}` argument, canonical JSON of the closed schema
-`lexlean/tooling-module/1` (`tooling/schemas/tooling-module.schema.json`). A module
-never mixes two forms.
+`lexlean/tooling-module/1` (`tooling/schemas/tooling-module.schema.json`), or the
+authoring notation of the same module (§17.21.7). A module never mixes two
+forms.
 
 **Context.** A tooling module requires language 1.2 and a project the compiler
 itself embeds (§22.10). A user project, a language-1.1 project, and every
@@ -6046,6 +6111,344 @@ into its project's semantic ID. `tooling/schemas/tooling-module.schema.json` is
 not a file of the compiler-semantics ID (§7, §21.2): the tooling language is
 internal to the compiler, so adding it changes no existing identity, and the
 tooling source the compiler embeds is language data, hashed into that ID.
+
+### 17.21 The authoring notation
+
+A language-1.2 module is written, read, and formatted by a person in a text,
+not in the canonical JSON of §17.11 and §17.12, and the two are the same
+module. This section fixes the text. It is the authoring surface of a
+`semanticmodule` (§17.11): everything the compiler, the libraries and the
+models of this repository are made of is a `.lex.tex` source in it, and no
+other tool's output is a source (§17.21.6).
+
+#### 17.21.1 Where it is written
+
+Under language 1.2, the body of `\begin{semanticmodule}` … `\end{semanticmodule}`
+is either one `\semanticdata{…}` argument (the data form of §17.11) or the
+notation: the verbatim text of its declarations, one after the other, to the
+closing `\end{semanticmodule}`. A `toolingmodule` (§17.21.7) and a `coremodule`
+(§17.21.8) are written in the same two ways, with `\toolingdata{…}` and
+`\coredata{…}`. Language 1.1 has the data form only; the
+notation under language 1.1 is refused with `LLP2003`. Every language-1.2 source
+of this repository that has a semantic or tooling module is written in the
+notation (`AU-04`); the data form is the wire format the notation is read to,
+and `fmt` is how a source leaves it. The text is the module's source
+bytes between the two markers: it is not scanned for prose, glossary entries,
+or comments, every atom of it is covered as metadata owned by
+`lexlean.core::semanticsource` (§20), and it writes a backslash only inside a
+string, where it is the escape `\\` (so the first `\end` control atom is the
+environment's end). A numeral with a redundant leading zero outside a string
+is `LLL1003` (§12.4); inside a string it is string data.
+
+The notation is read to the canonical JSON of the module, with the schema
+tag the language names (`lexlean/semantic-module/2`), and that JSON is decoded
+and linked exactly as a module written as data. What a module means is decided
+there and nowhere else: a module in the notation and its data form have the
+same semantic ID, the same generated Lean and LaTeX byte for byte, and
+differ only in their source ID and in the source maps, which relate each
+declaration to its own text in the notation.
+
+#### 17.21.2 Lexical structure
+
+The text is UTF-8 over the characters space and line feed (§12.1). A token is:
+
+```ebnf
+delimiter = "{" | "}" | "[" | "]" | "(" | ")" | "," | ":" | ";" | ":=" | "::" ;
+string    = '"' { scalar | escape } '"' ;           (* escapes of §21.7 JSON *)
+word      = ( scalar not white space, a delimiter, or '"' ) { the same } ;
+```
+
+White space separates tokens and is otherwise not significant. Everything the
+notation spells, other than a string, is a word; what a word means is decided
+by the position that reads it. A word is a *name* when it is a letter or `_`
+followed by letters, digits, `_`, `.`, `'`, `/`, and `-`, and is not `true` or
+`false`; a string is written without quotes only when it is a name.
+
+#### 17.21.3 The generic notation
+
+Every canonical JSON value (§21.7) has one spelling that does not depend on
+the schema, and reads back to the value:
+
+```ebnf
+value  = integer | "true" | "false" | string | name
+       | "[" [ value { "," value } [ "," ] ] "]"
+       | [ name ] "{" [ field { "," field } [ "," ] ] "}" ;
+field  = ( name | string ) ":" value ;
+```
+
+An object that has the member `"kind": K`, with `K` a name, is written `K{…}`
+with that member left out. Members are written in the order `name`,
+`type_parameters`, `parameters`, `type`, `result`, `statement`, `fields`,
+`constructors`, `arguments`, `body`, `proof`, `axioms`, then the others in
+key order, and are read in any order; a member written twice, an integer
+beyond 64 bits, a value nested deeper than 256 levels, and a word that is not
+a name where a string is expected are errors. Because the generic notation
+covers every value, no value of any schema is unspellable, and a variant added
+to a schema has a notation the day it is added.
+
+#### 17.21.4 Positions and readable forms
+
+The schema `schemas/semantic-module-v2.schema.json` decides what is read at a
+position: a declaration of the module, a term, a type, a member, a parameter,
+a proof, or a member of an object, found by walking the schema. A term, a type,
+a member, and a parameter have readable forms (below). Every other value, and
+every value of those positions that no readable form carries *exactly*, is
+written generically, with its members read at the positions the schema gives
+them. A readable form carries a value exactly only when the value has exactly
+the members the form spells and a name or literal the form can write: a node
+with an additional member, a variable named like a keyword, a literal that is
+not canonical, or a default written out is written generically.
+
+*Members and parameters.* A member is `name` or `Module::name`; a parameter is
+`name : type`.
+
+*Types.*
+
+| Type | Written |
+| --- | --- |
+| `bool`, `bytes`, `int`, `int8`, `int16`, `int32`, `int64`, `nat`, `ordering`, `prop`, `string`, `type`, `uint8`, `uint16`, `uint32`, `uint64`, `unit`, `contract_violation`, `reasoning_failure` | `Bool`, `Bytes`, `Int`, `Int8`, `Int16`, `Int32`, `Int64`, `Nat`, `Ordering`, `Prop`, `String`, `Type`, `UInt8`, `UInt16`, `UInt32`, `UInt64`, `Unit`, `ContractViolation`, `ReasoningFailure` |
+| `parameter` | `'T` |
+| `list`, `set`, `option`, `result`, `map` | `(List T)`, `(Set T)`, `(Option T)`, `(Result ok error)`, `(Map K V)` |
+| `product`, `function` | `(A * B)`, `(Fn (A B) R)` |
+| `named` | `Name`, `Module::Name`, or `(Name A B)` with arguments |
+
+A document-named type that is spelled like a type of the table is written
+generically.
+
+*Terms.* The head words `let if match fun forall nil cons first second not
+apply ctor record project prim ref checked`, the words `then else with`, and
+`true`, `false` are keywords; a variable or function named like one is written
+generically.
+
+| Term | Written |
+| --- | --- |
+| `var`, `nat`, `bool`, `string`, `bytes`, `unit` | `x`, `3`, `true`, `"text"`, `0x4a4b`, `()` |
+| `integer` | `(-3 : Int8)` |
+| `add`, `eq`, `le`, `lt`, `beq`, `ble`, `blt`, `and`, `or`, `prop_and`, `iff`, `implies` | `(a + b)`, `(a = b)`, `(a <= b)`, `(a < b)`, `(a =? b)`, `(a <=? b)`, `(a <? b)`, `(a && b)`, `(a \|\| b)`, `(a /\ b)`, `(a <-> b)`, `(premise -> conclusion)` |
+| `pair`, `first`, `second`, `not` | `(a, b)`, `(first p)`, `(second p)`, `(not a)` |
+| `nil`, `cons` | `(nil T)`, `(cons h t)` |
+| `if`, `let`, `forall` | `(if c then a else b)`, `(let x : T := v; body)`, `(forall (x : T), body)` |
+| `lambda`, `apply` | `(fun [c, …] (x : T) … => body)` (the captures omitted when there are none), `(apply f a b)` |
+| `call`, `constructor`, `function_ref` | `(f [T, …] a b)`, `(ctor C [T, …] a b)`, `(ref f [T, …])` (the type arguments omitted when there are none) |
+| `record`, `project` | `(record S [T, …] {f := v, …})`, `(project v f)` |
+| `primitive` | `(prim operation a b : R)` |
+| `checked_apply` | `(checked M [T, …] a b with [check, …])` |
+| `match` | `(match s \| C x y => body \| D => body)`, one branch to a line |
+
+Instance values, map, set, and graph literals, proofs, and declarations are
+written generically, with their members read at their positions: the notation
+of a declaration is `K{name: …, …}`.
+
+#### 17.21.5 The module and its canonical form
+
+The notation of a module is its declarations in order, separated by an empty
+line, each ended by a line feed. A declaration is laid out at 100 columns: a
+group that fits is on one line, and one that does not has each member on its
+own line, indented two further spaces. The canonical source of a module is the
+module with its body replaced by that text, and `fmt` writes it (§23.5); it is
+a function of the module alone, so no layout of the source survives it and
+`fmt` is idempotent. A language-1.2 module written as `\semanticdata{…}` has the
+same canonical source, the notation of its module, so `fmt` rewrites it and
+`fmt --check` reports it as `LLL1003`; a module of language 1.1, which has the
+data form only, is canonical as it is.
+
+The notation has no comment form: the canonical document (§19) is where a
+module explains itself, and a comment would have to be data of the module to
+survive `fmt`.
+
+#### 17.21.6 What is checked
+
+- A malformed text is `LLP2001` at the position of the offending token, a
+  notation under language 1.1 is `LLP2003`, and nothing in it panics: the
+  notation is read with an explicit nesting bound and without recursion over
+  its length.
+- **Round trip (`AU-01`).** For every value of the schema, and in particular for
+  every alternative of the declaration, term, type, and proof unions read from
+  the schema, with and without its optional members, and for every committed
+  semantic module, `read(write(v)) = v` and `write(read(write(v))) = write(v)`.
+  The samples are read from the schema, so a variant added to it is checked
+  the day it is added.
+- **Equivalence (`AU-02`).** A module in the notation links to the module its data
+  form links to, with the same semantic ID, generated Lean and LaTeX; source maps
+  relate each declaration to its text in the notation; `fmt` is the identity on
+  the notation and writes the data form as exactly the committed notation.
+- **Failing closed (`AU-03`).** Every single-token deletion, duplication, and
+  replacement of a committed module either fails with a registered code or links
+  to a module that decodes.
+- **Tooling modules (`AU-05`).** The same four laws for a tooling module:
+  read and written back equal for every committed one, linking to the semantic
+  ID, Lean, and LaTeX of its data form with a source map that names the
+  notation, `fmt` writing the data form as the committed notation, and every
+  single-token deletion and duplication refused with a position or decoded.
+- **Core modules (`AU-09`..`AU-12`).** §17.21.8: the notation of a
+  core module reads back to the module for every committed one and for a module
+  that carries every kind of node, level, annotation, and declaration member;
+  it links to the semantic ID, Lean, and LaTeX of its data form, with a source
+  map that names the notation, and `fmt` writes the data form as the committed
+  notation; and malformed text, with every single-token deletion and
+  duplication of a committed module, is refused with a position or decoded;
+  and a module written with names for its variables and its statements reads to
+  the module its canonical notation is, down to a theorem added to the
+  certification library by name.
+- **One identity (`AU-06`).** The compiler-semantics ID is the same for the
+  embedded tree whether its modules are written in the notation or as data
+  (§21.2), and changes with a module's meaning in either form.
+- **No other authoring path (`AU-07`).** The writers of the repository (the
+  generators `cargo xtask check-calculus` compares and rewrites) emit no
+  `.lex.tex` source of `compiler/`, `language/`, or `examples/` but the five
+  named records: the fixture modules `TargetFixtures`, `ReasoningFixtures`,
+  `GnafFixtures`, and `GnafCertificates`, whose input is committed data (the
+  fixtures, requests, and certificates, under `compiler/`), and the extraction
+  adapter's module, whose input is the registry the pinned Lean answers
+  (§22.10). Every other source is written and edited as source: the calculus
+  and the machine (§17.14), the GNAF and certification models (§17.15, §17.18),
+  the examples, and the libraries.
+- **The authoring API (`AU-08`).** §24.8.
+- **One authoring surface (`AU-04`).** Every committed source of the repository
+  that has a semantic, tooling, or core module is read for its language and its
+  form. A
+  language-1.2 source of the product (the compiler, the language libraries, the
+  examples, the positive fixtures) is written in the notation and is its own
+  canonical source. The data form remains under language 1.0 and 1.1, which
+  have it only, and in the refused fixtures of `tests/negative` whose payload
+  the notation cannot spell, because they test the data form's own refusal; a
+  refused fixture whose payload the notation can spell, written and read back
+  equal, is a defect, so the data form cannot become a second way to write a
+  module unnoticed.
+
+#### 17.21.7 Tooling modules
+
+A tooling module (§17.20) is a typed registry and typed functions over it, so
+its notation has no readable forms of its own: it is the generic notation
+(§17.21.3), which is exact for every value, of the one object the module is,
+without its `spec` member, which the language implies (`lexlean/tooling-module/1`
+under language 1.2; the notation under any other language is `LLT4013`, like
+the module). The body of `\begin{toolingmodule}` is that object laid out as in
+§17.21.5 and ended by a line feed, or one `\toolingdata{…}` argument. A
+declaration is a `kind`-tagged object (`type{…}`, `call{…}`, `function{…}`,
+`command{…}`, `invoke{…}`, `evaluate{…}`, `plumbing{…}`), and what each member
+means is decided by the decoder that reads the canonical JSON the notation is
+read to, so a member the schema does not state is refused with `LLT4013` exactly
+as in the data form. A malformed text is `LLP2001` at its position; the notation
+is scanned as the semantic notation is (§17.21.1), and its metadata rows are
+owned by `lexlean.core::toolingsource`. The source map of a module in the
+notation relates each declaration to its own text, as the semantic map does.
+`fmt` writes a language-1.2 tooling module in the notation, so a tooling module
+written as `\toolingdata` leaves the data form by being formatted.
+
+#### 17.21.8 Core modules
+
+A native core module (§17.10) is a library of kernel terms: a table of shared
+expressions (the nodes of a DAG whose every edge points to an earlier node)
+and declarations whose type and value are nodes. Its notation is the module
+written as a program over them, so that a person reads a library of kernel
+terms as text and not as a table of numbers, and the same text reads back to
+the same module.
+
+Only the schema `lexlean/core-module/2` has a notation, which the language
+implies as it does for a semantic module, so that a module of
+`lexlean/core-module/1` (the Atlas, language 1.0) and every core module under
+language 1.0 and 1.1 are written as `\coredata{…}`, and the notation under
+language 1.0 or 1.1 is `LLP2003`. The text of a module is:
+
+```ebnf
+module      = "imports" "[" [ name { "," name } ] "]" { declaration } { statement } ;
+declaration = kind name [ ".{" name { "," name } "}" ] ":" ref [ ":=" ref ] [ members ] ;
+kind        = "abbrev" | "definition" | "theorem" | "inductive" | "constructor" | "recursor" ;
+members     = object of the generic notation (§17.21.3) ;
+statement   = ref ":=" term ;
+ref         = "@" ( numeral | name ) ;
+
+term     = "fun" binder "=>" term
+         | ( "let" | "have" ) binder-name ":" term ":=" term ";" term
+         | binder "->" term
+         | head [ "->" term ] ;
+head     = "Sort" level | "proj" name name numeral atom
+         | "annot" "[" [ entry { "," entry } ] "]" atom
+         | atom { atom } ;
+atom     = ref | "#" numeral | name [ ".{" level { "," level } "}" ]
+         | "const" string [ ".{" level { "," level } "}" ]
+         | numeral | "nat" string | string | "proof" "(" term ")" | "(" term ")" ;
+binder   = "(" binder-name ":" term ")" | "{" binder-name ":" term "}"
+         | "{{" binder-name ":" term "}}" | "[" binder-name ":" term "]" ;
+level    = ( numeral | name | "max" "(" level "," level ")"
+           | "imax" "(" level "," level ")" | "(" level ")" ) { "+" numeral } ;
+entry    = name ":=" ( "bool" ( "true" | "false" ) | "nat" digits | "int" digits
+                     | "str" string | "name" name ) ;
+```
+
+A *name* is a word of letters, digits, `_ ' ! ? . @ #`, and any scalar outside
+ASCII that is not white space, beginning with a letter, `_`, or a scalar
+outside ASCII, not ending in `.`, not a keyword (`fun let have proof Sort proj
+annot const max imax true false bool nat int str name`), and holding no
+numeral with a redundant leading zero (§12.4); any other name is written as a
+string, and a constant that is written as a string is written `const "…"`
+because a string alone is a literal. A binder's empty name is `_`. White space
+is the space and the line feed. Every declaration and every statement begins
+at the start of a line, and no other line of the module does, so that a term
+runs to the next line that begins at the margin.
+
+*The nodes.* A statement `@N := term` defines the node `N`: the nodes of a
+module are numbered in the order they finish being read, a node written inside
+a term is numbered before the node of the term that holds it, and the label
+only states the number, which the reader checks. `@M` names the node `M`, which
+is earlier. A node is written inside the node that uses it, and has no
+statement, exactly when it is used once (a declaration uses the nodes it
+states), as a child of the node that comes right after it and its other written-inside children (so that
+the numbering of the text is the numbering of the module), and the nodes inside
+it are fewer than 48 deep; every other node is a statement. Which nodes those
+are is a function of the module, so every module has one notation. An
+application `f a b` is the node of `a` applied to the node of `f a` applied to
+`b`, the nodes of `f a` written inside it; the arrow `A -> B` is the dependent
+function type with the empty binder name and explicit binder, and the others
+write the binder; `let` and `have` are the two values of the node's `d`;
+`proof(…)` states that the node it holds is one of the module's `proof_nodes`,
+which are therefore in increasing order. A universe level is `0`, a name, `max`
+or `imax` of two levels, or one of them raised by `+n`, and a numeral `n` is the
+level `n`. A natural-number literal that is not the canonical spelling of its
+number, which the schema allows, is written `nat "…"`, and so is the value of
+an annotation entry (`int "…"` for an integer); a string literal that holds a
+value that is not a Unicode scalar has no notation.
+
+*Names.* A name in a term that is the name of a binder the term is under is
+the variable of the nearest such binder (the body of an arrow is under a
+binder that has no name, and `_` is no name), and any other name is a
+constant. The printer writes a variable by the name of its binder exactly when
+that is a bare word and no nearer binder of the statement has it, and
+otherwise by its index `#i`; a constant a binder in scope is named like is
+written `const "…"`; a variable free in a statement, or one whose binder is in
+another statement because the body is a shared node, is written by its index.
+A statement may be written `@name := term` and named `@name` where its node is
+used, and a declaration may name a statement that follows it; a name names one
+statement, an unknown name, a repeated name, and a variable given universe
+levels are errors, and `fmt` writes the numbers. A module written with names
+and one written with numbers read to one module, and the canonical notation
+keeps the names of the binders and writes the numbers of the statements, so
+that a person adds a theorem to a library by writing a declaration and the
+statements of its type and value, naming what they mean and counting nothing
+(`AU-12`). The notation does not infer: every argument and every universe level
+of a constant is written, as a kernel term has them (§17.10).
+
+*The declarations.* The other members of a declaration (its transparency,
+policy, reducibility, class and generated flags, the members of version 2, and
+every node it states other than its `type` and `value`) are the generic notation
+of the object that has them, so that no member is unspellable and a member added
+to the schema has a notation the day it is added. A declaration states its roots
+by `@`, so that each is a statement.
+
+The text is laid out at 100 columns: a statement is on one line when it fits,
+and when it does not an application puts each argument on a line of its own,
+indented, and a binder form puts its body on the next line. The canonical
+source of a module is the module with its body replaced by that text, as
+§17.21.5. A malformed text is `LLP2001` at its position; a notation read at a
+depth beyond 256, a universe level raised by more than 1024 at once, a label
+that is not the number of its node, a reference to a node not yet written, and a
+statement that defines no node are errors, and nothing panics. The notation is
+scanned as the semantic notation is (§17.21.1), and its metadata rows are owned
+by `lexlean.core::coresource`; the source map of a module in the notation
+relates the module's pieces to its text, and `fmt` writes a language-1.2 core
+module of schema 2 in the notation, so a module written as `\coredata` leaves
+the data form by being formatted.
 
 ## 18. Lean backend
 
@@ -6518,7 +6921,11 @@ canonical_json = "1"
 semantic IR, snapshot, proof forms, and fixed backends. A 1.1-only change
 updates that file and therefore the 1.1 compiler-semantics ID without changing
 the historical 1.0 ID. `language/semantics-1.2.toml` versions language 1.2 in
-the same way.
+the same way. The authoring notation of §17.21 is not part of any
+compiler-semantics ID: a module in the notation and in its data form have the
+same semantic ID and the same generated bytes (`AU-02`), so which of them a
+source is written in changes its source ID and source maps and nothing a build
+or a verification derives from the module.
 
 Each language's compiler-semantics ID is the §11.5 tree digest of a fixed,
 nested partition of the embedded tree. The language-1.2 ID covers the whole
@@ -6555,6 +6962,19 @@ The full (language-1.2) tree is the §11.5 tree digest of:
 - committed canonical-JSON fixtures under `tests/golden/canonical-json/`.
 
 The specification-link gate ensures these version declarations agree with this document. The digest excludes README prose, CI YAML, host binaries, timestamps, and generated build output.
+
+A file of the tree contributes its bytes, except that a `.lex.tex` source whose
+semantic, tooling, or core module is written in the authoring notation (§17.21)
+contributes the same source with that module written as its data form, the
+`\semanticdata{…}`, `\toolingdata{…}`, or `\coredata{…}` argument of canonical JSON that the
+source had before the notation existed. The two forms read to one module, so
+the form a normative source is written in is not part of what the compiler
+means: moving a source of the tree to the notation, or back, changes no
+compiler-semantics ID, and changing the module it holds changes the ID in
+either form (`AU-06`). The identity a preservation record states for the native
+library (`library.registry_sha256`, §17.17) is taken the same way, over the
+module list and each native source as its data form, so moving a library module
+to the notation changes no verification record (`AU-06`).
 
 The released binary embeds all three closed language IDs. Repository tests
 recompute the complete current input tree and, from the exclusion lists of
@@ -7084,16 +7504,23 @@ driver, and its process record.
 
 ### 22.11 Verification resource profile
 
-How many `lean`, `leanchecker`, and audit processes `verify` runs at once is an operational resource profile, never an input of verification. Its one parameter is the verification process width `W`, an integer from 1 to 64. It is selected only by the environment variable `LEXLEAN_VERIFY_WIDTH`, a decimal integer without sign or space; an unset or empty variable selects the default `W = 1`, the conservative profile, and any other value, including one that is not Unicode, fails as `LLV7017` before any stage runs. The width is not a field of `lexlean.toml`, the lock, a request, or the command line, it is not recorded by any artifact, and it enters no source, semantic, build, or attestation ID: a project verifies to the same artifacts at every width.
+How many `lean`, `leanchecker`, and audit processes `verify` runs at once, in which start order, and within what memory budget, is an operational resource profile, never an input of verification. Its parameters:
+
+- the verification process width `W`, an integer from 1 to 64, selected only by the environment variable `LEXLEAN_VERIFY_WIDTH`, a decimal integer without sign or space; an unset or empty variable selects the default `W = 1`, the conservative profile, and any other value, including one that is not Unicode, fails as `LLV7017` before any stage runs;
+- the scheduling hints, selected only by `LEXLEAN_VERIFY_HINTS`, the path of a JSON object keyed by the labels of the processes of a stage (this verifier: full Lean module names and audit-member names), each entry an object with `wall_ms` and an optional `peak_rss_kib`; an unset or empty variable selects no hints, and an unreadable, oversized, or malformed file, including a path that is not Unicode, fails as `LLV7017` before any stage runs;
+- the process memory budget, selected only by `LEXLEAN_VERIFY_MEMORY_KIB`, a decimal integer of KiB without sign or space; an unset or empty variable selects no budget, and any other value, including one that is not Unicode, fails as `LLV7017` before any stage runs.
+
+None is a field of `lexlean.toml`, the lock, a request, or the command line; none is recorded by any artifact; none enters a source, semantic, build, or attestation ID: a project verifies to the same artifacts at every profile.
 
 The profile changes how processes are scheduled and nothing else:
 
-1. Module elaboration (§22.3) proceeds in topological frontiers of the import graph. A module is elaborated only after every module it imports has been elaborated and its `.olean` produced by a successful process, so the import barriers hold at every width; the members of one frontier may run together, at most `W` at a time, and the next frontier starts when every member of the previous one has finished.
+1. Module elaboration (§22.3) proceeds in topological frontiers of the import graph. A module is elaborated only after every module it imports has been elaborated and its `.olean` produced by a successful process, so the import barriers hold at every width; the members of one frontier may run together, at most `W` at a time, and the next frontier starts when every member of the previous one has finished. The start order within a frontier is a scheduling decision: without hints it is the members' canonical order, and with hints it is the heaviest first by observed `wall_ms`, then by expected `peak_rss_kib`, then canonical order.
 2. Replay (§22.4) starts when every elaboration has finished and audit (§22.5) when every replay has finished: no replay overlaps an audit member, and neither overlaps an elaboration. The replays of different modules read the staged `.olean` files and write none, and the audit members each import one generated module and write none, so within each of those two stages the processes are independent and at most `W` run together.
 3. Results are consumed in the canonical order and never in completion order: the members of a frontier in module-declaration order, replays in sorted full module name, audit members in the order of the audit family. The process records, the staged files, the merge of the observed axiom sets, the policy rows, and the attestation body are functions of that order. When several processes fail, the diagnostic reported is the one of the first failing process in that order, which is the diagnostic width 1 reports; no process later in that order than a known failure is started, and every process started is finished before `verify` returns. Width 1 is exactly the sequence the verifier ran before there was a width: a process starts only after the result of the one before it has been consumed, so a failure that only the consumer can see (a missing `.olean`, a staging error) stops the stage before another process starts.
-4. The verifier does not measure the host. A width above 1 is for a host whose memory envelope is known; a width the host cannot hold is a failure of that host's run, never a verification result. The normative job uses the default width 1 (§9.4), and a width above 1 is exercised only on small projects, by the conformance cases.
+4. The verifier does not measure the host. A width above 1 is for a host whose memory envelope is known; a width the host cannot hold is a failure of that host's run, never a verification result. The normative job's `examples` leg names its profile (§9.4); every other run uses the default unless its environment selects one, and the conformance cases exercise widths above 1 on small projects.
+5. Hints and the memory budget are schedule inputs, never verdicts. A hint only reorders the start of items inside a stage, and the memory budget only gates a worker from starting an item whose expected peak (plus the expected peaks of the running items) would pass it. An item whose expected peak alone passes the budget runs alone rather than waiting forever: a wrong hint is a wrong schedule, never a fence and never a kill. A process that outgrows its hinted peak runs to completion; the stage measures it for the next hints. Hints change which ready item a worker starts first; results are consumed in the canonical order exactly as at width 1, so a failure reported is still the first failure in that order.
 
-For every project, the directory published at width `W` equals, byte for byte, the directory published at width 1 on the same host and toolchain; in particular the attestation ID, the observed axiom sets, the policy rows, the canonical compiler input, and every normalized verification record (§29.5) are identical.
+For every project, the directory published at any profile equals, byte for byte, the directory published at width 1 without hints and without a budget, on the same host and toolchain; in particular the attestation ID, the observed axiom sets, the policy rows, the canonical compiler input, and every normalized verification record (§29.5) are identical.
 
 ### 22.12 Performance telemetry
 
@@ -7121,7 +7548,7 @@ Global options:
 --help
 ```
 
-No environment variable changes semantic configuration. Two operational variables exist and change no output: `LEXLEAN_VERIFY_WIDTH` selects the verification process width (§22.11) and `LEXLEAN_CI_TELEMETRY` names the directory that receives performance telemetry (§22.12).
+No environment variable changes semantic configuration. Four operational variables exist and change no output: `LEXLEAN_VERIFY_WIDTH` selects the verification process width, `LEXLEAN_VERIFY_HINTS` names the scheduling-hints file and `LEXLEAN_VERIFY_MEMORY_KIB` the process memory budget (§22.11), and `LEXLEAN_CI_TELEMETRY` names the directory that receives performance telemetry (§22.12).
 
 ### 23.2 Project discovery
 
@@ -7503,6 +7930,57 @@ pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError>;
 **Schemas and versions.** The five schemas are `api/schemas/production-request`, `production-result`, `target-descriptor`, `target-descriptors`, and `production-replay`. They are outside `schemas/` and outside the compiler-semantics ID (§21.2): the envelope changes nothing the compiler computes from a source. `api/schemas/versions.toml` records each schema's SHA-256 under its exact spec; a released row is never edited, and a changed schema raises its spec version and adds a row.
 
 **Boundary.** No application semantics of a consumer enter the compiler: the consumer's own record of which roots it ships, under which names, is its own.
+
+
+### 24.8 Authoring API
+
+`lexlean::sdk` is the programmatic form of the authoring surface (§17.21): what
+a program that produces or edits a module's source may do, and nothing it may
+do in place of the notation. It reads, writes, and converts the `.lex.tex`
+source of a module without a project and without linking it (linking is the
+engine's, §24.1). The data it handles is the module as canonical JSON
+(`serde_json::Value`), the value every form of the module reads to.
+
+```rust
+pub enum ModuleKind { Semantic, Tooling, Core }
+
+pub struct AuthoringError { pub message: String, pub offset: Option<usize> }
+
+pub struct SourceHeader<'a> {
+    pub name: &'a str,
+    pub glossaries: &'a [&'a str],
+    pub imports: &'a [&'a str],
+    pub title: &'a str,
+}
+
+pub fn module_kind(text: &str) -> Option<ModuleKind>;
+pub fn is_notation(text: &str) -> bool;
+pub fn read_module(text: &str) -> Result<Value, AuthoringError>;
+pub fn write_module(text: &str, data: &Value) -> Result<String, AuthoringError>;
+pub fn to_data_form(text: &str) -> Result<String, AuthoringError>;
+pub fn to_notation(text: &str) -> Result<String, AuthoringError>;
+pub fn declaration_spans(text: &str)
+    -> Result<Option<Vec<(usize, usize)>>, AuthoringError>;
+pub fn assemble(header: &SourceHeader<'_>, kind: ModuleKind, data: &Value)
+    -> Result<String, AuthoringError>;
+```
+
+`read_module` returns the data of the module of `text`, written as
+`\semanticdata{…}` (`\toolingdata{…}`, `\coredata{…}`) or in the notation, which
+it reads as the compiler does (language 1.2). `write_module` replaces the data and keeps the form
+the module has: canonical JSON for the data form, the canonical notation for the
+notation, so a rewrite never changes which form a source is in. `to_data_form`
+and `to_notation` write the module in one form or the other (`to_notation` is
+what `fmt` writes for a language-1.2 module); `declaration_spans` is what a
+source map relates a declaration to; `assemble` writes the whole source of a
+module (header, the module in the canonical notation, closing). A source that
+states no module, a module whose data is not JSON or not a module of its kind,
+and notation that is not well formed are an `AuthoringError`, with the byte
+offset in the source when there is one, and never a panic. Every function is a
+function of its arguments alone. The formatter (§23.5), the identity of the
+embedded tree (§21.2), and the conformance suite's own editing of committed
+sources are written over these functions, so a program is held to the same text
+a person writes (`AU-08`).
 
 ---
 
@@ -8379,7 +8857,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
 | `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner at the default verifier width 1, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence. | §9.4 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence. | §9.4 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -8635,7 +9113,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TC-03` | `calculus` | The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean. | §17.14 |
 | `TC-04` | `calculus` | Lean's evaluator, running the published calculus sources compiled again by pinned Lean, reproduces every fixture's expected outcome and step count, including fixtures a reflexivity proof cannot decide, and the comparison refuses a fixture stated one step off. | §17.14 |
 | `TC-05` | `calculus` | Every realization library template has a fixture whose outcome the kernel proves equal to the value LexLean's own collection primitive computes, committed instances equal their templates, and a mutated template is rejected by Lean. | §17.12, §17.14 |
-| `TC-06` | `calculus` | Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits. | §17.13, §17.14 |
+| `TC-06` | `calculus` | Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits. | §17.13, §17.14 |
 | `TC-07` | `calculus` | Every fixture with an observable outcome renders to a safe Rust library crate in rust-std, and in rust-core exactly when it needs no heap, that the pinned rustc compiles with warnings denied, that prints exactly the denotation's value or overflow, and whose counted work never exceeds the denotation's steps; planted value and work discrepancies are detected. | §17.14 |
 | `RB-01` | `rust-backend` | Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused. | §17.16 |
 | `RB-02` | `rust-backend` | An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused. | §17.16, §26.3 |
@@ -8645,6 +9123,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-06` | `rust-backend` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected. | §17.16 |
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
 | `RB-08` | `rust-backend` | A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused. | §17.16 |
+| `RB-09` | `rust-backend` | Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused. | §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -8676,6 +9155,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-10` | `preservation` | A production root whose parameters can hold a map, set, or graph, directly or inside options, results, products, lists, document types, and recursive groups of them, is lowered with a generated entry function that calls the root only when the generated validators of each such parameter accept it and returns none otherwise; certificate A proves each validator decides exactly the proposition §17.12 states of its type and the entry's two outcomes; a validator is called only by the entry and by validators, so no proof-only invariant becomes a runtime check, and a validator called from inside the program is refused by the lowering; and a validator dropped from the entry, one weakened to admit an equal key, and a rendering whose entry drops a validator are each refused by Lean at the relation they change; a lowering whose entry skips a validated parameter is refused by the generator, which judges the validated parameters from the source types alone, and the differentials break each validated parameter's invariant in turn, which the interpreter, Lean, the declared machine, and rustc each refuse with none. | §17.12, §17.17 |
 | `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
 | `SP-12` | `preservation` | The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from. | §17.17 |
+| `SP-13` | `preservation` | Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements. | §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -8734,6 +9214,18 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TL-09` | `tooling` | A command declares its syntax kind, a grammar of a leading token, identifiers, and signature types, and an elaborator with no parameters whose type is the abbreviation `Lean.Elab.Command.CommandElab`, an invocation supplies one identifier or signature tree per non-token atom, and an evaluation runs a function of the module on typed arguments, all as semantic data; an elaborator with a parameter or another type, a grammar without a leading token, an invocation of an unregistered command or with a wrong argument count or kind, and an evaluation of an unregistered function or with ill-typed arguments fail with LLT4015, and the pinned Lean runs the committed elaborator, which accepts a constant that exists and refuses one that does not. | §17.20 |
 | `TL-10` | `tooling` | Both backends traverse the one linked module: the Lean text begins with the fixed header, holds one rendering per function, command, invocation, and evaluation, and contains no comment, every declaration with output has one source-mapped piece, coverage is complete, the LaTeX document has one entry per declaration, and the pinned Lean elaborates every committed fixture without a message while refusing a registry that misstates an arity or a constructor list that the tool is consistent with. | §17.20, §18, §19.6, §20.5 |
 | `TL-11` | `tooling` | Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record. | §17.20, §21.2, §28.3, §28.4 |
+| `AU-01` | `authoring` | Every value of the closed semantic-module schema has one notation and the notation reads back to the value: every alternative of the declaration, term, type, and proof unions, with and without its optional members, is written and read back equal, a node that no readable form carries exactly is written generically, the notation is its own canonical form, and every committed semantic module is written and read back equal to its data. | §17.21 |
+| `AU-02` | `authoring` | A language-1.2 semantic module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; fmt writes a module written as data in the notation, to the committed bytes, and leaves the notation unchanged, and the notation under language 1.1 is refused with LLP2003. | §17.21 |
+| `AU-03` | `authoring` | Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it. | §17.21 |
+| `AU-04` | `authoring` | No language-1.2 source of the product is written as data: every committed language-1.2 source with a semantic, tooling, or core module, in the compiler, the language libraries, the examples, and the positive fixtures, is written in the authoring notation and is canonical, the data form remains only under language 1.0 and 1.1 and in refused fixtures whose payload the notation cannot spell, and a refused fixture whose payload the notation can spell is a defect. | §17.21 |
+| `AU-05` | `authoring` | A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics. | §17.20, §17.21 |
+| `AU-06` | `authoring` | The compiler-semantics ID does not depend on the form a module of the embedded tree is written in: a semantic, tooling, or core module in the authoring notation contributes its data form, so the committed tree and the same tree with every such module written as data have one ID, a change to a module's meaning changes the ID in either form, the identity a preservation record states for the native library is over the same data forms, so it is the committed one, and the embedded tree holds at least one module written in the notation. | §17.21, §21.2 |
+| `AU-07` | `authoring` | No product source is the output of a generator: every `.lex.tex` source of `compiler/`, `language/`, and `examples/` is written and edited as source, and no writer of the repository (the generators `cargo xtask check-calculus` compares and rewrites) emits one of them except the four fixture modules of `compiler/` (`TargetFixtures`, `ReasoningFixtures`, `GnafFixtures`, `GnafCertificates`), generated from committed fixtures, requests, and certificates, and the extraction adapter's module, generated from the registry the pinned Lean answers; a source emitted by any other writer is a defect. | §17.14, §17.21 |
+| `AU-08` | `authoring` | The authoring API reads, writes, converts, and assembles the source of a module without a project: for every committed semantic and tooling source and every core source of at most twelve megabytes it reads the module it links to, writes it back in the form it has and in the other form, assembles the source from its header and data to the canonical notation, and is idempotent in each; and a source that is not a module, or whose notation is malformed, is an error with a position in the source and never a panic. | §24.8 |
+| `AU-09` | `authoring` | Every core module of the closed schema has one notation and the notation reads back to the module and to its data form: every committed core module reads back equal from its notation, its canonical JSON is the canonical JSON the compiler accepts and is, for a module written as data, byte for byte the data it was read from, the notation is its own canonical form, a node is written inside the node that uses it exactly when it is used once by the node after it and every other node is a statement, and a module that carries every kind of node, level, annotation, and declaration member is written and read back equal. | §17.21.8 |
+| `AU-10` | `authoring` | A language-1.2 core module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that name the notation; fmt writes a core module written as data as the notation and leaves the notation unchanged; and the notation under language 1.0 and 1.1 is refused with LLP2003. | §17.21.8 |
+| `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
+| `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
 
 
 | `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
@@ -8750,7 +9242,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-12` | `language-models` | Every fixed helper the text components are elaborated through is covered by a conformance case, so that a helper added without a case is a failure of the register rather than an untested path. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 380.
+**Total required capability IDs:** 394.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

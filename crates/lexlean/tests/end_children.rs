@@ -737,11 +737,13 @@ fn scenario_concurrent() {
         let registered_tx = registered_tx.clone();
         let stop = Arc::clone(&stop);
         joins.push(std::thread::spawn(move || {
-            let mut mine = Vec::new();
+            let mut mine: Vec<(std::process::Child, lexlean::verify::lifeline::Guard)> = Vec::new();
+            let mut started: Vec<u32> = Vec::new();
             while !stop.load(Ordering::SeqCst) {
                 match spawn_sleep_or_refusal_300() {
                     Ok((child, guard)) => {
                         let _ = registered_tx.send(child.id());
+                        started.push(child.id());
                         mine.push((child, guard));
                     }
                     // Refused: the host has ended the children and not yet
@@ -751,8 +753,16 @@ fn scenario_concurrent() {
                     }
                     Err(other) => panic!("the spawn works or is refused: {other:?}"),
                 }
+                // A child the host has ended stays in the process table as a
+                // zombie until its parent waits for it, and this loop starts
+                // children as fast as the machine lets it: unreaped, the
+                // zombies of sixty cycles exhaust a runner's process limit
+                // (`EAGAIN` on macOS) and fail the case for a reason that
+                // is not the function's. Reap the ones that have exited; the
+                // ids stay in `started`, which is what the case checks.
+                mine.retain_mut(|(child, _)| matches!(child.try_wait(), Ok(None)));
             }
-            mine
+            (mine, started)
         }));
     }
 
@@ -784,8 +794,11 @@ fn scenario_concurrent() {
 
     stop.store(true, Ordering::SeqCst);
     let mut spawned: Vec<(std::process::Child, lexlean::verify::lifeline::Guard)> = Vec::new();
+    let mut started: Vec<u32> = Vec::new();
     for join in joins {
-        spawned.extend(join.join().expect("the spawn thread"));
+        let (alive, ids) = join.join().expect("the spawn thread");
+        spawned.extend(alive);
+        started.extend(ids);
     }
     // What was registered after the last call is ended by one more.
     let sweep = lexlean::verify::end_live_children();
@@ -796,11 +809,10 @@ fn scenario_concurrent() {
         "every group of the sweep is ended: {sweep:?}"
     );
     ended.extend(sweep.iter().map(|row| row.group));
-    for (child, _) in &spawned {
+    for id in &started {
         assert!(
-            ended.contains(&child.id()),
-            "every started child is ended or was refused: {} is neither",
-            child.id()
+            ended.contains(id),
+            "every started child is ended or was refused: {id} is neither"
         );
     }
     for (mut child, guard) in spawned {

@@ -2,6 +2,23 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"countdown_decreases","parameters":[{"name":"number","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"blt","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"2"}},"right":{"kind":"bool","value":false}}}},{"axioms":["Quot.sound","propext"],"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"function":{"name":"countdown"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","name":"countdown","parameters":[{"name":"number","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"countdown_decreases"}],"measure":{"kind":"var","name":"number"}}}],"spec":"lexlean/semantic-module/2"}}
+theorem{
+  name: countdown_decreases,
+  parameters: [number : Nat],
+  statement: (((number <? 2) = false) -> ((prim subtract number 2 : Nat) < number)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: countdown,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number
+    | Nat.zero => 0
+    | Nat.succ previous => (countdown (prim subtract number 2 : Nat))),
+  axioms: [Quot.sound, propext],
+  termination: {evidence: [countdown_decreases], measure: number}
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -2,6 +2,29 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"kind":"theorem","name":"down_decreases","parameters":[{"name":"number","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"right":{"kind":"bool","value":false}}}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"downward"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Mixed","name":"upward","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}},{"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"function":{"name":"upward"},"kind":"call"},"kind":"if","then_value":{"kind":"nat","value":"0"}},"kind":"definition","mutual":"Mixed","name":"downward","parameters":[{"name":"number","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"down_decreases"}],"measure":{"kind":"var","name":"number"}}}],"spec":"lexlean/semantic-module/2"}}
+theorem{
+  name: down_decreases,
+  parameters: [number : Nat],
+  statement: (((number =? 0) = false) -> ((prim subtract number 1 : Nat) < number)),
+  proof: linear_arithmetic{}
+}
+
+definition{
+  name: upward,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number | Nat.zero => 0 | Nat.succ previous => (downward previous)),
+  mutual: Mixed,
+  recursive_argument: number
+}
+
+definition{
+  name: downward,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (if (number =? 0) then 0 else (upward (prim subtract number 1 : Nat))),
+  mutual: Mixed,
+  termination: {evidence: [down_decreases], measure: number}
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -2,6 +2,14 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"arguments":[{"kind":"var","name":"tail"}],"function":{"body":{"arguments":[{"kind":"var","name":"rest"}],"function":{"name":"depth"},"kind":"call"},"captures":[],"kind":"lambda","parameters":[{"name":"rest","type":{"element":{"kind":"nat"},"kind":"list"}}]},"kind":"apply"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"kind":"definition","name":"depth","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"recursive_argument":"values","result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: depth,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (match values
+    | List.nil => 0
+    | List.cons head tail => (apply (fun (rest : (List Nat)) => (depth rest)) tail)),
+  recursive_argument: values
+}
 \end{semanticmodule}
 \end{lexlean}

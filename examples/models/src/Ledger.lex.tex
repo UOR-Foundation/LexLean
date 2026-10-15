@@ -3,6 +3,537 @@
 \useglossary{models.titles@1.0.0}
 \title{Ledger contracts}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"kind":"le","left":{"kind":"var","name":"s"},"right":{"kind":"nat","value":"100"}},"kind":"definition","name":"Capped","parameters":[{"name":"s","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"s"},"right":{"kind":"nat","value":"100"}},"executable":true,"kind":"definition","name":"cappedCheck","parameters":[{"name":"s","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"capped_check_sound","parameters":[{"name":"s","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"cappedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"cappedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"kind":"theorem","name":"capped_check_complete","parameters":[{"name":"s","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"cappedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"cappedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"body":{"kind":"le","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"10"}},"kind":"definition","name":"Small","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"10"}},"executable":true,"kind":"definition","name":"smallCheck","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"small_check_sound","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Small"},{"name":"smallCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Small"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"smallCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"body":{"kind":"le","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"t"}},"kind":"definition","name":"Grows","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}},{"name":"t","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"t"}},"executable":true,"kind":"definition","name":"growsCheck","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}},{"name":"t","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"grows_check_sound","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}},{"name":"t","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Grows"},{"name":"growsCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"var","name":"t"},{"kind":"var","name":"y"}],"function":{"name":"Grows"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"var","name":"t"},{"kind":"var","name":"y"}],"function":{"name":"growsCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"kind":"theorem","name":"grows_check_complete","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}},{"name":"t","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Grows"},{"name":"growsCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"var","name":"t"},{"kind":"var","name":"y"}],"function":{"name":"growsCheck"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"var","name":"t"},{"kind":"var","name":"y"}],"function":{"name":"Grows"},"kind":"call"}}},{"axioms":["propext"],"input":{"name":"x","type":{"kind":"nat"}},"invariant":{"name":"Capped"},"kind":"contract","name":"LedgerContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Grows"},"precondition":{"name":"Small"},"state":{"name":"s","next":"t","type":{"kind":"nat"}},"validators":[{"complete":{"name":"capped_check_complete"},"predicate":"invariant","sound":{"name":"capped_check_sound"},"validator":{"name":"cappedCheck"}},{"complete":{"name":"grows_check_complete"},"predicate":"postcondition","sound":{"name":"grows_check_sound"},"validator":{"name":"growsCheck"}},{"predicate":"precondition","sound":{"name":"small_check_sound"},"validator":{"name":"smallCheck"}}]},{"descriptor":{"body":{"kind":"pair","left":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}},"right":{"kind":"var","name":"x"}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Spill","output":{"kind":"nat"},"state":{"initial":{"kind":"nat","value":"0"},"name":"s","type":{"kind":"nat"}}},{"body":{"kind":"pair","left":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}},"right":{"kind":"var","name":"x"}},"executable":true,"kind":"definition","name":"spillRef","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"spill_grows","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"Grows"},{"name":"Small"},{"name":"Spill"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"first","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Spill"},"kind":"call"}},{"kind":"second","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Spill"},"kind":"call"}}],"function":{"name":"Grows"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Small"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"axioms":["propext"],"kind":"theorem","name":"spill_reference","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Spill"},{"name":"spillRef"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Spill"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"spillRef"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Small"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"claims":[{"kind":"satisfies_contract","theorem":{"name":"spill_grows"}}],"contract":{"member":{"name":"LedgerContract"}},"kind":"evidence","name":"SpillEvidence","realization":{"member":{"name":"Spill"}}},{"contract":{"member":{"name":"LedgerContract"}},"evidence":[{"member":{"name":"SpillEvidence"}}],"kind":"model","name":"SpillModel","realization":{"member":{"name":"Spill"}}},{"axioms":["propext"],"claims":[{"kind":"equivalent_to","reference":{"member":{"name":"spillRef"}},"theorem":{"name":"spill_reference"}}],"contract":{"member":{"name":"LedgerContract"}},"kind":"evidence","name":"SpillReference","realization":{"member":{"name":"Spill"}}},{"contract":{"member":{"name":"LedgerContract"}},"evidence":[{"member":{"name":"SpillReference"}}],"kind":"model","name":"SpillRawModel","realization":{"member":{"name":"Spill"}}},{"axioms":["propext"],"input":{"name":"x","type":{"kind":"nat"}},"kind":"contract","name":"TallyContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Grows"},"precondition":{"name":"Small"},"state":{"name":"s","next":"t","type":{"kind":"nat"}},"validators":[{"predicate":"postcondition","sound":{"name":"grows_check_sound"},"validator":{"name":"growsCheck"}},{"predicate":"precondition","sound":{"name":"small_check_sound"},"validator":{"name":"smallCheck"}}]},{"descriptor":{"body":{"kind":"pair","left":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}},"right":{"kind":"var","name":"s"}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Tally","output":{"kind":"nat"},"state":{"initial":{"kind":"nat","value":"0"},"name":"s","type":{"kind":"nat"}}},{"body":{"kind":"pair","left":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}},"right":{"kind":"var","name":"s"}},"executable":true,"kind":"definition","name":"tallyRef","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"tally_grows","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Grows"},{"name":"Small"},{"name":"Tally"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"first","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"}},{"kind":"second","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"}}],"function":{"name":"Grows"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Small"},"kind":"call"}}},{"axioms":["propext"],"kind":"theorem","name":"tally_reference","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Tally"},{"name":"tallyRef"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"tallyRef"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Small"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"claims":[{"kind":"equivalent_to","reference":{"member":{"name":"tallyRef"}},"theorem":{"name":"tally_reference"}},{"kind":"satisfies_contract","theorem":{"name":"tally_grows"}}],"contract":{"member":{"name":"TallyContract"}},"kind":"evidence","name":"TallyEvidence","realization":{"member":{"name":"Tally"}}},{"contract":{"member":{"name":"TallyContract"}},"evidence":[{"member":{"name":"TallyEvidence"}}],"kind":"model","name":"TallyModel","realization":{"member":{"name":"Tally"}}},{"axioms":["propext"],"input":{"name":"x","type":{"kind":"nat"}},"invariant":{"name":"Capped"},"kind":"contract","name":"CapContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Grows"},"state":{"name":"s","next":"t","type":{"kind":"nat"}},"validators":[{"complete":{"name":"capped_check_complete"},"predicate":"invariant","sound":{"name":"capped_check_sound"},"validator":{"name":"cappedCheck"}},{"predicate":"postcondition","sound":{"name":"grows_check_sound"},"validator":{"name":"growsCheck"}}]},{"descriptor":{"body":{"binder":{"name":"total","type":{"kind":"nat"}},"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"total"},{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"100"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"total"},{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"100"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}},"kind":"let","value":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Clamp","output":{"kind":"nat"},"state":{"initial":{"kind":"nat","value":"0"},"name":"s","type":{"kind":"nat"}}},{"body":{"binder":{"name":"total","type":{"kind":"nat"}},"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"total"},{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"100"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"total"},{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"100"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}},"kind":"let","value":{"kind":"add","left":{"kind":"var","name":"s"},"right":{"kind":"var","name":"x"}}},"executable":true,"kind":"definition","name":"clampRef","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"kind":"theorem","name":"clamp_initial","parameters":[],"proof":{"kind":"decide"},"statement":{"arguments":[{"arguments":[],"function":{"name":"Clamp.initial"},"kind":"call"}],"function":{"name":"Capped"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"clamp_preserves","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"Clamp"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"first","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Clamp"},"kind":"call"}}],"function":{"name":"Capped"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"clamp_grows","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"Clamp"},{"name":"Grows"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"first","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Clamp"},"kind":"call"}},{"kind":"second","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Clamp"},"kind":"call"}}],"function":{"name":"Grows"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"axioms":["propext"],"kind":"theorem","name":"clamp_reference","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Clamp"},{"name":"clampRef"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Clamp"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"clampRef"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Capped"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"claims":[{"kind":"equivalent_to","reference":{"member":{"name":"clampRef"}},"theorem":{"name":"clamp_reference"}},{"kind":"initial_invariant","theorem":{"name":"clamp_initial"}},{"kind":"preserves_invariant","theorem":{"name":"clamp_preserves"}},{"kind":"satisfies_contract","theorem":{"name":"clamp_grows"}}],"contract":{"member":{"name":"CapContract"}},"kind":"evidence","name":"ClampEvidence","realization":{"member":{"name":"Clamp"}}},{"contract":{"member":{"name":"CapContract"}},"evidence":[{"member":{"name":"ClampEvidence"}}],"kind":"model","name":"ClampModel","realization":{"member":{"name":"Clamp"}}},{"axioms":["propext"],"input":{"name":"x","type":{"kind":"nat"}},"kind":"contract","name":"FreeContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Grows"},"state":{"name":"s","next":"t","type":{"kind":"nat"}},"validators":[{"predicate":"postcondition","sound":{"name":"grows_check_sound"},"validator":{"name":"growsCheck"}}]},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"tally_free_grows","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Grows"},{"name":"Tally"}],"kind":"linear_arithmetic"},"statement":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"},{"kind":"first","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"}},{"kind":"second","value":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"}}],"function":{"name":"Grows"},"kind":"call"}},{"axioms":["propext"],"kind":"theorem","name":"tally_free_reference","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Tally"},{"name":"tallyRef"}],"kind":"linear_arithmetic"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"Tally"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"function":{"name":"tallyRef"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"claims":[{"kind":"equivalent_to","reference":{"member":{"name":"tallyRef"}},"theorem":{"name":"tally_free_reference"}},{"kind":"satisfies_contract","theorem":{"name":"tally_free_grows"}}],"contract":{"member":{"name":"FreeContract"}},"kind":"evidence","name":"FreeEvidence","realization":{"member":{"name":"Tally"}}},{"contract":{"member":{"name":"FreeContract"}},"evidence":[{"member":{"name":"FreeEvidence"}}],"kind":"model","name":"FreeModel","realization":{"member":{"name":"Tally"}}},{"body":{"kind":"le","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"10"}},"kind":"definition","name":"Within","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"10"}},"executable":true,"kind":"definition","name":"withinCheck","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"within_check_sound","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Within"},{"name":"withinCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Within"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"withinCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"kind":"theorem","name":"within_check_complete","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Within"},{"name":"withinCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"withinCheck"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Within"},"kind":"call"}}},{"body":{"kind":"le","left":{"kind":"var","name":"y"},"right":{"kind":"var","name":"x"}},"kind":"definition","name":"Below","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"y"},"right":{"kind":"var","name":"x"}},"executable":true,"kind":"definition","name":"belowCheck","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"below_check_sound","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"y","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Below"},{"name":"belowCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"y"}],"function":{"name":"Below"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"y"}],"function":{"name":"belowCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"input":{"name":"x","type":{"kind":"nat"}},"kind":"contract","name":"GuessContract","output":{"name":"y","type":{"kind":"nat"}},"postcondition":{"name":"Below"},"precondition":{"name":"Within"},"validators":[{"predicate":"postcondition","sound":{"name":"below_check_sound"},"validator":{"name":"belowCheck"}},{"complete":{"name":"within_check_complete"},"predicate":"precondition","sound":{"name":"within_check_sound"},"validator":{"name":"withinCheck"}}]},{"descriptor":{"body":{"arguments":[{"kind":"var","name":"x"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Guess","output":{"kind":"nat"}},{"body":{"arguments":[{"kind":"var","name":"x"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"executable":true,"kind":"definition","name":"guessRef","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"kind":"nat"}},{"axioms":["propext"],"kind":"theorem","name":"guess_reference","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Guess"},{"name":"guessRef"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Guess"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"guessRef"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"x"}],"function":{"name":"Within"},"kind":"call"}}},{"body":{"head":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"1"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"4"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"9"},"right":{"kind":"nat","value":"9"}},"kind":"cons","tail":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"nil"}}}}}},"kind":"definition","name":"guessSamples","parameters":[],"result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"list"}},{"body":{"kind":"beq","left":{"kind":"var","name":"expected"},"right":{"kind":"var","name":"observed"}},"executable":true,"kind":"definition","name":"sameNat","parameters":[{"name":"expected","type":{"kind":"nat"}},{"name":"observed","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"same_nat_sound","parameters":[{"name":"expected","type":{"kind":"nat"}},{"name":"observed","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"sameNat"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"kind":"var","name":"expected"},"right":{"kind":"var","name":"observed"}},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"expected"},{"kind":"var","name":"observed"}],"function":{"name":"sameNat"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"kind":"theorem","name":"guess_agreement","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"prop_and","left":{"kind":"eq","left":{"arguments":[{"arguments":[],"function":{"name":"guessSamples"},"kind":"call"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"kind":"nat","value":"5"}},"right":{"kind":"eq","left":{"arguments":[{"body":{"condition":{"arguments":[{"arguments":[{"kind":"first","value":{"kind":"var","name":"example"}}],"function":{"name":"Guess"},"kind":"call"},{"kind":"second","value":{"kind":"var","name":"example"}}],"function":{"name":"sameNat"},"kind":"call"},"else_value":{"kind":"var","name":"count"},"kind":"if","then_value":{"kind":"add","left":{"kind":"var","name":"count"},"right":{"kind":"nat","value":"1"}}},"captures":[],"kind":"lambda","parameters":[{"name":"count","type":{"kind":"nat"}},{"name":"example","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}]},{"kind":"nat","value":"0"},{"arguments":[],"function":{"name":"guessSamples"},"kind":"call"}],"kind":"primitive","operation":"list_fold","result":{"kind":"nat"}},"right":{"kind":"nat","value":"4"}}}},{"claims":[{"agreements":4,"comparison":{"name":"sameNat"},"comparison_sound":{"name":"same_nat_sound"},"dataset":{"name":"guessSamples"},"examples":5,"kind":"dataset_agreement","theorem":{"name":"guess_agreement"}}],"contract":{"member":{"name":"GuessContract"}},"kind":"evidence","name":"GuessSample","realization":{"member":{"name":"Guess"}}},{"contract":{"member":{"name":"GuessContract"}},"evidence":[{"member":{"name":"GuessSample"}}],"kind":"model","name":"GuessModel","realization":{"member":{"name":"Guess"}}},{"axioms":["propext"],"claims":[{"kind":"equivalent_to","reference":{"member":{"name":"guessRef"}},"theorem":{"name":"guess_reference"}}],"contract":{"member":{"name":"GuessContract"}},"kind":"evidence","name":"GuessEquivalence","realization":{"member":{"name":"Guess"}}},{"contract":{"member":{"name":"GuessContract"}},"evidence":[{"member":{"name":"GuessEquivalence"}}],"kind":"model","name":"GuessExactModel","realization":{"member":{"name":"Guess"}}},{"descriptor":{"body":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"1"}},"kind":"deterministic"},"executable":true,"input":{"name":"x","type":{"kind":"nat"}},"kind":"realization","name":"Overshoot","output":{"kind":"nat"}},{"contract":{"member":{"name":"GuessContract"}},"kind":"model","name":"OvershootModel","realization":{"member":{"name":"Overshoot"}}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"1"},"constructor":{"name":"ContractViolation.precondition"}},{"binders":[],"body":{"kind":"nat","value":"2"},"constructor":{"name":"ContractViolation.input_invariant"}},{"binders":[],"body":{"kind":"nat","value":"3"},"constructor":{"name":"ContractViolation.postcondition"}},{"binders":[],"body":{"kind":"nat","value":"4"},"constructor":{"name":"ContractViolation.output_invariant"}}],"kind":"match","scrutinee":{"kind":"var","name":"violation"}},"executable":true,"kind":"definition","name":"violationCode","parameters":[{"name":"violation","type":{"kind":"contract_violation"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{name: Capped, parameters: [s : Nat], result: Prop, body: (s <= 100)}
+
+definition{
+  name: cappedCheck,
+  parameters: [s : Nat],
+  result: Bool,
+  body: (s <=? 100),
+  executable: true
+}
+
+theorem{
+  name: capped_check_sound,
+  parameters: [s : Nat],
+  statement: (((cappedCheck s) = true) -> (Capped s)),
+  proof: linear_arithmetic{definitions: [Capped, cappedCheck]},
+  axioms: [propext]
+}
+
+theorem{
+  name: capped_check_complete,
+  parameters: [s : Nat],
+  statement: ((Capped s) -> ((cappedCheck s) = true)),
+  proof: linear_arithmetic{definitions: [Capped, cappedCheck]},
+  axioms: [propext]
+}
+
+definition{name: Small, parameters: [s : Nat, x : Nat], result: Prop, body: (x <= 10)}
+
+definition{
+  name: smallCheck,
+  parameters: [s : Nat, x : Nat],
+  result: Bool,
+  body: (x <=? 10),
+  executable: true
+}
+
+theorem{
+  name: small_check_sound,
+  parameters: [s : Nat, x : Nat],
+  statement: (((smallCheck s x) = true) -> (Small s x)),
+  proof: linear_arithmetic{definitions: [Small, smallCheck]},
+  axioms: [propext]
+}
+
+definition{
+  name: Grows,
+  parameters: [s : Nat, x : Nat, t : Nat, y : Nat],
+  result: Prop,
+  body: (s <= t)
+}
+
+definition{
+  name: growsCheck,
+  parameters: [s : Nat, x : Nat, t : Nat, y : Nat],
+  result: Bool,
+  body: (s <=? t),
+  executable: true
+}
+
+theorem{
+  name: grows_check_sound,
+  parameters: [s : Nat, x : Nat, t : Nat, y : Nat],
+  statement: (((growsCheck s x t y) = true) -> (Grows s x t y)),
+  proof: linear_arithmetic{definitions: [Grows, growsCheck]},
+  axioms: [propext]
+}
+
+theorem{
+  name: grows_check_complete,
+  parameters: [s : Nat, x : Nat, t : Nat, y : Nat],
+  statement: ((Grows s x t y) -> ((growsCheck s x t y) = true)),
+  proof: linear_arithmetic{definitions: [Grows, growsCheck]},
+  axioms: [propext]
+}
+
+contract{
+  name: LedgerContract,
+  axioms: [propext],
+  input: {name: x, type: Nat},
+  invariant: Capped,
+  output: {name: y, type: Nat},
+  postcondition: Grows,
+  precondition: Small,
+  state: {name: s, type: Nat, next: t},
+  validators: [
+    {
+      complete: capped_check_complete,
+      predicate: invariant,
+      sound: capped_check_sound,
+      validator: cappedCheck
+    },
+    {
+      complete: grows_check_complete,
+      predicate: postcondition,
+      sound: grows_check_sound,
+      validator: growsCheck
+    },
+    {predicate: precondition, sound: small_check_sound, validator: smallCheck}
+  ]
+}
+
+realization{
+  name: Spill,
+  descriptor: deterministic{body: ((s + x), x)},
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat,
+  state: {name: s, type: Nat, initial: 0}
+}
+
+definition{
+  name: spillRef,
+  parameters: [s : Nat, x : Nat],
+  result: (Nat * Nat),
+  body: ((s + x), x),
+  executable: true
+}
+
+theorem{
+  name: spill_grows,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Capped s) -> ((Small s x) -> (Grows s x (first (Spill s x)) (second (Spill s x))))),
+  proof: linear_arithmetic{definitions: [Capped, Grows, Small, Spill]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: spill_reference,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Capped s) -> ((Small s x) -> ((Spill s x) = (spillRef s x)))),
+  proof: linear_arithmetic{definitions: [Spill, spillRef]},
+  axioms: [propext]
+}
+
+evidence{
+  name: SpillEvidence,
+  axioms: [Quot.sound, propext],
+  claims: [satisfies_contract{theorem: spill_grows}],
+  contract: {member: LedgerContract},
+  realization: {member: Spill}
+}
+
+model{
+  name: SpillModel,
+  contract: {member: LedgerContract},
+  evidence: [{member: SpillEvidence}],
+  realization: {member: Spill}
+}
+
+evidence{
+  name: SpillReference,
+  axioms: [propext],
+  claims: [equivalent_to{reference: {member: spillRef}, theorem: spill_reference}],
+  contract: {member: LedgerContract},
+  realization: {member: Spill}
+}
+
+model{
+  name: SpillRawModel,
+  contract: {member: LedgerContract},
+  evidence: [{member: SpillReference}],
+  realization: {member: Spill}
+}
+
+contract{
+  name: TallyContract,
+  axioms: [propext],
+  input: {name: x, type: Nat},
+  output: {name: y, type: Nat},
+  postcondition: Grows,
+  precondition: Small,
+  state: {name: s, type: Nat, next: t},
+  validators: [
+    {predicate: postcondition, sound: grows_check_sound, validator: growsCheck},
+    {predicate: precondition, sound: small_check_sound, validator: smallCheck}
+  ]
+}
+
+realization{
+  name: Tally,
+  descriptor: deterministic{body: ((s + x), s)},
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat,
+  state: {name: s, type: Nat, initial: 0}
+}
+
+definition{
+  name: tallyRef,
+  parameters: [s : Nat, x : Nat],
+  result: (Nat * Nat),
+  body: ((s + x), s),
+  executable: true
+}
+
+theorem{
+  name: tally_grows,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Small s x) -> (Grows s x (first (Tally s x)) (second (Tally s x)))),
+  proof: linear_arithmetic{definitions: [Grows, Small, Tally]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: tally_reference,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Small s x) -> ((Tally s x) = (tallyRef s x))),
+  proof: linear_arithmetic{definitions: [Tally, tallyRef]},
+  axioms: [propext]
+}
+
+evidence{
+  name: TallyEvidence,
+  axioms: [Quot.sound, propext],
+  claims: [
+    equivalent_to{reference: {member: tallyRef}, theorem: tally_reference},
+    satisfies_contract{theorem: tally_grows}
+  ],
+  contract: {member: TallyContract},
+  realization: {member: Tally}
+}
+
+model{
+  name: TallyModel,
+  contract: {member: TallyContract},
+  evidence: [{member: TallyEvidence}],
+  realization: {member: Tally}
+}
+
+contract{
+  name: CapContract,
+  axioms: [propext],
+  input: {name: x, type: Nat},
+  invariant: Capped,
+  output: {name: y, type: Nat},
+  postcondition: Grows,
+  state: {name: s, type: Nat, next: t},
+  validators: [
+    {
+      complete: capped_check_complete,
+      predicate: invariant,
+      sound: capped_check_sound,
+      validator: cappedCheck
+    },
+    {predicate: postcondition, sound: grows_check_sound, validator: growsCheck}
+  ]
+}
+
+realization{
+  name: Clamp,
+  descriptor: deterministic{
+    body: (let total : Nat := (s + x); ((prim subtract total (prim subtract total 100 : Nat) : Nat), (prim subtract total (prim subtract total 100 : Nat) : Nat)))
+  },
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat,
+  state: {name: s, type: Nat, initial: 0}
+}
+
+definition{
+  name: clampRef,
+  parameters: [s : Nat, x : Nat],
+  result: (Nat * Nat),
+  body: (let total : Nat := (s + x); ((prim subtract total (prim subtract total 100 : Nat) : Nat), (prim subtract total (prim subtract total 100 : Nat) : Nat))),
+  executable: true
+}
+
+theorem{name: clamp_initial, parameters: [], statement: (Capped (Clamp.initial)), proof: decide{}}
+
+theorem{
+  name: clamp_preserves,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Capped s) -> (Capped (first (Clamp s x)))),
+  proof: linear_arithmetic{definitions: [Capped, Clamp]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: clamp_grows,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Capped s) -> (Grows s x (first (Clamp s x)) (second (Clamp s x)))),
+  proof: linear_arithmetic{definitions: [Capped, Clamp, Grows]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: clamp_reference,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Capped s) -> ((Clamp s x) = (clampRef s x))),
+  proof: linear_arithmetic{definitions: [Clamp, clampRef]},
+  axioms: [propext]
+}
+
+evidence{
+  name: ClampEvidence,
+  axioms: [Quot.sound, propext],
+  claims: [
+    equivalent_to{reference: {member: clampRef}, theorem: clamp_reference},
+    initial_invariant{theorem: clamp_initial},
+    preserves_invariant{theorem: clamp_preserves},
+    satisfies_contract{theorem: clamp_grows}
+  ],
+  contract: {member: CapContract},
+  realization: {member: Clamp}
+}
+
+model{
+  name: ClampModel,
+  contract: {member: CapContract},
+  evidence: [{member: ClampEvidence}],
+  realization: {member: Clamp}
+}
+
+contract{
+  name: FreeContract,
+  axioms: [propext],
+  input: {name: x, type: Nat},
+  output: {name: y, type: Nat},
+  postcondition: Grows,
+  state: {name: s, type: Nat, next: t},
+  validators: [{predicate: postcondition, sound: grows_check_sound, validator: growsCheck}]
+}
+
+theorem{
+  name: tally_free_grows,
+  parameters: [s : Nat, x : Nat],
+  statement: (Grows s x (first (Tally s x)) (second (Tally s x))),
+  proof: linear_arithmetic{definitions: [Grows, Tally]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: tally_free_reference,
+  parameters: [s : Nat, x : Nat],
+  statement: ((Tally s x) = (tallyRef s x)),
+  proof: linear_arithmetic{definitions: [Tally, tallyRef]},
+  axioms: [propext]
+}
+
+evidence{
+  name: FreeEvidence,
+  axioms: [Quot.sound, propext],
+  claims: [
+    equivalent_to{reference: {member: tallyRef}, theorem: tally_free_reference},
+    satisfies_contract{theorem: tally_free_grows}
+  ],
+  contract: {member: FreeContract},
+  realization: {member: Tally}
+}
+
+model{
+  name: FreeModel,
+  contract: {member: FreeContract},
+  evidence: [{member: FreeEvidence}],
+  realization: {member: Tally}
+}
+
+definition{name: Within, parameters: [x : Nat], result: Prop, body: (x <= 10)}
+
+definition{
+  name: withinCheck,
+  parameters: [x : Nat],
+  result: Bool,
+  body: (x <=? 10),
+  executable: true
+}
+
+theorem{
+  name: within_check_sound,
+  parameters: [x : Nat],
+  statement: (((withinCheck x) = true) -> (Within x)),
+  proof: linear_arithmetic{definitions: [Within, withinCheck]},
+  axioms: [propext]
+}
+
+theorem{
+  name: within_check_complete,
+  parameters: [x : Nat],
+  statement: ((Within x) -> ((withinCheck x) = true)),
+  proof: linear_arithmetic{definitions: [Within, withinCheck]},
+  axioms: [propext]
+}
+
+definition{name: Below, parameters: [x : Nat, y : Nat], result: Prop, body: (y <= x)}
+
+definition{
+  name: belowCheck,
+  parameters: [x : Nat, y : Nat],
+  result: Bool,
+  body: (y <=? x),
+  executable: true
+}
+
+theorem{
+  name: below_check_sound,
+  parameters: [x : Nat, y : Nat],
+  statement: (((belowCheck x y) = true) -> (Below x y)),
+  proof: linear_arithmetic{definitions: [Below, belowCheck]},
+  axioms: [propext]
+}
+
+contract{
+  name: GuessContract,
+  axioms: [propext],
+  input: {name: x, type: Nat},
+  output: {name: y, type: Nat},
+  postcondition: Below,
+  precondition: Within,
+  validators: [
+    {predicate: postcondition, sound: below_check_sound, validator: belowCheck},
+    {
+      complete: within_check_complete,
+      predicate: precondition,
+      sound: within_check_sound,
+      validator: withinCheck
+    }
+  ]
+}
+
+realization{
+  name: Guess,
+  descriptor: deterministic{body: (prim subtract x 1 : Nat)},
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat
+}
+
+definition{
+  name: guessRef,
+  parameters: [x : Nat],
+  result: Nat,
+  body: (prim subtract x 1 : Nat),
+  executable: true
+}
+
+theorem{
+  name: guess_reference,
+  parameters: [x : Nat],
+  statement: ((Within x) -> ((Guess x) = (guessRef x))),
+  proof: linear_arithmetic{definitions: [Guess, guessRef]},
+  axioms: [propext]
+}
+
+definition{
+  name: guessSamples,
+  parameters: [],
+  result: (List (Nat * Nat)),
+  body: (cons (0, 0) (cons (1, 0) (cons (2, 1) (cons (5, 4) (cons (9, 9) (nil (Nat * Nat)))))))
+}
+
+definition{
+  name: sameNat,
+  parameters: [expected : Nat, observed : Nat],
+  result: Bool,
+  body: (expected =? observed),
+  executable: true
+}
+
+theorem{
+  name: same_nat_sound,
+  parameters: [expected : Nat, observed : Nat],
+  statement: (((sameNat expected observed) = true) -> (expected = observed)),
+  proof: linear_arithmetic{definitions: [sameNat]},
+  axioms: [propext]
+}
+
+theorem{
+  name: guess_agreement,
+  parameters: [],
+  statement: (((prim length (guessSamples) : Nat) = 5) /\ ((prim list_fold (fun (count : Nat) (example : (Nat * Nat)) => (if (sameNat (Guess (first example)) (second example)) then (count + 1) else count)) 0 (guessSamples) : Nat) = 4)),
+  proof: decide{}
+}
+
+evidence{
+  name: GuessSample,
+  claims: [
+    dataset_agreement{
+      agreements: 4,
+      comparison: sameNat,
+      comparison_sound: same_nat_sound,
+      dataset: guessSamples,
+      examples: 5,
+      theorem: guess_agreement
+    }
+  ],
+  contract: {member: GuessContract},
+  realization: {member: Guess}
+}
+
+model{
+  name: GuessModel,
+  contract: {member: GuessContract},
+  evidence: [{member: GuessSample}],
+  realization: {member: Guess}
+}
+
+evidence{
+  name: GuessEquivalence,
+  axioms: [propext],
+  claims: [equivalent_to{reference: {member: guessRef}, theorem: guess_reference}],
+  contract: {member: GuessContract},
+  realization: {member: Guess}
+}
+
+model{
+  name: GuessExactModel,
+  contract: {member: GuessContract},
+  evidence: [{member: GuessEquivalence}],
+  realization: {member: Guess}
+}
+
+realization{
+  name: Overshoot,
+  descriptor: deterministic{body: (x + 1)},
+  executable: true,
+  input: {name: x, type: Nat},
+  output: Nat
+}
+
+model{name: OvershootModel, contract: {member: GuessContract}, realization: {member: Overshoot}}
+
+definition{
+  name: violationCode,
+  parameters: [violation : ContractViolation],
+  result: Nat,
+  body: (match violation
+    | ContractViolation.precondition => 1
+    | ContractViolation.input_invariant => 2
+    | ContractViolation.postcondition => 3
+    | ContractViolation.output_invariant => 4),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

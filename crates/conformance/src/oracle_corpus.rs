@@ -793,15 +793,9 @@ pub fn probe_project(probes: &[Probe]) -> P {
 /// The named declarations of a semantic module's text that carry a
 /// production block, and the text with every block removed.
 fn strip_production(text: &str) -> (String, Vec<String>) {
-    let marker = "\\semanticdata{";
-    let Some(start) = text.find(marker) else {
+    let Ok(mut data) = crate::support::try_module_json(text) else {
         return (text.to_owned(), Vec::new());
     };
-    let body_start = start + marker.len();
-    let end = text[body_start..]
-        .rfind("}\n\\end{semanticmodule}")
-        .map_or(text.len(), |at| body_start + at);
-    let mut data: Json = serde_json::from_str(&text[body_start..end]).expect("semantic data");
     let mut roots = Vec::new();
     if let Some(declarations) = data.get_mut("declarations").and_then(Json::as_array_mut) {
         for declaration in declarations {
@@ -814,10 +808,7 @@ fn strip_production(text: &str) -> (String, Vec<String>) {
             }
         }
     }
-    (
-        format!("{}{}{}", &text[..body_start], data, &text[end..]),
-        roots,
-    )
+    (crate::support::with_module_json(text, &data), roots)
 }
 
 /// The rejection project of a negative fixture: its sources with the

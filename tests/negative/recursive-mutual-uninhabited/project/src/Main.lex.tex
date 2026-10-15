@@ -2,6 +2,20 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Odd"}}],"name":"fromOdd"}],"kind":"inductive","mutual":"Parity","name":"Even","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Even"}}],"name":"fromEven"}],"kind":"inductive","mutual":"Parity","name":"Odd","parameters":[],"type_parameters":[]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Even,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: fromOdd, fields: [Odd]}],
+  mutual: Parity
+}
+
+inductive{
+  name: Odd,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: fromEven, fields: [Even]}],
+  mutual: Parity
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -3,6 +3,12 @@
 \importmodule{Deep}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"arguments":[{"kind":"var","name":"limit"}],"function":{"module":"Deep","name":"count"},"kind":"call"},"executable":true,"kind":"definition","name":"relay","parameters":[{"name":"limit","type":{"kind":"nat"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: relay,
+  parameters: [limit : Nat],
+  result: Nat,
+  body: (Deep::count limit),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

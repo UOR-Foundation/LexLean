@@ -505,9 +505,25 @@ impl P {
         Engine::load(&self.root.join("lexlean.toml")).expect("project loads")
     }
 
-    /// Read a project file.
+    /// Read a project file. A language-1.2 semantic module written in the
+    /// authoring notation is presented in its data form, the canonical JSON
+    /// the cases quote and edit by fragment: the notation reads to exactly
+    /// that module (`AU-02`), and a case that writes the text back leaves a
+    /// module the compiler reads just the same. [`Self::read_raw`] is the
+    /// file's own bytes.
     #[must_use]
     pub fn read(&self, relative: &str) -> String {
+        let text = self.read_raw(relative);
+        if relative.ends_with(".lex.tex") {
+            as_data_text(&text)
+        } else {
+            text
+        }
+    }
+
+    /// Read a project file's own bytes.
+    #[must_use]
+    pub fn read_raw(&self, relative: &str) -> String {
         std::fs::read_to_string(self.root.join(relative).as_std_path()).expect("read")
     }
 
@@ -2155,6 +2171,145 @@ pub fn verify_ok_backed(id: &str, project: &P) -> Option<lexlean::VerifiedProjec
 pub fn tex_body(tex: &str) -> &str {
     tex.split_once("\\begin{document}\n")
         .map_or(tex, |(_, body)| body)
+}
+
+/// The module data of a committed or generated language-1.2 source as JSON,
+/// whichever form the source writes it in (`lexlean::sdk::read_module`).
+///
+/// # Errors
+///
+/// A source with no module, or one that is not well formed.
+pub fn try_module_json(text: &str) -> Result<serde_json::Value, String> {
+    lexlean::sdk::read_module(text).map_err(|error| error.to_string())
+}
+
+/// [`try_module_json`] for a source that is known to be well formed.
+///
+/// # Panics
+///
+/// When the source has no semantic module or the module is not well formed.
+#[must_use]
+pub fn module_json(text: &str) -> serde_json::Value {
+    try_module_json(text).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// `text` with its semantic module's data replaced by `data`, written in the
+/// form the module already uses: `data` is canonicalised for the data form,
+/// and printed in the notation for the notation, so a rewrite never changes
+/// which authoring form a source is in.
+///
+/// # Panics
+///
+/// When the source has no semantic module, or `data` is not a module.
+#[must_use]
+pub fn with_module_json(text: &str, data: &serde_json::Value) -> String {
+    lexlean::sdk::write_module(text, data).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Whether the semantic module of `text` declares `name`.
+///
+/// # Panics
+///
+/// When the source has no well-formed semantic module.
+#[must_use]
+pub fn declares(text: &str, name: &str) -> bool {
+    module_json(text)["declarations"]
+        .as_array()
+        .is_some_and(|declarations| {
+            declarations
+                .iter()
+                .any(|declaration| declaration["name"] == name)
+        })
+}
+
+/// The §11.5 tree digest of `rows`, each contributing what it contributes to a
+/// compiler-semantics ID (§21.2): a module written in the authoring notation
+/// contributes its data form. The rows are `(path, bytes)` in path order.
+#[must_use]
+pub fn identity_tree_digest(rows: &[(&str, &[u8])]) -> lexlean::artifact::content_id::Sha256Digest {
+    let normalized: Vec<(&str, std::borrow::Cow<'_, [u8]>)> = rows
+        .iter()
+        .map(|(path, bytes)| (*path, lexlean::identity_bytes(path, bytes)))
+        .collect();
+    let borrowed: Vec<(&str, &[u8])> = normalized
+        .iter()
+        .map(|(path, bytes)| (*path, bytes.as_ref()))
+        .collect();
+    lexlean::artifact::content_id::tree_digest(&borrowed)
+}
+
+/// Whether `text` has a semantic or tooling module written in the authoring
+/// notation that is well formed.
+#[must_use]
+pub fn is_notation_module(text: &str) -> bool {
+    lexlean::sdk::is_notation(text)
+}
+
+/// `text` with a semantic or tooling module written in the notation written as
+/// data instead (see [`P::read`]); any other text as it is.
+#[must_use]
+pub fn as_data_text(text: &str) -> String {
+    if is_notation_module(text) {
+        module_as_data(text)
+    } else {
+        text.to_owned()
+    }
+}
+
+/// `text` with its semantic module written as `\semanticdata{…}`, the
+/// canonical JSON the compiler links, instead of the authoring notation: the
+/// form a module had before it was written in the notation, and the one
+/// `fmt` migrates away from (SPEC.md §17.21).
+///
+/// # Panics
+///
+/// When the source has no well-formed semantic module.
+#[must_use]
+pub fn module_as_data(text: &str) -> String {
+    lexlean::sdk::to_data_form(text).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// `text` with the layout of its notation collapsed to single spaces outside
+/// strings: the same module, in a layout no formatter would write. A string's
+/// text is untouched, because it is the module's meaning.
+///
+/// # Panics
+///
+/// When the source has no semantic module.
+#[must_use]
+pub fn squeezed_notation(text: &str) -> String {
+    let body = lexlean::surface::module::locate(text)
+        .expect("the source states a module")
+        .body;
+    let mut squeezed = String::new();
+    let (mut quoted, mut escaped, mut space) = (false, false, false);
+    for scalar in text[body.0..body.1].chars() {
+        if quoted {
+            squeezed.push(scalar);
+            if escaped {
+                escaped = false;
+            } else if scalar == '\\' {
+                escaped = true;
+            } else if scalar == '"' {
+                quoted = false;
+            }
+        } else if scalar == ' ' || scalar == '\n' {
+            if !space {
+                squeezed.push(' ');
+            }
+            space = true;
+        } else {
+            space = false;
+            quoted = scalar == '"';
+            squeezed.push(scalar);
+        }
+    }
+    format!(
+        "{}\n{}\n{}",
+        &text[..body.0],
+        squeezed.trim(),
+        &text[body.1..]
+    )
 }
 
 /// Generate the §18.8 probe module for the named `package::entry` external

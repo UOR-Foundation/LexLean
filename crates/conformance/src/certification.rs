@@ -6,10 +6,10 @@
 //! host's trials say about each system, and the expected verdict is
 //! computed by the host transcription `lexlean::gnaf::certification::check`.
 //! The committed `compiler/certificates/<name>.json` files, the
-//! `compiler/src/GnafCertificates` module, the `Certification` module it
-//! imports ([`crate::certification_model`]), and the schemas are exactly
-//! what [`files`] renders, which `cargo xtask check-calculus` enforces. In
-//! the module, each certificate is a `Certification.Certificate` definition
+//! `compiler/src/GnafCertificates` module, and the schemas are exactly what
+//! [`files`] renders, which `cargo xtask check-calculus` enforces; the
+//! `Certification` model the module imports is source, written in `.lex.tex`
+//! (SPEC.md §17.18). In the module, each certificate is a `Certification.Certificate` definition
 //! with a theorem that the kernel reduces the checker's verdict on it and
 //! its request to what the host computes, so the model, not the
 //! transcription, is the oracle.
@@ -1374,7 +1374,7 @@ pub fn fixture_declarations(fixture: &CertificateFixture) -> Vec<Json> {
                "result": term::named(certification::MODEL, "Certificate"),
                "body": certification::certificate_term(&fixture.certificate)}),
         json!({"kind": "theorem", "name": format!("{id}Verdict"), "parameters": [],
-               "axioms": crate::gnaf_model::RUN_AXIOMS,
+               "axioms": crate::gnaf::RUN_AXIOMS,
                "statement": {"kind": "eq",
                    "left": {"kind": "call",
                             "function": term::member(certification::MODEL, "check"),
@@ -1398,7 +1398,7 @@ pub fn fixture_declarations(fixture: &CertificateFixture) -> Vec<Json> {
             .unwrap_or_else(|error| panic!("{}: {error:?}", fixture.name));
         out.push(
             json!({"kind": "theorem", "name": format!("{id}Preserves"), "parameters": [],
-               "axioms": crate::gnaf_model::RUN_AXIOMS,
+               "axioms": crate::gnaf::RUN_AXIOMS,
                "statement": {"kind": "eq",
                    "left": {"kind": "call",
                             "function": term::member(certification::MODEL,
@@ -1501,7 +1501,7 @@ fn pair_declarations() -> Vec<Json> {
                 "arguments": []});
             [false, true].map(|cheaper| {
                 json!({"kind": "theorem", "name": pair_theorem(pair, cheaper), "parameters": [],
-                       "axioms": crate::gnaf_model::RUN_AXIOMS,
+                       "axioms": crate::gnaf::RUN_AXIOMS,
                        "statement": {"kind": "eq",
                            "left": {"kind": "call",
                                     "function": term::member(certification::MODEL, "pairRelation"),
@@ -1553,10 +1553,6 @@ pub fn files() -> BTreeMap<String, Vec<u8>> {
     for (path, schema) in schemas() {
         out.insert(path.to_owned(), gnaf::to_file_bytes(&schema));
     }
-    out.insert(
-        crate::certification_model::PATH.to_owned(),
-        crate::certification_model::module().into_bytes(),
-    );
     out
 }
 

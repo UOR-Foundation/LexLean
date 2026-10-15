@@ -2,6 +2,811 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{toolingmodule}
-\toolingdata{{"authority":{"id":"LEAN-LCNF-4-32-1","lean_githash":"f054605aea4b840552cca2e725580bffd1e1b704","lean_version":"4.32.1"},"declarations":[{"constructors":[{"fields":[],"name":"pure"},{"fields":[],"name":"impure"}],"kind":"type","name":"Lean.Compiler.LCNF.Purity","parameters":[],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[{"name":"decl","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.LetDecl"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"let"},{"fields":[{"name":"decl","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.FunDecl"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"fun","requires":{"constructor":"Lean.Compiler.LCNF.Purity.pure","parameter":"pu"}},{"fields":[{"name":"decl","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.FunDecl"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"jp"},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"args","type":{"arguments":[{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Arg"}],"kind":"const","name":"Array"}}],"name":"jmp"},{"fields":[{"name":"cases","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Cases"}}],"name":"cases"},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}}],"name":"return"},{"fields":[{"name":"type","type":{"arguments":[],"kind":"const","name":"Lean.Expr"}}],"name":"unreach"},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"i","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"y","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Arg"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"oset","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"i","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"y","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"uset","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"i","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"offset","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"y","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"ty","type":{"arguments":[],"kind":"const","name":"Lean.Expr"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"sset","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"cidx","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"setTag","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"n","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"check","type":{"arguments":[],"kind":"const","name":"Bool"}},{"name":"persistent","type":{"arguments":[],"kind":"const","name":"Bool"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"inc","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"n","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"check","type":{"arguments":[],"kind":"const","name":"Bool"}},{"name":"persistent","type":{"arguments":[],"kind":"const","name":"Bool"}},{"name":"objs?","type":{"arguments":[{"arguments":[],"kind":"const","name":"Nat"}],"kind":"const","name":"Option"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"dec","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"k","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"del","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}}],"kind":"type","name":"Lean.Compiler.LCNF.Code","parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[{"name":"fvarId","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"binderName","type":{"arguments":[],"kind":"const","name":"Lean.Name"}},{"name":"params","type":{"arguments":[{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Param"}],"kind":"const","name":"Array"}},{"name":"type","type":{"arguments":[],"kind":"const","name":"Lean.Expr"}},{"name":"value","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"mk"}],"kind":"type","name":"Lean.Compiler.LCNF.FunDecl","parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[{"name":"ctorName","type":{"arguments":[],"kind":"const","name":"Lean.Name"}},{"name":"params","type":{"arguments":[{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Param"}],"kind":"const","name":"Array"}},{"name":"code","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"alt","requires":{"constructor":"Lean.Compiler.LCNF.Purity.pure","parameter":"pu"}},{"fields":[{"name":"info","type":{"arguments":[],"kind":"const","name":"Lean.Compiler.LCNF.CtorInfo"}},{"name":"code","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"ctorAlt","requires":{"constructor":"Lean.Compiler.LCNF.Purity.impure","parameter":"pu"}},{"fields":[{"name":"code","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"name":"default"}],"kind":"type","name":"Lean.Compiler.LCNF.Alt","parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[{"name":"typeName","type":{"arguments":[],"kind":"const","name":"Lean.Name"}},{"name":"resultType","type":{"arguments":[],"kind":"const","name":"Lean.Expr"}},{"name":"discr","type":{"arguments":[],"kind":"const","name":"Lean.FVarId"}},{"name":"alts","type":{"arguments":[{"arguments":[{"arguments":[],"kind":"parameter","name":"pu"}],"kind":"const","name":"Lean.Compiler.LCNF.Alt"}],"kind":"const","name":"Array"}}],"name":"mk"}],"kind":"type","name":"Lean.Compiler.LCNF.Cases","parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[{"name":"toList","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"α"}],"kind":"const","name":"List"}}],"name":"mk"}],"kind":"type","name":"Array","parameters":[{"kind":{"kind":"type"},"name":"α"}],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"constructors":[{"fields":[],"name":"false"},{"fields":[],"name":"true"}],"kind":"type","name":"Bool","parameters":[],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"constructors":[],"kind":"type","name":"Lean.Compiler.LCNF.Arg","opaque":true,"parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[],"kind":"type","name":"Lean.Compiler.LCNF.LetDecl","opaque":true,"parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[],"kind":"type","name":"Lean.Expr","opaque":true,"parameters":[],"source":{"file":"src/lean/Lean/Expr.lean","sha256":"7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"}},{"constructors":[],"kind":"type","name":"Lean.FVarId","opaque":true,"parameters":[],"source":{"file":"src/lean/Lean/Expr.lean","sha256":"7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"}},{"constructors":[{"fields":[],"name":"zero"},{"fields":[{"name":"n","type":{"arguments":[],"kind":"const","name":"Nat"}}],"name":"succ"}],"kind":"type","name":"Nat","parameters":[],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"constructors":[{"fields":[],"name":"none"},{"fields":[{"name":"val","type":{"arguments":[],"kind":"parameter","name":"α"}}],"name":"some"}],"kind":"type","name":"Option","parameters":[{"kind":{"kind":"type"},"name":"α"}],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"constructors":[],"kind":"type","name":"Lean.Compiler.LCNF.Param","opaque":true,"parameters":[{"kind":{"kind":"index","of":"Lean.Compiler.LCNF.Purity"},"name":"pu"}],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[],"kind":"type","name":"Lean.Name","opaque":true,"parameters":[],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"constructors":[],"kind":"type","name":"Lean.Compiler.LCNF.CtorInfo","opaque":true,"parameters":[],"source":{"file":"src/lean/Lean/Compiler/LCNF/Basic.lean","sha256":"58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"}},{"constructors":[{"fields":[],"name":"nil"},{"fields":[{"name":"head","type":{"arguments":[],"kind":"parameter","name":"α"}},{"name":"tail","type":{"arguments":[{"arguments":[],"kind":"parameter","name":"α"}],"kind":"const","name":"List"}}],"name":"cons"}],"kind":"type","name":"List","parameters":[{"kind":{"kind":"type"},"name":"α"}],"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"kind":"call","name":"Nat.add","role":"authority","signature":{"codomain":{"codomain":{"kind":"const","name":"Nat"},"domain":{"kind":"const","name":"Nat"},"kind":"arrow"},"domain":{"kind":"const","name":"Nat"},"kind":"arrow"},"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"kind":"call","name":"Array.toList","role":"authority","signature":{"codomain":{"codomain":{"arguments":[{"kind":"var","name":"α"}],"function":{"kind":"const","name":"List"},"kind":"app"},"domain":{"arguments":[{"kind":"var","name":"α"}],"function":{"kind":"const","name":"Array"},"kind":"app"},"kind":"arrow"},"domain":{"kind":"type","level":{"kind":"parameter","name":"u"}},"info":"implicit","kind":"pi","name":"α"},"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"kind":"call","name":"List.foldl","role":"authority","signature":{"codomain":{"codomain":{"codomain":{"codomain":{"codomain":{"kind":"var","name":"α"},"domain":{"arguments":[{"kind":"var","name":"β"}],"function":{"kind":"const","name":"List"},"kind":"app"},"kind":"arrow"},"domain":{"kind":"var","name":"α"},"kind":"arrow"},"domain":{"codomain":{"codomain":{"kind":"var","name":"α"},"domain":{"kind":"var","name":"β"},"kind":"arrow"},"domain":{"kind":"var","name":"α"},"kind":"arrow"},"kind":"arrow"},"domain":{"kind":"type","level":{"kind":"parameter","name":"v"}},"info":"implicit","kind":"pi","name":"β"},"domain":{"kind":"type","level":{"kind":"parameter","name":"u"}},"info":"implicit","kind":"pi","name":"α"},"source":{"file":"src/lean/Init/Prelude.lean","sha256":"44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"}},{"kind":"plumbing","names":["Bool.casesOn","Eq","Eq.casesOn","Eq.ndrec","Eq.refl","Eq.symm","False","False.elim","HEq","HEq.refl","Inhabited.default","Lean.Compiler.LCNF.Alt.casesOn","Lean.Compiler.LCNF.Arg.casesOn","Lean.Compiler.LCNF.Cases.casesOn","Lean.Compiler.LCNF.Code.casesOn","Lean.Compiler.LCNF.CtorInfo.casesOn","Lean.Compiler.LCNF.FunDecl.casesOn","Lean.Compiler.LCNF.Purity.ctorIdx","Lean.FVarId.casesOn","OfNat.ofNat","Option.casesOn","eq_of_heq","instInhabitedNat","instOfNatNat","noConfusion_of_Nat"]},{"body":{"branches":[{"binders":["decl","k"],"body":{"arguments":[{"kind":"nat","value":"1"},{"arguments":[{"kind":"var","name":"k"}],"function":"Traversal.code","kind":"call","type_arguments":[]}],"function":"Nat.add","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Code.let"},{"binders":["decl","k"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"decl"}],"function":"Traversal.funDecl","kind":"call","type_arguments":[]},{"arguments":[{"kind":"var","name":"k"}],"function":"Traversal.code","kind":"call","type_arguments":[]}],"function":"Nat.add","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Code.fun"},{"binders":["decl","k"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"decl"}],"function":"Traversal.funDecl","kind":"call","type_arguments":[]},{"arguments":[{"kind":"var","name":"k"}],"function":"Traversal.code","kind":"call","type_arguments":[]}],"function":"Nat.add","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Code.jp"},{"binders":["fvarId","args"],"body":{"kind":"nat","value":"0"},"constructor":"Lean.Compiler.LCNF.Code.jmp"},{"binders":["cases"],"body":{"arguments":[{"kind":"var","name":"cases"}],"function":"Traversal.cases","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Code.cases"},{"binders":["fvarId"],"body":{"kind":"nat","value":"0"},"constructor":"Lean.Compiler.LCNF.Code.return"},{"binders":["type"],"body":{"kind":"nat","value":"0"},"constructor":"Lean.Compiler.LCNF.Code.unreach"}],"kind":"match","scrutinee":{"kind":"var","name":"c"}},"kind":"function","mutual":"Code","name":"Traversal.code","parameters":[{"name":"c","type":{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Code"}}],"partial":true,"public":true,"result":{"arguments":[],"kind":"const","name":"Nat"},"traversal":true,"type_parameters":[]},{"body":{"branches":[{"binders":["fvarId","binderName","params","type","value"],"body":{"arguments":[{"kind":"var","name":"value"}],"function":"Traversal.code","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.FunDecl.mk"}],"kind":"match","scrutinee":{"kind":"var","name":"d"}},"kind":"function","mutual":"Code","name":"Traversal.funDecl","parameters":[{"name":"d","type":{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.FunDecl"}}],"partial":true,"public":true,"result":{"arguments":[],"kind":"const","name":"Nat"},"traversal":true,"type_parameters":[]},{"body":{"branches":[{"binders":["typeName","resultType","discr","alts"],"body":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"acc"},{"arguments":[{"kind":"var","name":"x"}],"function":"Traversal.alt","kind":"call","type_arguments":[]}],"function":"Nat.add","kind":"call","type_arguments":[]},"kind":"lambda","parameters":[{"name":"acc","type":{"arguments":[],"kind":"const","name":"Nat"}},{"name":"x","type":{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Alt"}}]},{"kind":"nat","value":"0"},{"arguments":[{"kind":"var","name":"alts"}],"function":"Array.toList","kind":"call","type_arguments":[{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Alt"}]}],"function":"List.foldl","kind":"call","type_arguments":[{"arguments":[],"kind":"const","name":"Nat"},{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Alt"}]},"constructor":"Lean.Compiler.LCNF.Cases.mk"}],"kind":"match","scrutinee":{"kind":"var","name":"cs"}},"kind":"function","mutual":"Code","name":"Traversal.cases","parameters":[{"name":"cs","type":{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Cases"}}],"partial":true,"public":true,"result":{"arguments":[],"kind":"const","name":"Nat"},"traversal":true,"type_parameters":[]},{"body":{"branches":[{"binders":["ctorName","params","code"],"body":{"arguments":[{"kind":"var","name":"code"}],"function":"Traversal.code","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Alt.alt"},{"binders":["code"],"body":{"arguments":[{"kind":"var","name":"code"}],"function":"Traversal.code","kind":"call","type_arguments":[]},"constructor":"Lean.Compiler.LCNF.Alt.default"}],"kind":"match","scrutinee":{"kind":"var","name":"a"}},"kind":"function","mutual":"Code","name":"Traversal.alt","parameters":[{"name":"a","type":{"arguments":[{"constructor":"Lean.Compiler.LCNF.Purity.pure","kind":"index"}],"kind":"const","name":"Lean.Compiler.LCNF.Alt"}}],"partial":true,"public":true,"result":{"arguments":[],"kind":"const","name":"Nat"},"traversal":true,"type_parameters":[]}],"imports":[],"spec":"lexlean/tooling-module/1"}}
+{
+  authority: {
+    id: LEAN-LCNF-4-32-1,
+    lean_githash: f054605aea4b840552cca2e725580bffd1e1b704,
+    lean_version: "4.32.1"
+  },
+  declarations: [
+    type{
+      name: Lean.Compiler.LCNF.Purity,
+      parameters: [],
+      constructors: [{name: pure, fields: []}, {name: impure, fields: []}],
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.Code,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [
+        {
+          name: let,
+          fields: [
+            {
+              name: decl,
+              type: const{
+                name: Lean.Compiler.LCNF.LetDecl,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            },
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ]
+        },
+        {
+          name: fun,
+          fields: [
+            {
+              name: decl,
+              type: const{
+                name: Lean.Compiler.LCNF.FunDecl,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            },
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.pure, parameter: pu}
+        },
+        {
+          name: jp,
+          fields: [
+            {
+              name: decl,
+              type: const{
+                name: Lean.Compiler.LCNF.FunDecl,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            },
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ]
+        },
+        {
+          name: jmp,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {
+              name: args,
+              type: const{
+                name: Array,
+                arguments: [
+                  const{
+                    name: Lean.Compiler.LCNF.Arg,
+                    arguments: [parameter{name: pu, arguments: []}]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          name: cases,
+          fields: [
+            {
+              name: cases,
+              type: const{
+                name: Lean.Compiler.LCNF.Cases,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ]
+        },
+        {name: return, fields: [{name: fvarId, type: const{name: Lean.FVarId, arguments: []}}]},
+        {name: unreach, fields: [{name: type, type: const{name: Lean.Expr, arguments: []}}]},
+        {
+          name: oset,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: i, type: const{name: Nat, arguments: []}},
+            {
+              name: y,
+              type: const{
+                name: Lean.Compiler.LCNF.Arg,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            },
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: uset,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: i, type: const{name: Nat, arguments: []}},
+            {name: y, type: const{name: Lean.FVarId, arguments: []}},
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: sset,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: i, type: const{name: Nat, arguments: []}},
+            {name: offset, type: const{name: Nat, arguments: []}},
+            {name: y, type: const{name: Lean.FVarId, arguments: []}},
+            {name: ty, type: const{name: Lean.Expr, arguments: []}},
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: setTag,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: cidx, type: const{name: Nat, arguments: []}},
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: inc,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: n, type: const{name: Nat, arguments: []}},
+            {name: check, type: const{name: Bool, arguments: []}},
+            {name: persistent, type: const{name: Bool, arguments: []}},
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: dec,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: n, type: const{name: Nat, arguments: []}},
+            {name: check, type: const{name: Bool, arguments: []}},
+            {name: persistent, type: const{name: Bool, arguments: []}},
+            {
+              name: "objs?",
+              type: const{name: Option, arguments: [const{name: Nat, arguments: []}]}
+            },
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: del,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {
+              name: k,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        }
+      ],
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.FunDecl,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [
+        {
+          name: mk,
+          fields: [
+            {name: fvarId, type: const{name: Lean.FVarId, arguments: []}},
+            {name: binderName, type: const{name: Lean.Name, arguments: []}},
+            {
+              name: params,
+              type: const{
+                name: Array,
+                arguments: [
+                  const{
+                    name: Lean.Compiler.LCNF.Param,
+                    arguments: [parameter{name: pu, arguments: []}]
+                  }
+                ]
+              }
+            },
+            {name: type, type: const{name: Lean.Expr, arguments: []}},
+            {
+              name: value,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.Alt,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [
+        {
+          name: alt,
+          fields: [
+            {name: ctorName, type: const{name: Lean.Name, arguments: []}},
+            {
+              name: params,
+              type: const{
+                name: Array,
+                arguments: [
+                  const{
+                    name: Lean.Compiler.LCNF.Param,
+                    arguments: [parameter{name: pu, arguments: []}]
+                  }
+                ]
+              }
+            },
+            {
+              name: code,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.pure, parameter: pu}
+        },
+        {
+          name: ctorAlt,
+          fields: [
+            {name: info, type: const{name: Lean.Compiler.LCNF.CtorInfo, arguments: []}},
+            {
+              name: code,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ],
+          requires: {constructor: Lean.Compiler.LCNF.Purity.impure, parameter: pu}
+        },
+        {
+          name: default,
+          fields: [
+            {
+              name: code,
+              type: const{
+                name: Lean.Compiler.LCNF.Code,
+                arguments: [parameter{name: pu, arguments: []}]
+              }
+            }
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.Cases,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [
+        {
+          name: mk,
+          fields: [
+            {name: typeName, type: const{name: Lean.Name, arguments: []}},
+            {name: resultType, type: const{name: Lean.Expr, arguments: []}},
+            {name: discr, type: const{name: Lean.FVarId, arguments: []}},
+            {
+              name: alts,
+              type: const{
+                name: Array,
+                arguments: [
+                  const{
+                    name: Lean.Compiler.LCNF.Alt,
+                    arguments: [parameter{name: pu, arguments: []}]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Array,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [
+        {
+          name: mk,
+          fields: [
+            {
+              name: toList,
+              type: const{name: List, arguments: [parameter{name: "α", arguments: []}]}
+            }
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Bool,
+      parameters: [],
+      constructors: [{name: "false", fields: []}, {name: "true", fields: []}],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.Arg,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.LetDecl,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Expr,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Expr.lean,
+        sha256: "7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"
+      }
+    },
+    type{
+      name: Lean.FVarId,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Expr.lean,
+        sha256: "7d4418bf9fef6f72eac422db70613848f849f074573392e79fb86fe745e79f7e"
+      }
+    },
+    type{
+      name: Nat,
+      parameters: [],
+      constructors: [
+        {name: zero, fields: []},
+        {name: succ, fields: [{name: n, type: const{name: Nat, arguments: []}}]}
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Option,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [
+        {name: none, fields: []},
+        {name: some, fields: [{name: val, type: parameter{name: "α", arguments: []}}]}
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.Param,
+      parameters: [{name: pu, kind: index{of: Lean.Compiler.LCNF.Purity}}],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: Lean.Name,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Lean.Compiler.LCNF.CtorInfo,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Lean/Compiler/LCNF/Basic.lean,
+        sha256: "58601e9868b1d38f6901bb6296fcf6172cf2417d6eaec0b57f95b61a07e9e3fc"
+      }
+    },
+    type{
+      name: List,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [
+        {name: nil, fields: []},
+        {
+          name: cons,
+          fields: [
+            {name: head, type: parameter{name: "α", arguments: []}},
+            {name: tail, type: const{name: List, arguments: [parameter{name: "α", arguments: []}]}}
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: Nat.add,
+      role: authority,
+      signature: arrow{
+        codomain: arrow{codomain: const{name: Nat}, domain: const{name: Nat}},
+        domain: const{name: Nat}
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: Array.toList,
+      role: authority,
+      signature: pi{
+        name: "α",
+        codomain: arrow{
+          codomain: app{arguments: [var{name: "α"}], function: const{name: List}},
+          domain: app{arguments: [var{name: "α"}], function: const{name: Array}}
+        },
+        domain: type{level: parameter{name: u}},
+        info: implicit
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: List.foldl,
+      role: authority,
+      signature: pi{
+        name: "α",
+        codomain: pi{
+          name: "β",
+          codomain: arrow{
+            codomain: arrow{
+              codomain: arrow{
+                codomain: var{name: "α"},
+                domain: app{arguments: [var{name: "β"}], function: const{name: List}}
+              },
+              domain: var{name: "α"}
+            },
+            domain: arrow{
+              codomain: arrow{codomain: var{name: "α"}, domain: var{name: "β"}},
+              domain: var{name: "α"}
+            }
+          },
+          domain: type{level: parameter{name: v}},
+          info: implicit
+        },
+        domain: type{level: parameter{name: u}},
+        info: implicit
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    plumbing{
+      names: [
+        Bool.casesOn,
+        Eq,
+        Eq.casesOn,
+        Eq.ndrec,
+        Eq.refl,
+        Eq.symm,
+        False,
+        False.elim,
+        HEq,
+        HEq.refl,
+        Inhabited.default,
+        Lean.Compiler.LCNF.Alt.casesOn,
+        Lean.Compiler.LCNF.Arg.casesOn,
+        Lean.Compiler.LCNF.Cases.casesOn,
+        Lean.Compiler.LCNF.Code.casesOn,
+        Lean.Compiler.LCNF.CtorInfo.casesOn,
+        Lean.Compiler.LCNF.FunDecl.casesOn,
+        Lean.Compiler.LCNF.Purity.ctorIdx,
+        Lean.FVarId.casesOn,
+        OfNat.ofNat,
+        Option.casesOn,
+        eq_of_heq,
+        instInhabitedNat,
+        instOfNatNat,
+        noConfusion_of_Nat
+      ]
+    },
+    function{
+      name: Traversal.code,
+      type_parameters: [],
+      parameters: [
+        {
+          name: c,
+          type: const{
+            name: Lean.Compiler.LCNF.Code,
+            arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+          }
+        }
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: call{
+              arguments: [
+                nat{value: "1"},
+                call{arguments: [var{name: k}], function: Traversal.code, type_arguments: []}
+              ],
+              function: Nat.add,
+              type_arguments: []
+            },
+            binders: [decl, k],
+            constructor: Lean.Compiler.LCNF.Code.let
+          },
+          {
+            body: call{
+              arguments: [
+                call{arguments: [var{name: decl}], function: Traversal.funDecl, type_arguments: []},
+                call{arguments: [var{name: k}], function: Traversal.code, type_arguments: []}
+              ],
+              function: Nat.add,
+              type_arguments: []
+            },
+            binders: [decl, k],
+            constructor: Lean.Compiler.LCNF.Code.fun
+          },
+          {
+            body: call{
+              arguments: [
+                call{arguments: [var{name: decl}], function: Traversal.funDecl, type_arguments: []},
+                call{arguments: [var{name: k}], function: Traversal.code, type_arguments: []}
+              ],
+              function: Nat.add,
+              type_arguments: []
+            },
+            binders: [decl, k],
+            constructor: Lean.Compiler.LCNF.Code.jp
+          },
+          {
+            body: nat{value: "0"},
+            binders: [fvarId, args],
+            constructor: Lean.Compiler.LCNF.Code.jmp
+          },
+          {
+            body: call{
+              arguments: [var{name: cases}],
+              function: Traversal.cases,
+              type_arguments: []
+            },
+            binders: [cases],
+            constructor: Lean.Compiler.LCNF.Code.cases
+          },
+          {body: nat{value: "0"}, binders: [fvarId], constructor: Lean.Compiler.LCNF.Code.return},
+          {body: nat{value: "0"}, binders: [type], constructor: Lean.Compiler.LCNF.Code.unreach}
+        ],
+        scrutinee: var{name: c}
+      },
+      mutual: Code,
+      partial: true,
+      public: true,
+      traversal: true
+    },
+    function{
+      name: Traversal.funDecl,
+      type_parameters: [],
+      parameters: [
+        {
+          name: d,
+          type: const{
+            name: Lean.Compiler.LCNF.FunDecl,
+            arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+          }
+        }
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: call{arguments: [var{name: value}], function: Traversal.code, type_arguments: []},
+            binders: [fvarId, binderName, params, type, value],
+            constructor: Lean.Compiler.LCNF.FunDecl.mk
+          }
+        ],
+        scrutinee: var{name: d}
+      },
+      mutual: Code,
+      partial: true,
+      public: true,
+      traversal: true
+    },
+    function{
+      name: Traversal.cases,
+      type_parameters: [],
+      parameters: [
+        {
+          name: cs,
+          type: const{
+            name: Lean.Compiler.LCNF.Cases,
+            arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+          }
+        }
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: call{
+              arguments: [
+                lambda{
+                  parameters: [
+                    {name: acc, type: const{name: Nat, arguments: []}},
+                    {
+                      name: x,
+                      type: const{
+                        name: Lean.Compiler.LCNF.Alt,
+                        arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+                      }
+                    }
+                  ],
+                  body: call{
+                    arguments: [
+                      var{name: acc},
+                      call{arguments: [var{name: x}], function: Traversal.alt, type_arguments: []}
+                    ],
+                    function: Nat.add,
+                    type_arguments: []
+                  }
+                },
+                nat{value: "0"},
+                call{
+                  arguments: [var{name: alts}],
+                  function: Array.toList,
+                  type_arguments: [
+                    const{
+                      name: Lean.Compiler.LCNF.Alt,
+                      arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+                    }
+                  ]
+                }
+              ],
+              function: List.foldl,
+              type_arguments: [
+                const{name: Nat, arguments: []},
+                const{
+                  name: Lean.Compiler.LCNF.Alt,
+                  arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+                }
+              ]
+            },
+            binders: [typeName, resultType, discr, alts],
+            constructor: Lean.Compiler.LCNF.Cases.mk
+          }
+        ],
+        scrutinee: var{name: cs}
+      },
+      mutual: Code,
+      partial: true,
+      public: true,
+      traversal: true
+    },
+    function{
+      name: Traversal.alt,
+      type_parameters: [],
+      parameters: [
+        {
+          name: a,
+          type: const{
+            name: Lean.Compiler.LCNF.Alt,
+            arguments: [index{constructor: Lean.Compiler.LCNF.Purity.pure}]
+          }
+        }
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: call{arguments: [var{name: code}], function: Traversal.code, type_arguments: []},
+            binders: [ctorName, params, code],
+            constructor: Lean.Compiler.LCNF.Alt.alt
+          },
+          {
+            body: call{arguments: [var{name: code}], function: Traversal.code, type_arguments: []},
+            binders: [code],
+            constructor: Lean.Compiler.LCNF.Alt.default
+          }
+        ],
+        scrutinee: var{name: a}
+      },
+      mutual: Code,
+      partial: true,
+      public: true,
+      traversal: true
+    }
+  ],
+  imports: []
+}
 \end{toolingmodule}
 \end{lexlean}

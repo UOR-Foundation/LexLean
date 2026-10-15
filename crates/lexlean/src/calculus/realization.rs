@@ -5,16 +5,18 @@
 //! A reference names a type (`type:<kind>`), a literal (`value:<kind>`), an
 //! expression (`expr:<kind>`), a constructor shape (`shape:<kind>`), a
 //! primitive (`prim:<kind>`), a library template (`template:<name>`), or one
-//! of four structural realizations: a program `function`,
+//! of five structural realizations: a program `function`,
 //! `monomorphization` (a type parameter is substituted by its closed type
 //! argument before realization, §17.13), `representation` (the operation is
-//! the identity on the realized representation), and `indirection` (a type
-//! that contains itself holds that occurrence behind a shared heap handle).
+//! the identity on the realized representation), `indirection` (a type
+//! that contains itself holds that occurrence behind a shared heap handle),
+//! and `recursion` (a function that calls itself, so that the depth of its
+//! calls is bounded only by its input).
 //! The conformance suite checks that the table and the runtime rows of the
 //! production registry are in bijection, that every reference names an
 //! element that exists, that fixtures exercise every element, and that a
-//! construct requires heap allocation exactly when its realization does
-//! (`allocates`).
+//! construct requires heap allocation, and implies recursion, exactly when
+//! its realization does (`allocates`, `recurses`).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -25,11 +27,12 @@ use super::library::Template;
 use super::{Adt, Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value};
 
 /// The structural realizations that are not calculus syntax.
-pub const STRUCTURAL: [&str; 4] = [
+pub const STRUCTURAL: [&str; 5] = [
     "function",
     "monomorphization",
     "representation",
     "indirection",
+    "recursion",
 ];
 
 /// Every runtime construct and its realization.
@@ -237,7 +240,7 @@ pub const TABLE: &[(&str, &[&str])] = &[
     ("declaration.definition", &["function"]),
     (
         "declaration.definition.recursive",
-        &["function", "expr:call"],
+        &["function", "expr:call", "recursion"],
     ),
     // A model construct is realized through the ordinary definitions it
     // elaborates to: an artifact as a constant function, a realization as
@@ -1110,6 +1113,127 @@ pub fn construct_allocates(construct: &str) -> Result<bool, String> {
         }
     }
     Ok(false)
+}
+
+/// Whether a realization element needs a call depth bounded only by its
+/// input (§17.13): the structural `recursion`, or a template whose instance
+/// calls itself, directly or through a closure of one of its own functions.
+/// A primitive realized by a runtime item is a loop, not a call.
+///
+/// # Errors
+///
+/// Returns the reference that names no element, or a template that does
+/// not instantiate.
+pub fn recurses(reference: &str) -> Result<bool, String> {
+    if reference == "recursion" {
+        return Ok(true);
+    }
+    if let Some(name) = reference.strip_prefix("template:") {
+        let template =
+            Template::named(name).ok_or_else(|| format!("`{reference}` names no template"))?;
+        let functions = template.instantiate(&vec![Ty::Nat; template.arity()], 0)?;
+        return Ok(calls_itself(&functions));
+    }
+    if all_elements()?.contains(reference) || STRUCTURAL.contains(&reference) {
+        return Ok(false);
+    }
+    Err(format!("`{reference}` names no calculus element"))
+}
+
+/// Whether the realization of `construct` implies recursion.
+///
+/// # Errors
+///
+/// Returns the construct without a row or a reference to no element.
+pub fn construct_recurses(construct: &str) -> Result<bool, String> {
+    let (_, references) = TABLE
+        .iter()
+        .find(|(key, _)| *key == construct)
+        .ok_or_else(|| format!("construct `{construct}` has no realization row"))?;
+    for reference in *references {
+        if recurses(reference)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+/// Whether some function of the instance is reachable from itself in the
+/// graph of calls and closures, the two ways a function body names another.
+fn calls_itself(functions: &[Function]) -> bool {
+    fn names(expr: &Expr, out: &mut BTreeSet<u64>) {
+        match expr {
+            Expr::Value { .. } | Expr::Var { .. } => {}
+            Expr::Let { bound, body, .. } => {
+                names(bound, out);
+                names(body, out);
+            }
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                names(condition, out);
+                names(then_branch, out);
+                names(else_branch, out);
+            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
+                names(scrutinee, out);
+                for arm in arms {
+                    names(&arm.body, out);
+                }
+            }
+            Expr::Build { operands, .. } | Expr::Prim { operands, .. } => {
+                for operand in operands {
+                    names(operand, out);
+                }
+            }
+            Expr::Call { function, operands }
+            | Expr::Closure {
+                function,
+                captures: operands,
+            } => {
+                out.insert(*function);
+                for operand in operands {
+                    names(operand, out);
+                }
+            }
+            Expr::Apply { target, operands } => {
+                names(target, out);
+                for operand in operands {
+                    names(operand, out);
+                }
+            }
+            Expr::First { value } | Expr::Second { value } | Expr::Field { value, .. } => {
+                names(value, out);
+            }
+        }
+    }
+    let edges: Vec<BTreeSet<u64>> = functions
+        .iter()
+        .map(|function| {
+            let mut out = BTreeSet::new();
+            names(&function.body, &mut out);
+            out
+        })
+        .collect();
+    (0..edges.len() as u64).any(|start| {
+        let mut seen = BTreeSet::new();
+        let mut pending: Vec<u64> = edges[start as usize].iter().copied().collect();
+        while let Some(next) = pending.pop() {
+            if next == start {
+                return true;
+            }
+            if seen.insert(next) {
+                if let Some(onward) = edges.get(next as usize) {
+                    pending.extend(onward.iter().copied());
+                }
+            }
+        }
+        false
+    })
 }
 
 /// Whether a program requires heap allocation: it uses an allocating

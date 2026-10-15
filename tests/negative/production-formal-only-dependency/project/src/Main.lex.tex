@@ -3,6 +3,13 @@
 \importmodule{Claims}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"binder":{"name":"claim","type":{"kind":"prop"}},"body":{"kind":"var","name":"value"},"kind":"let","value":{"arguments":[{"kind":"var","name":"value"}],"function":{"module":"Claims","name":"positive"},"kind":"call"}},"executable":true,"kind":"definition","name":"guarded","parameters":[{"name":"value","type":{"kind":"nat"}}],"production":{"effects":[],"targets":["rust-std"]},"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: guarded,
+  parameters: [value : Nat],
+  result: Nat,
+  body: (let claim : Prop := (Claims::positive value); value),
+  executable: true,
+  production: {effects: [], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

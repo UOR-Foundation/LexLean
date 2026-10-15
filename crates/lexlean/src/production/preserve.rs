@@ -1369,17 +1369,29 @@ pub struct CertifiedRoot {
 }
 
 /// The identity of the library a record is about: the framed SHA-256 of
-/// the module list and, in its order, every native source.
+/// the module list and, in its order, every native source. A source written
+/// in the authoring notation contributes its data form (§21.2), as it does to
+/// the compiler-semantics ID: the form a library is written in is not part of
+/// what it is, so writing it differently changes no record.
 fn library_identity() -> String {
+    library_identity_of(&|path| embedded_text(path).unwrap_or_default().to_owned())
+}
+
+/// [`library_identity`] over the sources `read` supplies for the library's
+/// paths in place of the embedded ones: how the identity is shown not to depend
+/// on the form a source is written in.
+#[doc(hidden)]
+#[must_use]
+pub fn library_identity_of(read: &dyn Fn(&str) -> String) -> String {
     use crate::artifact::content_id::FramedHasher;
     let mut hasher = FramedHasher::new("lexlean-preservation-library-v1");
-    let registry = embedded_text(LIBRARY_PATH).unwrap_or_default();
+    let registry = read(LIBRARY_PATH);
     hasher.frame("registry", registry.as_bytes());
     if let Ok(library) = registry_modules() {
         for module in library {
             if let Some(path) = native_source_path(&module) {
-                let source = embedded_text(&path).unwrap_or_default();
-                hasher.frame(&module, source.as_bytes());
+                let source = read(&path);
+                hasher.frame(&module, &crate::identity_bytes(&path, source.as_bytes()));
             }
         }
     }

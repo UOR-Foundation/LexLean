@@ -2,6 +2,210 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[],"name":"u8"},{"fields":[],"name":"u16"},{"fields":[],"name":"u32"},{"fields":[],"name":"u64"},{"fields":[],"name":"i8"},{"fields":[],"name":"i16"},{"fields":[],"name":"i32"},{"fields":[],"name":"i64"}],"kind":"inductive","name":"IntKind","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"less"},{"fields":[],"name":"same"},{"fields":[],"name":"more"}],"kind":"inductive","name":"Order","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"unit"},{"fields":[],"name":"bool"},{"fields":[],"name":"nat"},{"fields":[],"name":"int"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"IntKind"}}],"name":"fixed"},{"fields":[],"name":"string"},{"fields":[],"name":"bytes"},{"fields":[],"name":"ordering"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"option"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"result"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"list"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"pair"},{"fields":[{"kind":"nat"}],"name":"adt"},{"fields":[{"element":{"arguments":[],"kind":"named","member":{"name":"Ty"}},"kind":"list"},{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"fn"}],"kind":"inductive","name":"Ty","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"unit"},{"fields":[{"kind":"bool"}],"name":"bool"},{"fields":[{"kind":"nat"}],"name":"nat"},{"fields":[{"kind":"int"}],"name":"int"},{"fields":[{"kind":"uint8"}],"name":"u8"},{"fields":[{"kind":"uint16"}],"name":"u16"},{"fields":[{"kind":"uint32"}],"name":"u32"},{"fields":[{"kind":"uint64"}],"name":"u64"},{"fields":[{"kind":"int8"}],"name":"i8"},{"fields":[{"kind":"int16"}],"name":"i16"},{"fields":[{"kind":"int32"}],"name":"i32"},{"fields":[{"kind":"int64"}],"name":"i64"},{"fields":[{"kind":"string"}],"name":"string"},{"fields":[{"kind":"bytes"}],"name":"bytes"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Order"}}],"name":"ordering"},{"fields":[],"name":"none"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Value"}}],"name":"some"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Value"}}],"name":"ok"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Value"}}],"name":"error"},{"fields":[{"element":{"arguments":[],"kind":"named","member":{"name":"Value"}},"kind":"list"}],"name":"list"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Value"}},{"arguments":[],"kind":"named","member":{"name":"Value"}}],"name":"pair"},{"fields":[{"kind":"nat"},{"element":{"arguments":[],"kind":"named","member":{"name":"Value"}},"kind":"list"}],"name":"adt"},{"fields":[{"kind":"nat"},{"element":{"arguments":[],"kind":"named","member":{"name":"Value"}},"kind":"list"}],"name":"closure"}],"kind":"inductive","name":"Value","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"none"},{"fields":[],"name":"some"},{"fields":[],"name":"ok"},{"fields":[],"name":"error"},{"fields":[],"name":"nil"},{"fields":[],"name":"cons"},{"fields":[],"name":"zero"},{"fields":[],"name":"succ"},{"fields":[],"name":"pair"},{"fields":[],"name":"true"},{"fields":[],"name":"false"},{"fields":[],"name":"unit"},{"fields":[],"name":"lt"},{"fields":[],"name":"eq"},{"fields":[],"name":"gt"},{"fields":[{"kind":"nat"}],"name":"adt"}],"kind":"inductive","name":"Shape","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"natAdd"},{"fields":[],"name":"natSub"},{"fields":[],"name":"natMul"},{"fields":[],"name":"natQuot"},{"fields":[],"name":"natRem"},{"fields":[],"name":"natEq"},{"fields":[],"name":"natLe"},{"fields":[],"name":"natLt"},{"fields":[],"name":"intAdd"},{"fields":[],"name":"intSub"},{"fields":[],"name":"intMul"},{"fields":[],"name":"intNeg"},{"fields":[],"name":"intQuot"},{"fields":[],"name":"intRem"},{"fields":[],"name":"checkedAdd"},{"fields":[],"name":"checkedSub"},{"fields":[],"name":"checkedMul"},{"fields":[],"name":"checkedNeg"},{"fields":[],"name":"checkedQuot"},{"fields":[],"name":"bitAnd"},{"fields":[],"name":"bitOr"},{"fields":[],"name":"bitXor"},{"fields":[],"name":"bitNot"},{"fields":[],"name":"shiftLeft"},{"fields":[],"name":"shiftRight"},{"fields":[],"name":"equal"},{"fields":[],"name":"boolNot"},{"fields":[],"name":"boolAnd"},{"fields":[],"name":"boolOr"},{"fields":[],"name":"append"},{"fields":[],"name":"length"},{"fields":[],"name":"index"},{"fields":[],"name":"slice"},{"fields":[],"name":"utf8Encode"},{"fields":[],"name":"utf8Decode"},{"fields":[],"name":"compareBytes"},{"fields":[],"name":"splitExact"},{"fields":[],"name":"join"},{"fields":[],"name":"formatDecimal"},{"fields":[],"name":"compare"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"IntKind"}}],"name":"convert"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}}],"name":"parseDecimal"}],"kind":"inductive","name":"Prim","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"arguments":[],"kind":"named","member":{"name":"Value"}}],"name":"value"},{"fields":[{"kind":"nat"}],"name":"var"},{"fields":[{"kind":"nat"},{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"let"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"cond"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"element":{"arguments":[],"kind":"named","member":{"name":"Arm"}},"kind":"list"}],"name":"match"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Shape"}},{"arguments":[],"kind":"named","member":{"name":"Ty"}},{"element":{"arguments":[],"kind":"named","member":{"name":"Expr"}},"kind":"list"}],"name":"build"},{"fields":[{"kind":"nat"},{"element":{"arguments":[],"kind":"named","member":{"name":"Expr"}},"kind":"list"}],"name":"call"},{"fields":[{"kind":"nat"},{"element":{"arguments":[],"kind":"named","member":{"name":"Expr"}},"kind":"list"}],"name":"closure"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"element":{"arguments":[],"kind":"named","member":{"name":"Expr"}},"kind":"list"}],"name":"apply"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Prim"}},{"element":{"arguments":[],"kind":"named","member":{"name":"Expr"}},"kind":"list"}],"name":"prim"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"first"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"second"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"kind":"nat"}],"name":"field"}],"kind":"inductive","mutual":"Code","name":"Expr","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Shape"}},{"element":{"kind":"nat"},"kind":"list"},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"arm"}],"kind":"inductive","mutual":"Code","name":"Arm","parameters":[],"type_parameters":[]},{"fields":[{"name":"constructors","type":{"element":{"element":{"arguments":[],"kind":"named","member":{"name":"Ty"}},"kind":"list"},"kind":"list"}}],"kind":"structure","name":"Adt","parameters":[],"type_parameters":[]},{"fields":[{"name":"parameters","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"types","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Ty"}},"kind":"list"}},{"name":"result","type":{"arguments":[],"kind":"named","member":{"name":"Ty"}}},{"name":"body","type":{"arguments":[],"kind":"named","member":{"name":"Expr"}}}],"kind":"structure","name":"Function","parameters":[],"type_parameters":[]},{"fields":[{"name":"adts","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Adt"}},"kind":"list"}},{"name":"functions","type":{"element":{"arguments":[],"kind":"named","member":{"name":"Function"}},"kind":"list"}}],"kind":"structure","name":"Program","parameters":[],"type_parameters":[]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: IntKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: u8, fields: []},
+    {name: u16, fields: []},
+    {name: u32, fields: []},
+    {name: u64, fields: []},
+    {name: i8, fields: []},
+    {name: i16, fields: []},
+    {name: i32, fields: []},
+    {name: i64, fields: []}
+  ]
+}
+
+inductive{
+  name: Order,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: less, fields: []}, {name: same, fields: []}, {name: more, fields: []}]
+}
+
+inductive{
+  name: Ty,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unit, fields: []},
+    {name: bool, fields: []},
+    {name: nat, fields: []},
+    {name: int, fields: []},
+    {name: fixed, fields: [IntKind]},
+    {name: string, fields: []},
+    {name: bytes, fields: []},
+    {name: ordering, fields: []},
+    {name: option, fields: [Ty]},
+    {name: result, fields: [Ty, Ty]},
+    {name: list, fields: [Ty]},
+    {name: pair, fields: [Ty, Ty]},
+    {name: adt, fields: [Nat]},
+    {name: fn, fields: [(List Ty), Ty]}
+  ]
+}
+
+inductive{
+  name: Value,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unit, fields: []},
+    {name: bool, fields: [Bool]},
+    {name: nat, fields: [Nat]},
+    {name: int, fields: [Int]},
+    {name: u8, fields: [UInt8]},
+    {name: u16, fields: [UInt16]},
+    {name: u32, fields: [UInt32]},
+    {name: u64, fields: [UInt64]},
+    {name: i8, fields: [Int8]},
+    {name: i16, fields: [Int16]},
+    {name: i32, fields: [Int32]},
+    {name: i64, fields: [Int64]},
+    {name: string, fields: [String]},
+    {name: bytes, fields: [Bytes]},
+    {name: ordering, fields: [Order]},
+    {name: none, fields: []},
+    {name: some, fields: [Value]},
+    {name: ok, fields: [Value]},
+    {name: error, fields: [Value]},
+    {name: list, fields: [(List Value)]},
+    {name: pair, fields: [Value, Value]},
+    {name: adt, fields: [Nat, (List Value)]},
+    {name: closure, fields: [Nat, (List Value)]}
+  ]
+}
+
+inductive{
+  name: Shape,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: none, fields: []},
+    {name: some, fields: []},
+    {name: ok, fields: []},
+    {name: error, fields: []},
+    {name: nil, fields: []},
+    {name: cons, fields: []},
+    {name: zero, fields: []},
+    {name: succ, fields: []},
+    {name: pair, fields: []},
+    {name: "true", fields: []},
+    {name: "false", fields: []},
+    {name: unit, fields: []},
+    {name: lt, fields: []},
+    {name: eq, fields: []},
+    {name: gt, fields: []},
+    {name: adt, fields: [Nat]}
+  ]
+}
+
+inductive{
+  name: Prim,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: natAdd, fields: []},
+    {name: natSub, fields: []},
+    {name: natMul, fields: []},
+    {name: natQuot, fields: []},
+    {name: natRem, fields: []},
+    {name: natEq, fields: []},
+    {name: natLe, fields: []},
+    {name: natLt, fields: []},
+    {name: intAdd, fields: []},
+    {name: intSub, fields: []},
+    {name: intMul, fields: []},
+    {name: intNeg, fields: []},
+    {name: intQuot, fields: []},
+    {name: intRem, fields: []},
+    {name: checkedAdd, fields: []},
+    {name: checkedSub, fields: []},
+    {name: checkedMul, fields: []},
+    {name: checkedNeg, fields: []},
+    {name: checkedQuot, fields: []},
+    {name: bitAnd, fields: []},
+    {name: bitOr, fields: []},
+    {name: bitXor, fields: []},
+    {name: bitNot, fields: []},
+    {name: shiftLeft, fields: []},
+    {name: shiftRight, fields: []},
+    {name: equal, fields: []},
+    {name: boolNot, fields: []},
+    {name: boolAnd, fields: []},
+    {name: boolOr, fields: []},
+    {name: append, fields: []},
+    {name: length, fields: []},
+    {name: index, fields: []},
+    {name: slice, fields: []},
+    {name: utf8Encode, fields: []},
+    {name: utf8Decode, fields: []},
+    {name: compareBytes, fields: []},
+    {name: splitExact, fields: []},
+    {name: join, fields: []},
+    {name: formatDecimal, fields: []},
+    {name: compare, fields: []},
+    {name: convert, fields: [IntKind]},
+    {name: parseDecimal, fields: [Ty]}
+  ]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: value, fields: [Ty, Value]},
+    {name: var, fields: [Nat]},
+    {name: let, fields: [Nat, Ty, Expr, Expr]},
+    {name: cond, fields: [Expr, Expr, Expr]},
+    {name: match, fields: [Ty, Expr, (List Arm)]},
+    {name: build, fields: [Shape, Ty, (List Expr)]},
+    {name: call, fields: [Nat, (List Expr)]},
+    {name: closure, fields: [Nat, (List Expr)]},
+    {name: apply, fields: [Expr, (List Expr)]},
+    {name: prim, fields: [Prim, (List Expr)]},
+    {name: first, fields: [Expr]},
+    {name: second, fields: [Expr]},
+    {name: field, fields: [Expr, Nat]}
+  ],
+  mutual: Code
+}
+
+inductive{
+  name: Arm,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: arm, fields: [Shape, (List Nat), Expr]}],
+  mutual: Code
+}
+
+structure{
+  name: Adt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: constructors, type: (List (List Ty))}]
+}
+
+structure{
+  name: Function,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: parameters, type: (List Nat)},
+    {name: types, type: (List Ty)},
+    {name: result, type: Ty},
+    {name: body, type: Expr}
+  ]
+}
+
+structure{
+  name: Program,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: adts, type: (List Adt)}, {name: functions, type: (List Function)}]
+}
 \end{semanticmodule}
 \end{lexlean}

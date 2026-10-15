@@ -2,6 +2,11 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"arguments":[{"body":{"kind":"var","name":"sum"},"captures":[],"kind":"lambda","parameters":[{"name":"sum","type":{"kind":"bool"}},{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"0"},{"kind":"var","name":"values"}],"kind":"primitive","operation":"list_fold","result":{"kind":"nat"}},"kind":"definition","name":"total","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: total,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (sum : Bool) (value : Nat) => sum) 0 values : Nat)
+}
 \end{semanticmodule}
 \end{lexlean}
