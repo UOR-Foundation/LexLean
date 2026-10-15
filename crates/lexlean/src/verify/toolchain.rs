@@ -162,7 +162,7 @@ pub fn preflight(limits: &Limits) -> Result<Toolchain, Diagnostic> {
     })
 }
 
-fn reports_pinned_version(tool: &str, banner: &str) -> bool {
+pub(crate) fn reports_pinned_version(tool: &str, banner: &str) -> bool {
     if banner.contains(['\n', '\r']) {
         return false;
     }

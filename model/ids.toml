@@ -1875,6 +1875,12 @@ suite = "preservation"
 statement = "The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from."
 
 [[id]]
+id = "SP-13"
+level = "build"
+suite = "preservation"
+statement = "Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements."
+
+[[id]]
 id = "MD-01"
 level = "build"
 suite = "models"
