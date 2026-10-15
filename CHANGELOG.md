@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Production results state each output's effects (SPEC.md §24.7, §17.13,
+  `PX-13`, no new diagnostic code), step 3 of #105. A target output of
+  `lexlean/production-result/2` lists the effects its realization can exhibit,
+  exactly those eligibility requires of the root on that target, and the
+  schema states what `recursion` asks of the host: a stack its input-dependent
+  depth fits, whose exhaustion aborts the process. `lexlean production build`
+  reports how many outputs need such a stack. The result schema lives outside
+  the compiler-semantics ID (§21.2), so no identity, package, golden, or
+  verified record changes; `api/schemas/versions.toml` gains the
+  `production-result/2` row beside the released `/1` row.
+  `PX-13` brings the register to 382 IDs.
+
 - Certificates write a list of any length as a term Lean elaborates without
   binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
   `[…]` macro splits a literal of more than 32 elements in halves under
