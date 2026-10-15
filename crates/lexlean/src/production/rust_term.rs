@@ -12,12 +12,10 @@ use crate::calculus::rust::runtime::Item;
 use crate::calculus::rust::Profile;
 use crate::calculus::{IntKind, OrderingValue};
 
+use super::lean_list::{array, list, list_by, LITERAL_MAX};
+
 /// The Lean module of the closed Rust AST.
 pub const RUST_SYNTAX: &str = "LexLeanTarget.RustSyntax";
-
-fn list(items: impl IntoIterator<Item = String>) -> String {
-    format!("[{}]", items.into_iter().collect::<Vec<_>>().join(", "))
-}
 
 fn kind(width: IntKind) -> String {
     format!(".{}", width.name())
@@ -89,12 +87,8 @@ fn lit(literal: &Lit) -> String {
         Lit::Fixed(width, number) => format!("(.fixed {} {})", kind(*width), signed(*number)),
         Lit::Str(text) => format!("(.str {})", string_literal(text)),
         Lit::Bytes(octets) => format!(
-            "(.bytes (ByteArray.mk #[{}]))",
-            octets
-                .iter()
-                .map(u8::to_string)
-                .collect::<Vec<_>>()
-                .join(", ")
+            "(.bytes (ByteArray.mk {}))",
+            array(octets.iter().map(u8::to_string))
         ),
         Lit::Ordering(value) => format!("(.ordering {})", order(*value)),
     }
@@ -368,8 +362,10 @@ pub fn crate_term(rendered: &Crate) -> String {
         Profile::Std => ".std",
     };
     let items: Vec<String> = rendered.items.iter().map(item_def).collect();
-    format!(
-        "({{ profile := {profile}, items := [\n    {}] }} : {RUST_SYNTAX}.Crate)",
-        items.join(",\n    ")
-    )
+    let items = if items.len() <= LITERAL_MAX {
+        format!("[\n    {}]", items.join(",\n    "))
+    } else {
+        list_by(items, ",\n    ")
+    };
+    format!("({{ profile := {profile}, items := {items} }} : {RUST_SYNTAX}.Crate)")
 }

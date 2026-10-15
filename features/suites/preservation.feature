@@ -86,6 +86,12 @@ Feature: preservation
     And the registry names no declaration, and the constructors and soundness cases the audit uses are those of the native modules
     And a native source that is missing, extra, of the first schema, or weakened to an inexact policy is refused
 
+  @SP-13 @build
+  Scenario: Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements.
+    Given a root calling a function of 33 parameters, a root copying a record of 33 fields, and a root matching on 33 constructors of one field
+    When the certificates of each root are generated and the list literals they write are counted, and each root is verified with the pinned Lean
+    Then no certificate writes a list literal of more than 32 elements
+    And every root verifies, certificate B included
   @SP-14 @build
   Scenario: Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused.
     Given every production root of the committed examples, the lowered programs, and the native preservation library

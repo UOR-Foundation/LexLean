@@ -32,7 +32,24 @@ versions, and the entries below say what each tag does and does not claim.
   (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
   still Lean text, so the data certificate is rendered outside the module
   system until they follow. Languages 1.0 and 1.1 have no certificates and are
-  untouched. No diagnostic code is new; the register gains `SP-14` (380 rows).
+  untouched. No diagnostic code is new; the register gains `SP-14` (382 rows with `SP-13` and `RB-09`).
+- Certificates write a list of any length as a term Lean elaborates without
+  binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
+  `[…]` macro splits a literal of more than 32 elements in halves under
+  `let` binders, and certificate B's witnesses, whose elements Lean
+  postpones to metavariables, did not unify through them: a valid
+  certificate B of a root calling a function of 33 or more parameters was
+  rejected with `LLV7015`. One helper (`production::lean_list`) now writes
+  every list and array of the three certificate writers: a literal up to 32
+  elements, byte-identical to before, and the `List.cons` chain the macro
+  writes for a short one beyond that. The 100-parameter project of
+  `tests/negative/certificate-heartbeat-rejected` verifies without its
+  shim. The certificates of `examples/models` and `examples/reasoning` that
+  hold such a list change, and their verification records are regenerated,
+  as are the sizes `certificate-resource-exhausted` and
+  `certificate-generation-limit` quote.
+  `SP-13` brings the register to 380 IDs.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
 - Core modules in the authoring notation (SPEC.md §17.21.8, `AU-09`..`AU-12`;
   stages 3c and 3d of #93). A native `coremodule` of schema `lexlean/core-module/2`
   can be written as text instead of one `\coredata{…}` argument of canonical

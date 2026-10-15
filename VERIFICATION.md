@@ -1120,6 +1120,54 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### a list of any length is a term Lean elaborates without binders
+
+Lean's `[…]` macro writes a literal of more than 32 elements under `let`
+binders, and a certificate B witness does not unify through them (#97). Run
+with the pinned Lean 4.32.1 on WSL, and without Lean on Windows.
+
+Observed before the change: the project of
+`tests/negative/certificate-heartbeat-rejected` (the `total → h1 → h0` chain
+of 100 parameters), copied out and verified without its shim on `main`
+`d284b165`. Command: `lexlean verify --all`. The valid certificate B is
+refused.
+
+```text
+error[LLV7015]: certificate B: `LexLeanPreserve.C6963c57fd1f319f49d7646a253d9f310.R0.RustCore` was rejected in `fun0` of root `Production.Main.total`: error: Application type mismatch: The argument
+  rfl
+has type
+  ?m.5380 = ?m.5380
+```
+
+With the change, the same command verifies it (`verified 1 module; attestation
+32499d57…`, 1 min 56 s), and `conformance_sp_13` verifies the call of 33
+operands to a function of 33 parameters, the copy of a 33-field record, and
+the match on 33 constructors of one field (132 s).
+
+Planted (a): `lean_list::list_by` made to write every list as a literal
+(`if true || items.len() <= LITERAL_MAX`). Command: `cargo test -p
+repo-conformance --all-features --test conformance -- conformance_sp_13`.
+Expected: the Lean-free half finds the literal Lean would split, before any
+toolchain runs.
+
+```text
+thread 'conformance_sp_13' panicked at crates/conformance/src/cases/preservation.rs:1772:25:
+a call of 33 operands to a function of 33 parameters: `LexLeanPreserve.Cb589ceb26d4475920a8dc7d11fcc9b64.R0` writes a list literal of 33 elements, which Lean splits under `let` binders
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 370 filtered out
+```
+
+Removed: the plant was reverted and `conformance_sp_13` passes. A list of at
+most 32 elements is written byte for byte as before, so only certificates that
+hold a longer list changed. That is 13 certificates of `examples/models` and
+`examples/reasoning`, whose records `cargo xtask verify-examples --write`
+regenerated and a second, checking run confirmed. The others are two
+fixtures whose diagnostics quote a size the writers produce: the certificate
+A of `tests/negative/certificate-resource-exhausted` (63 552 bytes before, 66 000
+after, still at least a quarter of `max_file_bytes`; main's figure already
+carries the header of the lifted budgets), and the derivation bound of
+`tests/negative/certificate-generation-limit` (5 285 358 bytes before, 4 259 854
+after: the chain is shorter than the literal Lean splits under binders, and the
+root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
 ### certificate E is kernel-term data and a defect in it is refused
 
 Certificate E of a root is a native core module the compiler builds
