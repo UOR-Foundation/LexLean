@@ -2926,6 +2926,30 @@ pub fn run(id: &str) {
                 "withheld collection roots are reported: {missing:?}"
             );
         }
+        // §17.17: certificate E is kernel-term data, recorded in the notation.
+        "SP-14" => {
+            for (name, _) in certified_projects() {
+                let base = repo_root()
+                    .join("examples")
+                    .join(name)
+                    .join("expected/verify/preserve");
+                let record: serde_json::Value = serde_json::from_slice(
+                    &std::fs::read(base.join("preservation.json").as_std_path())
+                        .expect("a committed record"),
+                )
+                .expect("the record is JSON");
+                for row in record["roots"].as_array().expect("roots") {
+                    for rendering in row["renderings"].as_array().expect("renderings") {
+                        let module = rendering["composed"]["module"].as_str().expect("a module");
+                        let path = base.join(preserve::notation_path(module));
+                        assert!(
+                            path.as_std_path().is_file(),
+                            "{name}: certificate E `{module}` is recorded in the notation at {path}"
+                        );
+                    }
+                }
+            }
+        }
         _ => panic!("no preservation case is wired for {id}"),
     }
 }

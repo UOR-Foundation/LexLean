@@ -102,6 +102,8 @@ impl CertificateB {
             theorem: self.theorem,
             text: self.text,
             imports: Vec::new(),
+            data: None,
+            source: None,
         }
     }
 }

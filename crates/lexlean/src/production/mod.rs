@@ -9,6 +9,7 @@
 
 pub mod certificate;
 pub mod eligibility;
+pub mod kernel;
 pub mod lcnf;
 pub mod lower;
 pub mod preserve;

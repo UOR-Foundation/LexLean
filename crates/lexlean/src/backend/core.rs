@@ -1382,9 +1382,33 @@ fn append_core_command(
 /// Returns an internal diagnostic when the module's rows cannot be ordered
 /// or a chunk omits a node it needs.
 pub fn lean_text(core: &CoreModule) -> Result<String, Diagnostic> {
-    let mut text = String::from("module\n");
+    lean_text_with(core, true)
+}
+
+/// Render a native core module as Lean outside the module system: `import`
+/// lines and no `module` header, the decoder and the data as [`lean_text`]
+/// writes them. A certificate held as data is rendered this way while the
+/// certificates it imports are Lean text outside the module system, which a
+/// `module` cannot import (SPEC.md §17.17).
+///
+/// # Errors
+///
+/// As [`lean_text`].
+pub fn lean_text_legacy(core: &CoreModule) -> Result<String, Diagnostic> {
+    lean_text_with(core, false)
+}
+
+fn lean_text_with(core: &CoreModule, module_system: bool) -> Result<String, Diagnostic> {
+    let mut text = String::new();
+    if module_system {
+        text.push_str("module\n");
+    }
     for import in &core.imports {
-        text.push_str(&format!("public import {import}\n"));
+        if module_system {
+            text.push_str(&format!("public import {import}\n"));
+        } else {
+            text.push_str(&format!("import {import}\n"));
+        }
     }
     text.push_str(
         "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",

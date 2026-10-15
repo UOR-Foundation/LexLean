@@ -35,6 +35,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+mod data;
+
 use super::eligibility::BUILTIN_OWNERS;
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Constructor, Local, Site, Source};
@@ -84,6 +86,11 @@ pub struct Certificate {
     pub denote: String,
     /// The generated user modules the certificate imports.
     pub imports: Vec<String>,
+    /// The certificate as kernel-term data, when it is held as data: a
+    /// native core module the core backend rendered `text` from (SP-14).
+    pub data: Option<crate::ir::core::CoreModule>,
+    /// The record of a certificate held as data: its authoring notation.
+    pub source: Option<String>,
 }
 
 /// One constructor of a closed document type, as tooling that writes
@@ -437,18 +444,40 @@ pub fn certificate_e(
 ) -> Result<Certificate, Diagnostic> {
     let mut generator = generator(modules, lowered, max_bytes);
     generator.nest().map_err(failure)?;
-    let text = generator
-        .compose(root_module, root_name, module_a, module_b, module, fallible)
+    let data = generator
+        .compose_data(root_module, root_name, module_a, module_b, module, fallible)
         .map_err(failure)?;
-    let text = from_the_root(&text).map_err(internal)?;
+    let text = crate::backend::core::lean_text_legacy(&data)
+        .map_err(|diagnostic| internal(diagnostic.message))?;
     generator.within(text.len()).map_err(failure)?;
+    let source = record_source(module, &data).map_err(internal)?;
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
         denote: format!("{module_a}.denote"),
         text,
         imports: Vec::new(),
+        data: Some(data),
+        source: Some(source),
     })
+}
+
+/// The record of a certificate held as data: the whole source of the module
+/// in the authoring notation (SPEC.md §17.21.8), which reads back to the data.
+fn record_source(module: &str, data: &crate::ir::core::CoreModule) -> Result<String, String> {
+    let name = module.rsplit('.').next().unwrap_or(module);
+    let value = serde_json::to_value(data).map_err(|error| error.to_string())?;
+    crate::sdk::assemble(
+        &crate::sdk::SourceHeader {
+            name,
+            glossaries: &[],
+            imports: &[],
+            title: &format!("Certificate E {module}"),
+        },
+        crate::sdk::ModuleKind::Core,
+        &value,
+    )
+    .map_err(|error| error.message)
 }
 
 /// `text` with every name certificate A defines (its encoders and their
@@ -595,6 +624,8 @@ pub fn certificate(
         denote: format!("{module}.denote"),
         text,
         imports,
+        data: None,
+        source: None,
     })
 }
 

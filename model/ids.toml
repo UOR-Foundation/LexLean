@@ -1869,6 +1869,12 @@ suite = "preservation"
 statement = "The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from."
 
 [[id]]
+id = "SP-14"
+level = "build"
+suite = "preservation"
+statement = "Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused."
+
+[[id]]
 id = "MD-01"
 level = "build"
 suite = "models"
