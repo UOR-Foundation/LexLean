@@ -7424,3 +7424,68 @@ Removed: each edit was restored; `conformance_au_01`..`conformance_au_12` pass. 
 arbitrary canonical JSON values (`surface::generic`), and every alternative of
 the schema its own sample (`surface::semantic`), as unit tests of the
 `lexlean` crate.
+
+## The planted verification of the compiler project (Issue #145)
+
+`conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted
+reasoning transcriptions carries: a copy of the `compiler` project whose
+`ReasoningFixtures` states them must end as `LLV7002`. How long Lean takes is
+not part of that claim, but the copy inherited the 300 s `child_timeout_ms` of
+the committed project, and a Lean child that outran it ended the case as
+`LLS8002`, a different claim.
+
+It did so on four runs: the push run of #99's merge (`c257a657`) and the PR
+runs of #135, #137 and #143. The `ci-evidence` telemetry of the three PR runs
+and of the passing push run of #102's merge (`70de63d3`) says what happened:
+
+| run | `RS-12` | the five verifications of `compiler` (s) | `TargetSemantics` elaboration in each (s) | `EX-07` |
+| --- | ---: | --- | --- | ---: |
+| #102 merge, passed | 95 s | 154, 76, 36, 68, 64 | 10, 10, 10, 10, 11 | 1086 s |
+| #135, failed | 596 s | 231, 112, 55, **543**, 98 | 17, 18, 17, **160**, 17 | 1690 s |
+| #137, failed | 590 s | 237, 115, 55, **537**, 97 | 18, 18, 17, **150**, 17 | 1630 s |
+| #143, failed | 595 s | 234, 115, 54, **542**, 94 | 17, 18, 17, **159**, 17 | 1624 s |
+
+- **The module is far from the limit.** `ReasoningFixtures` elaborates in 25 s
+  to 31 s in the passing run, in 36 s to 38 s in the unaffected verifications of
+  the failing runs, and in 73 s to 105 s on an idle four-core development host
+  (`conformance_rs_12` alone, passing: 737 s in all before the change, 691 s
+  after).
+- **Everything was slow, not the module.** In the fourth verification of each
+  failing run the Lean children of every project running at the time took
+  about 5 to 20 times their usual time: `TargetSemantics` 150 s to 160 s (17 s
+  in the other verifications), the same module in `production`'s certificates
+  172 s (13.5 s on the examples leg), `RustCorr` 47 s (4.3 s), the trivial
+  `LexLeanExample.Main` of `nat-add-zero` 101 s (1 s to 5 s), a `leanchecker`
+  replay 4 s (0.8 s). Memory was not short: 6.6 GiB or more available and no
+  swap throughout. A slowdown of 5 to 20 times on 26 s to 38 s is 130 s to
+  760 s, which is over 300 s.
+- **It was not a single event.** The three runs have the same shape, in the same
+  verification and to within 7 % of each other, and all three were slow runs
+  throughout (`EX-07` 1.5 times the passing run's, `TargetSemantics` 17 s
+  against 10 s even where nothing stalled). The cause of the slowdown, whether
+  contention among the concurrent cases of the `bdd` recipe on the slower
+  runners or something of the host's, is not established here.
+
+The scratch copy now allows 900 s: three times the default, which keeps a
+slowdown of more than 12 times (against the 73 s of the idle host) or of more
+than 24 times (against the 37 s of CI) harmless, while a child that does hang
+is still ended, in 15 minutes. The committed `compiler` project, its limits, `verified_compiler()`,
+and every other case are unchanged. `verified_compiler()` has the same
+exposure in principle; it ran in the quiet first minutes of all three failing
+runs (231 s to 237 s) and is left alone until it fails.
+
+### the planted verification can fail
+
+- **a limit the case does not obey.** The scratch copy's `child_timeout_ms` set
+  to 5000 in the same edit. `-- conformance_rs_12`:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:703:5:
+  expected LLV7002, found ["LLS8002"] (LLS8002: child_timeout_ms exceeded by `lean` in phase LexLeanTarget.ReasoningOracle: configured 5000, observed 5007 ms)
+  ```
+
+  The edit reaches the verification it is made for: the limit in force is the
+  one the case sets, and a child that exceeds it is still `LLS8002`.
+
+Removed: the edit was restored; `conformance_rs_12` passes in 691 s on the
+idle host (737 s before the change).
