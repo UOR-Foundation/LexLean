@@ -15,6 +15,9 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Toolchain preflight compares the complete reported Lean version in Lean and
+  Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
+  suffixes, and a matching version elsewhere in the banner with `LLV7001`.
 - Core modules in the authoring notation (SPEC.md §17.21.8, `AU-09`..`AU-12`;
   stages 3c and 3d of #93). A native `coremodule` of schema `lexlean/core-module/2`
   can be written as text instead of one `\coredata{…}` argument of canonical
