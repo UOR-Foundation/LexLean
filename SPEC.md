@@ -4406,6 +4406,28 @@ and no call to it propagates. The length of a sequence cannot exceed
    test is negated as its complement, and the printer parenthesizes any
    comparison under `!`.
 
+**Runtime boundary.** The runtime both profiles carry is a closed text
+(`rust::runtime`), and what it may take from Rust's library is closed too.
+`rust_library::PRIMITIVES` lists the *machine primitives*: the checked
+integer operations at each width (`checked_add`, `checked_sub`,
+`checked_mul`, `checked_div`, `checked_rem`, `checked_neg`, `checked_shl`,
+`checked_shr`), conversion between integer widths, the order of two
+scalars, the work counter, a growable buffer (creation with a capacity,
+`push` and `truncate` by its only holder, length), a shared immutable copy of
+a slice, the unique-holder test and release of a shared value, replacement
+of a place's value, and the UTF-8 view and check of a text. Each is stated
+by its meaning, and these, with Rust's integer and Boolean operators, are
+the only operations the runtime may use that no runtime source defines.
+`rust_library::LIBRARY` lists every name the runtime text takes from the
+library (an import, a path, a method, a macro, or a capitalized type, trait,
+or constructor; an integer type in a path is written `<int>`), each with its
+role: part of a primitive; *stated*, meaning the closed AST states what it
+computes over the primitives the row cites, or over its own constructs
+alone when it cites none; or a construct of the closed AST. The audit
+(`rust_library::audit`) reads the text as tokens and refuses a name the
+table does not list, a row the text does not use or lists twice, a row
+citing a name that is not a primitive, and a primitive no row cites.
+
 **Packages.** A package manifest (`lexlean/rust-package/1`,
 `schemas/rust-package.schema.json`) names a crate and its version (three
 canonical decimals, each at most `2^64 - 1`, as Cargo reads them; the schema
@@ -9090,6 +9112,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-06` | `rust-backend` | Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected. | §17.16 |
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
 | `RB-08` | `rust-backend` | A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused. | §17.16 |
+| `RB-09` | `rust-backend` | Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused. | §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -9192,7 +9215,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
 | `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
 
-**Total required capability IDs:** 379.
+**Total required capability IDs:** 380.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

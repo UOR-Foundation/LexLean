@@ -3346,6 +3346,31 @@ thread 'conformance_sp_02' panicked at crates/conformance/src/cases/preservation
 `
 ```
 
+### rust runtime library boundary can fail
+
+Planted: the audit read its own table instead of the runtime text (`let
+used = rows.keys()...` in `crates/lexlean/src/calculus/rust_library.rs`).
+Command: `cargo test -p repo-conformance --all-features --test conformance
+conformance_rb_09`. Expected: a runtime with a library function the table
+does not list is accepted.
+
+```text
+thread 'conformance_rb_09' (28380) panicked at crates\conformance\src\cases\rust_backend.rs:1518:62:
+the runtime uses the method `wrapping_add`: ()
+```
+
+A second plant deleted the row of `saturating_sub` from `LIBRARY`:
+
+```text
+thread 'conformance_rb_09' (31736) panicked at crates\conformance\src\cases\rust_backend.rs:1504:29:
+the runtime keeps to its library table: "the runtime uses the method `saturating_sub`, which the library table does not list"
+```
+
+Removed: the scan and the row were restored; `conformance_rb_09` passes.
+`RB-09` also plants a path, a macro, and a type outside the table, a removed
+row, an unused row, a row citing a non-primitive, and an uncited primitive.
+
+
 ### GNAF kernel oracle can fail
 
 Planted: the host's `lexlean::gnaf::expand` dispatched only from a plan to
