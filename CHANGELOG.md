@@ -15,6 +15,23 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Certificates write a list of any length as a term Lean elaborates without
+  binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
+  `[…]` macro splits a literal of more than 32 elements in halves under
+  `let` binders, and certificate B's witnesses, whose elements Lean
+  postpones to metavariables, did not unify through them: a valid
+  certificate B of a root calling a function of 33 or more parameters was
+  rejected with `LLV7015`. One helper (`production::lean_list`) now writes
+  every list and array of the three certificate writers: a literal up to 32
+  elements, byte-identical to before, and the `List.cons` chain the macro
+  writes for a short one beyond that. The 100-parameter project of
+  `tests/negative/certificate-heartbeat-rejected` verifies without its
+  shim. The certificates of `examples/models` and `examples/reasoning` that
+  hold such a list change, and their verification records are regenerated,
+  as are the sizes `certificate-resource-exhausted` and
+  `certificate-generation-limit` quote.
+  `SP-13` brings the register to 380 IDs.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
 - Core modules in the authoring notation (SPEC.md §17.21.8, `AU-09`..`AU-12`;
   stages 3c and 3d of #93). A native `coremodule` of schema `lexlean/core-module/2`
   can be written as text instead of one `\coredata{…}` argument of canonical
@@ -302,6 +319,22 @@ versions, and the entries below say what each tag does and does not claim.
   whole. The gate's wall time becomes the longer leg, about 2 h 40 min where the
   last full run took 3 h 16 min (an estimate from that run's timings). Each leg
   uploads its own `acceptance-gate-evidence-<leg>`.
+- Production bundle replay binds the compiler version to the producing
+  attestation and refuses an absent, empty, or non-string version with
+  `LLV7102`, including a result whose identity was recomputed after changing
+  its compiler version (`PX-07`, #136).
+- Production replay also binds the attested compiler-semantics digest to the
+  result, requires a verified `lexlean/attestation/2` envelope, and checks the
+  complete Lean-version fields in its Lean and Lake records (`PX-07`, #142).
+  The compiler input's own Lean version and commit must match the same pin;
+  reading that identity requires JSON objects and preserves support for
+  deeply nested LCNF payloads.
+  Missing or malformed facts and inconsistent compiler identities fail with
+  `LLV7102`; self-consistent historical crate versions remain supported.
+- Production bundle replay preserves literal filename characters when it
+  encodes path components, refuses non-UTF-8 names, and rejects duplicate
+  inventory paths. An extra backslash-named file or a canonical file moved to
+  such a name can no longer hide behind another bundle path (`PX-07`, #133).
 - Production export contract (SPEC.md §24.7, `PX-01`..`PX-12`, `CL-23`,
   `LLC0201`..`LLC0204`, `LLV7101`, `LLV7102`): a stable, versioned façade,
   `lexlean::api::production`, through which a consumer such as PrismPM
@@ -426,6 +459,11 @@ versions, and the entries below say what each tag does and does not claim.
   supported-host job drops the `cargo build` its `cargo test` repeated (SPEC.md
   §8.3). Pinned by `conformance_rp_14` and the unit tests of
   `repo_conformance::evidence`; no register ID or code is added.
+- Filesystem confinement rejects Windows drive prefixes in every segment of
+  a configured project-relative path before joining it (#138, SPEC.md §10.1,
+  §25.1, `CF-03`, `SE-01`). Both absolute and drive-relative forms are refused
+  on every host; colon names without a drive prefix retain their existing
+  path policy.
 - A host that embeds the library can end the children the library started
   (SPEC.md §17.17, §24.6, `CL-22`): `lexlean::verify::end_live_children` ends
   every child process group the library started in this process and has not
