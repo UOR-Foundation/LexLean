@@ -7794,6 +7794,31 @@
 'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R7.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R0.Compose.RustCore.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R0.Compose.RustCore.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R0.Compose.RustCore.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R1.Compose.RustCore.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R1.Compose.RustCore.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R1.Compose.RustCore.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R2.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R2.Compose.RustStd.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R2.Compose.RustStd.__wt_3' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R2.Compose.RustStd.__wt_4' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R2.Compose.RustStd.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R3.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R3.Compose.RustStd.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R3.Compose.RustStd.__wt_3' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R3.Compose.RustStd.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R4.Compose.RustStd.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R4.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R5.Compose.RustCore.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R5.Compose.RustCore.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R5.Compose.RustCore.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R6.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R6.Compose.RustStd.__wt_2' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R6.Compose.RustStd.__wt_3' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R6.Compose.RustStd.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R7.Compose.RustStd.__wt_0' depends on axioms: [propext]
 -- statement vocabulary
 inductive LexLeanPreservation.Obs : Type
 number of parameters: 0
