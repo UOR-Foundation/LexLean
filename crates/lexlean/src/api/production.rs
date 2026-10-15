@@ -1670,7 +1670,15 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                         && stated_certificate.module == module
                         && stated_certificate.theorem == theorem
                         && stated_certificate.file.path
-                            == format!("evidence/certificates/{}", certificate_path(module))
+                            == format!(
+                                "evidence/certificates/{}",
+                                match role {
+                                    CertificateRole::E =>
+                                        crate::production::preserve::notation_path(module),
+                                    CertificateRole::A | CertificateRole::B =>
+                                        certificate_path(module),
+                                }
+                            )
                         && (
                             stated_certificate.file.byte_length,
                             stated_certificate.file.sha256,

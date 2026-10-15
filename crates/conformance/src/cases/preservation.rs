@@ -3126,7 +3126,11 @@ pub fn run(id: &str) {
                     !output.status.success() && joined.contains("error"),
                     "{label}: the planted certificate E is refused by Lean: {joined}"
                 );
-                joined.lines().next().unwrap_or_default().to_owned()
+                // The first error, with the kernel's reason on the lines after it.
+                joined.lines().take(3).collect::<Vec<_>>().join(
+                    "
+    ",
+                )
             };
             let scalar = data
                 .nodes
