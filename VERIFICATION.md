@@ -6841,6 +6841,45 @@ conformance_rp_14`, and the failure, after which the file was restored.
 derivation: only elaboration and replay processes, the largest of each field
 per name, and the same bytes for the same telemetry.
 
+## Shared production verification (Issue #141)
+
+`SP-05` reads the verified directory retained by the production-export
+harness's `exported("production")` fixture, which `PX-01` already uses.
+That fixture owns the project copy and lazily exports it through the consumer
+and `production::build`, whose unchanged verification pipeline elaborates,
+replays, and audits the source and its certificates. A crate-private harness
+helper locates that directory from the bundle's build root and attestation
+identity. The stable consumer still uses only the public production API;
+the conformance harness owns this access to the retained verification files.
+The shared setup also plants an interrupted staging directory containing a
+leftover Lean file and asserts that the real export removes it, preserving
+the cleanup probe previously supplied by `support::verify_ok`.
+
+Every positive artifact, schema, digest, and attestation assertion of
+`SP-05`, its six rejection observations, its host gate, and its parallel
+setup are retained. When `SP-05` runs alone it initializes the same real
+export; together with `PX-01` the fixture's existing `OnceLock` supplies one
+verified run. The independent second runs for verification determinism and
+offline export are unchanged, as are all acceptance recipes, resource
+profiles, source artifacts, and semantic identities. The saved verification
+belongs to `bdd`; this change does not shorten Atlas's proof work.
+
+With one Cargo worker and `LEXLEAN_VERIFY_WIDTH=1`, `cargo test --offline
+--locked -p repo-conformance --all-features --test conformance --
+conformance_sp_05 conformance_px_01 --exact --test-threads=1 --nocapture`
+passes both cases before and after the change: 1225.31 and 1060.20 seconds
+of test execution, respectively. The changed case also passes alone in a
+fresh process, with `conformance_sp_05` as the sole filter, in 749.99 seconds.
+These are observations on a shared development host with warmed Cargo state,
+not a controlled benchmark or a measurement of the whole CI gate. The saved
+pipeline invocation follows from the shared fixture, independently of those
+timings; no timing threshold is an acceptance condition.
+
+Formatting, workspace/all-target Clippy with warnings denied, the model and
+spec-link audits (380 IDs, 80 codes), and all five `bdd` meta-tests pass.
+`cargo xtask check-test-inventory` confirms the same 632 workspace tests:
+220 in `test` and 412 in `bdd`, disjoint with none lost.
+
 ## Production export contract (Issue #28)
 
 SPEC.md §24.7; `PX-01`..`PX-12` and `CL-23`. The Lean-backed cases share three exports in one process (the consumer's exports of `examples/production` and `examples/production-coverage`, and a second, offline CLI export of `examples/production` from another directory): 4 min 08 s and 2.2 GB peak RSS for all thirteen cases together on the development host (`cargo test -p repo-conformance --test conformance -- conformance_px_ conformance_cl_23`). The committed packages under `tests/production-export/` are regenerated only by `just production-export-write`.
