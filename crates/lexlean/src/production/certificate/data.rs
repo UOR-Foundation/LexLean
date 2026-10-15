@@ -1610,28 +1610,18 @@ impl Composer<'_, '_> {
     /// element of a list, the value of an option, the components of a pair,
     /// the error and the value of a result.
     fn aux_fields(&self, aux: &Aux) -> Result<Vec<SemanticType>, String> {
-        Ok(match aux.kind {
-            AuxKind::List => vec![super::element_of(&aux.original)?],
-            AuxKind::Option => match &aux.original {
-                SemanticType::Option { value } => vec![value.as_ref().clone()],
-                _ => return Err("an option auxiliary of a non-option".to_owned()),
-            },
-            AuxKind::Prod => match &aux.original {
-                SemanticType::Product { left, right } => {
-                    vec![left.as_ref().clone(), right.as_ref().clone()]
-                }
-                SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
-                    vec![SemanticType::Bool, SemanticType::Bool]
-                }
-                _ => return Err("a pair auxiliary of a non-pair".to_owned()),
-            },
-            AuxKind::Except => match &aux.original {
-                SemanticType::Result { ok, error } => {
-                    vec![error.as_ref().clone(), ok.as_ref().clone()]
-                }
-                _ => return Err("a result auxiliary of a non-result".to_owned()),
-            },
-        })
+        let parts = container_parts(&aux.original)?;
+        let expected = match aux.kind {
+            AuxKind::List | AuxKind::Option => 1,
+            AuxKind::Prod | AuxKind::Except => 2,
+        };
+        if parts.len() != expected {
+            return Err(format!(
+                "`{}` is an auxiliary of the wrong shape",
+                self.gen.source.type_text(&aux.original)
+            ));
+        }
+        Ok(parts)
     }
 
     /// The position of a type among the group's motives, if it has one.
@@ -1740,6 +1730,7 @@ impl Composer<'_, '_> {
 
     /// A minor premise: `fun fields… hypotheses… => body`, the hypotheses
     /// for the recursive fields in field order, `body` built over the fields.
+    #[allow(clippy::type_complexity)]
     fn minor(
         &mut self,
         group: &Group,
@@ -1858,10 +1849,9 @@ impl Composer<'_, '_> {
                     })?);
                 }
                 AuxKind::Option => {
-                    let inner = match &original {
-                        SemanticType::Option { value } => value.as_ref().clone(),
-                        _ => return Err("an option auxiliary of a non-option".to_owned()),
-                    };
+                    let inner = container_parts(&original)?
+                        .pop()
+                        .ok_or("an option auxiliary of a non-option")?;
                     let t = self.encoded_ty(&inner)?;
                     out.push(self.rust_lemma(
                         "wt_noneV",
@@ -1913,12 +1903,9 @@ impl Composer<'_, '_> {
                     })?);
                 }
                 AuxKind::Except => {
-                    let (ok, error) = match &original {
-                        SemanticType::Result { ok, error } => {
-                            (ok.as_ref().clone(), error.as_ref().clone())
-                        }
-                        _ => return Err("a result auxiliary of a non-result".to_owned()),
-                    };
+                    let mut parts = container_parts(&original)?;
+                    let ok = parts.pop().ok_or("a result auxiliary of a non-result")?;
+                    let error = parts.pop().ok_or("a result auxiliary of a non-result")?;
                     let s = self.encoded_ty(&ok)?;
                     let t = self.encoded_ty(&error)?;
                     let error_fields = [error.clone()];
@@ -2002,11 +1989,9 @@ impl Composer<'_, '_> {
     /// the block's first type for the `j`-th auxiliary).
     fn group_rows(&mut self, component: &[u64]) -> Result<Vec<Row>, String> {
         let group = self.group(component)?;
-        let first = &self.gen.layout.adts[group.block[0] as usize].ty;
-        let (first_member, first_arguments) = match first {
-            SemanticType::Named { member, arguments } => (member.clone(), arguments.clone()),
-            _ => return Err("a recursive group of a non-document type".to_owned()),
-        };
+        let first = self.gen.layout.adts[group.block[0] as usize].ty.clone();
+        let first_member = named_member(&first)?;
+        let first_arguments = type_arguments(&first);
         let first_name = self.document_name(&first_member)?;
         let mut params = Vec::new();
         for argument in &first_arguments {
@@ -2077,6 +2062,97 @@ impl Composer<'_, '_> {
     }
 }
 
+
+/// The field types of a container's constructors other than the container
+/// itself: the element of a list, set, or map (its entries), the value of an
+/// option, the two components of a pair, and the error then the value of a
+/// result.
+fn container_parts(ty: &SemanticType) -> Result<Vec<SemanticType>, String> {
+    Ok(match ty {
+        SemanticType::List { element } | SemanticType::Set { element } => {
+            vec![element.as_ref().clone()]
+        }
+        SemanticType::Map { key, value } => vec![SemanticType::Product {
+            left: key.clone(),
+            right: value.clone(),
+        }],
+        SemanticType::Option { value } => vec![value.as_ref().clone()],
+        SemanticType::Product { left, right } => {
+            vec![left.as_ref().clone(), right.as_ref().clone()]
+        }
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
+            vec![SemanticType::Bool, SemanticType::Bool]
+        }
+        SemanticType::Result { ok, error } => vec![error.as_ref().clone(), ok.as_ref().clone()],
+        SemanticType::Named {
+            member: _,
+            arguments: _,
+        }
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        } => return Err("the constructors of a non-container".to_owned()),
+    })
+}
+
+/// The type arguments a document type is instantiated at.
+fn type_arguments(ty: &SemanticType) -> Vec<SemanticType> {
+    match ty {
+        SemanticType::Named {
+            member: _,
+            arguments,
+        } => arguments.clone(),
+        SemanticType::List { element: _ }
+        | SemanticType::Set { element: _ }
+        | SemanticType::Map { key: _, value: _ }
+        | SemanticType::Option { value: _ }
+        | SemanticType::Product { left: _, right: _ }
+        | SemanticType::Result { ok: _, error: _ }
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        } => Vec::new(),
+    }
+}
+
 /// The member a document type names.
 fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
     match ty {
@@ -2084,7 +2160,36 @@ fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
             member,
             arguments: _,
         } => Ok(member.clone()),
-        _ => Err("a document type that is not named".to_owned()),
+        SemanticType::List { element: _ }
+        | SemanticType::Set { element: _ }
+        | SemanticType::Map { key: _, value: _ }
+        | SemanticType::Option { value: _ }
+        | SemanticType::Product { left: _, right: _ }
+        | SemanticType::Result { ok: _, error: _ }
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure
+        | SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Parameter { name: _ }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Function {
+            parameters: _,
+            result: _,
+        } => Err("a document type that is not named".to_owned()),
     }
 }
 
