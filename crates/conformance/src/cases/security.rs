@@ -274,6 +274,34 @@ pub(crate) fn run(id: &str) {
                 .expect("an escaping build root is rejected");
             support::expect_code(&error, "LLC0101");
 
+            // Reject drive prefixes before any host path join, including a
+            // prefix inside a slash-separated path. Parsing alone keeps
+            // these checks from reaching a real outside path on Windows.
+            let configuration = P::example().read("lexlean.toml");
+            for (field, value) in [
+                ("build_root", ".lexlean"),
+                ("lockfile", "lexlean.lock"),
+                ("lean_workspace", "."),
+            ] {
+                for path in ["C:/outside", "c:../outside", "dir/Z:outside"] {
+                    let text = configuration.replace(
+                        &format!("{field} = \"{value}\""),
+                        &format!("{field} = \"{path}\""),
+                    );
+                    let diagnostics =
+                        lexlean::config::parse_project("lexlean.toml", text.as_bytes()).expect_err(
+                            "a drive-prefixed configured path is rejected before joining",
+                        );
+                    assert!(
+                        diagnostics.iter().any(|diagnostic| {
+                            diagnostic.code.as_str() == "LLC0101"
+                                && diagnostic.message.contains(field)
+                        }),
+                        "{field} = {path:?}: {diagnostics:?}"
+                    );
+                }
+            }
+
             #[cfg(not(unix))]
             support::unix_only("SE-01", "unix symlink");
             #[cfg(unix)]

@@ -36,6 +36,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::eligibility::BUILTIN_OWNERS;
+use super::lean_list::{array, list, list_by};
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
@@ -788,12 +789,8 @@ pub fn render_ty(ty: &Ty) -> String {
         Ty::Pair { left, right } => format!("(.pair {} {})", render_ty(left), render_ty(right)),
         Ty::Adt { index } => format!("(.adt {index})"),
         Ty::Fn { parameters, result } => format!(
-            "(.fn [{}] {})",
-            parameters
-                .iter()
-                .map(render_ty)
-                .collect::<Vec<_>>()
-                .join(", "),
+            "(.fn {} {})",
+            list(parameters.iter().map(render_ty)),
             render_ty(result)
         ),
     }
@@ -821,7 +818,7 @@ fn bytes_literal(hex: &str) -> Result<String, String> {
                 .to_string(),
         );
     }
-    Ok(format!("ByteArray.mk #[{}]", values.join(", ")))
+    Ok(format!("ByteArray.mk {}", array(values)))
 }
 
 /// A calculus value as a `TargetSyntax.Value` term.
@@ -858,12 +855,13 @@ pub fn render_value(value: &Value) -> Result<String, String> {
         Value::Ok { value } => format!("(.ok {})", render_value(value)?),
         Value::Error { value } => format!("(.error {})", render_value(value)?),
         Value::List { items } => format!(
-            "(.list [{}])",
-            items
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.list {})",
+            list(
+                items
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
         Value::Pair { left, right } => {
             format!("(.pair {} {})", render_value(left)?, render_value(right)?)
@@ -872,20 +870,22 @@ pub fn render_value(value: &Value) -> Result<String, String> {
             constructor,
             fields,
         } => format!(
-            "(.adt {constructor} [{}])",
-            fields
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.adt {constructor} {})",
+            list(
+                fields
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
         Value::Closure { function, captures } => format!(
-            "(.closure {function} [{}])",
-            captures
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.closure {function} {})",
+            list(
+                captures
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
     })
 }
@@ -959,25 +959,16 @@ fn render_prim(prim: &Prim) -> String {
 }
 
 fn render_exprs(exprs: &[Expr]) -> Result<String, String> {
-    Ok(format!(
-        "[{}]",
+    Ok(list(
         exprs
             .iter()
             .map(render_expr)
-            .collect::<Result<Vec<_>, _>>()?
-            .join(", ")
+            .collect::<Result<Vec<_>, _>>()?,
     ))
 }
 
 fn numbers(names: &[u64]) -> String {
-    format!(
-        "[{}]",
-        names
-            .iter()
-            .map(u64::to_string)
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
+    list(names.iter().map(u64::to_string))
 }
 
 fn render_expr(expr: &Expr) -> Result<String, String> {
@@ -1010,26 +1001,27 @@ fn render_expr(expr: &Expr) -> Result<String, String> {
             scrutinee,
             arms,
         } => format!(
-            "(.«match» {} {} [{}])",
+            "(.«match» {} {} {})",
             render_ty(ty),
             render_expr(scrutinee)?,
-            arms.iter()
-                .map(
-                    |Arm {
-                         shape,
-                         binders,
-                         body,
-                     }| {
-                        Ok(format!(
-                            "(.arm {} {} {})",
-                            render_shape(*shape),
-                            numbers(binders),
-                            render_expr(body)?
-                        ))
-                    }
-                )
-                .collect::<Result<Vec<_>, String>>()?
-                .join(", ")
+            list(
+                arms.iter()
+                    .map(
+                        |Arm {
+                             shape,
+                             binders,
+                             body,
+                         }| {
+                            Ok(format!(
+                                "(.arm {} {} {})",
+                                render_shape(*shape),
+                                numbers(binders),
+                                render_expr(body)?
+                            ))
+                        }
+                    )
+                    .collect::<Result<Vec<_>, String>>()?
+            )
         ),
         Expr::Build {
             shape,
@@ -1072,50 +1064,41 @@ fn render_expr(expr: &Expr) -> Result<String, String> {
 ///
 /// Returns the reason a literal is malformed.
 pub fn render_program(program: &Program) -> Result<String, String> {
-    let mut out = String::from("{ adts := [");
-    for (index, adt) in program.adts.iter().enumerate() {
-        if index > 0 {
-            out.push_str(",\n    ");
-        }
-        out.push_str("{ constructors := [");
-        out.push_str(
-            &adt.constructors
-                .iter()
-                .map(|fields| {
-                    format!(
-                        "[{}]",
-                        fields.iter().map(render_ty).collect::<Vec<_>>().join(", ")
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
-        out.push_str("] }");
-    }
-    out.push_str("], functions := [");
-    for (
-        index,
-        Function {
-            parameters,
-            types,
-            result,
-            body,
-        },
-    ) in program.functions.iter().enumerate()
-    {
-        if index > 0 {
-            out.push(',');
-        }
-        out.push_str(&format!(
-            "\n    {{ parameters := {}, types := [{}], result := {},\n      body := {} }}",
-            numbers(parameters),
-            types.iter().map(render_ty).collect::<Vec<_>>().join(", "),
-            render_ty(result),
-            render_expr(body)?
-        ));
-    }
-    out.push_str("] }");
-    Ok(out)
+    let adts = program.adts.iter().map(|adt| {
+        format!(
+            "{{ constructors := {} }}",
+            list(
+                adt.constructors
+                    .iter()
+                    .map(|fields| list(fields.iter().map(render_ty)))
+            )
+        )
+    });
+    let functions = program
+        .functions
+        .iter()
+        .map(
+            |Function {
+                 parameters,
+                 types,
+                 result,
+                 body,
+             }| {
+                Ok::<String, String>(format!(
+                    "\n    {{ parameters := {}, types := {}, result := {},\n      body := {} }}",
+                    numbers(parameters),
+                    list(types.iter().map(render_ty)),
+                    render_ty(result),
+                    render_expr(body)?
+                ))
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(format!(
+        "{{ adts := {}, functions := {} }}",
+        list_by(adts, ",\n    "),
+        list_by(functions, ",")
+    ))
 }
 
 // --- Rendering the source -----------------------------------------------------
@@ -1744,28 +1727,30 @@ impl Gen<'_> {
                 value,
                 entries,
             } => format!(
-                "([{}] : List (Prod {} {}))",
-                entries
-                    .iter()
-                    .map(|SemanticMapEntry { key, value }| {
-                        Ok::<String, String>(format!(
-                            "({}, {})",
-                            self.src(key, ctx)?,
-                            self.src(value, ctx)?
-                        ))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?
-                    .join(", "),
+                "({} : List (Prod {} {}))",
+                list(
+                    entries
+                        .iter()
+                        .map(|SemanticMapEntry { key, value }| {
+                            Ok::<String, String>(format!(
+                                "({}, {})",
+                                self.src(key, ctx)?,
+                                self.src(value, ctx)?
+                            ))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                ),
                 self.ty(&self.source.close(key, site))?,
                 self.ty(&self.source.close(value, site))?
             ),
             SemanticTerm::SetLiteral { element, elements } => format!(
-                "([{}] : List {})",
-                elements
-                    .iter()
-                    .map(|element| self.src(element, ctx))
-                    .collect::<Result<Vec<_>, _>>()?
-                    .join(", "),
+                "({} : List {})",
+                list(
+                    elements
+                        .iter()
+                        .map(|element| self.src(element, ctx))
+                        .collect::<Result<Vec<_>, _>>()?
+                ),
                 self.ty(&self.source.close(element, site))?
             ),
             // Certificates read elaborated declarations, in which a checked
@@ -1795,16 +1780,9 @@ impl Gen<'_> {
                             targets.push(self.src(target, ctx)?);
                         }
                     }
-                    items.push(format!(
-                        "({}, [{}])",
-                        self.src(source, ctx)?,
-                        targets.join(", ")
-                    ));
+                    items.push(format!("({}, {})", self.src(source, ctx)?, list(targets)));
                 }
-                format!(
-                    "([{}] : List (Prod {node} (List {node})))",
-                    items.join(", ")
-                )
+                format!("({} : List (Prod {node} (List {node})))", list(items))
             }
             SemanticTerm::Eq { left: _, right: _ }
             | SemanticTerm::Le { left: _, right: _ }
@@ -2566,7 +2544,7 @@ impl Gen<'_> {
                     value: self.src(argument, ctx)?,
                     fits: format!("fun{typed} => __fits_{index}{fits_captures} {applied}"),
                     index: index.to_string(),
-                    captures: format!("[{}]", encoded.join(", ")),
+                    captures: list(encoded),
                     relation: format!("fun{typed} => __rel_{index}{relation_captures} {applied}"),
                     proof: Proof {
                         proof: format!("({} {})", lib("conv_closure"), captured.proof),
@@ -3720,12 +3698,12 @@ impl Gen<'_> {
                     rel_binders.push(format!("({} : Nat)", companion.index));
                     rel_binders.push(format!("({} : List {SYNTAX}.Value)", companion.captures));
                     rel_binders.push(format!(
-                        "({} : ∀{binders}, {} __prog {} ({SEMANTICS}.LexLeanRuntime.append {} [{}]) ({} ({}{applied}) ({} ({name}{applied}))))",
+                        "({} : ∀{binders}, {} __prog {} ({SEMANTICS}.LexLeanRuntime.append {} {}) ({} ({}{applied}) ({} ({name}{applied}))))",
                         companion.relation,
                         lib("FunRel"),
                         companion.index,
                         companion.captures,
-                        encoded.join(", "),
+                        list(encoded),
                         lib("Rel"),
                         companion.fits,
                         self.enc(codomain)?
@@ -3744,7 +3722,7 @@ impl Gen<'_> {
             fits_binders,
             rel_binders,
             fits_applied,
-            arguments: format!("[{}]", arguments.join(", ")),
+            arguments: list(arguments),
             value: format!("({} ({denotation}))", self.enc(result)?),
             names,
         })
@@ -5325,9 +5303,9 @@ impl<'a> Gen<'a> {
                         format!("⟨{}⟩", binders.join(", "))
                     };
                     text.push_str(&format!(
-                        "  | {pattern} => {} {position} [{}]\n",
+                        "  | {pattern} => {} {position} {}\n",
                         value_ctor("adt"),
-                        encoded.join(", ")
+                        list(encoded)
                     ));
                 }
                 text.push('\n');
@@ -5346,9 +5324,9 @@ impl<'a> Gen<'a> {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 format!(
-                    "def __enc_{index} (__s : {lean}) : {SYNTAX}.Value :=\n  {} 0 [{}]\n\n",
+                    "def __enc_{index} (__s : {lean}) : {SYNTAX}.Value :=\n  {} 0 {}\n\n",
                     value_ctor("adt"),
-                    fields.join(", ")
+                    list(fields)
                 )
             };
             texts.insert(index, text);
@@ -7769,19 +7747,18 @@ impl Gen<'_> {
             names.push(local);
         }
         let applied: String = names.iter().map(|local| format!(" {local}")).collect();
+        let argument_list = list(arguments);
         match self.entry_of() {
             // The root's entry validates the parameters that carry an
             // invariant before calling the root: its rendering realizes the
             // root's observation as `some` when §17.12's invariants hold,
             // and `none` when one fails.
             Some((entry, _)) => out.push_str(&format!(
-                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {module_b}.krate ({} {entry}) [{}] __e_ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) __e_ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) __e_ro) :=\n  match {} (fun __e_n => {module_b}.root __e_n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨__e_ro, __e_hr, __e_hc⟩ => ⟨__e_ro, __e_hc, fun __e_h => {module_a}.entry_accepts{applied} __e_h ▸ __e_hr, fun __e_h => {module_a}.entry_refuses{applied} __e_h ▸ __e_hr⟩\n\n",
+                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (__e_hrep : {} {argument_list}) : ∃ __e_ro, {} {module_b}.krate ({} {entry}) {argument_list} __e_ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) __e_ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) __e_ro) :=\n  match {} (fun __e_n => {module_b}.root __e_n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨__e_ro, __e_hr, __e_hc⟩ => ⟨__e_ro, __e_hc, fun __e_h => {module_a}.entry_accepts{applied} __e_h ▸ __e_hr, fun __e_h => {module_a}.entry_refuses{applied} __e_h ▸ __e_hr⟩\n\n",
                 binders.join(" "),
                 lib("Rust.RepresentableL"),
-                arguments.join(", "),
                 lib("Rust.RCI"),
                 lib("Rust.fnIdent"),
-                arguments.join(", "),
                 lib("Rust.RealizesFn"),
                 lib("someObs"),
                 lib("Rust.RealizesFn"),
@@ -7791,14 +7768,12 @@ impl Gen<'_> {
                 lib("Rust.rel_ne_stuck"),
             )),
             None => out.push_str(&format!(
-                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {fallible} ({module_a}.denote{applied}) __e_ro ∧ {} {module_b}.krate ({} 0) [{}] __e_ro :=\n  {} (fun __e_n => {module_b}.root __e_n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
+                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (__e_hrep : {} {argument_list}) : ∃ __e_ro, {} {fallible} ({module_a}.denote{applied}) __e_ro ∧ {} {module_b}.krate ({} 0) {argument_list} __e_ro :=\n  {} (fun __e_n => {module_b}.root __e_n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
                 binders.join(" "),
                 lib("Rust.RepresentableL"),
-                arguments.join(", "),
                 lib("Rust.RealizesFn"),
                 lib("Rust.RCI"),
                 lib("Rust.fnIdent"),
-                arguments.join(", "),
                 lib("Rust.compose"),
                 Self::wtl(&proofs),
                 lib("Rust.rel_ne_stuck"),

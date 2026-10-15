@@ -297,6 +297,65 @@ fn numbers_are_read_as_lean_reads_them() {
 /// the limit it is given, and that programs whose certificates fit the
 /// default limits are not refused. Returns how far certificate B went
 /// beyond A and E at most.
+/// The most elements of any `[…]` or `#[…]` literal in `text`, counted at
+/// the literal's own depth, outside string literals and comments.
+fn longest_literal(text: &str) -> usize {
+    // One entry per open bracket: its closing character and, for a list
+    // literal, the elements seen so far.
+    let mut open: Vec<(char, Option<usize>)> = Vec::new();
+    let mut longest = 0;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                while let Some(c) = chars.next() {
+                    match c {
+                        '\\' => {
+                            chars.next();
+                        }
+                        '"' => break,
+                        _ => {}
+                    }
+                }
+            }
+            '/' if chars.peek() == Some(&'-') => {
+                let mut previous = ' ';
+                for c in chars.by_ref() {
+                    if previous == '-' && c == '/' {
+                        break;
+                    }
+                    previous = c;
+                }
+            }
+            '-' if chars.peek() == Some(&'-') => {
+                for c in chars.by_ref() {
+                    if c == '\n' {
+                        break;
+                    }
+                }
+            }
+            '[' => open.push((']', Some(0))),
+            '(' => open.push((')', None)),
+            '{' => open.push(('}', None)),
+            '⟨' => open.push(('⟩', None)),
+            ',' => {
+                if let Some((_, Some(elements))) = open.last_mut() {
+                    *elements += 1;
+                }
+            }
+            ']' | ')' | '}' | '⟩' => {
+                if let Some((_, Some(commas))) = open.pop() {
+                    // A literal with any content has one more element than
+                    // separators; `[]` has none.
+                    longest = longest.max(commas + 1);
+                }
+            }
+            _ => {}
+        }
+    }
+    longest
+}
+
 fn stress_estimates() -> u64 {
     // The families are independent of one another and take minutes of one
     // core each, so they are certified on every core: one at a time they were
@@ -1723,6 +1782,41 @@ pub fn run(id: &str) {
                 planted(&|text| Some(text.replace("\"kind\":\"exact\"", "\"kind\":\"allow\"")))
                     .expect_err("an inexact policy is refused");
             assert!(error.contains("does not pin its axioms exactly"), "{error}");
+        }
+        // §17.17: a list of any length is a term Lean elaborates without
+        // binders, in every list position of a witness.
+        "SP-13" => {
+            let projects =
+                crate::stress::long_lists(lexlean::production::lean_list::LITERAL_MAX + 1);
+            for (shape, project) in &projects {
+                for certified in preservation::certificates(project) {
+                    for certificate in certified.all() {
+                        let longest = longest_literal(&certificate.text);
+                        assert!(
+                            longest <= lexlean::production::lean_list::LITERAL_MAX,
+                            "{shape}: `{}` writes a list literal of {longest} elements, which Lean splits under `let` binders",
+                            certificate.module
+                        );
+                    }
+                }
+            }
+            if !support::lean_backed("SP-13") {
+                return;
+            }
+            let threads: Vec<_> = projects
+                .into_iter()
+                .map(|(shape, project)| {
+                    std::thread::spawn(move || {
+                        support::verify_ok(&project);
+                        shape
+                    })
+                })
+                .collect();
+            for thread in threads {
+                thread
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            }
         }
         // §17.17, §22.8, §22.9: certificate A in verification.
         "SP-05" => {

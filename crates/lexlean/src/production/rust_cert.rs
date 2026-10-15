@@ -19,6 +19,7 @@ use crate::calculus::rust::runtime::Item;
 use crate::calculus::{Arm, Expr as Term, Prim, Program, Shape, Ty};
 
 use super::certificate::{render_program, render_ty};
+use super::lean_list::list;
 use super::rust_term;
 
 /// The library module whose soundness theorem certificate B applies.
@@ -236,10 +237,6 @@ impl Rule {
 }
 
 // --- Lean terms --------------------------------------------------------------
-
-fn list(items: impl IntoIterator<Item = String>) -> String {
-    format!("[{}]", items.into_iter().collect::<Vec<_>>().join(", "))
-}
 
 fn lets_term(lets: &[Let]) -> String {
     list(lets.iter().map(rust_term::binding))

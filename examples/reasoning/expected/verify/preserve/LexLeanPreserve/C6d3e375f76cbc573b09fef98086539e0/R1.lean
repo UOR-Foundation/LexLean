@@ -20,93 +20,93 @@ namespace LexLeanPreserve.C6d3e375f76cbc573b09fef98086539e0.R1
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[.nat, .nat, .nat, .nat, .nat, .nat]] },
     { constructors := [[(.adt 0), .nat, .nat, .nat, .nat, .nat, .nat, .nat, .nat]] },
-    { constructors := [[], [], [], [], [], [], [], []] }], functions := [
+    { constructors := [[], [], [], [], [], [], [], []] }], functions := ((
     { parameters := [0, 1, 2, 3, 4, 5], types := [.nat, .nat, .nat, .nat, .nat, .nat], result := .nat,
-      body := (.«match» .nat (.call 1 [(.build (.adt 0) (.adt 0) [(.var 0), (.var 1), (.var 2), (.var 3), (.var 4), (.var 5)])]) [(.arm .ok [6] (.var 6)), (.arm .error [7] (.value .nat (.nat 9)))]) },
+      body := (.«match» .nat (.call 1 [(.build (.adt 0) (.adt 0) [(.var 0), (.var 1), (.var 2), (.var 3), (.var 4), (.var 5)])]) [(.arm .ok [6] (.var 6)), (.arm .error [7] (.value .nat (.nat 9)))]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := (.result .nat (.pair .bool .bool)),
-      body := (.call 2 [(.var 0)]) },
+      body := (.call 2 [(.var 0)]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := (.result .nat (.pair .bool .bool)),
-      body := (.call 3 [(.var 0)]) },
+      body := (.call 3 [(.var 0)]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := (.result .nat (.pair .bool .bool)),
-      body := (.«let» 1 (.pair (.adt 1) .bool) (.call 4 [(.var 0)]) (.«match» (.result .nat (.pair .bool .bool)) (.second (.var 1)) [(.arm .true [] (.call 5 [(.var 0), (.first (.var 1))])), (.arm .false [] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .false .bool []), (.build .false .bool [])])]))])) },
+      body := (.«let» 1 (.pair (.adt 1) .bool) (.call 4 [(.var 0)]) (.«match» (.result .nat (.pair .bool .bool)) (.second (.var 1)) [(.arm .true [] (.call 5 [(.var 0), (.first (.var 1))])), (.arm .false [] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .false .bool []), (.build .false .bool [])])]))])) }) ::(
     { parameters := [0], types := [(.adt 0)], result := (.pair (.adt 1) .bool),
-      body := (.call 6 [(.closure 7 []), (.value .nat (.nat 11)), (.call 8 [(.var 0)])]) },
+      body := (.call 6 [(.closure 7 []), (.value .nat (.nat 11)), (.call 8 [(.var 0)])]) }) ::(
     { parameters := [0, 1], types := [(.adt 0), (.adt 1)], result := (.result .nat (.pair .bool .bool)),
-      body := (.«match» (.result .nat (.pair .bool .bool)) (.call 9 [(.var 0), (.var 1)]) [(.arm .some [2] (.build .ok (.result .nat (.pair .bool .bool)) [(.var 2)])), (.arm .none [] (.«match» (.result .nat (.pair .bool .bool)) (.call 10 [(.var 1)]) [(.arm .some [3] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .true .bool []), (.build .false .bool [])])])), (.arm .none [] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .false .bool []), (.build .true .bool [])])]))]))]) },
+      body := (.«match» (.result .nat (.pair .bool .bool)) (.call 9 [(.var 0), (.var 1)]) [(.arm .some [2] (.build .ok (.result .nat (.pair .bool .bool)) [(.var 2)])), (.arm .none [] (.«match» (.result .nat (.pair .bool .bool)) (.call 10 [(.var 1)]) [(.arm .some [3] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .true .bool []), (.build .false .bool [])])])), (.arm .none [] (.build .error (.result .nat (.pair .bool .bool)) [(.build .pair (.pair .bool .bool) [(.build .false .bool []), (.build .true .bool [])])]))]))]) }) ::(
     { parameters := [0, 1, 2], types := [(.fn [(.adt 1)] (.option (.adt 1))), .nat, (.adt 1)], result := (.pair (.adt 1) .bool),
-      body := (.«match» (.pair (.adt 1) .bool) (.var 1) [(.arm .zero [] (.build .pair (.pair (.adt 1) .bool) [(.var 2), (.build .false .bool [])])), (.arm .succ [3] (.«match» (.pair (.adt 1) .bool) (.apply (.var 0) [(.var 2)]) [(.arm .none [] (.build .pair (.pair (.adt 1) .bool) [(.var 2), (.build .true .bool [])])), (.arm .some [4] (.call 6 [(.var 0), (.var 3), (.var 4)]))]))]) },
+      body := (.«match» (.pair (.adt 1) .bool) (.var 1) [(.arm .zero [] (.build .pair (.pair (.adt 1) .bool) [(.var 2), (.build .false .bool [])])), (.arm .succ [3] (.«match» (.pair (.adt 1) .bool) (.apply (.var 0) [(.var 2)]) [(.arm .none [] (.build .pair (.pair (.adt 1) .bool) [(.var 2), (.build .true .bool [])])), (.arm .some [4] (.call 6 [(.var 0), (.var 3), (.var 4)]))]))]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.«match» (.option (.adt 1)) (.call 11 [(.var 0)]) [(.arm .none [] (.build .none (.option (.adt 1)) [])), (.arm .some [1] (.call 12 [(.var 0), (.var 1)]))]) },
+      body := (.«match» (.option (.adt 1)) (.call 11 [(.var 0)]) [(.arm .none [] (.build .none (.option (.adt 1)) [])), (.arm .some [1] (.call 12 [(.var 0), (.var 1)]))]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.var 0), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0))]) },
+      body := (.build (.adt 0) (.adt 1) [(.var 0), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0)), (.value .nat (.nat 0))]) }) ::(
     { parameters := [0, 1], types := [(.adt 0), (.adt 1)], result := (.option .nat),
-      body := (.«match» (.option .nat) (.call 10 [(.var 1)]) [(.arm .none [] (.build .none (.option .nat) [])), (.arm .some [2] (.cond (.call 13 [(.var 0), (.var 2)]) (.build .some (.option .nat) [(.var 2)]) (.build .none (.option .nat) [])))]) },
+      body := (.«match» (.option .nat) (.call 10 [(.var 1)]) [(.arm .none [] (.build .none (.option .nat) [])), (.arm .some [2] (.cond (.call 13 [(.var 0), (.var 2)]) (.build .some (.option .nat) [(.var 2)]) (.build .none (.option .nat) [])))]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option .nat),
-      body := (.build .some (.option .nat) [(.field (.var 0) 8)]) },
+      body := (.build .some (.option .nat) [(.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 2)),
-      body := (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.cond (.call 14 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 0) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [1] (.build .some (.option (.adt 2)) [(.var 1)])), (.arm .none [] (.cond (.call 15 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 1) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]) [(.arm .some [2] (.build .some (.option (.adt 2)) [(.var 2)])), (.arm .none [] (.«match» (.option (.adt 2)) (.cond (.call 16 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 2) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [3] (.build .some (.option (.adt 2)) [(.var 3)])), (.arm .none [] (.cond (.call 17 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 3) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]))]) [(.arm .some [4] (.build .some (.option (.adt 2)) [(.var 4)])), (.arm .none [] (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.cond (.call 18 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 4) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [5] (.build .some (.option (.adt 2)) [(.var 5)])), (.arm .none [] (.cond (.call 19 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 5) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]) [(.arm .some [6] (.build .some (.option (.adt 2)) [(.var 6)])), (.arm .none [] (.«match» (.option (.adt 2)) (.cond (.call 20 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 6) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [7] (.build .some (.option (.adt 2)) [(.var 7)])), (.arm .none [] (.cond (.call 21 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 7) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]))]))]) },
+      body := (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.cond (.call 14 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 0) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [1] (.build .some (.option (.adt 2)) [(.var 1)])), (.arm .none [] (.cond (.call 15 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 1) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]) [(.arm .some [2] (.build .some (.option (.adt 2)) [(.var 2)])), (.arm .none [] (.«match» (.option (.adt 2)) (.cond (.call 16 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 2) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [3] (.build .some (.option (.adt 2)) [(.var 3)])), (.arm .none [] (.cond (.call 17 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 3) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]))]) [(.arm .some [4] (.build .some (.option (.adt 2)) [(.var 4)])), (.arm .none [] (.«match» (.option (.adt 2)) (.«match» (.option (.adt 2)) (.cond (.call 18 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 4) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [5] (.build .some (.option (.adt 2)) [(.var 5)])), (.arm .none [] (.cond (.call 19 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 5) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]) [(.arm .some [6] (.build .some (.option (.adt 2)) [(.var 6)])), (.arm .none [] (.«match» (.option (.adt 2)) (.cond (.call 20 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 6) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])) [(.arm .some [7] (.build .some (.option (.adt 2)) [(.var 7)])), (.arm .none [] (.cond (.call 21 [(.var 0)]) (.build .some (.option (.adt 2)) [(.build (.adt 7) (.adt 2) [])]) (.build .none (.option (.adt 2)) [])))]))]))]) }) ::(
     { parameters := [0, 1], types := [(.adt 1), (.adt 2)], result := (.option (.adt 1)),
-      body := (.«match» (.option (.adt 1)) (.var 1) [(.arm (.adt 0) [] (.call 22 [(.var 0)])), (.arm (.adt 1) [] (.call 23 [(.var 0)])), (.arm (.adt 2) [] (.call 24 [(.var 0)])), (.arm (.adt 3) [] (.call 25 [(.var 0)])), (.arm (.adt 4) [] (.call 26 [(.var 0)])), (.arm (.adt 5) [] (.call 27 [(.var 0)])), (.arm (.adt 6) [] (.call 28 [(.var 0)])), (.arm (.adt 7) [] (.call 29 [(.var 0)]))]) },
+      body := (.«match» (.option (.adt 1)) (.var 1) [(.arm (.adt 0) [] (.call 22 [(.var 0)])), (.arm (.adt 1) [] (.call 23 [(.var 0)])), (.arm (.adt 2) [] (.call 24 [(.var 0)])), (.arm (.adt 3) [] (.call 25 [(.var 0)])), (.arm (.adt 4) [] (.call 26 [(.var 0)])), (.arm (.adt 5) [] (.call 27 [(.var 0)])), (.arm (.adt 6) [] (.call 28 [(.var 0)])), (.arm (.adt 7) [] (.call 29 [(.var 0)]))]) }) ::(
     { parameters := [0, 1], types := [(.adt 0), .nat], result := .bool,
-      body := (.cond (.prim .natLe [(.var 1), (.value .nat (.nat 3))]) (.cond (.prim .natEq [(.var 1), (.value .nat (.nat 3))]) (.build .true .bool []) (.prim .boolNot [(.cond (.call 30 [(.var 0)]) (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.cond (.call 31 [(.var 0)]) (.call 32 [(.var 0)]) (.build .false .bool [])) (.build .false .bool [])) (.build .false .bool []))])) (.build .false .bool [])) },
+      body := (.cond (.prim .natLe [(.var 1), (.value .nat (.nat 3))]) (.cond (.prim .natEq [(.var 1), (.value .nat (.nat 3))]) (.build .true .bool []) (.prim .boolNot [(.cond (.call 30 [(.var 0)]) (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.cond (.call 31 [(.var 0)]) (.call 32 [(.var 0)]) (.build .false .bool [])) (.build .false .bool [])) (.build .false .bool []))])) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 1), (.value .nat (.nat 0))]) (.call 31 [(.field (.var 0) 0)]) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 1), (.value .nat (.nat 0))]) (.call 31 [(.field (.var 0) 0)]) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 2), (.value .nat (.nat 0))]) (.call 32 [(.field (.var 0) 0)]) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 2), (.value .nat (.nat 0))]) (.call 32 [(.field (.var 0) 0)]) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 3), (.value .nat (.nat 0))]) (.call 33 [(.field (.var 0) 0)]) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 3), (.value .nat (.nat 0))]) (.call 33 [(.field (.var 0) 0)]) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 4), (.value .nat (.nat 0))]) (.call 34 [(.field (.var 0) 0)]) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 4), (.value .nat (.nat 0))]) (.call 34 [(.field (.var 0) 0)]) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 0))]) (.prim .natLe [(.value .nat (.nat 2)), (.prim .natAdd [(.prim .natAdd [(.prim .natAdd [(.field (.var 0) 1), (.field (.var 0) 2)]), (.field (.var 0) 3)]), (.field (.var 0) 4)])]) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 0))]) (.prim .natLe [(.value .nat (.nat 2)), (.prim .natAdd [(.prim .natAdd [(.prim .natAdd [(.field (.var 0) 1), (.field (.var 0) 2)]), (.field (.var 0) 3)]), (.field (.var 0) 4)])]) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 0))]) (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.prim .natEq [(.field (.field (.var 0) 0) 5), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 0))]) (.cond (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.prim .natEq [(.field (.field (.var 0) 0) 5), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natEq [(.field (.var 0) 7), (.value .nat (.nat 0))]) (.cond (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 1))]) (.call 30 [(.field (.var 0) 0)]) (.build .false .bool [])) (.build .false .bool [])) },
+      body := (.cond (.prim .natEq [(.field (.var 0) 7), (.value .nat (.nat 0))]) (.cond (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 1))]) (.call 30 [(.field (.var 0) 0)]) (.build .false .bool [])) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := .bool,
-      body := (.cond (.prim .natLt [(.field (.var 0) 8), (.value .nat (.nat 3))]) (.cond (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 0))]) (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .true .bool []) (.cond (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 1))]) (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .true .bool []) (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 2))]) (.prim .natEq [(.field (.var 0) 7), (.value .nat (.nat 1))]) (.build .false .bool [])))) (.build .false .bool [])) },
+      body := (.cond (.prim .natLt [(.field (.var 0) 8), (.value .nat (.nat 3))]) (.cond (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 0))]) (.prim .natEq [(.field (.var 0) 5), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .true .bool []) (.cond (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 1))]) (.prim .natEq [(.field (.var 0) 6), (.value .nat (.nat 1))]) (.build .false .bool [])) (.build .true .bool []) (.cond (.prim .natEq [(.field (.var 0) 8), (.value .nat (.nat 2))]) (.prim .natEq [(.field (.var 0) 7), (.value .nat (.nat 1))]) (.build .false .bool [])))) (.build .false .bool [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 14 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 35 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 14 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 35 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 15 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 36 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 15 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 36 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 16 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 37 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 16 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 37 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 17 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 38 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 17 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 38 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 18 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 39 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 18 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 39 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 19 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 40 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 19 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 40 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 20 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 41 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 20 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 41 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.option (.adt 1)),
-      body := (.cond (.call 21 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 42 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) },
+      body := (.cond (.call 21 [(.var 0)]) (.build .some (.option (.adt 1)) [(.call 42 [(.var 0)])]) (.build .none (.option (.adt 1)) [])) }) ::(
     { parameters := [0], types := [(.adt 0)], result := .bool,
-      body := (.prim .natLt [(.field (.var 0) 4), (.value .nat (.nat 90))]) },
+      body := (.prim .natLt [(.field (.var 0) 4), (.value .nat (.nat 90))]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := .bool,
-      body := (.prim .natLt [(.value .nat (.nat 380)), (.field (.var 0) 0)]) },
+      body := (.prim .natLt [(.value .nat (.nat 380)), (.field (.var 0) 0)]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := .bool,
-      body := (.prim .natLt [(.value .nat (.nat 90)), (.field (.var 0) 1)]) },
+      body := (.prim .natLt [(.value .nat (.nat 90)), (.field (.var 0) 1)]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := .bool,
-      body := (.prim .natLt [(.value .nat (.nat 20)), (.field (.var 0) 2)]) },
+      body := (.prim .natLt [(.value .nat (.nat 20)), (.field (.var 0) 2)]) }) ::(
     { parameters := [0], types := [(.adt 0)], result := .bool,
-      body := (.prim .natLt [(.value .nat (.nat 12)), (.field (.var 0) 3)]) },
+      body := (.prim .natLt [(.value .nat (.nat 12)), (.field (.var 0) 3)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.value .nat (.nat 1)), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.value .nat (.nat 1)), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.value .nat (.nat 1)), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.value .nat (.nat 1)), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.value .nat (.nat 1)), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.value .nat (.nat 1)), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.value .nat (.nat 1)), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.value .nat (.nat 1)), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.value .nat (.nat 1)), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.value .nat (.nat 1)), (.field (.var 0) 6), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.value .nat (.nat 1)), (.field (.var 0) 7), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.value .nat (.nat 1)), (.field (.var 0) 7), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.value .nat (.nat 1)), (.field (.var 0) 8)]) },
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.value .nat (.nat 1)), (.field (.var 0) 8)]) }) ::(
     { parameters := [0], types := [(.adt 1)], result := (.adt 1),
-      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.prim .natAdd [(.field (.var 0) 8), (.value .nat (.nat 1))])]) }] }
+      body := (.build (.adt 0) (.adt 1) [(.field (.var 0) 0), (.field (.var 0) 1), (.field (.var 0) 2), (.field (.var 0) 3), (.field (.var 0) 4), (.field (.var 0) 5), (.field (.var 0) 6), (.field (.var 0) 7), (.prim .natAdd [(.field (.var 0) 8), (.value .nat (.nat 1))])]) }) ::[]) }
 
 def __enc_0 (__s : (Reasoning.Clinic.Vitals)) : _root_.LexLeanTarget.TargetSyntax.Value :=
   _root_.LexLeanTarget.TargetSyntax.Value.adt 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).temperature), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).heartRate), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).respiratoryRate), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).whiteCells), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).systolic), (_root_.LexLeanTarget.TargetSyntax.Value.nat (__s).infection)]
