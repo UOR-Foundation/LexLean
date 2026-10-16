@@ -40,7 +40,8 @@
 //! realization context of the row, which for a definition with an
 //! equational-lemma record is opened once its smart-unfolding row is in. The
 //! elaborator's cache of sparse `casesOn` is part of that state: each chunk
-//! first drops the entries for the decoder's own constants, which the cache
+//! first drops the entries for the decoder's own constants (any name with a
+//! `LexLeanCore` component, so also a decoder a certificate scopes), which the cache
 //! holds because the decoder is itself elaborated in the module, and each
 //! sparse `casesOn` the decoder remakes is entered under both the exported and
 //! the private key, so that a later construction finds the module's constant
@@ -518,7 +519,7 @@ private def compileRows (declarations : Array Json) : CoreM Unit := do
 def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
   modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
     s.toList.foldl (init := {}) fun kept (key, made) =>
-      if (`LexLeanCore.Runtime).isPrefixOf (Lean.privateToUserName made) then kept else kept.insert key made
+      if (Lean.privateToUserName made).components.contains `LexLeanCore then kept else kept.insert key made
   let mut nodes : Array Expr := #[]
   for batch in nodeBatches do
     nodes ← decodeNodeBatch nodes batch

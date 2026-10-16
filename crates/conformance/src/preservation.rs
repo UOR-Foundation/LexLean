@@ -433,6 +433,29 @@ fn lean(root: &Path, arguments: &[String]) -> std::process::Output {
         .expect("lean runs")
 }
 
+/// Compile one more module into a checked workspace's build, over the
+/// modules [`check`] compiled: the planted or oracle module a case adds
+/// after the workspace is checked. Returns Lean's output.
+pub fn compile_text(root: &Path, module: &str, text: &str) -> std::process::Output {
+    let path = lexlean::production::preserve::module_path(module);
+    let source = root.join("src").join(&path);
+    std::fs::create_dir_all(source.parent().expect("a parent")).expect("mkdir");
+    std::fs::write(&source, text).expect("write");
+    let olean = root
+        .join("build")
+        .join(path.trim_end_matches(".lean"))
+        .with_extension("olean");
+    std::fs::create_dir_all(olean.parent().expect("a parent")).expect("mkdir");
+    lean(
+        root,
+        &[
+            "-o".to_owned(),
+            olean.display().to_string(),
+            source.display().to_string(),
+        ],
+    )
+}
+
 pub(crate) fn joined(output: &std::process::Output) -> String {
     format!(
         "{}{}",
@@ -651,6 +674,144 @@ impl CompositionMutation {
         self.marks(text).len()
     }
 
+    /// How many places a certificate has for this defect: in its data when
+    /// it is held as data (SP-14), else in its text.
+    #[must_use]
+    pub fn places_in(self, certificate: &Certificate) -> usize {
+        match &certificate.data {
+            Some(data) => self.data_places(data).len(),
+            None => self.places(&certificate.text),
+        }
+    }
+
+    /// The certificate with this defect planted at its `nth` place, as the
+    /// Lean text verification compiles: the data mutated and rendered by the
+    /// core backend for a certificate held as data, else the text.
+    #[must_use]
+    pub fn plant_in(self, certificate: &Certificate, nth: usize) -> Option<String> {
+        match &certificate.data {
+            Some(data) => {
+                let planted = self.plant_data(data, nth)?;
+                Some(
+                    lexlean::backend::core::lean_text_legacy(&planted, &certificate.module)
+                        .expect("the planted module renders"),
+                )
+            }
+            None => self.plant(&certificate.text, nth),
+        }
+    }
+
+    /// The nodes of `data` this defect applies to: the constant of the
+    /// fallibility flag, each `fnIdent` application, the type of each
+    /// `__e_hrep` binder (one node, shared by the statement and the proof).
+    fn data_places(self, data: &lexlean::ir::core::CoreModule) -> Vec<usize> {
+        use lexlean::ir::core::CoreNode;
+        let mut out = Vec::new();
+        for (index, node) in data.nodes.iter().enumerate() {
+            let hit = match (self, node) {
+                (Self::Fallibility, CoreNode::Const { n, .. }) => {
+                    n == "Bool.true" || n == "Bool.false"
+                }
+                (Self::Function, CoreNode::App { f, x }) => {
+                    matches!(&data.nodes[*f], CoreNode::Const { n, .. } if n == "LexLeanPreservation.Rust.fnIdent")
+                        && matches!(&data.nodes[*x], CoreNode::Nat { .. })
+                }
+                (Self::Hypothesis, CoreNode::Forall { n, t, .. }) => {
+                    n == "__e_hrep" && !out.contains(t)
+                }
+                _ => false,
+            };
+            if hit {
+                out.push(match (self, node) {
+                    (Self::Hypothesis, CoreNode::Forall { t, .. }) => *t,
+                    _ => index,
+                });
+            }
+        }
+        out
+    }
+
+    /// `data` with this defect planted at its `nth` place. The DAG is
+    /// rebuilt child before parent, the nodes a mutation adds inserted
+    /// before the first node that uses them.
+    fn plant_data(
+        self,
+        data: &lexlean::ir::core::CoreModule,
+        nth: usize,
+    ) -> Option<lexlean::ir::core::CoreModule> {
+        use lexlean::ir::core::CoreNode;
+        let place = *self.data_places(data).get(nth)?;
+        let mut planted = data.clone();
+        match self {
+            Self::Fallibility => {
+                if let CoreNode::Const { n, .. } = &mut planted.nodes[place] {
+                    *n = if n == "Bool.true" {
+                        "Bool.false".to_owned()
+                    } else {
+                        "Bool.true".to_owned()
+                    };
+                }
+                Some(planted)
+            }
+            Self::Function | Self::Hypothesis => {
+                // Rebuild with an index map, inserting the new nodes.
+                let mut nodes: Vec<CoreNode> = Vec::with_capacity(data.nodes.len() + 4);
+                let mut map: Vec<usize> = Vec::with_capacity(data.nodes.len());
+                let mut replacement: Option<usize> = None;
+                for (index, node) in data.nodes.iter().enumerate() {
+                    let mut node = remap(node, &map);
+                    if self == Self::Function && index == place {
+                        if let CoreNode::App { x, .. } = &mut node {
+                            let value = match &nodes[*x] {
+                                CoreNode::Nat { v } => v.parse::<u64>().ok()? + 1,
+                                _ => return None,
+                            };
+                            nodes.push(CoreNode::Nat {
+                                v: value.to_string(),
+                            });
+                            *x = nodes.len() - 1;
+                        }
+                    }
+                    if self == Self::Hypothesis {
+                        if let CoreNode::Forall { n, t, .. } | CoreNode::Lambda { n, t, .. } =
+                            &mut node
+                        {
+                            if n == "__e_hrep" && map[place] == *t {
+                                let wrapped = *replacement.get_or_insert_with(|| {
+                                    let and = nodes.len();
+                                    nodes.push(CoreNode::Const {
+                                        n: "And".to_owned(),
+                                        u: Vec::new(),
+                                    });
+                                    nodes.push(CoreNode::Const {
+                                        n: "False".to_owned(),
+                                        u: Vec::new(),
+                                    });
+                                    nodes.push(CoreNode::App { f: and, x: *t });
+                                    nodes.push(CoreNode::App {
+                                        f: nodes.len() - 1,
+                                        x: and + 1,
+                                    });
+                                    nodes.len() - 1
+                                });
+                                *t = wrapped;
+                            }
+                        }
+                    }
+                    map.push(nodes.len());
+                    nodes.push(node);
+                }
+                for row in &mut planted.declarations {
+                    row.r#type = map[row.r#type];
+                    row.value = row.value.map(|value| map[value]);
+                }
+                planted.proof_nodes = planted.proof_nodes.iter().map(|p| map[*p]).collect();
+                planted.nodes = nodes;
+                Some(planted)
+            }
+        }
+    }
+
     /// `text` with this defect planted at its `nth` place, or `None` when it
     /// has none.
     #[must_use]
@@ -675,6 +836,52 @@ impl CompositionMutation {
             }
             Self::Hypothesis => format!("{} ∧ False{}", &text[..at], &text[at..]),
         })
+    }
+}
+
+/// `node` with its children renumbered by `map`, which holds the new index
+/// of every earlier node.
+fn remap(node: &lexlean::ir::core::CoreNode, map: &[usize]) -> lexlean::ir::core::CoreNode {
+    use lexlean::ir::core::CoreNode;
+    match node {
+        CoreNode::App { f, x } => CoreNode::App {
+            f: map[*f],
+            x: map[*x],
+        },
+        CoreNode::Lambda { n, b, t, v } => CoreNode::Lambda {
+            n: n.clone(),
+            b: *b,
+            t: map[*t],
+            v: map[*v],
+        },
+        CoreNode::Forall { n, b, t, v } => CoreNode::Forall {
+            n: n.clone(),
+            b: *b,
+            t: map[*t],
+            v: map[*v],
+        },
+        CoreNode::Let { n, t, v, body, d } => CoreNode::Let {
+            n: n.clone(),
+            t: map[*t],
+            v: map[*v],
+            body: map[*body],
+            d: *d,
+        },
+        CoreNode::Mdata { m, x } => CoreNode::Mdata {
+            m: m.clone(),
+            x: map[*x],
+        },
+        CoreNode::Projection { n, s, i, x } => CoreNode::Projection {
+            n: n.clone(),
+            s: s.clone(),
+            i: *i,
+            x: map[*x],
+        },
+        other @ (CoreNode::BVar { .. }
+        | CoreNode::Sort { .. }
+        | CoreNode::Const { .. }
+        | CoreNode::Nat { .. }
+        | CoreNode::String { .. }) => other.clone(),
     }
 }
 
@@ -1035,11 +1242,11 @@ fn plant_composed(
             continue;
         };
         for mutation in CompositionMutation::ALL {
-            let places = mutation.places(&composed.text);
+            let places = mutation.places_in(composed);
             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
             for nth in 0..places {
                 let mut text = mutation
-                    .plant(&composed.text, nth)
+                    .plant_in(composed, nth)
                     .expect("the place was counted");
                 if mutation == CompositionMutation::Hypothesis {
                     // A vacuous statement proves, so only applying it shows.

@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 /// A universe level in the kernel calculus.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(tag = "k", content = "a")]
 #[serde(deny_unknown_fields)]
 pub enum CoreLevel {
@@ -30,7 +30,7 @@ pub enum CoreLevel {
 }
 
 /// Binder visibility, preserved from the elaborated kernel expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, Deserialize, Serialize)]
 pub enum CoreBinderInfo {
     /// Ordinary explicit binder.
     #[serde(rename = "e")]
@@ -47,7 +47,7 @@ pub enum CoreBinderInfo {
 }
 
 /// One node of a closed Calculus-of-Inductive-Constructions expression.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(tag = "k")]
 #[serde(deny_unknown_fields)]
 pub enum CoreNode {
@@ -113,7 +113,7 @@ pub enum CoreNode {
 }
 
 /// The value of one annotation entry.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(tag = "t")]
 #[serde(deny_unknown_fields)]
 pub enum CoreMetaValue {
@@ -135,7 +135,7 @@ pub enum CoreMetaValue {
 }
 
 /// One `key := value` entry of an annotation.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CoreMetaEntry {
     /// The key name.
