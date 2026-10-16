@@ -543,8 +543,11 @@ pub fn certificate(
         .map_err(failure)?;
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| internal(diagnostic.message))?;
-    generator.within(text.len()).map_err(failure)?;
+    // The certificate's weight is the module as recorded, in the authoring
+    // notation: the rendering to Lean text is the core backend's, and its size
+    // is the backend's, not a property of the certificate.
     let source = record_source(module, &data, "A").map_err(internal)?;
+    generator.within(source.len()).map_err(failure)?;
     let mut imports: Vec<String> = modules
         .values()
         .map(|linked| linked.lean_module.to_owned())

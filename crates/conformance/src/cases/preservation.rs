@@ -385,14 +385,7 @@ fn stress_estimates() -> u64 {
             let largest = |numerator: usize| -> u64 {
                 preservation::certificates(&crate::stress::mixed_lifted(shape.scaled(numerator)))
                     .iter()
-                    .map(|entry| {
-                        std::iter::once(&entry.certificate)
-                            .chain(entry.renderings.iter().map(|(_, b)| b))
-                            .chain(entry.composed.iter().map(|(_, e)| e))
-                            .map(|certificate| certificate.text.len() as u64)
-                            .max()
-                            .unwrap_or(0)
-                    })
+                    .map(largest_certificate)
                     .max()
                     .unwrap_or(0)
             };
@@ -455,7 +448,7 @@ fn stress_estimates() -> u64 {
             for entry in certified {
                 assert_floor(&family, &entry);
                 assert_bounds(&family, &entry);
-                let a = entry.certificate.text.len() as u64;
+                let a = weight_a(&entry.certificate);
                 let e = entry
                     .composed
                     .iter()
@@ -528,6 +521,25 @@ fn stress_estimates() -> u64 {
     })
 }
 
+/// The weight of certificate A against `max_file_bytes`: the module as
+/// recorded, in the authoring notation, which is what the generator bounds.
+fn weight_a(certificate: &lexlean::production::certificate::Certificate) -> u64 {
+    certificate
+        .source
+        .as_ref()
+        .map_or(certificate.text.len(), String::len) as u64
+}
+
+/// The size of the largest certificate of a root: A by its recorded weight,
+/// B and E by their text.
+fn largest_certificate(entry: &preservation::Certified) -> u64 {
+    std::iter::once(weight_a(&entry.certificate))
+        .chain(entry.renderings.iter().map(|(_, b)| b.text.len() as u64))
+        .chain(entry.composed.iter().map(|(_, e)| e.text.len() as u64))
+        .max()
+        .unwrap_or(0)
+}
+
 /// The floor the lowering puts under certificate B from the entries of its
 /// field reads is no more than any certificate B generated.
 fn assert_floor(label: &str, entry: &preservation::Certified) {
@@ -551,7 +563,7 @@ fn assert_bounds(label: &str, entry: &preservation::Certified) {
     let bounds = lexlean::production::lower::certificate_lower_bounds(
         &lexlean::production::lower::measure_program(&entry.program),
     );
-    let a = entry.certificate.text.len() as u64;
+    let a = weight_a(&entry.certificate);
     let smallest = |texts: Vec<u64>| texts.into_iter().min().unwrap_or(u64::MAX);
     let b = smallest(
         entry
@@ -1648,13 +1660,8 @@ pub fn run(id: &str) {
             let between = P::negative("certificate-resource-exhausted");
             let limit = support::limits(&between).max_file_bytes;
             for entry in preservation::certificates(&between) {
-                let module = entry.certificate.text.len() as u64;
-                let largest = std::iter::once(&entry.certificate)
-                    .chain(entry.renderings.iter().map(|(_, b)| b))
-                    .chain(entry.composed.iter().map(|(_, e)| e))
-                    .map(|certificate| certificate.text.len() as u64)
-                    .max()
-                    .unwrap_or(0);
+                let module = weight_a(&entry.certificate);
+                let largest = largest_certificate(&entry);
                 assert!(
                     largest <= limit && limit <= module.saturating_mul(4),
                     "certificate-resource-exhausted: {}: its limit {limit} must lie between its largest certificate, {largest}, and four times its module, {}",

@@ -197,7 +197,7 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                 root.report,
                 &lowered,
                 &module,
-                held.certificate.text.len() as u64 / 2,
+                held.certificate.source.as_ref().map_or(held.certificate.text.len(), String::len) as u64 / 2,
             ));
             let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
                 .expect("a valid program")[lowered.entry() as usize];
@@ -2890,9 +2890,10 @@ mod dev {
             ) {
                 Ok(certificate) => {
                     eprintln!(
-                        "R{index} {}: built, {} bytes of Lean",
+                        "R{index} {}: built, {} bytes of Lean, {} of notation",
                         root.report.root,
-                        certificate.text.len()
+                        certificate.text.len(),
+                        certificate.source.as_ref().map_or(0, String::len)
                     );
                     built.push(certificate);
                 }

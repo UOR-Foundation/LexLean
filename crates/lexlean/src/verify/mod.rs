@@ -964,19 +964,26 @@ pub fn run_part(
                     entry: lowered.entry(),
                 });
             }
-            for generated in std::iter::once(&generated).chain(
+            // Certificate A weighs what it is recorded as, the notation; B
+            // and E weigh their text.
+            let weight_a = generated
+                .source
+                .as_ref()
+                .map_or(generated.text.len(), String::len);
+            for (generated, weight) in std::iter::once((&generated, weight_a)).chain(
                 renderings
                     .iter()
-                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed]),
+                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed])
+                    .map(|certificate| (certificate, certificate.text.len())),
             ) {
-                if generated.text.len() as u64 > limits.max_file_bytes {
+                if weight as u64 > limits.max_file_bytes {
                     return Err(fail(Diagnostic::new(
                     code!("LLS8002"),
                     format!(
                         "max_file_bytes exceeded in phase certificates: configured {}, `{}` is {} bytes",
                         limits.max_file_bytes,
                         generated.module,
-                        generated.text.len()
+                        weight
                     ),
                 )));
                 }
@@ -993,7 +1000,7 @@ pub fn run_part(
                     .map_err(fail)?;
             }
             budget
-                .charge(generated.text.len(), &root.report.root, "its certificate A")
+                .charge(weight_a, &root.report.root, "its certificate A")
                 .map_err(fail)?;
             certified.push(CertifiedRoot {
                 root: root.report.root.clone(),
