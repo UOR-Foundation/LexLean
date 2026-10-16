@@ -48,7 +48,7 @@ fn tokenizer(name: &str, scheme: &str, vocabulary: &str) -> serde_json::Value {
         "kind": "tokenizer",
         "name": name,
         "scheme": scheme,
-        "vocabulary": {"member": vocabulary},
+        "vocabulary": {"member": {"name": vocabulary}},
         "axioms": ["Classical.choice", "Quot.sound", "propext"],
     })
 }
@@ -167,12 +167,12 @@ fn lm_01() {
     project.check_fails_with("LLT4001");
     let project = tokenized();
     edit_declaration(&project, MODULE, "Digits", |declaration| {
-        declaration["vocabulary"] = json!({"member": "hiddenWeights"});
+        declaration["vocabulary"] = json!({"member": {"name": "hiddenWeights"}});
     });
     refused(&project, "LLT4006", "a tokenizer needs role Vocabulary");
     let project = tokenized();
     edit_declaration(&project, MODULE, "Digits", |declaration| {
-        declaration["vocabulary"] = json!({"member": "banner"});
+        declaration["vocabulary"] = json!({"member": {"name": "banner"}});
     });
     refused(&project, "LLT4006", "a tokenizer needs role Vocabulary");
     let project = tokenized();
