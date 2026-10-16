@@ -15,6 +15,25 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Child deadlines remain active while reading inherited output pipes after
+  the direct child exits (#132). The process group stays registered until
+  both readers finish, so a timeout or an embedding host can end the remaining
+  group through the existing termination path (`SE-06`, SPEC.md §25.5).
+- Toolchain preflight compares the complete reported Lean version in Lean and
+  Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
+  suffixes, and a matching version elsewhere in the banner with `LLV7001`.
+- Production results state each output's effects (SPEC.md §24.7, §17.13,
+  `PX-13`, no new diagnostic code), step 3 of #105. A target output of
+  `lexlean/production-result/2` lists the effects its realization can exhibit,
+  exactly those eligibility requires of the root on that target, and the
+  schema states what `recursion` asks of the host: a stack its input-dependent
+  depth fits, whose exhaustion aborts the process. `lexlean production build`
+  reports how many outputs need such a stack. The result schema lives outside
+  the compiler-semantics ID (§21.2), so no identity, package, golden, or
+  verified record changes; `api/schemas/versions.toml` gains the
+  `production-result/2` row beside the released `/1` row.
+  `PX-13` brings the register to 382 IDs.
+
 - Certificates write a list of any length as a term Lean elaborates without
   binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
   `[…]` macro splits a literal of more than 32 elements in halves under
@@ -306,6 +325,10 @@ versions, and the entries below say what each tag does and does not claim.
   variable numbering, with the same nodes, closures, externals, and
   inductives. The register is unchanged
   in size (350 IDs, 74 codes); `TL-03`, `TL-05`, and `NE-04` are reworded.
+- The preservation case `SP-05` reads the verified production export shared
+  with `PX-01`, removing one full verification of the production example
+  within `bdd` (#141). Its artifact assertions and six rejection fixtures
+  remain, and running the case alone lazily performs the real export.
 - The normative CI gate runs in two legs at once (SPEC.md §9.4, `RP-14`, no new
   ID or code): `examples`, which is about three quarters of the gate's time on
   the runner, and the other eleven recipes of `vv` in their order, each leg a

@@ -129,7 +129,7 @@ pub fn preflight(limits: &Limits) -> Result<Toolchain, Diagnostic> {
         )));
     }
     let lean = load_tool(&bin_dir, "lean", Some(&["--version"]), limits)?;
-    if !lean.version_output.contains(crate::LEAN_VERSION) {
+    if !reports_pinned_version("lean", &lean.version_output) {
         return Err(environment(format!(
             "lean reports `{}`, not version {}",
             lean.version_output,
@@ -137,7 +137,7 @@ pub fn preflight(limits: &Limits) -> Result<Toolchain, Diagnostic> {
         )));
     }
     let lake = load_tool(&bin_dir, "lake", Some(&["--version"]), limits)?;
-    if !lake.version_output.contains(crate::LEAN_VERSION) {
+    if !reports_pinned_version("lake", &lake.version_output) {
         return Err(environment(format!(
             "lake reports `{}`, not Lean version {}",
             lake.version_output,
@@ -160,4 +160,68 @@ pub fn preflight(limits: &Limits) -> Result<Toolchain, Diagnostic> {
         lake,
         leanchecker,
     })
+}
+
+pub(crate) fn reports_pinned_version(tool: &str, banner: &str) -> bool {
+    if banner.contains(['\n', '\r']) {
+        return false;
+    }
+    // Lake has its own version: only the enclosed Lean version identifies
+    // the kernel. Match the whole field so patch and prerelease suffixes
+    // cannot satisfy the pin by sharing its prefix.
+    let version = match tool {
+        "lean" => banner
+            .strip_prefix("Lean (version ")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .and_then(|rest| rest.split_once(", "))
+            .filter(|(_, details)| !details.is_empty())
+            .map(|(version, _)| version),
+        "lake" => banner
+            .strip_prefix("Lake version ")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .and_then(|rest| rest.split_once(" (Lean version "))
+            .filter(|(lake, _)| !lake.is_empty() && !lake.contains(char::is_whitespace))
+            .map(|(_, version)| version),
+        _ => None,
+    };
+    version == Some(crate::LEAN_VERSION)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::reports_pinned_version;
+
+    #[test]
+    fn version_banners_require_the_exact_lean_version() {
+        for (tool, banner) in [
+            (
+                "lean",
+                "Lean (version 4.32.1, x86_64-unknown-linux-gnu, commit f054605, Release)",
+            ),
+            (
+                "lake",
+                "Lake version 5.0.0-src+f054605 (Lean version 4.32.1)",
+            ),
+        ] {
+            assert!(reports_pinned_version(tool, banner), "{tool}: {banner}");
+        }
+        for (tool, banner) in [
+            ("lean", "Lean (version 4.32.10, release)"),
+            ("lean", "Lean (version 4.32.1-rc1, release)"),
+            ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
+            ("lean", "unrecognized banner 4.32.1"),
+            ("lean", "Lean (version 4.32.1, release"),
+            ("lean", "Lean (version 4.32.1, release)\nextra output"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
+            ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.1"),
+            (
+                "lake",
+                "Lake version 5.0.0 (Lean version 4.32.1)\nextra output",
+            ),
+        ] {
+            assert!(!reports_pinned_version(tool, banner), "{tool}: {banner}");
+        }
+    }
 }

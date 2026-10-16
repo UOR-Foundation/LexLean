@@ -473,6 +473,83 @@ pub fn schema_versions_hold(
     Ok(())
 }
 
+/// The effects each `(root, target)` output must state: those the committed
+/// eligibility of `example` requires of the root on the target, ascending.
+fn committed_effects(example: &str) -> BTreeMap<(String, String), Vec<String>> {
+    let directory = support::repo_root()
+        .join("examples")
+        .join(example)
+        .join("expected/build/production");
+    let mut out = BTreeMap::new();
+    for entry in walkdir::WalkDir::new(directory.as_std_path())
+        .into_iter()
+        .flatten()
+        .filter(|entry| {
+            entry
+                .path()
+                .to_string_lossy()
+                .ends_with(".eligibility.json")
+        })
+    {
+        let report: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(entry.path()).expect("read")).expect("JSON");
+        for root in report["roots"].as_array().expect("roots") {
+            for target in root["targets"].as_array().expect("targets") {
+                let mut effects: Vec<String> = target["effects"]
+                    .as_array()
+                    .expect("effects")
+                    .iter()
+                    .map(|row| row["effect"].as_str().expect("effect").to_owned())
+                    .collect();
+                effects.sort();
+                effects.dedup();
+                out.insert(
+                    (
+                        root["root"].as_str().expect("root").to_owned(),
+                        target["target"].as_str().expect("target").to_owned(),
+                    ),
+                    effects,
+                );
+            }
+        }
+    }
+    out
+}
+
+/// The effects each `(root, target)` output of `result` states.
+fn stated_effects(result: &ProductionResult) -> BTreeMap<(String, String), Vec<String>> {
+    result
+        .roots
+        .iter()
+        .flat_map(|root| {
+            root.outputs.iter().map(|output| {
+                (
+                    (root.root.clone(), output.target.id.clone()),
+                    output.effects.clone(),
+                )
+            })
+        })
+        .collect()
+}
+
+/// Every stated output's effects equal its root's eligibility on its target.
+fn effects_agree(
+    stated: &BTreeMap<(String, String), Vec<String>>,
+    expected: &BTreeMap<(String, String), Vec<String>>,
+) -> Result<(), String> {
+    for ((root, target), effects) in stated {
+        let required = expected
+            .get(&(root.clone(), target.clone()))
+            .ok_or_else(|| format!("{root} on {target}: no committed eligibility"))?;
+        if effects != required {
+            return Err(format!(
+                "{root} on {target}: the result states {effects:?}, eligibility requires {required:?} (recursion asks the host for a stack)"
+            ));
+        }
+    }
+    Ok(())
+}
+
 /// Run the case for one PX ID.
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
@@ -1580,6 +1657,59 @@ pub fn run(id: &str) {
                 assert!(
                     !crate::schema::validate(&api_schema(name).1, &unknown).is_empty(),
                     "{name} refuses an unknown field"
+                );
+            }
+        }
+        // §24.7, §17.13: each output states the effects its realization can
+        // exhibit, so a caller sees what `recursion` asks of its host without
+        // reading the package.
+        "PX-13" => {
+            // Armed by the corpus: the committed eligibility of the coverage
+            // example has outputs that recurse and outputs that do not.
+            let expected = committed_effects("production-coverage");
+            let recurses = |effects: &Vec<String>| effects.iter().any(|e| e == "recursion");
+            assert!(
+                expected.values().any(recurses) && !expected.values().all(recurses),
+                "the coverage example arms the case with recursive and non-recursive outputs: {expected:?}"
+            );
+            // The comparison is falsifiable on every host: `recursion` dropped
+            // from an output, or stated for one that cannot recurse, disagrees.
+            effects_agree(&expected, &expected).expect("eligibility agrees with itself");
+            let (key, _) = expected
+                .iter()
+                .find(|(_, e)| recurses(e))
+                .expect("recursive");
+            let mut dropped = expected.clone();
+            dropped
+                .get_mut(key)
+                .expect("the output")
+                .retain(|e| e != "recursion");
+            let error = effects_agree(&dropped, &expected).expect_err("dropped");
+            assert!(error.contains("recursion"), "{error}");
+            let (key, _) = expected
+                .iter()
+                .find(|(_, e)| !recurses(e))
+                .expect("non-recursive");
+            let mut added = expected.clone();
+            let effects = added.get_mut(key).expect("the output");
+            effects.push("recursion".to_owned());
+            effects.sort();
+            let error = effects_agree(&added, &expected).expect_err("added");
+            assert!(error.contains("recursion"), "{error}");
+            // The export states exactly what eligibility requires, and the
+            // report counts the outputs that recurse.
+            if support::lean_backed("PX-13") {
+                let result = &harness::exported("production-coverage").output.result;
+                let stated = stated_effects(result);
+                assert_eq!(
+                    stated.len(),
+                    expected.len(),
+                    "every eligible output of the example is exported"
+                );
+                effects_agree(&stated, &expected).unwrap_or_else(|reason| panic!("{reason}"));
+                assert_eq!(
+                    result.recursive_outputs(),
+                    stated.values().filter(|e| recurses(e)).count()
                 );
             }
         }
