@@ -324,7 +324,8 @@ pub fn is_reserved_module_root(root: &str) -> bool {
 }
 
 /// Is `text` a project-relative path: nonempty, `/`-separated, no leading
-/// separator, no `.` or `..` segments, no backslash, no NUL?
+/// separator, no `.` or `..` segments, no Windows drive-prefixed segments,
+/// no backslash, no NUL?
 #[must_use]
 pub fn is_project_relative(text: &str) -> bool {
     !text.is_empty()
@@ -332,9 +333,14 @@ pub fn is_project_relative(text: &str) -> bool {
         && !text.contains('\0')
         && !text.starts_with('/')
         && !text.ends_with('/')
-        && text
-            .split('/')
-            .all(|segment| !segment.is_empty() && segment != "." && segment != "..")
+        && text.split('/').all(|segment| {
+            // Even a drive-relative segment replaces a Windows join's root.
+            // Reject it on every host before any per-segment path walk.
+            !segment.is_empty()
+                && segment != "."
+                && segment != ".."
+                && !matches!(segment.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic())
+        })
 }
 
 /// Is one project-relative path equal to, inside, or containing the other?
