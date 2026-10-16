@@ -266,20 +266,22 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
 
 /// The Lean roots this compiler ships or generates beside a project's own:
 /// the certificates and their audit (`LexLeanPreserve`, `LexLeanAudit`), the
-/// namespaces of the runtime modules' collection, model, and reasoning
-/// definitions (`LexLeanCollections`, `LexLeanModels`, `LexLeanReasoning`),
+/// namespaces of the runtime modules' collection, model, reasoning, and
+/// fold-law definitions (`LexLeanCollections`, `LexLeanModels`,
+/// `LexLeanReasoning`, `LexLeanLaws`),
 /// the native-module decoder (`LexLeanCore`), and what the extraction and the
 /// probes compile (`LexLeanExtract`, `LexLeanProbe`, `LexLeanIdentityProbe`,
 /// `LexLeanTokenProbe`). The roots of the shipped libraries themselves,
 /// [`LIBRARY_ROOTS`], are the three a project may take (the compiler's own
 /// project and the libraries' projects do), but not for a module with a
 /// production root.
-pub const SHIPPED_ROOTS: [&str; 10] = [
+pub const SHIPPED_ROOTS: [&str; 11] = [
     "LexLeanAudit",
     "LexLeanCollections",
     "LexLeanCore",
     "LexLeanExtract",
     "LexLeanIdentityProbe",
+    "LexLeanLaws",
     "LexLeanModels",
     "LexLeanPreserve",
     "LexLeanProbe",
