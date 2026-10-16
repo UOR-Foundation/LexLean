@@ -1361,6 +1361,75 @@ carries the header of the lifted budgets), and the derivation bound of
 after: the chain is shorter than the literal Lean splits under binders, and the
 root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
 
+### certificate E is kernel-term data and a defect in it is refused
+
+Certificate E of a root is a native core module the compiler builds
+(`production/certificate/data.rs` over `production/kernel.rs`), so a defect is
+planted in the data and must be seen where the kernel checks it, or before,
+where the data is audited. `conformance_sp_14` builds every certificate E of the
+four corpora as data, reads each record back from its notation, verifies the
+production example under the pinned Lean, and then plants five defects in the
+data of one certificate E of that example, each refused. The plants below are
+what the case runs; their outputs were recorded on Linux x86-64 with Lean
+4.32.1. Command: `cargo test -p repo-conformance --test conformance --
+conformance_sp_14 --nocapture`.
+
+Planted (a), a wrong lemma: the first scalar well-typedness lemma the
+certificate applies (`LexLeanPreservation.Rust.wt_u32`, the proof that the
+encoded first argument `left : UInt32` is well typed) renamed to `LexLeanPreservation.Rust.wt_bool` in every constant node
+that names it. Expected: the kernel refuses the row, since the lemma's type is
+not the argument's.
+
+```text
+<staging>/src/LexLeanPreserve/C7b8829e2cc52192864282f3d66903769/R0/Compose/RustCorePlantWrongLemma.lean:517:0: error: native core declaration 'LexLeanPreserve.C7b8829e2cc52192864282f3d66903769.R0.Compose.RustCore.root':
+  (kernel) application type mismatch
+    LexLeanPreservation.Rust.wt_bool left
+```
+
+Planted (b), a changed statement: the constant node of the fallibility flag
+(`Bool.true`, shared by the statement and the proof) renamed to `Bool.false`.
+Expected: the restated theorem claims the other result shape of the crate's
+root, and `compose`'s equation on `fnFallible` no longer holds by `Eq.refl`.
+
+```text
+<staging>/src/LexLeanPreserve/C7b8829e2cc52192864282f3d66903769/R0/Compose/RustCorePlantChangedStatement.lean:517:0: error: native core declaration 'LexLeanPreserve.C7b8829e2cc52192864282f3d66903769.R0.Compose.RustCore.root':
+  (kernel) application type mismatch
+    LexLeanPreservation.Rust.compose (fun __e_n => RustCore.root __e_n 0)
+```
+
+Planted (c), a forged crate reference: the constant node `<module_b>.krate`
+renamed to `<module_b>.flags`. Expected: the kernel refuses the row, since
+certificate B's root theorem is about the crate, not the flags.
+
+```text
+<staging>/src/LexLeanPreserve/C7b8829e2cc52192864282f3d66903769/R0/Compose/RustCorePlantForgedCrate.lean:517:0: error: native core declaration 'LexLeanPreserve.C7b8829e2cc52192864282f3d66903769.R0.Compose.RustCore.root':
+  (kernel) application type mismatch
+    LexLeanPreservation.Rust.RCI RustCore.flags
+```
+
+Planted (d), an added axiom: a constant node `sorryAx` appended to the DAG and
+made the `root` row's proof. Expected: the data audit refuses the module
+before any Lean runs, naming the forbidden constant.
+
+```text
+the forbidden constant `sorryAx`
+```
+
+Planted (e), a lying policy: the `root` row's policy changed from the three
+certificate axioms to `exact{axioms: []}`. Expected: Lean accepts the module
+(the proof is unchanged), and the audit module, which prints the axioms of
+every row of a data certificate, refuses the row whose policy does not state
+what Lean prints.
+
+```text
+the certificate row `LexLeanPreserve.C7b8829e2cc52192864282f3d66903769.R0.Compose.RustCore.root` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins []
+```
+
+Removed: the plants are mutations of a clone of the generated data inside the
+case; nothing is restored. The case passes on the unplanted data, and the
+committed records of the four corpora are its notation, read back to the data
+byte for byte.
+
 ### certificate generation is bounded
 
 `lexlean verify` of a project whose root instantiates the generic chain
@@ -8151,9 +8220,13 @@ case decides whether it runs.
 themselves. It lists `bdd` whole and each part with its filters (`cargo test …
 -- --list <filters>`) and requires the parts to be disjoint, their union to be
 `bdd`'s list, and every test a part names to be in that part's list
-(`inventory::compare_parts`). On this branch it reports the 425 tests of `bdd`
-as the parts' 21, 13, 39, 91, and 261 (the remainder's 261 are 223 conformance
-tests and the 38 tests of the library and meta-gate targets). `RP-14` reads
+(`inventory::compare_parts`). On this branch, with main through #146 merged
+(register 392), it reports the 430 tests of `bdd` as the parts' 21, 14, 39, 91,
+and 265 (the remainder's 265 are 227 conformance tests and the 38 tests of the
+library and meta-gate targets). The IDs main added after the plan was written
+went to the remainder by default (`PF-20` to `PF-23`), except `SP-14`, which
+shares the shipped preservation environment and is named in `preservation`.
+`RP-14` reads
 `ci.yml`: a row names a part exactly when it runs `bdd`, every part of the
 plan, the remainder included, is run by exactly one row, a row that runs `bdd`
 alone is named `bdd-<part>`, `LEXLEAN_BDD_PART` is set once on the gate job and
