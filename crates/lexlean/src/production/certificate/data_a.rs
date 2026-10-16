@@ -42,6 +42,7 @@ mod prove;
 mod recplan;
 mod rows;
 mod src;
+mod structural;
 mod templates;
 
 pub(super) const LIB: &str = "LexLeanPreservation";

@@ -470,7 +470,18 @@ pub fn audit_core(
                 row.name, row.kind
             ));
         }
-        if row.safety.is_some() {
+        // The only definitions that are not safe are the compiler's
+        // implementation records of a recursive definition of the module, which
+        // the differential evaluator runs: `f._unsafe_rec`, partial, beside the
+        // safe `f` the theorems are about. No safe declaration can name one, so
+        // no theorem depends on it.
+        let record = row.safety == Some(crate::ir::core::CoreSafety::Partial)
+            && matches!(row.kind, CoreDeclKind::Definition)
+            && row
+                .name
+                .strip_suffix("._unsafe_rec")
+                .is_some_and(|safe| module.declarations.iter().any(|other| other.name == safe));
+        if row.safety.is_some() && !record {
             return Err(format!("the row `{}` is not a safe definition", row.name));
         }
         if !matches!(row.policy, CoreAxiomPolicy::Exact(_)) {

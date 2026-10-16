@@ -270,6 +270,80 @@ impl Builder {
         })
     }
 
+    /// `term` with each application of a constant rewritten by `rewrite`,
+    /// which is given the constant's name and its (already rewritten)
+    /// arguments and returns the replacement, or `None` to keep the
+    /// application.
+    pub fn rewrite_apps(
+        &mut self,
+        term: Term,
+        rewrite: &mut dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term>,
+    ) -> Term {
+        let mut memo = HashMap::new();
+        self.rewrite_memo(term, rewrite, &mut memo)
+    }
+
+    fn rewrite_memo(
+        &mut self,
+        term: Term,
+        rewrite: &mut dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term>,
+        memo: &mut HashMap<Term, Term>,
+    ) -> Term {
+        if let Some(&done) = memo.get(&term) {
+            return done;
+        }
+        let out = match self.nodes[term].clone() {
+            CoreNode::BVar { .. }
+            | CoreNode::Sort { .. }
+            | CoreNode::Nat { .. }
+            | CoreNode::String { .. } => term,
+            CoreNode::Const { n, .. } => rewrite(self, &n, &[]).unwrap_or(term),
+            CoreNode::App { .. } => {
+                let (head, args) = self.spine(term);
+                let args: Vec<Term> = args
+                    .iter()
+                    .map(|arg| self.rewrite_memo(*arg, rewrite, memo))
+                    .collect();
+                match self.nodes[head].clone() {
+                    CoreNode::Const { n, .. } => match rewrite(self, &n, &args) {
+                        Some(replaced) => replaced,
+                        None => self.apps(head, &args),
+                    },
+                    _ => {
+                        let head = self.rewrite_memo(head, rewrite, memo);
+                        self.apps(head, &args)
+                    }
+                }
+            }
+            CoreNode::Lambda { n, b, t, v } => {
+                let t = self.rewrite_memo(t, rewrite, memo);
+                let v = self.rewrite_memo(v, rewrite, memo);
+                self.lam(&n, b, t, v)
+            }
+            CoreNode::Forall { n, b, t, v } => {
+                let t = self.rewrite_memo(t, rewrite, memo);
+                let v = self.rewrite_memo(v, rewrite, memo);
+                self.pi(&n, b, t, v)
+            }
+            CoreNode::Let { n, t, v, body, d } => {
+                let t = self.rewrite_memo(t, rewrite, memo);
+                let v = self.rewrite_memo(v, rewrite, memo);
+                let body = self.rewrite_memo(body, rewrite, memo);
+                self.let_node(&n, t, v, body, d)
+            }
+            CoreNode::Mdata { m, x } => {
+                let x = self.rewrite_memo(x, rewrite, memo);
+                self.mdata_node(m, x)
+            }
+            CoreNode::Projection { n, s, i, x } => {
+                let x = self.rewrite_memo(x, rewrite, memo);
+                self.projection(&n, &s, i, x)
+            }
+        };
+        memo.insert(term, out);
+        out
+    }
+
     /// `term` with each node of `from` replaced by the node of `to` at its
     /// position, wherever it occurs (a free variable, in practice).
     pub fn substitute(&mut self, term: Term, from: &[Term], to: &[Term]) -> Term {

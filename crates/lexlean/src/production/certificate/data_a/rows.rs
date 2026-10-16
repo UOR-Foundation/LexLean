@@ -327,6 +327,18 @@ impl<'a> Writer<'_, 'a> {
             || graph
                 .get(&component[0])
                 .is_some_and(|edges| edges.contains(&component[0]));
+        let structural = component.iter().any(|index| {
+            matches!(
+                self.gen.subjects.get(index),
+                Some(Subject::Definition {
+                    recursion: Recursion::Structural { .. },
+                    ..
+                })
+            )
+        });
+        if structural {
+            return self.structural_component(component);
+        }
         for index in component {
             let subject = self.gen.subject_of(*index)?;
             match subject {
