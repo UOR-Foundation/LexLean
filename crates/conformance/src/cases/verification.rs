@@ -789,6 +789,15 @@ pub(crate) fn run(id: &str) {
                     }),
                 ),
                 (
+                    // Certificate E, held as kernel data (§17.17).
+                    "preserve/LexLeanPreserve/*/*/Compose/*.lex.tex",
+                    Box::new(|f: &str| {
+                        f.starts_with("preserve/LexLeanPreserve/")
+                            && f.contains("/Compose/")
+                            && f.ends_with(".lex.tex")
+                    }),
+                ),
+                (
                     "preserve/program/R<i>.json",
                     Box::new(|f: &str| f.starts_with("preserve/program/R") && f.ends_with(".json")),
                 ),
@@ -1222,6 +1231,16 @@ pub(crate) fn run(id: &str) {
                         );
                     }
                 }
+                // The one Lean text beside the module's data is the decoder of
+                // core module 1: the released bytes of language 1.0, held as
+                // the frozen data the backend reads (SPEC.md §17.12, RT-02).
+                assert_eq!(
+                    text.matches(lexlean::backend::runtime::frozen_core_decoder())
+                        .count(),
+                    1,
+                    "{} carries the frozen decoder of core module 1 exactly once",
+                    entry.path().display()
+                );
             }
 
             for entry in walkdir::WalkDir::new(root.as_std_path())

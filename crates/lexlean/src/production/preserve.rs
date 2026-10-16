@@ -311,6 +311,8 @@ fn build_native(
     let mut rows = BTreeMap::new();
     let mut seen_modules: BTreeSet<String> = BTreeSet::new();
     let mut names = BTreeSet::new();
+    // The source that first declared each equation lemma, by name.
+    let mut equation_lemmas: BTreeMap<String, String> = BTreeMap::new();
     for module in &library.modules {
         let path = native_source_path(module)
             .ok_or_else(|| format!("{LIBRARY_PATH}: `{module}` is outside `{LIBRARY_PREFIX}`"))?;
@@ -332,7 +334,34 @@ fn build_native(
                 continue;
             }
             if !names.insert(row.name.clone()) {
+                // Lean realizes the equation lemma of a definition in every
+                // module that asks for it, and imports the copies of two
+                // modules as one: two library modules that do not import
+                // each other may each declare it, as the same declaration up
+                // to the names of bound variables. It is audited once.
+                let earlier = equation_lemmas
+                    .get(&row.name)
+                    .map(|earlier| -> Result<bool, String> {
+                        let source = read(earlier)?;
+                        let earlier_core = crate::ir::core::CoreModule::from_source(&source, "1.2")
+                            .map_err(|reason| format!("{earlier}: {reason}"))?;
+                        Ok(earlier_core
+                            .declarations
+                            .iter()
+                            .find(|candidate| candidate.name == row.name)
+                            .is_some_and(|candidate| {
+                                earlier_core.declaration_up_to_binder_names(candidate)
+                                    == core.declaration_up_to_binder_names(row)
+                            }))
+                    })
+                    .transpose()?;
+                if earlier == Some(true) {
+                    continue;
+                }
                 return Err(format!("{path}: `{}` is declared twice", row.name));
+            }
+            if is_equation_lemma(&row.name) {
+                equation_lemmas.insert(row.name.clone(), path.clone());
             }
             if !matches!(row.policy, crate::ir::core::CoreAxiomPolicy::Exact(_)) {
                 return Err(format!(
@@ -369,6 +398,17 @@ fn build_native(
         modules,
         rows,
     })
+}
+
+/// Whether a declaration name is an equation lemma Lean realizes on demand:
+/// its last segment is `eq_` and a number.
+fn is_equation_lemma(name: &str) -> bool {
+    name.rsplit('.')
+        .next()
+        .and_then(|last| last.strip_prefix("eq_"))
+        .is_some_and(|number| {
+            !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit())
+        })
 }
 
 fn load_native() -> Result<Native, String> {
@@ -1204,6 +1244,22 @@ pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String
 /// The audit module's name.
 pub const AUDIT_MODULE: &str = "LexLeanPreserve.Audit";
 
+/// The runtime modules (§17.12) a set of generated Lean texts imports, in
+/// dependency order, as staged files.
+fn runtime_files<'a>(
+    texts: impl IntoIterator<Item = &'a str>,
+) -> Result<Vec<StagedFile>, Diagnostic> {
+    Ok(crate::backend::runtime::imported_by(texts)?
+        .into_iter()
+        .map(|runtime| StagedFile {
+            path: module_path(&runtime.name),
+            text: runtime.text.clone(),
+            module: runtime.name.clone(),
+            source: None,
+        })
+        .collect())
+}
+
 /// Stage the workspace of a project's certificates.
 ///
 /// # Errors
@@ -1221,6 +1277,18 @@ pub fn workspace(
         .map(|module| (*module).to_owned())
         .collect();
     let mut files = Vec::new();
+    // Every runtime module (§17.12), first: one module root is one directory
+    // of compiled modules, so the shared environment holds all of them, not
+    // only those a given project imports.
+    for runtime in crate::backend::runtime::modules()? {
+        environment.insert(runtime.name.clone());
+        files.push(StagedFile {
+            path: module_path(&runtime.name),
+            text: runtime.text.clone(),
+            module: runtime.name.clone(),
+            source: None,
+        });
+    }
     for module in TARGET_MODULES
         .iter()
         .map(|module| (*module).to_owned())
@@ -1432,6 +1500,16 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
         .map(|module| (*module).to_owned())
         .collect();
     let mut environment = Vec::new();
+    // The runtime modules the calculus modules import (§17.12), first.
+    let calculus = TARGET_MODULES
+        .iter()
+        .map(|module| module_text(module))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|diagnostic| drift(diagnostic.message))?;
+    for runtime in runtime_files(calculus).map_err(|diagnostic| drift(diagnostic.message))? {
+        imports.insert(runtime.module.clone());
+        environment.push(runtime);
+    }
     for module in TARGET_MODULES
         .iter()
         .map(|module| (*module).to_owned())
