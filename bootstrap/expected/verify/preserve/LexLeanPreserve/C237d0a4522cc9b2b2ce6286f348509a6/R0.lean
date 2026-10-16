@@ -12,7 +12,7 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
-namespace LexLeanPreserve.C8ac239e8ab91929d26031a02a79be7fa.R0
+namespace LexLeanPreserve.C237d0a4522cc9b2b2ce6286f348509a6.R0
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -95,4 +95,4 @@ def denote (raw : ByteArray) : _root_.LexLeanPreservation.Obs :=
 theorem root (raw : ByteArray) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.bytes raw)] (_root_.LexLeanPreservation.Rel (__fits_0 raw) (_root_.LexLeanTarget.TargetSyntax.Value.bool (LexLeanBoot.AxiomOutput.isClosedLeanName raw))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 raw)
 
-end LexLeanPreserve.C8ac239e8ab91929d26031a02a79be7fa.R0
+end LexLeanPreserve.C237d0a4522cc9b2b2ce6286f348509a6.R0
