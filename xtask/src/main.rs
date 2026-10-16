@@ -255,18 +255,18 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
                     .map(|need| utf8(&parts.join(need)))
                     .collect::<Result<_, _>>()?;
                 let output = utf8(&parts.join(shard))?;
-                let outcome = engine
-                    .verify_part(
-                        lexlean::VerifyRequest {
-                            selection: lexlean::Selection::Entrypoints,
-                        },
-                        lexlean::VerifyPart::Shard {
-                            plan: shard_plan,
-                            imports,
-                            output,
-                        },
-                    )
-                    .map_err(|error| format!("{name}: verify (shard {shard}): {error}"))?;
+                let outcome = lexlean::verify_part(
+                    &engine,
+                    lexlean::VerifyRequest {
+                        selection: lexlean::Selection::Entrypoints,
+                    },
+                    lexlean::VerifyPart::Shard {
+                        plan: shard_plan,
+                        imports,
+                        output,
+                    },
+                )
+                .map_err(|error| format!("{name}: verify (shard {shard}): {error}"))?;
                 lap("verify");
                 let lexlean::VerifyPartOutcome::Shard { output, processes } = outcome else {
                     return Err(format!("{name}: shard `{shard}` published a verification").into());
@@ -290,17 +290,17 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
                     .filter(|shard| shard.as_str() != repo_conformance::shards::JOIN)
                     .map(|shard| utf8(&parts.join(shard)))
                     .collect::<Result<_, _>>()?;
-                let outcome = engine
-                    .verify_part(
-                        lexlean::VerifyRequest {
-                            selection: lexlean::Selection::Entrypoints,
-                        },
-                        lexlean::VerifyPart::Join {
-                            plan: join_plan,
-                            parts: others,
-                        },
-                    )
-                    .map_err(|error| format!("{name}: verify (join): {error}"))?;
+                let outcome = lexlean::verify_part(
+                    &engine,
+                    lexlean::VerifyRequest {
+                        selection: lexlean::Selection::Entrypoints,
+                    },
+                    lexlean::VerifyPart::Join {
+                        plan: join_plan,
+                        parts: others,
+                    },
+                )
+                .map_err(|error| format!("{name}: verify (join): {error}"))?;
                 let lexlean::VerifyPartOutcome::Verified(verified) = outcome else {
                     return Err(format!("{name}: the join published no verification").into());
                 };

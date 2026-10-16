@@ -160,7 +160,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Prose-free deterministic generated Lean with complete token traceability | `LN-01`..`LN-12` | `build` |
 | Canonical LaTeX regeneration and the optional hash-checked PDF provider | `TX-01`..`TX-12` | `build` |
 | Canonical diagnostics, source maps, coverage, manifests, and reproducible builds | `AR-01`..`AR-14` | `build` |
-| Fifteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-22` | `build` |
+| Fifteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-23` | `build` |
 | The exact CLI contract, the stable seven-method Rust `Engine` API, the host-driven end of the children the library started, and the `production` subcommands | `CL-01`..`CL-23` | `build` |
 | Filesystem confinement, no shell, no hidden network, closed failure model | `SE-01`..`SE-12` | `build` |
 | Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit | `PD-01`..`PD-07` | `build` |

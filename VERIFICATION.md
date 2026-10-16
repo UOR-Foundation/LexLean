@@ -7701,7 +7701,7 @@ for the Atlas side against 178; the first CI run of the change is the
 measurement, and the `rest` leg (76 minutes, 64 of them `bdd`) is then the
 longer one.
 
-The verifier runs as one part through `Engine::verify_part`
+The verifier runs as one part through `lexlean::verify_part`
 (`verify::partition`, SPEC.md §9.4, §22.11). A shard runs the prelude whole
 (certificate generation, the preflights, staging, the generated-source audit,
 the probe), seeds the placed set with the modules whose `.olean` arrived from

@@ -1,4 +1,4 @@
-//! The `verification` suite: VR-01..VR-22.
+//! The `verification` suite: VR-01..VR-23.
 
 use lexlean::{Selection, VerifyRequest};
 

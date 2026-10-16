@@ -61,6 +61,7 @@ pub mod surface;
 #[doc(hidden)]
 pub mod verify;
 
+pub use api::verify_part;
 pub use api::{
     BuildRequest, BuiltUnit, CheckRequest, CheckedUnit, CheckedUnitSummary, Engine, FormatRequest,
     FormatResultSet, LockRequest, LockResult, ModuleArtifacts, ProjectResultSet, Selection,

@@ -812,7 +812,8 @@ fn parts_equal_the_whole() {
         let _environment = support::env_shared();
         let project = P::copy_example(example);
         let outcome = Operational::new(1, None).expect("width 1").scoped(|| {
-            project.engine().verify_part(
+            lexlean::verify_part(
+                &project.engine(),
                 VerifyRequest {
                     selection: Selection::Entrypoints,
                 },

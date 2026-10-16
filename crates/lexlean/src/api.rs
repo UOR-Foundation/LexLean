@@ -989,53 +989,6 @@ impl Engine {
         }
     }
 
-    /// Verify a selection as one part of a verification run as several
-    /// parts (SPEC.md §9.4): a shard runs the processes its plan names and
-    /// writes them to its output directory; the join runs its own, reads
-    /// every other part's, and publishes through the same pipeline as
-    /// [`Self::verify`]. A part is defined for a project without production
-    /// roots and without PDF rendering.
-    pub fn verify_part(
-        &self,
-        request: VerifyRequest,
-        part: VerifyPart,
-    ) -> Result<VerifyPartOutcome, LexLeanError> {
-        let plan_of = |plan: &VerifyPlan| crate::verify::Plan {
-            elaborate: plan.elaborate.iter().cloned().collect(),
-            replay: plan.replay.iter().cloned().collect(),
-        };
-        match &part {
-            VerifyPart::Shard {
-                plan,
-                imports,
-                output,
-            } => {
-                let plan = plan_of(plan);
-                self.bound(
-                    "verify",
-                    self.verify_part_inner(
-                        &request,
-                        &crate::verify::Part::Shard {
-                            plan: &plan,
-                            imports,
-                            output,
-                        },
-                    ),
-                )
-            }
-            VerifyPart::Join { plan, parts } => {
-                let plan = plan_of(plan);
-                self.bound(
-                    "verify",
-                    self.verify_part_inner(
-                        &request,
-                        &crate::verify::Part::Join { plan: &plan, parts },
-                    ),
-                )
-            }
-        }
-    }
-
     fn verify_part_inner(
         &self,
         request: &VerifyRequest,
@@ -1470,4 +1423,50 @@ pub fn command_result_json(
         fields.push(("explanation", Json::Str(text.to_owned())));
     }
     Json::object(fields)
+}
+
+/// Verify a project as one part of a verification run as several
+/// parts (SPEC.md §9.4): a shard runs the processes its plan names and
+/// writes them to its output directory; the join runs its own, reads
+/// every other part's, and publishes through the same pipeline as
+/// [`Engine::verify`]. It is repository tooling for the CI gate, not one of
+/// the stable entry points of §24.1. A part is defined for a project without production
+/// roots and without PDF rendering.
+pub fn verify_part(
+    engine: &Engine,
+    request: VerifyRequest,
+    part: VerifyPart,
+) -> Result<VerifyPartOutcome, LexLeanError> {
+    let plan_of = |plan: &VerifyPlan| crate::verify::Plan {
+        elaborate: plan.elaborate.iter().cloned().collect(),
+        replay: plan.replay.iter().cloned().collect(),
+    };
+    match &part {
+        VerifyPart::Shard {
+            plan,
+            imports,
+            output,
+        } => {
+            let plan = plan_of(plan);
+            engine.bound(
+                "verify",
+                engine.verify_part_inner(
+                    &request,
+                    &crate::verify::Part::Shard {
+                        plan: &plan,
+                        imports,
+                        output,
+                    },
+                ),
+            )
+        }
+        VerifyPart::Join { plan, parts } => {
+            let plan = plan_of(plan);
+            engine.bound(
+                "verify",
+                engine
+                    .verify_part_inner(&request, &crate::verify::Part::Join { plan: &plan, parts }),
+            )
+        }
+    }
 }

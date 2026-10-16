@@ -24,7 +24,7 @@ versions, and the entries below say what each tag does and does not claim.
   `cargo xtask ci-shards` against the import graph of the committed build:
   every module elaborated by one shard and replayed by one, every import
   elaborated by the shard or by one it needs. The verifier runs as one part
-  through `Engine::verify_part` (`verify::partition`): a shard runs the
+  through `lexlean::verify_part` (`verify::partition`): a shard runs the
   prelude whole, then elaborates, replays, and audits the modules of its plan
   with the `.olean` files of the shards it needs, and writes its records; the
   join reads every shard's records, judges each as its stage does, and
