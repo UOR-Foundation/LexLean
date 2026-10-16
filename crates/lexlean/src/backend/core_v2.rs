@@ -51,6 +51,33 @@
 /// The imports the decoder of core module 2 adds after `import Lean`.
 pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
 
+/// The decoder's entry of a remade sparse `casesOn` in the elaborator's
+/// cache, which [`legacy_decoder`] leaves out.
+pub const LEAN_CORE_V2_CACHE_SEED: &str = "    for isPrivate in [false, true] do
+      modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+        let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
+        if s.contains key then s else s.insert key name
+";
+
+/// The decoder's removal of its own constants from that cache, which
+/// [`legacy_decoder`] leaves out.
+pub const LEAN_CORE_V2_CACHE_PURGE: &str = "  modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+    s.toList.foldl (init := {}) fun kept (key, made) =>
+      if (Lean.privateToUserName made).components.contains `LexLeanCore then kept else kept.insert key made
+";
+
+/// The decoder of core module 2 for a rendering outside the module system
+/// (a certificate E, SPEC.md §17.17): such a file cannot import a module in
+/// full, so the cache, private to its Lean module, is out of its reach. A
+/// certificate states theorems only, no sparse `casesOn` and no derived
+/// row, so it needs neither use of the cache.
+#[must_use]
+pub fn legacy_decoder() -> String {
+    LEAN_CORE_DECODER_V2
+        .replacen(LEAN_CORE_V2_CACHE_SEED, "", 1)
+        .replacen(LEAN_CORE_V2_CACHE_PURGE, "", 1)
+}
+
 /// The decoder module of core module 2, spliced after the generated module's
 /// header.
 pub const LEAN_CORE_DECODER_V2: &str = r##"
@@ -623,3 +650,17 @@ def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
 
 end LexLeanCore.Runtime
 "##;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cache_uses_are_in_the_decoder_once() {
+        for part in [LEAN_CORE_V2_CACHE_SEED, LEAN_CORE_V2_CACHE_PURGE] {
+            assert_eq!(LEAN_CORE_DECODER_V2.matches(part).count(), 1);
+            assert!(!legacy_decoder().contains(part));
+        }
+        assert!(!legacy_decoder().contains("sparseCasesOnCacheExt"));
+    }
+}

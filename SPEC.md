@@ -2398,7 +2398,10 @@ are data of the module, not conventions of a backend.
   finds it, as it did when the elaborator made the module; each chunk first
   drops from the cache the runtime's own constants, which are not the
   module's. The cache is private to its Lean module, which the runtime
-  therefore imports in full.
+  therefore imports in full. A certificate rendered outside the module
+  system (§17.17) cannot import a module in full; it states theorems only,
+  no sparse `casesOn` and no derived row, and its runtime leaves the cache
+  alone.
 - A row whose name the pinned Lean reserves (`Lean.isReservedName`: the
   equations and splitter of a matcher, the equations and unfolding theorem
   of a definition, the `else_eq` of a sparse `casesOn`, and the other names
