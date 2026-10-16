@@ -11,7 +11,7 @@
 # run when the rows and the version disagree.
 
 spec = "lexlean/oracle-differences/1"
-version = 2
+version = 3
 
 [[difference]]
 id = "KD-01"
@@ -93,6 +93,8 @@ roots = [
   "Coverage.Main.intOps",
   "Coverage.Main.mapped",
   "Coverage.Main.parity",
+  "Coverage.Prims.pixels",
+  "Coverage.Prims.widenings",
   "OracleProbe.ProbeInt.intRoot",
 ]
 
@@ -189,3 +191,4 @@ reason = "LexLean rejects this root (LLT4005: a named type at the boundary that 
 roots = [
   "LanguageTwelve.Main.measure",
 ]
+

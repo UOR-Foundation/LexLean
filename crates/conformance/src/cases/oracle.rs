@@ -887,10 +887,11 @@ fn malformed_non_overlap_tables_are_refused() {
         "spec = \"lexlean/oracle-overlap/1\"",
         "spec = \"lexlean/oracle-overlap/2\"",
     );
-    refused("version = 1", "version = 0");
+    let mut value: toml::Value = text.parse().expect("the table is TOML");
+    let version = value["version"].as_integer().expect("version");
+    refused(&format!("version = {version}"), "version = 0");
     refused("kind = \"not-runtime\"", "kind = \"vendored\"");
     // A row with a blank reason.
-    let mut value: toml::Value = text.parse().expect("the table is TOML");
     value["construct"][0]["reason"] = toml::Value::String("  ".to_owned());
     differential::NonOverlapTable::parse(&value.to_string())
         .expect_err("a blank reason is refused");

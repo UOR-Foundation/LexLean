@@ -158,13 +158,15 @@ pub const fn primitive_key(operation: SemanticPrimitive) -> &'static str {
         SemanticPrimitive::GraphReachable => "primitive.graph_reachable",
         SemanticPrimitive::GraphTopological => "primitive.graph_topological",
         SemanticPrimitive::LessThan => "primitive.less_than",
+        SemanticPrimitive::ToInt => "primitive.to_int",
+        SemanticPrimitive::ToNat => "primitive.to_nat",
     }
 }
 
 /// Every primitive operation, in declaration order. [`primitive_index`] is
 /// exhaustive, so a new operation cannot be added without extending it, and
 /// the conformance suite checks the two agree.
-pub const PRIMITIVES: [SemanticPrimitive; 54] = [
+pub const PRIMITIVES: [SemanticPrimitive; 56] = [
     SemanticPrimitive::Subtract,
     SemanticPrimitive::Multiply,
     SemanticPrimitive::Quotient,
@@ -219,6 +221,8 @@ pub const PRIMITIVES: [SemanticPrimitive; 54] = [
     SemanticPrimitive::GraphReachable,
     SemanticPrimitive::GraphTopological,
     SemanticPrimitive::LessThan,
+    SemanticPrimitive::ToInt,
+    SemanticPrimitive::ToNat,
 ];
 
 /// The position of an operation in [`PRIMITIVES`].
@@ -279,6 +283,8 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
         SemanticPrimitive::GraphReachable => 51,
         SemanticPrimitive::GraphTopological => 52,
         SemanticPrimitive::LessThan => 53,
+        SemanticPrimitive::ToInt => 54,
+        SemanticPrimitive::ToNat => 55,
     }
 }
 
@@ -886,6 +892,16 @@ impl<'a> Walk<'a> {
             module,
             modules: self.modules,
         }
+    }
+
+    /// The widening conversions the elaborated declaration `name` of
+    /// `module` applied; each is realized through its elaboration, and the
+    /// member still reports that it uses one (§17.12, §17.13).
+    fn widenings(&self, module: &str, name: &str) -> Vec<&'static str> {
+        self.modules
+            .get(module)
+            .map(|linked| linked.semantic.widenings(name))
+            .unwrap_or_default()
     }
 
     fn violation(&mut self, site: &Site<'_>, construct: &str, reason: String) {
@@ -1724,6 +1740,16 @@ impl<'a> Walk<'a> {
                 self.construct(site, key, None);
                 let substituted = substitute(result, site.substitution);
                 self.construct(site, primitive_key(*operation), Some(&substituted));
+                // The analysis reads elaborated declarations, in which every
+                // widening conversion is the ordinary term it means
+                // (§17.12); one reaching here was not elaborated.
+                if operation.widening() {
+                    self.violation(
+                        site,
+                        primitive_key(*operation),
+                        "a widening conversion is realized only through its elaboration".to_owned(),
+                    );
+                }
                 self.ty(result, site);
                 self.terms(arguments, site);
             }
@@ -2268,6 +2294,11 @@ impl<'a> Walk<'a> {
                 {
                     self.construct(&site, "term.checked_apply", None);
                 }
+                // So is a widening conversion (§17.12, *Widening
+                // conversions*).
+                for conversion in self.widenings(&module, &name) {
+                    self.construct(&site, conversion, None);
+                }
                 if !*executable {
                     self.violation(
                         &site,
@@ -2310,6 +2341,9 @@ impl<'a> Walk<'a> {
                 fields,
             }) => {
                 self.construct(&site, construct, None);
+                for conversion in self.widenings(&module, &name) {
+                    self.construct(&site, conversion, None);
+                }
                 let named = SemanticType::Named {
                     member: class.clone(),
                     arguments: arguments.clone(),

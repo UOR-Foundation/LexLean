@@ -291,77 +291,164 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-#[derive(Clone)]
-pub enum Adt0 {
-    C0(u64),
-    C1(std::rc::Rc<Adt0>, std::rc::Rc<Adt0>),
-    C2(List<Adt1>, std::rc::Rc<Adt0>),
-}
-
-#[derive(Clone)]
-pub enum Adt1 {
-    C0(Str, Adt0),
-    C1(std::rc::Rc<Adt1>, std::rc::Rc<Adt1>),
-}
-
-pub fn f0(v0: Adt0) -> R<u64> {
-    f1(v0)
-}
-
-pub fn f1(v0: Adt0) -> R<u64> {
-    let m1 = v0;
-    match m1 {
-        Adt0::C0(_) => {
-            Ok(1u64)
-        }
-        Adt0::C1(r8, r9) => {
-            let v2 = (*r8).clone();
-            let v3 = (*r9).clone();
-            let a4 = {
-                let a2 = f1(v2)?;
-                let a3 = f1(v3)?;
-                nat_add(a2, a3)?
-            };
-            let a5 = 1u64;
-            nat_add(a4, a5)
-        }
-        Adt0::C2(v4, r10) => {
-            let v5 = (*r10).clone();
-            let a6 = f2(v4)?;
-            let a7 = f1(v5)?;
-            nat_add(a6, a7)
-        }
-    }
-}
-
-pub fn f2(v0: List<Adt1>) -> R<u64> {
-    let m11 = v0;
-    match m11.uncons() {
+pub fn f0(v0: Bytes, v1: u64) -> R<Option<i64>> {
+    let m3 = {
+        let a1 = v0;
+        let a2 = v1;
+        index_bytes(a1, a2)
+    };
+    match m3 {
         None => {
-            Ok(0u64)
+            Ok(None::<i64>)
         }
-        Some((v1, v2)) => {
-            let a12 = f3(v1)?;
-            let a13 = f2(v2)?;
-            nat_add(a12, a13)
-        }
-    }
-}
-
-pub fn f3(v0: Adt1) -> R<u64> {
-    let m14 = v0;
-    match m14 {
-        Adt1::C0(_, v2) => {
-            let a15 = f1(v2)?;
-            let a16 = 1u64;
-            nat_add(a15, a16)
-        }
-        Adt1::C1(r19, r20) => {
-            let v3 = (*r19).clone();
-            let v4 = (*r20).clone();
-            let a17 = f3(v3)?;
-            let a18 = f3(v4)?;
-            nat_add(a17, a18)
+        Some(v2) => {
+            Ok(Some({
+                let v3: u8 = v2;
+                let a55 = {
+                    let a27 = {
+                        let a13 = {
+                            let a6 = {
+                                let a4 = v3;
+                                let a5 = 128u8;
+                                fixed_u8::bit_and(a4, a5)
+                            };
+                            let a7 = 128u8;
+                            if equal(a6, a7) {
+                                128i64
+                            } else {
+                                0i64
+                            }
+                        };
+                        let a14 = {
+                            let a12 = {
+                                let a10 = {
+                                    let a8 = v3;
+                                    let a9 = 64u8;
+                                    fixed_u8::bit_and(a8, a9)
+                                };
+                                let a11 = 64u8;
+                                if equal(a10, a11) {
+                                    64i64
+                                } else {
+                                    0i64
+                                }
+                            };
+                            int_neg(a12)?
+                        };
+                        int_sub(a13, a14)?
+                    };
+                    let a28 = {
+                        let a26 = {
+                            let a24 = {
+                                let a17 = {
+                                    let a15 = v3;
+                                    let a16 = 32u8;
+                                    fixed_u8::bit_and(a15, a16)
+                                };
+                                let a18 = 32u8;
+                                if equal(a17, a18) {
+                                    32i64
+                                } else {
+                                    0i64
+                                }
+                            };
+                            let a25 = {
+                                let a23 = {
+                                    let a21 = {
+                                        let a19 = v3;
+                                        let a20 = 16u8;
+                                        fixed_u8::bit_and(a19, a20)
+                                    };
+                                    let a22 = 16u8;
+                                    if equal(a21, a22) {
+                                        16i64
+                                    } else {
+                                        0i64
+                                    }
+                                };
+                                int_neg(a23)?
+                            };
+                            int_sub(a24, a25)?
+                        };
+                        int_neg(a26)?
+                    };
+                    int_sub(a27, a28)?
+                };
+                let a56 = {
+                    let a54 = {
+                        let a52 = {
+                            let a38 = {
+                                let a31 = {
+                                    let a29 = v3;
+                                    let a30 = 8u8;
+                                    fixed_u8::bit_and(a29, a30)
+                                };
+                                let a32 = 8u8;
+                                if equal(a31, a32) {
+                                    8i64
+                                } else {
+                                    0i64
+                                }
+                            };
+                            let a39 = {
+                                let a37 = {
+                                    let a35 = {
+                                        let a33 = v3;
+                                        let a34 = 4u8;
+                                        fixed_u8::bit_and(a33, a34)
+                                    };
+                                    let a36 = 4u8;
+                                    if equal(a35, a36) {
+                                        4i64
+                                    } else {
+                                        0i64
+                                    }
+                                };
+                                int_neg(a37)?
+                            };
+                            int_sub(a38, a39)?
+                        };
+                        let a53 = {
+                            let a51 = {
+                                let a49 = {
+                                    let a42 = {
+                                        let a40 = v3;
+                                        let a41 = 2u8;
+                                        fixed_u8::bit_and(a40, a41)
+                                    };
+                                    let a43 = 2u8;
+                                    if equal(a42, a43) {
+                                        2i64
+                                    } else {
+                                        0i64
+                                    }
+                                };
+                                let a50 = {
+                                    let a48 = {
+                                        let a46 = {
+                                            let a44 = v3;
+                                            let a45 = 1u8;
+                                            fixed_u8::bit_and(a44, a45)
+                                        };
+                                        let a47 = 1u8;
+                                        if equal(a46, a47) {
+                                            1i64
+                                        } else {
+                                            0i64
+                                        }
+                                    };
+                                    int_neg(a48)?
+                                };
+                                int_sub(a49, a50)?
+                            };
+                            int_neg(a51)?
+                        };
+                        int_sub(a52, a53)?
+                    };
+                    int_neg(a54)?
+                };
+                int_sub(a55, a56)?
+            }))
         }
     }
 }
