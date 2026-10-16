@@ -61,10 +61,11 @@ pub mod surface;
 #[doc(hidden)]
 pub mod verify;
 
+pub use api::verify_part;
 pub use api::{
     BuildRequest, BuiltUnit, CheckRequest, CheckedUnit, CheckedUnitSummary, Engine, FormatRequest,
     FormatResultSet, LockRequest, LockResult, ModuleArtifacts, ProjectResultSet, Selection,
-    VerifiedProject, VerifiedUnit, VerifyRequest,
+    VerifiedProject, VerifiedUnit, VerifyPart, VerifyPartOutcome, VerifyPlan, VerifyRequest,
 };
 pub use artifact::content_id::Sha256Digest;
 pub use artifact::snapshot::{

@@ -96,10 +96,10 @@ Feature: repository
     And a test recipe that includes repo-conformance, or a bdd recipe that runs fewer targets, fails the inventory
 
   @RP-14 @build
-  Scenario: The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence.
-    Given .github/workflows/ci.yml
-    When the runner, the environment, and the job steps are read
-    Then the job runs on ubuntu-24.04 with the 360-minute limit, and each verification profile variable is set once, from the leg's matrix row
-    And the leg that runs examples names width 2, a 12 GiB budget, and the committed hints, which the verifier parses, and the other leg names no profile
-    And its two legs run the recipes of vv, each exactly once, in the order of vv within a leg, and the leg that runs examples asserts that Atlas verified
-    And the vv job has no path filter, no cache action, no condition on a recipe, and each leg uploads its ci-evidence under a name of its own
+  Scenario: The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other leg at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence.
+    Given .github/workflows/ci.yml and .github/verify-shards.json
+    When the runner, the environment, the job steps, and the plan are read
+    Then every gate job runs on ubuntu-24.04 with the 360-minute limit, and each verification profile variable is set once per job, from the leg's matrix row or as the examples profile on an Atlas job
+    And the leg that runs examples names width 2, a 12 GiB budget, and the committed hints, which the verifier parses, verifies every example but uor-atlas, and the other leg names no profile and no part, and the two legs run the recipes of vv, each exactly once, in the order of vv within a leg, through the one gate command
+    And the Atlas jobs run every shard of the plan exactly once, each after the jobs of the shards it needs, from the one executable the prefix job built, the join asserts that Atlas verified, and the plan elaborates and replays every Atlas module exactly once with every import elaborated by the shard or by one it needs
+    And the vv job has no path filter, no cache action, and no condition on a recipe, the Atlas jobs wait only for a pull request to leave draft, and each job uploads its ci-evidence under a name of its own

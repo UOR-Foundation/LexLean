@@ -31,6 +31,41 @@ versions, and the entries below say what each tag does and does not claim.
   example gates (`verify-examples`, `check-golden`) and
   `check-production-export` compares its packages. `SL-01` brings the
   register to 382 IDs.
+- The runtime gates read what they claimed to (#154, follow-up to #144; no new
+  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
+  literal of the compiler's source outside unit-test items, in production code
+  after a test module, with or without a `namespace` line (a declaration
+  under a runtime name is one), written whole or in literals joined by
+  `concat!`, an array, `+` or `format!`; its statement now also asserts
+  what it said of generated modules: every committed language-1.2 module
+  imports the runtime modules whose constants it names and declares nothing
+  under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
+  with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
+  plants the second direction of the axiom check. Every directory that holds a
+  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
+  beside the sources no longer reads as source. No compiled behavior changes.
+- UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
+  `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
+  minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of
+  Atlas, whose import chain through `Census` and `CensusCert4` no schedule on
+  one runner finishes in under about 65 minutes. `.github/verify-shards.json`
+  partitions Atlas's verification into fourteen shards and a join, checked by
+  `cargo xtask ci-shards` against the import graph of the committed build:
+  every module elaborated by one shard and replayed by one, every import
+  elaborated by the shard or by one it needs. The verifier runs as one part
+  through `lexlean::verify_part` (`verify::partition`): a shard runs the
+  prelude whole, then elaborates, replays, and audits the modules of its plan
+  with the `.olean` files of the shards it needs, and writes its records; the
+  join reads every shard's records, judges each as its stage does, and
+  publishes through the same policy, attestation, and publication as the whole
+  verification, byte-identical to it and with the same attestation identity
+  (`VR-23`, on `peano-arithmetic`). `cargo xtask verify-examples` runs the
+  part `LEXLEAN_EXAMPLES_PART` names: `without:uor-atlas` on the examples leg,
+  `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs; unset, the
+  recipe is unchanged. `ci.yml` runs the shards as jobs after the jobs of the
+  shards they need, from the one executable the `prefix` job builds, with the
+  shards' output as artifacts of the run and nothing across runs, and not while
+  a pull request is a draft. The register has 382 IDs.
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining
