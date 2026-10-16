@@ -7728,6 +7728,31 @@ runs (231 s to 237 s) and is left alone until it fails.
 Removed: the edit was restored; `conformance_rs_12` passes in 691 s on the
 idle host (737 s before the change).
 
+### The start-order case of the verifier pool (Issue #148)
+
+`verify::pool::tests::hints_order_the_start_and_never_the_consumption` failed
+once in CI (Intel macOS host leg of the PR run of #147). It ran four items on
+four workers and recorded the start order by pushing from inside each job,
+after its claim, so what it recorded was the order in which the scheduler ran
+the workers: `[3, 0, 1]` against `[3, 1, 0]`. Run 600 times beside eight busy
+loops on an idle four-core host, the unchanged case failed 82 times, with the
+same assertion and other permutations (`[3, 1, 2]`). It now uses two workers,
+item 3 holding one for the whole run, so the first two claims are 3 and 1 (as
+a set) and the next two, one thread's, are 0 then 2.
+
+- **a claim order the case does not observe.** The claim of `run_ordered_with`
+  taken from the items in their own order instead of the hint order
+  (`items[sequence]` for `effective[sequence]`). `-- verify::pool`:
+
+  ```text
+  panicked at crates/lexlean/src/verify/pool.rs:672:9:
+  assertion `left == right` failed: the hinted heaviest were started first
+    left: [0, 1]
+   right: [1, 3]
+  ```
+
+Removed: the edit was restored; the ten `verify::pool` cases pass, and the
+changed case passes 400 of 400 runs beside the same eight busy loops.
 ## Exact toolchain version fields (Issue #134)
 
 The existing `VR-02` owner (SPEC.md §8.2, §22.2) also refuses patch-prefix
