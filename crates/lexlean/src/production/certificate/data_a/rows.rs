@@ -478,14 +478,6 @@ impl<'a> Writer<'_, 'a> {
         Ok(self.b.apps(head, &args))
     }
 
-    /// The encoders of every document type: none, until a program has one.
-    pub(super) fn encoders(&mut self) -> Result<(), String> {
-        if self.gen.layout.adts.is_empty() {
-            return Ok(());
-        }
-        Err("document types".to_owned())
-    }
-
     /// `denote`, `root`, and the boundary.
     pub(super) fn root(
         &mut self,

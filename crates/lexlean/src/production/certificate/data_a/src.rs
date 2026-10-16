@@ -550,6 +550,37 @@ impl Writer<'_, '_> {
                 }
                 (self.b.konst_at(&format!("{owner}.casesOn"), vec![level]), params)
             }
+            SemanticType::Product { left, right } => {
+                let left = self.lean_ty(left)?;
+                let right = self.lean_ty(right)?;
+                (
+                    self.b.konst_at(
+                        "Prod.casesOn",
+                        vec![level, CoreLevel::Zero, CoreLevel::Zero],
+                    ),
+                    vec![left, right],
+                )
+            }
+            SemanticType::Map { key, value } => {
+                let key = self.lean_ty(key)?;
+                let value = self.lean_ty(value)?;
+                let entry = self.b.pair_ty(key, value);
+                (
+                    self.b
+                        .konst_at("List.casesOn", vec![level, CoreLevel::Zero]),
+                    vec![entry],
+                )
+            }
+            SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
+                let bool = self.b.konst("Bool");
+                (
+                    self.b.konst_at(
+                        "Prod.casesOn",
+                        vec![level, CoreLevel::Zero, CoreLevel::Zero],
+                    ),
+                    vec![bool, bool],
+                )
+            }
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
@@ -566,14 +597,10 @@ impl Writer<'_, '_> {
             | SemanticType::String
             | SemanticType::Bytes
             | SemanticType::Ordering
-            | SemanticType::Product { left: _, right: _ }
             | SemanticType::Function {
                 parameters: _,
                 result: _,
-            }
-            | SemanticType::Map { key: _, value: _ }
-            | SemanticType::ContractViolation
-            | SemanticType::ReasoningFailure => {
+            } => {
                 return Err(format!(
                     "a match on `{}` has no eliminator here",
                     self.gen.source.type_text(scrutinee_ty)

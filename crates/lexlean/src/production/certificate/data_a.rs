@@ -28,16 +28,18 @@ use super::{components, CLocal, Ctx, Gen, Subject, SYNTAX};
 use crate::calculus::Expr;
 use crate::ir::core::{
     CoreAxiomPolicy, CoreBinderInfo, CoreDeclKind, CoreDeclaration, CoreModule, CoreReducibility,
-    CoreTransparency, CORE_SPEC_2,
+    CoreSafety, CoreTransparency, CORE_SPEC_2,
 };
 use crate::ir::semantic::SemanticType;
 
 mod boundary;
 mod calls;
 mod lean;
+mod encoders;
 mod matching;
 mod prims;
 mod prove;
+mod recplan;
 mod rows;
 mod src;
 mod templates;
@@ -52,6 +54,11 @@ pub(super) enum RowKind {
     /// A definition; `compiled` is whether the code generator runs over it,
     /// which the differential evaluator needs of `denote` and what it calls.
     Definition { compiled: bool },
+    /// The compiler's implementation record of a recursive definition: the
+    /// same function written with direct recursion, for the code generator,
+    /// which has no code for a recursor. The members of one mutual group
+    /// name each other.
+    Partial,
 }
 
 /// One row of the module.
@@ -62,6 +69,8 @@ pub(super) struct Row {
     pub(super) value: Term,
     pub(super) kind: RowKind,
     pub(super) axioms: BTreeSet<String>,
+    /// The rows of the mutual group the row belongs to, itself included.
+    pub(super) group: Option<Vec<String>>,
 }
 
 /// A proof of a program expression's relation, with its type
@@ -348,8 +357,23 @@ impl<'g, 'a> Writer<'g, 'a> {
             value,
             kind,
             axioms,
+            group: None,
         });
         Ok(())
+    }
+
+    /// Name the rows of one mutual group (their short names) as each other's
+    /// group.
+    pub(super) fn group_rows(&mut self, short_names: &[String]) {
+        let full: Vec<String> = short_names
+            .iter()
+            .map(|name| format!("{}.{name}", self.name))
+            .collect();
+        for row in &mut self.rows {
+            if full.contains(&row.name) {
+                row.group = Some(full.clone());
+            }
+        }
     }
 
     /// The module.
@@ -432,16 +456,23 @@ impl<'g, 'a> Writer<'g, 'a> {
 }
 
 fn declaration(row: &Row, height: u32, ty: Term, value: Term) -> CoreDeclaration {
-    let (kind, reducibility, compiled) = match row.kind {
-        RowKind::Theorem => (CoreDeclKind::Theorem, None, false),
+    let (kind, reducibility, compiled, safety) = match row.kind {
+        RowKind::Theorem => (CoreDeclKind::Theorem, None, false, None),
         RowKind::Definition { compiled } => (
             CoreDeclKind::Definition,
             Some(CoreReducibility::Regular(height + 1)),
             compiled,
+            None,
+        ),
+        RowKind::Partial => (
+            CoreDeclKind::Definition,
+            Some(CoreReducibility::Opaque),
+            false,
+            Some(CoreSafety::Partial),
         ),
     };
     CoreDeclaration {
-        all: Some(vec![row.name.clone()]),
+        all: Some(row.group.clone().unwrap_or_else(|| vec![row.name.clone()])),
         name: row.name.clone(),
         levels: Vec::new(),
         kind,
@@ -454,7 +485,7 @@ fn declaration(row: &Row, height: u32, ty: Term, value: Term) -> CoreDeclaration
         class: false,
         instance: None,
         generated: false,
-        safety: None,
+        safety,
         compiled,
         tags: Vec::new(),
         no_confusion: None,
