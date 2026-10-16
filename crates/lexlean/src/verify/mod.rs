@@ -1287,7 +1287,7 @@ pub fn run(
                 return Err(fail(internal(format!(
                     "text laws: `{}` does not compile silently under the pinned Lean: {}",
                     file.module,
-                    first_error(&combined)
+                    lean_error(&combined)
                 ))));
             }
             write_staged(
