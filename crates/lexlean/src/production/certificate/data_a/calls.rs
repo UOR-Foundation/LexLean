@@ -11,15 +11,16 @@ use crate::production::kernel::{Given, Term};
 use crate::production::source::Source;
 
 /// A function-typed argument with its companions.
-struct FunctionArgument {
-    value: Term,
-    fits: Term,
-    index: Term,
-    captures: Term,
-    relation: Term,
-    proof: Pf,
+#[derive(Debug, Clone, Copy)]
+pub(super) struct FunctionArgument {
+    pub(super) value: Term,
+    pub(super) fits: Term,
+    pub(super) index: Term,
+    pub(super) captures: Term,
+    pub(super) relation: Term,
+    pub(super) proof: Pf,
     /// The function the program numbered it (unused for a parameter).
-    number: u64,
+    pub(super) number: u64,
 }
 
 /// The parameter and result types of a closed function type.
@@ -166,7 +167,7 @@ impl<'a> Writer<'_, 'a> {
 
     /// A function-typed argument's value and companions; `None` for a
     /// first-order argument.
-    fn function_argument(
+    pub(super) fn function_argument(
         &mut self,
         argument: &SemanticTerm,
         expr: &'a Expr,
