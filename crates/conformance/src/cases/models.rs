@@ -1,4 +1,4 @@
-//! The `models` suite: MD-01..MD-12, language-1.2 models, contracts,
+//! The `models` suite: MD-01..MD-13, language-1.2 models, contracts,
 //! realizations, and evidence (SPEC.md §17.12).
 //!
 //! Every mutation starts from the committed `models` example, so a refusal
