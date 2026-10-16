@@ -1608,7 +1608,12 @@ pub fn run(id: &str) {
                         entry.root
                     );
                     assert!(
-                        entry.certificate.text.contains("theorem root"),
+                        entry.certificate.data.as_ref().is_some_and(|data| {
+                            data.declarations.iter().any(|row| {
+                                row.name == format!("{}.root", entry.certificate.module)
+                                    && matches!(row.kind, lexlean::ir::core::CoreDeclKind::Theorem)
+                            })
+                        }),
                         "{}: the certificate states the root theorem",
                         entry.root
                     );
