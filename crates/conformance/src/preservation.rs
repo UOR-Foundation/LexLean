@@ -396,7 +396,11 @@ pub(crate) fn shipped() -> &'static Shipped {
                 std::fs::create_dir_all(path.parent().expect("a parent")).expect("mkdir");
             }
             std::fs::write(&source, &file.text).expect("write");
+            // The source root names the module, so its private names are
+            // the ones its rows state (SPEC.md §17.10).
             let output = pinned_with("lean", &building, &search)
+                .arg("-R")
+                .arg(building.join("src"))
                 .arg("-o")
                 .arg(&olean)
                 .arg(&source)

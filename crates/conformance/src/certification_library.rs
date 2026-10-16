@@ -309,6 +309,8 @@ fn cached(label: &str, sources: &[Source], upstream: &[PathBuf]) -> PathBuf {
         }
         std::fs::write(&file, &source.text).expect("write");
         let output = pinned_with("lean", &building, &search)
+            .arg("-R")
+            .arg(building.join("src"))
             .arg("-o")
             .arg(&olean)
             .arg(&file)
@@ -418,6 +420,8 @@ pub fn compile(root: &Path, module: &str, text: &str, search: &[PathBuf]) -> std
     let mut directories = vec![root.join("build")];
     directories.extend(search.iter().cloned());
     pinned_with("lean", root, &directories)
+        .arg("-R")
+        .arg(root.join("src"))
         .arg("-o")
         .arg(&olean)
         .arg(&file)
