@@ -1,0 +1,44 @@
+name: LexLeanMatmul SDK dependency transport
+on:
+  push:
+    branches: [ci/lexlean-matmul-sdk-transport-2026-10-16]
+    paths: [.github/workflows/lexlean-matmul-sdk-transport.yml]
+permissions: {}
+jobs:
+  registry-capability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check existing public package transport without publishing content
+        env:
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import base64, json, os, urllib.request, urllib.parse
+          registry = 'https://ghcr.io'
+          repository = 'afflom/lexlean'
+          credentials = base64.b64encode((os.environ['REGISTRY_USERNAME'] + ':' + os.environ['REGISTRY_TOKEN']).encode()).decode()
+          query = urllib.parse.urlencode({'service': 'ghcr.io', 'scope': 'repository:' + repository + ':pull,push'})
+          request = urllib.request.Request(registry + '/token?' + query, headers={'Authorization': 'Basic ' + credentials})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              payload = json.load(response)
+          authorization = {'Authorization': 'Bearer ' + payload.get('token', payload.get('access_token'))}
+          location = None
+          try:
+              request = urllib.request.Request(registry + '/v2/' + repository + '/blobs/uploads/', method='POST', data=b'', headers={**authorization, 'Content-Length': '0'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  assert response.status == 202
+                  location = urllib.parse.urljoin(registry, response.headers['Location'])
+                  print('Empty upload initiation HTTP ' + str(response.status))
+              parsed = urllib.parse.urlsplit(location)
+              assert parsed.scheme == 'https' and parsed.hostname == 'ghcr.io'
+          finally:
+              if location is not None:
+                  with urllib.request.urlopen(urllib.request.Request(location, method='DELETE', headers=authorization), timeout=30) as response:
+                      assert response.status == 204
+                      print('Empty upload cancellation HTTP ' + str(response.status))
+          print('Registry push capability confirmed; no blob content, manifest, or tag published.')
