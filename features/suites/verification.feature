@@ -133,7 +133,7 @@ Feature: verification
     And neither JSON status is `verified` and neither stdout contains `kernel-checked`
 
   @VR-19 @build
-  Scenario: The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists.
+  Scenario: The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. The one Lean text a generated Atlas module carries beside its data is the decoder of core module 1: the released language-1.0 bytes, held as the frozen data `language/runtime-1.2/frozen/core-decoder-1.txt`, the one declared exception to Lean generated from native modules.
     Given the committed native Atlas source and generated module graph
     When the release tree is audited without the completed one-time migration inputs
     Then every native source module has exactly one generated Lean module

@@ -1916,6 +1916,26 @@ fn conformance_au_12() {
 }
 
 #[test]
+fn conformance_rt_01() {
+    repo_conformance::cases::run("RT-01");
+}
+
+#[test]
+fn conformance_rt_02() {
+    repo_conformance::cases::run("RT-02");
+}
+
+#[test]
+fn conformance_rt_03() {
+    repo_conformance::cases::run("RT-03");
+}
+
+#[test]
+fn conformance_rt_04() {
+    repo_conformance::cases::run("RT-04");
+}
+
+#[test]
 fn conformance_lm_01() {
     repo_conformance::cases::run("LM-01");
 }
@@ -1928,51 +1948,6 @@ fn conformance_lm_02() {
 #[test]
 fn conformance_lm_03() {
     repo_conformance::cases::run("LM-03");
-}
-
-#[test]
-fn conformance_lm_04() {
-    repo_conformance::cases::run("LM-04");
-}
-
-#[test]
-fn conformance_lm_05() {
-    repo_conformance::cases::run("LM-05");
-}
-
-#[test]
-fn conformance_lm_06() {
-    repo_conformance::cases::run("LM-06");
-}
-
-#[test]
-fn conformance_lm_07() {
-    repo_conformance::cases::run("LM-07");
-}
-
-#[test]
-fn conformance_lm_08() {
-    repo_conformance::cases::run("LM-08");
-}
-
-#[test]
-fn conformance_lm_09() {
-    repo_conformance::cases::run("LM-09");
-}
-
-#[test]
-fn conformance_lm_10() {
-    repo_conformance::cases::run("LM-10");
-}
-
-#[test]
-fn conformance_lm_11() {
-    repo_conformance::cases::run("LM-11");
-}
-
-#[test]
-fn conformance_lm_12() {
-    repo_conformance::cases::run("LM-12");
 }
 
 #[test]

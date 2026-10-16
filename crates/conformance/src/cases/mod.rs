@@ -32,6 +32,7 @@ mod production_export;
 mod proofs;
 mod reasoning;
 mod repository;
+mod runtime;
 mod rust_backend;
 mod security;
 mod semantic_ir;
@@ -112,6 +113,7 @@ pub fn run(id: &str) {
         "OR" => oracle::run(id),
         "MD" => models::run(id),
         "RS" => reasoning::run(id),
+        "RT" => runtime::run(id),
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
         _ => panic!("no conformance case is wired for {id}"),
