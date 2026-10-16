@@ -929,6 +929,22 @@ recursion = false
 note = "A key comparison."
 
 [[construct]]
+key = "primitive.to_int"
+disposition = "runtime"
+allocation = false
+overflow = ["int"]
+recursion = false
+note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and an exact integer sum, which leaves the 64-bit range exactly when an unsigned 64-bit operand does."
+
+[[construct]]
+key = "primitive.to_nat"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and a natural-number sum, which never leaves the 64-bit range."
+
+[[construct]]
 key = "declaration.structure"
 disposition = "runtime"
 allocation = false

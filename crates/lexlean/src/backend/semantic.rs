@@ -688,6 +688,25 @@ impl Render<'_> {
                 return out;
             }
         }
+        // Linking elaborates every widening conversion before Lean is rendered
+        // (§17.12); the canonical document states the conversion itself, by
+        // a name no Lean runtime declares.
+        if operation.widening() {
+            let name = match operation {
+                SemanticPrimitive::ToNat => "toNat",
+                _ => "toInt",
+            };
+            let mut out = format!("({name}");
+            for argument in arguments {
+                out.push_str(" (");
+                out.push_str(&self.term(argument));
+                out.push(')');
+            }
+            out.push_str(" : ");
+            out.push_str(&self.ty(result));
+            out.push(')');
+            return out;
+        }
         let operation = match operation {
             SemanticPrimitive::Subtract => "subtract",
             SemanticPrimitive::Multiply => "multiply",

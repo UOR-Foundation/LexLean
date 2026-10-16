@@ -39,7 +39,7 @@ fn certified_projects() -> [(&'static str, P); 4] {
 /// model roots no input found overflows their arithmetic over the decoded
 /// weights. The list is checked both ways: a root on it that overflows, or a
 /// root off it that does not, fails SP-03.
-const UNREACHED_OVERFLOW: [&str; 23] = [
+const UNREACHED_OVERFLOW: [&str; 25] = [
     "Production.Main.halvings",
     "Coverage.Colls.mapOps",
     "Coverage.Colls.setOps",
@@ -49,6 +49,8 @@ const UNREACHED_OVERFLOW: [&str; 23] = [
     "Coverage.Prims.sequences",
     "Coverage.Prims.decimals",
     "Coverage.Prims.text",
+    "Coverage.Prims.widenings",
+    "Coverage.Prims.pixels",
     "Coverage.RecRoots.roseTotal",
     "Coverage.RecRoots.syntaxTotal",
     "Coverage.RecRoots.wellFounded",
