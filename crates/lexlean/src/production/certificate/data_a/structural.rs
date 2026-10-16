@@ -8,20 +8,22 @@ use std::collections::{BTreeMap, HashMap};
 use super::super::{CLocal, Ctx, Gen, Hypotheses, Recursion, Subject};
 use super::recplan::RecPlan;
 use super::rows::{Binder, LocalSet, Sig};
-use super::{LocalTerm, Pf, RowKind, Scope, Writer, EXPLICIT};
+use super::{LocalTerm, RowKind, Scope, Writer, EXPLICIT};
 use crate::calculus::Expr;
 use crate::ir::core::CoreLevel;
 use crate::ir::semantic::{SemanticTerm, SemanticType};
 use crate::production::kernel::{Given, Term};
 use crate::production::source::{Local, Site};
 
+/// The minor premises of one constructor: the width-predicate minor, the
+/// relation minor, and the direct form of each function's, by member slot.
+type StructuralMinors = (Term, Term, Vec<(usize, Term)>);
+
 /// One function of a structurally recursive group.
 struct Member<'a> {
     index: u64,
     module: String,
     name: String,
-    type_arguments: Vec<SemanticType>,
-    result: SemanticType,
     body: &'a SemanticTerm,
     site: Site,
     type_parameters: Vec<(String, SemanticType)>,
@@ -35,7 +37,6 @@ struct Member<'a> {
     /// and the relation's.
     fits_arg: usize,
     rel_arg: usize,
-    set: LocalSet,
     sig: Sig,
 }
 
@@ -71,14 +72,10 @@ impl<'a> Writer<'_, 'a> {
             else {
                 return Err(format!("function {index} is not a definition"));
             };
-            let Recursion::Structural {
-                argument,
-                mutual: _,
-            } = recursion
-            else {
+            let Recursion::Structural { argument } = recursion else {
                 return Err(format!("`{module}.{name}` is not structurally recursive"));
             };
-            let clocals = Gen::scope(&locals, "");
+            let clocals = Gen::scope(&locals);
             let arg_position = clocals
                 .iter()
                 .position(|local| local.local.name == argument)
@@ -88,7 +85,7 @@ impl<'a> Writer<'_, 'a> {
             let sig = self.signature(*index, &clocals, &set, &result, denotation)?;
             self.sigs.insert(*index, sig.clone());
             let width = |local: &CLocal, rel: bool| -> usize {
-                if local.companion.is_some() {
+                if local.has_companion {
                     if rel {
                         5
                     } else {
@@ -107,8 +104,6 @@ impl<'a> Writer<'_, 'a> {
                 index: *index,
                 module,
                 name,
-                type_arguments,
-                result,
                 body,
                 site,
                 type_parameters,
@@ -118,7 +113,6 @@ impl<'a> Writer<'_, 'a> {
                 plan_position: 0,
                 fits_arg,
                 rel_arg,
-                set,
                 sig,
             });
         }
@@ -414,18 +408,6 @@ impl<'a> Writer<'_, 'a> {
         }
     }
 
-    /// `T.casesOn` at the constant motive `result` whose minors are the
-    /// functions of the constructor's fields.
-    fn cases_on_fresh_motive(
-        &mut self,
-        ty: &SemanticType,
-        discriminant: Term,
-        result: Term,
-        minors: &[Term],
-    ) -> Result<Term, String> {
-        self.cases_on_const(ty, discriminant, result, minors)
-    }
-
     /// The denotation of a definition instance applied to its locals.
     fn denotation_of(
         &mut self,
@@ -484,7 +466,7 @@ impl<'a> Writer<'_, 'a> {
         at_position: &[Vec<usize>],
         position: usize,
         ctor: usize,
-    ) -> Result<(Term, Term, Vec<(usize, Term)>), String> {
+    ) -> Result<StructuralMinors, String> {
         let shape = &plan.positions[position].constructors[ctor];
         let slots = &at_position[position];
         // Free variables: the fields, and a hypothesis for each recursive
@@ -580,7 +562,9 @@ impl<'a> Writer<'_, 'a> {
     /// relation, each abstracted over the other arguments, and the direct
     /// form of the predicate over the fields; with the value of the
     /// constructor.
-    #[allow(clippy::too_many_lines)]
+    // The minor's inputs are the plan, the group, and one constructor's
+    // fields; bundling them would only rename the same nine values.
+    #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
     fn structural_member_minor(
         &mut self,
         plan: &RecPlan,
@@ -607,7 +591,48 @@ impl<'a> Writer<'_, 'a> {
         };
         match scrutinee.as_ref() {
             SemanticTerm::Var { name } if *name == member.argument => {}
-            _ => {
+            SemanticTerm::Var { .. }
+            | SemanticTerm::Nat { .. }
+            | SemanticTerm::Integer { .. }
+            | SemanticTerm::String { .. }
+            | SemanticTerm::Bytes { .. }
+            | SemanticTerm::Primitive { .. }
+            | SemanticTerm::Bool { .. }
+            | SemanticTerm::Unit
+            | SemanticTerm::Nil { .. }
+            | SemanticTerm::Cons { .. }
+            | SemanticTerm::Record { .. }
+            | SemanticTerm::Constructor { .. }
+            | SemanticTerm::InstanceValue { .. }
+            | SemanticTerm::Project { .. }
+            | SemanticTerm::Call { .. }
+            | SemanticTerm::If { .. }
+            | SemanticTerm::Match { .. }
+            | SemanticTerm::Eq { .. }
+            | SemanticTerm::Le { .. }
+            | SemanticTerm::Lt { .. }
+            | SemanticTerm::Add { .. }
+            | SemanticTerm::Beq { .. }
+            | SemanticTerm::Ble { .. }
+            | SemanticTerm::Blt { .. }
+            | SemanticTerm::And { .. }
+            | SemanticTerm::PropAnd { .. }
+            | SemanticTerm::Or { .. }
+            | SemanticTerm::Not { .. }
+            | SemanticTerm::Implies { .. }
+            | SemanticTerm::Iff { .. }
+            | SemanticTerm::Forall { .. }
+            | SemanticTerm::Let { .. }
+            | SemanticTerm::Pair { .. }
+            | SemanticTerm::First { .. }
+            | SemanticTerm::Second { .. }
+            | SemanticTerm::Lambda { .. }
+            | SemanticTerm::Apply { .. }
+            | SemanticTerm::FunctionRef { .. }
+            | SemanticTerm::MapLiteral { .. }
+            | SemanticTerm::SetLiteral { .. }
+            | SemanticTerm::GraphLiteral { .. }
+            | SemanticTerm::CheckedApply { .. } => {
                 return Err(format!(
                     "structural `{}.{}` does not match on `{}`",
                     member.module, member.name, member.argument
@@ -669,7 +694,7 @@ impl<'a> Writer<'_, 'a> {
                     ty,
                 },
                 generic,
-                companion: None,
+                has_companion: false,
             });
             terms.push(LocalTerm {
                 value: *free,
@@ -709,7 +734,20 @@ impl<'a> Writer<'_, 'a> {
                 scrutinee,
                 arms,
             } => (ty, scrutinee.as_ref(), arms.as_slice()),
-            _ => return Err("the lowering of a structural body is not a match".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of a structural body is not a match".to_owned())
+            }
         };
         let arm = arms
             .get(branch_index)
@@ -744,7 +782,20 @@ impl<'a> Writer<'_, 'a> {
         let p = self.prog;
         let number = match scrutinee_expr {
             Expr::Var { name } => *name,
-            _ => return Err("the lowering of a structural scrutinee is not a variable".to_owned()),
+            Expr::Value { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of a structural scrutinee is not a variable".to_owned())
+            }
         };
         let x = self.nat_u(number);
         let tested = self.apply(
@@ -836,13 +887,13 @@ impl<'a> Writer<'_, 'a> {
         // The component types of each position, with the free variables that
         // stand for the argument of each function there.
         let mut tys_cache: HashMap<(usize, bool), (Vec<Term>, Vec<Term>)> = HashMap::new();
-        for position in 0..plan.positions.len() {
+        for (position, slots) in at_position.iter().enumerate().take(plan.positions.len()) {
             for relation in [false, true] {
-                if at_position[position].is_empty() {
+                if slots.is_empty() {
                     continue;
                 }
-                let tys = self.component_types(members, &at_position[position], relation)?;
-                let frees: Vec<Term> = at_position[position]
+                let tys = self.component_types(members, slots, relation)?;
+                let frees: Vec<Term> = slots
                     .iter()
                     .map(|slot| {
                         let other = &members[*slot];
@@ -856,7 +907,7 @@ impl<'a> Writer<'_, 'a> {
                 tys_cache.insert((position, relation), (tys, frees));
             }
         }
-        let mut replace = |writer: &mut Self, term: Term, relation: bool| -> Term {
+        let replace = |writer: &mut Self, term: Term, relation: bool| -> Term {
             let called = &called;
             let by_field = &by_field;
             let tys_cache = &tys_cache;

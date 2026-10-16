@@ -30,7 +30,7 @@ use crate::ir::core::{
     CoreAxiomPolicy, CoreBinderInfo, CoreDeclKind, CoreDeclaration, CoreModule, CoreReducibility,
     CoreSafety, CoreTransparency, CORE_SPEC_2,
 };
-use crate::ir::semantic::{MemberRef, SemanticTerm, SemanticType, Step};
+use crate::ir::semantic::{MemberRef, SemanticTerm, Step};
 
 mod boundary;
 mod calls;
@@ -181,7 +181,7 @@ pub(super) struct Writer<'g, 'a> {
     /// The rendering of each expression of the program, by address.
     exprs: HashMap<*const Expr, Term>,
     /// The signature of each function whose relation has been stated.
-    pub(super) sigs: HashMap<u64, rows::Sig>,
+    sigs: HashMap<u64, rows::Sig>,
     /// The well-founded definition under derivation.
     pub(super) wf: Option<WfState>,
 }
@@ -237,10 +237,6 @@ impl<'g, 'a> Writer<'g, 'a> {
     }
 
     // --- Names ------------------------------------------------------------
-
-    pub(super) fn c(&mut self, name: &str) -> Term {
-        self.b.konst(name)
-    }
 
     pub(super) fn ts(&mut self, name: &str) -> Term {
         self.b.konst(&format!("{SYNTAX}.{name}"))

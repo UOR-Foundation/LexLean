@@ -234,7 +234,7 @@ impl<'a> Writer<'_, 'a> {
                 "`{module}.{name}` names a termination measure and does not recurse"
             ));
         }
-        let clocals: Vec<CLocal> = Gen::scope(locals, "");
+        let clocals: Vec<CLocal> = Gen::scope(locals);
         let declared: Vec<String> = type_parameters.iter().map(|(n, _)| n.clone()).collect();
         let parameters: Vec<SemanticParameter> = locals
             .iter()
@@ -431,7 +431,19 @@ impl<'a> Writer<'_, 'a> {
         let value_node = self.b.node(body_value).clone();
         let denoted = match value_node {
             crate::ir::core::CoreNode::App { f, x: denoted } if f == encoder => denoted,
-            _ => return Err("the value of a well-founded body is not an encoding".to_owned()),
+            crate::ir::core::CoreNode::BVar { .. }
+            | crate::ir::core::CoreNode::Sort { .. }
+            | crate::ir::core::CoreNode::Const { .. }
+            | crate::ir::core::CoreNode::App { .. }
+            | crate::ir::core::CoreNode::Lambda { .. }
+            | crate::ir::core::CoreNode::Forall { .. }
+            | crate::ir::core::CoreNode::Let { .. }
+            | crate::ir::core::CoreNode::Nat { .. }
+            | crate::ir::core::CoreNode::String { .. }
+            | crate::ir::core::CoreNode::Mdata { .. }
+            | crate::ir::core::CoreNode::Projection { .. } => {
+                return Err("the value of a well-founded body is not an encoding".to_owned())
+            }
         };
         let lean_result = self.lean_ty(result)?;
         let value_var = self.b.free();
@@ -448,7 +460,18 @@ impl<'a> Writer<'_, 'a> {
         let (definition, definition_args) = self.b.spine(denotation);
         let definition_name = match self.b.node(definition).clone() {
             crate::ir::core::CoreNode::Const { n, .. } => n,
-            _ => return Err("the denotation of a definition is not a constant".to_owned()),
+            crate::ir::core::CoreNode::BVar { .. }
+            | crate::ir::core::CoreNode::Sort { .. }
+            | crate::ir::core::CoreNode::App { .. }
+            | crate::ir::core::CoreNode::Lambda { .. }
+            | crate::ir::core::CoreNode::Forall { .. }
+            | crate::ir::core::CoreNode::Let { .. }
+            | crate::ir::core::CoreNode::Nat { .. }
+            | crate::ir::core::CoreNode::String { .. }
+            | crate::ir::core::CoreNode::Mdata { .. }
+            | crate::ir::core::CoreNode::Projection { .. } => {
+                return Err("the denotation of a definition is not a constant".to_owned())
+            }
         };
         let eq_def_head = self.b.konst(&format!("{definition_name}.eq_def"));
         let eq_def = self.b.apps(eq_def_head, &definition_args);

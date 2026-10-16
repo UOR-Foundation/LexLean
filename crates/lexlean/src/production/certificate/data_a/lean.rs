@@ -2,7 +2,6 @@
 //! target program's literals, and the source's denotation (`src`), each the
 //! term the pinned Lean elaborates the text of §17.17 to.
 
-use super::super::NAT_BOUND;
 use super::Writer;
 use crate::calculus::{
     Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value,
@@ -93,17 +92,6 @@ impl Writer<'_, '_> {
     pub(super) fn nat_blt(&mut self, a: Term, b: Term) -> Term {
         let blt = self.b.konst("Nat.blt");
         self.b.apps(blt, &[a, b])
-    }
-
-    /// The bound of a 64-bit natural, as the width predicates state it.
-    pub(super) fn nat_bound(&mut self) -> Term {
-        self.nat_lit(NAT_BOUND)
-    }
-
-    /// `Nat.blt n 2^64`.
-    pub(super) fn below_bound(&mut self, n: Term) -> Term {
-        let bound = self.nat_bound();
-        self.nat_blt(n, bound)
     }
 
     // --- Types ------------------------------------------------------------

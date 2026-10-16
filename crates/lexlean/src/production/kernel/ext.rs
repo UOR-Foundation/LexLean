@@ -24,6 +24,10 @@ use std::collections::HashMap;
 use super::{Applied, Builder, Term};
 use crate::ir::core::{CoreBinderInfo, CoreNode};
 
+/// The rewriter of `rewrite_apps`: given a constant's name and its rewritten
+/// arguments, the replacement, or `None` to keep the application.
+type Rewrite<'r> = dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term> + 'r;
+
 const FREE: &str = "\u{1}free.";
 const META: &str = "\u{1}meta.";
 
@@ -271,11 +275,7 @@ impl Builder {
     /// which is given the constant's name and its (already rewritten)
     /// arguments and returns the replacement, or `None` to keep the
     /// application.
-    pub fn rewrite_apps(
-        &mut self,
-        term: Term,
-        rewrite: &mut dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term>,
-    ) -> Term {
+    pub fn rewrite_apps(&mut self, term: Term, rewrite: &mut Rewrite<'_>) -> Term {
         let mut memo = HashMap::new();
         self.rewrite_memo(term, rewrite, &mut memo)
     }
@@ -283,7 +283,7 @@ impl Builder {
     fn rewrite_memo(
         &mut self,
         term: Term,
-        rewrite: &mut dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term>,
+        rewrite: &mut Rewrite<'_>,
         memo: &mut HashMap<Term, Term>,
     ) -> Term {
         if let Some(&done) = memo.get(&term) {
@@ -808,11 +808,8 @@ impl Builder {
             next: 0,
         };
         let mut ty = ty;
-        loop {
-            let (binder, info, domain, body) = match &self.nodes[ty] {
-                CoreNode::Forall { n, b, t, v } => (n.clone(), *b, *t, *v),
-                _ => break,
-            };
+        while let CoreNode::Forall { n, b, t, v } = &self.nodes[ty] {
+            let (binder, info, domain, body) = (n.clone(), *b, *t, *v);
             let (id, placeholder) = self.meta();
             if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder) {
                 open.solved.insert(id, *hint);

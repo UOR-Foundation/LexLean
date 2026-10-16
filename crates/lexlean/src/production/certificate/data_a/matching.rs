@@ -142,7 +142,18 @@ impl<'a> Writer<'_, 'a> {
                 scrutinee,
                 arms,
             } => (ty, scrutinee.as_ref(), arms.as_slice()),
-            _ => return Err("the lowering of a match is not a match".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => return Err("the lowering of a match is not a match".to_owned()),
         };
         let scrutinee_ty = self.infer(scrutinee, scope)?;
         let result_ty = self.infer(whole, scope)?;
@@ -385,7 +396,20 @@ impl<'a> Writer<'_, 'a> {
                 scrutinee,
                 arms,
             } => (ty, scrutinee.as_ref(), arms.as_slice()),
-            _ => return Err("a violation match's pair arm is not a match".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("a violation match's pair arm is not a match".to_owned())
+            }
         };
         let _ = first_expr;
         let bool = self.b.konst("Bool");
@@ -456,7 +480,18 @@ impl<'a> Writer<'_, 'a> {
                 .ok_or("a violation match lowered to fewer halves")?;
             let (second_ty, leaf_arms) = match &second_arms.body {
                 Expr::Match { ty, arms, .. } => (ty, arms.as_slice()),
-                _ => return Err("a violation half is not a match".to_owned()),
+                Expr::Value { .. }
+                | Expr::Var { .. }
+                | Expr::Let { .. }
+                | Expr::Cond { .. }
+                | Expr::Build { .. }
+                | Expr::Call { .. }
+                | Expr::Closure { .. }
+                | Expr::Apply { .. }
+                | Expr::Prim { .. }
+                | Expr::First { .. }
+                | Expr::Second { .. }
+                | Expr::Field { .. } => return Err("a violation half is not a match".to_owned()),
             };
             let leaf = leaf_arms
                 .get(usize::from(second_value))
