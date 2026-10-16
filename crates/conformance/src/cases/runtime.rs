@@ -67,9 +67,10 @@ fn rt_01() {
             runtime::PORTABLE,
             runtime::COLLECTIONS,
             runtime::MODELS,
-            runtime::REASONING
+            runtime::REASONING,
+            runtime::LAWS
         ],
-        "the registry lists the four runtime modules in dependency order"
+        "the registry lists the five runtime modules in dependency order"
     );
     // The registry lists the modules and nothing else.
     let registry: toml::Table = disk(runtime::REGISTRY_PATH)
@@ -167,10 +168,15 @@ fn rt_01() {
     });
     assert!(missing.is_err(), "a missing native source is refused");
     // The one-time migration input is not in the release tree.
-    assert!(
-        !repo_root().join("tests/runtime-library/oracle").exists(),
-        "tests/runtime-library/oracle: the completed one-time migration input is absent"
-    );
+    for input in [
+        "tests/runtime-library/oracle",
+        "tests/runtime-library/laws-oracle",
+    ] {
+        assert!(
+            !repo_root().join(input).exists(),
+            "{input}: the completed one-time migration input is absent"
+        );
+    }
     // No native source names a runtime copy inside a module: a runtime
     // constant is `LexLeanRuntime.x`, or a private realization of it
     // `_private.<module>.#<n>.LexLeanRuntime.x`, never `<module>.LexLeanRuntime.x`;

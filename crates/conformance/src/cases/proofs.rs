@@ -1,4 +1,4 @@
-//! The `proofs` suite: PF-01..PF-19.
+//! The `proofs` suite: PF-01..PF-23.
 //!
 //! Positive forms are asserted against the shared Lean-verified proof
 //! corpus (`support::verified_corpus`): every case first asserts the
@@ -35,6 +35,165 @@ fn conditional_lemma_pair(
     format!(
         "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.0.0}}\n\\title{{Natural number addition}}\n\n\\begin{{theorem}}{{helper}}\n\\noaxioms\n{first_statement}\n\\begin{{proof}}\nAssume \\(h\\).\nClose the goal by reflexivity.\n\\end{{proof}}\n\\end{{theorem}}\n\n\\begin{{theorem}}{{second}}\n\\noaxioms\n{second_statement}\n\\begin{{proof}}\n{second_proof}\n\\end{{proof}}\n\\end{{theorem}}\n\\end{{lexlean}}\n"
     )
+}
+
+/// The rewrite set the committed fold-law registry gives
+/// `linear_arithmetic` (§17.12, *Fold laws*), read from the file rather than
+/// from the compiler, so that a backend that stopped reading it is caught.
+fn registered_rewrites() -> Vec<String> {
+    let text = std::fs::read_to_string(
+        support::repo_root()
+            .join("language/runtime-1.2/laws.toml")
+            .as_std_path(),
+    )
+    .expect("the fold-law registry");
+    let registry: toml::Value = toml::from_str(&text).expect("the registry is TOML");
+    registry["rewrites"]
+        .as_array()
+        .expect("an ordered rewrite set")
+        .iter()
+        .map(|name| name.as_str().expect("a Lean name").to_owned())
+        .collect()
+}
+
+/// The fixed `linear_arithmetic` script of §17.12 at one level of
+/// indentation, unfolding `definitions`.
+fn linear_script(definitions: &[&str]) -> String {
+    let fixed = [
+        ("UInt8", "toNat"),
+        ("UInt16", "toNat"),
+        ("UInt32", "toNat"),
+        ("UInt64", "toNat"),
+        ("Int8", "toInt"),
+        ("Int16", "toInt"),
+        ("Int32", "toInt"),
+        ("Int64", "toInt"),
+    ];
+    let mut lemmas: Vec<String> = definitions.iter().map(|name| (*name).to_owned()).collect();
+    lemmas.extend(
+        [
+            "← Bool.not_eq_true",
+            "Bool.and_eq_true",
+            "Bool.or_eq_true",
+            "Bool.not_eq_true'",
+            "and_true",
+            "true_and",
+            "Option.some.injEq",
+            "Nat.beq_eq",
+            "Nat.blt_eq",
+            "Nat.ble_eq",
+            "LexLeanRuntime.subtract",
+            "LexLeanRuntime.multiply",
+            "LexLeanRuntime.negate",
+            "LexLeanRuntime.equal",
+            "beq_iff_eq",
+            "decide_eq_true_eq",
+            "decide_eq_false_iff_not",
+            "Nat.add_assoc",
+            "Int.add_assoc",
+            "Int.neg_neg",
+            "Int.emod_neg",
+            "Int.neg_zero",
+            "↓reduceIte",
+        ]
+        .map(str::to_owned),
+    );
+    lemmas.extend(registered_rewrites());
+    for (ty, value) in fixed {
+        lemmas.push(format!("{ty}.le_iff_{value}_le"));
+        lemmas.push(format!("{ty}.lt_iff_{value}_lt"));
+    }
+    for (ty, value) in fixed {
+        let reduce = if value == "toNat" { "ToNat" } else { "ToInt" };
+        lemmas.push(format!("{ty}.reduce{reduce}"));
+        lemmas.push(format!("← {ty}.{value}_inj"));
+    }
+    let mut bits: Vec<String> = fixed
+        .iter()
+        .map(|(ty, value)| format!("{ty}.{value}"))
+        .collect();
+    bits.push("BitVec.toInt_eq_toNat_cond".to_owned());
+    let subst = if definitions.is_empty() {
+        ""
+    } else {
+        "  subst_vars\n"
+    };
+    format!(
+        "  intros\n{subst}  try set_option linter.unusedSimpArgs false in simp only [{}] at *\n  try set_option linter.unusedSimpArgs false in simp only [{}] at *\n  all_goals (repeat' split)\n  all_goals omega\n",
+        lemmas.join(", "),
+        bits.join(", ")
+    )
+}
+
+/// The theorems of `file` in `project` that a verification failure names:
+/// every `LLV7002` diagnostic's source span, mapped to the declaration whose
+/// source block holds it.
+fn refused_theorems(project: &P, file: &str, error: &lexlean::LexLeanError) -> Vec<String> {
+    let source = project.read_raw(file);
+    let mut names: Vec<String> = error
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.as_str() == "LLV7002")
+        .filter_map(|diagnostic| diagnostic.primary.as_ref())
+        .filter(|span| span.path.ends_with(file))
+        .filter_map(|span| {
+            // The span may open at the declaration itself, so the block
+            // that holds it starts at or before the span's first byte.
+            let before = &source[..(span.byte_start + "theorem{".len()).min(source.len())];
+            let block = before.rfind("theorem{")?;
+            let rest = &source[block..];
+            let start = rest.find("  name: ")? + "  name: ".len();
+            let end = rest[start..].find(',')?;
+            Some(rest[start..start + end].to_owned())
+        })
+        .collect();
+    names.sort();
+    names.dedup();
+    names
+}
+
+/// A copy of the fold-laws example with each `(from, to)` replacement made
+/// in `file`'s own notation, each `from` asserted present.
+fn fold_laws_with(file: &str, edits: &[(&str, &str)]) -> P {
+    let copy = P::copy_example("fold-laws");
+    let mut source = copy.read_raw(file);
+    for (from, to) in edits {
+        assert!(source.contains(from), "fold-laws/{file} lacks {from:?}");
+        source = source.replacen(from, to, 1);
+    }
+    copy.write(file, &source);
+    copy
+}
+
+/// [`fold_laws_with`] expecting linking to refuse the copy with `message`.
+fn fold_laws_rejected(file: &str, from: &str, to: &str, message: &str) {
+    let copy = fold_laws_with(file, &[(from, to)]);
+    let error = copy.check_fails_with("LLT4001");
+    assert!(
+        error.to_string().contains(message),
+        "expected {message:?}, got {error}"
+    );
+}
+
+/// Insert one declaration into the committed language-1.1 semantic example
+/// and expect linking to refuse it with `message`.
+fn semantic_1_1_rejects(declaration: &str, message: &str) {
+    let eleven = P::semantic_example();
+    let source = eleven.read("src/Main.lex.tex");
+    let anchor = r#""declarations":["#;
+    assert!(
+        source.contains(anchor),
+        "a declaration list in the 1.1 fixture"
+    );
+    eleven.write(
+        "src/Main.lex.tex",
+        &source.replacen(anchor, &format!("{anchor}{declaration},"), 1),
+    );
+    let error = eleven.check_fails_with("LLT4001");
+    assert!(
+        error.to_string().contains(message),
+        "expected {message:?}, got {error}"
+    );
 }
 
 fn project_with(module: &str) -> P {
@@ -652,9 +811,7 @@ pub(crate) fn run(id: &str) {
             let project = P::copy_example("recursion");
             project.check_ok();
             let main = support::lean_text(&support::rendered(&project), "Main");
-            assert!(main.contains(
-                "  intros\n  try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  all_goals omega\n"
-            ), "{main}");
+            assert!(main.contains(&linear_script(&[])), "{main}");
             let _ = support::verify_ok_backed("PF-19", &project);
             // The form names only definitions to unfold: no tactic name or
             // term can ride on it, and no unit-variant proof takes a member.
@@ -683,7 +840,7 @@ pub(crate) fn run(id: &str) {
             let main_text = project.read("src/Main.lex.tex");
             assert!(main_text
                 .contains(r#"{"definitions":[{"name":"weight"}],"kind":"linear_arithmetic"}"#));
-            assert!(main.contains("  intros\n  subst_vars\n  try set_option linter.unusedSimpArgs false in simp only [weight, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq, LexLeanRuntime.subtract, LexLeanRuntime.multiply] at *\n  all_goals omega\n"), "{main}");
+            assert!(main.contains(&linear_script(&["weight"])), "{main}");
             // Language 1.1 rejects the form.
             let eleven = P::semantic_example();
             let source = eleven.read("src/Main.lex.tex");
@@ -723,6 +880,317 @@ pub(crate) fn run(id: &str) {
                 // other cases override under this lock.
                 let _guard = support::env_shared();
                 wrong.verify_fails_with("LLV7002");
+            }
+        }
+        // §17.12: order over every integer type in language 1.2.
+        "PF-20" => {
+            let project = P::copy_example("fold-laws");
+            project.check_ok();
+            let build = support::rendered(&project);
+            let kernels = support::lean_text(&build, "Kernels");
+            for statement in [
+                "((x <= y) -> (requantize (x) <= requantize (y)))",
+                "((0 : Int) <= requantize (x))",
+                "((x <= y) -> ((y < z) -> (x < z)))",
+                "(x <= (255 : UInt8))",
+                "(((LexLeanCollections.lessThan (x) ((-128 : Int8)) : Bool) = false) /\\ (x <= (127 : Int8)))",
+            ] {
+                assert!(kernels.contains(statement), "{statement}\n{kernels}");
+            }
+            fold_laws_rejected(
+                "src/Kernels.lex.tex",
+                "statement: ((0 : Int) <= (requantize x)),",
+                "statement: (0 <= (requantize x)),",
+                "order right operand has type Int, expected Nat",
+            );
+            fold_laws_rejected(
+                "src/Kernels.lex.tex",
+                "statement: ((0 : Int) <= (requantize x)),",
+                "statement: (\"a\" <= \"b\"),",
+                "order operand has type String, expected Nat, Int, or a fixed-width integer",
+            );
+            fold_laws_rejected(
+                "src/Kernels.lex.tex",
+                "statement: (x <= (255 : UInt8)),",
+                "statement: (x <= (255 : UInt16)),",
+                "order right operand has type UInt16, expected UInt8",
+            );
+            semantic_1_1_rejects(
+                r#"{"axioms":[],"kind":"theorem","name":"int_order","parameters":[{"name":"x","type":{"kind":"int"}}],"proof":{"kind":"reflexivity"},"statement":{"kind":"le","left":{"kind":"var","name":"x"},"right":{"kind":"var","name":"x"}}}"#,
+                "order left operand has type Int, expected Nat",
+            );
+            let _ = support::verify_ok_backed("PF-20", &project);
+        }
+        // §17.12: linear_arithmetic reads the runtime.
+        "PF-21" => {
+            let project = P::copy_example("fold-laws");
+            project.check_ok();
+            let build = support::rendered(&project);
+            let kernels = support::lean_text(&build, "Kernels");
+            assert!(
+                kernels.contains("public import LexLeanRuntime.Laws\n"),
+                "a module with linear_arithmetic imports the laws module\n{kernels}"
+            );
+            assert!(
+                kernels.contains(&format!(
+                    "(requantize (x) <= (255 : Int)) := by\n{}",
+                    linear_script(&["requantize"])
+                )),
+                "the fixed script with the unfolded definition\n{kernels}"
+            );
+            assert!(
+                kernels.contains(&format!("(x < (6 : UInt8))) := by\n{}", linear_script(&[]))),
+                "the fixed script without definitions\n{kernels}"
+            );
+            let _ = support::verify_ok_backed("PF-21", &project);
+            // The form decides, it does not assume: each false kernel links
+            // and is refused by Lean.
+            if support::lean_backed("PF-21") {
+                let wrong = fold_laws_with(
+                    "src/Kernels.lex.tex",
+                    &[
+                        (
+                            "statement: ((requantize x) <= (255 : Int)),",
+                            "statement: ((requantize x) <= (254 : Int)),",
+                        ),
+                        (
+                            "(prim negate (prim remainder a (7 : Int) (0 : Int) : Int) : Int) : Int) = a),",
+                            "(prim remainder a (7 : Int) (0 : Int) : Int) : Int) = a),",
+                        ),
+                        (
+                            "statement: ((x <= (5 : UInt8)) -> (x < (6 : UInt8))),",
+                            "statement: ((x <= (5 : UInt8)) -> (x < (5 : UInt8))),",
+                        ),
+                    ],
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, "src/Kernels.lex.tex", &error),
+                    ["byte_literal", "requantize_high", "truncating_division"],
+                    "{error}"
+                );
+            }
+        }
+        // §17.12, §22.6: the fold laws as LexLean source.
+        "PF-22" => {
+            use lexlean::backend::runtime;
+            let modules = runtime::modules().expect("the shipped runtime");
+            let laws = modules
+                .iter()
+                .find(|module| module.name == runtime::LAWS)
+                .expect("the laws module is a runtime module");
+            assert_eq!(laws.imports, [runtime::PORTABLE, runtime::COLLECTIONS]);
+            let path = runtime::native_source_path(runtime::LAWS).expect("a native path");
+            let source = std::fs::read_to_string(support::repo_root().join(&path).as_std_path())
+                .expect("the native laws source");
+            assert!(
+                source.contains("\\begin{coremodule}") && !source.contains("\\coredata{"),
+                "the laws are a native core module in the notation"
+            );
+            for name in registered_rewrites().iter().chain(
+                [
+                    "LexLeanLaws.listFold_fusion",
+                    "LexLeanLaws.listFold_pair",
+                    "LexLeanLaws.listFold_append",
+                ]
+                .map(str::to_owned)
+                .iter(),
+            ) {
+                assert!(
+                    laws.declarations
+                        .iter()
+                        .any(|(declared, _)| declared == name),
+                    "`{name}` is a declaration of the laws module"
+                );
+            }
+            // Laws an application or the rewrite set relies on carry no
+            // axiom beyond the three Lean's standard library uses.
+            for (name, axioms) in &laws.declarations {
+                assert!(
+                    axioms
+                        .iter()
+                        .all(|axiom| ["Quot.sound", "propext"].contains(&axiom.as_str())),
+                    "`{name}` pins {axioms:?}"
+                );
+            }
+            let registry = std::fs::read_to_string(
+                support::repo_root()
+                    .join("language/runtime-1.2/laws.toml")
+                    .as_std_path(),
+            )
+            .expect("the fold-law registry");
+            runtime::check_laws_registry(&registry).expect("the shipped registry");
+            let missing = registry.replacen(
+                "\"LexLeanLaws.sumNat_append\",",
+                "\"LexLeanLaws.sumNat_rotate\",",
+                1,
+            );
+            let error = runtime::check_laws_registry(&missing).expect_err("a missing rewrite");
+            assert!(
+                error.contains(
+                    "`LexLeanLaws.sumNat_rotate` is not a declaration of `LexLeanRuntime.Laws`"
+                ),
+                "{error}"
+            );
+            let twice = registry.replacen(
+                "name = \"list_fold_pair\"",
+                "name = \"list_fold_fusion\"",
+                1,
+            );
+            let error = runtime::check_laws_registry(&twice).expect_err("a law registered twice");
+            assert!(
+                error.contains("law `list_fold_fusion` is registered twice"),
+                "{error}"
+            );
+            // A law that only bounds its axioms is refused: every row pins
+            // them exactly.
+            let unpinned = source.replacen(
+                "policy: exact{axioms: [Quot.sound, propext]}",
+                "policy: allow{axioms: [Quot.sound, propext]}",
+                1,
+            );
+            assert_ne!(unpinned, source, "a law that pins Quot.sound and propext");
+            let error = runtime::check_native_sources(&|candidate| {
+                if candidate == path {
+                    Ok(unpinned.clone())
+                } else {
+                    std::fs::read_to_string(support::repo_root().join(candidate).as_std_path())
+                        .map_err(|error| error.to_string())
+                }
+            })
+            .expect_err("a laws row that does not pin its axioms");
+            assert!(error.contains("does not pin its axioms exactly"), "{error}");
+            // decide is used only on closed instances.
+            let project = P::copy_example("fold-laws");
+            for file in [
+                "src/Kernels.lex.tex",
+                "src/Folds.lex.tex",
+                "src/Main.lex.tex",
+            ] {
+                let module = support::module_json(&project.read_raw(file));
+                for declaration in module["declarations"].as_array().expect("declarations") {
+                    if declaration["proof"]["kind"] == "decide" {
+                        assert!(
+                            declaration["parameters"]
+                                .as_array()
+                                .is_none_or(Vec::is_empty),
+                            "{file}: a decide proof of an open statement: {declaration}"
+                        );
+                    }
+                }
+            }
+            project.check_ok();
+            let build = support::rendered(&project);
+            let folds = support::lean_text(&build, "Folds");
+            assert!(
+                folds.contains(&format!(
+                    "(total (xs) + total (xs))) := by\n{}",
+                    linear_script(&["doubledTotal", "total"])
+                )),
+                "{folds}"
+            );
+            let _ = support::verify_ok_backed("PF-22", &project);
+            if support::lean_backed("PF-22") {
+                let wrong = fold_laws_with(
+                    "src/Folds.lex.tex",
+                    &[
+                        (
+                            "statement: ((doubledTotal xs) = ((total xs) + (total xs))),",
+                            "statement: ((doubledTotal xs) = ((total xs) + (count xs))),",
+                        ),
+                        (
+                            "statement: ((total (reversed xs)) = (total xs)),",
+                            "statement: ((total (reversed xs)) = (count xs)),",
+                        ),
+                        (
+                            "statement: ((entryTotal m) = ((keyTotal m) + (valueTotal m))),",
+                            "statement: ((entryTotal m) = ((keyTotal m) + (keyTotal m))),",
+                        ),
+                    ],
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, "src/Folds.lex.tex", &error),
+                    ["doubled_total", "map_split", "total_reversed"],
+                    "{error}"
+                );
+            }
+        }
+        // §17.12: the law proof form.
+        "PF-23" => {
+            let project = P::copy_example("fold-laws");
+            project.check_ok();
+            let build = support::rendered(&project);
+            let main = support::lean_text(&build, "Main");
+            for application in [
+                "  exact @LexLeanLaws.listFold_pair (Nat) (Nat) (Nat) ((fun (acc : Nat) (v : Nat) => (acc + v))) ((fun (acc : Nat) (_v : Nat) => (acc + 1))) (0) (0) (xs)\n",
+                "  exact @LexLeanLaws.listFold_fusion (Nat) (Nat) (Nat) ((fun (acc : Nat) (v : Nat) => (acc + v))) ((fun (acc : Nat) (v : Nat) => (LexLeanRuntime.remainder ((acc + v)) (2) (0) : Nat))) ((fun (n : Nat) => (LexLeanRuntime.remainder (n) (2) (0) : Nat))) (0) (xs) parity_step\n",
+                "  exact @LexLeanLaws.listFold_append (Nat) (Nat) ((fun (acc : Nat) (_v : Nat) => (acc + 1))) (0) (xs) (ys)\n",
+            ] {
+                assert!(main.contains(application), "{application}\n{main}");
+            }
+            let file = "src/Main.lex.tex";
+            fold_laws_rejected(
+                file,
+                "    name: list_fold_pair,",
+                "    name: list_fold_triple,",
+                "`list_fold_triple` is not a registered law",
+            );
+            fold_laws_rejected(
+                file,
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "law `list_fold_pair` expects 5 argument(s), received 4",
+            );
+            fold_laws_rejected(
+                file,
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      true,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "law application argument has type Bool, expected Nat",
+            );
+            fold_laws_rejected(
+                file,
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat]",
+                "law `list_fold_pair` expects 3 explicit type argument(s), received 2",
+            );
+            fold_laws_rejected(
+                file,
+                "    premises: [parity_step],\n",
+                "",
+                "law `list_fold_fusion` expects 1 premise(s), received 0",
+            );
+            fold_laws_rejected(
+                file,
+                "    premises: [parity_step],",
+                "    premises: [count_append],",
+                "law `list_fold_fusion` premise names a forward or missing theorem `count_append`",
+            );
+            semantic_1_1_rejects(
+                r#"{"axioms":[],"kind":"theorem","name":"law_use","parameters":[],"proof":{"arguments":[],"kind":"law","name":"list_fold_pair"},"statement":{"kind":"eq","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}"#,
+                "`law proof` is a language-1.2 construct",
+            );
+            let _ = support::verify_ok_backed("PF-23", &project);
+            if support::lean_backed("PF-23") {
+                let wrong = fold_laws_with(
+                    file,
+                    &[(
+                        "statement: ((statistics xs) = ((Folds::total xs), (Folds::count xs))),",
+                        "statement: ((statistics xs) = ((Folds::count xs), (Folds::total xs))),",
+                    )],
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, file, &error),
+                    ["statistics_one_pass"],
+                    "{error}"
+                );
             }
         }
         other => panic!("no proofs case is wired for {other}"),

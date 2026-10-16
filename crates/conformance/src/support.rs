@@ -265,6 +265,11 @@ fn prove(value: &SnapshotProof) -> usize {
         SnapshotProof::Apply { type_arguments, arguments, .. } => {
             type_arguments.iter().map(ty).sum::<usize>() + arguments.iter().map(term).sum::<usize>()
         }
+        SnapshotProof::Law { type_arguments, arguments, premises, .. } => {
+            type_arguments.iter().map(ty).sum::<usize>()
+                + arguments.iter().map(term).sum::<usize>()
+                + premises.len()
+        }
     }
 }
 "#,

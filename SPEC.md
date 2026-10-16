@@ -760,7 +760,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `spec` | Exactly `lexlean/project/1`. |
 | `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |
 | `language` | Language version: `1.0`, `1.1`, or `1.2`. |
-| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
+| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanLaws`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
 | `source_roots` | Nonempty, unique, sorted project-relative directories. |
 | `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |
 | `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |
@@ -2613,7 +2613,9 @@ backend runs.
 | `executable` definitions | `lexlean/semantic-module/2` | `"executable":true` asserts production eligibility under the higher-order rules below. |
 | `mutual` definition label | `lexlean/semantic-module/2` | `"mutual":"Label"` on a structurally recursive definition places it in a mutual definition group under the recursion rules below. |
 | `termination` evidence | `lexlean/semantic-module/2` | `{"measure":m,"evidence":[theorem...]}` on a definition declares well-founded recursion under the recursion rules below. |
-| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. Without definitions it lowers to the fixed script `intros`, `try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq] at *` (adding `LexLeanRuntime.subtract, LexLeanRuntime.multiply` when the module emits the portable runtime), and `all_goals omega`, so a goal the simplifier already closed leaves nothing for `omega`; with definitions, `subst_vars` follows `intros` and the definitions lead the `simp only` list, so hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. |
+| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. It lowers to one fixed script (*Fold laws* below): `intros`; with definitions, `subst_vars`; one `simp only [...] at *` over, in order, the named definitions, the Boolean-comparison bridges `← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq`, the runtime definitions `LexLeanRuntime.subtract, LexLeanRuntime.multiply, LexLeanRuntime.negate, LexLeanRuntime.equal`, the Lean lemmas `beq_iff_eq, decide_eq_true_eq, decide_eq_false_iff_not, Nat.add_assoc, Int.add_assoc, Int.neg_neg, Int.emod_neg, Int.neg_zero, ↓reduceIte`, the registered rewrite set of the fold laws, and for each fixed-width type `T` (`UInt8`, `UInt16`, `UInt32`, `UInt64` read by `toNat`; `Int8`, `Int16`, `Int32`, `Int64` read by `toInt`) first `T.le_iff_v_le, T.lt_iff_v_lt` and then `T.reduceToNat` or `T.reduceToInt` and `← T.v_inj`; a second `simp only [...] at *` over `UInt8.toNat` … `Int64.toInt` and `BitVec.toInt_eq_toNat_cond`, which reads every remaining fixed-width value as the bounded natural number of its bits; `all_goals (repeat' split)`, which splits every `if` and `match` left in the goal; and `all_goals omega`. Each `simp only` is under `try` with the unused-argument linter off, so a goal the simplifier already closed leaves nothing for `omega`. With definitions, hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. A module with this proof imports `LexLeanRuntime.Laws`. |
+| `law` proof | `lexlean/semantic-module/2` | `{"kind":"law","name":N,"type_arguments":[T...],"arguments":[...],"premises":[theorem...]}` (`type_arguments` and `premises` omitted when empty): exact application of the registered fold law `N` (*Fold laws* below) to explicit type arguments, arguments, and prior theorems discharging its premises in order. Linking checks the counts, the type arguments, each argument against the registered parameter type, and that each premise names a prior theorem; Lean checks the statement. It lowers to `exact @L (T1) … (a1) … p1 …`, `L` the law's Lean name, and a module with it imports `LexLeanRuntime.Laws`. |
+| integer order | `lexlean/semantic-module/2` | The order propositions `le` and `lt`, which language 1.1 types over `Nat` only, take two operands of one integer type: `Nat`, `Int`, or one fixed-width type. They lower to Lean's `<=` and `<` on that type, which on a fixed-width type is the order of its mathematical value. |
 | `map`, `set` types | `lexlean/semantic-module/2` | `{"kind":"map","key":K,"value":V}` and `{"kind":"set","element":K}` over an ordered key type, under the collection rules below. |
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
@@ -2689,12 +2691,13 @@ either backend runs; they do not defer to what Lean would accept.
    so no part of a data declaration is free; language-1.1 modules keep their
    historical count.
 10. **Binder hygiene.** The backend refers to the module's own declarations,
-    to the built-in names it emits (`And`, `Bool`, `ByteArray`, `Except`,
-    `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`, `LexLeanModels`,
-    `LexLeanReasoning`, `LexLeanRuntime`, `List`, `Nat`, `Option`,
-    `Ordering`, `Prod`, `Prop`, `Result`, `String`, `Type`,
-    `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `congr`, `decide`,
-    `false`, `id`, `rfl`, `true`, `true_and`), and to every imported declaration through
+    to the built-in names it emits (`And`, `BitVec`, `Bool`, `ByteArray`,
+    `Except`, `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`,
+    `LexLeanLaws`, `LexLeanModels`, `LexLeanReasoning`, `LexLeanRuntime`,
+    `List`, `Nat`, `Option`, `Ordering`, `Prod`, `Prop`, `Result`, `String`,
+    `Type`, `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `beq_iff_eq`,
+    `congr`, `decide`, `decide_eq_false_iff_not`, `decide_eq_true_eq`,
+    `false`, `id`, `reduceIte`, `rfl`, `true`, `true_and`), and to every imported declaration through
     the project's module prefix, all without qualification. In a
     `lexlean/semantic-module/2` module no binder (a type parameter, a value
     parameter, or a pattern, `let`, quantifier, lambda, or proof binder) is
@@ -3012,7 +3015,7 @@ Termination evidence is semantic data, never tactic or backend text; no
    namespace `LexLeanCollections` (*Runtime modules* below).
 
 **Runtime modules.** The runtime of language 1.2 is LexLean source, not text
-of the backend: four native core modules (§17.10) of the embedded project
+of the backend: five native core modules (§17.10) of the embedded project
 `language/runtime-1.2/library/` (module prefix `LexLeanRuntime`, registry
 `language/runtime-1.2/library.toml`, tag `lexlean/runtime-library/1`), whose
 Lean the compiler generates like any other core module's:
@@ -3021,18 +3024,22 @@ fixed-width arithmetic, byte strings, and decimal text the primitives apply),
 `LexLeanRuntime.Collections` (namespace `LexLeanCollections`, rule 6),
 `LexLeanRuntime.Models` (namespace `LexLeanModels`, rule 12 of the model
 rules), and `LexLeanRuntime.Reasoning` (namespace `LexLeanReasoning`, rule 11
-of the reasoning rules; it imports the first two). A generated language-1.2
+of the reasoning rules; it imports the first two), and `LexLeanRuntime.Laws`
+(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two). A
+generated language-1.2
 module publicly imports, after `Init` and before its own imports, exactly the
 runtime modules it uses: `Portable` when it applies a primitive or has a
 reasoning declaration, `Collections` under rule 6, `Models` when it has a
-model declaration, and `Reasoning` when it has a reasoning declaration; it
-carries no runtime text. Every declaration of a runtime module pins its exact
+model declaration, `Reasoning` when it has a reasoning declaration, and
+`Laws` when it has a `linear_arithmetic` or `law` proof; it carries no runtime
+text. Every declaration of a runtime module pins its exact
 axioms; a verification that needs a runtime module compiles it before the
 project's modules, replays it with `leanchecker`, audits each of its
 declarations, and refuses any observed axiom set but the pinned one
-(§22.3–§22.6, `RT-03`). The runtime modules were migrated once, losslessly,
-from the texts the backend spliced, with the equivalence evidence in
-`tests/runtime-library/MIGRATION.md`; a declaration is the same up to the
+(§22.3–§22.6, `RT-03`). The first four runtime modules were migrated once,
+losslessly, from the texts the backend spliced, with the equivalence evidence
+in `tests/runtime-library/MIGRATION.md`; `Laws` was exported once from Lean,
+with its evidence in `tests/runtime-library/LAWS.md`. A declaration is the same up to the
 module that holds it, so a runtime name is `LexLeanRuntime.x`, never
 `<module>.LexLeanRuntime.x` (`RT-01`). The decoder of core module 2 (§17.10)
 is the one Lean text of the language-1.2 compiler that is not generated from a
@@ -3046,6 +3053,59 @@ native modules: they are data, `language/runtime-1.2/frozen/portable-runtime-1.1
 and `language/runtime-1.2/frozen/core-decoder-1.txt`, which the language-1.0
 and 1.1 backends alone read, and `RT-02` holds them equal to the released
 output.
+
+#### Fold laws (language 1.2)
+
+A program equality over all inputs (two folds that compute one value, an
+integer kernel that is monotone or bounded) is proved by `linear_arithmetic`
+or by `law`, and the facts both use are LexLean source, never assumed. These
+rules are LexLean's own; the diagnostic each linking failure raises is
+`LLT4001`, and a statement Lean does not accept is `LLV7002`.
+
+1. **The laws module.** `LexLeanRuntime.Laws` is a native runtime module
+   (*Runtime modules* above) importing `Portable` and `Collections`. It
+   declares, in the namespace `LexLeanLaws`, the sum of a function over a
+   list (`sumNat`, `sumInt`), the bridges from the runtime to propositions,
+   and the laws below, each row pinning its exact axioms. It was exported
+   once from Lean and its regenerated environment checked against the
+   committed source declaration by declaration
+   (`tests/runtime-library/LAWS.md`).
+2. **The registry.** `language/runtime-1.2/laws.toml` (tag
+   `lexlean/runtime-laws/1`) names what the compiler uses of the module:
+   the ordered rewrite set of `linear_arithmetic`, and the laws a `law`
+   proof applies, each with its explicit type parameters, its parameter
+   types in the semantic schema, and its number of premises. It states no
+   law. The runtime build refuses a registry that names a declaration the
+   module does not have or registers a law twice.
+3. **Bridges.** `less_than` on `Nat`, `Int`, and every fixed-width type is
+   `decide` of the order of mathematical values; `quotient` and `remainder`
+   on `Nat` and `Int` are an `if` on a zero divisor around `/` and `%`, or
+   `Int.tdiv` and `Int.tmod`, which are rewritten to Euclidean division and
+   remainder with a sign case; `length` and `append` of a list are
+   `List.length` and `++`; `set_fold`, `map_fold`, `set_size`, `map_size`,
+   `set_elements`, and `map_entries` are the list operations on the
+   canonical list they are, a map's fold being the fold of its entries.
+4. **Additive folds.** A fold whose step adds (or, over `Int`, subtracts)
+   what each element contributes is its initial value plus (minus) the sum
+   of the contributions; the sum is linear in the contribution (sums,
+   differences, negation, and a constant factor on either side), a constant
+   contribution sums to the constant times the length, and the sum of an
+   appended list is the sum of the parts. The fold that conses every element
+   onto its state is the reverse of the list onto it, and the fold that
+   appends every element is the list after the state. A sum is invariant
+   under every permutation of the list (`sumNat_perm`, `sumInt_perm`), and
+   in particular under reverse. With these rewrites the equality of two
+   additive folds over all lists, sets, or maps is linear over the sums of
+   the contributions, which `omega` decides.
+5. **Applied laws.** `list_fold_fusion`: a function `h` that commutes with
+   the steps, as a prior theorem states for all states and elements, carries
+   the fold of one step to the fold of the other, `h (list_fold f z xs) =
+   list_fold g (h z) xs`. `list_fold_pair`: two folds over one list are one
+   fold over the pair of their states. `list_fold_append`: a fold over an
+   appended list continues the fold of the first part.
+6. **Closed instances.** `decide` evaluates a closed statement and does not
+   decide one with a free variable, so a statement over all inputs is proved
+   by the laws and `omega`, never by enumerating inputs.
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 
@@ -9078,6 +9138,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PF-17` | `proofs` | native_decide is never accepted or generated. | §16.12, §18.2 |
 | `PF-18` | `proofs` | Lean proof failures remap to the smallest originating LexLean proof or statement span. | §20.4 |
 | `PF-19` | `proofs` | The language-1.2 linear_arithmetic proof form names only the prior document definitions it unfolds, lowers to one fixed omega script, proves true linear obligations, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-20` | `proofs` | Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only. | §17.12 |
+| `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
+| `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -9320,7 +9384,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 
-**Total required capability IDs:** 388.
+**Total required capability IDs:** 392.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
