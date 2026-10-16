@@ -1,0 +1,6 @@
+name = "lexlean_atlas_host"
+version = "0.1.0"
+defaultTargets = ["LexLeanAtlasHost"]
+
+[[lean_lib]]
+name = "LexLeanAtlasHost"
