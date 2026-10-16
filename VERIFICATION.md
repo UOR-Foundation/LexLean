@@ -7663,6 +7663,122 @@ arbitrary canonical JSON values (`surface::generic`), and every alternative of
 the schema its own sample (`surface::semantic`), as unit tests of the
 `lexlean` crate.
 
+## UOR Atlas as the parts of one run (Issue #131)
+
+Issue #131 asked why every pull request's gate takes three hours and what
+would shorten it without a weaker proof obligation. On `main` at `514e95ad`
+(CI run 38716449420) the `examples` leg took 178 minutes, 156 of them the
+verification of UOR Atlas (elaboration 5,047 s, replay 4,286 s); the `rest`
+leg took 76 minutes. Atlas's 66 modules are not independent: 63 of its sources
+declare `\importmodule`, the generated Lean imports them as `public import`,
+and the chain `Roots → Blocks → Places → Group → Census → CensusCert4`, then
+`CensusComplete → Closure → ClosurePairs → ClosurePairCert* → … → Atlas`, is 20
+deep. From the committed hints and the measured replays, the elaboration of
+that chain up to `CensusCert4` (2,687 s) and the replay of `CensusCert4`
+(1,229 s) bound any schedule of today's modules at about 65 minutes, however
+many runners it has; a single 16 GB runner at width 2 cannot overlap the four
+modules that peak near 15 GiB with anything, which is where the other 90
+minutes went. The maintainer's reading on the issue, that a content-addressed
+certificate of main's proof would skip Atlas on five of the 34 merged pull
+requests once its key covered the compiler sources, stands; `§9.4`'s sentence
+on caches is unchanged.
+
+What changed is where the processes run, not which run. Atlas's verification
+is partitioned into the shards of `.github/verify-shards.json`, each a job of
+its own clean checkout on the standard runner: `prefix` elaborates the import
+closure of `CensusCert4` (15 modules, 1,399 s of elaboration); `cert4` that
+module alone; `census-a` to `census-d` the other `CensusCert*` modules, the
+replays of the prefix, and the modules that import only the prefix; `closure`
+the three modules every later one imports; `orbit` and `pairs-a` to `pairs-d`
+the rest; `cert4-replay` the one replay that takes 20 minutes; and the `join`
+the last four modules, then every shard's records, the attestation, and the
+comparison with `expected/verify`. The critical path is `prefix` (23 minutes
+of elaboration at width 2), `cert4` (22), `closure` (3), the `pairs` shards (11
+each), the join (under 2), plus each job's set-up: the Lean toolchain and,
+once, the Rust build of the gate's executable, which the `prefix` job uploads
+and the other jobs take from the run. That is an estimate of 80 to 90 minutes
+for the Atlas side against 178; the first CI run of the change is the
+measurement, and the `rest` leg (76 minutes, 64 of them `bdd`) is then the
+longer one.
+
+The verifier runs as one part through `lexlean::verify_part`
+(`verify::partition`, SPEC.md §9.4, §22.11). A shard runs the prelude whole
+(certificate generation, the preflights, staging, the generated-source audit,
+the probe), seeds the placed set with the modules whose `.olean` arrived from
+the shards it needs, elaborates the modules of its plan in the same
+topological frontiers, replays and audits the modules its plan names, and
+moves its `.olean` tree (intermediates included, a later shard's elaboration
+reads them) and its process records to its output directory; it publishes
+nothing. The join does the same for its own plan, reads every other part's
+records (`ChildRecord::from_json`, which checks each stream against its
+digest), judges an imported elaboration as the elaboration stage judges its
+own (exit 0, silent), an imported replay as the replay stage does (exit 0,
+else `LLV7003`), and an imported audit member as the audit stage does (exit 0,
+silent, its printed set parsed against the member's declarations, else
+`LLV7004`), and assembles the attestation's process list in the canonical
+order of §22.11 (`partition::elaboration_order`: the frontiers in module
+order, then replays in sorted name, then the family) from whichever part
+produced each record. A module without a record from any part, a record of a
+process no module owns, two parts that wrote the same `.olean` or record, and
+a shard whose plan elaborates a module before its imports (`module order did
+not converge: … imports …`) are refused. A part is defined for a project
+without production roots and without PDF rendering; Atlas is such a project.
+
+`VR-23` verifies `peano-arithmetic` whole and as two shards and a join over
+its committed import graph (the first frontier; the second, replaying both;
+the rest), and requires the join's verified directory to equal the whole's
+byte for byte with the same attestation ID, then refuses the three plans
+above. `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
+job, each job waiting (through the job graph) for the jobs of the shards its
+shard needs and never for a row of its own matrix, the examples profile on
+every Atlas job, the one `cargo build` in the `prefix` job and every other job
+taking the executable and the shards' output from the run (`pattern:
+atlas-*`, never a `run-id`), the shard output uploaded under the shard's name,
+the join asserting Atlas's two lines, the draft condition on every Atlas job
+and no other, and the `ready_for_review` type that reruns them. The plan
+itself is checked by `cargo xtask ci-shards` and inside `RP-14` by
+`repo_conformance::shards::check`.
+
+### the partition can fail
+
+Each record is a defect planted in `.github/verify-shards.json` or `ci.yml`,
+then `cargo test -p repo-conformance --test conformance -- --exact
+conformance_rp_14` (the plan's defects also fail `cargo xtask ci-shards` with
+the same line), and the failure, after which the file was restored.
+
+- **a module replayed by two shards** (`CensusCert4` added to `census-a`'s
+  replay): `` `LexLeanExample.CensusCert4` is replayed by `census-a` and by
+  `cert4-replay` ``.
+- **a shard elaborating a module before its imports** (`cert4` with no needs):
+  `` shard `cert4` elaborates `LexLeanExample.CensusCert4`, whose import
+  `LexLeanExample.CensusClosure` is elaborated by no shard it needs ``.
+- **a module elaborated by no shard** (`Atlas` dropped from the join):
+  `` `LexLeanExample.Atlas` is elaborated by no shard ``.
+- **a job that no longer waits for the shards it needs** (`atlas-closure` with
+  `needs: [atlas-prefix]`): `` §9.4: `closure` runs in `atlas-closure`, which
+  does not wait for `atlas-l1`, the job of `cert4` it needs ``.
+- **an Atlas job without the draft condition** (`atlas-l3`): `` §9.4:
+  `atlas-l3` waits only for a pull request to leave draft ``.
+- **a second `cargo build`** (in `atlas-closure`): `ci.yml builds the gate's
+  executable once` (`left: 2, right: 1`).
+- **a shard run by two jobs** (`pairs-a` added to `atlas-l1`'s matrix):
+  `` §9.4: the shard `pairs-a` is run by two jobs ``.
+- **the examples leg verifying every example** (`examples_part` emptied):
+  `§9.4: the examples leg's profile and part` (`left: [.., ""]`, `right: [..,
+  "without:uor-atlas"]`).
+- **a cache action in a shard job**: `` ci.yml has no `actions/cache` ``.
+- **the join reading another run's artifacts** (`run-id` on its download):
+  `` §9.4: `atlas-join` reads the artifacts of this run only ``.
+
+Two defects were found by the cases and not by review: a shard exported the
+`.olean` files it had imported along with its own, so the join refused the
+duplicate (`` `oleans/PeanoArithmetic/Addition.ir` was written by two parts of
+the run ``; `export` now moves only the modules of the shard's plan), and the
+join assembled the imported elaboration and replay records into the
+attestation without publishing them, so the directory it published had no
+`process/lean/PeanoArithmetic.Addition.json` and `verify-examples` refused it
+against `expected/verify` (R10). Both are what `VR-23` and the end-to-end run
+of `verify-examples` as two shards and a join of `peano-arithmetic` now check.
 ### runtime modules can fail
 
 Five plants, each on the committed tree and each restored after its run.

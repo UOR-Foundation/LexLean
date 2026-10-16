@@ -1,0 +1,292 @@
+{
+  "project": "uor-atlas",
+  "shards": {
+    "prefix": {
+      "needs": [],
+      "elaborate": [
+        "LexLeanExample.Blocks",
+        "LexLeanExample.Category",
+        "LexLeanExample.Census",
+        "LexLeanExample.CensusClosure",
+        "LexLeanExample.Glue",
+        "LexLeanExample.Group",
+        "LexLeanExample.Parameters",
+        "LexLeanExample.Places",
+        "LexLeanExample.Prelude.Algebra",
+        "LexLeanExample.Prelude.Bitset",
+        "LexLeanExample.Prelude.Linear",
+        "LexLeanExample.Prelude.NumInstances",
+        "LexLeanExample.Prelude.Perm",
+        "LexLeanExample.Prelude.RingLemmas",
+        "LexLeanExample.Roots"
+      ],
+      "replay": []
+    },
+    "cert4": {
+      "needs": [
+        "prefix"
+      ],
+      "elaborate": [
+        "LexLeanExample.CensusCert4"
+      ],
+      "replay": []
+    },
+    "census-a": {
+      "needs": [
+        "prefix"
+      ],
+      "elaborate": [
+        "LexLeanExample.CensusCert10",
+        "LexLeanExample.CensusCert11",
+        "LexLeanExample.CensusCert5",
+        "LexLeanExample.CensusCert8"
+      ],
+      "replay": [
+        "LexLeanExample.CensusCert10",
+        "LexLeanExample.CensusCert11",
+        "LexLeanExample.CensusCert5",
+        "LexLeanExample.CensusCert8"
+      ]
+    },
+    "census-b": {
+      "needs": [
+        "prefix"
+      ],
+      "elaborate": [
+        "LexLeanExample.CensusCert0",
+        "LexLeanExample.CensusCert12",
+        "LexLeanExample.CensusCert13",
+        "LexLeanExample.CensusCert14",
+        "LexLeanExample.CensusCert15",
+        "LexLeanExample.CensusCert6",
+        "LexLeanExample.CensusCert7",
+        "LexLeanExample.CensusCert70",
+        "LexLeanExample.CensusCert71",
+        "LexLeanExample.CensusCert72",
+        "LexLeanExample.CensusCert73",
+        "LexLeanExample.CensusCert74",
+        "LexLeanExample.CensusCert75",
+        "LexLeanExample.CensusCert76",
+        "LexLeanExample.CensusCert77",
+        "LexLeanExample.CensusCert78",
+        "LexLeanExample.CensusCert79",
+        "LexLeanExample.CensusCert9"
+      ],
+      "replay": [
+        "LexLeanExample.CensusCert0",
+        "LexLeanExample.CensusCert12",
+        "LexLeanExample.CensusCert13",
+        "LexLeanExample.CensusCert14",
+        "LexLeanExample.CensusCert15",
+        "LexLeanExample.CensusCert6",
+        "LexLeanExample.CensusCert7",
+        "LexLeanExample.CensusCert70",
+        "LexLeanExample.CensusCert71",
+        "LexLeanExample.CensusCert72",
+        "LexLeanExample.CensusCert73",
+        "LexLeanExample.CensusCert74",
+        "LexLeanExample.CensusCert75",
+        "LexLeanExample.CensusCert76",
+        "LexLeanExample.CensusCert77",
+        "LexLeanExample.CensusCert78",
+        "LexLeanExample.CensusCert79",
+        "LexLeanExample.CensusCert9",
+        "LexLeanExample.Group"
+      ]
+    },
+    "census-c": {
+      "needs": [
+        "prefix"
+      ],
+      "elaborate": [],
+      "replay": [
+        "LexLeanExample.Blocks",
+        "LexLeanExample.Category",
+        "LexLeanExample.Census",
+        "LexLeanExample.CensusClosure",
+        "LexLeanExample.Glue",
+        "LexLeanExample.Parameters",
+        "LexLeanExample.Places",
+        "LexLeanExample.Prelude.Algebra",
+        "LexLeanExample.Prelude.Bitset",
+        "LexLeanExample.Prelude.Linear",
+        "LexLeanExample.Prelude.NumInstances",
+        "LexLeanExample.Prelude.Perm",
+        "LexLeanExample.Prelude.RingLemmas",
+        "LexLeanExample.Roots"
+      ]
+    },
+    "census-d": {
+      "needs": [
+        "prefix"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosureOrbitCount",
+        "LexLeanExample.Functor",
+        "LexLeanExample.GroupSeries",
+        "LexLeanExample.Scales"
+      ],
+      "replay": [
+        "LexLeanExample.ClosureOrbitCount",
+        "LexLeanExample.Functor",
+        "LexLeanExample.GroupSeries",
+        "LexLeanExample.Scales"
+      ]
+    },
+    "cert4-replay": {
+      "needs": [
+        "prefix",
+        "cert4"
+      ],
+      "elaborate": [],
+      "replay": [
+        "LexLeanExample.CensusCert4"
+      ]
+    },
+    "closure": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b"
+      ],
+      "elaborate": [
+        "LexLeanExample.CensusComplete",
+        "LexLeanExample.Closure",
+        "LexLeanExample.ClosurePairs"
+      ],
+      "replay": []
+    },
+    "orbit": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "closure"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosureOrbit"
+      ],
+      "replay": [
+        "LexLeanExample.CensusComplete",
+        "LexLeanExample.Closure",
+        "LexLeanExample.ClosureOrbit",
+        "LexLeanExample.ClosurePairs"
+      ]
+    },
+    "pairs-a": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "closure"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosurePairCert0",
+        "LexLeanExample.ClosurePairCert1",
+        "LexLeanExample.ClosurePairCert2",
+        "LexLeanExample.ClosurePairCert3"
+      ],
+      "replay": [
+        "LexLeanExample.ClosurePairCert0",
+        "LexLeanExample.ClosurePairCert1",
+        "LexLeanExample.ClosurePairCert2",
+        "LexLeanExample.ClosurePairCert3"
+      ]
+    },
+    "pairs-b": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "closure"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosurePairCert4",
+        "LexLeanExample.ClosurePairCert5",
+        "LexLeanExample.ClosurePairCert6",
+        "LexLeanExample.ClosurePairCert7"
+      ],
+      "replay": [
+        "LexLeanExample.ClosurePairCert4",
+        "LexLeanExample.ClosurePairCert5",
+        "LexLeanExample.ClosurePairCert6",
+        "LexLeanExample.ClosurePairCert7"
+      ]
+    },
+    "pairs-c": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "closure"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosurePairCert10",
+        "LexLeanExample.ClosurePairCert11",
+        "LexLeanExample.ClosurePairCert8",
+        "LexLeanExample.ClosurePairCert9"
+      ],
+      "replay": [
+        "LexLeanExample.ClosurePairCert10",
+        "LexLeanExample.ClosurePairCert11",
+        "LexLeanExample.ClosurePairCert8",
+        "LexLeanExample.ClosurePairCert9"
+      ]
+    },
+    "pairs-d": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "closure"
+      ],
+      "elaborate": [
+        "LexLeanExample.ClosurePairCert12",
+        "LexLeanExample.ClosurePairCert13",
+        "LexLeanExample.ClosurePairCert14",
+        "LexLeanExample.ClosurePairCert15"
+      ],
+      "replay": [
+        "LexLeanExample.ClosurePairCert12",
+        "LexLeanExample.ClosurePairCert13",
+        "LexLeanExample.ClosurePairCert14",
+        "LexLeanExample.ClosurePairCert15"
+      ]
+    },
+    "join": {
+      "needs": [
+        "prefix",
+        "cert4",
+        "census-a",
+        "census-b",
+        "census-c",
+        "census-d",
+        "cert4-replay",
+        "closure",
+        "orbit",
+        "pairs-a",
+        "pairs-b",
+        "pairs-c",
+        "pairs-d"
+      ],
+      "elaborate": [
+        "LexLeanExample.Atlas",
+        "LexLeanExample.ClosureGauge",
+        "LexLeanExample.ClosureOrbitTransport",
+        "LexLeanExample.ClosurePairComplete"
+      ],
+      "replay": [
+        "LexLeanExample.Atlas",
+        "LexLeanExample.ClosureGauge",
+        "LexLeanExample.ClosureOrbitTransport",
+        "LexLeanExample.ClosurePairComplete"
+      ]
+    }
+  }
+}
