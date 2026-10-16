@@ -197,6 +197,21 @@ impl<'g, 'a> Writer<'g, 'a> {
             for declaration in linked.semantic.lowered_declarations() {
                 let mut axioms = declaration.axioms().to_vec();
                 axioms.sort();
+                // A definition a model construct elaborates to carries the
+                // construct's declared set as an upper bound; the audit finds
+                // none for it, as it finds for any definition that proves
+                // nothing, so the exact set is empty.
+                let derived = matches!(declaration, crate::ir::semantic::SemanticDeclaration::Definition { .. })
+                    && !linked.semantic.declarations.iter().any(|source| {
+                        source.name() == declaration.name()
+                            && matches!(
+                                source,
+                                crate::ir::semantic::SemanticDeclaration::Definition { .. }
+                            )
+                    });
+                if derived {
+                    axioms.clear();
+                }
                 declared.insert(
                     format!("{}.{}", linked.lean_module, declaration.name()),
                     axioms,
@@ -363,7 +378,11 @@ impl<'g, 'a> Writer<'g, 'a> {
             }
         }
         for name in names {
-            out.extend(self.constant_axioms(&name)?);
+            let found = self.constant_axioms(&name)?;
+            if std::env::var("LEXLEAN_AXDBG").is_ok() && !found.is_empty() {
+                eprintln!("AXDBG {name} {found:?}");
+            }
+            out.extend(found);
         }
         Ok(out)
     }
