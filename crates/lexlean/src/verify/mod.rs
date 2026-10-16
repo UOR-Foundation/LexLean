@@ -1264,6 +1264,9 @@ pub fn run_part(
     // them before its own modules, the part that publishes also replays and
     // audits them, and its records are the ones the attestation lists, first
     // among the elaborations and first among the replays.
+    // The text-laws library (§17.12, *Text components*) is compiled before
+    // the runtime modules, so its records precede theirs in the attestation.
+    let mut text_laws_records: Vec<ChildRecord> = Vec::new();
     let mut runtime_lean_records: Vec<ChildRecord> = Vec::new();
     let mut runtime_replay_records: Vec<ChildRecord> = Vec::new();
     let is_runtime = |name: &str| runtime_modules.iter().any(|module| module.name == name);
@@ -1437,7 +1440,7 @@ pub fn run_part(
                 &format!("process/text-laws/{}.json", file.module),
                 &record.to_json().to_file_bytes(),
             )?;
-            process_records.push(record);
+            text_laws_records.push(record);
         }
     }
 
@@ -2684,6 +2687,7 @@ pub fn run_part(
     )
     .map_err(fail)?;
     let mut process_records: Vec<ChildRecord> = vec![probe_record];
+    process_records.extend(text_laws_records);
     process_records.extend(runtime_lean_records);
     let missing = |what: &str, key: &str| {
         fail(internal(format!(
