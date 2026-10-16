@@ -201,14 +201,16 @@ impl<'g, 'a> Writer<'g, 'a> {
                 // construct's declared set as an upper bound; the audit finds
                 // none for it, as it finds for any definition that proves
                 // nothing, so the exact set is empty.
-                let derived = matches!(declaration, crate::ir::semantic::SemanticDeclaration::Definition { .. })
-                    && !linked.semantic.declarations.iter().any(|source| {
-                        source.name() == declaration.name()
-                            && matches!(
-                                source,
-                                crate::ir::semantic::SemanticDeclaration::Definition { .. }
-                            )
-                    });
+                let derived = matches!(
+                    declaration,
+                    crate::ir::semantic::SemanticDeclaration::Definition { .. }
+                ) && !linked.semantic.declarations.iter().any(|source| {
+                    source.name() == declaration.name()
+                        && matches!(
+                            source,
+                            crate::ir::semantic::SemanticDeclaration::Definition { .. }
+                        )
+                });
                 if derived {
                     axioms.clear();
                 }
