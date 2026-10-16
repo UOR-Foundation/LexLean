@@ -1,11 +1,17 @@
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R16/Compose/RustCore.lean
 import LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16
 import LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16.RustCore
+========
+import LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16
+import LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.RustCore
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R16/Compose/RustCore.lean
 import LexLeanPreservation.Compose
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R16/Compose/RustCore.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16.Compose.RustCore
 
 /-- The rendering of the root, invoked on the encoded arguments, realizes
@@ -14,3 +20,13 @@ theorem root (n : Nat) (__e_hrep : _root_.LexLeanPreservation.Rust.Representable
   _root_.LexLeanPreservation.Rust.compose (fun __e_n => _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16.RustCore.root __e_n 0) rfl (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_nat n) _root_.LexLeanPreservation.Rust.wtl_nil) rfl rfl (_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16.root n) (_root_.LexLeanPreservation.Rust.rel_ne_stuck _ _)
 
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R16.Compose.RustCore
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.Compose.RustCore
+
+/-- The rendering of the root, invoked on the encoded arguments, realizes
+the encoded source result. -/
+theorem root (n : Nat) (__e_hrep : _root_.LexLeanPreservation.Rust.RepresentableL [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)]) : ∃ __e_ro, _root_.LexLeanPreservation.Rust.RealizesFn Bool.true (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.denote n) __e_ro ∧ _root_.LexLeanPreservation.Rust.RCI _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.RustCore.krate (_root_.LexLeanPreservation.Rust.fnIdent 0) [(_root_.LexLeanTarget.TargetSyntax.Value.nat n)] __e_ro :=
+  _root_.LexLeanPreservation.Rust.compose (fun __e_n => _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.RustCore.root __e_n 0) rfl (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_nat n) _root_.LexLeanPreservation.Rust.wtl_nil) rfl rfl (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.root n) (_root_.LexLeanPreservation.Rust.rel_ne_stuck _ _)
+
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R16.Compose.RustCore
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R16/Compose/RustCore.lean

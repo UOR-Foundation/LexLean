@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R12.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R12
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R12
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R12.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[.nat], [.nat, .nat], []] }], functions := [
@@ -51,4 +55,8 @@ def denote (w : Nat) (h : Nat) : _root_.LexLeanPreservation.Obs :=
 theorem root (w : Nat) (h : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat w), (_root_.LexLeanTarget.TargetSyntax.Value.nat h)] (_root_.LexLeanPreservation.Rel (__fits_0 w h) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Coverage.Main.shapes w h))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 w h)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R12.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R12
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R12
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R12.lean

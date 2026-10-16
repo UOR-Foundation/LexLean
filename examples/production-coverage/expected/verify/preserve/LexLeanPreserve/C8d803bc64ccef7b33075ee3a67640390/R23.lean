@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R23.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R23
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R23
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R23.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -37,4 +41,8 @@ def denote (a : Int64) (b : Int64) (c : UInt64) : _root_.LexLeanPreservation.Obs
 theorem root (a : Int64) (b : Int64) (c : UInt64) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.i64 a), (_root_.LexLeanTarget.TargetSyntax.Value.i64 b), (_root_.LexLeanTarget.TargetSyntax.Value.u64 c)] (_root_.LexLeanPreservation.Rel (__fits_0 a b c) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.i64) (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u64)))))) (Coverage.Prims.fixedWide a b c))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 a b c)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R23.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R23
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R23
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R23.lean

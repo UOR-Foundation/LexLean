@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R15.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R15
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R15
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R15.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -37,4 +41,8 @@ def denote (v : (Option Nat)) (r : (Except Bool Nat)) : _root_.LexLeanPreservati
 theorem root (v : (Option Nat)) (r : (Except Bool Nat)) : _root_.LexLeanPreservation.RunConv __prog 0 [((_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.nat) v), ((_root_.LexLeanPreservation.encExcept _root_.LexLeanTarget.TargetSyntax.Value.bool _root_.LexLeanTarget.TargetSyntax.Value.nat) r)] (_root_.LexLeanPreservation.Rel (__fits_0 v r) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Coverage.Main.options v r))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 v r)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R15.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R15
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R15
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R15.lean

@@ -1,0 +1,48 @@
+import LexLeanPreservation.Core
+import LexLeanPreservation.Values
+import LexLeanPreservation.Primitives
+import LexLeanPreservation.Fixed
+import LexLeanPreservation.Keys
+import LexLeanPreservation.Templates
+import LexLeanPreservation.Validate
+import Coverage.Boundary
+import Coverage.Colls
+import Coverage.Main
+import Coverage.Prims
+import Coverage.RecRoots
+import Coverage.Recur
+import Coverage.Syntax
+import Coverage.Types
+set_option autoImplicit false
+set_option maxRecDepth 100000
+set_option maxHeartbeats 0
+set_option synthInstance.maxHeartbeats 0
+set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R9.lean
+namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R9
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R9
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R9.lean
+
+def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
+  { adts := [], functions := [
+    { parameters := [0, 1], types := [.nat, .string], result := (.pair (.list (.pair .string .nat)) (.pair (.list .nat) (.list (.pair .nat (.list .nat))))),
+      body := (.build .pair (.pair (.list (.pair .string .nat)) (.pair (.list .nat) (.list (.pair .nat (.list .nat))))) [(.build .cons (.list (.pair .string .nat)) [(.build .pair (.pair .string .nat) [(.value .string (.string "a")), (.var 0)]), (.build .cons (.list (.pair .string .nat)) [(.build .pair (.pair .string .nat) [(.value .string (.string "b")), (.value .nat (.nat 2))]), (.build .nil (.list (.pair .string .nat)) [])])]), (.build .pair (.pair (.list .nat) (.list (.pair .nat (.list .nat)))) [(.build .cons (.list .nat) [(.value .nat (.nat 1)), (.build .cons (.list .nat) [(.value .nat (.nat 3)), (.build .nil (.list .nat) [])])]), (.build .cons (.list (.pair .nat (.list .nat))) [(.build .pair (.pair .nat (.list .nat)) [(.value .nat (.nat 1)), (.build .cons (.list .nat) [(.value .nat (.nat 2)), (.build .nil (.list .nat) [])])]), (.build .cons (.list (.pair .nat (.list .nat))) [(.build .pair (.pair .nat (.list .nat)) [(.value .nat (.nat 2)), (.build .cons (.list .nat) [(.value .nat (.nat 1)), (.build .nil (.list .nat) [])])]), (.build .nil (.list (.pair .nat (.list .nat))) [])])])])]) }] }
+
+def __fits_0 (x : Nat) (s : String) : Bool :=
+  ((((((Bool.true && (Bool.true && Bool.true)) && Bool.true) && (((((Bool.true && (Bool.true && Bool.true)) && Bool.true) && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && (((((Bool.true && (((Bool.true && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && (((((Bool.true && (((Bool.true && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && (((((Bool.true && (((Bool.true && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && ((Bool.true && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true) && Bool.true)) && Bool.true)
+
+theorem __rel_0 (x : Nat) (s : String) : _root_.LexLeanPreservation.FunRel __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat x), (_root_.LexLeanTarget.TargetSyntax.Value.string s)] (_root_.LexLeanPreservation.Rel (__fits_0 x s) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.string _root_.LexLeanTarget.TargetSyntax.Value.nat)) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat))))) (Coverage.Colls.literals x s))) :=
+  _root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_nil) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_nil) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_nil) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons _root_.LexLeanPreservation.conv_value (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_nil) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_nil) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_cons) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair) _root_.LexLeanPreservation.convL_nil)) _root_.LexLeanPreservation.construct_pair)
+
+def denote (x : Nat) (s : String) : _root_.LexLeanPreservation.Obs :=
+  _root_.cond (__fits_0 x s) (_root_.LexLeanPreservation.Obs.value (((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.string _root_.LexLeanTarget.TargetSyntax.Value.nat)) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat))))) (Coverage.Colls.literals x s)))) _root_.LexLeanPreservation.Obs.overflow
+
+theorem root (x : Nat) (s : String) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat x), (_root_.LexLeanTarget.TargetSyntax.Value.string s)] (_root_.LexLeanPreservation.Rel (__fits_0 x s) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.string _root_.LexLeanTarget.TargetSyntax.Value.nat)) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat))))) (Coverage.Colls.literals x s))) :=
+  _root_.LexLeanPreservation.run_of_funRel (__rel_0 x s)
+
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R9.lean
+end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R9
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R9
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R9.lean

@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+pub mod laws;
 pub mod model;
 pub mod reasoning;
 
@@ -644,6 +645,18 @@ pub enum SemanticProof {
     /// an independent proposition. The backend never invokes `propext`.
     BooleanReflection {
         reflection: SemanticReflection,
+    },
+    /// Language 1.2: exact application of one registered law of the
+    /// runtime's fold-law module (§17.12, *Fold laws*) to checked type
+    /// arguments and arguments, with prior theorems discharging its premises
+    /// in order.
+    Law {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_arguments: Vec<SemanticType>,
+        arguments: Vec<SemanticTerm>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        premises: Vec<MemberRef>,
     },
     /// Exact application of one prior theorem to checked semantic arguments.
     Apply {
@@ -2149,7 +2162,9 @@ fn proof_node_count(proof: &SemanticProof) -> u64 {
                 .map(|branch| proof_node_count(&branch.proof))
                 .sum()
         }
-        SemanticProof::Apply { arguments, .. } => arguments.iter().map(term_node_count).sum(),
+        SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
+            arguments.iter().map(term_node_count).sum()
+        }
     }
 }
 
@@ -2911,7 +2926,7 @@ fn proof_terms(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticTerm)) {
                 proof_terms(&branch.proof, visit);
             }
         }
-        SemanticProof::Apply { arguments, .. } => {
+        SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             for argument in arguments {
                 visit_terms(argument, visit);
             }
@@ -2937,7 +2952,7 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
                 proof_terms_mut(&mut branch.proof, visit);
             }
         }
-        SemanticProof::Apply { arguments, .. } => {
+        SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             for argument in arguments {
                 visit_terms_mut(argument, visit);
             }
@@ -3015,8 +3030,9 @@ pub fn reserved_module_segment(name: &str) -> Option<&str> {
 
 /// The names the backend writes without qualification (see
 /// [`is_backend_bare_name`]).
-pub const BACKEND_BARE_NAMES: [&str; 38] = [
+pub const BACKEND_BARE_NAMES: [&str; 44] = [
     "And",
+    "BitVec",
     "Bool",
     "ByteArray",
     "Except",
@@ -3027,6 +3043,7 @@ pub const BACKEND_BARE_NAMES: [&str; 38] = [
     "Int64",
     "Int8",
     "LexLeanCollections",
+    "LexLeanLaws",
     "LexLeanModels",
     "LexLeanReasoning",
     "LexLeanRuntime",
@@ -3047,10 +3064,14 @@ pub const BACKEND_BARE_NAMES: [&str; 38] = [
     "Unit",
     "and_congr",
     "and_true",
+    "beq_iff_eq",
     "congr",
     "decide",
+    "decide_eq_false_iff_not",
+    "decide_eq_true_eq",
     "false",
     "id",
+    "reduceIte",
     "rfl",
     "true",
     "true_and",
@@ -3064,6 +3085,7 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. }
         | SemanticProof::LinearArithmetic { .. }
+        | SemanticProof::Law { .. }
         | SemanticProof::Apply { .. } => {}
         SemanticProof::Constructor { branches } => {
             for branch in branches {
@@ -3361,7 +3383,9 @@ fn proof_type_arguments(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticT
                 proof_type_arguments(&branch.proof, visit);
             }
         }
-        SemanticProof::Apply { type_arguments, .. } => type_arguments.iter().for_each(visit),
+        SemanticProof::Apply { type_arguments, .. } | SemanticProof::Law { type_arguments, .. } => {
+            type_arguments.iter().for_each(visit);
+        }
     }
 }
 
@@ -7794,8 +7818,28 @@ fn infer_term(
             Ok(Some(SemanticType::Prop))
         }
         SemanticTerm::Le { left, right } | SemanticTerm::Lt { left, right } => {
-            require_type(infer(left)?, &SemanticType::Nat, "order left operand")?;
-            require_type(infer(right)?, &SemanticType::Nat, "order right operand")?;
+            // Language 1.2 orders every integer type by its mathematical
+            // value; language 1.1 keeps the released Nat-only order.
+            let left = infer(left)?;
+            let right = infer(right)?;
+            match (&left, &right) {
+                (Some(operand), _) | (None, Some(operand))
+                    if env.language_1_2 && *operand != SemanticType::Nat =>
+                {
+                    if integer_representation(operand).is_none() {
+                        return Err(format!(
+                            "order operand has type {operand}, expected Nat, Int, or a fixed-width integer"
+                        ));
+                    }
+                    let operand = operand.clone();
+                    require_type(left, &operand, "order left operand")?;
+                    require_type(right, &operand, "order right operand")?;
+                }
+                _ => {
+                    require_type(left, &SemanticType::Nat, "order left operand")?;
+                    require_type(right, &SemanticType::Nat, "order right operand")?;
+                }
+            }
             Ok(Some(SemanticType::Prop))
         }
         SemanticTerm::Add { left, right } => {
@@ -8005,6 +8049,67 @@ fn check_proof(
                     expected,
                     "theorem application argument",
                 )?;
+            }
+            Ok(())
+        }
+        SemanticProof::Law {
+            name,
+            type_arguments,
+            arguments,
+            premises,
+        } => {
+            require_language_1_2(env, "law proof")?;
+            let law = laws::law(name)?;
+            if law.type_parameters.len() != type_arguments.len() {
+                return Err(format!(
+                    "law `{name}` expects {} explicit type argument(s), received {}",
+                    law.type_parameters.len(),
+                    type_arguments.len()
+                ));
+            }
+            for argument in type_arguments {
+                check_type_argument(argument, env)?;
+            }
+            let instantiation: BTreeMap<String, SemanticType> = law
+                .type_parameters
+                .iter()
+                .cloned()
+                .zip(type_arguments.iter().cloned())
+                .collect();
+            if law.parameters.len() != arguments.len() {
+                return Err(format!(
+                    "law `{name}` expects {} argument(s), received {}",
+                    law.parameters.len(),
+                    arguments.len()
+                ));
+            }
+            let local_names = locals.keys().cloned().collect();
+            for (argument, parameter) in arguments.iter().zip(&law.parameters) {
+                check_term(argument, &local_names, env, None, &BTreeSet::new())?;
+                require_type(
+                    infer_term(argument, locals, env)?,
+                    &substitute_type(parameter, &instantiation),
+                    "law application argument",
+                )?;
+            }
+            if law.premises != premises.len() {
+                return Err(format!(
+                    "law `{name}` expects {} premise(s), received {}",
+                    law.premises,
+                    premises.len()
+                ));
+            }
+            // A premise is discharged by a prior theorem; what it states is
+            // checked by Lean against the law, as `apply` leaves the
+            // statement to Lean.
+            for premise in premises {
+                check_member(premise, env)?;
+                if !env.proof_rules.contains_key(&member_key(premise)) {
+                    return Err(format!(
+                        "law `{name}` premise names a forward or missing theorem `{}`",
+                        member_key(premise)
+                    ));
+                }
             }
             Ok(())
         }

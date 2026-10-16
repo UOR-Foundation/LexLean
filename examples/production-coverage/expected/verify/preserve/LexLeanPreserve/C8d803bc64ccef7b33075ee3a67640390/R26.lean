@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R26.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R26
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R26
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R26.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -37,4 +41,8 @@ def denote (xs : (List Nat)) (b : ByteArray) (i : Nat) : _root_.LexLeanPreservat
 theorem root (xs : (List Nat)) (b : ByteArray) (i : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [((_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) xs), (_root_.LexLeanTarget.TargetSyntax.Value.bytes b), (_root_.LexLeanTarget.TargetSyntax.Value.nat i)] (_root_.LexLeanPreservation.Rel (__fits_0 xs b i) ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bytes (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u8) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat)) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.bytes) (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bool _root_.LexLeanTarget.TargetSyntax.Value.bool)))))))) (Coverage.Prims.sequences xs b i))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 xs b i)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R26.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R26
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R26
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R26.lean

@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R6.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R6.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -129,12 +133,17 @@ def entryValue (g : (List (Prod Nat (List Nat)))) (start : Nat) : _root_.LexLean
 
 /-- The entry's observation. -/
 def denoteEntry (g : (List (Prod Nat (List Nat)))) (start : Nat) : _root_.LexLeanPreservation.Obs :=
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R6.lean
   _root_.cond (_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.entryFits g start) (_root_.LexLeanPreservation.Obs.value (_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.entryValue g start)) _root_.LexLeanPreservation.Obs.overflow
+========
+  _root_.cond (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryFits g start) (_root_.LexLeanPreservation.Obs.value (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryValue g start)) _root_.LexLeanPreservation.Obs.overflow
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R6.lean
 
 /-- §17.12's invariants of the validated parameters. -/
 def accepts (g : (List (Prod Nat (List Nat)))) (start : Nat) : Prop :=
   (__inv_28 g ∧ _root_.True)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R6.lean
 theorem entry (g : (List (Prod Nat (List Nat)))) (start : Nat) : _root_.LexLeanPreservation.RunConv __prog 30 [((_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat))) g), (_root_.LexLeanTarget.TargetSyntax.Value.nat start)] (_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.denoteEntry g start) :=
   _root_.LexLeanPreservation.run_of_funRel (_root_.LexLeanPreservation.FunRel.fits_eq (_root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_cond (fun __c => if __c then __fits_0 g start else Bool.true) (fun __c => if __c then (_root_.LexLeanTarget.TargetSyntax.Value.some ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encOption (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat)))) (Coverage.Colls.graphs g start))) else _root_.LexLeanTarget.TargetSyntax.Value.none) (__valid_28 g) (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (__vrel_28 g)) (fun _ => _root_.LexLeanPreservation.Conv.fits_eq (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil)) (__rel_0 g start)) _root_.LexLeanPreservation.convL_nil) _root_.LexLeanPreservation.construct_some) (by simp)) (fun _ => _root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_none))) (by simp [_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.entryFits]))
 
@@ -147,8 +156,26 @@ theorem entry_accepts (g : (List (Prod Nat (List Nat)))) (start : Nat) (__h : _r
 theorem entry_refuses (g : (List (Prod Nat (List Nat)))) (start : Nat) (__h : ¬ _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.accepts g start) : _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.denoteEntry g start = _root_.LexLeanPreservation.Obs.value _root_.LexLeanTarget.TargetSyntax.Value.none := by
   unfold _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.accepts at __h
   unfold _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.denoteEntry _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.entryFits _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6.entryValue
+========
+theorem entry (g : (List (Prod Nat (List Nat)))) (start : Nat) : _root_.LexLeanPreservation.RunConv __prog 30 [((_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat))) g), (_root_.LexLeanTarget.TargetSyntax.Value.nat start)] (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denoteEntry g start) :=
+  _root_.LexLeanPreservation.run_of_funRel (_root_.LexLeanPreservation.FunRel.fits_eq (_root_.LexLeanPreservation.funRel_intro rfl rfl (_root_.LexLeanPreservation.conv_cond (fun __c => if __c then __fits_0 g start else Bool.true) (fun __c => if __c then (_root_.LexLeanTarget.TargetSyntax.Value.some ((_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat) (_root_.LexLeanPreservation.encOption (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.nat)))) (Coverage.Colls.graphs g start))) else _root_.LexLeanTarget.TargetSyntax.Value.none) (__valid_28 g) (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil) (__vrel_28 g)) (fun _ => _root_.LexLeanPreservation.Conv.fits_eq (_root_.LexLeanPreservation.conv_build (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_call (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) (_root_.LexLeanPreservation.convL_cons (_root_.LexLeanPreservation.conv_var rfl) _root_.LexLeanPreservation.convL_nil)) (__rel_0 g start)) _root_.LexLeanPreservation.convL_nil) _root_.LexLeanPreservation.construct_some) (by simp)) (fun _ => _root_.LexLeanPreservation.conv_build _root_.LexLeanPreservation.convL_nil _root_.LexLeanPreservation.construct_none))) (by simp [_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryFits]))
+
+theorem entry_accepts (g : (List (Prod Nat (List Nat)))) (start : Nat) (__h : _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.accepts g start) : _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denoteEntry g start = _root_.LexLeanPreservation.someObs (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denote g start) := by
+  unfold _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.accepts at __h
+  unfold _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denoteEntry _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryFits _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryValue _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denote
+  simp only [_root_.if_true, (__viff_28 g).mpr __h.1]
+  cases __fits_0 g start <;> rfl
+
+theorem entry_refuses (g : (List (Prod Nat (List Nat)))) (start : Nat) (__h : ¬ _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.accepts g start) : _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denoteEntry g start = _root_.LexLeanPreservation.Obs.value _root_.LexLeanTarget.TargetSyntax.Value.none := by
+  unfold _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.accepts at __h
+  unfold _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.denoteEntry _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryFits _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6.entryValue
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R6.lean
   cases __c0 : __valid_28 g
   · simp
   · exact _root_.absurd ⟨(__viff_28 g).mp __c0, _root_.trivial⟩ __h
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R6.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R6
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R6
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R6.lean

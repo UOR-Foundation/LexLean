@@ -1,3 +1,186 @@
+'LexLeanCollections.Key' does not depend on any axioms
+'LexLeanCollections.Key.casesOn' does not depend on any axioms
+'LexLeanCollections.Key.compare' does not depend on any axioms
+'LexLeanCollections.Key.ctorIdx' does not depend on any axioms
+'LexLeanCollections.Key.mk._flat_ctor' does not depend on any axioms
+'LexLeanCollections.Key.mk.noConfusion' does not depend on any axioms
+'LexLeanCollections.Key.noConfusion' does not depend on any axioms
+'LexLeanCollections.Key.noConfusionType' does not depend on any axioms
+'LexLeanCollections.Key.recOn' does not depend on any axioms
+'LexLeanCollections.compareCodes' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._f' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._sunfold' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._unsafe_rec' depends on axioms: [propext]
+'LexLeanCollections.compareCodes.match_1' depends on axioms: [propext]
+'LexLeanCollections.compareCodes.match_4' does not depend on any axioms
+'LexLeanCollections.containsElement' does not depend on any axioms
+'LexLeanCollections.containsElement._f' does not depend on any axioms
+'LexLeanCollections.containsElement._sunfold' does not depend on any axioms
+'LexLeanCollections.containsElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.graphNodes' does not depend on any axioms
+'LexLeanCollections.graphReachable' depends on axioms: [propext]
+'LexLeanCollections.graphSuccessors' does not depend on any axioms
+'LexLeanCollections.graphTopological' does not depend on any axioms
+'LexLeanCollections.insertElement' does not depend on any axioms
+'LexLeanCollections.insertElement._f' does not depend on any axioms
+'LexLeanCollections.insertElement._sunfold' does not depend on any axioms
+'LexLeanCollections.insertElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.insertElement.match_1' does not depend on any axioms
+'LexLeanCollections.insertEntry' does not depend on any axioms
+'LexLeanCollections.insertEntry._f' does not depend on any axioms
+'LexLeanCollections.insertEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.insertEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.insertEntry.match_1' does not depend on any axioms
+'LexLeanCollections.insertEntry.match_3' does not depend on any axioms
+'LexLeanCollections.instKeyBool' depends on axioms: [propext]
+'LexLeanCollections.instKeyInt' does not depend on any axioms
+'LexLeanCollections.instKeyInt16' does not depend on any axioms
+'LexLeanCollections.instKeyInt32' does not depend on any axioms
+'LexLeanCollections.instKeyInt64' does not depend on any axioms
+'LexLeanCollections.instKeyInt8' does not depend on any axioms
+'LexLeanCollections.instKeyNat' does not depend on any axioms
+'LexLeanCollections.instKeyProd' depends on axioms: [propext]
+'LexLeanCollections.instKeyString' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanCollections.instKeyUInt16' does not depend on any axioms
+'LexLeanCollections.instKeyUInt32' does not depend on any axioms
+'LexLeanCollections.instKeyUInt64' does not depend on any axioms
+'LexLeanCollections.instKeyUInt8' does not depend on any axioms
+'LexLeanCollections.iterate' does not depend on any axioms
+'LexLeanCollections.iterate._f' does not depend on any axioms
+'LexLeanCollections.iterate._sunfold' does not depend on any axioms
+'LexLeanCollections.iterate._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.iterate.match_1' does not depend on any axioms
+'LexLeanCollections.iterateUntil' does not depend on any axioms
+'LexLeanCollections.iterateUntil._f' does not depend on any axioms
+'LexLeanCollections.iterateUntil._sunfold' does not depend on any axioms
+'LexLeanCollections.iterateUntil._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.iterateUntil.match_1' does not depend on any axioms
+'LexLeanCollections.lessThan' depends on axioms: [propext]
+'LexLeanCollections.lessThan._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.lessThan.match_1' depends on axioms: [propext]
+'LexLeanCollections.listFold' does not depend on any axioms
+'LexLeanCollections.lookupEntry' does not depend on any axioms
+'LexLeanCollections.lookupEntry._f' does not depend on any axioms
+'LexLeanCollections.lookupEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.lookupEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.mapContains' does not depend on any axioms
+'LexLeanCollections.mapEntries' does not depend on any axioms
+'LexLeanCollections.mapFold' does not depend on any axioms
+'LexLeanCollections.mapInsert' does not depend on any axioms
+'LexLeanCollections.mapKeys' does not depend on any axioms
+'LexLeanCollections.mapLookup' does not depend on any axioms
+'LexLeanCollections.mapRemove' does not depend on any axioms
+'LexLeanCollections.mapSize' does not depend on any axioms
+'LexLeanCollections.mapValues' does not depend on any axioms
+'LexLeanCollections.reachableFrom' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._f' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._sunfold' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._unsafe_rec' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom.match_1' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom.match_4' does not depend on any axioms
+'LexLeanCollections.removeElement' does not depend on any axioms
+'LexLeanCollections.removeElement._f' does not depend on any axioms
+'LexLeanCollections.removeElement._sunfold' does not depend on any axioms
+'LexLeanCollections.removeElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.removeEntry' does not depend on any axioms
+'LexLeanCollections.removeEntry._f' does not depend on any axioms
+'LexLeanCollections.removeEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.removeEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.setContains' does not depend on any axioms
+'LexLeanCollections.setDifference' does not depend on any axioms
+'LexLeanCollections.setElements' does not depend on any axioms
+'LexLeanCollections.setFold' does not depend on any axioms
+'LexLeanCollections.setInsert' does not depend on any axioms
+'LexLeanCollections.setIntersection' does not depend on any axioms
+'LexLeanCollections.setRemove' does not depend on any axioms
+'LexLeanCollections.setSize' does not depend on any axioms
+'LexLeanCollections.setUnion' does not depend on any axioms
+'LexLeanCollections.topological' does not depend on any axioms
+'LexLeanCollections.topological._f' does not depend on any axioms
+'LexLeanCollections.topological._sunfold' does not depend on any axioms
+'LexLeanCollections.topological._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.lessThan._sparseCasesOn_1.else_eq' depends on axioms: [propext]
+'LexLeanCollections.lessThan.eq_1' depends on axioms: [propext]
+'LexLeanCollections.listFold.eq_1' does not depend on any axioms
+'LexLeanLaws.append_list' does not depend on any axioms
+'LexLeanLaws.length_list' does not depend on any axioms
+'LexLeanLaws.lessThan_int' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.lessThan_int16' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.lessThan_int32' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.lessThan_int64' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.lessThan_int8' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.lessThan_nat' depends on axioms: [propext]
+'LexLeanLaws.lessThan_uint16' depends on axioms: [propext]
+'LexLeanLaws.lessThan_uint32' depends on axioms: [propext]
+'LexLeanLaws.lessThan_uint64' depends on axioms: [propext]
+'LexLeanLaws.lessThan_uint8' depends on axioms: [propext]
+'LexLeanLaws.listFold_add_int' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_add_int_self' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_add_nat' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_add_nat_self' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_append' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_cons' does not depend on any axioms
+'LexLeanLaws.listFold_extend' depends on axioms: [propext]
+'LexLeanLaws.listFold_fusion' does not depend on any axioms
+'LexLeanLaws.listFold_nil' does not depend on any axioms
+'LexLeanLaws.listFold_pair' does not depend on any axioms
+'LexLeanLaws.listFold_prepend' depends on axioms: [propext]
+'LexLeanLaws.listFold_sub_int' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.listFold_sub_int_self' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.mapEntries_self' does not depend on any axioms
+'LexLeanLaws.mapFold_listFold' does not depend on any axioms
+'LexLeanLaws.mapSize_length' does not depend on any axioms
+'LexLeanLaws.quotient_int' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.quotient_nat' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.remainder_int' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.remainder_nat' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.setElements_self' does not depend on any axioms
+'LexLeanLaws.setFold_listFold' does not depend on any axioms
+'LexLeanLaws.setSize_length' does not depend on any axioms
+'LexLeanLaws.sumInt' does not depend on any axioms
+'LexLeanLaws.sumInt._f' does not depend on any axioms
+'LexLeanLaws.sumInt._sunfold' does not depend on any axioms
+'LexLeanLaws.sumInt._unsafe_rec' does not depend on any axioms
+'LexLeanLaws.sumInt.eq_1' does not depend on any axioms
+'LexLeanLaws.sumInt.eq_2' does not depend on any axioms
+'LexLeanLaws.sumInt.eq_def' does not depend on any axioms
+'LexLeanLaws.sumInt_add' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_append' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_cons' does not depend on any axioms
+'LexLeanLaws.sumInt_const' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_mul' depends on axioms: [propext]
+'LexLeanLaws.sumInt_mul_right' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_mul_self' depends on axioms: [propext]
+'LexLeanLaws.sumInt_neg' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_neg_self' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_nil' does not depend on any axioms
+'LexLeanLaws.sumInt_perm' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_reverse' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumInt_sub' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat' does not depend on any axioms
+'LexLeanLaws.sumNat._f' does not depend on any axioms
+'LexLeanLaws.sumNat._sunfold' does not depend on any axioms
+'LexLeanLaws.sumNat._unsafe_rec' does not depend on any axioms
+'LexLeanLaws.sumNat.eq_1' does not depend on any axioms
+'LexLeanLaws.sumNat.eq_2' does not depend on any axioms
+'LexLeanLaws.sumNat.eq_def' does not depend on any axioms
+'LexLeanLaws.sumNat.match_1' does not depend on any axioms
+'LexLeanLaws.sumNat_add' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat_append' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat_cons' does not depend on any axioms
+'LexLeanLaws.sumNat_const' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat_mul' does not depend on any axioms
+'LexLeanLaws.sumNat_mul_right' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat_mul_self' does not depend on any axioms
+'LexLeanLaws.sumNat_nil' does not depend on any axioms
+'LexLeanLaws.sumNat_perm' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.sumNat_reverse' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.tdiv_ediv' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.tmod_emod' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.quotient.eq_1' does not depend on any axioms
+'LexLeanRuntime.remainder.eq_1' does not depend on any axioms
 'LexLeanRuntime.Appendable' does not depend on any axioms
 'LexLeanRuntime.Appendable.append' does not depend on any axioms
 'LexLeanRuntime.Appendable.casesOn' does not depend on any axioms

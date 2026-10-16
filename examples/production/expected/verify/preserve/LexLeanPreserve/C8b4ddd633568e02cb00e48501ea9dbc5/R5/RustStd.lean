@@ -3,7 +3,11 @@ set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
+<<<<<<<< HEAD:examples/production/expected/verify/preserve/LexLeanPreserve/C8b4ddd633568e02cb00e48501ea9dbc5/R5/RustStd.lean
 namespace LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R5.RustStd
+========
+namespace LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R5.RustStd
+>>>>>>>> gh/main:examples/production/expected/verify/preserve/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R5/RustStd.lean
 open LexLeanTarget LexLeanPreservation.Rust
 
 noncomputable def program : TargetSyntax.Program :=
@@ -38,4 +42,8 @@ theorem crate_ok : CrateOK program krate flags := by
 /-- Every function of the program is simulated by its rendering. -/
 theorem root : ∀ n f, FunSem program krate flags n f := fun n f => simulate crate_ok n f
 
+<<<<<<<< HEAD:examples/production/expected/verify/preserve/LexLeanPreserve/C8b4ddd633568e02cb00e48501ea9dbc5/R5/RustStd.lean
 end LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R5.RustStd
+========
+end LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R5.RustStd
+>>>>>>>> gh/main:examples/production/expected/verify/preserve/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R5/RustStd.lean

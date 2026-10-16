@@ -12,7 +12,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production/expected/verify/preserve/LexLeanPreserve/C8b4ddd633568e02cb00e48501ea9dbc5/R0.lean
 namespace LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0
+========
+namespace LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R0
+>>>>>>>> gh/main:examples/production/expected/verify/preserve/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R0.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -31,4 +35,8 @@ def denote (left : UInt32) (right : UInt32) : _root_.LexLeanPreservation.Obs :=
 theorem root (left : UInt32) (right : UInt32) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.u32 left), (_root_.LexLeanTarget.TargetSyntax.Value.u32 right)] (_root_.LexLeanPreservation.Rel (__fits_0 left right) ((_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.u32) (Production.Main.checkedSum left right))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 left right)
 
+<<<<<<<< HEAD:examples/production/expected/verify/preserve/LexLeanPreserve/C8b4ddd633568e02cb00e48501ea9dbc5/R0.lean
 end LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0
+========
+end LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R0
+>>>>>>>> gh/main:examples/production/expected/verify/preserve/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R0.lean

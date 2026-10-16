@@ -19,7 +19,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/models/expected/verify/preserve/LexLeanPreserve/C38ccd8a9e29d1de8ccb04624cc5bc434/R5.lean
 namespace LexLeanPreserve.C38ccd8a9e29d1de8ccb04624cc5bc434.R5
+========
+namespace LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R5
+>>>>>>>> gh/main:examples/models/expected/verify/preserve/LexLeanPreserve/C6e8361ce3941a9dbed4a89b310886cf8/R5.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -72,4 +76,8 @@ def denote (s : Nat) (x : Nat) : _root_.LexLeanPreservation.Obs :=
 theorem root (s : Nat) (x : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat s), (_root_.LexLeanTarget.TargetSyntax.Value.nat x)] (_root_.LexLeanPreservation.Rel (__fits_0 s x) ((_root_.LexLeanPreservation.encExcept (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bool _root_.LexLeanTarget.TargetSyntax.Value.bool) (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat _root_.LexLeanTarget.TargetSyntax.Value.nat)) (Models.Main.ledgerPost s x))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 s x)
 
+<<<<<<<< HEAD:examples/models/expected/verify/preserve/LexLeanPreserve/C38ccd8a9e29d1de8ccb04624cc5bc434/R5.lean
 end LexLeanPreserve.C38ccd8a9e29d1de8ccb04624cc5bc434.R5
+========
+end LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R5
+>>>>>>>> gh/main:examples/models/expected/verify/preserve/LexLeanPreserve/C6e8361ce3941a9dbed4a89b310886cf8/R5.lean

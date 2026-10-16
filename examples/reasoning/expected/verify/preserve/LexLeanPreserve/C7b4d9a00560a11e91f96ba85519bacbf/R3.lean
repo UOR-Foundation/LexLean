@@ -15,7 +15,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/reasoning/expected/verify/preserve/LexLeanPreserve/C7b4d9a00560a11e91f96ba85519bacbf/R3.lean
 namespace LexLeanPreserve.C7b4d9a00560a11e91f96ba85519bacbf.R3
+========
+namespace LexLeanPreserve.Cd362aa768021aa2dd83c667dc02645c0.R3
+>>>>>>>> gh/main:examples/reasoning/expected/verify/preserve/LexLeanPreserve/Cd362aa768021aa2dd83c667dc02645c0/R3.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[], [], [.nat]] },
@@ -346,4 +350,8 @@ def denote (target : Nat) : _root_.LexLeanPreservation.Obs :=
 theorem root (target : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat target)] (_root_.LexLeanPreservation.Rel (__fits_0 target) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Reasoning.Main.planLeft target))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 target)
 
+<<<<<<<< HEAD:examples/reasoning/expected/verify/preserve/LexLeanPreserve/C7b4d9a00560a11e91f96ba85519bacbf/R3.lean
 end LexLeanPreserve.C7b4d9a00560a11e91f96ba85519bacbf.R3
+========
+end LexLeanPreserve.Cd362aa768021aa2dd83c667dc02645c0.R3
+>>>>>>>> gh/main:examples/reasoning/expected/verify/preserve/LexLeanPreserve/Cd362aa768021aa2dd83c667dc02645c0/R3.lean

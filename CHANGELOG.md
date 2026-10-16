@@ -31,11 +31,31 @@ versions, and the entries below say what each tag does and does not claim.
   another role or schema, or a tokenizer with type parameters, is refused
   with `LLT4006`, and a scheme outside `byte_level` and `longest_match` is a
   schema violation (`LLT4001`). The language-1.2 `semantic_ir`,
-  `lean_backend`, and `latex_backend` versions move to 11, 18, and 12, so
+  `lean_backend`, and `latex_backend` versions move to 12, 19, and 12, so
   every language-1.2 lock, golden, fixture, and verification record is
-  regenerated. The register holds 391 IDs: this slice registers `LM-01`..`LM-03`
+  regenerated. The register holds 395 IDs: this slice registers `LM-01`..`LM-03`
   and `LM-13` only; the remaining text components of the design on #30 add
   their rows when their slices land, so no registered ID is unwired.
+- Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
+  no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
+  integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
+  `Nat` only. `linear_arithmetic` now reads the runtime: `less_than`,
+  `equal`, `negate`, `quotient`, `remainder` (truncating division by a
+  literal included), and fixed-width order and equality become linear
+  arithmetic, every `if` and `match` left in the goal is split, and `omega`
+  decides each case. The fold laws are LexLean source, the native runtime
+  module `LexLeanRuntime.Laws` (`tests/runtime-library/LAWS.md`). It holds
+  the normal form of additive list, set, and map folds as sums, their
+  linearity, and their invariance under permutation, append, and reverse,
+  which `linear_arithmetic` rewrites with, plus fusion, the fold of a pair,
+  and the fold of an append. The closed `law` proof form applies one of
+  these registered laws (`language/runtime-1.2/laws.toml`) with linking
+  checks. `examples/fold-laws` verifies integer kernels and fold equalities
+  for all inputs, with `decide` only on closed instances. The
+  language-1.2 compiler-semantics ID changes (`semantic_ir` 11,
+  `lean_backend` 18, `proof_lowering` 3), and every language-1.2 lock,
+  golden, fixture expectation, calculus package, production export, and
+  verified record is regenerated. The register holds 391 IDs.
 
 - The runtime gates read what they claimed to (#154, follow-up to #144; no new
   diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string

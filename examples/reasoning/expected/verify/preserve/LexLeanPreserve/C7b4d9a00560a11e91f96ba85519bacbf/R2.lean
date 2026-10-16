@@ -15,7 +15,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/reasoning/expected/verify/preserve/LexLeanPreserve/C7b4d9a00560a11e91f96ba85519bacbf/R2.lean
 namespace LexLeanPreserve.C7b4d9a00560a11e91f96ba85519bacbf.R2
+========
+namespace LexLeanPreserve.Cd362aa768021aa2dd83c667dc02645c0.R2
+>>>>>>>> gh/main:examples/reasoning/expected/verify/preserve/LexLeanPreserve/Cd362aa768021aa2dd83c667dc02645c0/R2.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[.nat, .nat, .nat, .nat, .nat, .nat]] },
@@ -414,4 +418,8 @@ def denote (temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteC
 theorem root (temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.nat temperature), (_root_.LexLeanTarget.TargetSyntax.Value.nat heartRate), (_root_.LexLeanTarget.TargetSyntax.Value.nat respiratoryRate), (_root_.LexLeanTarget.TargetSyntax.Value.nat whiteCells), (_root_.LexLeanTarget.TargetSyntax.Value.nat systolic), (_root_.LexLeanTarget.TargetSyntax.Value.nat infection)] (_root_.LexLeanPreservation.Rel (__fits_0 temperature heartRate respiratoryRate whiteCells systolic infection) (_root_.LexLeanTarget.TargetSyntax.Value.nat (Reasoning.Main.triageSteps temperature heartRate respiratoryRate whiteCells systolic infection))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 temperature heartRate respiratoryRate whiteCells systolic infection)
 
+<<<<<<<< HEAD:examples/reasoning/expected/verify/preserve/LexLeanPreserve/C7b4d9a00560a11e91f96ba85519bacbf/R2.lean
 end LexLeanPreserve.C7b4d9a00560a11e91f96ba85519bacbf.R2
+========
+end LexLeanPreserve.Cd362aa768021aa2dd83c667dc02645c0.R2
+>>>>>>>> gh/main:examples/reasoning/expected/verify/preserve/LexLeanPreserve/Cd362aa768021aa2dd83c667dc02645c0/R2.lean

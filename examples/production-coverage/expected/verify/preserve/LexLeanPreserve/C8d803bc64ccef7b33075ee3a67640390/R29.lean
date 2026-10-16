@@ -18,7 +18,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R29.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R29
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R29
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R29.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [], functions := [
@@ -37,4 +41,8 @@ def denote (s : String) (d : String) : _root_.LexLeanPreservation.Obs :=
 theorem root (s : String) (d : String) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.string s), (_root_.LexLeanTarget.TargetSyntax.Value.string d)] (_root_.LexLeanPreservation.Rel (__fits_0 s d) ((_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bytes (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption _root_.LexLeanTarget.TargetSyntax.Value.string) (_root_.LexLeanPreservation.encPair _root_.LexLeanPreservation.encOrdering (_root_.LexLeanPreservation.encPair (_root_.LexLeanPreservation.encOption (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.string)) (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.string (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.nat _root_.LexLeanTarget.TargetSyntax.Value.bool)))))) (Coverage.Prims.text s d))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 s d)
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R29.lean
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R29
+========
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R29
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R29.lean

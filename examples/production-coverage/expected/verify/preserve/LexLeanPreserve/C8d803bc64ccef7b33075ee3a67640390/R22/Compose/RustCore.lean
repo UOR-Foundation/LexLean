@@ -1,11 +1,17 @@
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R22/Compose/RustCore.lean
 import LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22
 import LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22.RustCore
+========
+import LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22
+import LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.RustCore
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R22/Compose/RustCore.lean
 import LexLeanPreservation.Compose
 set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C8d803bc64ccef7b33075ee3a67640390/R22/Compose/RustCore.lean
 namespace LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22.Compose.RustCore
 
 /-- The rendering of the root, invoked on the encoded arguments, realizes
@@ -14,3 +20,13 @@ theorem root (a : Int16) (b : Int32) (__e_hrep : _root_.LexLeanPreservation.Rust
   _root_.LexLeanPreservation.Rust.compose (fun __e_n => _root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22.RustCore.root __e_n 0) rfl (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_i16 a) (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_i32 b) _root_.LexLeanPreservation.Rust.wtl_nil)) rfl rfl (_root_.LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22.root a b) (_root_.LexLeanPreservation.Rust.rel_ne_stuck _ _)
 
 end LexLeanPreserve.C8d803bc64ccef7b33075ee3a67640390.R22.Compose.RustCore
+========
+namespace LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.Compose.RustCore
+
+/-- The rendering of the root, invoked on the encoded arguments, realizes
+the encoded source result. -/
+theorem root (a : Int16) (b : Int32) (__e_hrep : _root_.LexLeanPreservation.Rust.RepresentableL [(_root_.LexLeanTarget.TargetSyntax.Value.i16 a), (_root_.LexLeanTarget.TargetSyntax.Value.i32 b)]) : ∃ __e_ro, _root_.LexLeanPreservation.Rust.RealizesFn Bool.false (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.denote a b) __e_ro ∧ _root_.LexLeanPreservation.Rust.RCI _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.RustCore.krate (_root_.LexLeanPreservation.Rust.fnIdent 0) [(_root_.LexLeanTarget.TargetSyntax.Value.i16 a), (_root_.LexLeanTarget.TargetSyntax.Value.i32 b)] __e_ro :=
+  _root_.LexLeanPreservation.Rust.compose (fun __e_n => _root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.RustCore.root __e_n 0) rfl (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_i16 a) (_root_.LexLeanPreservation.Rust.wtl_cons (_root_.LexLeanPreservation.Rust.wt_i32 b) _root_.LexLeanPreservation.Rust.wtl_nil)) rfl rfl (_root_.LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.root a b) (_root_.LexLeanPreservation.Rust.rel_ne_stuck _ _)
+
+end LexLeanPreserve.Cc2030093ffdb7a3e8068874ff75532ac.R22.Compose.RustCore
+>>>>>>>> gh/main:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cc2030093ffdb7a3e8068874ff75532ac/R22/Compose/RustCore.lean

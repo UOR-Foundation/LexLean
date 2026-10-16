@@ -1,0 +1,174 @@
+\begin{lexlean}{Folds}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{folds.titles@1.0.0}
+\title{Fold equalities}
+\begin{semanticmodule}
+definition{
+  name: total,
+  parameters: [xs : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (acc : Nat) (v : Nat) => (acc + v)) 0 xs : Nat),
+  executable: true
+}
+
+definition{
+  name: count,
+  parameters: [xs : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (acc : Nat) (v : Nat) => (acc + 1)) 0 xs : Nat),
+  executable: true
+}
+
+definition{
+  name: doubledTotal,
+  parameters: [xs : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (acc : Nat) (v : Nat) => ((acc + v) + v)) 0 xs : Nat),
+  executable: true
+}
+
+definition{
+  name: weighted,
+  parameters: [xs : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (acc : Nat) (v : Nat) => (acc + ((prim multiply 3 v : Nat) + 1))) 0 xs : Nat),
+  executable: true
+}
+
+definition{
+  name: reversed,
+  parameters: [xs : (List Nat)],
+  result: (List Nat),
+  body: (prim list_fold (fun (acc : (List Nat)) (v : Nat) => (cons v acc)) (nil Nat) xs : (List Nat)),
+  executable: true
+}
+
+definition{
+  name: balance,
+  parameters: [opening : Int, movements : (List Int)],
+  result: Int,
+  body: (prim list_fold (fun (acc : Int) (v : Int) => (prim subtract acc v : Int)) opening movements : Int),
+  executable: true
+}
+
+definition{
+  name: credit,
+  parameters: [opening : Int, movements : (List Int)],
+  result: Int,
+  body: (prim list_fold (fun (acc : Int) (v : Int) => (prim subtract acc (prim negate v : Int) : Int)) opening movements : Int),
+  executable: true
+}
+
+definition{
+  name: setTotal,
+  parameters: [s : (Set Nat)],
+  result: Nat,
+  body: (prim set_fold (fun (acc : Nat) (v : Nat) => (acc + v)) 0 s : Nat),
+  executable: true
+}
+
+definition{
+  name: setDoubled,
+  parameters: [s : (Set Nat)],
+  result: Nat,
+  body: (prim set_fold (fun (acc : Nat) (v : Nat) => (acc + (prim multiply 2 v : Nat))) 0 s : Nat),
+  executable: true
+}
+
+definition{
+  name: entryTotal,
+  parameters: [m : (Map Nat Nat)],
+  result: Nat,
+  body: (prim map_fold (fun (acc : Nat) (k : Nat) (v : Nat) => (acc + (k + v))) 0 m : Nat),
+  executable: true
+}
+
+definition{
+  name: keyTotal,
+  parameters: [m : (Map Nat Nat)],
+  result: Nat,
+  body: (prim map_fold (fun (acc : Nat) (k : Nat) (v : Nat) => (acc + k)) 0 m : Nat),
+  executable: true
+}
+
+definition{
+  name: valueTotal,
+  parameters: [m : (Map Nat Nat)],
+  result: Nat,
+  body: (prim map_fold (fun (acc : Nat) (k : Nat) (v : Nat) => (acc + v)) 0 m : Nat),
+  executable: true
+}
+
+theorem{
+  name: doubled_total,
+  parameters: [xs : (List Nat)],
+  statement: ((doubledTotal xs) = ((total xs) + (total xs))),
+  proof: linear_arithmetic{definitions: [doubledTotal, total]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: count_is_length,
+  parameters: [xs : (List Nat)],
+  statement: ((count xs) = (prim length xs : Nat)),
+  proof: linear_arithmetic{definitions: [count]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: weighted_total,
+  parameters: [xs : (List Nat)],
+  statement: ((weighted xs) = ((prim multiply 3 (total xs) : Nat) + (count xs))),
+  proof: linear_arithmetic{definitions: [count, total, weighted]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: total_append_commutes,
+  parameters: [xs : (List Nat), ys : (List Nat)],
+  statement: ((total (prim append xs ys : (List Nat))) = (total (prim append ys xs : (List Nat)))),
+  proof: linear_arithmetic{definitions: [total]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: total_reversed,
+  parameters: [xs : (List Nat)],
+  statement: ((total (reversed xs)) = (total xs)),
+  proof: linear_arithmetic{definitions: [reversed, total]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: balance_credit,
+  parameters: [opening : Int, movements : (List Int)],
+  statement: ((prim subtract (balance opening movements) opening : Int) = (prim subtract opening (credit opening movements) : Int)),
+  proof: linear_arithmetic{definitions: [balance, credit]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: set_doubled,
+  parameters: [s : (Set Nat)],
+  statement: ((setDoubled s) = (prim multiply 2 (setTotal s) : Nat)),
+  proof: linear_arithmetic{definitions: [setDoubled, setTotal]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: map_split,
+  parameters: [m : (Map Nat Nat)],
+  statement: ((entryTotal m) = ((keyTotal m) + (valueTotal m))),
+  proof: linear_arithmetic{definitions: [entryTotal, keyTotal, valueTotal]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: doubled_total_closed,
+  parameters: [],
+  statement: ((doubledTotal (cons 1 (cons 2 (cons 3 (nil Nat))))) = 12),
+  proof: decide{},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}

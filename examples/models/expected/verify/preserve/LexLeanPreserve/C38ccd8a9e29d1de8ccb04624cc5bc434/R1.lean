@@ -19,7 +19,11 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
+<<<<<<<< HEAD:examples/models/expected/verify/preserve/LexLeanPreserve/C38ccd8a9e29d1de8ccb04624cc5bc434/R1.lean
 namespace LexLeanPreserve.C38ccd8a9e29d1de8ccb04624cc5bc434.R1
+========
+namespace LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R1
+>>>>>>>> gh/main:examples/models/expected/verify/preserve/LexLeanPreserve/C6e8361ce3941a9dbed4a89b310886cf8/R1.lean
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[], [], [], [], [], [], [], [], [], []] }], functions := [
@@ -242,4 +246,8 @@ def denote (glyph : (Models.Glyphs.Glyph)) : _root_.LexLeanPreservation.Obs :=
 theorem root (glyph : (Models.Glyphs.Glyph)) : _root_.LexLeanPreservation.RunConv __prog 0 [(__enc_0 glyph)] (_root_.LexLeanPreservation.Rel (__fits_0 glyph) ((_root_.LexLeanPreservation.encExcept (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bool _root_.LexLeanTarget.TargetSyntax.Value.bool) _root_.LexLeanTarget.TargetSyntax.Value.nat) (Models.Main.classifyChecked glyph))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 glyph)
 
+<<<<<<<< HEAD:examples/models/expected/verify/preserve/LexLeanPreserve/C38ccd8a9e29d1de8ccb04624cc5bc434/R1.lean
 end LexLeanPreserve.C38ccd8a9e29d1de8ccb04624cc5bc434.R1
+========
+end LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R1
+>>>>>>>> gh/main:examples/models/expected/verify/preserve/LexLeanPreserve/C6e8361ce3941a9dbed4a89b310886cf8/R1.lean
