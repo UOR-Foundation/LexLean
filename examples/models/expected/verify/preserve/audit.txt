@@ -7800,6 +7800,12 @@
 'LexLeanPreserve.C49cf062e918bdc2f8a44a66473c4435e.R8.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R0.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R1.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R2.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R2.Compose.RustStd.__wt_1' depends on axioms: [propext]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R3.Compose.RustStd.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C6e8361ce3941a9dbed4a89b310886cf8.R4.Compose.RustStd.__wt_0' depends on axioms: [propext]
 -- statement vocabulary
 inductive LexLeanPreservation.Obs : Type
 number of parameters: 0

@@ -119,6 +119,19 @@ impl<'a> Source<'a> {
         })
     }
 
+    /// The position of the declaration `name` among `module`'s elaborated
+    /// declarations: the order Lean declares them in, which a mutual block's
+    /// recursors follow.
+    pub(crate) fn declaration_position(&self, module: &str, name: &str) -> Option<usize> {
+        self.modules.get(module).and_then(|linked| {
+            linked
+                .semantic
+                .lowered_declarations()
+                .into_iter()
+                .position(|declaration| declaration.name() == name)
+        })
+    }
+
     /// The generated Lean module of a source module.
     pub(crate) fn lean_module(&self, module: &str) -> Result<&'a str, String> {
         self.modules
