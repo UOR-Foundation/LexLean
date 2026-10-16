@@ -364,9 +364,7 @@ impl Writer<'_, '_> {
             | SemanticPrimitive::GraphReachable
             | SemanticPrimitive::GraphTopological
             | SemanticPrimitive::LessThan => {
-                return Err(format!(
-                    "{operation:?} is a collection operation, certified through its template"
-                ));
+                return self.collection_call(site, operation, types, args);
             }
         }
         // `quotient` and `remainder` take their zero case as a third operand.

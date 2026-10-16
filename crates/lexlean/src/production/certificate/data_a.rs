@@ -34,6 +34,7 @@ use crate::ir::semantic::{MemberRef, SemanticTerm, SemanticType, Step};
 
 mod boundary;
 mod calls;
+mod clauses;
 mod encoders;
 mod lean;
 mod matching;
@@ -314,6 +315,11 @@ impl<'g, 'a> Writer<'g, 'a> {
         if let Some((module, rest)) = name.split_once(".LexLeanRuntime.") {
             if module == super::SEMANTICS_MODULE || self.runtime_modules.contains(module) {
                 return Ok(runtime_axioms(rest));
+            }
+        }
+        if let Some((module, rest)) = name.split_once(".LexLeanCollections.") {
+            if self.runtime_modules.contains(module) {
+                return Ok(collections_axioms(rest));
             }
         }
         Ok(Vec::new())
@@ -631,6 +637,41 @@ fn runtime_axioms(name: &str) -> Vec<String> {
         | "instFixedUInt8" | "instFixedUInt16" | "instFixedUInt32" | "instFixedUInt64" => {
             some(&["Quot.sound", "propext"])
         }
+        _ => Vec::new(),
+    }
+}
+
+/// The axioms of a declaration of the collections runtime every generated
+/// module carries (`backend::semantic`), by its name below
+/// `LexLeanCollections`, as `#print axioms` reports them, measured with
+/// `Lean.collectAxioms` over a compiled module. Every declaration not named
+/// here depends on none. The audit module prints the axioms of every row, so
+/// a runtime that changes disagrees with this table at the first certificate.
+fn collections_axioms(name: &str) -> Vec<String> {
+    let propext = || vec!["propext".to_owned()];
+    match name {
+        "compareCodes"
+        | "compareCodes._f"
+        | "compareCodes._sparseCasesOn_1"
+        | "compareCodes._sunfold"
+        | "compareCodes._unsafe_rec"
+        | "compareCodes.match_1"
+        | "graphReachable"
+        | "instKeyBool"
+        | "instKeyProd"
+        | "lessThan"
+        | "lessThan._sparseCasesOn_1"
+        | "lessThan.match_1"
+        | "reachableFrom"
+        | "reachableFrom._f"
+        | "reachableFrom._sparseCasesOn_1"
+        | "reachableFrom._sunfold"
+        | "reachableFrom._unsafe_rec"
+        | "reachableFrom.match_1" => propext(),
+        "instKeyString" => ["Classical.choice", "Quot.sound", "propext"]
+            .iter()
+            .map(|axiom| (*axiom).to_owned())
+            .collect(),
         _ => Vec::new(),
     }
 }

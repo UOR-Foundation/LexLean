@@ -2454,33 +2454,3 @@ impl<'a> Writer<'_, 'a> {
         Ok(self.b.app(applied, refutation))
     }
 }
-
-// TEMP-SHIM-BEGIN
-impl Writer<'_, '_> {
-    fn key_order(&mut self, site: &Site, ty: &SemanticType) -> Result<Term, String> {
-        let module = self.gen.source.lean_module(&site.module)?;
-        let instance = match ty {
-            SemanticType::Nat => "instKeyNat",
-            SemanticType::Int => "instKeyInt",
-            _ => return Err("temporary".to_owned()),
-        };
-        let lean = self.lean_ty(ty)?;
-        let instance = self
-            .b
-            .konst(&format!("{module}.LexLeanCollections.{instance}"));
-        let compare = self
-            .b
-            .konst(&format!("{module}.LexLeanCollections.Key.compare"));
-        Ok(self.b.apps(compare, &[lean, instance]))
-    }
-    fn key_spec(&mut self, site: &Site, ty: &SemanticType) -> Result<Pf, String> {
-        let order = self.key_order(site, ty)?;
-        let lemma = match ty {
-            SemanticType::Nat => "keySpec_nat",
-            SemanticType::Int => "keySpec_int",
-            _ => return Err("temporary".to_owned()),
-        };
-        self.apply(lemma, &[], &[Given::Term(order), Given::Refl])
-    }
-}
-// TEMP-SHIM-END
