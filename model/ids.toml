@@ -2157,6 +2157,12 @@ suite = "production-export"
 statement = "Each production export schema under api/schemas validates the values the façade produces and refuses an unknown field, and its SHA-256 is recorded under its exact spec version in api/schemas/versions.toml, so that a schema changed without a new version fails the gate."
 
 [[id]]
+id = "PX-13"
+level = "build"
+suite = "production-export"
+statement = "Every output of a production result states the effects its realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there, so an output that can recurse says that it needs a host stack its input-dependent depth fits, and the export report counts those outputs."
+
+[[id]]
 id = "TL-01"
 level = "build"
 suite = "tooling"

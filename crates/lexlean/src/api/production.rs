@@ -26,7 +26,7 @@ use crate::error::LexLeanError;
 /// The schema tag of a production request.
 pub const REQUEST_SPEC: &str = "lexlean/production-request/1";
 /// The schema tag of a production result.
-pub const RESULT_SPEC: &str = "lexlean/production-result/1";
+pub const RESULT_SPEC: &str = "lexlean/production-result/2";
 /// The schema tag of one target descriptor.
 pub const TARGET_SPEC: &str = "lexlean/target-descriptor/1";
 /// The schema tag of the target-descriptor document.
@@ -425,7 +425,7 @@ pub fn targets_document() -> Result<Vec<u8>, LexLeanError> {
 // Result
 // ---------------------------------------------------------------------------
 
-/// A production result (`lexlean/production-result/1`).
+/// A production result (`lexlean/production-result/2`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductionResult {
@@ -526,6 +526,11 @@ pub struct TargetOutput {
     pub entry: Entry,
     /// Its certification.
     pub certification: Certification,
+    /// The effects its realization can exhibit on this target, ascending:
+    /// exactly those eligibility requires of the root there (§17.13). With
+    /// `recursion`, the host must give the call a stack its depth fits, a
+    /// depth bounded only by the input; exhausting it aborts the process.
+    pub effects: Vec<String>,
 }
 
 /// An exporting package.
@@ -654,6 +659,17 @@ impl ProductionResult {
     #[must_use]
     pub fn to_json(&self) -> Vec<u8> {
         canonical_bytes(self)
+    }
+
+    /// The outputs whose realization can recurse, each of which needs a host
+    /// stack its input-dependent depth fits (§17.13).
+    #[must_use]
+    pub fn recursive_outputs(&self) -> usize {
+        self.roots
+            .iter()
+            .flat_map(|root| &root.outputs)
+            .filter(|output| output.effects.iter().any(|effect| effect == "recursion"))
+            .count()
     }
 }
 
@@ -913,7 +929,7 @@ struct Planned {
     request: RootRequest,
     program_bytes: Vec<u8>,
     entry: u64,
-    packages: Vec<(TargetRef, Manifest, package::Package)>,
+    packages: Vec<(TargetRef, Manifest, package::Package, Vec<String>)>,
     evidence: Option<CheckedEvidence>,
 }
 
@@ -1146,7 +1162,21 @@ fn build_inner(
                     ),
                 ))
             })?;
-            packages.push((target.clone(), manifest, rendered));
+            let effects = root
+                .report
+                .targets
+                .iter()
+                .find(|row| row.target == target.id)
+                .map(|row| {
+                    let ids: BTreeSet<String> = row
+                        .effects
+                        .iter()
+                        .map(|effect| effect.effect.clone())
+                        .collect();
+                    ids.into_iter().collect()
+                })
+                .unwrap_or_default();
+            packages.push((target.clone(), manifest, rendered, effects));
         }
         let evidence = match request
             .evidence
@@ -1270,7 +1300,7 @@ fn build_inner(
             ),
         };
         let mut outputs = Vec::new();
-        for (target, manifest, rendered) in plan.packages {
+        for (target, manifest, rendered, effects) in plan.packages {
             let rendering = preserved
                 .renderings
                 .iter()
@@ -1350,6 +1380,7 @@ fn build_inner(
                     axioms: preservation.library.axioms.clone(),
                     certificates,
                 },
+                effects,
             });
         }
         let optimality = match plan.evidence {

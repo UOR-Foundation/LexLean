@@ -1796,6 +1796,11 @@ fn conformance_px_12() {
 }
 
 #[test]
+fn conformance_px_13() {
+    repo_conformance::cases::run("PX-13");
+}
+
+#[test]
 fn conformance_tl_01() {
     repo_conformance::cases::run("TL-01");
 }
