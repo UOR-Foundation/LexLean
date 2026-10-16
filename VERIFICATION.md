@@ -2481,6 +2481,44 @@ Removed: all seven were restored (the unit test of the audit,
 dependency with no role, a role with no dependency, and a SPEC without the
 table).
 
+### inherited output remains subject to the child deadline (Issue #132)
+
+A leader can exit successfully while a descendant still holds stdout or
+stderr. The runner now keeps its existing timeout and process-group guard
+active until the leader has exited and both output readers have finished;
+joining the readers cannot bypass the deadline. Timeout and host shutdown
+still use the existing termination path. `SE-06` also exercises a finite
+descendant holding stdout after its leader exits; the crate's unit tests
+cover each stream separately, group cleanup, and a descendant that finishes
+within its deadline with the successful status and output retained.
+
+Before the fix, `cargo test -p lexlean --lib a_timeout_bounds_` ran both
+inherited-pipe regressions and both failed in 3.00 seconds: `expect_err`
+received a successful `ChildRecord` with `exit_code: 0` after the finite
+descendant completed, despite `child_timeout_ms = 200`.
+
+The separate serialized host regression, `cargo test -p lexlean --test
+end_children an_embedding_host_ends_a_group_after_its_leader_exits`, failed
+in 0.02 seconds before the fix:
+
+```text
+the group stays registered while its output is being read
+  left: []
+ right: [ChildGroupEnd { group: 102, outcome: Ended }]
+```
+
+The case waits until the leader is actually reaped before asking the host
+to end the remaining group, and its descendant is finite even when the
+assertion fails. These process-group assertions run on Unix; the existing
+Windows tree-termination implementation is unchanged.
+
+After the fix, all seven timeout unit cases pass in 1.21 seconds, the
+hosting regression passes in 0.03 seconds, and `conformance_se_06` passes in
+1.79 seconds. Formatting, workspace/all-target Clippy with warnings denied,
+and the model/spec-link audits pass. The existing hosting suite passed nine
+cases in the sandbox; its real-signal case passes outside that sandbox in
+0.04 seconds, where SIGINT and SIGTERM reach its child host.
+
 ### a host ends the children the library started
 
 A host that embeds the library (`lexlean::cli::run`, a service, a test

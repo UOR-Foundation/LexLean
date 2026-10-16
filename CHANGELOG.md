@@ -15,6 +15,10 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Child deadlines remain active while reading inherited output pipes after
+  the direct child exits (#132). The process group stays registered until
+  both readers finish, so a timeout or an embedding host can end the remaining
+  group through the existing termination path (`SE-06`, SPEC.md §25.5).
 - Toolchain preflight compares the complete reported Lean version in Lean and
   Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
   suffixes, and a matching version elsewhere in the banner with `LLV7001`.
