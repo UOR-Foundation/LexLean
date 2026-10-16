@@ -1896,16 +1896,17 @@ pub fn run(id: &str) {
                 return;
             }
             let verified_example = || {
-                let project = P::copy_example("production");
-                let verified = support::verify_ok(&project);
-                let root = verified.root.as_std_path();
+                let exported = crate::production_export::exported("production");
+                let project = &exported.project;
+                let verified_root = exported.verified_root();
+                let root = verified_root.as_std_path();
                 let record_bytes = std::fs::read(root.join("preserve/preservation.json"))
                     .expect("preservation.json");
                 let record: serde_json::Value =
                     serde_json::from_slice(&record_bytes).expect("preservation.json is JSON");
                 support::assert_schema("preservation", "preservation.json", &record);
                 let rows = record["roots"].as_array().expect("roots");
-                let checked = support::checked_project(&project);
+                let checked = support::checked_project(project);
                 assert_eq!(
                     rows.len(),
                     roots(&checked).expect("the eligibility reports").len(),
@@ -2001,9 +2002,9 @@ pub fn run(id: &str) {
                 ("certificate-resource-exhausted", "LLS8002"),
                 ("preservation-drift", "LLV7014"),
             ];
-            // The verification of the example and the six rejections are
-            // independent runs of the whole pipeline, so they run side by
-            // side: a few at a time, because each holds a Lean process.
+            // Keep rejection setup beside the shared positive fixture:
+            // neither is initialized when this case runs alone, and each
+            // holds a Lean process.
             let reject = |&(fixture, code): &(&str, &str)| {
                 let observed = crate::fixtures::observe_shared(
                     &repo_root().join("tests/negative").join(fixture),

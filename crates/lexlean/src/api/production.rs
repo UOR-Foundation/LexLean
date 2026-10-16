@@ -768,30 +768,6 @@ struct AttestationFacts {
     preservation: (u64, Sha256Digest),
 }
 
-fn reports_pinned_lean_version(tool: &str, banner: &str) -> bool {
-    if banner.contains(['\n', '\r']) {
-        return false;
-    }
-    // Lake's own version does not identify Lean; only the whole enclosed
-    // Lean version field can establish the pin the result states.
-    let version = match tool {
-        "lean" => banner
-            .strip_prefix("Lean (version ")
-            .and_then(|rest| rest.strip_suffix(')'))
-            .and_then(|rest| rest.split_once(", "))
-            .filter(|(_, details)| !details.is_empty())
-            .map(|(version, _)| version),
-        "lake" => banner
-            .strip_prefix("Lake version ")
-            .and_then(|rest| rest.strip_suffix(')'))
-            .and_then(|rest| rest.split_once(" (Lean version "))
-            .filter(|(lake, _)| !lake.is_empty() && !lake.contains(char::is_whitespace))
-            .map(|(_, version)| version),
-        _ => None,
-    };
-    version == Some(crate::LEAN_VERSION)
-}
-
 fn require_attested_toolchain(body: &BTreeMap<String, Json>) -> Result<(), String> {
     let Some(Json::Obj(toolchain)) = body.get("toolchain") else {
         return Err("attestation.json states no `toolchain` object".to_owned());
@@ -807,7 +783,7 @@ fn require_attested_toolchain(body: &BTreeMap<String, Json>) -> Result<(), Strin
                 "attestation.json states no string `toolchain.{tool}.version_output`"
             ));
         };
-        if !reports_pinned_lean_version(tool, banner) {
+        if !crate::verify::toolchain::reports_pinned_version(tool, banner) {
             return Err(format!(
                 "attestation.json `toolchain.{tool}.version_output` does not report Lean {}",
                 crate::LEAN_VERSION

@@ -438,12 +438,15 @@ pub fn run(
         .as_ref()
         .map(|_| telemetry::GroupWatch::new(child.id()));
     let status = {
-        // Registered for as long as the child may be running.
+        // A descendant can hold either pipe after the leader exits. Keep
+        // its group registered and the deadline active until reading ends.
         let _tracked = tracked;
         loop {
             match child.try_wait() {
-                Ok(Some(status)) => break status,
-                Ok(None) => {
+                Ok(Some(status)) if stdout_reader.is_finished() && stderr_reader.is_finished() => {
+                    break status;
+                }
+                Ok(_) => {
                     if let Some(watch) = watch.as_mut() {
                         watch.poll();
                     }
@@ -668,6 +671,111 @@ mod timeout_tests {
             "the group was ended, so the report does not say otherwise: {error:?}"
         );
         assert!(left.is_empty(), "a timeout left running: {left:?}");
+    }
+
+    /// Reaping the leader does not close a pipe its descendant inherited.
+    #[test]
+    fn a_timeout_bounds_stdout_inherited_after_the_leader_exits() {
+        #[cfg(unix)]
+        inherited_pipe_timeout("stdout", "2>/dev/null");
+    }
+
+    #[test]
+    fn a_timeout_bounds_stderr_inherited_after_the_leader_exits() {
+        #[cfg(unix)]
+        inherited_pipe_timeout("stderr", ">/dev/null");
+    }
+
+    #[cfg(unix)]
+    fn inherited_pipe_timeout(stream: &str, redirect: &str) {
+        use std::os::unix::fs::PermissionsExt;
+        use std::time::{Duration, Instant};
+
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("leader");
+        // Finite even with the defect: the failing case leaves no process
+        // behind and never relies on an outer timeout to finish.
+        std::fs::write(
+            &script,
+            format!(
+                "#!/bin/sh\nprintf '%s\\n' \"$$\" > leader.pid\nsleep 3 {redirect} &\nexit 0\n"
+            ),
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "pipe-holder",
+            module: Some(stream.to_owned()),
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let started = Instant::now();
+        let result = run(&spec, &limits(200), &Normalizer::default());
+        let elapsed = started.elapsed();
+        let group = std::fs::read_to_string(directory.path().join("leader.pid"))
+            .expect("the leader recorded its group")
+            .trim()
+            .parse()
+            .expect("a group number");
+        let members =
+            crate::verify::lifeline::group_members(group).expect("the host has /proc or ps");
+        let live: Vec<_> = members.iter().filter(|member| !member.zombie).collect();
+        if !live.is_empty() {
+            let _ = crate::verify::lifeline::end_leader(u32::try_from(group).expect("group"));
+        }
+        let error = result.expect_err("an inherited pipe remains subject to the child timeout");
+        assert_eq!(error.code.as_str(), "LLS8002", "{error:?}");
+        for needle in ["child_timeout_ms", "configured 200", "pipe-holder", stream] {
+            assert!(error.message.contains(needle), "{error:?}");
+        }
+        assert!(live.is_empty(), "a timeout left the descendant running");
+        assert!(
+            elapsed < Duration::from_secs(2),
+            "the finite descendant outlived the configured timeout: {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn output_from_a_descendant_finishing_within_the_timeout_is_retained() {
+        #[cfg(unix)]
+        completed_descendant();
+    }
+
+    #[cfg(unix)]
+    fn completed_descendant() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("leader");
+        std::fs::write(
+            &script,
+            "#!/bin/sh\nprintf 'before\\n'\n(sleep 0.05; printf 'after\\n'; printf 'error\\n' >&2) &\nexit 0\n",
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "pipe-holder",
+            module: None,
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let record = run(&spec, &limits(5_000), &Normalizer::default())
+            .expect("the descendant finishes within the timeout");
+        assert_eq!(record.exit_code, 0);
+        assert_eq!(record.stdout, "before\nafter\n");
+        assert_eq!(record.stderr, "error\n");
     }
 
     /// The exit status `code` as the platform makes one.
