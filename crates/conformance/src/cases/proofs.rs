@@ -1143,32 +1143,32 @@ pub(crate) fn run(id: &str) {
             );
             fold_laws_rejected(
                 file,
-                "(fun (acc : Nat) (v : Nat) => (acc + 1)), 0, 0, xs]",
-                "(fun (acc : Nat) (v : Nat) => (acc + 1)), 0, xs]",
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
                 "law `list_fold_pair` expects 5 argument(s), received 4",
             );
             fold_laws_rejected(
                 file,
-                "(fun (acc : Nat) (v : Nat) => (acc + 1)), 0, 0, xs]",
-                "(fun (acc : Nat) (v : Nat) => (acc + 1)), 0, true, xs]",
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      true,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
                 "law application argument has type Bool, expected Nat",
             );
             fold_laws_rejected(
                 file,
-                "    type_arguments: [Nat, Nat, Nat],\n    arguments: [(fun (acc : Nat) (v : Nat) => (acc + v)), (fun (acc : Nat) (v : Nat) => (acc + 1)), 0, 0, xs]",
-                "    type_arguments: [Nat, Nat],\n    arguments: [(fun (acc : Nat) (v : Nat) => (acc + v)), (fun (acc : Nat) (v : Nat) => (acc + 1)), 0, 0, xs]",
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat, Nat]",
+                "      0,\n      0,\n      xs\n    ],\n    type_arguments: [Nat, Nat]",
                 "law `list_fold_pair` expects 3 explicit type argument(s), received 2",
             );
             fold_laws_rejected(
                 file,
-                ",\n    premises: [parity_step]",
+                "    premises: [parity_step],\n",
                 "",
                 "law `list_fold_fusion` expects 1 premise(s), received 0",
             );
             fold_laws_rejected(
                 file,
-                "    premises: [parity_step]",
-                "    premises: [count_append]",
+                "    premises: [parity_step],",
+                "    premises: [count_append],",
                 "law `list_fold_fusion` premise names a forward or missing theorem `count_append`",
             );
             semantic_1_1_rejects(

@@ -8,8 +8,8 @@ definition{
   parameters: [x : Int],
   result: Int,
   body: (let q : Int := (prim quotient (prim subtract (prim multiply (prim subtract x (-20 : Int) : Int) (9365133 : Int) : Int) (-2147483648 : Int) : Int) (4294967296 : Int) (0 : Int) : Int); (if (prim less_than q (0 : Int) : Bool) then (0 : Int) else (if (prim less_than (255 : Int) q : Bool) then (255 : Int) else q))),
-  executable: true,
-  axioms: [propext]
+  axioms: [propext],
+  executable: true
 }
 
 theorem{
