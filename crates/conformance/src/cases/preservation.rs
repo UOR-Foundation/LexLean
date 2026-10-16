@@ -921,6 +921,10 @@ fn assert_statement(
     rendering: &lexlean::production::certificate::Certificate,
     composed: &lexlean::production::certificate::Certificate,
 ) {
+    if let Some(data) = &composed.data {
+        assert_data_statement(name, entry, rendering, composed, data);
+        return;
+    }
     let at = composed
         .text
         .find("theorem root ")
@@ -1027,6 +1031,380 @@ fn assert_statement(
         composed.module,
         rest.lines().take(4).collect::<Vec<_>>().join("\n")
     );
+}
+
+/// The namespaces a certificate begins names with: from its constant nodes
+/// when it is held as data (every constant of kernel data is a resolved
+/// name), else from its text.
+fn referenced_namespaces_in(
+    certificate: &lexlean::production::certificate::Certificate,
+    user: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    match &certificate.data {
+        Some(data) => data
+            .nodes
+            .iter()
+            .filter_map(|node| match node {
+                lexlean::ir::core::CoreNode::Const { n, .. } => {
+                    let first = n.split('.').next()?;
+                    (n.contains('.')
+                        && !user.contains(first)
+                        && !lexlean::ir::semantic::is_backend_bare_name(first))
+                    .then(|| first.to_owned())
+                }
+                _ => None,
+            })
+            .collect(),
+        None => referenced_namespaces(&certificate.text, user),
+    }
+}
+
+/// No name of a certificate can be captured by a parameter: in kernel data a
+/// constant is a resolved name and a variable an index, so there is nothing
+/// to check; a text certificate is checked lexeme by lexeme.
+fn assert_no_bare_globals_in(
+    certificate: &lexlean::production::certificate::Certificate,
+    user: &BTreeSet<String>,
+    prefix_root: &str,
+) {
+    if certificate.data.is_none() {
+        assert_no_bare_globals(&certificate.module, &certificate.text, user, prefix_root);
+    }
+}
+
+/// The end-to-end theorem a certificate E held as data states, read off its
+/// `root` row: the root's parameters then `__e_hrep : RepresentableL [enc xᵢ]`
+/// as binders, and the conclusion of §17.17 for the root or its entry, with
+/// certificate A's observation, certificate B's crate, the fallibility flag,
+/// and the function the entry is (SP-09, SP-14). Every binder the composition
+/// adds begins with two underscores.
+fn assert_data_statement(
+    name: &str,
+    entry: &preservation::Certified,
+    rendering: &lexlean::production::certificate::Certificate,
+    composed: &lexlean::production::certificate::Certificate,
+    data: &lexlean::ir::core::CoreModule,
+) {
+    use lexlean::ir::core::CoreNode;
+    let module = &composed.module;
+    let row = data
+        .declarations
+        .iter()
+        .find(|row| row.name == composed.theorem)
+        .unwrap_or_else(|| panic!("{name}: `{module}` states no root theorem"));
+    assert_eq!(
+        data.declarations
+            .iter()
+            .filter(|row| row.name.ends_with(".root"))
+            .count(),
+        1,
+        "{name}: `{module}` states one root theorem"
+    );
+    let node = |index: usize| &data.nodes[index];
+    let spine = |mut index: usize| -> (usize, Vec<usize>) {
+        let mut args = Vec::new();
+        while let CoreNode::App { f, x } = node(index) {
+            args.push(*x);
+            index = *f;
+        }
+        args.reverse();
+        (index, args)
+    };
+    let is_const = |index: usize, expected: &str| matches!(node(index), CoreNode::Const { n, .. } if n == expected);
+    let applied = |index: usize, head: &str, arity: usize| -> Vec<usize> {
+        let (f, args) = spine(index);
+        assert!(
+            is_const(f, head) && args.len() == arity,
+            "{name}: `{module}`: expected `{head}` applied to {arity} arguments, found {:?} to {}",
+            node(f),
+            args.len()
+        );
+        args
+    };
+    // The binders.
+    let parameters = &entry.program.functions[0].parameters;
+    let mut binders = Vec::new();
+    let mut body = row.r#type;
+    while let CoreNode::Forall { n, t, v, .. } = node(body) {
+        binders.push((n.clone(), *t));
+        body = *v;
+    }
+    assert_eq!(
+        binders.len(),
+        parameters.len() + 1,
+        "{name}: `{module}` binds the {} parameters and one hypothesis",
+        parameters.len()
+    );
+    let (hypothesis, own) = binders.split_last().expect("a hypothesis");
+    assert_eq!(
+        hypothesis.0, "__e_hrep",
+        "{name}: `{module}`: the hypothesis binder"
+    );
+    for (binder, _) in own {
+        assert!(
+            !binder.starts_with("__"),
+            "{name}: `{module}` binds the parameter `{binder}` under a generated name"
+        );
+    }
+    // The hypothesis: RepresentableL of the encodings, each applied to its
+    // parameter, the i-th of n parameters being #(n - 1 - i) under them.
+    let list = applied(hypothesis.1, "LexLeanPreservation.Rust.RepresentableL", 1)[0];
+    let encodings = list_items(data, list);
+    assert_eq!(
+        encodings.len(),
+        own.len(),
+        "{name}: `{module}`: one encoding per parameter"
+    );
+    for (position, encoding) in encodings.iter().enumerate() {
+        let (_, args) = spine(*encoding);
+        let last = *args
+            .last()
+            .unwrap_or_else(|| panic!("{name}: `{module}`: an encoding applies to its parameter"));
+        assert!(
+            matches!(node(last), CoreNode::BVar { i } if *i == own.len() - 1 - position),
+            "{name}: `{module}`: encoding {position} does not encode parameter {position}"
+        );
+    }
+    // The conclusion: ∃ __e_ro, …
+    let exists = applied(body, "Exists", 2);
+    assert!(
+        is_const(exists[0], "LexLeanPreservation.Rust.ROut"),
+        "{name}: `{module}`: the witness is an outcome"
+    );
+    let (witness, conjunction) = match node(exists[1]) {
+        CoreNode::Lambda { n, v, .. } => (n.clone(), *v),
+        other => panic!("{name}: `{module}`: the predicate is not a lambda: {other:?}"),
+    };
+    assert_eq!(witness, "__e_ro", "{name}: `{module}`: the witness binder");
+    let fallible = lexlean::calculus::rust::fallible_functions(&entry.program)
+        .expect("a valid program")[entry.entry as usize];
+    let flag = if fallible { "Bool.true" } else { "Bool.false" };
+    let a = &entry.certificate.module;
+    let b = &rendering.module;
+    // Under __e_ro, the encodings list of the hypothesis is lifted by one:
+    // the arguments of RCI are the encodings applied to #(n - i), checked as
+    // a list of the same length whose heads are the same encoders.
+    let check_args = |list_node: usize| {
+        let items = list_items(data, list_node);
+        assert_eq!(
+            items.len(),
+            own.len(),
+            "{name}: `{module}`: RCI takes one encoding per parameter"
+        );
+        for (position, item) in items.iter().enumerate() {
+            let (_, args) = spine(*item);
+            let last = *args.last().expect("an applied encoding");
+            assert!(
+                matches!(node(last), CoreNode::BVar { i } if *i == own.len() - position + 1),
+                "{name}: `{module}`: RCI's argument {position} is not the encoding of parameter {position}"
+            );
+        }
+    };
+    let check_rci = |rci: usize, function: u64| {
+        let args = applied(rci, "LexLeanPreservation.Rust.RCI", 4);
+        assert!(
+            is_const(args[0], &format!("{b}.krate")),
+            "{name}: `{module}`: RCI is about certificate B's crate"
+        );
+        let ident = applied(args[1], "LexLeanPreservation.Rust.fnIdent", 1);
+        assert!(
+            matches!(node(ident[0]), CoreNode::Nat { v } if *v == function.to_string()),
+            "{name}: `{module}`: RCI invokes function {function}"
+        );
+        check_args(args[2]);
+        assert!(
+            matches!(node(args[3]), CoreNode::BVar { i: 0 }),
+            "{name}: `{module}`: RCI ends in the witness"
+        );
+    };
+    let check_realizes = |realizes: usize, observation: &dyn Fn(usize)| {
+        let args = applied(realizes, "LexLeanPreservation.Rust.RealizesFn", 3);
+        assert!(
+            is_const(args[0], flag),
+            "{name}: `{module}`: the fallibility flag is `{flag}`"
+        );
+        observation(args[1]);
+        assert!(
+            matches!(node(args[2]), CoreNode::BVar { i: 0 }),
+            "{name}: `{module}`: RealizesFn ends in the witness"
+        );
+    };
+    let denote_of = |observation: usize, depth: usize| {
+        let (f, args) = spine(observation);
+        assert!(
+            is_const(f, &format!("{a}.denote")),
+            "{name}: `{module}`: the observation is certificate A's `denote`"
+        );
+        assert_eq!(
+            args.len(),
+            own.len(),
+            "{name}: `{module}`: `denote` takes the parameters"
+        );
+        for (position, arg) in args.iter().enumerate() {
+            assert!(
+                matches!(node(*arg), CoreNode::BVar { i } if *i == own.len() - 1 - position + depth),
+                "{name}: `{module}`: `denote`'s argument {position} is parameter {position}"
+            );
+        }
+    };
+    if entry.entry == 0 {
+        let both = applied(conjunction, "And", 2);
+        check_realizes(both[0], &|observation| denote_of(observation, 2));
+        check_rci(both[1], 0);
+    } else {
+        let both = applied(conjunction, "And", 2);
+        check_rci(both[0], entry.entry);
+        let tail = applied(both[1], "And", 2);
+        // (accepts xs → RealizesFn F (someObs (denote xs)) ro) ∧ (¬ accepts xs → RealizesFn F (Obs.value Value.none) ro)
+        let (accepts_ty, accepted) = match node(tail[0]) {
+            CoreNode::Forall { t, v, .. } => (*t, *v),
+            other => {
+                panic!("{name}: `{module}`: the accepted case is not an implication: {other:?}")
+            }
+        };
+        let (f, _) = spine(accepts_ty);
+        assert!(
+            is_const(f, &format!("{a}.accepts")),
+            "{name}: `{module}`: the hypothesis of the accepted case is `accepts`"
+        );
+        check_realizes_at(
+            data,
+            accepted,
+            flag,
+            1,
+            &|observation| {
+                let inner = applied(observation, "LexLeanPreservation.someObs", 1);
+                denote_of(inner[0], 3);
+            },
+            name,
+            module,
+        );
+        let (refuses_ty, refused) = match node(tail[1]) {
+            CoreNode::Forall { t, v, .. } => (*t, *v),
+            other => {
+                panic!("{name}: `{module}`: the refused case is not an implication: {other:?}")
+            }
+        };
+        let not = applied(refuses_ty, "Not", 1);
+        let (f, _) = spine(not[0]);
+        assert!(
+            is_const(f, &format!("{a}.accepts")),
+            "{name}: `{module}`: the refused case negates `accepts`"
+        );
+        check_realizes_at(
+            data,
+            refused,
+            flag,
+            1,
+            &|observation| {
+                let value = applied(observation, "LexLeanPreservation.Obs.value", 1);
+                assert!(
+                    is_const(value[0], "LexLeanTarget.TargetSyntax.Value.none"),
+                    "{name}: `{module}`: a refused entry returns none"
+                );
+            },
+            name,
+            module,
+        );
+    }
+    // No binder the composition adds is a name a parameter could be.
+    let own_names: BTreeSet<&str> = own.iter().map(|(binder, _)| binder.as_str()).collect();
+    for index in reachable(data, row.r#type)
+        .into_iter()
+        .chain(reachable(data, row.value.expect("a proof")))
+    {
+        if let CoreNode::Lambda { n, .. } | CoreNode::Forall { n, .. } = node(index) {
+            assert!(
+                n.is_empty() || n == "_" || n.starts_with("__") || own_names.contains(n.as_str()),
+                "{name}: `{module}` binds `{n}`, which a parameter of that name would capture"
+            );
+        }
+    }
+}
+
+/// `RealizesFn flag observation #witness` where the witness is `#witness`
+/// under the binders between it and the application.
+fn check_realizes_at(
+    data: &lexlean::ir::core::CoreModule,
+    realizes: usize,
+    flag: &str,
+    witness: usize,
+    observation: &dyn Fn(usize),
+    name: &str,
+    module: &str,
+) {
+    use lexlean::ir::core::CoreNode;
+    let mut args = Vec::new();
+    let mut index = realizes;
+    while let CoreNode::App { f, x } = &data.nodes[index] {
+        args.push(*x);
+        index = *f;
+    }
+    args.reverse();
+    assert!(
+        matches!(&data.nodes[index], CoreNode::Const { n, .. } if n == "LexLeanPreservation.Rust.RealizesFn")
+            && args.len() == 3,
+        "{name}: `{module}`: a RealizesFn statement"
+    );
+    assert!(
+        matches!(&data.nodes[args[0]], CoreNode::Const { n, .. } if n == flag),
+        "{name}: `{module}`: the fallibility flag is `{flag}`"
+    );
+    observation(args[1]);
+    assert!(
+        matches!(&data.nodes[args[2]], CoreNode::BVar { i } if *i == witness),
+        "{name}: `{module}`: RealizesFn ends in the witness"
+    );
+}
+
+/// The items of a `List.cons`/`List.nil` literal node.
+fn list_items(data: &lexlean::ir::core::CoreModule, mut list: usize) -> Vec<usize> {
+    use lexlean::ir::core::CoreNode;
+    let mut out = Vec::new();
+    loop {
+        let mut args = Vec::new();
+        let mut index = list;
+        while let CoreNode::App { f, x } = &data.nodes[index] {
+            args.push(*x);
+            index = *f;
+        }
+        args.reverse();
+        match &data.nodes[index] {
+            CoreNode::Const { n, .. } if n == "List.cons" && args.len() == 3 => {
+                out.push(args[1]);
+                list = args[2];
+            }
+            CoreNode::Const { n, .. } if n == "List.nil" && args.len() == 1 => return out,
+            other => panic!("not a list literal: {other:?}"),
+        }
+    }
+}
+
+/// Every node reachable from `root`.
+fn reachable(data: &lexlean::ir::core::CoreModule, root: usize) -> Vec<usize> {
+    use lexlean::ir::core::CoreNode;
+    let mut seen = vec![false; data.nodes.len()];
+    let mut stack = vec![root];
+    let mut out = Vec::new();
+    while let Some(index) = stack.pop() {
+        if seen[index] {
+            continue;
+        }
+        seen[index] = true;
+        out.push(index);
+        match &data.nodes[index] {
+            CoreNode::App { f, x } => stack.extend([*f, *x]),
+            CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => stack.extend([*t, *v]),
+            CoreNode::Let { t, v, body, .. } => stack.extend([*t, *v, *body]),
+            CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => stack.push(*x),
+            CoreNode::BVar { .. }
+            | CoreNode::Sort { .. }
+            | CoreNode::Const { .. }
+            | CoreNode::Nat { .. }
+            | CoreNode::String { .. } => {}
+        }
+    }
+    out
 }
 
 /// Certifying the projects takes minutes; the cases share one run, and the
@@ -2828,7 +3206,7 @@ pub fn run(id: &str) {
                         referenced.extend(referenced_namespaces(&rendering.text, &users));
                     }
                     for (_, composed) in &entry.composed {
-                        referenced.extend(referenced_namespaces(&composed.text, &users));
+                        referenced.extend(referenced_namespaces_in(composed, &users));
                     }
                 }
             }
@@ -2865,12 +3243,7 @@ pub fn run(id: &str) {
                     &named_root,
                 );
                 for (_, composed) in &entry.composed {
-                    assert_no_bare_globals(
-                        &composed.module,
-                        &composed.text,
-                        &named_users,
-                        &named_root,
-                    );
+                    assert_no_bare_globals_in(composed, &named_users, &named_root);
                 }
             }
             for entry in &named {
@@ -2918,14 +3291,13 @@ pub fn run(id: &str) {
                         // representable, and the conclusion is the two
                         // statements of §17.17 and nothing else.
                         assert_statement(name, &entry, rendering, composed);
-                        assert_no_bare_globals(&composed.module, &composed.text, &users, &root);
+                        assert_no_bare_globals_in(composed, &users, &root);
                         for mutation in preservation::CompositionMutation::ALL {
-                            let places = mutation.places(&composed.text);
+                            let places = mutation.places_in(composed);
                             assert!(places > 0, "{mutation:?} applies to `{}`", composed.module);
                             for nth in 0..places {
-                                let planted = mutation
-                                    .plant(&composed.text, nth)
-                                    .expect("a counted place");
+                                let planted =
+                                    mutation.plant_in(composed, nth).expect("a counted place");
                                 assert_ne!(planted, composed.text, "{mutation:?} {nth}");
                             }
                         }

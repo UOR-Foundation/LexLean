@@ -32,7 +32,7 @@ versions, and the entries below say what each tag does and does not claim.
   (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
   still Lean text, so the data certificate is rendered outside the module
   system until they follow. Languages 1.0 and 1.1 have no certificates and are
-  untouched. No diagnostic code is new; the register gains `SP-14` (382 rows with `SP-13` and `RB-09`).
+  untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining

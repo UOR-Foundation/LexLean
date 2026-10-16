@@ -1417,6 +1417,13 @@ fn lean_text_with(core: &CoreModule, legacy_scope: Option<&str>) -> Result<Strin
         "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
     );
     if let Some(scope) = legacy_scope {
+        // A certificate lifts the heartbeat budgets as its text form did
+        // (SPEC.md §17.17): what bounds the kernel's work is the wall clock.
+        text.push_str(
+            "set_option maxHeartbeats 0
+set_option synthInstance.maxHeartbeats 0
+",
+        );
         text.push_str(&format!("namespace {scope}\n"));
     }
     text.push_str(if core.version() == 2 {

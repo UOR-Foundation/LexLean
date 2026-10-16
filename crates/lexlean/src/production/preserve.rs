@@ -1752,6 +1752,15 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
 /// rejection concerns.
 #[must_use]
 pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    // A certificate held as data is added by the decoder, whose message
+    // names the declaration the kernel refused.
+    if let Some(named) = output.lines().find_map(|line| {
+        let (_, rest) = line.split_once("native core declaration '")?;
+        let (name, _) = rest.split_once('\'')?;
+        name.rsplit('.').next().map(str::to_owned)
+    }) {
+        return Some(named);
+    }
     let line: usize = output.lines().find_map(|line| {
         let (_, rest) = line.split_once(".lean:")?;
         let (number, rest) = rest.split_once(':')?;

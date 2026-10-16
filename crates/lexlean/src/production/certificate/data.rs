@@ -691,7 +691,7 @@ impl<'g, 'a> Composer<'g, 'a> {
         let domain = self.lean_type(ty)?;
         let x = self.b.bvar(0);
         let body = self.wt_apply(ty, x)?;
-        Ok(self.b.lam("x", CoreBinderInfo::Explicit, domain, body))
+        Ok(self.b.lam("__x", CoreBinderInfo::Explicit, domain, body))
     }
 
     /// `WTL p c A [v₁, …] [t₁, …]` from the proofs `WT p c A vᵢ tᵢ`: the
