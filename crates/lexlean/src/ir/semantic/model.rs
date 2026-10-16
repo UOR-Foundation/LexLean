@@ -2469,7 +2469,7 @@ fn role_admits(role: ArtifactRole, schema: &ArtifactSchema) -> bool {
     }
 }
 
-fn ordinary_definition(
+pub(super) fn ordinary_definition(
     name: String,
     type_parameters: &[String],
     parameters: Vec<SemanticParameter>,
@@ -2490,6 +2490,18 @@ fn ordinary_definition(
         termination: None,
         production: None,
     }
+}
+
+/// What linking knows about a prior artifact, by reference: its role and
+/// schema, for the text family's vocabulary checks (§17.12, text).
+pub(super) fn artifact_info(
+    member: &MemberRef,
+    env: &Environment<'_>,
+) -> Option<(ArtifactRole, ArtifactSchema)> {
+    env.models
+        .artifacts
+        .get(&member_key(member))
+        .map(|info| (info.role, info.schema.clone()))
 }
 
 /// The most dimensions an integer tensor artifact may declare: a closed

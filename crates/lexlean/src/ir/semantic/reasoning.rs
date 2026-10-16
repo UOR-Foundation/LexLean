@@ -6232,7 +6232,10 @@ pub(super) fn check_declaration(
 /// Check a generated theorem's signature and every term of its statement,
 /// then register one that states an ordinary proposition as a prior
 /// theorem. Its proof is one fixed template, checked by Lean.
-fn check_generated(generated: &GeneratedTheorem, env: &mut Environment<'_>) -> Result<(), String> {
+pub(super) fn check_generated(
+    generated: &GeneratedTheorem,
+    env: &mut Environment<'_>,
+) -> Result<(), String> {
     let scope = type_parameter_set(&generated.type_parameters)?;
     let locals = super::check_parameters(&generated.parameters, env, &scope)?;
     let typed = super::typed_locals(&generated.parameters);

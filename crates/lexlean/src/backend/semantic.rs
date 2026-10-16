@@ -347,6 +347,11 @@ impl Render<'_> {
             .split_once('.')
             .is_some_and(|(owner, _)| BUILTIN_CONSTRUCTOR_OWNERS.contains(&owner));
         match (&member.module, self.qualify) {
+            // §17.12 (text): a member of the laws library is written by the
+            // library's own name; the module is the elaboration's import.
+            (Some(module), _) if module == crate::text_laws::PREFIX => {
+                identifier(&format!("{module}.{}", member.name))
+            }
             (Some(module), _) => identifier(&format!("{}.{}.{}", self.prefix, module, member.name)),
             (None, Some(own)) if !builtin => identifier(&format!("{own}.{}", member.name)),
             (None, _) => identifier(&member.name),
@@ -3425,6 +3430,86 @@ fn latex_model(
     }
 }
 
+/// The document lines of a text declaration (§17.12, *Text components*):
+/// its closed members, the laws library its elaboration imports, exactly what
+/// linking elaborated it to, and the theorems it generates. The pieces of the
+/// vocabulary are never document text (rule 13 under *Models*): the artifact
+/// is named, and the generated Lean carries its value.
+fn latex_text(
+    render: &Render<'_>,
+    module: &SemanticModule,
+    index: usize,
+    declaration: &SemanticDeclaration,
+    text: &mut String,
+) {
+    if let SemanticDeclaration::Tokenizer {
+        scheme,
+        vocabulary,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(
+            text,
+            "Scheme",
+            match scheme {
+                crate::ir::semantic::TokenizerScheme::ByteLevel => "byte_level",
+                crate::ir::semantic::TokenizerScheme::LongestMatch => "longest_match",
+            },
+        );
+        latex_line(text, "Vocabulary", &latex_use(render, vocabulary));
+        latex_line(
+            text,
+            "Laws",
+            &format!(
+                "imported from the native module {}",
+                crate::text_laws::laws_module()
+            ),
+        );
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
+    for derived in module.elaboration.lowered(index) {
+        if let SemanticDeclaration::Definition {
+            name,
+            parameters,
+            result,
+            body,
+            ..
+        } = derived
+        {
+            latex_line(
+                text,
+                "Elaborates to",
+                &format!(
+                    "{name}{} : {} := {}",
+                    render.parameters(parameters),
+                    render.ty(result),
+                    render.term(body)
+                ),
+            );
+        }
+    }
+    for theorem in module.elaboration.theorems(index) {
+        let binders = if theorem.parameters.is_empty() {
+            String::new()
+        } else {
+            format!("forall{}, ", render.parameters(&theorem.parameters))
+        };
+        latex_line(
+            text,
+            &format!(
+                "Generates theorem ({} template)",
+                theorem.template().replace('_', " ")
+            ),
+            &format!(
+                "{} : {binders}{}",
+                theorem.name,
+                render.formula(&theorem.statement)
+            ),
+        );
+    }
+}
+
 /// Render the same semantic module as canonical explanatory LaTeX.
 pub fn render_latex(
     checked: &CheckedModule,
@@ -3646,8 +3731,10 @@ pub fn render_latex(
             | SemanticDeclaration::Reasoner { .. } => {
                 reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
             }
-            SemanticDeclaration::Tokenizer { .. }
-            | SemanticDeclaration::ContextWindow { .. }
+            SemanticDeclaration::Tokenizer { .. } => {
+                latex_text(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::ContextWindow { .. }
             | SemanticDeclaration::TextGenerator { .. }
             | SemanticDeclaration::TextClassifier { .. } => {
                 return Err(Diagnostic::new(
