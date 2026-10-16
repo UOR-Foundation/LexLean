@@ -304,6 +304,7 @@ impl<'a> Writer<'_, 'a> {
             )?;
             names.push(name);
         }
+        self.group_rows(&names);
         // The implementation records: direct recursion by the eliminator of
         // each type, calling the records of the others.
         let unsafe_names: Vec<String> = names

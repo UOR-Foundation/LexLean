@@ -332,6 +332,14 @@ impl<'g, 'a> Writer<'g, 'a> {
         value: Term,
     ) -> Result<(), String> {
         let full = format!("{}.{name}", self.name);
+        if std::env::var("LEXLEAN_SHOW").is_ok_and(|wanted| full.ends_with(&wanted)) {
+            let text = format!("{full} : {}\n:= {}\n", self.b.show(ty), self.b.show(value));
+            if let Ok(path) = std::env::var("LEXLEAN_SHOW_FILE") {
+                let _ = std::fs::write(path, text);
+            } else {
+                eprintln!("{text}");
+            }
+        }
         if self.b.has_placeholder(ty) || self.b.has_placeholder(value) {
             return Err(format!(
                 "the row `{full}` of certificate A has a free variable or placeholder left"
@@ -341,14 +349,6 @@ impl<'g, 'a> Writer<'g, 'a> {
             return Err(format!(
                 "the row `{full}` of certificate A has a loose bound variable"
             ));
-        }
-        if std::env::var("LEXLEAN_SHOW").is_ok_and(|wanted| full.ends_with(&wanted)) {
-            let text = format!("{full} : {}\n:= {}\n", self.b.show(ty), self.b.show(value));
-            if let Ok(path) = std::env::var("LEXLEAN_SHOW_FILE") {
-                let _ = std::fs::write(path, text);
-            } else {
-                eprintln!("{text}");
-            }
         }
         let axioms = self.row_axiom_set(&[ty, value])?;
         self.row_axioms.insert(full.clone(), axioms.clone());
