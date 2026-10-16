@@ -44,8 +44,9 @@ the laws it uses.
 
 ## How
 
-The one-time oracle is in the checkpoint commit that adds this record,
-`tests/runtime-library/laws-oracle/`; the commit after it removes it. Its
+The one-time oracle is in the checkpoint commit that adds this record
+(`b58f1952`, `tests/runtime-library/laws-oracle/`); the commit after it
+removes it. Its
 exporter, `flags.lean`, `canon.py`, and `compare.py` are those of the runtime
 migration (`MIGRATION.md`), with the module list narrowed to `Laws`.
 `run.sh <repository> <work>`:

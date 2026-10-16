@@ -15,6 +15,27 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
+  no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
+  integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
+  `Nat` only. `linear_arithmetic` now reads the runtime: `less_than`,
+  `equal`, `negate`, `quotient`, `remainder` (truncating division by a
+  literal included), and fixed-width order and equality become linear
+  arithmetic, every `if` and `match` left in the goal is split, and `omega`
+  decides each case. The fold laws are LexLean source, the native runtime
+  module `LexLeanRuntime.Laws` (`tests/runtime-library/LAWS.md`). It holds
+  the normal form of additive list, set, and map folds as sums, their
+  linearity, and their invariance under permutation, append, and reverse,
+  which `linear_arithmetic` rewrites with, plus fusion, the fold of a pair,
+  and the fold of an append. The closed `law` proof form applies one of
+  these registered laws (`language/runtime-1.2/laws.toml`) with linking
+  checks. `examples/fold-laws` verifies integer kernels and fold equalities
+  for all inputs, with `decide` only on closed instances. The
+  language-1.2 compiler-semantics ID changes (`semantic_ir` 11,
+  `lean_backend` 18, `proof_lowering` 3), and every language-1.2 lock,
+  golden, fixture expectation, calculus package, production export, and
+  verified record is regenerated. The register holds 390 IDs.
+
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining
