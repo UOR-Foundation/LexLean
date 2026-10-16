@@ -3823,6 +3823,59 @@ pub fn run(id: &str) {
                     );
                 }
             }
+            // No Lean text template for certificate A remains in the
+            // compiler: the sources that build it name no tactic, no
+            // declaration keyword of a row, and no termination clause. The
+            // markers are spelled in halves so that this list is not itself
+            // a template (the same discipline as `audit-deferral`).
+            let markers: Vec<String> = [
+                ("theorem ", "__rel_"),
+                ("def ", "__fits_"),
+                ("termination", "_by"),
+                ("decreasing", "_by"),
+                ("by ", "simp"),
+                ("by ", "rw ["),
+                ("exact ", "_root_"),
+                ("(fun _ => ", "rfl)"),
+            ]
+            .iter()
+            .map(|(head, tail)| format!("{head}{tail}"))
+            .collect();
+            let templates = |source: &str| -> Vec<String> {
+                markers
+                    .iter()
+                    .filter(|marker| source.contains(marker.as_str()))
+                    .cloned()
+                    .collect()
+            };
+            let production = repo_root().join("crates/lexlean/src/production");
+            let mut scanned = 0usize;
+            let mut sources = vec![production.join("certificate.rs")];
+            for entry in walkdir::WalkDir::new(production.join("certificate/data_a").as_std_path())
+                .into_iter()
+                .flatten()
+            {
+                if entry.path().extension().is_some_and(|extension| extension == "rs") {
+                    sources.push(camino::Utf8PathBuf::from_path_buf(entry.path().to_path_buf())
+                        .expect("a UTF-8 path"));
+                }
+            }
+            sources.push(production.join("certificate/data_a.rs"));
+            for path in &sources {
+                let text = std::fs::read_to_string(path.as_std_path()).expect("a source");
+                assert!(
+                    templates(&text).is_empty(),
+                    "{path}: Lean text template for certificate A: {:?}",
+                    templates(&text)
+                );
+                scanned += 1;
+            }
+            assert!(scanned > 10, "the scan reads the sources that build certificate A");
+            // The scan is armed: a planted template is found.
+            assert!(
+                !templates(&format!("format!(\"theorem {}0 : …\")", "__rel_")).is_empty(),
+                "the template scan finds a planted template"
+            );
             if !support::lean_backed("SP-15") {
                 return;
             }
