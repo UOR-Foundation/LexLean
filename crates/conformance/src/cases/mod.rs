@@ -34,6 +34,7 @@ mod repository;
 mod rust_backend;
 mod security;
 mod semantic_ir;
+mod stdlib;
 mod tooling;
 mod typed_diagnostics;
 mod verification;
@@ -112,6 +113,7 @@ pub fn run(id: &str) {
         "RS" => reasoning::run(id),
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
+        "SL" => stdlib::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

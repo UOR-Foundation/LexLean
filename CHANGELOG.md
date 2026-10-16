@@ -15,6 +15,22 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The standard library's first member: bytes and text over `Bytes`
+  (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
+  language-1.2 project beside `compiler/` under the module prefix
+  `LexLeanStd`, written in the authoring notation; its `Text` module declares
+  `startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, and
+  `find` as production roots for `rust-std`, each admitting exactly the
+  effects its closure realizes. `SL-01` runs every member's lowered program
+  under the calculus evaluator and its rendered package under the pinned
+  rustc on a seeded corpus against Rust's `starts_with`, `ends_with`,
+  `trim_ascii`, `lines`, `split`, `join`, and `find`, detects a planted
+  character class in `trim`, and, under the pinned Lean, compares the
+  certified packages the production export publishes with the committed
+  ones under `tests/production-export/stdlib/`. The project passes the
+  example gates (`verify-examples`, `check-golden`) and
+  `check-production-export` compares its packages. `SL-01` brings the
+  register to 382 IDs.
 - Certificates write a list of any length as a term Lean elaborates without
   binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
   `[…]` macro splits a literal of more than 32 elements in halves under
