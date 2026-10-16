@@ -7,6 +7,7 @@
 mod artifacts;
 mod authoring;
 mod authoring_core;
+mod bootstrap;
 mod calculus;
 mod certification;
 mod cli_api;
@@ -116,6 +117,7 @@ pub fn run(id: &str) {
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
         "SL" => stdlib::run(id),
+        "BS" => bootstrap::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }
