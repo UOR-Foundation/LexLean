@@ -36,6 +36,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 mod data;
+mod data_a;
 
 use super::eligibility::BUILTIN_OWNERS;
 use super::lean_list::{array, list, list_by};
@@ -451,7 +452,7 @@ pub fn certificate_e(
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| internal(diagnostic.message))?;
     generator.within(text.len()).map_err(failure)?;
-    let source = record_source(module, &data).map_err(internal)?;
+    let source = record_source(module, &data, "E").map_err(internal)?;
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
@@ -465,7 +466,11 @@ pub fn certificate_e(
 
 /// The record of a certificate held as data: the whole source of the module
 /// in the authoring notation (SPEC.md §17.21.8), which reads back to the data.
-fn record_source(module: &str, data: &crate::ir::core::CoreModule) -> Result<String, String> {
+fn record_source(
+    module: &str,
+    data: &crate::ir::core::CoreModule,
+    kind: &str,
+) -> Result<String, String> {
     let name = module.rsplit('.').next().unwrap_or(module);
     let value = serde_json::to_value(data).map_err(|error| error.to_string())?;
     crate::sdk::assemble(
@@ -473,7 +478,7 @@ fn record_source(module: &str, data: &crate::ir::core::CoreModule) -> Result<Str
             name,
             glossaries: &[],
             imports: &[],
-            title: &format!("Certificate E {module}"),
+            title: &format!("Certificate {kind} {module}"),
         },
         crate::sdk::ModuleKind::Core,
         &value,
@@ -577,11 +582,13 @@ pub fn certificate(
 ) -> Result<Certificate, Diagnostic> {
     let mut generator = generator(modules, lowered, max_bytes);
     generator.nest().map_err(failure)?;
-    let text = generator
-        .module(root_module, root_name, report, module)
+    let data = generator
+        .module_data(root_module, root_name, report, module)
         .map_err(failure)?;
-    let text = from_the_root(&text).map_err(internal)?;
+    let text = crate::backend::core::lean_text_legacy(&data, module)
+        .map_err(|diagnostic| internal(diagnostic.message))?;
     generator.within(text.len()).map_err(failure)?;
+    let source = record_source(module, &data, "A").map_err(internal)?;
     let mut imports: Vec<String> = modules
         .values()
         .map(|linked| linked.lean_module.to_owned())
@@ -593,8 +600,8 @@ pub fn certificate(
         denote: format!("{module}.denote"),
         text,
         imports,
-        data: None,
-        source: None,
+        data: Some(data),
+        source: Some(source),
     })
 }
 

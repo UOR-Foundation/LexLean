@@ -40,6 +40,100 @@ pub enum Given {
 }
 
 impl Builder {
+    /// The nodes reachable from `roots`, child before parent, with the
+    /// position each root has among them: the DAG a module keeps, without the
+    /// intermediate terms the construction passed through.
+    #[must_use]
+    pub fn compact(&self, roots: &[Term]) -> (Vec<CoreNode>, Vec<Term>) {
+        let mut position: HashMap<Term, Term> = HashMap::new();
+        let mut out: Vec<CoreNode> = Vec::new();
+        for &root in roots {
+            let mut stack: Vec<(Term, bool)> = vec![(root, false)];
+            while let Some((term, children_done)) = stack.pop() {
+                if position.contains_key(&term) {
+                    continue;
+                }
+                let node = &self.nodes[term];
+                if !children_done {
+                    stack.push((term, true));
+                    match node {
+                        CoreNode::BVar { .. }
+                        | CoreNode::Sort { .. }
+                        | CoreNode::Const { .. }
+                        | CoreNode::Nat { .. }
+                        | CoreNode::String { .. } => {}
+                        CoreNode::App { f, x } => {
+                            stack.push((*x, false));
+                            stack.push((*f, false));
+                        }
+                        CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
+                            stack.push((*v, false));
+                            stack.push((*t, false));
+                        }
+                        CoreNode::Let { t, v, body, .. } => {
+                            stack.push((*body, false));
+                            stack.push((*v, false));
+                            stack.push((*t, false));
+                        }
+                        CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => {
+                            stack.push((*x, false));
+                        }
+                    }
+                    continue;
+                }
+                let at = |term: &Term| position[term];
+                let moved = match node.clone() {
+                    CoreNode::App { f, x } => CoreNode::App {
+                        f: at(&f),
+                        x: at(&x),
+                    },
+                    CoreNode::Lambda { n, b, t, v } => CoreNode::Lambda {
+                        n,
+                        b,
+                        t: at(&t),
+                        v: at(&v),
+                    },
+                    CoreNode::Forall { n, b, t, v } => CoreNode::Forall {
+                        n,
+                        b,
+                        t: at(&t),
+                        v: at(&v),
+                    },
+                    CoreNode::Let { n, t, v, body, d } => CoreNode::Let {
+                        n,
+                        t: at(&t),
+                        v: at(&v),
+                        body: at(&body),
+                        d,
+                    },
+                    CoreNode::Mdata { m, x } => CoreNode::Mdata { m, x: at(&x) },
+                    CoreNode::Projection { n, s, i, x } => CoreNode::Projection {
+                        n,
+                        s,
+                        i,
+                        x: at(&x),
+                    },
+                    atom @ (CoreNode::BVar { .. }
+                    | CoreNode::Sort { .. }
+                    | CoreNode::Const { .. }
+                    | CoreNode::Nat { .. }
+                    | CoreNode::String { .. }) => atom,
+                };
+                position.insert(term, out.len());
+                out.push(moved);
+            }
+        }
+        let mapped = roots.iter().map(|root| position[root]).collect();
+        (out, mapped)
+    }
+
+    /// A natural-number literal of any size, from its digits.
+    pub fn nat_text(&mut self, digits: &str) -> Term {
+        self.push(CoreNode::Nat {
+            v: digits.to_owned(),
+        })
+    }
+
     /// A fresh free variable.
     pub fn free(&mut self) -> Term {
         let id = self.fresh;
@@ -176,6 +270,69 @@ impl Builder {
         })
     }
 
+    /// `term` with each node of `from` replaced by the node of `to` at its
+    /// position, wherever it occurs (a free variable, in practice).
+    pub fn substitute(&mut self, term: Term, from: &[Term], to: &[Term]) -> Term {
+        let map: HashMap<Term, Term> = from.iter().copied().zip(to.iter().copied()).collect();
+        if map.is_empty() {
+            return term;
+        }
+        let mut memo = HashMap::new();
+        self.substitute_memo(term, &map, &mut memo)
+    }
+
+    fn substitute_memo(
+        &mut self,
+        term: Term,
+        map: &HashMap<Term, Term>,
+        memo: &mut HashMap<Term, Term>,
+    ) -> Term {
+        if let Some(&replacement) = map.get(&term) {
+            return replacement;
+        }
+        if let Some(&done) = memo.get(&term) {
+            return done;
+        }
+        let out = match self.nodes[term].clone() {
+            CoreNode::BVar { .. }
+            | CoreNode::Sort { .. }
+            | CoreNode::Const { .. }
+            | CoreNode::Nat { .. }
+            | CoreNode::String { .. } => term,
+            CoreNode::App { f, x } => {
+                let f = self.substitute_memo(f, map, memo);
+                let x = self.substitute_memo(x, map, memo);
+                self.app(f, x)
+            }
+            CoreNode::Lambda { n, b, t, v } => {
+                let t = self.substitute_memo(t, map, memo);
+                let v = self.substitute_memo(v, map, memo);
+                self.lam(&n, b, t, v)
+            }
+            CoreNode::Forall { n, b, t, v } => {
+                let t = self.substitute_memo(t, map, memo);
+                let v = self.substitute_memo(v, map, memo);
+                self.pi(&n, b, t, v)
+            }
+            CoreNode::Let { n, t, v, body, d } => {
+                let t = self.substitute_memo(t, map, memo);
+                let v = self.substitute_memo(v, map, memo);
+                let body = self.substitute_memo(body, map, memo);
+                self.let_node(&n, t, v, body, d)
+            }
+            CoreNode::Mdata { m, x } => {
+                let x = self.substitute_memo(x, map, memo);
+                self.mdata_node(m, x)
+            }
+            CoreNode::Projection { n, s, i, x } => {
+                let x = self.substitute_memo(x, map, memo);
+                self.projection(&n, &s, i, x)
+            }
+        };
+        memo.insert(term, out);
+        out
+    }
+
     /// `term` with every constant named in `map` replaced by its term.
     pub fn replace_consts(&mut self, term: Term, map: &HashMap<String, Term>) -> Term {
         if map.is_empty() {
@@ -305,32 +462,46 @@ impl Builder {
     #[must_use]
     pub fn has_placeholder(&self, term: Term) -> bool {
         let mut seen = std::collections::HashSet::new();
-        self.placeholder_walk(term, &mut seen)
+        self.placeholder_walk(term, &mut seen, true)
     }
 
-    fn placeholder_walk(&self, term: Term, seen: &mut std::collections::HashSet<Term>) -> bool {
+    /// Whether `term` mentions a lemma's placeholder, a binder nothing solved.
+    #[must_use]
+    pub fn has_unsolved(&self, term: Term) -> bool {
+        let mut seen = std::collections::HashSet::new();
+        self.placeholder_walk(term, &mut seen, false)
+    }
+
+    fn placeholder_walk(
+        &self,
+        term: Term,
+        seen: &mut std::collections::HashSet<Term>,
+        free_too: bool,
+    ) -> bool {
         if !seen.insert(term) {
             return false;
         }
         match &self.nodes[term] {
-            CoreNode::Const { n, .. } => n.starts_with(FREE) || n.starts_with(META),
+            CoreNode::Const { n, .. } => {
+                n.starts_with(META) || (free_too && n.starts_with(FREE))
+            }
             CoreNode::BVar { .. }
             | CoreNode::Sort { .. }
             | CoreNode::Nat { .. }
             | CoreNode::String { .. } => false,
             CoreNode::App { f, x } => {
-                self.placeholder_walk(*f, seen) || self.placeholder_walk(*x, seen)
+                self.placeholder_walk(*f, seen, free_too) || self.placeholder_walk(*x, seen, free_too)
             }
             CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
-                self.placeholder_walk(*t, seen) || self.placeholder_walk(*v, seen)
+                self.placeholder_walk(*t, seen, free_too) || self.placeholder_walk(*v, seen, free_too)
             }
             CoreNode::Let { t, v, body, .. } => {
-                self.placeholder_walk(*t, seen)
-                    || self.placeholder_walk(*v, seen)
-                    || self.placeholder_walk(*body, seen)
+                self.placeholder_walk(*t, seen, free_too)
+                    || self.placeholder_walk(*v, seen, free_too)
+                    || self.placeholder_walk(*body, seen, free_too)
             }
             CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => {
-                self.placeholder_walk(*x, seen)
+                self.placeholder_walk(*x, seen, free_too)
             }
         }
     }
@@ -621,6 +792,46 @@ pub struct Open {
     next: usize,
 }
 
+impl Builder {
+    /// `Eq.refl` at the equation `domain` states; for a statement under
+    /// binders, the function from them. A placeholder on a side of the
+    /// equation is solved by the other side.
+    fn refl_proof(
+        &mut self,
+        name: &str,
+        position: usize,
+        domain: Term,
+        solved: &mut HashMap<usize, Term>,
+    ) -> Result<Term, String> {
+        if let CoreNode::Forall { n, b: info, t, v } = self.nodes[domain].clone() {
+            let free = self.free();
+            let body = self.instantiate_beta(v, free);
+            let inner = self.refl_proof(name, position, body, solved)?;
+            return Ok(self.lam_over(&n, info, t, free, inner));
+        }
+        let (eq, parts) = self.spine(domain);
+        let levels = match &self.nodes[eq] {
+            CoreNode::Const { n, u } if n == "Eq" && parts.len() == 3 => u.clone(),
+            _ => {
+                return Err(format!(
+                    "`{name}`: argument {position} is a reflexivity proof at {}, which is not an equation",
+                    self.show(domain)
+                ));
+            }
+        };
+        if let Some(solution) = self.meta_id(parts[2]) {
+            solved.entry(solution).or_insert(parts[1]);
+        }
+        if let Some(solution) = self.meta_id(parts[1]) {
+            solved.entry(solution).or_insert(parts[2]);
+        }
+        let refl = self.konst_at("Eq.refl", levels);
+        let sides = self.resolve(parts[1], solved);
+        let carrier = self.resolve(parts[0], solved);
+        Ok(self.apps(refl, &[carrier, sides]))
+    }
+}
+
 impl Open {
     fn explicit_at(&self, position: usize) -> Option<usize> {
         self.binders
@@ -692,27 +903,7 @@ impl Open {
             }
             Given::Refl => {
                 let domain = b.resolve(domain, &self.solved);
-                let (eq, parts) = b.spine(domain);
-                let levels = match &b.nodes[eq] {
-                    CoreNode::Const { n, u } if n == "Eq" && parts.len() == 3 => u.clone(),
-                    _ => {
-                        return Err(format!(
-                            "`{}`: argument {position} is a reflexivity proof at {}, which is not an equation",
-                            self.name,
-                            b.show(domain)
-                        ));
-                    }
-                };
-                if let Some(solution) = b.meta_id(parts[2]) {
-                    self.solved.entry(solution).or_insert(parts[1]);
-                }
-                if let Some(solution) = b.meta_id(parts[1]) {
-                    self.solved.entry(solution).or_insert(parts[2]);
-                }
-                let refl = b.konst_at("Eq.refl", levels);
-                let sides = b.resolve(parts[1], &self.solved);
-                let carrier = b.resolve(parts[0], &self.solved);
-                b.apps(refl, &[carrier, sides])
+                b.refl_proof(&self.name, position, domain, &mut self.solved)?
             }
         };
         self.solved.insert(id, value);
@@ -735,7 +926,7 @@ impl Open {
         }
         let term = b.resolve(term, &self.solved);
         let ty = b.resolve(self.conclusion, &self.solved);
-        if b.has_placeholder(term) || b.has_placeholder(ty) {
+        if b.has_unsolved(term) || b.has_unsolved(ty) {
             let open: Vec<&str> = self
                 .binders
                 .iter()

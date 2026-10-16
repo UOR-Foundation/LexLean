@@ -2841,3 +2841,94 @@ pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -
         entered,
     }
 }
+
+#[cfg(test)]
+mod dev {
+    use super::*;
+
+    /// Build certificate A of the roots of an example (`LEXLEAN_EXAMPLE`,
+    /// default `production`; `LEXLEAN_ROOTS`, comma-separated indices, default
+    /// all), print what the generator says of each, then compile and replay
+    /// the ones it built. A developer's lens, not a gate.
+    #[test]
+    #[ignore = "a developer's lens on certificate A"]
+    fn dev_certificate_a() {
+        let example = std::env::var("LEXLEAN_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let only: Option<Vec<usize>> = std::env::var("LEXLEAN_ROOTS").ok().map(|list| {
+            list.split(',')
+                .filter_map(|item| item.trim().parse().ok())
+                .collect()
+        });
+        let project = P::copy_example(&example);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+        let limits = support::limits(&project);
+        let mut built = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            if only.as_ref().is_some_and(|list| !list.contains(&index)) {
+                continue;
+            }
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            match certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                limits.max_file_bytes,
+            ) {
+                Ok(certificate) => {
+                    eprintln!(
+                        "R{index} {}: built, {} bytes of Lean",
+                        root.report.root,
+                        certificate.text.len()
+                    );
+                    built.push(certificate);
+                }
+                Err(diagnostic) => {
+                    eprintln!("R{index} {}: {}", root.report.root, diagnostic.message);
+                }
+            }
+        }
+        if built.is_empty() {
+            return;
+        }
+        if let Ok(dump) = std::env::var("LEXLEAN_DUMP") {
+            for certificate in &built {
+                let path = std::path::Path::new(&dump).join(format!("{}.lean", certificate.module));
+                std::fs::write(&path, &certificate.text).expect("dump");
+            }
+        }
+        let rendered = support::rendered(&project);
+        let user: Vec<(String, String)> = rendered
+            .modules
+            .iter()
+            .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
+            .collect();
+        let staged = workspace(&user, &built).expect("the workspace stages");
+        let scratch = tempfile::Builder::new()
+            .prefix("lexlean-dev-a-")
+            .tempdir()
+            .expect("tempdir");
+        let result = check(&staged, scratch.path());
+        match result.failure {
+            Some((module, output)) => {
+                let head: String = output.lines().take(60).collect::<Vec<_>>().join("\n");
+                eprintln!("`{module}` was rejected:\n{head}");
+                panic!("rejected");
+            }
+            None => {
+                audit(&result.audit_output, &built).expect("the axiom audit");
+                eprintln!("{} certificates A: compiled, replayed, audited", built.len());
+            }
+        }
+    }
+}
