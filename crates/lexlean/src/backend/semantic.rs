@@ -24,9 +24,6 @@ struct Render<'a> {
     /// §17.12: in a well-founded definition, each `if` (by node address)
     /// lowers to a dependent match binding its numbered hypothesis.
     hypotheses: std::collections::BTreeMap<usize, usize>,
-    /// Whether this module emits the portable runtime, whose Nat
-    /// subtraction and multiplication `linear_arithmetic` unfolds.
-    runtime: bool,
     /// Whether this renders the canonical document, which names a map and
     /// a set by their own type constructors rather than by the list
     /// encoding Lean receives (§17.12).
@@ -134,7 +131,7 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
             } => parameter == local || values == local,
             SemanticReflection::Record { record, .. } => record == local,
         },
-        SemanticProof::Apply { arguments, .. } => {
+        SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().any(|argument| term_uses(argument, local))
         }
     }
@@ -557,7 +554,6 @@ impl Render<'_> {
         let qualified = Render {
             prefix: self.prefix,
             hypotheses: std::collections::BTreeMap::new(),
-            runtime: self.runtime,
             document: false,
             qualify: Some(module),
         };
@@ -1072,25 +1068,11 @@ impl Render<'_> {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
             SemanticProof::Decide => format!("{pad}decide\n"),
             SemanticProof::LinearArithmetic { definitions } => {
-                let runtime = if self.runtime {
-                    ", LexLeanRuntime.subtract, LexLeanRuntime.multiply"
-                } else {
-                    ""
-                };
-                if definitions.is_empty() {
-                    format!(
-                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
-                    )
-                } else {
-                    format!(
-                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
-                        definitions
-                            .iter()
-                            .map(|member| self.member(member))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )
-                }
+                let unfolded = definitions
+                    .iter()
+                    .map(|member| self.member(member))
+                    .collect::<Vec<_>>();
+                linear_arithmetic(&pad, &unfolded)
             }
             SemanticProof::Simplify { definitions } => format!(
                 "{pad}simp only [{}]\n",
@@ -1197,6 +1179,32 @@ impl Render<'_> {
                     )
                 }
             },
+            SemanticProof::Law {
+                name,
+                type_arguments,
+                arguments,
+                premises,
+            } => {
+                // Linking resolved the law; a law it did not resolve never
+                // reaches the backend.
+                let lean = crate::ir::semantic::laws::law(name)
+                    .map_or_else(|_| identifier(name), |law| law.lean.clone());
+                let arguments = type_arguments
+                    .iter()
+                    .map(|argument| format!(" ({})", self.ty(argument)))
+                    .chain(
+                        arguments
+                            .iter()
+                            .map(|argument| format!(" ({})", self.term(argument))),
+                    )
+                    .chain(
+                        premises
+                            .iter()
+                            .map(|premise| format!(" {}", self.member(premise))),
+                    )
+                    .collect::<String>();
+                format!("{pad}exact @{lean}{arguments}\n")
+            }
             SemanticProof::Apply {
                 theorem,
                 type_arguments,
@@ -1215,6 +1223,89 @@ impl Render<'_> {
             }
         }
     }
+}
+
+/// The fixed Boolean comparisons `linear_arithmetic` reflects into
+/// propositions, and the runtime definitions it unfolds (§17.12).
+const LINEAR_BRIDGES: &[&str] = &[
+    "← Bool.not_eq_true",
+    "Bool.and_eq_true",
+    "Bool.or_eq_true",
+    "Bool.not_eq_true'",
+    "and_true",
+    "true_and",
+    "Option.some.injEq",
+    "Nat.beq_eq",
+    "Nat.blt_eq",
+    "Nat.ble_eq",
+    "LexLeanRuntime.subtract",
+    "LexLeanRuntime.multiply",
+    "LexLeanRuntime.negate",
+    "LexLeanRuntime.equal",
+    "beq_iff_eq",
+    "decide_eq_true_eq",
+    "decide_eq_false_iff_not",
+    "Nat.add_assoc",
+    "Int.add_assoc",
+    "Int.neg_neg",
+    "Int.emod_neg",
+    "Int.neg_zero",
+    "↓reduceIte",
+];
+
+/// The fixed-width integer types in the order `linear_arithmetic` names
+/// their order lemmas, each with the projection to its mathematical value.
+const FIXED_WIDTH: &[(&str, &str)] = &[
+    ("UInt8", "toNat"),
+    ("UInt16", "toNat"),
+    ("UInt32", "toNat"),
+    ("UInt64", "toNat"),
+    ("Int8", "toInt"),
+    ("Int16", "toInt"),
+    ("Int32", "toInt"),
+    ("Int64", "toInt"),
+];
+
+/// The fixed `linear_arithmetic` script (§17.12): introduce the goal, and
+/// with named definitions substitute and unfold them; rewrite the runtime's
+/// comparisons, arithmetic, and folds into linear arithmetic through the
+/// bridges and the registered fold laws, with fixed-width order and
+/// equality read on the mathematical values (literals evaluated first);
+/// read every remaining fixed-width value as the bounded natural number of
+/// its bits, so `omega` knows its range; split every `if` and `match` left
+/// in the goal; and decide each case with `omega`. A goal the simplifier
+/// closed leaves nothing for `omega`.
+fn linear_arithmetic(pad: &str, definitions: &[String]) -> String {
+    let rewrites = crate::ir::semantic::laws::registry()
+        .map(|registry| registry.rewrites.as_slice())
+        .unwrap_or_default();
+    let mut lemmas: Vec<String> = definitions.to_vec();
+    lemmas.extend(LINEAR_BRIDGES.iter().map(|lemma| (*lemma).to_owned()));
+    lemmas.extend(rewrites.iter().cloned());
+    for (ty, value) in FIXED_WIDTH {
+        lemmas.push(format!("{ty}.le_iff_{value}_le"));
+        lemmas.push(format!("{ty}.lt_iff_{value}_lt"));
+    }
+    for (ty, value) in FIXED_WIDTH {
+        let reduce = if *value == "toNat" { "ToNat" } else { "ToInt" };
+        lemmas.push(format!("{ty}.reduce{reduce}"));
+        lemmas.push(format!("← {ty}.{value}_inj"));
+    }
+    let mut bits: Vec<String> = FIXED_WIDTH
+        .iter()
+        .map(|(ty, value)| format!("{ty}.{value}"))
+        .collect();
+    bits.push("BitVec.toInt_eq_toNat_cond".to_owned());
+    let subst = if definitions.is_empty() {
+        String::new()
+    } else {
+        format!("{pad}subst_vars\n")
+    };
+    format!(
+        "{pad}intros\n{subst}{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}all_goals (repeat' split)\n{pad}all_goals omega\n",
+        lemmas.join(", "),
+        bits.join(", ")
+    )
 }
 
 /// §17.12 well-founded lowering: a semireducible definition whose `if`
@@ -1250,7 +1341,6 @@ fn well_founded_definition(
             })?;
     let render = Render {
         prefix: base.prefix,
-        runtime: base.runtime,
         hypotheses: plan
             .addresses
             .iter()
@@ -1656,7 +1746,6 @@ pub fn render_lean(
     let base_render = Render {
         prefix: module_prefix,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime,
         document: false,
         qualify: None,
     };
@@ -1666,7 +1755,6 @@ pub fn render_lean(
     let model_render = Render {
         prefix: module_prefix,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime,
         document: false,
         qualify: Some(&document.lean_module),
     };
@@ -1683,14 +1771,19 @@ pub fn render_lean(
     let models = module.declarations.iter().any(|declaration| {
         crate::ir::semantic::model::declaration_construct(declaration).is_some()
     });
+    // §17.12 (fold laws): `linear_arithmetic` rewrites with the laws
+    // module and `law` applies it, so a module with either proof uses it.
+    let laws = elaborated.contains("\"kind\":\"linear_arithmetic\"")
+        || elaborated.contains("\"kind\":\"law\"");
     let mut text = String::from("module\npublic import Init\n");
     if language_1_2 {
-        use crate::backend::runtime::{COLLECTIONS, MODELS, PORTABLE, REASONING};
+        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING};
         for (used, runtime_module) in [
             (runtime, PORTABLE),
             (collections, COLLECTIONS),
             (models, MODELS),
             (reasoning, REASONING),
+            (laws, LAWS),
         ] {
             if used {
                 text.push_str(&format!("public import {runtime_module}\n"));
@@ -2639,7 +2732,6 @@ pub fn render_latex(
     let render = Render {
         prefix: module_prefix,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime: false,
         document: true,
         qualify: None,
     };

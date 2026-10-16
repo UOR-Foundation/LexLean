@@ -1,0 +1,52 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{statistics}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(p, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (p : (Prod (Nat) (Nat))) (v : Nat) => (((p).1 + v), ((p).2 + 1)))) ((0, 0)) (xs) : (Prod (Nat) (Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{statistics\_one\_pass}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{(statistics (xs) = (FoldLaws.Folds.total (xs), FoldLaws.Folds.count (xs)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{parity}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Nat) (v : Nat) => (LexLeanRuntime.remainder ((acc + v)) (2) (0) : Nat))) (0) (xs) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{parity\_step}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Nat) (x : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.remainder ((a + x)) (2) (0) : Nat) = (LexLeanRuntime.remainder (((LexLeanRuntime.remainder (a) (2) (0) : Nat) + x)) (2) (0) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parity\_fused}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.remainder (FoldLaws.Folds.total (xs)) (2) (0) : Nat) = (LexLeanCollections.listFold ((fun (acc : Nat) (v : Nat) => (LexLeanRuntime.remainder ((acc + v)) (2) (0) : Nat))) ((LexLeanRuntime.remainder (0) (2) (0) : Nat)) (xs) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parity\_of\_total}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.remainder (FoldLaws.Folds.total (xs)) (2) (0) : Nat) = parity (xs))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{count\_append}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (ys : List (Nat))}.\par
+\noindent Statement: \texttt{(FoldLaws.Folds.count ((LexLeanRuntime.append (xs) (ys) : List (Nat))) = (LexLeanCollections.listFold ((fun (acc : Nat) (\_v : Nat) => (acc + 1))) (FoldLaws.Folds.count (xs)) (ys) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{requantized\_total}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (ys : List (Nat))}.\par
+\noindent Statement: \texttt{((FoldLaws.Folds.total (xs) <= FoldLaws.Folds.total ((LexLeanRuntime.append (xs) (ys) : List (Nat)))) /\textbackslash{} (FoldLaws.Kernels.requantize ((0 : Int)) <= (255 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\end{document}

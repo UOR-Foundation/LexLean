@@ -1,3 +1,3 @@
 spec = "lexlean/runtime-library/1"
 toolchain = "leanprover/lean4:v4.32.1"
-modules = ["LexLeanRuntime.Portable", "LexLeanRuntime.Collections", "LexLeanRuntime.Models", "LexLeanRuntime.Reasoning"]
+modules = ["LexLeanRuntime.Portable", "LexLeanRuntime.Collections", "LexLeanRuntime.Models", "LexLeanRuntime.Reasoning", "LexLeanRuntime.Laws"]
