@@ -7803,6 +7803,8 @@
 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R5.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
+'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R1.Compose.RustCore.__wt_0' depends on axioms: [propext]
+'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R1.Compose.RustStd.__wt_0' depends on axioms: [propext]
 -- statement vocabulary
 inductive LexLeanPreservation.Obs : Type
 number of parameters: 0

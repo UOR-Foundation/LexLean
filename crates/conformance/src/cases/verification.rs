@@ -789,6 +789,15 @@ pub(crate) fn run(id: &str) {
                     }),
                 ),
                 (
+                    // Certificate E, held as kernel data (§17.17).
+                    "preserve/LexLeanPreserve/*/*/Compose/*.lex.tex",
+                    Box::new(|f: &str| {
+                        f.starts_with("preserve/LexLeanPreserve/")
+                            && f.contains("/Compose/")
+                            && f.ends_with(".lex.tex")
+                    }),
+                ),
+                (
                     "preserve/program/R<i>.json",
                     Box::new(|f: &str| f.starts_with("preserve/program/R") && f.ends_with(".json")),
                 ),
