@@ -24,6 +24,7 @@ pub(crate) fn run(id: &str) {
         "VR-20" => width_is_operational(),
         "VR-21" => width_invariance(),
         "VR-22" => telemetry_is_noncanonical(),
+        "VR-23" => parts_equal_the_whole(),
         other => panic!("no operational case for {other}"),
     }
 }
@@ -755,4 +756,153 @@ fn telemetry_is_noncanonical() {
     )
     .expect("an unwritable sink does not fail verification");
     assert_eq!(unwritable.attestation_id, without.attestation_id);
+}
+
+/// VR-23: a verification run as the parts of one run (SPEC.md §9.4) equals
+/// the whole, and a plan that cannot run is refused.
+fn parts_equal_the_whole() {
+    use lexlean::{VerifyPart, VerifyPartOutcome, VerifyPlan};
+    if !support::lean_backed("VR-23") {
+        return;
+    }
+    let example = "peano-arithmetic";
+    let whole_project = P::copy_example(example);
+    let whole = verify_at(&whole_project, Operational::new(1, None).expect("width 1"))
+        .expect("the whole verification");
+
+    // The plan, from the example's committed build: its first topological
+    // frontier is one shard, its second another that also replays the first,
+    // and the rest is the join's.
+    let graph = crate::shards::import_graph(
+        support::repo_root()
+            .join("examples")
+            .join(example)
+            .as_std_path(),
+    )
+    .expect("the import graph reads from the committed build");
+    let mut placed: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut remaining: Vec<String> = graph.keys().cloned().collect();
+    let mut frontiers: Vec<Vec<String>> = Vec::new();
+    while !remaining.is_empty() {
+        let ready: Vec<String> = remaining
+            .iter()
+            .filter(|module| graph[*module].iter().all(|import| placed.contains(import)))
+            .cloned()
+            .collect();
+        assert!(!ready.is_empty(), "the import graph converges");
+        placed.extend(ready.iter().cloned());
+        remaining.retain(|module| !ready.contains(module));
+        frontiers.push(ready);
+    }
+    assert!(
+        frontiers.len() >= 3,
+        "the fixture has at least three frontiers: {frontiers:?}"
+    );
+    let first = frontiers[0].clone();
+    let second = frontiers[1].clone();
+    let rest: Vec<String> = frontiers[2..].concat();
+    let parts = tempfile::tempdir().expect("tempdir");
+    let dir = |name: &str| {
+        camino::Utf8PathBuf::from_path_buf(parts.path().join(name)).expect("utf8 tempdir")
+    };
+    // Each part verifies its own copy of the project; the copies live until
+    // the end of the case, as the join's published directory is inside one.
+    let copies: std::cell::RefCell<Vec<P>> = std::cell::RefCell::new(Vec::new());
+    let run_part = |part: VerifyPart| -> Result<VerifyPartOutcome, lexlean::LexLeanError> {
+        let _environment = support::env_shared();
+        let project = P::copy_example(example);
+        let outcome = Operational::new(1, None).expect("width 1").scoped(|| {
+            lexlean::verify_part(
+                &project.engine(),
+                VerifyRequest {
+                    selection: Selection::Entrypoints,
+                },
+                part,
+            )
+        });
+        copies.borrow_mut().push(project);
+        outcome
+    };
+    let plan = |elaborate: &[String], replay: &[String]| VerifyPlan {
+        elaborate: elaborate.to_vec(),
+        replay: replay.to_vec(),
+    };
+
+    let a = run_part(VerifyPart::Shard {
+        plan: plan(&first, &[]),
+        imports: vec![],
+        output: dir("a"),
+    })
+    .expect("the first shard");
+    assert!(
+        matches!(a, VerifyPartOutcome::Shard { processes, .. } if processes == first.len()),
+        "the first shard ran its elaborations and nothing else"
+    );
+    let mut first_and_second = first.clone();
+    first_and_second.extend(second.iter().cloned());
+    let b = run_part(VerifyPart::Shard {
+        plan: plan(&second, &first_and_second),
+        imports: vec![dir("a")],
+        output: dir("b"),
+    })
+    .expect("the second shard, with the first's oleans");
+    assert!(
+        matches!(b, VerifyPartOutcome::Shard { processes, .. } if processes == second.len() + 2 * first_and_second.len()),
+        "the second shard ran its elaborations and the replays and audits of both"
+    );
+    let joined = match run_part(VerifyPart::Join {
+        plan: plan(&rest, &rest),
+        parts: vec![dir("a"), dir("b")],
+    })
+    .expect("the join")
+    {
+        VerifyPartOutcome::Verified(verified) => verified,
+        VerifyPartOutcome::Shard { .. } => panic!("the join publishes"),
+    };
+    assert_eq!(
+        joined.attestation_id, whole.attestation_id,
+        "the join and the whole verification have one attestation identity"
+    );
+    assert_trees_equal(&tree(&joined.root), &tree(&whole.root), "whole and joined");
+
+    // A shard whose plan elaborates a module before its imports does not
+    // converge, and names the import.
+    let error = run_part(VerifyPart::Shard {
+        plan: plan(&second, &[]),
+        imports: vec![],
+        output: dir("c"),
+    })
+    .map(|_| ())
+    .expect_err("a module elaborated before its imports");
+    let text = error.to_string();
+    assert!(
+        text.contains("module order did not converge") && text.contains(&first[0]),
+        "{text}"
+    );
+    // A join that is handed one shard too few has no record of a process.
+    let error = run_part(VerifyPart::Join {
+        plan: plan(&rest, &rest),
+        parts: vec![dir("b")],
+    })
+    .map(|_| ())
+    .expect_err("a join missing a shard");
+    let text = error.to_string();
+    assert!(
+        text.contains("from any part of the run") || text.contains("module order did not converge"),
+        "{text}"
+    );
+    // A join whose plan leaves a replay to no part has no record of it.
+    let error = run_part(VerifyPart::Join {
+        plan: plan(&rest, &rest[1..]),
+        parts: vec![dir("a"), dir("b")],
+    })
+    .map(|_| ())
+    .expect_err("a replay no part ran");
+    let text = error.to_string();
+    // The audit member of the module is placed with its replay, so the hole
+    // is seen at the audit stage, before the records are assembled.
+    assert!(
+        text.contains("from any part of the run") && text.contains(&rest[0]),
+        "{text}"
+    );
 }

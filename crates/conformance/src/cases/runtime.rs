@@ -42,7 +42,9 @@ fn files(root: &std::path::Path, extensions: &[&str]) -> Vec<std::path::PathBuf>
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            !(entry.file_type().is_dir() && matches!(name.as_ref(), "target" | ".git" | ".lexlean"))
+            !(entry.file_type().is_dir()
+                && (matches!(name.as_ref(), "target" | ".git" | ".lexlean")
+                    || support::holds_cache_tag(entry)))
         })
         .flatten()
         .filter(|entry| entry.file_type().is_file())
@@ -298,11 +300,50 @@ fn rt_02() {
         "a mutated decoder is refused"
     );
     // The frozen bytes belong to no older identity (RP-10 pins those IDs to
-    // the committed locks).
+    // the committed locks), and are part of the language-1.2 one: the three
+    // IDs recomputed from disk are the compiler's, and with either frozen
+    // file changed the 1.0 and 1.1 IDs are the same and the 1.2 ID is not.
     assert!(
         support::spec_text().contains("`language/runtime-1.2/`"),
         "SPEC.md §21.2 excludes the runtime project and the frozen bytes from the language-1.0 and 1.1 IDs"
     );
+    let rows = support::normative_rows();
+    let borrowed: Vec<(&str, &[u8])> = rows
+        .iter()
+        .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
+        .collect();
+    let (ten, eleven, twelve) = support::semantics_ids(&borrowed);
+    assert_eq!(ten, lexlean::compiler_semantics_id_for("1.0"));
+    assert_eq!(eleven, lexlean::compiler_semantics_id_for("1.1"));
+    assert_eq!(twelve, lexlean::compiler_semantics_id_for("1.2"));
+    for path in [
+        runtime::FROZEN_PORTABLE_PATH,
+        runtime::FROZEN_CORE_DECODER_PATH,
+    ] {
+        let mut changed = rows.clone();
+        let row = changed
+            .iter_mut()
+            .find(|(candidate, _)| candidate == path)
+            .unwrap_or_else(|| panic!("{path} is in the normative tree"));
+        row.1.push(b'\n');
+        let borrowed: Vec<(&str, &[u8])> = changed
+            .iter()
+            .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
+            .collect();
+        let (changed_ten, changed_eleven, changed_twelve) = support::semantics_ids(&borrowed);
+        assert_eq!(
+            changed_ten, ten,
+            "{path}: the language-1.0 ID does not read it"
+        );
+        assert_eq!(
+            changed_eleven, eleven,
+            "{path}: the language-1.1 ID does not read it"
+        );
+        assert_ne!(
+            changed_twelve, twelve,
+            "{path}: the language-1.2 ID reads it"
+        );
+    }
 }
 
 /// RT-03: a verification audits the runtime against its pinned axioms.
@@ -334,39 +375,117 @@ fn rt_03() {
     );
     planted.relock();
     planted.verify_fails_with("LLV7005");
+    // And the other direction: a declaration that uses an axiom its row does
+    // not pin is refused as well (the verifier compares the sets both ways).
+    let unpinned = P::runtime_project();
+    unpinned.edit(
+        "src/Collections.lex.tex",
+        "\"policy\":{\"axioms\":[\"propext\"],\"kind\":\"exact\"}",
+        "\"policy\":{\"axioms\":[],\"kind\":\"exact\"}",
+    );
+    unpinned.relock();
+    unpinned.verify_fails_with("LLV7005");
 }
 
-/// The string literals of a Rust source, decoded: raw literals as written,
-/// ordinary ones with their escapes resolved, with the line each opens on.
-fn string_literals(source: &str) -> Vec<(usize, String)> {
+/// A string literal of a Rust source.
+struct Literal {
+    /// Where its opening delimiter is, and where its closing one ends.
+    start: usize,
+    end: usize,
+    /// The line it opens on.
+    line: usize,
+    /// Its text, with escapes resolved (a raw literal as written).
+    text: String,
+}
+
+/// A Rust source read once: its string literals, and its code with every
+/// literal, character literal and comment blanked, so that a brace, an
+/// attribute or a keyword found in it is code.
+struct Scan {
+    literals: Vec<Literal>,
+    code: Vec<u8>,
+}
+
+/// Whether the `r` at `index` opens a raw literal: it is not the end of a
+/// longer name, apart from the `b` of a raw byte string.
+fn opens_raw(bytes: &[u8], index: usize) -> bool {
+    let name = |byte: u8| byte.is_ascii_alphanumeric() || byte == b'_';
+    match index.checked_sub(1).map(|before| bytes[before]) {
+        None => true,
+        Some(b'b') => index == 1 || !name(bytes[index - 2]),
+        Some(byte) => !name(byte),
+    }
+}
+
+fn scan(source: &str) -> Scan {
     let bytes = source.as_bytes();
-    let mut out = Vec::new();
+    let mut code = bytes.to_vec();
+    let mut literals = Vec::new();
+    let blank = |code: &mut Vec<u8>, from: usize, to: usize| {
+        for byte in &mut code[from..to.min(bytes.len())] {
+            if *byte != b'\n' {
+                *byte = b' ';
+            }
+        }
+    };
+    let line_of = |at: usize| source[..at].matches('\n').count() + 1;
     let mut index = 0;
     while index < bytes.len() {
         match bytes[index] {
             b'/' if bytes.get(index + 1) == Some(&b'/') => {
+                let start = index;
                 while index < bytes.len() && bytes[index] != b'\n' {
                     index += 1;
                 }
+                blank(&mut code, start, index);
+            }
+            b'/' if bytes.get(index + 1) == Some(&b'*') => {
+                // Block comments nest.
+                let start = index;
+                let mut depth = 0usize;
+                while index < bytes.len() {
+                    if bytes[index..].starts_with(b"/*") {
+                        depth += 1;
+                        index += 2;
+                    } else if bytes[index..].starts_with(b"*/") {
+                        depth -= 1;
+                        index += 2;
+                        if depth == 0 {
+                            break;
+                        }
+                    } else {
+                        index += 1;
+                    }
+                }
+                blank(&mut code, start, index);
             }
             b'\'' => {
-                // A character literal or a lifetime: skip `'x'`, `'\x'`.
-                if bytes.get(index + 2) == Some(&b'\'') {
+                // A character literal (`'x'`, `'\n'`, `'\u{1F600}'`, `'é'`) or
+                // a lifetime.
+                let start = index;
+                if bytes.get(index + 1) == Some(&b'\\') {
                     index += 3;
-                } else if bytes.get(index + 1) == Some(&b'\\') {
-                    index += 2;
                     while index < bytes.len() && bytes[index] != b'\'' {
                         index += 1;
                     }
                     index += 1;
+                    blank(&mut code, start, index);
+                } else if let Some(next) = source[index + 1..].chars().next() {
+                    let width = next.len_utf8();
+                    if bytes.get(index + 1 + width) == Some(&b'\'') {
+                        index += width + 2;
+                        blank(&mut code, start, index);
+                    } else {
+                        index += 1;
+                    }
                 } else {
                     index += 1;
                 }
             }
             b'r' if matches!(bytes.get(index + 1), Some(b'#' | b'"'))
-                && (index == 0
-                    || !(bytes[index - 1].is_ascii_alphanumeric() || bytes[index - 1] == b'_')) =>
+                && opens_raw(bytes, index) =>
             {
+                let start = index;
                 let mut hashes = 0;
                 let mut at = index + 1;
                 while bytes.get(at) == Some(&b'#') {
@@ -378,18 +497,21 @@ fn string_literals(source: &str) -> Vec<(usize, String)> {
                     continue;
                 }
                 let closing = format!("\"{}", "#".repeat(hashes));
-                let start = at + 1;
-                let end = source[start..]
+                let text_start = at + 1;
+                let text_end = source[text_start..]
                     .find(&closing)
-                    .map_or(bytes.len(), |end| start + end);
-                out.push((
-                    source[..index].matches('\n').count() + 1,
-                    source[start..end].to_owned(),
-                ));
-                index = end + closing.len();
+                    .map_or(bytes.len(), |end| text_start + end);
+                index = (text_end + closing.len()).min(bytes.len());
+                literals.push(Literal {
+                    start,
+                    end: index,
+                    line: line_of(start),
+                    text: source[text_start..text_end].to_owned(),
+                });
+                blank(&mut code, start, index);
             }
             b'"' => {
-                let line = source[..index].matches('\n').count() + 1;
+                let start = index;
                 let mut text = String::new();
                 index += 1;
                 while index < bytes.len() && bytes[index] != b'"' {
@@ -397,6 +519,42 @@ fn string_literals(source: &str) -> Vec<(usize, String)> {
                         match bytes[index + 1] {
                             b'n' => text.push('\n'),
                             b't' => text.push('\t'),
+                            b'r' => text.push('\r'),
+                            b'0' => text.push('\0'),
+                            // A backslash before a line break drops the
+                            // break and the white space that opens the next
+                            // line: one literal written over several lines.
+                            b'\n' | b'\r' => {
+                                index += 2;
+                                while index < bytes.len() && bytes[index].is_ascii_whitespace() {
+                                    index += 1;
+                                }
+                                continue;
+                            }
+                            b'x' => {
+                                let digits = source.get(index + 2..index + 4).unwrap_or_default();
+                                if let Ok(value) = u8::from_str_radix(digits, 16) {
+                                    text.push(char::from(value));
+                                }
+                                index += 4;
+                                continue;
+                            }
+                            b'u' => {
+                                let close =
+                                    source[index..].find('}').map_or(index + 2, |at| index + at);
+                                let digits = source
+                                    .get(index + 3..close)
+                                    .unwrap_or_default()
+                                    .replace('_', "");
+                                if let Some(decoded) = u32::from_str_radix(&digits, 16)
+                                    .ok()
+                                    .and_then(char::from_u32)
+                                {
+                                    text.push(decoded);
+                                }
+                                index = close + 1;
+                                continue;
+                            }
                             other => text.push(char::from(other)),
                         }
                         index += 2;
@@ -406,26 +564,99 @@ fn string_literals(source: &str) -> Vec<(usize, String)> {
                         index += width;
                     }
                 }
-                out.push((line, text));
-                index += 1;
+                index = (index + 1).min(bytes.len());
+                literals.push(Literal {
+                    start,
+                    end: index,
+                    line: line_of(start),
+                    text,
+                });
+                blank(&mut code, start, index);
             }
             _ => index += 1,
         }
     }
-    out
+    Scan { literals, code }
 }
 
-/// Whether a text is Lean runtime text: a `namespace` and, within it, a
-/// declaration.
-fn is_runtime_text(text: &str) -> bool {
-    let declaration = |line: &str| {
-        let mut rest = line.trim_start();
-        if rest.starts_with("@[") {
-            rest = rest
-                .split_once(']')
-                .map_or("", |(_, after)| after)
-                .trim_start();
+/// A source with its test items blanked, each by the line breaks it held so
+/// that every other line keeps its number: an item under `#[cfg(test)]` (a
+/// `mod`, a function, a `use`), wherever it stands, and the whole file when
+/// it opens with `#![cfg(test)]`. A unit test's fixture text is no part of
+/// what the compiler emits. What follows a test item is production code and
+/// stays, which a cut at the first test module would have dropped.
+fn without_test_items(source: &str) -> String {
+    let scanned = scan(source);
+    let code = &scanned.code;
+    let mut blanked = source.as_bytes().to_vec();
+    let erase = |blanked: &mut Vec<u8>, from: usize, to: usize| {
+        for byte in &mut blanked[from..to] {
+            if *byte != b'\n' {
+                *byte = b' ';
+            }
         }
+    };
+    let text = String::from_utf8_lossy(code).into_owned();
+    if text.contains("#![cfg(test)]") {
+        let whole = blanked.len();
+        erase(&mut blanked, 0, whole);
+    }
+    let mut search = 0;
+    while let Some(found) = text[search..].find("#[cfg(test)]") {
+        let attribute = search + found;
+        // The item follows its attributes: up to the first `{` or `;` outside
+        // parentheses and brackets, then the matching `}`.
+        let mut at = attribute + "#[cfg(test)]".len();
+        let mut nesting = 0usize;
+        let mut end = code.len();
+        while at < code.len() {
+            match code[at] {
+                b'(' | b'[' => nesting += 1,
+                b')' | b']' => nesting = nesting.saturating_sub(1),
+                b';' if nesting == 0 => {
+                    end = at + 1;
+                    break;
+                }
+                b'{' if nesting == 0 => {
+                    let mut depth = 0usize;
+                    while at < code.len() {
+                        match code[at] {
+                            b'{' => depth += 1,
+                            b'}' => {
+                                depth -= 1;
+                                if depth == 0 {
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                        at += 1;
+                    }
+                    end = (at + 1).min(code.len());
+                    break;
+                }
+                _ => {}
+            }
+            at += 1;
+        }
+        erase(&mut blanked, attribute, end);
+        search = end.max(attribute + 1);
+    }
+    String::from_utf8(blanked).expect("blanking keeps ASCII and whole characters")
+}
+
+/// What a line of Lean declares, when it declares: the text after the
+/// declaration keyword, once its attributes and modifiers are read.
+fn declaration(line: &str) -> Option<&str> {
+    let mut rest = line.trim_start();
+    while rest.starts_with("@[") {
+        rest = rest
+            .split_once(']')
+            .map_or("", |(_, after)| after)
+            .trim_start();
+    }
+    loop {
+        let before = rest;
         for modifier in [
             "public ",
             "private ",
@@ -436,45 +667,145 @@ fn is_runtime_text(text: &str) -> bool {
         ] {
             rest = rest.strip_prefix(modifier).unwrap_or(rest);
         }
-        [
-            "def ",
-            "theorem ",
-            "instance ",
-            "class ",
-            "inductive ",
-            "structure ",
-            "abbrev ",
-        ]
-        .iter()
-        .any(|keyword| rest.starts_with(keyword))
-    };
-    text.lines().any(|line| line.starts_with("namespace ")) && text.lines().any(declaration)
+        if rest == before {
+            break;
+        }
+    }
+    [
+        "def ",
+        "theorem ",
+        "lemma ",
+        "instance ",
+        "class ",
+        "inductive ",
+        "structure ",
+        "abbrev ",
+        "opaque ",
+        "axiom ",
+    ]
+    .iter()
+    .find_map(|keyword| rest.strip_prefix(keyword))
 }
 
-/// The runtime texts of a Rust source, by line.
+/// Whether a text opens or closes a runtime namespace, or declares a name
+/// under one (`def LexLeanRuntime.x`), with or without a `namespace` line
+/// around it. A text that only names a runtime constant, as the Lean a
+/// generated module holds does, is not one.
+fn declares_under_runtime(text: &str) -> bool {
+    let under_runtime = |name: &str| {
+        NAMESPACES
+            .iter()
+            .any(|namespace| name == *namespace || name.starts_with(&format!("{namespace}.")))
+    };
+    text.lines().map(str::trim_start).any(|line| {
+        let namespace = line
+            .strip_prefix("namespace ")
+            .or_else(|| line.strip_prefix("end "))
+            .is_some_and(|name| under_runtime(name.split_whitespace().next().unwrap_or_default()));
+        let declared = declaration(line).is_some_and(|rest| {
+            under_runtime(
+                rest.split(|c: char| c.is_whitespace() || ":({[".contains(c))
+                    .next()
+                    .unwrap_or_default(),
+            )
+        });
+        namespace || declared
+    })
+}
+
+/// Whether a text of the compiler's source is Lean runtime text: it declares
+/// under a runtime namespace, or it declares something inside a namespace of
+/// its own, which is how a runtime module reads whatever it is called.
+fn is_runtime_text(text: &str) -> bool {
+    declares_under_runtime(text)
+        || (text.lines().any(|line| line.starts_with("namespace "))
+            && text.lines().any(|line| declaration(line).is_some()))
+}
+
+/// The runtime texts of a Rust source, by line: a literal alone, and the
+/// literals written one after another (`concat!`, an array of lines, `+`,
+/// the arguments of `format!`), read joined with and without a line break
+/// between them, because a text can be cut anywhere.
 fn runtime_texts(source: &str) -> Vec<usize> {
-    string_literals(source)
+    let scanned = scan(source);
+    let mut found = Vec::new();
+    let mut chain: Vec<&Literal> = Vec::new();
+    let flush = |chain: &mut Vec<&Literal>, found: &mut Vec<usize>| {
+        if let Some(first) = chain.first() {
+            let texts: Vec<&str> = chain.iter().map(|literal| literal.text.as_str()).collect();
+            if texts.iter().any(|text| is_runtime_text(text))
+                || is_runtime_text(&texts.concat())
+                || is_runtime_text(&texts.join("\n"))
+            {
+                found.push(first.line);
+            }
+        }
+        chain.clear();
+    };
+    for literal in &scanned.literals {
+        if let Some(previous) = chain.last() {
+            // The same expression: little between the two, and no statement
+            // or block boundary.
+            let between = &source[previous.end..literal.start];
+            if between.len() > 64 || between.contains([';', '{', '}']) {
+                flush(&mut chain, &mut found);
+            }
+        }
+        chain.push(literal);
+    }
+    flush(&mut chain, &mut found);
+    found
+}
+
+/// What a generated language-1.2 module must be to meet RT-04's statement:
+/// it names a runtime constant only if it imports the runtime module that
+/// declares it, and it declares nothing under a runtime namespace.
+fn generated_module_defects(
+    text: &str,
+    owners: &std::collections::BTreeMap<String, &'static str>,
+) -> Vec<String> {
+    let mut defects = Vec::new();
+    let imported: BTreeSet<&str> = runtime::imported_by([text])
+        .expect("the shipped runtime")
         .into_iter()
-        .filter(|(_, text)| is_runtime_text(text))
-        .map(|(line, _)| line)
-        .collect()
+        .map(|module| module.name.as_str())
+        .collect();
+    let mut seen = BTreeSet::new();
+    for token in text.split(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '.' | '\''))) {
+        if !NAMESPACES
+            .iter()
+            .any(|namespace| token.starts_with(&format!("{namespace}.")))
+        {
+            continue;
+        }
+        let name = token.trim_end_matches('.');
+        if let Some(owner) = owners.get(name) {
+            if !imported.contains(owner) && seen.insert(name.to_owned()) {
+                defects.push(format!("uses `{name}` without importing `{owner}`"));
+            }
+        }
+    }
+    if declares_under_runtime(text) {
+        defects.push("declares a runtime namespace or a name under one".to_owned());
+    }
+    defects
 }
 
 /// RT-04: no Lean runtime text remains in the language-1.2 compiler but the
-/// decoder of core module 2, which loads native modules.
+/// decoder of core module 2, which loads native modules; and what the
+/// compiler generates imports the runtime modules it uses and splices none.
 fn rt_04() {
     let source_root = repo_root().join("crates/lexlean/src");
     let mut found = Vec::new();
     for path in files(source_root.as_std_path(), &["rs"]) {
         let text = std::fs::read_to_string(&path).expect("a compiler source");
-        // A unit test's fixture text is no part of what the compiler emits.
-        let text = text.split("\n#[cfg(test)]").next().unwrap_or_default();
+        let text = without_test_items(&text);
         let relative = path
             .strip_prefix(source_root.as_std_path())
             .expect("below the source root")
             .to_string_lossy()
             .replace('\\', "/");
-        for line in runtime_texts(text) {
+        for line in runtime_texts(&text) {
             found.push((relative.clone(), line));
         }
     }
@@ -485,24 +816,179 @@ fn rt_04() {
         .position(|line| line.starts_with("pub const LEAN_CORE_DECODER_V2"))
         .expect("the decoder constant")
         + 1;
+    found.sort();
     assert_eq!(
         found,
         [("backend/core_v2.rs".to_owned(), decoder_line)],
         "the only Lean runtime text in the compiler is the decoder of core module 2"
     );
-    // A planted runtime text constant, raw or escaped, is found.
-    for plant in [
-        "const PLANTED: &str = r#\"\nnamespace LexLeanCollections\n\n@[expose] public def listFold {α σ : Type} (step : σ -> α -> σ) (initial : σ) (values : List α) : σ :=\n  values.foldl step initial\nend LexLeanCollections\n\"#;\n",
-        "const PLANTED: &str = \"\\nnamespace LexLeanModels\\npublic def Sound1 : Prop := True\\nend LexLeanModels\\n\";\n",
+    // A planted runtime text is found wherever and however it is written:
+    // raw or escaped, with a namespace line or only a qualified name, split
+    // across literals or written over several lines, and in production code
+    // that follows a test module.
+    let semantic = std::fs::read_to_string(source_root.join("backend/semantic.rs").as_std_path())
+        .expect("the semantic backend");
+    assert_eq!(
+        runtime_texts(&without_test_items(&semantic)),
+        Vec::<usize>::new(),
+        "the semantic backend carries no runtime text"
+    );
+    for (shape, plant) in [
+        (
+            "a raw literal",
+            "const PLANTED: &str = r#\"\nnamespace LexLeanCollections\n\n@[expose] public def listFold {α σ : Type} (step : σ -> α -> σ) (initial : σ) (values : List α) : σ :=\n  values.foldl step initial\nend LexLeanCollections\n\"#;\n",
+        ),
+        (
+            "an escaped literal",
+            "const PLANTED: &str = \"\\nnamespace LexLeanModels\\npublic def Sound1 : Prop := True\\nend LexLeanModels\\n\";\n",
+        ),
+        (
+            "a declaration under a runtime name and no namespace line",
+            "const PLANTED: &str = \"public def LexLeanRuntime.listFold {α : Type} (xs : List α) : Nat := xs.length\\n\";\n",
+        ),
+        (
+            "a theorem under a runtime name",
+            "const PLANTED: &str = \"theorem LexLeanReasoning.sound1 : True := trivial\";\n",
+        ),
+        (
+            "a namespace opened and closed with nothing declared in it",
+            "const PLANTED: &str = \"namespace LexLeanModels\\nend LexLeanModels\\n\";\n",
+        ),
+        (
+            "literals joined by concat!",
+            "const PLANTED: &str = concat!(\n    \"namespace LexLeanCollections\\n\",\n    \"public def listFold : Nat := 0\\n\",\n    \"end LexLeanCollections\\n\"\n);\n",
+        ),
+        (
+            "a name cut inside its namespace",
+            "const PLANTED: &str = concat!(\"public def LexLean\", \"Models.Sound1 : Prop := True\");\n",
+        ),
+        (
+            "an array of lines",
+            "const PLANTED: [&str; 2] = [\"namespace LexLeanRuntime\", \"public def x : Nat := 0\"];\n",
+        ),
+        (
+            "a format! template",
+            "fn planted(name: &str) -> String {\n    format!(\"public def LexLeanReasoning.{name} : Nat := 0\")\n}\n",
+        ),
+        (
+            "a literal continued over lines",
+            "const PLANTED: &str = \"namespace LexLeanModels\\n\\\n    public def Sound1 : Prop := True\\n\";\n",
+        ),
     ] {
-        let semantic = std::fs::read_to_string(source_root.join("backend/semantic.rs").as_std_path())
-            .expect("the semantic backend");
-        assert_eq!(runtime_texts(&semantic), Vec::<usize>::new(), "the semantic backend carries no runtime text");
         let planted = format!("{semantic}\n{plant}");
         assert_eq!(
-            runtime_texts(&planted).len(),
+            runtime_texts(&without_test_items(&planted)).len(),
             1,
-            "a planted runtime text constant is found: {plant}"
+            "a planted runtime text is found ({shape}): {plant}"
         );
     }
+    // Production code after a test module is read: a text planted after the
+    // `HEAVY_FRACTION` constant of the verifier, which follows its first test
+    // module, is found, and the finding names a line below that module.
+    let verifier = std::fs::read_to_string(source_root.join("verify/mod.rs").as_std_path())
+        .expect("the verifier");
+    let first_test = verifier
+        .lines()
+        .position(|line| line.starts_with("#[cfg(test)]"))
+        .expect("the verifier has a unit test module")
+        + 1;
+    let after = verifier
+        .find("const HEAVY_FRACTION")
+        .and_then(|at| verifier[at..].find('\n').map(|end| at + end + 1))
+        .expect("the verifier holds HEAVY_FRACTION");
+    let at_line = verifier[..after].matches('\n').count() + 1;
+    assert!(
+        at_line > first_test,
+        "HEAVY_FRACTION follows the first unit test module of the verifier"
+    );
+    let planted = format!(
+        "{}const PLANTED: &str = \"public def LexLeanRuntime.listFold : Nat := 0\";\n{}",
+        &verifier[..after],
+        &verifier[after..]
+    );
+    assert_eq!(
+        runtime_texts(&without_test_items(&planted)),
+        [at_line],
+        "a runtime text after a test module is found, on its own line"
+    );
+    // A unit test's fixture is not what the compiler emits: the same text
+    // inside a test item is not found, and the production code after it is.
+    let in_test = format!(
+        "{semantic}\n#[cfg(test)]\nmod planted_tests {{\n    const FIXTURE: &str = \"namespace LexLeanRuntime\\npublic def x : Nat := 0\\n\";\n    fn nested() {{ if true {{ let _ = 1; }} }}\n}}\nconst PRODUCTION: &str = \"namespace LexLeanRuntime\\npublic def y : Nat := 0\\n\";\n"
+    );
+    let found_after_test = runtime_texts(&without_test_items(&in_test));
+    assert_eq!(
+        found_after_test.len(),
+        1,
+        "a test item's fixture is skipped and the production text after it is found"
+    );
+    // The statement's other half, over what the compiler generates: every
+    // committed language-1.2 module imports the runtime modules whose
+    // constants it names and declares none, and a module that omits an
+    // import, or splices a declaration, is refused.
+    let modules = runtime::modules().expect("the shipped runtime");
+    let mut owners: std::collections::BTreeMap<String, &'static str> =
+        std::collections::BTreeMap::new();
+    for module in modules {
+        for (name, _) in &module.declarations {
+            owners.insert(name.clone(), module.name.as_str());
+        }
+    }
+    assert!(!owners.is_empty(), "the runtime modules declare constants");
+    let root = repo_root();
+    let mut generated = 0usize;
+    let mut using = None;
+    for path in files(root.as_std_path(), &["lean"]) {
+        let shown = path.display().to_string().replace('\\', "/");
+        let is_output = shown.contains("/expected/build/modules/");
+        let project = path
+            .ancestors()
+            .find(|ancestor| ancestor.join("lexlean.toml").is_file());
+        let language_1_2 = project.is_some_and(|project| {
+            std::fs::read_to_string(project.join("lexlean.toml"))
+                .unwrap_or_default()
+                .contains("language = \"1.2\"")
+        });
+        if !is_output || !language_1_2 {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).expect("a generated module");
+        generated += 1;
+        assert_eq!(
+            generated_module_defects(&text, &owners),
+            Vec::<String>::new(),
+            "{shown}: a generated language-1.2 module meets the statement"
+        );
+        if using.is_none()
+            && text
+                .split(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '.' | '\'')))
+                .any(|token| owners.contains_key(token))
+        {
+            using = Some(text);
+        }
+    }
+    assert!(
+        generated > 0,
+        "the repository commits generated language-1.2 modules"
+    );
+    let using = using.expect("a committed generated module uses a runtime constant");
+    let without_import = using
+        .lines()
+        .filter(|line| {
+            !line.starts_with("public import LexLeanRuntime.")
+                && !line.starts_with("import LexLeanRuntime.")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        !generated_module_defects(&without_import, &owners).is_empty(),
+        "a generated module that drops its runtime imports is refused"
+    );
+    let spliced = format!(
+        "{using}\nnamespace LexLeanRuntime\npublic def planted : Nat := 0\nend LexLeanRuntime\n"
+    );
+    assert!(
+        !generated_module_defects(&spliced, &owners).is_empty(),
+        "a generated module that declares a runtime namespace is refused"
+    );
 }

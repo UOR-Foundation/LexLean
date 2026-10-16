@@ -48,7 +48,10 @@ fn committed() -> Vec<(String, String)> {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
