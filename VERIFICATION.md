@@ -7702,6 +7702,88 @@ error[LLV7005]: `LexLeanCollections.insertEntry` of the runtime module `LexLeanR
 
 Removed: each file was restored, and `RT-01`..`RT-04` pass on the restored
 tree.
+
+### the runtime gates, read again (Issue #154)
+
+`RT-04` had cut each compiler source at its first `#[cfg(test)]`, asked a
+literal for a `namespace` line and a declaration, and read one literal at a
+time; #154 reproduced a text that passed. Each shape below is now planted on
+the committed tree and restored after its run
+(`cargo test -p repo-conformance --all-features --test conformance --
+conformance_rt_04 --exact`); the same shapes, and the ones that must not be
+found, are asserted by the case itself.
+
+1. Production code after the first test module of the verifier: a
+   `const PLANTED: &str = "public def LexLeanRuntime.listFold : Nat := 0";`
+   after `HEAVY_FRACTION` in `verify/mod.rs`, which follows the module that
+   ends at line 2694.
+2. A declaration under a runtime name and no `namespace` line, as a string
+   constant appended to `backend/semantic.rs`.
+3. The same text written with `concat!` (`namespace LexLeanCollections`,
+   `public def listFold : Nat := 0`, `end LexLeanCollections` as three
+   literals).
+4. The same under a `format!` template
+   (`public def LexLeanReasoning.{name} : Nat := 0`).
+
+```text
+thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:765:5:
+assertion `left == right` failed: the only Lean runtime text in the compiler is the decoder of core module 2
+  left: [("backend/core_v2.rs", 34), ("verify/mod.rs", 2731)]
+ right: [("backend/core_v2.rs", 34)]
+  left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2965)]     (2 and 3)
+  left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2966)]     (4)
+```
+
+What the gate cannot see is said here and not left to a reader: a text built
+at run time from parts declared apart (a name in one constant, a template in
+another) is not a literal or a run of literals, and `RT-04` does not read it.
+What bounds that is the other half of its statement, which is checked over
+the output: a generated language-1.2 module that declares under a runtime
+namespace, or names a runtime constant without importing the module that
+declares it, is refused (planted in the case: the committed module of the
+collections example with its runtime imports dropped, and with a runtime
+namespace appended).
+
+`RT-03`'s axiom check compares the observed and the pinned sets in both
+directions (`LLV7005`); the fifth plant of the section above pinned an axiom a
+declaration does not use, and the case now also plants the other:
+`LexLeanCollections.compareCodes._sparseCasesOn_1` pinned to
+`exact{axioms: []}` in `Collections.lex.tex`, which uses `propext`:
+
+```text
+error[LLV7005]: `LexLeanCollections.compareCodes._sparseCasesOn_1` violates its exact axiom policy: observed [propext]
+  --> lexlean.toml:1:1
+```
+
+A runtime declaration whose body changes and still type-checks
+(`@3159 := 64` to `65` in `Portable.lex.tex`, a width constant of
+`checkedMultiplyInt64`) is not caught by `RT-01`..`RT-04`: all four pass with
+it planted, because it is a well-typed change that pins the same axioms. It is
+caught by the identity discipline, which is the gate for any normative byte:
+the language-1.2 compiler-semantics ID changes, so `lexlean lock --check` in
+each language-1.2 example refuses its lock,
+
+```text
+error[LLC0102]: lexlean.lock is stale or noncanonical; run `lexlean lock`
+  --> lexlean.lock:1:1
+```
+
+and a verification after relocking differs from the committed record of the
+example (`examples/collections/expected/verify/audit/LexLeanAudit.Aea7d3fe….*`
+against `LexLeanAudit.A65452ac….*`; the audit prefix is a function of the
+identity); `cargo xtask verify-examples` compares those records, so the change
+stays red until every record is regenerated, which is a diff a review reads. No
+runtime-specific oracle of a declaration's body exists beyond those pins, and
+none is claimed.
+
+`RT-02`'s statement that the frozen files belong to no older identity was a
+grep of `SPEC.md` for the path; it now recomputes the three IDs from disk
+(`RP-10`'s recomputation, shared) and finds, with either frozen file changed
+by one byte, the language-1.0 and 1.1 IDs unchanged and the 1.2 ID changed.
+The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
+a Cargo target directory named `target-check` in the checkout, `RT-01` and
+`SP-12` failed on its Lean files before and pass now.
+
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted

@@ -15,6 +15,19 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The runtime gates read what they claimed to (#154, follow-up to #144; no new
+  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
+  literal of the compiler's source outside unit-test items, in production code
+  after a test module, with or without a `namespace` line (a declaration
+  under a runtime name is one), written whole or in literals joined by
+  `concat!`, an array, `+` or `format!`; its statement now also asserts
+  what it said of generated modules: every committed language-1.2 module
+  imports the runtime modules whose constants it names and declares nothing
+  under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
+  with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
+  plants the second direction of the axiom check. Every directory that holds a
+  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
+  beside the sources no longer reads as source. No compiled behavior changes.
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining
