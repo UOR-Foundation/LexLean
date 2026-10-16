@@ -1561,6 +1561,11 @@ fn conformance_sp_12() {
 }
 
 #[test]
+fn conformance_sp_13() {
+    repo_conformance::cases::run("SP-13");
+}
+
+#[test]
 fn conformance_md_01() {
     repo_conformance::cases::run("MD-01");
 }
@@ -1788,6 +1793,11 @@ fn conformance_px_11() {
 #[test]
 fn conformance_px_12() {
     repo_conformance::cases::run("PX-12");
+}
+
+#[test]
+fn conformance_px_13() {
+    repo_conformance::cases::run("PX-13");
 }
 
 #[test]

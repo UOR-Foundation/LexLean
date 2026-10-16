@@ -120,11 +120,31 @@ fn canonical_key_is_alpha_safe() {
 #[test]
 fn path_rules_are_strict() {
     use lexlean::config::is_project_relative;
-    assert!(is_project_relative("src/Main.lex.tex"));
-    assert!(!is_project_relative("/etc/passwd"));
-    assert!(!is_project_relative("../escape"));
-    assert!(!is_project_relative("a/../../b"));
-    assert!(!is_project_relative(""));
+    for path in [
+        "src/Main.lex.tex",
+        "assets/name:value.dat",
+        "assets/12:00.dat",
+        "names/:colon",
+        "names/é:notes",
+    ] {
+        assert!(is_project_relative(path), "{path:?} is project-relative");
+    }
+    for path in [
+        "",
+        "/etc/passwd",
+        "../escape",
+        "a/../../b",
+        "C:",
+        "C:outside",
+        "c:../outside",
+        "C:/outside",
+        "dir/C:outside",
+        "dir/c:../outside",
+        "dir/C:/outside",
+        "dir/nested/Z:outside",
+    ] {
+        assert!(!is_project_relative(path), "{path:?} escapes the project");
+    }
 }
 
 /// The repository root, when the crate is being tested inside it.

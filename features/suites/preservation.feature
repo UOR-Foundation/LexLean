@@ -85,3 +85,10 @@ Feature: preservation
     Then every listed module has exactly one native source and the project holds no Lean file, and no Lean file in the release tree declares the library's namespace
     And the registry names no declaration, and the constructors and soundness cases the audit uses are those of the native modules
     And a native source that is missing, extra, of the first schema, or weakened to an inexact policy is refused
+
+  @SP-13 @build
+  Scenario: Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements.
+    Given a root calling a function of 33 parameters, a root copying a record of 33 fields, and a root matching on 33 constructors of one field
+    When the certificates of each root are generated and the list literals they write are counted, and each root is verified with the pinned Lean
+    Then no certificate writes a list literal of more than 32 elements
+    And every root verifies, certificate B included

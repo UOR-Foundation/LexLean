@@ -201,6 +201,17 @@ impl Exported {
     pub fn bundle(&self) -> Utf8PathBuf {
         self.project.root.join(&self.output.bundle)
     }
+
+    /// The verified directory retained beside the export's production area.
+    #[must_use]
+    pub(crate) fn verified_root(&self) -> Utf8PathBuf {
+        self.bundle()
+            .parent()
+            .and_then(Utf8Path::parent)
+            .expect("a production bundle is below its build root's production area")
+            .join("verified")
+            .join(self.output.result.verification.attestation_id.to_hex())
+    }
 }
 
 /// Export one example through the public consumer, with GNAF evidence for
@@ -232,12 +243,27 @@ pub fn export(example: &str) -> Result<Exported, String> {
             certificate_id: gnaf.certificate_id,
         });
     }
+    // Preserve the interrupted-run cleanup assertion that SP-05's former
+    // independent verification established through `support::verify_ok`.
+    let stale = project
+        .root
+        .join(".lexlean/verified/.staging-interrupted-export");
+    std::fs::create_dir_all(stale.join("inner").as_std_path()).expect("stale staging");
+    std::fs::write(
+        stale.join("inner/Leftover.lean").as_std_path(),
+        "-- left behind",
+    )
+    .expect("stale staging file");
     let (output, report) = production_consumer::export(
         &project.root.join("lexlean.toml"),
         &application(example),
         &evidence,
     )
     .map_err(|error| format!("{example}: {:?}", error.diagnostics))?;
+    assert!(
+        !stale.as_std_path().exists(),
+        "{stale}: the staging directory of an interrupted run is removed by the next verify"
+    );
     Ok(Exported {
         project,
         output,
