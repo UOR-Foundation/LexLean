@@ -8379,6 +8379,30 @@ The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
 a Cargo target directory named `target-check` in the checkout, `RT-01` and
 `SP-12` failed on its Lean files before and pass now.
 
+The fifth runtime module, `LexLeanRuntime.Laws` (#117), declares under the
+namespace `LexLeanLaws`, which the runtime cases' list of namespaces did not
+hold: a copy of a laws declaration in a generated module, or a literal of the
+compiler's source under that namespace, passed `RT-01` and `RT-04`. The list is
+now asserted equal to the first segments of the declarations of every shipped
+runtime module (`rt_04`), so a sixth module cannot be missed the same way. Both
+halves are planted by removing `"LexLeanLaws"` from the list and running
+`cargo test -p repo-conformance --all-features --test conformance --
+conformance_rt_04 --exact`, each caught:
+
+```text
+assertion `left == right` failed: a planted runtime text is found (a declaration under the laws namespace): const PLANTED: &str = "public def LexLeanLaws.sumNat (xs : List Nat) : Nat := xs.length\n";
+  left: 0
+ right: 1
+```
+
+and, with that plant also removed from the case,
+
+```text
+assertion `left == right` failed: the runtime namespaces the gates know are the namespaces the shipped runtime declares
+  left: {"LexLeanCollections", "LexLeanLaws", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
+ right: {"LexLeanCollections", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
+```
+
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted

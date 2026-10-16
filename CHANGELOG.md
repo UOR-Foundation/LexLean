@@ -216,6 +216,10 @@ versions, and the entries below say what each tag does and does not claim.
   stage 3 of #89, certificate A) is still Lean text, so the data certificate is
   rendered outside the module system until they follow. Languages 1.0 and 1.1 have no certificates and are
   untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
+- The runtime gates know the fifth runtime namespace (`RT-01`, `RT-04`): the
+  list of runtime namespaces gained `LexLeanLaws` and is asserted equal to the
+  namespaces the shipped runtime declares, so a module added to the runtime
+  cannot escape the gates by its namespace. No identity moves.
 - Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
   no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
   integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
