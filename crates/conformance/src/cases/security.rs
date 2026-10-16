@@ -274,6 +274,34 @@ pub(crate) fn run(id: &str) {
                 .expect("an escaping build root is rejected");
             support::expect_code(&error, "LLC0101");
 
+            // Reject drive prefixes before any host path join, including a
+            // prefix inside a slash-separated path. Parsing alone keeps
+            // these checks from reaching a real outside path on Windows.
+            let configuration = P::example().read("lexlean.toml");
+            for (field, value) in [
+                ("build_root", ".lexlean"),
+                ("lockfile", "lexlean.lock"),
+                ("lean_workspace", "."),
+            ] {
+                for path in ["C:/outside", "c:../outside", "dir/Z:outside"] {
+                    let text = configuration.replace(
+                        &format!("{field} = \"{value}\""),
+                        &format!("{field} = \"{path}\""),
+                    );
+                    let diagnostics =
+                        lexlean::config::parse_project("lexlean.toml", text.as_bytes()).expect_err(
+                            "a drive-prefixed configured path is rejected before joining",
+                        );
+                    assert!(
+                        diagnostics.iter().any(|diagnostic| {
+                            diagnostic.code.as_str() == "LLC0101"
+                                && diagnostic.message.contains(field)
+                        }),
+                        "{field} = {path:?}: {diagnostics:?}"
+                    );
+                }
+            }
+
             #[cfg(not(unix))]
             support::unix_only("SE-01", "unix symlink");
             #[cfg(unix)]
@@ -763,6 +791,21 @@ pub(crate) fn run(id: &str) {
                 limits.child_timeout_ms = 200;
                 let error = lexlean::verify::child::run(&spec(&sleeper, cwd), &limits, &normalizer)
                     .expect_err("the timeout is enforced");
+                assert_eq!(error.code.as_str(), "LLS8002");
+                for needle in [
+                    "child_timeout_ms",
+                    "`stub`",
+                    "phase Probe",
+                    "configured 200",
+                ] {
+                    assert!(error.message.contains(needle), "{}", error.message);
+                }
+                // The deadline also bounds output inherited by a live
+                // descendant after its leader has exited and been reaped.
+                std::fs::write(&sleeper, "#!/bin/sh\nsleep 3 2>/dev/null &\nexit 0\n")
+                    .expect("write");
+                let error = lexlean::verify::child::run(&spec(&sleeper, cwd), &limits, &normalizer)
+                    .expect_err("an inherited output pipe cannot outlive the child timeout");
                 assert_eq!(error.code.as_str(), "LLS8002");
                 for needle in [
                     "child_timeout_ms",
