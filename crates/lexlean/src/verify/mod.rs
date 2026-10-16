@@ -1018,12 +1018,39 @@ pub fn run_part(
     // Stage 5: Lake workspace preflight (§10.4) and module-name conflicts
     // (§18.8, §18.9).
     workspace::preflight(project, lock).map_err(fail)?;
+    // §17.12: the runtime modules the generated modules import, and, when
+    // the project certifies a root, those the calculus modules its
+    // certificates compile beside import. They are generated from the
+    // shipped native sources, compiled before the project's modules,
+    // replayed, and audited against their exact axioms like any other.
+    let runtime_modules: Vec<&'static crate::backend::runtime::RuntimeModule> = {
+        let mut texts: Vec<&str> = build
+            .modules
+            .iter()
+            .map(|module| module.lean_text.as_str())
+            .collect();
+        if !certified.is_empty() {
+            for module in crate::production::preserve::TARGET_MODULES {
+                texts.push(crate::production::preserve::module_text(module).map_err(fail)?);
+            }
+        }
+        let mut imported = crate::backend::runtime::imported_by(texts).map_err(fail)?;
+        // The runtime's own project generates these modules itself.
+        imported.retain(|runtime| {
+            !build
+                .modules
+                .iter()
+                .any(|module| module.lean_module == runtime.name)
+        });
+        imported
+    };
     let probe_name = format!("LexLeanProbe.P{semantic_hex32}");
     let audit_name = format!("LexLeanAudit.A{semantic_hex32}");
     let mut all_names: Vec<String> = build
         .modules
         .iter()
         .map(|module| module.lean_module.clone())
+        .chain(runtime_modules.iter().map(|module| module.name.clone()))
         .collect();
     all_names.push(probe_name.clone());
     all_names.push(audit_name.clone());
@@ -1052,6 +1079,16 @@ pub fn run_part(
     let mut module_declarations: Vec<(String, Vec<String>)> = Vec::new();
     for module in &build.modules {
         module_declarations.push((module.lean_module.clone(), module.declaration_names.clone()));
+    }
+    for module in &runtime_modules {
+        module_declarations.push((
+            module.name.clone(),
+            module
+                .declarations
+                .iter()
+                .map(|(name, _)| name.clone())
+                .collect(),
+        ));
     }
     let audit_modules = crate::backend::lean::audit_modules(&semantic_hex32, &module_declarations);
     let mut declaration_names: Vec<String> = audit_modules
@@ -1106,6 +1143,11 @@ pub fn run_part(
                 "`{}`: {reason}",
                 module.lean_module
             ))));
+        }
+    }
+    for module in &runtime_modules {
+        if let Err(reason) = generated_core_source_audit(&module.text) {
+            return Err(fail(internal(format!("`{}`: {reason}", module.name))));
         }
     }
     if let Err(reason) = generated_source_audit(&probe.text, false) {
@@ -1203,6 +1245,14 @@ pub fn run_part(
             module.lean_text.as_bytes(),
         )?;
     }
+    for module in &runtime_modules {
+        let module_path = module.name.replace('.', "/");
+        write_staged(
+            staging.path(),
+            &format!("lean-src/{module_path}.lean"),
+            module.text.as_bytes(),
+        )?;
+    }
     release_non_diagnostic_buffers(build);
     let lean_path_env = format!("{olean_root}");
     // The records of this run's processes, by what they are and the module
@@ -1210,6 +1260,16 @@ pub fn run_part(
     // in the order they ran. The attestation lists them in the canonical
     // order of §22.11 whichever part of the run produced them.
     let mut lean_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
+    // The runtime modules (§17.12) are shipped data: every part elaborates
+    // them before its own modules, the part that publishes also replays and
+    // audits them, and its records are the ones the attestation lists, first
+    // among the elaborations and first among the replays.
+    let mut runtime_lean_records: Vec<ChildRecord> = Vec::new();
+    let mut runtime_replay_records: Vec<ChildRecord> = Vec::new();
+    let is_runtime = |name: &str| runtime_modules.iter().any(|module| module.name == name);
+    // Does this part replay and audit a module: one of its plan, or a
+    // runtime module when the part publishes.
+    let checks = |name: &str| part.replays(name) || (part.publishes() && is_runtime(name));
     let mut replay_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
     let mut audit_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
     let mut tail_records: Vec<ChildRecord> = Vec::new();
@@ -1305,6 +1365,82 @@ pub fn run_part(
     // is placed when its `.olean` arrived from an earlier part of the run
     // (§9.4), and a module of the plan whose import is neither stops the
     // order from converging, with the import named.
+    // The runtime modules come first, in their dependency order: every
+    // generated module that uses the runtime imports them (§17.12). They are
+    // shipped data, so a refusal is a defect of the compiler, not the
+    // project's.
+    for module in &runtime_modules {
+        let module_path = module.name.replace('.', "/");
+        let source = src_root.join(format!("{module_path}.lean"));
+        let olean = olean_root.join(format!("{module_path}.olean"));
+        if let Some(parent) = olean.parent() {
+            std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                fail(Diagnostic::new(
+                    code!("LLB6003"),
+                    format!("staging oleans: {io_error}"),
+                ))
+            })?;
+        }
+        let record = run_child(
+            &ChildSpec {
+                tool: "lean",
+                module: Some(module.name.clone()),
+                program: &toolchain.lake.path,
+                executable_sha256: toolchain.lean.sha256,
+                argv: vec![
+                    "env".to_owned(),
+                    "lean".to_owned(),
+                    "-R".to_owned(),
+                    src_root.to_string(),
+                    "-o".to_owned(),
+                    olean.to_string(),
+                    source.to_string(),
+                ],
+                cwd: &workspace_root,
+                extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                home: ChildHome::Toolchain {
+                    toolchain_bin: &toolchain_bin,
+                },
+            },
+            &limits,
+            &normalizer,
+        )
+        .map_err(fail)?;
+        if record.exit_code != 0
+            || !record.stdout.trim().is_empty()
+            || !record.stderr.trim().is_empty()
+        {
+            let combined = format!("{}\n{}", record.stdout, record.stderr);
+            return Err(fail(
+                resource_death(
+                    &module.name,
+                    record.exit_code,
+                    &combined,
+                    module.text.len() as u64,
+                    &limits,
+                )
+                .unwrap_or_else(|| {
+                    internal(format!(
+                        "the runtime module `{}` was refused: {}",
+                        module.name,
+                        lean_error(&combined)
+                    ))
+                }),
+            ));
+        }
+        if !olean.as_std_path().is_file() {
+            return Err(fail(Diagnostic::new(
+                code!("LLV7002"),
+                format!("`{}` produced no olean", module.name),
+            )));
+        }
+        write_staged(
+            staging.path(),
+            &format!("process/lean/{}.json", module.name),
+            &record.to_json().to_file_bytes(),
+        )?;
+        runtime_lean_records.push(record);
+    }
     let mut placed: BTreeSet<String> = BTreeSet::new();
     let mut remaining: Vec<usize> = Vec::new();
     for (index, module) in build.modules.iter().enumerate() {
@@ -1485,7 +1621,24 @@ pub fn run_part(
 
     stages.enter("replay");
     // Stage 8: separate-process leanchecker replay per module, sorted
-    // (§22.4).
+    // (§22.4): the runtime modules, then the project's.
+    for module in runtime_modules.iter().filter(|_| part.publishes()) {
+        let record = leanchecker::replay_module(
+            &toolchain,
+            &module.name,
+            &lean_path_env,
+            &workspace_root,
+            &limits,
+            &normalizer,
+        )
+        .map_err(fail)?;
+        write_staged(
+            staging.path(),
+            &format!("process/leanchecker/{}.json", module.name),
+            &record.to_json().to_file_bytes(),
+        )?;
+        runtime_replay_records.push(record);
+    }
     let mut sorted_modules: Vec<usize> = (0..build.modules.len())
         .filter(|index| part.replays(&build.modules[*index].lean_module))
         .collect();
@@ -1549,7 +1702,7 @@ pub fn run_part(
         .map(|audit| audit.name.clone())
         .collect();
     let audit_indices: Vec<usize> = (0..audit_modules.len())
-        .filter(|index| part.replays(&audit_modules[*index].generated_module))
+        .filter(|index| checks(&audit_modules[*index].generated_module))
         .collect();
     pool::run_ordered_with(
         width,
@@ -1642,7 +1795,7 @@ pub fn run_part(
     // parser refuses is refused here with the same diagnostic, whichever
     // part ran it (§9.4).
     for audit in &audit_modules {
-        if part.replays(&audit.generated_module) {
+        if checks(&audit.generated_module) {
             continue;
         }
         let audit_record = imported.audit.get(&audit.name).ok_or_else(|| {
@@ -1933,6 +2086,46 @@ pub fn run_part(
         }
     }
 
+    // §17.12: every declaration of a runtime module the project uses observes
+    // exactly the axioms its native source pins.
+    for module in &runtime_modules {
+        for (name, axioms) in &module.declarations {
+            let observed_set = observed.get(name).cloned().ok_or_else(|| {
+                fail(internal(format!(
+                    "runtime declaration `{name}` is absent from the axiom audit"
+                )))
+            })?;
+            if observed_set != *axioms {
+                return Err(fail(Diagnostic::new(
+                    code!("LLV7005"),
+                    format!(
+                        "`{name}` of the runtime module `{}` violates its exact axiom policy: observed [{}]",
+                        module.name,
+                        observed_set.join(", ")
+                    ),
+                )));
+            }
+            declaration_rows.push(Json::object(vec![
+                ("name", Json::Str(name.clone())),
+                (
+                    "policy",
+                    Json::object(vec![
+                        ("kind", Json::Str("exact".to_owned())),
+                        (
+                            "axioms",
+                            Json::Arr(axioms.iter().cloned().map(Json::Str).collect()),
+                        ),
+                    ]),
+                ),
+                (
+                    "observed",
+                    Json::Arr(observed_set.into_iter().map(Json::Str).collect()),
+                ),
+                ("result", Json::Str("ok".to_owned())),
+            ]));
+        }
+    }
+
     stages.enter("extraction");
     // Stage 12: named-root extraction (§22.10). Lean's compiler front end
     // reports the computational closure of every production root while the
@@ -1959,10 +2152,17 @@ pub fn run_part(
             .iter()
             .flat_map(|report| report.roots.iter().map(|root| root.root.clone()))
             .collect();
-        let modules: Vec<String> = build
-            .modules
+        // The runtime modules are reported with the project's, so that the
+        // runtime members a closure reaches are told apart (§22.10).
+        let modules: Vec<String> = runtime_modules
             .iter()
-            .map(|module| module.lean_module.clone())
+            .map(|module| module.name.clone())
+            .chain(
+                build
+                    .modules
+                    .iter()
+                    .map(|module| module.lean_module.clone()),
+            )
             .collect();
         let driver = lcnf::driver(&semantic_hex32, &roots, &modules)
             .map_err(|reason| fail(internal(reason)))?;
@@ -2174,6 +2374,15 @@ pub fn run_part(
             )
         };
         for file in &stage.environment {
+            // A runtime module the calculus modules import was compiled,
+            // replayed, and audited with the project's (stage 7), and its
+            // olean is on this search path.
+            if runtime_modules
+                .iter()
+                .any(|module| module.name == file.module)
+            {
+                continue;
+            }
             let record = compile(file, true).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
@@ -2391,6 +2600,7 @@ pub fn run_part(
     )
     .map_err(fail)?;
     let mut process_records: Vec<ChildRecord> = vec![probe_record];
+    process_records.extend(runtime_lean_records);
     let missing = |what: &str, key: &str| {
         fail(internal(format!(
             "no {what} record of `{key}` from any part of the run"
@@ -2430,6 +2640,7 @@ pub fn run_part(
         .map(|module| &module.lean_module)
         .collect();
     sorted_names.sort();
+    process_records.extend(runtime_replay_records);
     for name in sorted_names {
         let record = match replay_records.remove(name) {
             Some(record) => record,
@@ -2527,8 +2738,12 @@ pub fn run_part(
     stages.enter("olean-hash");
     // Copy oleans into the verified set and hash them.
     let mut olean_rows: Vec<Json> = Vec::new();
-    for module in &build.modules {
-        let module_path = module.lean_module.replace('.', "/");
+    for module in runtime_modules
+        .iter()
+        .map(|module| &module.name)
+        .chain(build.modules.iter().map(|module| &module.lean_module))
+    {
+        let module_path = module.replace('.', "/");
         let olean = olean_root.join(format!("{module_path}.olean"));
         let bytes = std::fs::read(olean.as_std_path()).map_err(|io_error| {
             fail(Diagnostic::new(
@@ -2537,7 +2752,7 @@ pub fn run_part(
             ))
         })?;
         olean_rows.push(Json::object(vec![
-            ("module", Json::Str(module.lean_module.clone())),
+            ("module", Json::Str(module.clone())),
             ("byte_length", Json::from_usize(bytes.len())),
             ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
         ]));

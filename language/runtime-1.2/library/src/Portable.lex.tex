@@ -1,0 +1,4144 @@
+\begin{lexlean}{Portable}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{runtime.titles@1.0.0}
+\title{Runtime portable primitives}
+\begin{coremodule}
+imports [Init]
+
+constructor LexLeanRuntime.Appendable.mk : @9 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Appendable : @10 {
+  all: [LexLeanRuntime.Appendable],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Appendable.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [{name: append, binder: e, projection: LexLeanRuntime.Appendable.append}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Appendable.append : @16 := @19 {
+  all: [LexLeanRuntime.Appendable.append],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {
+    constructor: LexLeanRuntime.Appendable.mk,
+    from_class: true,
+    index: 0,
+    num_params: 1
+  },
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Appendable.rec.{u} : @32 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Appendable.casesOn.{u} : @44 := @58 {
+  all: [LexLeanRuntime.Appendable.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Appendable.ctorIdx : @61 := @64 {
+  all: [LexLeanRuntime.Appendable.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Appendable.mk._flat_ctor : @9 := @68 {
+  all: [LexLeanRuntime.Appendable.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Appendable.noConfusionType.{u} : @73 := @103 {
+  all: [LexLeanRuntime.Appendable.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Appendable.noConfusion.{u} : @125 := @207 {
+  all: [LexLeanRuntime.Appendable.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Appendable.mk.noConfusion.{u} : @225 := @254 {
+  all: [LexLeanRuntime.Appendable.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 5},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Appendable.recOn.{u} : @44 := @260 {
+  all: [LexLeanRuntime.Appendable.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+constructor LexLeanRuntime.Decimal.mk : @270 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Decimal : @10 {
+  all: [LexLeanRuntime.Decimal],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Decimal.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [
+        {name: parse, binder: e, projection: LexLeanRuntime.Decimal.parse},
+        {name: format, binder: e, projection: LexLeanRuntime.Decimal.format}
+      ],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Decimal.rec.{u} : @286 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Decimal.casesOn.{u} : @300 := @315 {
+  all: [LexLeanRuntime.Decimal.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Decimal.ctorIdx : @317 := @319 {
+  all: [LexLeanRuntime.Decimal.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Decimal.format : @321 := @324 {
+  all: [LexLeanRuntime.Decimal.format],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Decimal.mk, from_class: true, index: 1, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Decimal.mk._flat_ctor : @270 := @330 {
+  all: [LexLeanRuntime.Decimal.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Decimal.noConfusionType.{u} : @335 := @369 {
+  all: [LexLeanRuntime.Decimal.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Decimal.noConfusion.{u} : @387 := @468 {
+  all: [LexLeanRuntime.Decimal.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Decimal.mk.noConfusion.{u} : @497 := @526 {
+  all: [LexLeanRuntime.Decimal.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 2, arity: 7},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Decimal.parse : @528 := @531 {
+  all: [LexLeanRuntime.Decimal.parse],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Decimal.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Decimal.recOn.{u} : @300 := @537 {
+  all: [LexLeanRuntime.Decimal.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+constructor LexLeanRuntime.ToMathInt.mk : @543 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.ToMathInt : @10 {
+  all: [LexLeanRuntime.ToMathInt],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.ToMathInt.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [{name: toInt, binder: e, projection: LexLeanRuntime.ToMathInt.toInt}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+constructor LexLeanRuntime.Fixed.mk : @565 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Fixed : @10 {
+  all: [LexLeanRuntime.Fixed],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Fixed.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [
+        {
+          name: toToMathInt,
+          binder: c,
+          projection: LexLeanRuntime.Fixed.toToMathInt,
+          subobject: LexLeanRuntime.ToMathInt
+        },
+        {name: fromInt, binder: e, projection: LexLeanRuntime.Fixed.fromInt},
+        {name: minimum, binder: e, projection: LexLeanRuntime.Fixed.minimum},
+        {name: maximum, binder: e, projection: LexLeanRuntime.Fixed.maximum},
+        {name: bitAnd, binder: e, projection: LexLeanRuntime.Fixed.bitAnd},
+        {name: bitOr, binder: e, projection: LexLeanRuntime.Fixed.bitOr},
+        {name: bitXor, binder: e, projection: LexLeanRuntime.Fixed.bitXor},
+        {name: bitNot, binder: e, projection: LexLeanRuntime.Fixed.bitNot},
+        {name: shiftLeft, binder: e, projection: LexLeanRuntime.Fixed.shiftLeft},
+        {name: shiftRight, binder: e, projection: LexLeanRuntime.Fixed.shiftRight}
+      ],
+      parents: [
+        {
+          name: LexLeanRuntime.ToMathInt,
+          projection: LexLeanRuntime.Fixed.toToMathInt,
+          subobject: true
+        }
+      ]
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.bitAnd : @568 := @571 {
+  all: [LexLeanRuntime.Fixed.bitAnd],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 4, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.bitNot : @573 := @576 {
+  all: [LexLeanRuntime.Fixed.bitNot],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 7, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.bitOr : @568 := @579 {
+  all: [LexLeanRuntime.Fixed.bitOr],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 5, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.bitXor : @568 := @582 {
+  all: [LexLeanRuntime.Fixed.bitXor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 6, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Fixed.rec.{u} : @615 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.casesOn.{u} : @648 := @683 {
+  all: [LexLeanRuntime.Fixed.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Fixed.ctorIdx : @685 := @687 {
+  all: [LexLeanRuntime.Fixed.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.fromInt : @689 := @692 {
+  all: [LexLeanRuntime.Fixed.fromInt],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 1, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.maximum : @694 := @697 {
+  all: [LexLeanRuntime.Fixed.maximum],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 3, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.minimum : @694 := @700 {
+  all: [LexLeanRuntime.Fixed.minimum],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 2, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.mk._flat_ctor : @702 := @727 {
+  all: [LexLeanRuntime.Fixed.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.noConfusionType.{u} : @732 := @875 {
+  all: [LexLeanRuntime.Fixed.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Fixed.noConfusion.{u} : @893 := @1066 {
+  all: [LexLeanRuntime.Fixed.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Fixed.mk.noConfusion.{u} : @1158 := @1220 {
+  all: [LexLeanRuntime.Fixed.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 10, arity: 23},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Fixed.recOn.{u} : @648 := @1226 {
+  all: [LexLeanRuntime.Fixed.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Fixed.shiftLeft : @1230 := @1233 {
+  all: [LexLeanRuntime.Fixed.shiftLeft],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 8, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.shiftRight : @1230 := @1236 {
+  all: [LexLeanRuntime.Fixed.shiftRight],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 9, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Fixed.toToMathInt : @1238 := @1241 {
+  all: [LexLeanRuntime.Fixed.toToMathInt],
+  class: false,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: [1]},
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Fixed.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+constructor LexLeanRuntime.Indexable.mk : @1249 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Indexable : @1251 {
+  all: [LexLeanRuntime.Indexable],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Indexable.mk],
+    num_indices: 0,
+    num_params: 2,
+    structure: {
+      fields: [{name: index, binder: e, projection: LexLeanRuntime.Indexable.index}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Indexable.rec.{u} : @1269 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Indexable.casesOn.{u} : @1281 := @1296 {
+  all: [LexLeanRuntime.Indexable.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Indexable.ctorIdx : @1299 := @1302 {
+  all: [LexLeanRuntime.Indexable.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Indexable.index : @1305 := @1309 {
+  all: [LexLeanRuntime.Indexable.index],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Indexable.mk, from_class: true, index: 0, num_params: 2},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Indexable.mk._flat_ctor : @1249 := @1315 {
+  all: [LexLeanRuntime.Indexable.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Indexable.noConfusionType.{u} : @1322 := @1356 {
+  all: [LexLeanRuntime.Indexable.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Indexable.noConfusion.{u} : @1384 := @1505 {
+  all: [LexLeanRuntime.Indexable.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 10, lhs: 3, rhs: 6},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Indexable.mk.noConfusion.{u} : @1521 := @1552 {
+  all: [LexLeanRuntime.Indexable.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 6},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Indexable.recOn.{u} : @1281 := @1559 {
+  all: [LexLeanRuntime.Indexable.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+constructor LexLeanRuntime.Lengthable.mk : @1564 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Lengthable : @10 {
+  all: [LexLeanRuntime.Lengthable],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Lengthable.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [{name: length, binder: e, projection: LexLeanRuntime.Lengthable.length}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Lengthable.rec.{u} : @1577 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Lengthable.casesOn.{u} : @1586 := @1597 {
+  all: [LexLeanRuntime.Lengthable.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Lengthable.ctorIdx : @1599 := @1601 {
+  all: [LexLeanRuntime.Lengthable.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Lengthable.length : @1603 := @1606 {
+  all: [LexLeanRuntime.Lengthable.length],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {
+    constructor: LexLeanRuntime.Lengthable.mk,
+    from_class: true,
+    index: 0,
+    num_params: 1
+  },
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Lengthable.mk._flat_ctor : @1564 := @1610 {
+  all: [LexLeanRuntime.Lengthable.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Lengthable.noConfusionType.{u} : @1615 := @1641 {
+  all: [LexLeanRuntime.Lengthable.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Lengthable.noConfusion.{u} : @1659 := @1728 {
+  all: [LexLeanRuntime.Lengthable.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Lengthable.mk.noConfusion.{u} : @1744 := @1767 {
+  all: [LexLeanRuntime.Lengthable.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 5},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Lengthable.recOn.{u} : @1586 := @1773 {
+  all: [LexLeanRuntime.Lengthable.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+constructor LexLeanRuntime.Quotient.mk : @1781 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Quotient : @10 {
+  all: [LexLeanRuntime.Quotient],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Quotient.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [
+        {name: quotient, binder: e, projection: LexLeanRuntime.Quotient.quotient},
+        {name: remainder, binder: e, projection: LexLeanRuntime.Quotient.remainder},
+        {name: isZero, binder: e, projection: LexLeanRuntime.Quotient.isZero}
+      ],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Quotient.rec.{u} : @1798 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Quotient.casesOn.{u} : @1812 := @1828 {
+  all: [LexLeanRuntime.Quotient.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Quotient.ctorIdx : @1830 := @1832 {
+  all: [LexLeanRuntime.Quotient.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Quotient.isZero : @1835 := @1838 {
+  all: [LexLeanRuntime.Quotient.isZero],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Quotient.mk, from_class: true, index: 2, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Quotient.mk._flat_ctor : @1781 := @1846 {
+  all: [LexLeanRuntime.Quotient.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Quotient.noConfusionType.{u} : @1851 := @1895 {
+  all: [LexLeanRuntime.Quotient.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Quotient.noConfusion.{u} : @1912 := @1995 {
+  all: [LexLeanRuntime.Quotient.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Quotient.mk.noConfusion.{u} : @2029 := @2063 {
+  all: [LexLeanRuntime.Quotient.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 3, arity: 9},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Quotient.quotient : @2065 := @2068 {
+  all: [LexLeanRuntime.Quotient.quotient],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Quotient.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Quotient.recOn.{u} : @1812 := @2074 {
+  all: [LexLeanRuntime.Quotient.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Quotient.remainder : @2065 := @2077 {
+  all: [LexLeanRuntime.Quotient.remainder],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Quotient.mk, from_class: true, index: 1, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+constructor LexLeanRuntime.Sliceable.mk : @2083 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanRuntime.Sliceable : @10 {
+  all: [LexLeanRuntime.Sliceable],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanRuntime.Sliceable.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [{name: slice, binder: e, projection: LexLeanRuntime.Sliceable.slice}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.Sliceable.rec.{u} : @2097 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Sliceable.casesOn.{u} : @2107 := @2119 {
+  all: [LexLeanRuntime.Sliceable.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.Sliceable.ctorIdx : @2121 := @2123 {
+  all: [LexLeanRuntime.Sliceable.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Sliceable.mk._flat_ctor : @2083 := @2127 {
+  all: [LexLeanRuntime.Sliceable.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.Sliceable.noConfusionType.{u} : @2132 := @2159 {
+  all: [LexLeanRuntime.Sliceable.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Sliceable.noConfusion.{u} : @2177 := @2252 {
+  all: [LexLeanRuntime.Sliceable.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Sliceable.mk.noConfusion.{u} : @2270 := @2293 {
+  all: [LexLeanRuntime.Sliceable.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 5},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Sliceable.recOn.{u} : @2107 := @2299 {
+  all: [LexLeanRuntime.Sliceable.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.Sliceable.slice : @2301 := @2304 {
+  all: [LexLeanRuntime.Sliceable.slice],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.Sliceable.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+recursor LexLeanRuntime.ToMathInt.rec.{u} : @2314 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.ToMathInt.casesOn.{u} : @2323 := @2334 {
+  all: [LexLeanRuntime.ToMathInt.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+definition LexLeanRuntime.ToMathInt.ctorIdx : @2336 := @2338 {
+  all: [LexLeanRuntime.ToMathInt.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.ToMathInt.mk._flat_ctor : @543 := @2342 {
+  all: [LexLeanRuntime.ToMathInt.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.ToMathInt.noConfusionType.{u} : @2347 := @2372 {
+  all: [LexLeanRuntime.ToMathInt.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.ToMathInt.noConfusion.{u} : @2390 := @2458 {
+  all: [LexLeanRuntime.ToMathInt.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.ToMathInt.mk.noConfusion.{u} : @2474 := @2497 {
+  all: [LexLeanRuntime.ToMathInt.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 5},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanRuntime.ToMathInt.recOn.{u} : @2323 := @2503 {
+  all: [LexLeanRuntime.ToMathInt.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanRuntime.ToMathInt.toInt : @2505 := @2508 {
+  all: [LexLeanRuntime.ToMathInt.toInt],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanRuntime.ToMathInt.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+definition LexLeanRuntime.append : @2512 := @2521 {
+  all: [LexLeanRuntime.append],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.bitAnd : @2523 := @2532 {
+  all: [LexLeanRuntime.bitAnd],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.bitNot : @2535 := @2542 {
+  all: [LexLeanRuntime.bitNot],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.bitOr : @2544 := @2553 {
+  all: [LexLeanRuntime.bitOr],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.bitXor : @2555 := @2564 {
+  all: [LexLeanRuntime.bitXor],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedFromInt : @2567 := @2608 {
+  all: [LexLeanRuntime.checkedFromInt],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 14},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedAdd : @2612 := @2639 {
+  all: [LexLeanRuntime.checkedAdd],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedAddInt64 : @2643 := @2713 {
+  all: [LexLeanRuntime.checkedAddInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 17},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedConvert : @2718 := @2728 {
+  all: [LexLeanRuntime.checkedConvert],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedMultiply : @2730 := @2746 {
+  all: [LexLeanRuntime.checkedMultiply],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.checkedMultiplyInt64.match_1.{u_1} : @2762 := @2777 {
+  all: [LexLeanRuntime.checkedMultiplyInt64.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.magnitudeInt64 : @2778 := @2803 {
+  all: [LexLeanRuntime.magnitudeInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 17},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.multiplyMagnitudeInt64.match_1.{u_1} : @2847 := @2875 {
+  all: [LexLeanRuntime.multiplyMagnitudeInt64.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 4, overlaps: 0, unit_thunk: false},
+      {fields: 5, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], [], [], [], []],
+    num_discrs: 5,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanRuntime.multiplyMagnitudeInt64._f : @2885 := @3029 {
+  all: [LexLeanRuntime.multiplyMagnitudeInt64._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanRuntime.multiplyMagnitudeInt64 : @3034 := @3048 {
+  all: [LexLeanRuntime.multiplyMagnitudeInt64],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 3034,
+    declarations: [LexLeanRuntime.multiplyMagnitudeInt64],
+    levels: [],
+    num_fixed: 0,
+    perms: [[[], [], [], [], []]],
+    rec_arg_pos: 0,
+    rev_deps: [[[], [], [], [], []]],
+    value: 3135
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanRuntime.signedMagnitudeInt64 : @3137 := @3143 {
+  all: [LexLeanRuntime.signedMagnitudeInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedMultiplyInt64 : @2643 := @3182 {
+  all: [LexLeanRuntime.checkedMultiplyInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 18},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedNegate : @3185 := @3201 {
+  all: [LexLeanRuntime.checkedNegate],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedNegateInt64 : @3202 := @3228 {
+  all: [LexLeanRuntime.checkedNegateInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedQuotient : @3230 := @3254 {
+  all: [LexLeanRuntime.checkedQuotient],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+abbrev LexLeanRuntime.divideMagnitudeInt64.match_1.{u_1} : @3276 := @3286 {
+  all: [LexLeanRuntime.divideMagnitudeInt64.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 4, overlaps: 0, unit_thunk: false},
+      {fields: 5, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], [], [], [], []],
+    num_discrs: 5,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanRuntime.divideMagnitudeInt64._f : @3295 := @3363 {
+  all: [LexLeanRuntime.divideMagnitudeInt64._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanRuntime.divideMagnitudeInt64 : @3368 := @3381 {
+  all: [LexLeanRuntime.divideMagnitudeInt64],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 3368,
+    declarations: [LexLeanRuntime.divideMagnitudeInt64],
+    levels: [],
+    num_fixed: 0,
+    perms: [[[], [], [], [], []]],
+    rec_arg_pos: 0,
+    rev_deps: [[[], [], [], [], []]],
+    value: 3437
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedQuotientInt64 : @2643 := @3474 {
+  all: [LexLeanRuntime.checkedQuotientInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 18},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedSubtract : @3476 := @3490 {
+  all: [LexLeanRuntime.checkedSubtract],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: semireducible
+}
+definition LexLeanRuntime.checkedSubtractInt64 : @2643 := @3514 {
+  all: [LexLeanRuntime.checkedSubtractInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 17},
+  transparency: semireducible
+}
+definition LexLeanRuntime.compareBytes : @3518 := @3535 {
+  all: [LexLeanRuntime.compareBytes],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 12},
+  transparency: semireducible
+}
+definition LexLeanRuntime.divideMagnitudeInt64._sunfold : @3368 := @3558 {
+  all: [LexLeanRuntime.divideMagnitudeInt64._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 16},
+  transparency: semireducible
+}
+definition LexLeanRuntime.divideMagnitudeInt64._unsafe_rec : @3368 := @3583 {
+  all: [LexLeanRuntime.divideMagnitudeInt64._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanRuntime.equal : @3589 := @3597 {
+  all: [LexLeanRuntime.equal],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.formatDecimal : @3600 := @3607 {
+  all: [LexLeanRuntime.formatDecimal],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.index : @3612 := @3623 {
+  all: [LexLeanRuntime.index],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.instAppendableByteArray : @3624 := @3627 {
+  all: [LexLeanRuntime.instAppendableByteArray],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instAppendableList : @3630 := @3635 {
+  all: [LexLeanRuntime.instAppendableList],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: implicit-reducible
+}
+abbrev LexLeanRuntime.instDecimalInt.match_1.{u_1} : @3648 := @3660 {
+  all: [LexLeanRuntime.instDecimalInt.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 1, overlaps: 0, unit_thunk: false}, {fields: 0, overlaps: 0, unit_thunk: true}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instDecimalInt : @3661 := @3691 {
+  all: [LexLeanRuntime.instDecimalInt],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 11},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instDecimalOfFixedOfToString : @3696 := @3720 {
+  all: [LexLeanRuntime.instDecimalOfFixedOfToString],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: [1, 2]},
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedInt16 : @3722 := @3788 {
+  all: [LexLeanRuntime.instFixedInt16],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 16},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedInt32 : @3790 := @3848 {
+  all: [LexLeanRuntime.instFixedInt32],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 16},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedInt64 : @3849 := @3897 {
+  all: [LexLeanRuntime.instFixedInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 16},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedInt8 : @3899 := @3957 {
+  all: [LexLeanRuntime.instFixedInt8],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 16},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedUInt16 : @3959 := @4010 {
+  all: [LexLeanRuntime.instFixedUInt16],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedUInt32 : @4011 := @4057 {
+  all: [LexLeanRuntime.instFixedUInt32],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedUInt64 : @4058 := @4104 {
+  all: [LexLeanRuntime.instFixedUInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instFixedUInt8 : @4105 := @4155 {
+  all: [LexLeanRuntime.instFixedUInt8],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instIndexableByteArrayUInt8 : @4157 := @4183 {
+  all: [LexLeanRuntime.instIndexableByteArrayUInt8],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 8},
+  transparency: implicit-reducible
+}
+abbrev LexLeanRuntime.listIndex.match_1.{u_1} : @4219 := @4252 {
+  all: [LexLeanRuntime.listIndex.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 3, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], []],
+    num_discrs: 2,
+    num_params: 1,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanRuntime.listIndex._f : @4261 := @4314 {
+  all: [LexLeanRuntime.listIndex._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanRuntime.listIndex : @4316 := @4330 {
+  all: [LexLeanRuntime.listIndex],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 4316,
+    declarations: [LexLeanRuntime.listIndex],
+    levels: [],
+    num_fixed: 1,
+    perms: [[[0], [], []]],
+    rec_arg_pos: 1,
+    rev_deps: [[[1], [], []]],
+    value: 4354
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanRuntime.instIndexableList : @4357 := @4362 {
+  all: [LexLeanRuntime.instIndexableList],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instLengthableByteArray : @4363 := @4366 {
+  all: [LexLeanRuntime.instLengthableByteArray],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 6},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instLengthableList : @4368 := @4373 {
+  all: [LexLeanRuntime.instLengthableList],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instLengthableString : @4374 := @4377 {
+  all: [LexLeanRuntime.instLengthableString],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 25},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instQuotientInt : @4378 := @4390 {
+  all: [LexLeanRuntime.instQuotientInt],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 10},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instQuotientNat : @4391 := @4405 {
+  all: [LexLeanRuntime.instQuotientNat],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 8},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instSliceableByteArray : @4406 := @4442 {
+  all: [LexLeanRuntime.instSliceableByteArray],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 14},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instSliceableList : @4444 := @4471 {
+  all: [LexLeanRuntime.instSliceableList],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 5},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.instToMathIntInt : @4472 := @4475 {
+  all: [LexLeanRuntime.instToMathIntInt],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: implicit-reducible
+}
+definition LexLeanRuntime.join : @4478 := @4483 {
+  all: [LexLeanRuntime.join],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.length : @4486 := @4493 {
+  all: [LexLeanRuntime.length],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.listIndex._sunfold : @4316 := @4509 {
+  all: [LexLeanRuntime.listIndex._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanRuntime.listIndex._unsafe_rec : @4316 := @4520 {
+  all: [LexLeanRuntime.listIndex._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanRuntime.multiply : @4524 := @4536 {
+  all: [LexLeanRuntime.multiply],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanRuntime.multiplyMagnitudeInt64._sunfold : @3034 := @4560 {
+  all: [LexLeanRuntime.multiplyMagnitudeInt64._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 16},
+  transparency: semireducible
+}
+definition LexLeanRuntime.multiplyMagnitudeInt64._unsafe_rec : @3034 := @4587 {
+  all: [LexLeanRuntime.multiplyMagnitudeInt64._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanRuntime.negate : @4591 := @4597 {
+  all: [LexLeanRuntime.negate],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.parseDecimal : @4600 := @4607 {
+  all: [LexLeanRuntime.parseDecimal],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.quotient : @4612 := @4635 {
+  all: [LexLeanRuntime.quotient],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: semireducible
+}
+definition LexLeanRuntime.remainder : @4637 := @4648 {
+  all: [LexLeanRuntime.remainder],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: semireducible
+}
+definition LexLeanRuntime.shiftLeft : @4652 := @4661 {
+  all: [LexLeanRuntime.shiftLeft],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.shiftRight : @4663 := @4672 {
+  all: [LexLeanRuntime.shiftRight],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.slice : @4677 := @4688 {
+  all: [LexLeanRuntime.slice],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanRuntime.splitExact : @4692 := @4724 {
+  all: [LexLeanRuntime.splitExact],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 8},
+  transparency: semireducible
+}
+definition LexLeanRuntime.subtract : @4728 := @4740 {
+  all: [LexLeanRuntime.subtract],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanRuntime.utf8Decode : @4742 := @4745 {
+  all: [LexLeanRuntime.utf8Decode],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 24},
+  transparency: semireducible
+}
+definition LexLeanRuntime.utf8Encode : @4746 := @4749 {
+  all: [LexLeanRuntime.utf8Encode],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+
+@0 := Sort 1
+@1 := #0
+@2 := #1
+@3 := #2
+@4 := (a._@._internal._hyg.#0 : @2) -> @3
+@5 := (a._@._internal._hyg.#0 : @1) -> @4
+@6 := LexLeanRuntime.Appendable
+@7 := @6 @2
+@9 := {α : @0} -> (append : @5) -> @7
+@10 := (α : @0) -> @0
+@11 := @6 @1
+@12 := #3
+@14 := (a._@._internal._hyg.#0 : @2) -> (a._@._internal._hyg.#0 : @3) -> @12
+@16 := {α : @0} -> [self : @11] -> @14
+@19 := fun (α : @0) =>
+  fun [self : @11] => proj LexLeanRuntime.Appendable LexLeanRuntime.Appendable.append 0 @1
+@20 := Sort u
+@21 := (t : @11) -> @20
+@22 := LexLeanRuntime.Appendable.mk
+@26 := (append : @14) -> @2 (@22 @3 @1)
+@27 := @6 @3
+@28 := @3 @1
+@32 := {α : @0} -> {motive : @21} -> (mk : @26) -> (t : @27) -> @28
+@33 := #4
+@35 := (a._@._internal._hyg.#0 : @3) -> (a._@._internal._hyg.#0 : @12) -> @33
+@36 := @22 @12
+@37 := @36 @1
+@39 := (append : @35) -> @3 @37
+@40 := @3 @2
+@44 := {α : @0} -> {motive : @21} -> (t : @7) -> (mk : @39) -> @40
+@47 := LexLeanRuntime.Appendable.rec.{u} @12 @3
+@48 := #5
+@50 := (a._@._internal._hyg.#0 : @12) -> (a._@._internal._hyg.#0 : @33) -> @48
+@51 := @2 @1
+@58 := fun {α : @0} =>
+  fun {motive : @21} => fun (t : @7) => fun (mk : @39) => @47 (fun (append : @50) => @51) @2
+@59 := Nat
+@61 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#824280705._hygCtx._hyg.#9 : @11) -> @59
+@62 := 0
+@64 := fun {α : @0} => fun (x : @11) => @62
+@68 := fun (α : @0) => fun (append : @5) => @22 @2 @1
+@73 := (P : @20) -> {α : @0} -> (t : @11) -> {α' : @0} -> (t' : @11) -> @20
+@74 := LexLeanRuntime.Appendable.casesOn.{u+1}
+@75 := @74 @12
+@76 := @6 @12
+@79 := @75 (fun (t : @76) => @20) @3
+@83 := @74 @3 (fun (t : @27) => @20) @2
+@84 := HEq.{1}
+@85 := #6
+@86 := #7
+@88 := (a._@._internal._hyg.#0 : @48) -> (a._@._internal._hyg.#0 : @85) -> @86
+@103 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @11) =>
+  fun {α' : @0} =>
+  fun (t' : @11) =>
+  @79
+    (fun (append : @50) =>
+    @83
+      (fun (append : @35) =>
+      (x._@.LexLeanRuntime.Portable.#824280705._hygCtx._hyg.#10 : (append_eq : @84 @88 @2 @50 @1) ->
+      @86) ->
+      @86))
+@105 := Eq.{2} @0
+@107 := @105 @12 @2
+@112 := @84 (@6 @33) @12 @27 @2
+@113 := LexLeanRuntime.Appendable.noConfusionType.{u}
+@125 := {P : @20} ->
+  {α : @0} ->
+  {t : @11} -> {α' : @0} -> {t' : @11} -> (eq_1 : @107) -> (eq_2 : @112) -> @113 @85 @48 @33 @12 @3
+@127 := Eq.ndrec.{u, 2} @0
+@128 := @127 @48
+@129 := @6 @86
+@133 := @84 @129 @85 @7 @1
+@134 := #9
+@135 := @113 @134
+@136 := #8
+@137 := @135 @136
+@138 := @137 @86
+@144 := @128 (fun {α' : @0} => {t' : @11} -> (eq_2 : @133) -> @138 @3 @2)
+@145 := @6 @48
+@146 := @6 @85
+@150 := @84 @146 @48 @146 @1
+@151 := Eq.ndrec.{u, 1}
+@157 := @151 @129 @85 (fun {t' : @129} => @138 @136 @1)
+@165 := LexLeanRuntime.Appendable.casesOn.{u} @86 (fun {t : @129} => @137 @1 @136 @1) @85
+@166 := (a._@._internal._hyg.#0 : @136) -> @134
+@167 := (a._@._internal._hyg.#0 : @86) -> @166
+@168 := #10
+@169 := (a._@._internal._hyg.#0 : @134) -> @168
+@170 := (a._@._internal._hyg.#0 : @136) -> @169
+@171 := @84 @170
+@175 := (append_eq : @171 @1 @170 @1) -> @168
+@176 := HEq.refl.{1}
+@177 := #11
+@178 := (a._@._internal._hyg.#0 : @168) -> @177
+@179 := (a._@._internal._hyg.#0 : @134) -> @178
+@187 := @157 (@165 (fun (append : @167) => fun (k : @175) => @1 (@176 @179 @2))) @2
+@188 := eq_of_heq.{1}
+@207 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @11} =>
+  fun {α' : @0} =>
+  fun {t' : @11} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @112) =>
+  @144 (fun {t' : @145} => fun (eq_2 : @150) => @187 (@188 @129 @85 @2 @1)) @12 @2 @3 @1
+@208 := Eq.{1}
+@212 := @208 @76 (@36 @2) @37
+@214 := (a._@._internal._hyg.#0 : @33) -> (a._@._internal._hyg.#0 : @48) -> @85
+@219 := (append_eq : @84 @214 @3 @214 @2) -> @33
+@225 := {α : @0} ->
+  {P : @20} -> {append : @14} -> {append' : @35} -> (eq : @212) -> (k : @219) -> @33
+@226 := id.{u}
+@227 := @226 @33
+@230 := LexLeanRuntime.Appendable.noConfusion.{u} @33 @48
+@231 := @22 @48
+@232 := @231 @12
+@234 := @230 @232 @48
+@235 := @231 @3
+@236 := @234 @235
+@238 := Eq.refl.{2} @0
+@239 := @238 @48
+@240 := @236 @239
+@241 := heq_of_eq.{1}
+@254 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {append : @14} =>
+  fun {append' : @35} =>
+  fun (eq : @212) => fun (k : @219) => @227 (@240 (@241 @145 @232 @235 @2) @1)
+@260 := fun {α : @0} => fun {motive : @21} => fun (t : @7) => fun (mk : @39) => @47 @1 @2
+@261 := String
+@262 := Option.{0}
+@264 := (a._@._internal._hyg.#0 : @261) -> @262 @2
+@265 := (a._@._internal._hyg.#0 : @2) -> @261
+@266 := LexLeanRuntime.Decimal
+@267 := @266 @3
+@270 := {α : @0} -> (parse : @264) -> (format : @265) -> @267
+@271 := @266 @1
+@272 := (t : @271) -> @20
+@273 := @262 @3
+@274 := (a._@._internal._hyg.#0 : @261) -> @273
+@275 := (a._@._internal._hyg.#0 : @3) -> @261
+@276 := LexLeanRuntime.Decimal.mk
+@286 := {α : @0} ->
+  {motive : @272} ->
+  (mk : (parse : @274) -> (format : @275) -> @3 (@276 @12 @2 @1)) -> (t : @267) -> @28
+@287 := @266 @2
+@288 := @262 @12
+@296 := (parse : (a._@._internal._hyg.#0 : @261) -> @288) ->
+  (format : (a._@._internal._hyg.#0 : @12) -> @261) -> @12 (@276 @33 @2 @1)
+@300 := {α : @0} -> {motive : @272} -> (t : @287) -> (mk : @296) -> @40
+@303 := LexLeanRuntime.Decimal.rec.{u} @12 @3
+@304 := @262 @33
+@305 := (a._@._internal._hyg.#0 : @261) -> @304
+@306 := (a._@._internal._hyg.#0 : @33) -> @261
+@315 := fun {α : @0} =>
+  fun {motive : @272} =>
+  fun (t : @287) => fun (mk : @296) => @303 (fun (parse : @305) => fun (format : @306) => @40 @1) @2
+@317 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#2488323864._hygCtx._hyg.#11 : @271) -> @59
+@319 := fun {α : @0} => fun (x : @271) => @62
+@321 := {α : @0} -> [self : @271] -> @265
+@324 := fun (α : @0) =>
+  fun [self : @271] => proj LexLeanRuntime.Decimal LexLeanRuntime.Decimal.format 1 @1
+@325 := @276 @3
+@330 := fun (α : @0) => fun (parse : @264) => fun (format : @265) => @325 @2 @1
+@335 := (P : @20) -> {α : @0} -> (t : @271) -> {α' : @0} -> (t' : @271) -> @20
+@341 := LexLeanRuntime.Decimal.casesOn.{u+1} @12 (fun (t : @266 @12) => @20) @3
+@342 := @262 @136
+@343 := (a._@._internal._hyg.#0 : @261) -> @342
+@345 := @84 @343 @12
+@346 := @262 @85
+@349 := @345 ((a._@._internal._hyg.#0 : @261) -> @346) @2
+@350 := (a._@._internal._hyg.#0 : @136) -> @261
+@369 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @271) =>
+  fun {α' : @0} =>
+  fun (t' : @271) =>
+  @341
+    (fun (parse : @305) =>
+    fun (format : @306) =>
+    @341
+      (fun (parse : @305) =>
+      fun (format : @306) =>
+      (x._@.LexLeanRuntime.Portable.#2488323864._hygCtx._hyg.#12 : (parse_eq : @349) ->
+      (format_eq : @84 @350 @12 ((a._@._internal._hyg.#0 : @85) -> @261) @2) -> @168) ->
+      @134))
+@374 := @84 (@266 @33) @12 @267 @2
+@375 := LexLeanRuntime.Decimal.noConfusionType.{u}
+@387 := {P : @20} ->
+  {α : @0} ->
+  {t : @271} ->
+  {α' : @0} -> {t' : @271} -> (eq_1 : @107) -> (eq_2 : @374) -> @375 @85 @48 @33 @12 @3
+@388 := @266 @86
+@392 := @84 @388 @85 @287 @1
+@394 := @375 @134 @136
+@395 := @394 @86
+@401 := @128 (fun {α' : @0} => {t' : @271} -> (eq_2 : @392) -> @395 @3 @2)
+@402 := @266 @48
+@403 := @266 @85
+@407 := @84 @403 @48 @403 @1
+@413 := @151 @388 @85 (fun {t' : @388} => @395 @136 @1)
+@421 := LexLeanRuntime.Decimal.casesOn.{u} @86 (fun {t : @388} => @394 @1 @136 @1) @85
+@422 := @262 @168
+@423 := (a._@._internal._hyg.#0 : @261) -> @422
+@427 := @84 @423 @2 @423 @2
+@428 := (a._@._internal._hyg.#0 : @168) -> @261
+@432 := @84 @428 @2 @428 @2
+@433 := #12
+@435 := (parse_eq : @427) -> (format_eq : @432) -> @433
+@436 := @262 @177
+@468 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @271} =>
+  fun {α' : @0} =>
+  fun {t' : @271} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @374) =>
+  @401
+    (fun {t' : @402} =>
+    fun (eq_2 : @407) =>
+    @413
+      (@421
+        (fun (parse : @343) =>
+        fun (format : @350) =>
+        fun (k : @435) => @1 (@176 ((a._@._internal._hyg.#0 : @261) -> @436) @3) (@176 @428 @2)))
+      @2
+      (@188 @388 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@469 := @208 @402
+@470 := @276 @48
+@476 := @469 (@470 @12 @3) (@470 @2 @1)
+@477 := @262 @86
+@478 := (a._@._internal._hyg.#0 : @261) -> @477
+@482 := @84 @478 @33 @478 @3
+@483 := (a._@._internal._hyg.#0 : @86) -> @261
+@489 := (parse_eq : @482) -> (format_eq : @84 @483 @33 @483 @3) -> @86
+@497 := {α : @0} ->
+  {P : @20} ->
+  {parse : @274} ->
+  {format : @275} -> {parse' : @305} -> {format' : @306} -> (eq : @476) -> (k : @489) -> @85
+@498 := @226 @85
+@501 := LexLeanRuntime.Decimal.noConfusion.{u} @85 @86
+@502 := @276 @86
+@504 := @502 @48 @33
+@506 := @501 @504 @86
+@508 := @502 @12 @3
+@526 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {parse : @274} =>
+  fun {format : @275} =>
+  fun {parse' : @305} =>
+  fun {format' : @306} =>
+  fun (eq : @476) => fun (k : @489) => @498 (@506 @508 (@238 @86) (@241 @388 @504 @508 @2) @1)
+@528 := {α : @0} -> [self : @271] -> @274
+@531 := fun (α : @0) =>
+  fun [self : @271] => proj LexLeanRuntime.Decimal LexLeanRuntime.Decimal.parse 0 @1
+@537 := fun {α : @0} => fun {motive : @272} => fun (t : @287) => fun (mk : @296) => @303 @1 @2
+@538 := Int
+@539 := (a._@._internal._hyg.#0 : @1) -> @538
+@540 := LexLeanRuntime.ToMathInt
+@541 := @540 @2
+@543 := {α : @0} -> (toInt : @539) -> @541
+@544 := @540 @1
+@545 := (a._@._internal._hyg.#0 : @538) -> @3
+@546 := (a._@._internal._hyg.#0 : @86) -> @136
+@547 := (a._@._internal._hyg.#0 : @85) -> @546
+@548 := UInt32
+@550 := (a._@._internal._hyg.#0 : @136) -> (a._@._internal._hyg.#0 : @548) -> @422
+@552 := (a._@._internal._hyg.#0 : @134) -> (a._@._internal._hyg.#0 : @548) -> @436
+@553 := LexLeanRuntime.Fixed
+@563 := (fromInt : @545) ->
+  (minimum : @538) ->
+  (maximum : @538) ->
+  (bitAnd : @214) ->
+  (bitOr : @88) ->
+  (bitXor : @547) -> (bitNot : @546) -> (shiftLeft : @550) -> (shiftRight : @552) -> @553 @168
+@565 := {α : @0} -> [toToMathInt : @544] -> @563
+@566 := @553 @1
+@568 := {α : @0} -> [self : @566] -> @14
+@571 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.bitAnd 4 @1
+@573 := {α : @0} -> [self : @566] -> @4
+@576 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.bitNot 7 @1
+@579 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.bitOr 5 @1
+@582 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.bitXor 6 @1
+@583 := (t : @566) -> @20
+@584 := (a._@._internal._hyg.#0 : @538) -> @12
+@585 := @262 @433
+@587 := (a._@._internal._hyg.#0 : @168) -> (a._@._internal._hyg.#0 : @548) -> @585
+@588 := LexLeanRuntime.Fixed.mk
+@610 := [toToMathInt : @541] ->
+  (fromInt : @584) ->
+  (minimum : @538) ->
+  (maximum : @538) ->
+  (bitAnd : @88) ->
+  (bitOr : @547) ->
+  (bitXor : @167) ->
+  (bitNot : @166) ->
+  (shiftLeft : @552) ->
+  (shiftRight : @587) -> @168 (@588 @177 @134 @136 @86 @85 @48 @33 @12 @3 @2 @1)
+@611 := @553 @3
+@615 := {α : @0} -> {motive : @583} -> (mk : @610) -> (t : @611) -> @28
+@616 := @553 @2
+@617 := @540 @3
+@618 := (a._@._internal._hyg.#0 : @538) -> @33
+@619 := #13
+@620 := @262 @619
+@622 := (a._@._internal._hyg.#0 : @177) -> (a._@._internal._hyg.#0 : @548) -> @620
+@644 := [toToMathInt : @617] ->
+  (fromInt : @618) ->
+  (minimum : @538) ->
+  (maximum : @538) ->
+  (bitAnd : @547) ->
+  (bitOr : @167) ->
+  (bitXor : @170) ->
+  (bitNot : @169) ->
+  (shiftLeft : @587) ->
+  (shiftRight : @622) -> @177 (@588 @433 @134 @136 @86 @85 @48 @33 @12 @3 @2 @1)
+@648 := {α : @0} -> {motive : @583} -> (t : @616) -> (mk : @644) -> @40
+@651 := LexLeanRuntime.Fixed.rec.{u} @12 @3
+@652 := @540 @12
+@653 := (a._@._internal._hyg.#0 : @538) -> @48
+@654 := #14
+@655 := @262 @654
+@657 := (a._@._internal._hyg.#0 : @433) -> (a._@._internal._hyg.#0 : @548) -> @655
+@683 := fun {α : @0} =>
+  fun {motive : @583} =>
+  fun (t : @616) =>
+  fun (mk : @644) =>
+  @651
+    (fun [toToMathInt : @652] =>
+    fun (fromInt : @653) =>
+    fun (minimum : @538) =>
+    fun (maximum : @538) =>
+    fun (bitAnd : @167) =>
+    fun (bitOr : @170) =>
+    fun (bitXor : @179) =>
+    fun (bitNot : @178) =>
+    fun (shiftLeft : @622) =>
+    fun (shiftRight : @657) => @168 @134 @136 @86 @85 @48 @33 @12 @3 @2 @1)
+    @2
+@685 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#3558232561._hygCtx._hyg.#41 : @566) -> @59
+@687 := fun {α : @0} => fun (x : @566) => @62
+@689 := {α : @0} -> [self : @566] -> @545
+@692 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.fromInt 1 @1
+@694 := (α : @0) -> [self : @566] -> @538
+@697 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.maximum 3 @1
+@700 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.minimum 2 @1
+@702 := {α : @0} -> (toInt : @539) -> @563
+@703 := @588 @168
+@704 := LexLeanRuntime.ToMathInt.mk
+@727 := fun (α : @0) =>
+  fun (toInt : @539) =>
+  fun (fromInt : @545) =>
+  fun (minimum : @538) =>
+  fun (maximum : @538) =>
+  fun (bitAnd : @214) =>
+  fun (bitOr : @88) =>
+  fun (bitXor : @547) =>
+  fun (bitNot : @546) =>
+  fun (shiftLeft : @550) =>
+  fun (shiftRight : @552) => @703 (@704 @168 @134) @136 @86 @85 @48 @33 @12 @3 @2 @1
+@732 := (P : @20) -> {α : @0} -> (t : @566) -> {α' : @0} -> (t' : @566) -> @20
+@733 := LexLeanRuntime.Fixed.casesOn.{u+1}
+@738 := @733 @12 (fun (t : @553 @12) => @20) @3
+@743 := @733 @177 (fun (t : @553 @177) => @20) @168
+@744 := @540 @177
+@745 := (a._@._internal._hyg.#0 : @538) -> @619
+@746 := #15
+@747 := #16
+@748 := #17
+@750 := (a._@._internal._hyg.#0 : @746) -> (a._@._internal._hyg.#0 : @747) -> @748
+@751 := #18
+@753 := (a._@._internal._hyg.#0 : @747) -> (a._@._internal._hyg.#0 : @748) -> @751
+@754 := #19
+@755 := (a._@._internal._hyg.#0 : @751) -> @754
+@756 := (a._@._internal._hyg.#0 : @748) -> @755
+@757 := #21
+@760 := (a._@._internal._hyg.#0 : @754) -> (a._@._internal._hyg.#0 : @548) -> @262 @757
+@761 := #20
+@762 := #22
+@765 := (a._@._internal._hyg.#0 : @761) -> (a._@._internal._hyg.#0 : @548) -> @262 @762
+@766 := #23
+@772 := @84 (@540 @766) @754 (@540 @757) @134
+@773 := #25
+@779 := @84
+    ((a._@._internal._hyg.#0 : @538) -> @773)
+    @754
+    ((a._@._internal._hyg.#0 : @538) -> @766)
+    @134
+@780 := @208 @538
+@782 := @780 @754 @134
+@783 := #27
+@784 := #28
+@785 := #29
+@786 := (a._@._internal._hyg.#0 : @784) -> @785
+@787 := (a._@._internal._hyg.#0 : @783) -> @786
+@788 := @84 @787
+@789 := @788 @754
+@790 := #26
+@794 := @789 ((a._@._internal._hyg.#0 : @773) -> (a._@._internal._hyg.#0 : @790) -> @783) @134
+@795 := #30
+@796 := (a._@._internal._hyg.#0 : @785) -> @795
+@797 := (a._@._internal._hyg.#0 : @784) -> @796
+@798 := @84 @797
+@799 := @798 @754
+@801 := (a._@._internal._hyg.#0 : @790) -> (a._@._internal._hyg.#0 : @783) -> @784
+@803 := @799 @801 @134
+@804 := #31
+@805 := (a._@._internal._hyg.#0 : @795) -> @804
+@810 := @84 ((a._@._internal._hyg.#0 : @785) -> @805) @754 @787 @134
+@814 := @84 @805 @754 @786 @134
+@818 := (a._@._internal._hyg.#0 : @804) -> (a._@._internal._hyg.#0 : @548) -> @262 #33
+@819 := @84 @818
+@825 := @819
+    @754
+    ((a._@._internal._hyg.#0 : @785) -> (a._@._internal._hyg.#0 : @548) -> @262 @804)
+    @134
+@826 := #32
+@827 := #34
+@832 := @84 ((a._@._internal._hyg.#0 : @826) -> (a._@._internal._hyg.#0 : @548) -> @262 @827) @754
+@835 := (a._@._internal._hyg.#0 : @795) -> (a._@._internal._hyg.#0 : @548) -> @262 @826
+@875 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @566) =>
+  fun {α' : @0} =>
+  fun (t' : @566) =>
+  @738
+    (fun [toToMathInt : @652] =>
+    fun (fromInt : @653) =>
+    fun (minimum : @538) =>
+    fun (maximum : @538) =>
+    fun (bitAnd : @167) =>
+    fun (bitOr : @170) =>
+    fun (bitXor : @179) =>
+    fun (bitNot : @178) =>
+    fun (shiftLeft : @622) =>
+    fun (shiftRight : @657) =>
+    @743
+      (fun [toToMathInt : @744] =>
+      fun (fromInt : @745) =>
+      fun (minimum : @538) =>
+      fun (maximum : @538) =>
+      fun (bitAnd : @750) =>
+      fun (bitOr : @753) =>
+      fun (bitXor : @756) =>
+      fun (bitNot : @755) =>
+      fun (shiftLeft : @760) =>
+      fun (shiftRight : @765) =>
+      (x._@.LexLeanRuntime.Portable.#3558232561._hygCtx._hyg.#42 : (toToMathInt_eq : @772) ->
+      (fromInt_eq : @779) ->
+      (minimum_eq : @782) ->
+      (maximum_eq : @782) ->
+      (bitAnd_eq : @794) ->
+      (bitOr_eq : @803) ->
+      (bitXor_eq : @810) ->
+      (bitNot_eq : @814) -> (shiftLeft_eq : @825) -> (shiftRight_eq : @832 @835 @134) -> @827) ->
+      @773))
+@880 := @84 (@553 @33) @12 @611 @2
+@881 := LexLeanRuntime.Fixed.noConfusionType.{u}
+@893 := {P : @20} ->
+  {α : @0} ->
+  {t : @566} ->
+  {α' : @0} -> {t' : @566} -> (eq_1 : @107) -> (eq_2 : @880) -> @881 @85 @48 @33 @12 @3
+@894 := @553 @86
+@898 := @84 @894 @85 @616 @1
+@900 := @881 @134 @136
+@901 := @900 @86
+@907 := @128 (fun {α' : @0} => {t' : @566} -> (eq_2 : @898) -> @901 @3 @2)
+@908 := @553 @48
+@909 := @553 @85
+@913 := @84 @909 @48 @909 @1
+@919 := @151 @894 @85 (fun {t' : @894} => @901 @136 @1)
+@927 := LexLeanRuntime.Fixed.casesOn.{u} @86 (fun {t : @894} => @900 @1 @136 @1) @85
+@928 := @540 @86
+@929 := (a._@._internal._hyg.#0 : @538) -> @134
+@931 := (a._@._internal._hyg.#0 : @177) -> (a._@._internal._hyg.#0 : @433) -> @619
+@933 := (a._@._internal._hyg.#0 : @433) -> (a._@._internal._hyg.#0 : @619) -> @654
+@934 := (a._@._internal._hyg.#0 : @654) -> @746
+@935 := (a._@._internal._hyg.#0 : @619) -> @934
+@938 := (a._@._internal._hyg.#0 : @746) -> (a._@._internal._hyg.#0 : @548) -> @262 @748
+@941 := (a._@._internal._hyg.#0 : @747) -> (a._@._internal._hyg.#0 : @548) -> @262 @751
+@942 := @540 @748
+@946 := @84 @942 @134 @942 @134
+@947 := (a._@._internal._hyg.#0 : @538) -> @754
+@951 := @84 @947 @134 @947 @134
+@953 := @780 @134 @134
+@955 := (a._@._internal._hyg.#0 : @757) -> (a._@._internal._hyg.#0 : @762) -> @766
+@959 := @84 @955 @134 @955 @134
+@960 := #24
+@962 := (a._@._internal._hyg.#0 : @762) -> (a._@._internal._hyg.#0 : @766) -> @960
+@966 := @84 @962 @134 @962 @134
+@967 := (a._@._internal._hyg.#0 : @960) -> @773
+@968 := (a._@._internal._hyg.#0 : @766) -> @967
+@972 := @84 @968 @134 @968 @134
+@976 := @84 @967 @134 @967 @134
+@979 := (a._@._internal._hyg.#0 : @773) -> (a._@._internal._hyg.#0 : @548) -> @262 @783
+@983 := @84 @979 @134 @979 @134
+@986 := (a._@._internal._hyg.#0 : @790) -> (a._@._internal._hyg.#0 : @548) -> @262 @784
+@1000 := (toToMathInt_eq : @946) ->
+  (fromInt_eq : @951) ->
+  (minimum_eq : @953) ->
+  (maximum_eq : @953) ->
+  (bitAnd_eq : @959) ->
+  (bitOr_eq : @966) ->
+  (bitXor_eq : @972) ->
+  (bitNot_eq : @976) -> (shiftLeft_eq : @983) -> (shiftRight_eq : @84 @986 @134 @986 @134) -> @784
+@1007 := @1 (@176 (@540 @751) @168) (@176 @947 @134)
+@1009 := Eq.refl.{1} @538
+@1013 := @1007 (@1009 @136) (@1009 @86)
+@1016 := @176 ((a._@._internal._hyg.#0 : @751) -> (a._@._internal._hyg.#0 : @754) -> @761)
+@1025 := @1013 (@1016 @85) (@1016 @48) (@1016 @33) (@176 @755 @12)
+@1029 := @176 ((a._@._internal._hyg.#0 : @751) -> (a._@._internal._hyg.#0 : @548) -> @262 @761)
+@1066 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @566} =>
+  fun {α' : @0} =>
+  fun {t' : @566} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @880) =>
+  @907
+    (fun {t' : @908} =>
+    fun (eq_2 : @913) =>
+    @919
+      (@927
+        (fun [toToMathInt : @928] =>
+        fun (fromInt : @929) =>
+        fun (minimum : @538) =>
+        fun (maximum : @538) =>
+        fun (bitAnd : @931) =>
+        fun (bitOr : @933) =>
+        fun (bitXor : @935) =>
+        fun (bitNot : @934) =>
+        fun (shiftLeft : @938) =>
+        fun (shiftRight : @941) => fun (k : @1000) => @1025 (@1029 @3) (@1029 @2)))
+      @2
+      (@188 @894 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@1068 := @208 (@553 @757)
+@1069 := @588 @757
+@1091 := @1068
+    (@1069 @754 @751 @748 @747 @746 @654 @619 @433 @177 @168)
+    (@1069 @134 @136 @86 @85 @48 @33 @12 @3 @2 @1)
+@1092 := @540 @762
+@1096 := @84 @1092 @761 @1092 @168
+@1097 := (a._@._internal._hyg.#0 : @538) -> @960
+@1101 := @84 @1097 @761 @1097 @168
+@1103 := @780 @761 @168
+@1134 := (toToMathInt_eq : @1096) ->
+  (fromInt_eq : @1101) ->
+  (minimum_eq : @1103) ->
+  (maximum_eq : @1103) ->
+  (bitAnd_eq : @84 @801 @761 @801 @168) ->
+  (bitOr_eq : @788 @761 @787 @168) ->
+  (bitXor_eq : @798 @761 @797 @168) ->
+  (bitNot_eq : @84 @796 @761 @796 @168) ->
+  (shiftLeft_eq : @84 @835 @761 @835 @168) -> (shiftRight_eq : @819 @761 @818 @168) -> @804
+@1158 := {α : @0} ->
+  {P : @20} ->
+  {toToMathInt : @541} ->
+  {fromInt : @584} ->
+  {minimum : @538} ->
+  {maximum : @538} ->
+  {bitAnd : @88} ->
+  {bitOr : @547} ->
+  {bitXor : @167} ->
+  {bitNot : @166} ->
+  {shiftLeft : @552} ->
+  {shiftRight : @587} ->
+  {toToMathInt' : @744} ->
+  {fromInt' : @745} ->
+  {minimum' : @538} ->
+  {maximum' : @538} ->
+  {bitAnd' : @750} ->
+  {bitOr' : @753} ->
+  {bitXor' : @756} ->
+  {bitNot' : @755} ->
+  {shiftLeft' : @760} -> {shiftRight' : @765} -> (eq : @1091) -> (k : @1134) -> @762
+@1159 := @226 @762
+@1162 := LexLeanRuntime.Fixed.noConfusion.{u} @762 @766
+@1163 := @588 @766
+@1173 := @1163 @757 @761 @754 @751 @748 @747 @746 @654 @619 @433
+@1175 := @1162 @1173 @766
+@1185 := @1163 @177 @168 @134 @136 @86 @85 @48 @33 @12 @3
+@1220 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {toToMathInt : @541} =>
+  fun {fromInt : @584} =>
+  fun {minimum : @538} =>
+  fun {maximum : @538} =>
+  fun {bitAnd : @88} =>
+  fun {bitOr : @547} =>
+  fun {bitXor : @167} =>
+  fun {bitNot : @166} =>
+  fun {shiftLeft : @552} =>
+  fun {shiftRight : @587} =>
+  fun {toToMathInt' : @744} =>
+  fun {fromInt' : @745} =>
+  fun {minimum' : @538} =>
+  fun {maximum' : @538} =>
+  fun {bitAnd' : @750} =>
+  fun {bitOr' : @753} =>
+  fun {bitXor' : @756} =>
+  fun {bitNot' : @755} =>
+  fun {shiftLeft' : @760} =>
+  fun {shiftRight' : @765} =>
+  fun (eq : @1091) =>
+  fun (k : @1134) => @1159 (@1175 @1185 (@238 @766) (@241 (@553 @766) @1173 @1185 @2) @1)
+@1226 := fun {α : @0} => fun {motive : @583} => fun (t : @616) => fun (mk : @644) => @651 @1 @2
+@1230 := {α : @0} ->
+  [self : @566] -> (a._@._internal._hyg.#0 : @2) -> (a._@._internal._hyg.#0 : @548) -> @288
+@1233 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.shiftLeft 8 @1
+@1236 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.shiftRight 9 @1
+@1238 := {α : @0} -> [self : @566] -> @541
+@1241 := fun (α : @0) =>
+  fun [self : @566] => proj LexLeanRuntime.Fixed LexLeanRuntime.Fixed.toToMathInt 0 @1
+@1242 := (a._@._internal._hyg.#0 : @59) -> @273
+@1243 := (a._@._internal._hyg.#0 : @2) -> @1242
+@1244 := LexLeanRuntime.Indexable
+@1246 := @1244 @3 @2
+@1249 := {α : @0} -> {β : @0} -> (index : @1243) -> @1246
+@1251 := (α : @0) -> (β : @0) -> @0
+@1252 := @1244 @2
+@1253 := @1252 @1
+@1254 := (t : @1253) -> @20
+@1255 := (a._@._internal._hyg.#0 : @59) -> @288
+@1256 := (a._@._internal._hyg.#0 : @3) -> @1255
+@1257 := LexLeanRuntime.Indexable.mk
+@1262 := (index : @1256) -> @2 (@1257 @12 @3 @1)
+@1264 := @1244 @12 @3
+@1269 := {α : @0} -> {β : @0} -> {motive : @1254} -> (mk : @1262) -> (t : @1264) -> @28
+@1270 := (a._@._internal._hyg.#0 : @59) -> @304
+@1271 := (a._@._internal._hyg.#0 : @12) -> @1270
+@1273 := @1257 @33 @12
+@1274 := @1273 @1
+@1276 := (index : @1271) -> @3 @1274
+@1281 := {α : @0} -> {β : @0} -> {motive : @1254} -> (t : @1246) -> (mk : @1276) -> @40
+@1285 := LexLeanRuntime.Indexable.rec.{u} @33 @12 @3
+@1287 := (a._@._internal._hyg.#0 : @59) -> @262 @48
+@1288 := (a._@._internal._hyg.#0 : @33) -> @1287
+@1296 := fun {α : @0} =>
+  fun {β : @0} =>
+  fun {motive : @1254} =>
+  fun (t : @1246) => fun (mk : @1276) => @1285 (fun (index : @1288) => @51) @2
+@1299 := {α : @0} ->
+  {β : @0} -> (x._@.LexLeanRuntime.Portable.#3290840662._hygCtx._hyg.#11 : @1253) -> @59
+@1302 := fun {α : @0} => fun {β : @0} => fun (x : @1253) => @62
+@1305 := {α : @0} -> {β : @0} -> [self : @1253] -> @1256
+@1309 := fun (α : @0) =>
+  fun (β : @0) =>
+  fun [self : @1253] => proj LexLeanRuntime.Indexable LexLeanRuntime.Indexable.index 0 @1
+@1315 := fun (α : @0) => fun (β : @0) => fun (index : @1243) => @1257 @3 @2 @1
+@1322 := (P : @20) ->
+  {α : @0} -> {β : @0} -> (t : @1253) -> {α' : @0} -> {β' : @0} -> (t' : @1253) -> @20
+@1323 := LexLeanRuntime.Indexable.casesOn.{u+1}
+@1330 := @1323 @48 @33 (fun (t : @1244 @48 @33) => @20) @12
+@1331 := (a._@._internal._hyg.#0 : @59) -> @346
+@1332 := (a._@._internal._hyg.#0 : @48) -> @1331
+@1337 := @1323 @12 @3 (fun (t : @1264) => @20) @2
+@1338 := (a._@._internal._hyg.#0 : @59) -> @342
+@1356 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun {β : @0} =>
+  fun (t : @1253) =>
+  fun {α' : @0} =>
+  fun {β' : @0} =>
+  fun (t' : @1253) =>
+  @1330
+    (fun (index : @1332) =>
+    @1337
+      (fun (index : @1271) =>
+      (x._@.LexLeanRuntime.Portable.#3290840662._hygCtx._hyg.#12 : (index_eq : @84
+        ((a._@._internal._hyg.#0 : @86) -> @1338)
+        @2
+        @1288
+        @1) ->
+      @134) ->
+      @134))
+@1358 := @105 @48 @3
+@1362 := @84 (@1244 @86 @85) @48
+@1364 := @1244 @33 @12
+@1366 := @1362 @1364 @3
+@1367 := LexLeanRuntime.Indexable.noConfusionType.{u}
+@1384 := {P : @20} ->
+  {α : @0} ->
+  {β : @0} ->
+  {t : @1253} ->
+  {α' : @0} ->
+  {β' : @0} ->
+  {t' : @1253} ->
+  (eq_1 : @1358) -> (eq_2 : @1358) -> (eq_3 : @1366) -> @1367 @134 @136 @86 @85 @48 @33 @12
+@1385 := @127 @136
+@1387 := @1244 @1 @48
+@1389 := @1244 @168 @134
+@1405 := @1385
+    (fun {α' : @0} =>
+    {t' : @1387} -> (eq_3 : @84 @1389 @136 (@1252 @85) @1) -> @1367 @433 @177 @168 @134 @3 @86 @2)
+@1407 := @1244 @136 @33
+@1408 := @1244 @134
+@1414 := @84 (@1408 @136) @86 (@1408 @48) @1
+@1415 := @127 @134
+@1416 := @1244 @177
+@1417 := @1416 @1
+@1418 := @1244 @433
+@1419 := @1418 @177
+@1424 := @84 @1419 @168 (@1418 @2) @1
+@1427 := @1367 @654 @619 @433
+@1429 := @1427 @177 @619
+@1435 := @1415 (fun {β' : @0} => {t' : @1417} -> (eq_3 : @1424) -> @1429 @3 @2)
+@1436 := @1416 @168
+@1440 := @84 @1436 @134 @1436 @1
+@1446 := @151 @1419 @168 (fun {t' : @1419} => @1429 @433 @1)
+@1456 := LexLeanRuntime.Indexable.casesOn.{u}
+    @433
+    @177
+    (fun {t : @1419} => @1427 @1 @619 @433 @1)
+    @168
+@1458 := (a._@._internal._hyg.#0 : @433) -> (a._@._internal._hyg.#0 : @59) -> @620
+@1460 := (a._@._internal._hyg.#0 : @619) -> (a._@._internal._hyg.#0 : @59) -> @655
+@1505 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {β : @0} =>
+  fun {t : @1253} =>
+  fun {α' : @0} =>
+  fun {β' : @0} =>
+  fun {t' : @1253} =>
+  fun (eq_1 : @1358) =>
+  fun (eq_2 : @1358) =>
+  fun (eq_3 : @1366) =>
+  @1405
+    (fun {t' : @1407} =>
+    fun (eq_3 : @1414) =>
+    @1435
+      (fun {t' : @1389} =>
+      fun (eq_3 : @1440) =>
+      @1446
+        (@1456
+          (fun (index : @1458) =>
+          fun (k : (index_eq : @84 @1460 @1 @1460 @1) -> @746) =>
+          @1
+            (@176
+              ((a._@._internal._hyg.#0 : @654) -> (a._@._internal._hyg.#0 : @59) -> @262 @746)
+              @2)))
+        @2
+        (@188 @1419 @168 @2 @1))
+      @85
+      @12
+      @2
+      @1)
+    @48
+    @3
+    @12
+    @1
+@1509 := @208 @1364 (@1273 @2) @1274
+@1514 := (index_eq : @84 @1332 @3 @1332 @2) -> @33
+@1521 := {α : @0} ->
+  {β : @0} -> {P : @20} -> {index : @1256} -> {index' : @1271} -> (eq : @1509) -> (k : @1514) -> @33
+@1525 := LexLeanRuntime.Indexable.noConfusion.{u} @33 @85 @48
+@1527 := @1257 @85 @48
+@1528 := @1527 @12
+@1531 := @1525 @1528 @85 @48
+@1532 := @1527 @3
+@1552 := fun {α : @0} =>
+  fun {β : @0} =>
+  fun {P : @20} =>
+  fun {index : @1256} =>
+  fun {index' : @1271} =>
+  fun (eq : @1509) =>
+  fun (k : @1514) => @227 (@1531 @1532 (@238 @85) @239 (@241 (@1244 @85 @48) @1528 @1532 @2) @1)
+@1559 := fun {α : @0} =>
+  fun {β : @0} => fun {motive : @1254} => fun (t : @1246) => fun (mk : @1276) => @1285 @1 @2
+@1560 := (a._@._internal._hyg.#0 : @1) -> @59
+@1561 := LexLeanRuntime.Lengthable
+@1562 := @1561 @2
+@1564 := {α : @0} -> (length : @1560) -> @1562
+@1565 := @1561 @1
+@1566 := (t : @1565) -> @20
+@1567 := (a._@._internal._hyg.#0 : @2) -> @59
+@1568 := LexLeanRuntime.Lengthable.mk
+@1572 := (length : @1567) -> @2 (@1568 @3 @1)
+@1573 := @1561 @3
+@1577 := {α : @0} -> {motive : @1566} -> (mk : @1572) -> (t : @1573) -> @28
+@1578 := (a._@._internal._hyg.#0 : @3) -> @59
+@1579 := @1568 @12
+@1580 := @1579 @1
+@1582 := (length : @1578) -> @3 @1580
+@1586 := {α : @0} -> {motive : @1566} -> (t : @1562) -> (mk : @1582) -> @40
+@1589 := LexLeanRuntime.Lengthable.rec.{u} @12 @3
+@1590 := (a._@._internal._hyg.#0 : @12) -> @59
+@1597 := fun {α : @0} =>
+  fun {motive : @1566} =>
+  fun (t : @1562) => fun (mk : @1582) => @1589 (fun (length : @1590) => @51) @2
+@1599 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#2660805663._hygCtx._hyg.#7 : @1565) -> @59
+@1601 := fun {α : @0} => fun (x : @1565) => @62
+@1603 := {α : @0} -> [self : @1565] -> @1567
+@1606 := fun (α : @0) =>
+  fun [self : @1565] => proj LexLeanRuntime.Lengthable LexLeanRuntime.Lengthable.length 0 @1
+@1610 := fun (α : @0) => fun (length : @1560) => @1568 @2 @1
+@1615 := (P : @20) -> {α : @0} -> (t : @1565) -> {α' : @0} -> (t' : @1565) -> @20
+@1616 := LexLeanRuntime.Lengthable.casesOn.{u+1}
+@1617 := @1616 @12
+@1618 := @1561 @12
+@1641 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @1565) =>
+  fun {α' : @0} =>
+  fun (t' : @1565) =>
+  @1617
+    (fun (t : @1618) => @20)
+    @3
+    (fun (length : @1590) =>
+    @1616
+      @3
+      (fun (t : @1573) => @20)
+      @2
+      (fun (length : @1578) =>
+      (x._@.LexLeanRuntime.Portable.#2660805663._hygCtx._hyg.#8 : (length_eq : @84
+        ((a._@._internal._hyg.#0 : @48) -> @59)
+        @2
+        @1590
+        @1) ->
+      @86) ->
+      @86))
+@1646 := @84 (@1561 @33) @12 @1573 @2
+@1647 := LexLeanRuntime.Lengthable.noConfusionType.{u}
+@1659 := {P : @20} ->
+  {α : @0} ->
+  {t : @1565} ->
+  {α' : @0} -> {t' : @1565} -> (eq_1 : @107) -> (eq_2 : @1646) -> @1647 @85 @48 @33 @12 @3
+@1660 := @1561 @86
+@1664 := @84 @1660 @85 @1562 @1
+@1666 := @1647 @134 @136
+@1667 := @1666 @86
+@1673 := @128 (fun {α' : @0} => {t' : @1565} -> (eq_2 : @1664) -> @1667 @3 @2)
+@1674 := @1561 @48
+@1675 := @1561 @85
+@1679 := @84 @1675 @48 @1675 @1
+@1685 := @151 @1660 @85 (fun {t' : @1660} => @1667 @136 @1)
+@1693 := LexLeanRuntime.Lengthable.casesOn.{u} @86 (fun {t : @1660} => @1666 @1 @136 @1) @85
+@1694 := (a._@._internal._hyg.#0 : @86) -> @59
+@1695 := (a._@._internal._hyg.#0 : @136) -> @59
+@1728 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @1565} =>
+  fun {α' : @0} =>
+  fun {t' : @1565} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @1646) =>
+  @1673
+    (fun {t' : @1674} =>
+    fun (eq_2 : @1679) =>
+    @1685
+      (@1693
+        (fun (length : @1694) =>
+        fun (k : (length_eq : @84 @1695 @1 @1695 @1) -> @168) =>
+        @1 (@176 ((a._@._internal._hyg.#0 : @134) -> @59) @2)))
+      @2
+      (@188 @1660 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@1732 := @208 @1618 (@1579 @2) @1580
+@1733 := (a._@._internal._hyg.#0 : @33) -> @59
+@1738 := (length_eq : @84 @1733 @3 @1733 @2) -> @33
+@1744 := {α : @0} ->
+  {P : @20} -> {length : @1567} -> {length' : @1578} -> (eq : @1732) -> (k : @1738) -> @33
+@1747 := LexLeanRuntime.Lengthable.noConfusion.{u} @33 @48
+@1748 := @1568 @48
+@1749 := @1748 @12
+@1751 := @1747 @1749 @48
+@1752 := @1748 @3
+@1767 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {length : @1567} =>
+  fun {length' : @1578} =>
+  fun (eq : @1732) => fun (k : @1738) => @227 (@1751 @1752 @239 (@241 @1674 @1749 @1752 @2) @1)
+@1773 := fun {α : @0} => fun {motive : @1566} => fun (t : @1562) => fun (mk : @1582) => @1589 @1 @2
+@1774 := Bool
+@1775 := (a._@._internal._hyg.#0 : @3) -> @1774
+@1776 := LexLeanRuntime.Quotient
+@1777 := @1776 @12
+@1781 := {α : @0} -> (quotient : @5) -> (remainder : @14) -> (isZero : @1775) -> @1777
+@1782 := @1776 @1
+@1783 := (t : @1782) -> @20
+@1784 := (a._@._internal._hyg.#0 : @12) -> @1774
+@1785 := LexLeanRuntime.Quotient.mk
+@1793 := (quotient : @14) -> (remainder : @35) -> (isZero : @1784) -> @12 (@1785 @33 @3 @2 @1)
+@1794 := @1776 @3
+@1798 := {α : @0} -> {motive : @1783} -> (mk : @1793) -> (t : @1794) -> @28
+@1799 := @1776 @2
+@1808 := (quotient : @35) ->
+  (remainder : @50) ->
+  (isZero : (a._@._internal._hyg.#0 : @33) -> @1774) -> @33 (@1785 @48 @3 @2 @1)
+@1812 := {α : @0} -> {motive : @1783} -> (t : @1799) -> (mk : @1808) -> @40
+@1815 := LexLeanRuntime.Quotient.rec.{u} @12 @3
+@1816 := (a._@._internal._hyg.#0 : @48) -> @1774
+@1817 := @12 @3
+@1819 := @1817 @2 @1
+@1828 := fun {α : @0} =>
+  fun {motive : @1783} =>
+  fun (t : @1799) =>
+  fun (mk : @1808) =>
+  @1815 (fun (quotient : @50) => fun (remainder : @214) => fun (isZero : @1816) => @1819) @2
+@1830 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#3795262475._hygCtx._hyg.#17 : @1782) -> @59
+@1832 := fun {α : @0} => fun (x : @1782) => @62
+@1835 := {α : @0} -> [self : @1782] -> (a._@._internal._hyg.#0 : @2) -> @1774
+@1838 := fun (α : @0) =>
+  fun [self : @1782] => proj LexLeanRuntime.Quotient LexLeanRuntime.Quotient.isZero 2 @1
+@1846 := fun (α : @0) =>
+  fun (quotient : @5) => fun (remainder : @14) => fun (isZero : @1775) => @1785 @12 @3 @2 @1
+@1851 := (P : @20) -> {α : @0} -> (t : @1782) -> {α' : @0} -> (t' : @1782) -> @20
+@1852 := LexLeanRuntime.Quotient.casesOn.{u+1}
+@1856 := @1852 @12 (fun (t : @1777) => @20) @3
+@1857 := @1852 @33
+@1858 := @1776 @33
+@1861 := @1857 (fun (t : @1858) => @20) @12
+@1862 := (a._@._internal._hyg.#0 : @85) -> @1774
+@1863 := @84 @179
+@1866 := @1863 @48 @167 @3
+@1868 := (a._@._internal._hyg.#0 : @168) -> (a._@._internal._hyg.#0 : @177) -> @433
+@1869 := @84 @1868
+@1872 := @1869 @48 @170 @3
+@1873 := (a._@._internal._hyg.#0 : @177) -> @1774
+@1875 := @84 @1873 @48
+@1876 := (a._@._internal._hyg.#0 : @134) -> @1774
+@1895 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @1782) =>
+  fun {α' : @0} =>
+  fun (t' : @1782) =>
+  @1856
+    (fun (quotient : @50) =>
+    fun (remainder : @214) =>
+    fun (isZero : @1816) =>
+    @1861
+      (fun (quotient : @214) =>
+      fun (remainder : @88) =>
+      fun (isZero : @1862) =>
+      (x._@.LexLeanRuntime.Portable.#3795262475._hygCtx._hyg.#18 : (quotient_eq : @1866) ->
+      (remainder_eq : @1872) -> (isZero_eq : @1875 @1876 @3) -> @619) ->
+      @177))
+@1899 := @84 @1858 @12 @1794 @2
+@1900 := LexLeanRuntime.Quotient.noConfusionType.{u}
+@1912 := {P : @20} ->
+  {α : @0} ->
+  {t : @1782} ->
+  {α' : @0} -> {t' : @1782} -> (eq_1 : @107) -> (eq_2 : @1899) -> @1900 @85 @48 @33 @12 @3
+@1913 := @1776 @86
+@1917 := @84 @1913 @85 @1799 @1
+@1919 := @1900 @134 @136
+@1920 := @1919 @86
+@1926 := @128 (fun {α' : @0} => {t' : @1782} -> (eq_2 : @1917) -> @1920 @3 @2)
+@1927 := @1776 @48
+@1928 := @1776 @85
+@1932 := @84 @1928 @48 @1928 @1
+@1938 := @151 @1913 @85 (fun {t' : @1913} => @1920 @136 @1)
+@1946 := LexLeanRuntime.Quotient.casesOn.{u} @86 (fun {t : @1913} => @1919 @1 @136 @1) @85
+@1949 := @1869 @3 @1868 @3
+@1953 := @84 @931 @3 @931 @3
+@1954 := (a._@._internal._hyg.#0 : @433) -> @1774
+@1961 := (quotient_eq : @1949) ->
+  (remainder_eq : @1953) -> (isZero_eq : @84 @1954 @3 @1954 @3) -> @654
+@1962 := @176 @931
+@1995 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @1782} =>
+  fun {α' : @0} =>
+  fun {t' : @1782} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @1899) =>
+  @1926
+    (fun {t' : @1927} =>
+    fun (eq_2 : @1932) =>
+    @1938
+      (@1946
+        (fun (quotient : @167) =>
+        fun (remainder : @170) =>
+        fun (isZero : @1876) => fun (k : @1961) => @1 (@1962 @12) (@1962 @3) (@176 @1873 @2)))
+      @2
+      (@188 @1913 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@1996 := @208 @1913
+@1997 := @1785 @86
+@2005 := @1996 (@1997 @48 @33 @12) (@1997 @3 @2 @1)
+@2008 := @171 @85 @170 @12
+@2011 := @1863 @85 @179 @12
+@2012 := (a._@._internal._hyg.#0 : @168) -> @1774
+@2019 := (quotient_eq : @2008) ->
+  (remainder_eq : @2011) -> (isZero_eq : @84 @2012 @85 @2012 @12) -> @168
+@2029 := {α : @0} ->
+  {P : @20} ->
+  {quotient : @14} ->
+  {remainder : @35} ->
+  {isZero : @1784} ->
+  {quotient' : @214} ->
+  {remainder' : @88} -> {isZero' : @1862} -> (eq : @2005) -> (k : @2019) -> @136
+@2030 := @226 @136
+@2033 := LexLeanRuntime.Quotient.noConfusion.{u} @136 @134
+@2034 := @1785 @134
+@2037 := @2034 @86 @85 @48
+@2039 := @2033 @2037 @134
+@2042 := @2034 @33 @12 @3
+@2063 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {quotient : @14} =>
+  fun {remainder : @35} =>
+  fun {isZero : @1784} =>
+  fun {quotient' : @214} =>
+  fun {remainder' : @88} =>
+  fun {isZero' : @1862} =>
+  fun (eq : @2005) =>
+  fun (k : @2019) => @2030 (@2039 @2042 (@238 @134) (@241 (@1776 @134) @2037 @2042 @2) @1)
+@2065 := {α : @0} -> [self : @1782] -> @14
+@2068 := fun (α : @0) =>
+  fun [self : @1782] => proj LexLeanRuntime.Quotient LexLeanRuntime.Quotient.quotient 0 @1
+@2074 := fun {α : @0} => fun {motive : @1783} => fun (t : @1799) => fun (mk : @1808) => @1815 @1 @2
+@2077 := fun (α : @0) =>
+  fun [self : @1782] => proj LexLeanRuntime.Quotient LexLeanRuntime.Quotient.remainder 1 @1
+@2079 := (a._@._internal._hyg.#0 : @1) -> (a._@._internal._hyg.#0 : @59) -> @1255
+@2080 := LexLeanRuntime.Sliceable
+@2081 := @2080 @2
+@2083 := {α : @0} -> (slice : @2079) -> @2081
+@2084 := @2080 @1
+@2085 := (t : @2084) -> @20
+@2087 := (a._@._internal._hyg.#0 : @2) -> (a._@._internal._hyg.#0 : @59) -> @1270
+@2088 := LexLeanRuntime.Sliceable.mk
+@2092 := (slice : @2087) -> @2 (@2088 @3 @1)
+@2093 := @2080 @3
+@2097 := {α : @0} -> {motive : @2085} -> (mk : @2092) -> (t : @2093) -> @28
+@2099 := (a._@._internal._hyg.#0 : @3) -> (a._@._internal._hyg.#0 : @59) -> @1287
+@2100 := @2088 @12
+@2101 := @2100 @1
+@2103 := (slice : @2099) -> @3 @2101
+@2107 := {α : @0} -> {motive : @2085} -> (t : @2081) -> (mk : @2103) -> @40
+@2110 := LexLeanRuntime.Sliceable.rec.{u} @12 @3
+@2112 := (a._@._internal._hyg.#0 : @12) -> (a._@._internal._hyg.#0 : @59) -> @1331
+@2119 := fun {α : @0} =>
+  fun {motive : @2085} =>
+  fun (t : @2081) => fun (mk : @2103) => @2110 (fun (slice : @2112) => @51) @2
+@2121 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#909551347._hygCtx._hyg.#12 : @2084) -> @59
+@2123 := fun {α : @0} => fun (x : @2084) => @62
+@2127 := fun (α : @0) => fun (slice : @2079) => @2088 @2 @1
+@2132 := (P : @20) -> {α : @0} -> (t : @2084) -> {α' : @0} -> (t' : @2084) -> @20
+@2133 := LexLeanRuntime.Sliceable.casesOn.{u+1}
+@2134 := @2133 @12
+@2135 := @2080 @12
+@2159 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @2084) =>
+  fun {α' : @0} =>
+  fun (t' : @2084) =>
+  @2134
+    (fun (t : @2135) => @20)
+    @3
+    (fun (slice : @2112) =>
+    @2133
+      @3
+      (fun (t : @2093) => @20)
+      @2
+      (fun (slice : @2099) =>
+      (x._@.LexLeanRuntime.Portable.#909551347._hygCtx._hyg.#13 : (slice_eq : @84
+        ((a._@._internal._hyg.#0 : @48) -> (a._@._internal._hyg.#0 : @59) -> @1338)
+        @2
+        @2112
+        @1) ->
+      @86) ->
+      @86))
+@2164 := @84 (@2080 @33) @12 @2093 @2
+@2165 := LexLeanRuntime.Sliceable.noConfusionType.{u}
+@2177 := {P : @20} ->
+  {α : @0} ->
+  {t : @2084} ->
+  {α' : @0} -> {t' : @2084} -> (eq_1 : @107) -> (eq_2 : @2164) -> @2165 @85 @48 @33 @12 @3
+@2178 := @2080 @86
+@2182 := @84 @2178 @85 @2081 @1
+@2184 := @2165 @134 @136
+@2185 := @2184 @86
+@2191 := @128 (fun {α' : @0} => {t' : @2084} -> (eq_2 : @2182) -> @2185 @3 @2)
+@2192 := @2080 @48
+@2193 := @2080 @85
+@2197 := @84 @2193 @48 @2193 @1
+@2203 := @151 @2178 @85 (fun {t' : @2178} => @2185 @136 @1)
+@2211 := LexLeanRuntime.Sliceable.casesOn.{u} @86 (fun {t : @2178} => @2184 @1 @136 @1) @85
+@2214 := (a._@._internal._hyg.#0 : @86) ->
+  (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @59) -> @422
+@2217 := (a._@._internal._hyg.#0 : @136) ->
+  (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @59) -> @436
+@2252 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @2084} =>
+  fun {α' : @0} =>
+  fun {t' : @2084} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @2164) =>
+  @2191
+    (fun {t' : @2192} =>
+    fun (eq_2 : @2197) =>
+    @2203
+      (@2211
+        (fun (slice : @2214) =>
+        fun (k : (slice_eq : @84 @2217 @1 @2217 @1) -> @168) =>
+        @1
+          (@176
+            ((a._@._internal._hyg.#0 : @134) ->
+            (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @59) -> @585)
+            @2)))
+      @2
+      (@188 @2178 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@2256 := @208 @2135 (@2100 @2) @2101
+@2259 := (a._@._internal._hyg.#0 : @33) ->
+  (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @59) -> @477
+@2264 := (slice_eq : @84 @2259 @3 @2259 @2) -> @33
+@2270 := {α : @0} ->
+  {P : @20} -> {slice : @2087} -> {slice' : @2099} -> (eq : @2256) -> (k : @2264) -> @33
+@2273 := LexLeanRuntime.Sliceable.noConfusion.{u} @33 @48
+@2274 := @2088 @48
+@2275 := @2274 @12
+@2277 := @2273 @2275 @48
+@2278 := @2274 @3
+@2293 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {slice : @2087} =>
+  fun {slice' : @2099} =>
+  fun (eq : @2256) => fun (k : @2264) => @227 (@2277 @2278 @239 (@241 @2192 @2275 @2278 @2) @1)
+@2299 := fun {α : @0} => fun {motive : @2085} => fun (t : @2081) => fun (mk : @2103) => @2110 @1 @2
+@2301 := {α : @0} -> [self : @2084] -> @2087
+@2304 := fun (α : @0) =>
+  fun [self : @2084] => proj LexLeanRuntime.Sliceable LexLeanRuntime.Sliceable.slice 0 @1
+@2305 := (t : @544) -> @20
+@2306 := (a._@._internal._hyg.#0 : @2) -> @538
+@2314 := {α : @0} ->
+  {motive : @2305} -> (mk : (toInt : @2306) -> @2 (@704 @3 @1)) -> (t : @617) -> @28
+@2315 := (a._@._internal._hyg.#0 : @3) -> @538
+@2316 := @704 @12
+@2317 := @2316 @1
+@2319 := (toInt : @2315) -> @3 @2317
+@2323 := {α : @0} -> {motive : @2305} -> (t : @541) -> (mk : @2319) -> @40
+@2326 := LexLeanRuntime.ToMathInt.rec.{u} @12 @3
+@2327 := (a._@._internal._hyg.#0 : @12) -> @538
+@2334 := fun {α : @0} =>
+  fun {motive : @2305} =>
+  fun (t : @541) => fun (mk : @2319) => @2326 (fun (toInt : @2327) => @51) @2
+@2336 := {α : @0} -> (x._@.LexLeanRuntime.Portable.#3229831968._hygCtx._hyg.#7 : @544) -> @59
+@2338 := fun {α : @0} => fun (x : @544) => @62
+@2342 := fun (α : @0) => fun (toInt : @539) => @704 @2 @1
+@2347 := (P : @20) -> {α : @0} -> (t : @544) -> {α' : @0} -> (t' : @544) -> @20
+@2348 := LexLeanRuntime.ToMathInt.casesOn.{u+1}
+@2372 := fun (P : @20) =>
+  fun {α : @0} =>
+  fun (t : @544) =>
+  fun {α' : @0} =>
+  fun (t' : @544) =>
+  @2348
+    @12
+    (fun (t : @652) => @20)
+    @3
+    (fun (toInt : @2327) =>
+    @2348
+      @3
+      (fun (t : @617) => @20)
+      @2
+      (fun (toInt : @2315) =>
+      (x._@.LexLeanRuntime.Portable.#3229831968._hygCtx._hyg.#8 : (toInt_eq : @84
+        ((a._@._internal._hyg.#0 : @48) -> @538)
+        @2
+        @2327
+        @1) ->
+      @86) ->
+      @86))
+@2377 := @84 (@540 @33) @12 @617 @2
+@2378 := LexLeanRuntime.ToMathInt.noConfusionType.{u}
+@2390 := {P : @20} ->
+  {α : @0} ->
+  {t : @544} ->
+  {α' : @0} -> {t' : @544} -> (eq_1 : @107) -> (eq_2 : @2377) -> @2378 @85 @48 @33 @12 @3
+@2394 := @84 @928 @85 @541 @1
+@2396 := @2378 @134 @136
+@2397 := @2396 @86
+@2403 := @128 (fun {α' : @0} => {t' : @544} -> (eq_2 : @2394) -> @2397 @3 @2)
+@2404 := @540 @48
+@2405 := @540 @85
+@2409 := @84 @2405 @48 @2405 @1
+@2415 := @151 @928 @85 (fun {t' : @928} => @2397 @136 @1)
+@2423 := LexLeanRuntime.ToMathInt.casesOn.{u} @86 (fun {t : @928} => @2396 @1 @136 @1) @85
+@2424 := (a._@._internal._hyg.#0 : @86) -> @538
+@2425 := (a._@._internal._hyg.#0 : @136) -> @538
+@2458 := fun {P : @20} =>
+  fun {α : @0} =>
+  fun {t : @544} =>
+  fun {α' : @0} =>
+  fun {t' : @544} =>
+  fun (eq_1 : @107) =>
+  fun (eq_2 : @2377) =>
+  @2403
+    (fun {t' : @2404} =>
+    fun (eq_2 : @2409) =>
+    @2415
+      (@2423
+        (fun (toInt : @2424) =>
+        fun (k : (toInt_eq : @84 @2425 @1 @2425 @1) -> @168) =>
+        @1 (@176 ((a._@._internal._hyg.#0 : @134) -> @538) @2)))
+      @2
+      (@188 @928 @85 @2 @1))
+    @12
+    @2
+    @3
+    @1
+@2462 := @208 @652 (@2316 @2) @2317
+@2463 := (a._@._internal._hyg.#0 : @33) -> @538
+@2468 := (toInt_eq : @84 @2463 @3 @2463 @2) -> @33
+@2474 := {α : @0} ->
+  {P : @20} -> {toInt : @2306} -> {toInt' : @2315} -> (eq : @2462) -> (k : @2468) -> @33
+@2477 := LexLeanRuntime.ToMathInt.noConfusion.{u} @33 @48
+@2478 := @704 @48
+@2479 := @2478 @12
+@2481 := @2477 @2479 @48
+@2482 := @2478 @3
+@2497 := fun {α : @0} =>
+  fun {P : @20} =>
+  fun {toInt : @2306} =>
+  fun {toInt' : @2315} =>
+  fun (eq : @2462) => fun (k : @2468) => @227 (@2481 @2482 @239 (@241 @2404 @2479 @2482 @2) @1)
+@2503 := fun {α : @0} => fun {motive : @2305} => fun (t : @541) => fun (mk : @2319) => @2326 @1 @2
+@2505 := {α : @0} -> [self : @544] -> @2306
+@2508 := fun (α : @0) =>
+  fun [self : @544] => proj LexLeanRuntime.ToMathInt LexLeanRuntime.ToMathInt.toInt 0 @1
+@2510 := (left : @2) -> (right : @3) -> @12
+@2512 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#4042049376._hygCtx._hyg.#3 : @11] -> @2510
+@2521 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#4042049376._hygCtx._hyg.#3 : @11] =>
+  fun (left : @2) => fun (right : @3) => LexLeanRuntime.Appendable.append @12 @3 @2 @1
+@2523 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#1734218043._hygCtx._hyg.#3 : @566] -> @2510
+@2532 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#1734218043._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => LexLeanRuntime.Fixed.bitAnd @12 @3 @2 @1
+@2533 := (value : @2) -> @3
+@2535 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#3083787976._hygCtx._hyg.#3 : @566] -> @2533
+@2542 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3083787976._hygCtx._hyg.#3 : @566] =>
+  fun (value : @2) => LexLeanRuntime.Fixed.bitNot @3 @2 @1
+@2544 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#2068590770._hygCtx._hyg.#3 : @566] -> @2510
+@2553 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2068590770._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => LexLeanRuntime.Fixed.bitOr @12 @3 @2 @1
+@2555 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#489258206._hygCtx._hyg.#3 : @566] -> @2510
+@2564 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#489258206._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => LexLeanRuntime.Fixed.bitXor @12 @3 @2 @1
+@2567 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#3915936177._hygCtx._hyg.#3 : @566] -> (value : @538) -> @273
+@2568 := ite.{1}
+@2569 := @2568 @273
+@2570 := LT.lt.{0}
+@2573 := @2570 @538 Int.instLTInt
+@2574 := @2573 @1
+@2577 := LexLeanRuntime.Fixed.minimum @3 @2
+@2579 := @2569 (@2574 @2577)
+@2580 := Int.decLt
+@2583 := @2579 (@2580 @1 @2577)
+@2584 := Option.none.{0}
+@2585 := @2584 @3
+@2586 := @2583 @2585
+@2589 := LexLeanRuntime.Fixed.maximum @3 @2
+@2596 := @2569 (@2573 @2589 @1) (@2580 @2589 @1) @2585
+@2597 := Option.some.{0}
+@2608 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3915936177._hygCtx._hyg.#3 : @566] =>
+  fun (value : @538) => @2586 (@2596 (@2597 @3 (LexLeanRuntime.Fixed.fromInt @3 @2 @1)))
+@2610 := (left : @2) -> (right : @3) -> @288
+@2612 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#385978793._hygCtx._hyg.#3 : @566] -> @2610
+@2613 := LexLeanRuntime.checkedFromInt
+@2614 := @2613 @12
+@2615 := @2614 @3
+@2616 := HAdd.hAdd.{0, 0, 0}
+@2619 := @2616 @538 @538 @538
+@2620 := instHAdd.{0}
+@2624 := @2619 (@2620 @538 Int.instAdd)
+@2625 := LexLeanRuntime.ToMathInt.toInt
+@2626 := @2625 @12
+@2627 := LexLeanRuntime.Fixed.toToMathInt
+@2630 := @2626 (@2627 @12 @3)
+@2631 := @2630 @2
+@2632 := @2624 @2631
+@2633 := @2630 @1
+@2639 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#385978793._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => @2615 (@2632 @2633)
+@2640 := Int64
+@2641 := @262 @2640
+@2643 := (left : @2640) -> (right : @2640) -> @2641
+@2652 := @2616 @2640 @2640 @2640 (@2620 @2640 instAddInt64) @2 @1
+@2653 := @2568 @2641
+@2654 := @208 @1774
+@2655 := Bool.or
+@2656 := Bool.and
+@2657 := Decidable.decide
+@2660 := @2570 @2640 instLTInt64
+@2661 := OfNat.ofNat.{0}
+@2662 := @2661 @2640
+@2663 := @2662 @62
+@2664 := Int64.instOfNat
+@2666 := @2663 (@2664 @62)
+@2669 := @2657 (@2660 @2666 @2)
+@2670 := Int64.decLt
+@2674 := @2656 (@2669 (@2670 @2666 @2))
+@2675 := @2660 @1
+@2677 := @2657 (@2675 @3)
+@2678 := @2670 @1
+@2680 := @2677 (@2678 @3)
+@2682 := @2655 (@2674 @2680)
+@2684 := @2660 @2 @2666
+@2685 := @2657 @2684
+@2687 := @2670 @2 @2666
+@2688 := @2685 @2687
+@2689 := @2656 @2688
+@2695 := @2657 (@2660 @3 @1) (@2670 @3 @1)
+@2697 := @2682 (@2689 @2695)
+@2698 := @2654 @2697
+@2699 := Bool.true
+@2701 := @2653 (@2698 @2699)
+@2702 := instDecidableEqBool
+@2705 := @2701 (@2702 @2697 @2699)
+@2706 := @2584 @2640
+@2707 := @2705 @2706
+@2708 := @2597 @2640
+@2709 := @2708 @1
+@2713 := fun (left : @2640) => fun (right : @2640) => have value : @2640 := @2652; @2707 @2709
+@2718 := {α : @0} ->
+  {β : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#2373680332._hygCtx._hyg.#4 : @541] ->
+  [inst._@.LexLeanRuntime.Portable.#2373680332._hygCtx._hyg.#7 : @616] -> (value : @12) -> @288
+@2728 := fun {α : @0} =>
+  fun {β : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2373680332._hygCtx._hyg.#4 : @541] =>
+  fun [inst._@.LexLeanRuntime.Portable.#2373680332._hygCtx._hyg.#7 : @616] =>
+  fun (value : @12) => @2614 @2 (@2625 @33 @3 @1)
+@2730 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#1613823734._hygCtx._hyg.#3 : @566] -> @2610
+@2731 := HMul.hMul.{0, 0, 0}
+@2734 := @2731 @538 @538 @538
+@2735 := instHMul.{0}
+@2746 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#1613823734._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => @2615 (@2734 (@2735 @538 Int.instMul) @2631 @2633)
+@2747 := UInt64
+@2748 := @262 @2747
+@2749 := Sort u_1
+@2750 := (x._@.LexLeanRuntime.Portable.#443906790._hygCtx._hyg.#37 : @2748) -> @2749
+@2751 := Unit
+@2752 := @2584 @2747
+@2754 := ("_" : @2751) -> @3 @2752
+@2755 := @2597 @2747
+@2758 := (value : @2747) -> @12 (@2755 @1)
+@2762 := (motive : @2750) ->
+  (x._@.LexLeanRuntime.Portable.#443906790._hygCtx._hyg.#37 : @2748) ->
+  (h_1 : @2754) -> (h_2 : @2758) -> @1817
+@2763 := Option.casesOn.{u_1, 0}
+@2764 := @2763 @2747
+@2765 := @33 @1
+@2768 := @2764 (fun (x : @2748) => @2765) @3
+@2769 := Unit.unit
+@2777 := fun (motive : @2750) =>
+  fun (x._@.LexLeanRuntime.Portable.#443906790._hygCtx._hyg.#37 : @2748) =>
+  fun (h_1 : @2754) =>
+  fun (h_2 : @2758) =>
+  @2768 (@2 @2769) (fun (val._@.LexLeanRuntime.Portable.#443906790._hygCtx._hyg.#55 : @2747) => @51)
+@2778 := (value : @2640) -> @2747
+@2780 := Int64.toUInt64 @1
+@2781 := @2568 @2747
+@2783 := @2781 @2684 @2687
+@2784 := HSub.hSub.{0, 0, 0}
+@2787 := @2784 @2747 @2747 @2747
+@2788 := instHSub.{0}
+@2792 := @2787 (@2788 @2747 instSubUInt64)
+@2793 := @2661 @2747
+@2794 := @2793 @62
+@2795 := UInt64.instOfNat
+@2797 := @2794 (@2795 @62)
+@2799 := @2792 @2797 @1
+@2803 := fun (value : @2640) => have bits : @2747 := @2780; @2783 @2799 @1
+@2808 := (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#14.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#57 : @59) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#15.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#60 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#16.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#63 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#17.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#66 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#18.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#69 : @1774) ->
+  @2749
+@2809 := @2661 @59
+@2810 := @2809 @62
+@2811 := instOfNatNat
+@2813 := @2810 (@2811 @62)
+@2818 := @134 @2813 @12 @3 @2 @1
+@2822 := (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#85 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#84 : @2747) ->
+  (accumulator : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#83 : @1774) -> @2818
+@2823 := Nat.succ
+@2824 := @2823 @33
+@2829 := @177 @2824 @12 @3 @2 @1
+@2834 := (fuel : @59) ->
+  (source : @2747) -> (multiplicand : @2747) -> (accumulator : @2747) -> (negative : @1774) -> @2829
+@2839 := @86 @85 @48 @33 @12 @3
+@2847 := (motive : @2808) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#14.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#57 : @59) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#15.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#60 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#16.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#63 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#17.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#66 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#18.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#69 : @1774) ->
+  (h_1 : @2822) -> (h_2 : @2834) -> @2839
+@2848 := Nat.casesOn.{u_1}
+@2861 := @2848 (fun (x : @59) => @136 @1 @85 @48 @33 @12) @85 (@2 @48 @33 @12 @3)
+@2865 := @51 @85 @48 @33 @12
+@2875 := fun (motive : @2808) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#14.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#57 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#15.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#60 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#16.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#63 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#17.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#66 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#18.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#69 : @1774) =>
+  fun (h_1 : @2822) =>
+  fun (h_2 : @2834) =>
+  @2861 (fun (n._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#227 : @59) => @2865)
+@2876 := Nat.below.{1}
+@2880 := (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) -> @2748
+@2881 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) => @2880
+@2882 := @2876 @2881
+@2883 := @2882 @1
+@2885 := (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) -> (f : @2883) -> @2880
+@2886 := LexLeanRuntime.multiplyMagnitudeInt64.match_1.{1}
+@2907 := @2886
+    (fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#14.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#57 : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#15.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#60 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#16.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#63 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#17.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#66 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#18.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#69 : @1774) =>
+    (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#228 : @2882 @33) -> @2748)
+    @48
+    @12
+    @3
+    @2
+    @1
+    (fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#85 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#84 : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#83 : @1774) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#228 : @2882 @2813) => @2755 @3)
+@2908 := @2882 @2824
+@2909 := Sort 0
+@2910 := LE.le.{0}
+@2913 := @2910 @2747 instLEUInt64
+@2914 := 9223372036854775808
+@2917 := @2793 @2914 (@2795 @2914)
+@2918 := @2913 @2917
+@2919 := @2918 @33
+@2925 := @2781 (@2654 @3 @2699) (@2702 @3 @2699)
+@2926 := @2925 @2917
+@2927 := 9223372036854775807
+@2930 := @2793 @2927 (@2795 @2927)
+@2931 := @2926 @2930
+@2937 := @2781 (@2654 @12 @2699) (@2702 @12 @2699)
+@2938 := 4611686018427387904
+@2941 := @2793 @2938 (@2795 @2938)
+@2942 := @2937 @2941
+@2943 := 4611686018427387903
+@2946 := @2793 @2943 (@2795 @2943)
+@2947 := @2942 @2946
+@2948 := @2568 @2748
+@2951 := @2570 @2747 instLTUInt64
+@2952 := @2951 @1
+@2954 := @2948 (@2952 @48)
+@2955 := UInt64.decLt
+@2956 := @2955 @1
+@2959 := @2954 (@2956 @48) @2752
+@2966 := @2616 @2747 @2747 @2747 (@2620 @2747 instAddUInt64)
+@2968 := @2966 @48 @48
+@2969 := @2948 @12
+@2970 := UInt64.decLe
+@2971 := @2970 @2917
+@2973 := @2969 (@2971 @136)
+@2974 := @2951 @3
+@2976 := @2657 (@2974 @86)
+@2977 := @2955 @3
+@2980 := @2655 (@2976 (@2977 @86))
+@2981 := @2792 @3
+@2982 := @2981 @86
+@2989 := @2980 (@2657 (@2951 @2982 @1) (@2955 @2982 @1))
+@2996 := @2948 (@2654 @2989 @2699) (@2702 @2989 @2699) @2752
+@2997 := proj PProd PProd.fst 0 @33
+@3001 := @2997 (@2966 @136 @136) @86
+@3002 := @2966 @1
+@3029 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) =>
+  fun (f : @2883) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) =>
+  @2907
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (multiplicand : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (negative : @1774) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#228 : @2908) =>
+    let high : @2909 := @2919;
+    let limit : @2747 := @2931;
+    let halfLimit : @2747 := @2947;
+    @2959 (let doubled : @2747 := @2968; @2973 (@2996 (@3001 (@3002 @86) @48)) (@3001 @1 @48)))
+    @33
+@3034 := (a._@._internal._hyg.#0 : @59) ->
+  (a._@._internal._hyg.#0 : @2747) ->
+  (a._@._internal._hyg.#0 : @2747) ->
+  (a._@._internal._hyg.#0 : @2747) -> (a._@._internal._hyg.#0 : @1774) -> @2748
+@3035 := Nat.brecOn.{1}
+@3048 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) =>
+  @3035 @2881 @33 LexLeanRuntime.multiplyMagnitudeInt64._f @12 @3 @2 @1
+@3059 := @2886
+    (fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#14.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#57 : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#15.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#60 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#16.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#63 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#17.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#66 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx.#18.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#69 : @1774) =>
+    @2748)
+    @33
+    @12
+    @3
+    @2
+    @1
+@3060 := @2755 @2
+@3065 := @3059
+    (fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#85 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#84 : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#83 : @1774) => @3060)
+@3066 := @2918 @12
+@3072 := @2781 (@2654 @2 @2699) (@2702 @2 @2699)
+@3074 := @3072 @2917 @2930
+@3076 := @2925 @2941 @2946
+@3081 := @2948 (@2952 @33) (@2956 @33) @2752
+@3083 := @2966 @33 @33
+@3085 := @2969 (@2971 @86)
+@3090 := @2655 (@2657 (@2974 @85) (@2977 @85))
+@3091 := @2981 @85
+@3098 := @3090 (@2657 (@2951 @3091 @1) (@2955 @3091 @1))
+@3105 := @2948 (@2654 @3098 @2699) (@2702 @3098 @2699) @2752
+@3106 := LexLeanRuntime.multiplyMagnitudeInt64
+@3107 := @3106 @136
+@3109 := @2966 @86 @86
+@3111 := @3107 @3109 @85
+@3112 := @3002 @85
+@3119 := @3085 (@3105 (@3111 @3112 @33)) (@3111 @1 @33)
+@3135 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) =>
+  @3065
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (multiplicand : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (negative : @1774) =>
+    let high : @2909 := @3066;
+    let limit : @2747 := @3074;
+    let halfLimit : @2747 := @3076; @3081 (let doubled : @2747 := @3083; @3119))
+@3137 := (negative : @1774) -> (value : @2747) -> @2640
+@3143 := fun (negative : @1774) => fun (value : @2747) => UInt64.toInt64 (@3072 @2799 @1)
+@3145 := bne.{0} @1774
+@3146 := instBEqOfDecidableEq.{0}
+@3155 := @3145 (@3146 @1774 @2702) @2688 (@2657 (@2675 @2666) (@2678 @2666))
+@3158 := LexLeanRuntime.checkedMultiplyInt64.match_1.{1}
+    (fun (x._@.LexLeanRuntime.Portable.#443906790._hygCtx._hyg.#37 : @2748) => @2641)
+@3159 := 64
+@3162 := @2809 @3159 (@2811 @3159)
+@3163 := @3106 @3162
+@3164 := LexLeanRuntime.magnitudeInt64
+@3165 := @3164 @2
+@3166 := @3163 @3165
+@3167 := @3164 @3
+@3173 := @3158 (@3166 @3167 @2797 @1) (fun ("_" : @2751) => @2706)
+@3174 := LexLeanRuntime.signedMagnitudeInt64
+@3182 := fun (left : @2640) =>
+  fun (right : @2640) =>
+  have negative : @1774 := @3155; @3173 (fun (value : @2747) => @2708 (@3174 @2 @1))
+@3185 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#3576376632._hygCtx._hyg.#3 : @566] -> (value : @2) -> @273
+@3187 := @2613 @3 @2
+@3188 := Neg.neg.{0}
+@3191 := @3188 @538 Int.instNegInt
+@3201 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3576376632._hygCtx._hyg.#3 : @566] =>
+  fun (value : @2) => @3187 (@3191 (@2625 @3 (@2627 @3 @2) @1))
+@3202 := (value : @2640) -> @2641
+@3203 := BEq.beq.{0}
+@3208 := @3203 @2640 (@3146 @2640 instDecidableEqInt64)
+@3209 := @3208 @1
+@3212 := @3188 @2640 Int64.instNeg
+@3216 := @3212 (@2662 @2914 (@2664 @2914))
+@3217 := @3209 @3216
+@3228 := fun (value : @2640) =>
+  @2653 (@2654 @3217 @2699) (@2702 @3217 @2699) @2706 (@2708 (@3212 @1))
+@3230 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#3368564382._hygCtx._hyg.#3 : @566] -> @2610
+@3231 := @2568 @288
+@3232 := @780 @2633
+@3233 := @2661 @538
+@3234 := @3233 @62
+@3235 := instOfNat
+@3237 := @3234 (@3235 @62)
+@3239 := @3231 (@3232 @3237)
+@3240 := Int.instDecidableEq
+@3243 := @3239 (@3240 @2633 @3237)
+@3244 := @2584 @12
+@3245 := @3243 @3244
+@3246 := Int.tdiv
+@3254 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3368564382._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) => fun (right : @3) => @3245 (@2615 (@3246 @2631 @2633))
+@3259 := (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#13.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#56 : @59) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#14.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#59 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#15.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#62 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#16.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#65 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#17.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#68 : @2747) ->
+  @2749
+@3263 := (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#84 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#83 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#82 : @2747) -> (quotient : @2747) -> @2818
+@3268 := (fuel : @59) ->
+  (source : @2747) -> (divisor : @2747) -> (remainder : @2747) -> (quotient : @2747) -> @2829
+@3276 := (motive : @3259) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#13.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#56 : @59) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#14.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#59 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#15.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#62 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#16.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#65 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#17.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#68 : @2747) ->
+  (h_1 : @3263) -> (h_2 : @3268) -> @2839
+@3286 := fun (motive : @3259) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#13.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#56 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#14.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#59 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#15.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#62 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#16.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#65 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#17.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#68 : @2747) =>
+  fun (h_1 : @3263) =>
+  fun (h_2 : @3268) =>
+  @2861 (fun (n._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#190 : @59) => @2865)
+@3290 := (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) ->
+  (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) -> @2747
+@3291 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) => @3290
+@3292 := @2876 @3291
+@3293 := @3292 @1
+@3295 := (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) -> (f : @3293) -> @3290
+@3296 := LexLeanRuntime.divideMagnitudeInt64.match_1.{1}
+@3316 := @3296
+    (fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#13.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#56 : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#14.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#59 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#15.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#62 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#16.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#65 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#17.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#68 : @2747) =>
+    (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#191 : @3292 @33) -> @2747)
+    @48
+    @12
+    @3
+    @2
+    @1
+    (fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#84 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#83 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#82 : @2747) =>
+    fun (quotient : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#191 : @3292 @2813) => @2)
+@3317 := @3292 @2824
+@3318 := @2966 @3083
+@3319 := @2781 @2
+@3321 := @3319 (@2971 @85)
+@3322 := 1
+@3325 := @2793 @3322 (@2795 @3322)
+@3328 := @3318 (@3321 @3325 @2797)
+@3334 := @2781 (@2913 @86 @2) (@2970 @86 @2)
+@3336 := @2997 @3 @86
+@3337 := @2792 @2
+@3339 := @3336 (@3337 @86)
+@3340 := @3002 @3325
+@3363 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) =>
+  fun (f : @3293) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) =>
+  @3316
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (divisor : @2747) =>
+    fun (remainder : @2747) =>
+    fun (quotient : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#191 : @3317) =>
+    let high : @2909 := @2919;
+    let source : @2747 := @2968;
+    let remainder : @2747 := @3328;
+    let quotient : @2747 := @3083; @3334 (@3339 @3340) (@3336 @2 @1))
+    @33
+@3368 := (a._@._internal._hyg.#0 : @59) ->
+  (a._@._internal._hyg.#0 : @2747) ->
+  (a._@._internal._hyg.#0 : @2747) ->
+  (a._@._internal._hyg.#0 : @2747) -> (a._@._internal._hyg.#0 : @2747) -> @2747
+@3381 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) =>
+  @3035 @3291 @33 LexLeanRuntime.divideMagnitudeInt64._f @12 @3 @2 @1
+@3392 := @3296
+    (fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#13.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#56 : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#14.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#59 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#15.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#62 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#16.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#65 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx.#17.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#68 : @2747) =>
+    @2747)
+    @33
+    @12
+    @3
+    @2
+    @1
+@3397 := @3392
+    (fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#84 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#83 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#82 : @2747) =>
+    fun (quotient : @2747) => @1)
+@3399 := @2966 @12 @12
+@3405 := @2966 @3399 (@3319 (@2971 @48) @3325 @2797)
+@3411 := @2781 (@2913 @85 @2) (@2970 @85 @2)
+@3412 := LexLeanRuntime.divideMagnitudeInt64
+@3415 := @3412 @136 @3 @85
+@3416 := @3337 @85
+@3422 := @3411 (@3415 @3416 @3340) (@3415 @2 @1)
+@3437 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) =>
+  @3397
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (divisor : @2747) =>
+    fun (remainder : @2747) =>
+    fun (quotient : @2747) =>
+    let high : @2909 := @3066;
+    let source : @2747 := @3083;
+    let remainder : @2747 := @3405; let quotient : @2747 := @3399; @3422)
+@3438 := @3209 @2666
+@3445 := @2653 (@2654 @3438 @2699) (@2702 @3438 @2699) @2706
+@3454 := @2656 (@3208 @2 @3216) (@3209 (@3212 (@2662 @3322 (@2664 @3322))))
+@3474 := fun (left : @2640) =>
+  fun (right : @2640) =>
+  @3445
+    (@2653
+      (@2654 @3454 @2699)
+      (@2702 @3454 @2699)
+      @2706
+      (have negative : @1774 := @3155; @2708 (@3174 @1 (@3412 @3162 @3167 @3165 @2797 @2797))))
+@3476 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#3886186820._hygCtx._hyg.#3 : @566] -> @2610
+@3490 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3886186820._hygCtx._hyg.#3 : @566] =>
+  fun (left : @2) =>
+  fun (right : @3) => @2615 (@2784 @538 @538 @538 (@2788 @538 Int.instSub) @2631 @2633)
+@3499 := @2784 @2640 @2640 @2640 (@2788 @2640 instSubInt64) @2 @1
+@3503 := @2655 (@2674 @2695) (@2689 @2680)
+@3514 := fun (left : @2640) =>
+  fun (right : @2640) =>
+  have value : @2640 := @3499; @2653 (@2654 @3503 @2699) (@2702 @3503 @2699) @2706 @2709
+@3515 := ByteArray
+@3518 := (left : @3515) -> (right : @3515) -> Ordering
+@3519 := Ord.compare.{0}
+@3520 := List.{0}
+@3521 := UInt8
+@3528 := @3519 (@3520 @3521) (List.instOrd.{0} @3521 UInt8.instOrd)
+@3529 := ByteArray.toList
+@3535 := fun (left : @3515) => fun (right : @3515) => @3528 (@3529 @2) (@3529 @1)
+@3558 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) =>
+  annot [sunfoldMatch := bool true]
+  (@3392
+    (fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#84 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#83 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#82 : @2747) =>
+    fun (quotient : @2747) => annot [sunfoldMatchAlt := bool true] @1)
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (divisor : @2747) =>
+    fun (remainder : @2747) =>
+    fun (quotient : @2747) =>
+    annot [sunfoldMatchAlt := bool true]
+    (let high : @2909 := @3066;
+    have source : @2747 := @3083;
+    have remainder : @2747 := @3405; have quotient : @2747 := @3399; @3422)))
+@3562 := LexLeanRuntime.divideMagnitudeInt64._unsafe_rec @136 @3 @85
+@3583 := fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#13 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#14 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#957775566._hygCtx._hyg.#17 : @2747) =>
+  @3397
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (divisor : @2747) =>
+    fun (remainder : @2747) =>
+    fun (quotient : @2747) =>
+    let high : @2909 := @3066;
+    let source : @2747 := @3083;
+    let remainder : @2747 := @3405;
+    let quotient : @2747 := @3399; @3411 (@3562 @3416 @3340) (@3562 @2 @1))
+@3585 := BEq.{0} @1
+@3589 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#1212145906._hygCtx._hyg.#3 : @3585] ->
+  (left : @2) -> (right : @3) -> @1774
+@3597 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#1212145906._hygCtx._hyg.#3 : @3585] =>
+  fun (left : @2) => fun (right : @3) => @3203 @12 @3 @2 @1
+@3600 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @271] -> (value : @2) -> @261
+@3607 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @271] =>
+  fun (value : @2) => LexLeanRuntime.Decimal.format @3 @2 @1
+@3612 := {α : @0} ->
+  {β : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#3407831578._hygCtx._hyg.#4 : @1253] ->
+  (value : @3) -> (offset : @59) -> @288
+@3623 := fun {α : @0} =>
+  fun {β : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3407831578._hygCtx._hyg.#4 : @1253] =>
+  fun (value : @3) => fun (offset : @59) => LexLeanRuntime.Indexable.index @33 @12 @3 @2 @1
+@3624 := @6 @3515
+@3627 := @22 @3515 ByteArray.append
+@3628 := @3520 @1
+@3630 := {α : @0} -> @6 @3628
+@3635 := fun {α : @0} => @22 @3628 (List.append.{0} @1)
+@3636 := @262 @538
+@3637 := (x._@.LexLeanRuntime.Portable.#1501779435._hygCtx._hyg.#13 : @3636) -> @2749
+@3639 := @2597 @538 @1
+@3641 := (parsed : @538) -> @3 @3639
+@3642 := @2584 @538
+@3644 := ("_" : @2751) -> @12 @3642
+@3648 := (motive : @3637) ->
+  (x._@.LexLeanRuntime.Portable.#1501779435._hygCtx._hyg.#13 : @3636) ->
+  (h_1 : @3641) -> (h_2 : @3644) -> @1817
+@3660 := fun (motive : @3637) =>
+  fun (x._@.LexLeanRuntime.Portable.#1501779435._hygCtx._hyg.#13 : @3636) =>
+  fun (h_1 : @3641) =>
+  fun (h_2 : @3644) =>
+  @2763
+    @538
+    (fun (x : @3636) => @2765)
+    @3
+    (@1 @2769)
+    (fun (val._@.LexLeanRuntime.Portable.#1501779435._hygCtx._hyg.#40 : @538) => @28)
+@3661 := @266 @538
+@3662 := @276 @538
+@3663 := LexLeanRuntime.instDecimalInt.match_1.{1}
+@3665 := @3663 (fun (x._@.LexLeanRuntime.Portable.#1501779435._hygCtx._hyg.#13 : @3636) => @3636)
+@3667 := String.toInt? @1
+@3668 := @3665 @3667
+@3669 := @2568 @3636
+@3670 := @208 @261
+@3671 := ToString.toString.{0}
+@3674 := @3671 @538 instToStringInt
+@3675 := @3674 @1
+@3677 := @3670 @3675 @2
+@3678 := @3669 @3677
+@3681 := instDecidableEqString @3675 @2
+@3691 := @3662
+    (fun (value : @261) =>
+    @3668 (fun (parsed : @538) => @3678 @3681 @3639 @3642) (fun ("_" : @2751) => @3642))
+    @3674
+@3693 := ToString.{0} @2
+@3696 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#3633157058._hygCtx._hyg.#3 : @566] ->
+  [inst._@.LexLeanRuntime.Portable.#3633157058._hygCtx._hyg.#6 : @3693] -> @267
+@3699 := @3663
+    (fun (x._@.LexLeanRuntime.Portable.#3633157058._hygCtx._hyg.#20 : @3636) => @304)
+    @3667
+@3706 := @2568 @304 @3677 @3681 (@2613 @33 @12 @1)
+@3707 := @2584 @33
+@3720 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3633157058._hygCtx._hyg.#3 : @566] =>
+  fun [inst._@.LexLeanRuntime.Portable.#3633157058._hygCtx._hyg.#6 : @3693] =>
+  @325
+    (fun (value : @261) => @3699 (fun (parsed : @538) => @3706 @3707) (fun ("_" : @2751) => @3707))
+    (@3671 @3 @1)
+@3721 := Int16
+@3722 := @553 @3721
+@3729 := @588 @3721 (@704 @3721 Int16.toInt) Int16.ofInt
+@3730 := 32768
+@3735 := @3729 (@3191 (@3233 @3730 (@3235 @3730)))
+@3736 := 32767
+@3748 := @3735 (@3233 @3736 (@3235 @3736)) Int16.land Int16.lor Int16.xor Int16.complement
+@3750 := @2568 (@262 @3721)
+@3753 := @2570 @59 instLTNat
+@3754 := UInt32.toNat
+@3755 := @3754 @1
+@3756 := @3753 @3755
+@3757 := 16
+@3760 := @2809 @3757 (@2811 @3757)
+@3761 := @3756 @3760
+@3762 := @3750 @3761
+@3763 := Nat.decLt
+@3764 := @3763 @3755
+@3765 := @3764 @3760
+@3766 := @3762 @3765
+@3767 := @2597 @3721
+@3769 := Int16.shiftLeft @2
+@3771 := Int16.ofNat @3755
+@3774 := @3766 (@3767 (@3769 @3771))
+@3775 := @2584 @3721
+@3788 := @3748
+    (fun (value : @3721) => fun (amount : @548) => @3774 @3775)
+    (fun (value : @3721) => fun (amount : @548) => @3766 (@3767 (Int16.shiftRight @2 @3771)) @3775)
+@3789 := Int32
+@3790 := @553 @3789
+@3797 := @588 @3789 (@704 @3789 Int32.toInt) Int32.ofInt
+@3798 := 2147483648
+@3803 := @3797 (@3191 (@3233 @3798 (@3235 @3798)))
+@3804 := 2147483647
+@3816 := @3803 (@3233 @3804 (@3235 @3804)) Int32.land Int32.lor Int32.xor Int32.complement
+@3818 := @2568 (@262 @3789)
+@3819 := 32
+@3822 := @2809 @3819 (@2811 @3819)
+@3823 := @3756 @3822
+@3824 := @3818 @3823
+@3825 := @3764 @3822
+@3826 := @3824 @3825
+@3827 := @2597 @3789
+@3829 := Int32.shiftLeft @2
+@3831 := Int32.ofNat @3755
+@3834 := @3826 (@3827 (@3829 @3831))
+@3835 := @2584 @3789
+@3848 := @3816
+    (fun (value : @3789) => fun (amount : @548) => @3834 @3835)
+    (fun (value : @3789) => fun (amount : @548) => @3826 (@3827 (Int32.shiftRight @2 @3831)) @3835)
+@3849 := @553 @2640
+@3873 := @588
+    @2640
+    (@704 @2640 Int64.toInt)
+    Int64.ofInt
+    (@3191 (@3233 @2914 (@3235 @2914)))
+    (@3233 @2927 (@3235 @2927))
+    Int64.land
+    Int64.lor
+    Int64.xor
+    Int64.complement
+@3874 := @3756 @3162
+@3875 := @2653 @3874
+@3876 := @3764 @3162
+@3877 := @3875 @3876
+@3879 := Int64.shiftLeft @2
+@3881 := Int64.ofNat @3755
+@3897 := @3873
+    (fun (value : @2640) => fun (amount : @548) => @3877 (@2708 (@3879 @3881)) @2706)
+    (fun (value : @2640) => fun (amount : @548) => @3877 (@2708 (Int64.shiftRight @2 @3881)) @2706)
+@3898 := Int8
+@3899 := @553 @3898
+@3906 := @588 @3898 (@704 @3898 Int8.toInt) Int8.ofInt
+@3907 := 128
+@3912 := @3906 (@3191 (@3233 @3907 (@3235 @3907)))
+@3913 := 127
+@3925 := @3912 (@3233 @3913 (@3235 @3913)) Int8.land Int8.lor Int8.xor Int8.complement
+@3927 := @2568 (@262 @3898)
+@3928 := 8
+@3931 := @2809 @3928 (@2811 @3928)
+@3932 := @3756 @3931
+@3933 := @3927 @3932
+@3934 := @3764 @3931
+@3935 := @3933 @3934
+@3936 := @2597 @3898
+@3938 := Int8.shiftLeft @2
+@3940 := Int8.ofNat @3755
+@3943 := @3935 (@3936 (@3938 @3940))
+@3944 := @2584 @3898
+@3957 := @3925
+    (fun (value : @3898) => fun (amount : @548) => @3943 @3944)
+    (fun (value : @3898) => fun (amount : @548) => @3935 (@3936 (Int8.shiftRight @2 @3940)) @3944)
+@3958 := UInt16
+@3959 := @553 @3958
+@3960 := @588 @3958
+@3961 := @704 @3958
+@3962 := Int.ofNat
+@3971 := @3960 (@3961 (fun (value : @3958) => @3962 (UInt16.toNat @1))) UInt16.ofInt @3237
+@3972 := 65535
+@3984 := @3971 (@3233 @3972 (@3235 @3972)) UInt16.land UInt16.lor UInt16.xor UInt16.complement
+@3988 := @2568 (@262 @3958) @3761 @3765
+@3989 := @2597 @3958
+@3991 := UInt16.shiftLeft @2
+@3993 := UInt16.ofNat @3755
+@3996 := @3988 (@3989 (@3991 @3993))
+@3997 := @2584 @3958
+@4010 := @3984
+    (fun (value : @3958) => fun (amount : @548) => @3996 @3997)
+    (fun (value : @3958) => fun (amount : @548) => @3988 (@3989 (UInt16.shiftRight @2 @3993)) @3997)
+@4011 := @553 @548
+@4020 := @588 @548 (@704 @548 (fun (value : @548) => @3962 @3755)) UInt32.ofInt @3237
+@4021 := 4294967295
+@4033 := @4020 (@3233 @4021 (@3235 @4021)) UInt32.land UInt32.lor UInt32.xor UInt32.complement
+@4037 := @2568 (@262 @548) @3823 @3825
+@4038 := @2597 @548
+@4043 := @4037 (@4038 (UInt32.shiftLeft @2 @1))
+@4044 := @2584 @548
+@4057 := @4033
+    (fun (value : @548) => fun (amount : @548) => @4043 @4044)
+    (fun (value : @548) => fun (amount : @548) => @4037 (@4038 (UInt32.shiftRight @2 @1)) @4044)
+@4058 := @553 @2747
+@4069 := @588 @2747 (@704 @2747 (fun (value : @2747) => @3962 (UInt64.toNat @1))) UInt64.ofInt @3237
+@4070 := 18446744073709551615
+@4082 := @4069 (@3233 @4070 (@3235 @4070)) UInt64.land UInt64.lor UInt64.xor UInt64.complement
+@4084 := @2948 @3874 @3876
+@4086 := UInt64.shiftLeft @2
+@4088 := UInt64.ofNat @3755
+@4104 := @4082
+    (fun (value : @2747) => fun (amount : @548) => @4084 (@2755 (@4086 @4088)) @2752)
+    (fun (value : @2747) => fun (amount : @548) => @4084 (@2755 (UInt64.shiftRight @2 @4088)) @2752)
+@4105 := @553 @3521
+@4116 := @588 @3521 (@704 @3521 (fun (value : @3521) => @3962 (UInt8.toNat @1))) UInt8.ofInt @3237
+@4117 := 255
+@4129 := @4116 (@3233 @4117 (@3235 @4117)) UInt8.land UInt8.lor UInt8.xor UInt8.complement
+@4133 := @2568 (@262 @3521) @3932 @3934
+@4134 := @2597 @3521
+@4136 := UInt8.shiftLeft @2
+@4138 := UInt8.ofNat @3755
+@4141 := @4133 (@4134 (@4136 @4138))
+@4142 := @2584 @3521
+@4155 := @4129
+    (fun (value : @3521) => fun (amount : @548) => @4141 @4142)
+    (fun (value : @3521) => fun (amount : @548) => @4133 (@4134 (UInt8.shiftRight @2 @4138)) @4142)
+@4157 := @1244 @3515 @3521
+@4159 := @1257 @3515 @3521
+@4160 := GetElem?.getElem?.{0, 0, 0}
+@4162 := Array.{0} @3521
+@4183 := @4159
+    (fun (value : @3515) =>
+    fun (offset : @59) =>
+    @4160
+      @4162
+      @59
+      @3521
+      (fun (xs : @4162) => fun (i : @59) => @3753 @1 (Array.size.{0} @3521 @2))
+      (Array.instGetElem?NatLtSize.{0} @3521)
+      (ByteArray.data @2)
+      @1)
+@4185 := (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#10.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#29 : @3628) ->
+  (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#11.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#32 : @59) ->
+  @2749
+@4186 := @3520 @2
+@4188 := List.nil.{0} @33
+@4191 := (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#43 : @59) -> @12 @4188 @1
+@4192 := @3520 @48
+@4193 := List.cons.{0}
+@4194 := @4193 @85
+@4200 := (head : @33) ->
+  (tail._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#57 : @4192) -> @48 (@4194 @2 @1) @2813
+@4201 := @3520 @85
+@4210 := (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#76 : @48) ->
+  (tail : @4201) -> (index : @59) -> @86 (@4193 @136 @3 @2) (@2823 @1)
+@4219 := {α : @0} ->
+  (motive : @4185) ->
+  (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#10.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#29 : @4186) ->
+  (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#11.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#32 : @59) ->
+  (h_1 : @4191) -> (h_2 : @4200) -> (h_3 : @4210) -> @48 @33 @12
+@4252 := fun {α : @0} =>
+  fun (motive : @4185) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#10.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#29 : @4186) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#11.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#32 : @59) =>
+  fun (h_1 : @4191) =>
+  fun (h_2 : @4200) =>
+  fun (h_3 : @4210) =>
+  List.casesOn.{u_1, 0}
+    @85
+    (fun (x : @4201) => @85 @1 @33)
+    @33
+    (@3 @12)
+    (fun (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#88 : @85) =>
+    fun (tail._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#89 : @3520 @86) =>
+    @2848
+      (fun (x : @59) => @136 (@4193 @134 @3 @2) @1)
+      @48
+      (@12 @2 @1)
+      (fun (n._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#90 : @59) => @1819))
+@4253 := List.below.{1, 0}
+@4254 := @4253 @2
+@4255 := (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) -> @288
+@4258 := @4254 (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @4186) => @4255) @1
+@4261 := {α : @0} ->
+  (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) -> (f : @4258) -> @4255
+@4262 := LexLeanRuntime.listIndex.match_1.{1}
+@4263 := @4262 @12
+@4264 := @3520 @12
+@4268 := @4253
+    @48
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @4192) =>
+    (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) -> @477)
+@4275 := @4263
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#10.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#29 : @4264) =>
+    fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#11.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#32 : @59) =>
+    (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#91 : @4268 @2) -> @346)
+    @3
+    @1
+@4276 := @4253 @33
+@4277 := @3520 @33
+@4314 := fun {α : @0} =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) =>
+  fun (f : @4258) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) =>
+  @4275
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#43 : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#91 : @4276
+      (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @4277) =>
+      (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) -> @346)
+      @4188) =>
+    @2584 @48)
+    (fun (head : @12) =>
+    fun (tail._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#57 : @4277) =>
+    fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#91 : @4268 (@4193 @48 @2 @1)) =>
+    @2597 @85 @3)
+    (fun (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#76 : @12) =>
+    fun (tail : @4277) =>
+    fun (index : @59) =>
+    fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#91 : @4253
+      @85
+      (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @4201) =>
+      (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) -> @342)
+      (@4194 @3 @2)) =>
+    (proj PProd PProd.fst 0 @1) @2)
+    @2
+@4316 := {α : @0} -> (a._@._internal._hyg.#0 : @3628) -> @1242
+@4318 := List.brecOn.{1, 0} @3
+@4319 := @3520 @3
+@4330 := fun {α : @0} =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) =>
+  @4318
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @4319) =>
+    (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) -> @304)
+    @2
+    (LexLeanRuntime.listIndex._f @3)
+    @1
+@4336 := @4262
+    @3
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#10.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#29 : @4319) =>
+    fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx.#11.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#32 : @59) =>
+    @304)
+    @2
+    @1
+@4338 := @4336 (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#43 : @59) => @3244)
+@4340 := @2597 @33 @2
+@4343 := @4338
+    (fun (head : @3) =>
+    fun (tail._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#57 : @4264) => @4340)
+@4344 := LexLeanRuntime.listIndex
+@4347 := @4344 @48 @2 @1
+@4354 := fun {α : @0} =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) =>
+  @4343
+    (fun (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#76 : @3) =>
+    fun (tail : @4264) => fun (index : @59) => @4347)
+@4357 := {α : @0} -> @1244 @3628 @1
+@4362 := fun {α : @0} => @1257 @3628 @1 (@4344 @1)
+@4363 := @1561 @3515
+@4364 := @1568 @3515
+@4365 := ByteArray.size
+@4366 := @4364 @4365
+@4368 := {α : @0} -> @1561 @3628
+@4369 := @1568 @3628
+@4370 := List.length.{0}
+@4373 := fun {α : @0} => @4369 (@4370 @1)
+@4374 := @1561 @261
+@4377 := @1568 @261 String.length
+@4378 := @1776 @538
+@4390 := @1785 @538 @3246 Int.tmod (fun (value : @538) => @3203 @538 (@3146 @538 @3240) @1 @3237)
+@4391 := @1776 @59
+@4405 := @1785
+    @59
+    Nat.div
+    Nat.mod
+    (fun (value : @59) => @3203 @59 (@3146 @59 instDecidableEqNat) @1 @2813)
+@4406 := @2080 @3515
+@4407 := @2088 @3515
+@4409 := @2568 (@262 @3515)
+@4412 := @2910 @59 instLENat
+@4421 := @2616 @59 @59 @59 (@2620 @59 instAddNat) @2 @1
+@4422 := @4412 @4421
+@4423 := @4365 @3
+@4425 := @4409 (@4422 @4423)
+@4427 := Nat.decLe @4421
+@4442 := @4407
+    (fun (value : @3515) =>
+    fun (start : @59) =>
+    fun (count : @59) =>
+    @4425 (@4427 @4423) (@2597 @3515 (ByteArray.extract @3 @2 @4421)) (@2584 @3515))
+@4444 := {α : @0} -> @2080 @3628
+@4445 := @2088 @3628
+@4447 := @2568 (@262 @4264)
+@4449 := @4370 @12 @3
+@4471 := fun {α : @0} =>
+  @4445
+    (fun (value : @3628) =>
+    fun (start : @59) =>
+    fun (count : @59) =>
+    @4447
+      (@4422 @4449)
+      (@4427 @4449)
+      (@2597 @4264 (List.take.{0} @12 @1 (List.drop.{0} @12 @2 @3)))
+      (@2584 @4264))
+@4472 := @540 @538
+@4475 := @704 @538 (fun (value : @538) => @1)
+@4476 := @3520 @261
+@4478 := (values : @4476) -> (delimiter : @261) -> @261
+@4483 := fun (values : @4476) => fun (delimiter : @261) => String.intercalate @1 @2
+@4486 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#210037673._hygCtx._hyg.#3 : @1565] -> (value : @2) -> @59
+@4493 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#210037673._hygCtx._hyg.#3 : @1565] =>
+  fun (value : @2) => LexLeanRuntime.Lengthable.length @3 @2 @1
+@4509 := fun {α : @0} =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) =>
+  annot [sunfoldMatch := bool true]
+  (@4336
+    (fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#43 : @59) =>
+    annot [sunfoldMatchAlt := bool true] @3244)
+    (fun (head : @3) =>
+    fun (tail._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#57 : @4264) =>
+    annot [sunfoldMatchAlt := bool true] @4340)
+    (fun (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#76 : @3) =>
+    fun (tail : @4264) => fun (index : @59) => annot [sunfoldMatchAlt := bool true] @4347))
+@4520 := fun {α : @0} =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#10 : @3628) =>
+  fun (x._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#11 : @59) =>
+  @4343
+    (fun (head._@.LexLeanRuntime.Portable.#2784266133._hygCtx._hyg.#76 : @3) =>
+    fun (tail : @4264) => fun (index : @59) => LexLeanRuntime.listIndex._unsafe_rec @48 @2 @1)
+@4522 := Mul.{0} @1
+@4524 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#2570481935._hygCtx._hyg.#3 : @4522] -> @2510
+@4536 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2570481935._hygCtx._hyg.#3 : @4522] =>
+  fun (left : @2) => fun (right : @3) => @2731 @12 @12 @12 (@2735 @12 @3) @2 @1
+@4560 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) =>
+  annot [sunfoldMatch := bool true]
+  (@3059
+    (fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#85 : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#84 : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#83 : @1774) =>
+    annot [sunfoldMatchAlt := bool true] @3060)
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (multiplicand : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (negative : @1774) =>
+    annot [sunfoldMatchAlt := bool true]
+    (let high : @2909 := @3066;
+    have limit : @2747 := @3074;
+    have halfLimit : @2747 := @3076; @3081 (have doubled : @2747 := @3083; @3119))))
+@4564 := LexLeanRuntime.multiplyMagnitudeInt64._unsafe_rec @136 @3109 @85
+@4587 := fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#15 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#16 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#17 : @2747) =>
+  fun (x._@.LexLeanRuntime.Portable.#3599286266._hygCtx._hyg.#18 : @1774) =>
+  @3065
+    (fun (fuel : @59) =>
+    fun (source : @2747) =>
+    fun (multiplicand : @2747) =>
+    fun (accumulator : @2747) =>
+    fun (negative : @1774) =>
+    let high : @2909 := @3066;
+    let limit : @2747 := @3074;
+    let halfLimit : @2747 := @3076;
+    @3081 (let doubled : @2747 := @3083; @3085 (@3105 (@4564 @3112 @33)) (@4564 @1 @33)))
+@4589 := Neg.{0} @1
+@4591 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#778658725._hygCtx._hyg.#3 : @4589] -> @2533
+@4597 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#778658725._hygCtx._hyg.#3 : @4589] =>
+  fun (value : @2) => @3188 @3 @2 @1
+@4600 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#3035123439._hygCtx._hyg.#3 : @271] -> (value : @261) -> @273
+@4607 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#3035123439._hygCtx._hyg.#3 : @271] =>
+  fun (value : @261) => LexLeanRuntime.Decimal.parse @3 @2 @1
+@4610 := (left : @2) -> (right : @3) -> (zeroCase : @12) -> @33
+@4612 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#2403509443._hygCtx._hyg.#3 : @1782] -> @4610
+@4613 := @2568 @33
+@4617 := LexLeanRuntime.Quotient.isZero @33 @12 @2
+@4624 := @4613 (@2654 @4617 @2699) (@2702 @4617 @2699) @1
+@4635 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2403509443._hygCtx._hyg.#3 : @1782] =>
+  fun (left : @2) =>
+  fun (right : @3) => fun (zeroCase : @12) => @4624 (LexLeanRuntime.Quotient.quotient @33 @12 @3 @2)
+@4637 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#2801245371._hygCtx._hyg.#3 : @1782] -> @4610
+@4648 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2801245371._hygCtx._hyg.#3 : @1782] =>
+  fun (left : @2) =>
+  fun (right : @3) =>
+  fun (zeroCase : @12) => @4624 (LexLeanRuntime.Quotient.remainder @33 @12 @3 @2)
+@4650 := (value : @2) -> (amount : @548) -> @288
+@4652 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#2402918556._hygCtx._hyg.#3 : @566] -> @4650
+@4661 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2402918556._hygCtx._hyg.#3 : @566] =>
+  fun (value : @2) => fun (amount : @548) => LexLeanRuntime.Fixed.shiftLeft @12 @3 @2 @1
+@4663 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#825848865._hygCtx._hyg.#3 : @566] -> @4650
+@4672 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#825848865._hygCtx._hyg.#3 : @566] =>
+  fun (value : @2) => fun (amount : @548) => LexLeanRuntime.Fixed.shiftRight @12 @3 @2 @1
+@4677 := {α : @0} ->
+  [inst._@.LexLeanRuntime.Portable.#2537723928._hygCtx._hyg.#3 : @2084] ->
+  (value : @2) -> (start : @59) -> (count : @59) -> @304
+@4688 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#2537723928._hygCtx._hyg.#3 : @2084] =>
+  fun (value : @2) =>
+  fun (start : @59) => fun (count : @59) => LexLeanRuntime.Sliceable.slice @33 @12 @3 @2 @1
+@4689 := @262 @4476
+@4692 := (value : @261) -> (delimiter : @261) -> (maximum : @548) -> @4689
+@4695 := String.splitOn @3 @2
+@4696 := @2568 @4689
+@4699 := @2655 (String.isEmpty @3)
+@4700 := @3754 @2
+@4701 := @3753 @4700
+@4703 := @4370 @261 @1
+@4709 := @4699 (@2657 (@4701 @4703) (@3763 @4700 @4703))
+@4724 := fun (value : @261) =>
+  fun (delimiter : @261) =>
+  fun (maximum : @548) =>
+  have fields : @4476 := @4695;
+  @4696 (@2654 @4709 @2699) (@2702 @4709 @2699) (@2584 @4476) (@2597 @4476 @1)
+@4726 := Sub.{0} @1
+@4728 := {α : @0} -> [inst._@.LexLeanRuntime.Portable.#739024333._hygCtx._hyg.#3 : @4726] -> @2510
+@4740 := fun {α : @0} =>
+  fun [inst._@.LexLeanRuntime.Portable.#739024333._hygCtx._hyg.#3 : @4726] =>
+  fun (left : @2) => fun (right : @3) => @2784 @12 @12 @12 (@2788 @12 @3) @2 @1
+@4742 := (value : @3515) -> @262 @261
+@4745 := fun (value : @3515) => String.fromUTF8? @1
+@4746 := (value : @261) -> @3515
+@4749 := fun (value : @261) => String.toUTF8 @1
+\end{coremodule}
+\end{lexlean}

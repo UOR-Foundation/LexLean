@@ -12,7 +12,7 @@
 # version disagree.
 
 spec = "lexlean/oracle-overlap/1"
-version = 1
+version = 2
 
 [[construct]]
 key = "type.type"
@@ -54,9 +54,9 @@ reason = "A function-typed parameter reaches the oracle as a type expression it 
 key = "type.reasoning_failure"
 kind = "oracle-refuses"
 probe = "Reasoning.Main.gradeLevel"
-refusal = "opaque-lowering"
+refusal = "unresolved-external-call"
 scope = "closure"
-reason = "Only reasoner closures realize it, and the oracle refuses the reasoners' generic transition functions (opaque lowering); the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
+reason = "Only reasoner closures realize it, and the oracle refuses the reasoners as unresolved external calls: they iterate with definitions of the runtime module a generated module imports (§17.12), which the oracle's exporter does not follow; the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
 
 [[construct]]
 key = "term.eq"
@@ -152,65 +152,57 @@ reason = "Checked conversions between widths go through LexLeanRuntime.Fixed, a 
 key = "primitive.map_insert"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapInsert.mapInsertRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_remove"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapRemove.mapRemoveRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_lookup"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapLookup.mapLookupRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_contains"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapContains.mapContainsRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_size"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapSize.mapSizeRoot"
-refusal = "opaque-lowering"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_keys"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapKeys.mapKeysRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_values"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeMapValues.mapValuesRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
-
-[[construct]]
-key = "primitive.map_entries"
-kind = "oracle-refuses"
-probe = "OracleProbe.ProbeMapEntries.mapEntriesRoot"
-refusal = "opaque-lowering"
-scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.map_fold"
@@ -224,65 +216,57 @@ reason = "LexLean realizes maps, sets, and graphs as ordered lists through the c
 key = "primitive.set_insert"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetInsert.setInsertRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_remove"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetRemove.setRemoveRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_contains"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetContains.setContainsRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_size"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetSize.setSizeRoot"
-refusal = "opaque-lowering"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
-
-[[construct]]
-key = "primitive.set_elements"
-kind = "oracle-refuses"
-probe = "OracleProbe.ProbeSetElements.setElementsRoot"
-refusal = "opaque-lowering"
-scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_union"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetUnion.setUnionRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_intersection"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetIntersection.setIntersectionRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_difference"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeSetDifference.setDifferenceRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.set_fold"
@@ -320,25 +304,25 @@ reason = "LexLean realizes folds and bounded iteration through higher-order func
 key = "primitive.graph_successors"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeGraphSuccessors.successorsRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.graph_reachable"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeGraphReachable.reachableRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.graph_topological"
 kind = "oracle-refuses"
 probe = "OracleProbe.ProbeGraphTopological.topologicalRoot"
-refusal = "escaping-local-function"
+refusal = "unresolved-external-call"
 scope = "construct"
-reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14 (key-order dictionaries, folds, search), which Lean compiles to local functions that escape or to polymorphic accessors; the oracle's domain contains neither."
+reason = "LexLean realizes maps, sets, and graphs as ordered lists through the collection templates of §17.14, whose Lean is the runtime module LexLeanRuntime.Collections a generated module imports (§17.12); the oracle's exporter does not follow a call into another module, so a template Lean's compiler keeps a call is unresolved there."
 
 [[construct]]
 key = "primitive.less_than"
@@ -392,9 +376,9 @@ reason = "Proof- or specification-only: LexLean erases it (registry disposition 
 key = "declaration.inference_rule"
 kind = "oracle-refuses"
 probe = "Reasoning.Main.gradeLevel"
-refusal = "opaque-lowering"
+refusal = "unresolved-external-call"
 scope = "closure"
-reason = "Reasoner closures hold generic transition functions the oracle refuses (opaque lowering); the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
+reason = "Reasoner closures iterate with definitions of the runtime module a generated module imports (§17.12), which the oracle's exporter does not follow, so the oracle refuses them as unresolved external calls; the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
 
 [[construct]]
 key = "declaration.verifier"
@@ -406,6 +390,6 @@ reason = "Proof- or specification-only: LexLean erases it (registry disposition 
 key = "declaration.reasoner"
 kind = "oracle-refuses"
 probe = "Reasoning.Main.gradeLevel"
-refusal = "opaque-lowering"
+refusal = "unresolved-external-call"
 scope = "closure"
-reason = "Reasoner closures hold generic transition functions the oracle refuses (opaque lowering); the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
+reason = "Reasoner closures iterate with definitions of the runtime module a generated module imports (§17.12), which the oracle's exporter does not follow, so the oracle refuses them as unresolved external calls; the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."

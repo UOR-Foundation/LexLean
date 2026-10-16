@@ -2402,6 +2402,78 @@ fn print_param(
 // Probe and audit modules
 // ---------------------------------------------------------------------------
 
+/// A module that verification generates beside the project's own, as data:
+/// the external-interface probe (§18.8) and the members of the axiom-audit
+/// family (§18.9). The backend renders it; nothing assembles its Lean as
+/// text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuxiliaryModule {
+    /// The modules it imports, in order. They are private imports: nothing
+    /// of an auxiliary module is public.
+    pub imports: Vec<String>,
+    /// Its commands, in order.
+    pub commands: Vec<AuxiliaryCommand>,
+}
+
+/// One command of an [`AuxiliaryModule`]: a closed set, each rendered one
+/// line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AuxiliaryCommand {
+    /// `set_option autoImplicit false`.
+    NoAutoImplicit,
+    /// `universe` and the named universe variables.
+    Universe(Vec<String>),
+    /// `example : <type> := <constant>`: the type as the backend's printer
+    /// prints a signature, the constant by its Lean name.
+    Example {
+        /// The printed type.
+        ty: String,
+        /// The constant that inhabits it.
+        constant: String,
+    },
+    /// `#print axioms` and a fully qualified declaration name, quoted as
+    /// the module that declares it quotes it.
+    PrintAxioms(String),
+}
+
+impl AuxiliaryModule {
+    /// The module's Lean, and the one-based line each command is on.
+    #[must_use]
+    pub fn render(&self) -> (String, Vec<usize>) {
+        let mut text = String::from("module\n");
+        for import in &self.imports {
+            text.push_str("import ");
+            text.push_str(import);
+            text.push('\n');
+        }
+        let mut line = 1 + self.imports.len();
+        let mut lines = Vec::with_capacity(self.commands.len());
+        for command in &self.commands {
+            line += 1;
+            lines.push(line);
+            match command {
+                AuxiliaryCommand::NoAutoImplicit => text.push_str("set_option autoImplicit false"),
+                AuxiliaryCommand::Universe(names) => {
+                    text.push_str("universe ");
+                    text.push_str(&names.join(" "));
+                }
+                AuxiliaryCommand::Example { ty, constant } => {
+                    text.push_str("example : ");
+                    text.push_str(ty);
+                    text.push_str(" := ");
+                    text.push_str(constant);
+                }
+                AuxiliaryCommand::PrintAxioms(declaration) => {
+                    text.push_str("#print axioms ");
+                    text.push_str(&super::semantic::identifier(declaration));
+                }
+            }
+            text.push('\n');
+        }
+        (text, lines)
+    }
+}
+
 /// One probe line's provenance: which entry produced which generated line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProbeLine {
@@ -2454,7 +2526,7 @@ pub fn probe_module(
     for external in externals.values() {
         imports.insert(external.lean_module.clone());
     }
-    let mut examples: Vec<(usize, String, String)> = Vec::new();
+    let mut examples: Vec<(usize, String, AuxiliaryCommand)> = Vec::new();
     let mut universes: Vec<String> = Vec::new();
     let mut unprobed = Vec::new();
     for (index, (entry_id, external)) in externals.iter().enumerate() {
@@ -2478,32 +2550,36 @@ pub fn probe_module(
         examples.push((
             index,
             entry_id.clone(),
-            format!("example : {ty} := {}", external.lean_name),
+            AuxiliaryCommand::Example {
+                ty,
+                constant: external.lean_name.clone(),
+            },
         ));
     }
-    let mut text = String::from("module\n");
-    let mut line_count = 1usize;
-    for import in &imports {
-        text.push_str(&format!("import {import}\n"));
-        line_count += 1;
-    }
-    text.push_str("set_option autoImplicit false\n");
-    line_count += 1;
+    let mut commands = vec![AuxiliaryCommand::NoAutoImplicit];
     if !universes.is_empty() {
-        text.push_str(&format!("universe {}\n", universes.join(" ")));
-        line_count += 1;
+        commands.push(AuxiliaryCommand::Universe(universes));
     }
-    let mut lines = Vec::new();
+    let first_example = commands.len();
+    let mut entries = Vec::with_capacity(examples.len());
     for (index, entry, example) in examples {
-        line_count += 1;
-        lines.push(ProbeLine {
-            line: line_count,
+        entries.push((index, entry));
+        commands.push(example);
+    }
+    let (text, command_lines) = AuxiliaryModule {
+        imports: imports.into_iter().collect(),
+        commands,
+    }
+    .render();
+    let lines = entries
+        .into_iter()
+        .zip(&command_lines[first_example..])
+        .map(|((index, entry), line)| ProbeLine {
+            line: *line,
             index,
             entry,
-        });
-        text.push_str(&example);
-        text.push('\n');
-    }
+        })
+        .collect();
     Ok(ProbeModule {
         name,
         text,
@@ -2540,16 +2616,18 @@ pub fn audit_modules(
         .map(|(generated_module, mut declarations)| {
             declarations.sort();
             let name = format!("{root}.{generated_module}");
-            let mut text = format!("module\nimport {generated_module}\n");
-            for declaration in &declarations {
-                // A user's name may be spelled like a word the audit of
-                // generated Lean forbids (`native_decide`, `IO`); the module
-                // quotes it, so the audit module names it the same way.
-                text.push_str(&format!(
-                    "#print axioms {}\n",
-                    super::semantic::identifier(declaration)
-                ));
+            // A user's name may be spelled like a word the audit of generated
+            // Lean forbids (`native_decide`, `IO`); the module quotes it, so
+            // the audit module names it the same way (the renderer quotes).
+            let (text, _) = AuxiliaryModule {
+                imports: vec![generated_module.clone()],
+                commands: declarations
+                    .iter()
+                    .cloned()
+                    .map(AuxiliaryCommand::PrintAxioms)
+                    .collect(),
             }
+            .render();
             AuditModule {
                 name,
                 generated_module,

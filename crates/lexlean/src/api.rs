@@ -321,11 +321,16 @@ pub fn render_build(
             .map(|declaration| format!("{lean_module}.{}", declaration.lean_name))
             .collect();
         if let Some(core) = &checked_module.document.core {
+            // A private constant has no name a command can write (its module
+            // prefix is a numbered segment), so the audit covers it through
+            // every declaration that uses it, as the library audits do
+            // (§17.17, §18.9).
             declaration_names.extend(
                 crate::backend::core::environment_declarations(core)
                     .map_err(LexLeanError::from_diagnostic)?
                     .into_iter()
-                    .map(|declaration| declaration.name.clone()),
+                    .map(|declaration| declaration.name.clone())
+                    .filter(|name| !name.starts_with("_private.")),
             );
         }
         if let Some(semantic) = &checked_module.document.semantic {

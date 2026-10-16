@@ -289,7 +289,7 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
     let compiled = scratch.path().join("out");
     std::fs::create_dir_all(compiled.join("LexLeanTarget")).expect("output directory");
     let search = std::env::join_paths([compiled.clone(), library]).expect("LEAN_PATH");
-    for module in [
+    let modules = [
         "TargetSyntax",
         "TargetSemantics",
         "TargetOracle",
@@ -300,7 +300,49 @@ fn lean_evaluations(verified: &camino::Utf8Path, cases: &[Case]) -> BTreeMap<Str
         "ScreeningOracle",
         "TargetFixtures",
         "ReasoningFixtures",
-    ] {
+    ];
+    // The runtime modules the generated modules import (SPEC.md §17.12),
+    // first, in their dependency order.
+    let texts: Vec<String> = modules
+        .iter()
+        .map(|module| {
+            std::fs::read_to_string(
+                verified
+                    .join("modules")
+                    .join("LexLeanTarget")
+                    .join(format!("{module}.lean")),
+            )
+            .expect("published generated source")
+        })
+        .collect();
+    let runtime_sources = scratch.path().join("runtime");
+    for runtime in lexlean::backend::runtime::imported_by(texts.iter().map(String::as_str))
+        .expect("the shipped runtime")
+    {
+        let relative = runtime.name.replace('.', "/");
+        let path = runtime_sources.join(format!("{relative}.lean"));
+        let object = compiled.join(format!("{relative}.olean"));
+        for directory in [path.parent(), object.parent()] {
+            std::fs::create_dir_all(directory.expect("parent")).expect("runtime directory");
+        }
+        std::fs::write(&path, &runtime.text).expect("runtime source");
+        let built = std::process::Command::new(&lean)
+            .arg("-o")
+            .arg(&object)
+            .arg(format!("{relative}.lean"))
+            .current_dir(&runtime_sources)
+            .env("LEAN_PATH", &search)
+            .output()
+            .expect("pinned lean runs");
+        assert!(
+            built.status.success(),
+            "{} does not compile:\n{}\n{}",
+            runtime.name,
+            String::from_utf8_lossy(&built.stdout),
+            String::from_utf8_lossy(&built.stderr)
+        );
+    }
+    for module in modules {
         let built = std::process::Command::new(&lean)
             .arg("-o")
             .arg(

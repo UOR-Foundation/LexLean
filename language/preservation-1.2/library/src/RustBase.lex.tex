@@ -2006,8 +2006,8 @@ definition LexLeanPreservation.Rust.tysBeq._sunfold : @6095 := @38249 {
   reducibility: regular{height: 6},
   transparency: semireducible
 }
-theorem LexLeanTarget.RustSemantics.LexLeanRuntime.equal.eq_1 : @38266 := @38271 {
-  all: [LexLeanTarget.RustSemantics.LexLeanRuntime.equal.eq_1],
+theorem LexLeanRuntime.equal.eq_1 : @38266 := @38271 {
+  all: [LexLeanRuntime.equal.eq_1],
   class: false,
   generated: false,
   policy: exact{axioms: []},
@@ -9132,18 +9132,14 @@ theorem _private.LexLeanPreservation.RustBase.#0.LexLeanTarget.TargetSemantics.l
     (fun (x._@.LexLeanTarget.RustSemantics.#692303640._hygCtx._hyg.#1058 : @6589) => @7267)
 @9807 := @6194 @52
 @9809 := @6591 @9807 @27
-@9814 := LexLeanTarget.RustSemantics.LexLeanRuntime.length
-    @46
-    (LexLeanTarget.RustSemantics.LexLeanRuntime.instLengthableList @21)
+@9814 := LexLeanRuntime.length @46 (LexLeanRuntime.instLengthableList @21)
 @9815 := @9814 @24
 @9818 := @9806 (@9809 @9815) @9718
 @9819 := @9694 @423
 @9820 := @9819 @59
 @9821 := @6167 @345
 @9822 := @9820 @9821
-@9827 := LexLeanTarget.RustSemantics.LexLeanRuntime.append
-    @46
-    (LexLeanTarget.RustSemantics.LexLeanRuntime.instAppendableList @21)
+@9827 := LexLeanRuntime.append @46 (LexLeanRuntime.instAppendableList @21)
 @9829 := @9827 @27 @24
 @9831 := @9107 (@9822 @9829)
 @9833 := @6140 @16 @16
@@ -25542,7 +25538,7 @@ theorem _private.LexLeanPreservation.RustBase.#0.LexLeanTarget.TargetSemantics.l
 @36632 := List.below.{0, 0}
 @36633 := @36632 @24
 @36635 := @2857 (@7 @345)
-@36636 := LexLeanTarget.TargetSemantics.LexLeanRuntime.listIndex
+@36636 := LexLeanRuntime.listIndex
 @36637 := @36636 @345
 @36640 := @36635 (@36637 @24 @32)
 @36641 := @1 @345
@@ -25673,14 +25669,7 @@ theorem _private.LexLeanPreservation.RustBase.#0.LexLeanTarget.TargetSemantics.l
 @36864 := {α : @0} ->
   (xs : @36568) ->
   (i : @3) ->
-  @36796
-    (LexLeanTarget.TargetSemantics.LexLeanRuntime.index
-      @36801
-      @27
-      (LexLeanTarget.TargetSemantics.LexLeanRuntime.instIndexableList @27)
-      @24
-      @32)
-    @36814
+  @36796 (LexLeanRuntime.index @36801 @27 (LexLeanRuntime.instIndexableList @27) @24 @32) @36814
 @36871 := proof(fun {α : @0} =>
     proof(fun (xs : @36568) =>
       proof(fun (i : @3) =>
@@ -26492,7 +26481,7 @@ theorem _private.LexLeanPreservation.RustBase.#0.LexLeanTarget.TargetSemantics.l
     (fun (x._@.LexLeanPreservation.RustBase.#746091797._hygCtx._hyg.#372 : @12) =>
     fun (x._@.LexLeanPreservation.RustBase.#746091797._hygCtx._hyg.#371 : @12) => @36872))
 @38251 := BEq.{0} @32
-@38252 := LexLeanTarget.RustSemantics.LexLeanRuntime.equal
+@38252 := LexLeanRuntime.equal
 @38256 := @38252 @345 @27 @24 @32
 @38266 := {α : @0} ->
   [inst._@.LexLeanTarget.RustSemantics.#1212145906._hygCtx._hyg.#3 : @38251] ->

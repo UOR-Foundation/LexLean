@@ -756,6 +756,91 @@ impl CoreModule {
         deepest
     }
 
+    /// One declaration as a value in which every expression root is replaced
+    /// by a digest of the kernel term it roots, without the names of bound
+    /// variables, which no kernel judgment reads. Two rows, of one module or
+    /// of two, state the same declaration exactly when these values are
+    /// equal: a library uses it to tell an equation lemma Lean realized in
+    /// two of its modules from two declarations of one name (§17.17).
+    #[must_use]
+    pub fn declaration_up_to_binder_names(&self, row: &CoreDeclaration) -> serde_json::Value {
+        let mut memo = std::collections::BTreeMap::new();
+        let mut value = serde_json::to_value(row).expect("a core declaration serializes");
+        let mut replace = |slot: Option<&mut serde_json::Value>| {
+            if let Some(slot) = slot {
+                if let Some(root) = slot.as_u64().and_then(|root| usize::try_from(root).ok()) {
+                    *slot = serde_json::Value::String(self.term_digest(root, &mut memo));
+                }
+            }
+        };
+        replace(value.get_mut("type"));
+        replace(value.get_mut("value"));
+        if let Some(info) = value.get_mut("eqn_info") {
+            replace(info.get_mut("type"));
+            replace(info.get_mut("value"));
+        }
+        if let Some(fields) = value
+            .pointer_mut("/inductive/structure/fields")
+            .and_then(serde_json::Value::as_array_mut)
+        {
+            for field in fields {
+                replace(field.get_mut("auto_param"));
+            }
+        }
+        value
+    }
+
+    /// A digest of the kernel term at `root`, without binder names. The edges
+    /// point backwards, so a node's children are digested before it.
+    fn term_digest(
+        &self,
+        root: usize,
+        memo: &mut std::collections::BTreeMap<usize, String>,
+    ) -> String {
+        use serde_json::json;
+        let mut stack = vec![root];
+        while let Some(&index) = stack.last() {
+            if memo.contains_key(&index) {
+                stack.pop();
+                continue;
+            }
+            let node = &self.nodes[index];
+            let pending: Vec<usize> = node
+                .children()
+                .into_iter()
+                .filter(|child| !memo.contains_key(child))
+                .collect();
+            if !pending.is_empty() {
+                stack.extend(pending);
+                continue;
+            }
+            let child = |at: &usize| memo[at].clone();
+            let shape = match node {
+                CoreNode::Lambda { b, t, v, .. } => json!(["l", b, child(t), child(v)]),
+                CoreNode::Forall { b, t, v, .. } => json!(["p", b, child(t), child(v)]),
+                CoreNode::Let { t, v, body, d, .. } => {
+                    json!(["e", child(t), child(v), child(body), d])
+                }
+                CoreNode::App { f, x } => json!(["a", child(f), child(x)]),
+                CoreNode::Projection { n, s, i, x } => json!(["j", n, s, i, child(x)]),
+                CoreNode::Mdata { m, x } => json!(["d", m, child(x)]),
+                leaf @ (CoreNode::BVar { .. }
+                | CoreNode::Sort { .. }
+                | CoreNode::Const { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. }) => {
+                    serde_json::to_value(leaf).expect("a core node serializes")
+                }
+            };
+            let digest =
+                crate::artifact::content_id::Sha256Digest::of(shape.to_string().as_bytes())
+                    .to_hex();
+            memo.insert(index, digest);
+            stack.pop();
+        }
+        memo[&root].clone()
+    }
+
     /// The schema version the module declares: 1 or 2.
     #[must_use]
     pub fn version(&self) -> u8 {

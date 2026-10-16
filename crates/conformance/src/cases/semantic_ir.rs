@@ -2002,17 +2002,20 @@ pub(crate) fn run(id: &str) {
             let tables = support::lean_text(&rendered, "Tables");
             for expected in [
                 "public def declare (table : List (Prod (String) (Nat))) (name : String) (slot : Nat) : List (Prod (String) (Nat)) := (LexLeanCollections.mapInsert (table) (name) (slot) : List (Prod (String) (Nat)))",
-                "namespace LexLeanCollections",
-                "public class Key (α : Type) where",
+                "public import LexLeanRuntime.Collections\n",
             ] {
                 assert!(tables.contains(expected), "missing {expected:?} in:\n{tables}");
             }
+            assert!(
+                !tables.contains("namespace LexLeanCollections"),
+                "the collection runtime is imported, not spliced:\n{tables}"
+            );
             // A module that only measures an imported table writes no
-            // collection type or literal, yet calls the runtime: it emits its
-            // own copy, and pinned Lean verifies it.
+            // collection type or literal, yet calls the runtime: it imports
+            // the collection runtime module, and pinned Lean verifies it.
             let measure = support::lean_text(&rendered, "Measure");
             for expected in [
-                "namespace LexLeanCollections",
+                "public import LexLeanRuntime.Collections\n",
                 "(LexLeanCollections.mapSize (Collections.Tables.buildTable (",
             ] {
                 assert!(

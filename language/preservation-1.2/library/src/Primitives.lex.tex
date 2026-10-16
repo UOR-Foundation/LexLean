@@ -605,32 +605,32 @@ theorem LexLeanPreservation.prim_utf8Encode : @5386 := @5388 {
   tags: [defeq, backward_defeq],
   transparency: semireducible
 }
-theorem LexLeanTarget.TargetSemantics.LexLeanRuntime.compareBytes.eq_1 : @5396 := @5399 {
-  all: [LexLeanTarget.TargetSemantics.LexLeanRuntime.compareBytes.eq_1],
+theorem LexLeanRuntime.compareBytes.eq_1 : @5396 := @5399 {
+  all: [LexLeanRuntime.compareBytes.eq_1],
   class: false,
   generated: false,
   policy: exact{axioms: [propext]},
   tags: [backward_defeq],
   transparency: semireducible
 }
-theorem LexLeanTarget.TargetSemantics.LexLeanRuntime.equal.eq_1 : @5415 := @5420 {
-  all: [LexLeanTarget.TargetSemantics.LexLeanRuntime.equal.eq_1],
+theorem LexLeanRuntime.equal.eq_1 : @5415 := @5420 {
+  all: [LexLeanRuntime.equal.eq_1],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   tags: [backward_defeq],
   transparency: semireducible
 }
-theorem LexLeanTarget.TargetSemantics.LexLeanRuntime.length.eq_1 : @5434 := @5439 {
-  all: [LexLeanTarget.TargetSemantics.LexLeanRuntime.length.eq_1],
+theorem LexLeanRuntime.length.eq_1 : @5434 := @5439 {
+  all: [LexLeanRuntime.length.eq_1],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   tags: [backward_defeq],
   transparency: semireducible
 }
-theorem LexLeanTarget.TargetSemantics.LexLeanRuntime.slice.eq_1 : @5459 := @5466 {
-  all: [LexLeanTarget.TargetSemantics.LexLeanRuntime.slice.eq_1],
+theorem LexLeanRuntime.slice.eq_1 : @5459 := @5466 {
+  all: [LexLeanRuntime.slice.eq_1],
   class: false,
   generated: false,
   policy: exact{axioms: []},
@@ -1157,13 +1157,13 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @764 := proof(@763 @729)
 @765 := Bool
 @766 := @4 @765
-@767 := LexLeanTarget.TargetSemantics.LexLeanRuntime.equal
+@767 := LexLeanRuntime.equal
 @768 := @767 @681
 @769 := instBEqOfDecidableEq.{0}
 @771 := @769 @681 @733
 @772 := @768 @771
 @773 := proof(@772 @658)
-@774 := LexLeanTarget.TargetSemantics.LexLeanRuntime.compareBytes
+@774 := LexLeanRuntime.compareBytes
 @776 := @774 @466 @214
 @777 := proof(@773 @776)
 @778 := proof(@766 @777)
@@ -1623,11 +1623,9 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @1572 := proof(Option.isSome.{0})
 @1573 := proof(Int64)
 @1574 := proof(@1572 @1573)
-@1581 := proof(proof(proof(proof(proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedConvert)
-            @1570)
-          @1573)
-        proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.instToMathIntInt))
-      proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedInt64))
+@1581 := proof(proof(proof(proof(proof(LexLeanRuntime.checkedConvert) @1570) @1573)
+        proof(LexLeanRuntime.instToMathIntInt))
+      proof(LexLeanRuntime.instFixedInt64))
 @1582 := proof(@1581 @8)
 @1584 := fun (n : @1570) => @1574 @1582
 @1585 := Sort 1
@@ -1683,7 +1681,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @1665 := Option.{0}
 @1666 := @1665 @655
 @1667 := @4 @1666
-@1668 := LexLeanTarget.TargetSemantics.LexLeanRuntime.listIndex
+@1668 := LexLeanRuntime.listIndex
 @1669 := @1668 @655
 @1671 := @1483 @1445 @655
 @1672 := @1671 @1452
@@ -2112,18 +2110,10 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @2366 := @2108 (@2356 @2364)
 @2367 := @2107 @2366
 @2368 := @2114 @779
-@2369 := LexLeanTarget.TargetSemantics.LexLeanRuntime.append
+@2369 := LexLeanRuntime.append
 @2380 := (a : @2353) ->
   (b : @2353) ->
-  @2367
-    (@2113
-      (@2368
-        (@2357
-          (@2369
-            @2353
-            LexLeanTarget.TargetSemantics.LexLeanRuntime.instAppendableByteArray
-            @11
-            @8))))
+  @2367 (@2113 (@2368 (@2357 (@2369 @2353 LexLeanRuntime.instAppendableByteArray @11 @8))))
 @2381 := proof(@1505 @2106)
 @2384 := proof(fun (a : @2353) => proof(fun (b : @2353) => proof(@2381 @2366)))
 @2386 := LexLeanPreservation.ListEnc @8
@@ -2133,14 +2123,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @2392 := @2389 @8
 @2408 := @2107
     (@2108 (@2356 (@2391 (@1520 @2392 @2362))))
-    (@2113
-      (@2368
-        (@2389
-          (@2369
-            @1837
-            (LexLeanTarget.TargetSemantics.LexLeanRuntime.instAppendableList @1452)
-            @11
-            @8))))
+    (@2113 (@2368 (@2389 (@2369 @1837 (LexLeanRuntime.instAppendableList @1452) @11 @8))))
 @2412 := {α : @1585} -> (L : @2386) -> (xs : @1589) -> (ys : @1664) -> @2408
 @2413 := proof(@74 @2408)
 @2414 := proof(LexLeanPreservation.Obs.value)
@@ -2470,8 +2453,8 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @3092 := @3091 @2
 @3093 := LexLeanTarget.TargetSyntax.Value.u8
 @3094 := @3092 @3093
-@3095 := LexLeanTarget.TargetSemantics.LexLeanRuntime.index
-@3099 := @3095 @2353 @2 LexLeanTarget.TargetSemantics.LexLeanRuntime.instIndexableByteArrayUInt8
+@3095 := LexLeanRuntime.index
+@3099 := @3095 @2353 @2 LexLeanRuntime.instIndexableByteArrayUInt8
 @3101 := @3099 @11 @8
 @3105 := @3090 (@2113 (@2368 (@3094 @3101)))
 @3107 := (a : @2353) -> (i : @0) -> @3105
@@ -2559,8 +2542,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
   (hO : @3228) ->
   (li : @3231) -> (h0 : @3238) -> (h1 : @3248) -> (h2 : @3257) -> (xs : @1634) -> (i : @0) -> @3272
 @3283 := proof(@74 @3272)
-@3288 := proof(proof(proof(@3095 @1478) @655)
-      proof(proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.instIndexableList) @655))
+@3288 := proof(proof(proof(@3095 @1478) @655) proof(proof(LexLeanRuntime.instIndexableList) @655))
 @3290 := proof(proof(@2418 @1636) @1606)
 @3291 := proof(@3290 @11)
 @3294 := proof(@1667 proof(proof(@3288 @3291) @8))
@@ -2734,35 +2716,35 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @3634 := @1520 @2119 @2362
 @3635 := @3632 @3634
 @3638 := @2107 (@2108 (@3631 @3635))
-@3639 := LexLeanTarget.TargetSemantics.LexLeanRuntime.multiply
+@3639 := LexLeanRuntime.multiply
 @3644 := @3639 @1570 Int.instMul @11 @8
 @3652 := (a : @1570) -> (b : @1570) -> @3638 (@2113 (@2114 (@2115 @3644) (@2118 @3644)))
 @3653 := proof(LexLeanPreservation.obs_intResult)
 @3656 := proof(fun (a : @1570) => proof(fun (b : @1570) => proof(@3653 @3644)))
 @3661 := @2107 (@2108 (@2354 LexLeanTarget.TargetSyntax.Prim.intNeg @3634))
-@3666 := LexLeanTarget.TargetSemantics.LexLeanRuntime.negate @1570 Int.instNegInt @8
+@3666 := LexLeanRuntime.negate @1570 Int.instNegInt @8
 @3673 := (a : @1570) -> @3661 (@2113 (@2114 (@2115 @3666) (@2118 @3666)))
 @3675 := proof(fun (a : @1570) => proof(@3653 @3666))
 @3677 := @2354 LexLeanTarget.TargetSyntax.Prim.intQuot
 @3679 := @1520 @2163 @3635
 @3682 := @2107 (@2108 (@3677 @3679))
-@3683 := LexLeanTarget.TargetSemantics.LexLeanRuntime.quotient
+@3683 := LexLeanRuntime.quotient
 @3684 := @3683 @1570
-@3685 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instQuotientInt
+@3685 := LexLeanRuntime.instQuotientInt
 @3689 := @3684 @3685 @693 @11 @8
 @3698 := (a : @1570) ->
   (b : @1570) -> (z : @1570) -> @3682 (@2113 (@2114 (@2115 @3689) (@2118 @3689)))
 @3702 := proof(fun (a : @1570) =>
     proof(fun (b : @1570) => proof(fun (z : @1570) => proof(@3653 @3689))))
 @3707 := @2107 (@2108 (@2354 LexLeanTarget.TargetSyntax.Prim.intRem @3679))
-@3708 := LexLeanTarget.TargetSemantics.LexLeanRuntime.remainder
+@3708 := LexLeanRuntime.remainder
 @3713 := @3708 @1570 @3685 @693 @11 @8
 @3722 := (a : @1570) ->
   (b : @1570) -> (z : @1570) -> @3707 (@2113 (@2114 (@2115 @3713) (@2118 @3713)))
 @3726 := proof(fun (a : @1570) =>
     proof(fun (b : @1570) => proof(fun (z : @1570) => proof(@3653 @3713))))
 @3731 := @2107 (@2108 (@2354 LexLeanTarget.TargetSyntax.Prim.intSub @3635))
-@3732 := LexLeanTarget.TargetSemantics.LexLeanRuntime.subtract
+@3732 := LexLeanRuntime.subtract
 @3737 := @3732 @1570 Int.instSub @11 @8
 @3745 := (a : @1570) -> (b : @1570) -> @3731 (@2113 (@2114 (@2115 @3737) (@2118 @3737)))
 @3748 := proof(fun (a : @1570) => proof(fun (b : @1570) => proof(@3653 @3737)))
@@ -2866,7 +2848,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @3892 := @2354 LexLeanTarget.TargetSyntax.Prim.join
 @3895 := LexLeanPreservation.encList @1438 @1486
 @3901 := @2107 (@2108 (@3892 (@1520 (@3895 @11) @3037)))
-@3902 := LexLeanTarget.TargetSemantics.LexLeanRuntime.join
+@3902 := LexLeanRuntime.join
 @3907 := @2113 (@2368 (@1486 (@3902 @11 @8)))
 @3908 := @3901 @3907
 @3910 := (xs : @1439) -> (d : @1438) -> @3908
@@ -2902,14 +2884,14 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
               proof(@2188 @3933)))))
 @3969 := @2354 LexLeanTarget.TargetSyntax.Prim.length
 @3972 := @2107 (@2108 (@3969 @2363))
-@3973 := LexLeanTarget.TargetSemantics.LexLeanRuntime.length
-@3977 := @3973 @2353 LexLeanTarget.TargetSemantics.LexLeanRuntime.instLengthableByteArray @8
+@3973 := LexLeanRuntime.length
+@3977 := @3973 @2353 LexLeanRuntime.instLengthableByteArray @8
 @3985 := (a : @2353) -> @3972 (@2113 (@2114 (@2247 @3977 @2252) (@2255 @3977)))
 @3986 := proof(LexLeanPreservation.obs_natResult)
 @3988 := proof(fun (a : @2353) => proof(@3986 @3977))
 @3996 := @2107 (@2108 (@3969 (@1520 (@2387 @693 @11 @8) @2362)))
 @3997 := @3973 @1664
-@3998 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instLengthableList
+@3998 := LexLeanRuntime.instLengthableList
 @4001 := @3997 (@3998 @693) @8
 @4008 := @3996 (@2113 (@2114 (@2247 @4001 @2252) (@2255 @4001)))
 @4011 := {α : @1585} -> (L : @2386) -> (xs : @1589) -> @4008
@@ -2977,7 +2959,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
                             @8)))
                   proof(@3986 @4044)))))))
 @4134 := @2107 (@2108 (@3969 @3037))
-@4138 := @3973 @1438 LexLeanTarget.TargetSemantics.LexLeanRuntime.instLengthableString @8
+@4138 := @3973 @1438 LexLeanRuntime.instLengthableString @8
 @4146 := (a : @1438) -> @4134 (@2113 (@2114 (@2247 @4138 @2252) (@2255 @4138)))
 @4148 := proof(fun (a : @1438) => proof(@3986 @4138))
 @4153 := @2107 (@2108 (@2354 LexLeanTarget.TargetSyntax.Prim.natAdd @2765))
@@ -3002,7 +2984,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @4243 := @2108 (@4239 @4241)
 @4244 := @2107 @4243
 @4245 := @3683 @0
-@4246 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instQuotientNat
+@4246 := LexLeanRuntime.instQuotientNat
 @4257 := (a : @0) -> (b : @0) -> (z : @0) -> @4244 (@2113 (@2368 (@2255 (@4245 @4246 @693 @11 @8))))
 @4261 := proof(fun (a : @0) => proof(fun (b : @0) => proof(fun (z : @0) => proof(@2381 @4243))))
 @4265 := @2108 (@2354 LexLeanTarget.TargetSyntax.Prim.natRem @4241)
@@ -3035,8 +3017,8 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @4327 := @2354 LexLeanTarget.TargetSyntax.Prim.slice
 @4333 := @2107 (@2108 (@4327 (@1520 (@2357 @693) @2765)))
 @4335 := @3091 @2353 @2357
-@4336 := LexLeanTarget.TargetSemantics.LexLeanRuntime.slice
-@4339 := @4336 @2353 LexLeanTarget.TargetSemantics.LexLeanRuntime.instSliceableByteArray
+@4336 := LexLeanRuntime.slice
+@4339 := @4336 @2353 LexLeanRuntime.instSliceableByteArray
 @4342 := @4339 @693 @11 @8
 @4346 := @4333 (@2113 (@2368 (@4335 @4342)))
 @4349 := (a : @2353) -> (s : @0) -> (c : @0) -> @4346
@@ -3110,7 +3092,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @4473 := @2107 (@2108 (@4327 (@1520 (@2387 @1596 @1594 @693) @2765)))
 @4475 := @3266 @1604 @1445
 @4476 := @4336 @1604
-@4477 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instSliceableList
+@4477 := LexLeanRuntime.instSliceableList
 @4482 := @4476 (@4477 @1596) @693 @11 @8
 @4486 := @4473 (@2113 (@2368 (@4475 @4482)))
 @4493 := {α : @1585} ->
@@ -3453,7 +3435,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
         LexLeanTarget.TargetSyntax.Prim.splitExact
         (@1522 (@3034 (@1520 (LexLeanTarget.TargetSyntax.Value.u32 @8) @2362)))))
 @5122 := @3091 @1439 @3895
-@5123 := LexLeanTarget.TargetSemantics.LexLeanRuntime.splitExact
+@5123 := LexLeanRuntime.splitExact
 @5126 := @5123 @693 @11 @8
 @5130 := @5120 (@2113 (@2368 (@5122 @5126)))
 @5133 := (s : @1438) -> (d : @1438) -> (m : @5109) -> @5130
@@ -3541,7 +3523,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
     (fun (val._@.LexLeanPreservation.Primitives.#279014726._hygCtx._hyg.#75 : @1438) => @3078)
 @5286 := @2107 (@2108 (@2354 LexLeanTarget.TargetSyntax.Prim.utf8Decode @2363))
 @5288 := @3091 @1438 @1486
-@5289 := LexLeanTarget.TargetSemantics.LexLeanRuntime.utf8Decode
+@5289 := LexLeanRuntime.utf8Decode
 @5290 := @5289 @8
 @5294 := @5286 (@2113 (@2368 (@5288 @5290)))
 @5295 := (b : @2353) -> @5294
@@ -3588,8 +3570,7 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
                       proof(proof(proof(@5345 @5305) @5353) @8)))))
             proof(proof(@40 @5258) @5290))))
 @5378 := @2108 (@2354 LexLeanTarget.TargetSyntax.Prim.utf8Encode @3037)
-@5386 := (s : @1438) ->
-  @2107 @5378 (@2113 (@2368 (@2357 (LexLeanTarget.TargetSemantics.LexLeanRuntime.utf8Encode @8))))
+@5386 := (s : @1438) -> @2107 @5378 (@2113 (@2368 (@2357 (LexLeanRuntime.utf8Encode @8))))
 @5388 := proof(fun (s : @1438) => proof(@2381 @5378))
 @5396 := (left : @2353) -> (right : @2353) -> @690 @2675 (@833 (@48 @11) (@48 @8))
 @5399 := proof(fun (left : @2353) => proof(fun (right : @2353) => proof(@1434 @2675)))
@@ -3601,22 +3582,20 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
 @5420 := proof(fun {α : @1585} =>
     proof(fun [inst : @5401] =>
       proof(fun (left : @11) => proof(fun (right : @693) => proof(@1046 @5405)))))
-@5422 := LexLeanTarget.TargetSemantics.LexLeanRuntime.Lengthable @8
+@5422 := LexLeanRuntime.Lengthable @8
 @5425 := @3973 @693 @11 @8
 @5434 := {α : @1585} ->
   [inst._@.LexLeanTarget.TargetSemantics.#210037673._hygCtx._hyg.#3 : @5422] ->
-  (value : @11) ->
-  @4013 @5425 (LexLeanTarget.TargetSemantics.LexLeanRuntime.Lengthable.length @693 @11 @8)
+  (value : @11) -> @4013 @5425 (LexLeanRuntime.Lengthable.length @693 @11 @8)
 @5439 := proof(fun {α : @1585} =>
     proof(fun [inst : @5422] => proof(fun (value : @11) => proof(proof(@40 @0) @5425))))
-@5441 := LexLeanTarget.TargetSemantics.LexLeanRuntime.Sliceable @8
+@5441 := LexLeanRuntime.Sliceable @8
 @5446 := @4336 @1445 @1452 @693 @11 @8
 @5459 := {α : @1585} ->
   [inst._@.LexLeanTarget.TargetSemantics.#2537723928._hygCtx._hyg.#3 : @5441] ->
   (value : @11) ->
   (start : @0) ->
-  (count : @0) ->
-  @1904 @5446 (LexLeanTarget.TargetSemantics.LexLeanRuntime.Sliceable.slice @1445 @1452 @693 @11 @8)
+  (count : @0) -> @1904 @5446 (LexLeanRuntime.Sliceable.slice @1445 @1452 @693 @11 @8)
 @5466 := proof(fun {α : @1585} =>
     proof(fun [inst : @5441] =>
       proof(fun (value : @11) =>
