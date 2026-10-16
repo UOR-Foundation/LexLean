@@ -2639,6 +2639,17 @@ fn gc_11() {
         library::PREFIX,
         "tests/certification-library/oracle",
     );
+    // The one Lean text beside a module's data is the decoder of core module
+    // 2, which loads native modules (SPEC.md §17.12, RT-04).
+    for stem in library::MODULES {
+        assert_eq!(
+            library::library_text(stem)
+                .matches(lexlean::backend::core_v2::LEAN_CORE_DECODER_V2)
+                .count(),
+            1,
+            "`{stem}` carries the decoder of core module 2 exactly once"
+        );
+    }
     // The library is LexLean source and nothing else: no Lean file lies
     // anywhere in its project, and its sources are the listed modules.
     let project = repo_root().join(library::PROJECT_DIR);

@@ -85,3 +85,9 @@ Feature: production-export
     When each value is validated, an unknown field is added, and a schema is changed under its recorded version
     Then every value validates and every unknown field is refused
     And a schema changed without a new version fails the gate
+
+  @PX-13 @build
+  Scenario: Every output of a production result states the effects its realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there, so an output that can recurse says that it needs a host stack its input-dependent depth fits, and the export report counts those outputs.
+    Given the committed eligibility of the coverage example, which has outputs that recurse and outputs that do not
+    When the example is exported and each output's effects are compared with its root's eligibility on its target, and a result with `recursion` dropped from one output or added to another is compared the same way
+    Then every output states exactly the effects eligibility requires, the report counts the outputs that recurse, and each planted result disagrees naming recursion

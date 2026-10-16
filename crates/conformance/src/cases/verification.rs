@@ -105,16 +105,31 @@ pub(crate) fn run(id: &str) {
                 );
             }
 
-            // A wrong-version toolchain fails preflight before use.
-            let lying = support::fake_toolchain(&[(
-                "lean",
-                "#!/bin/sh\necho Lean \\(version 4.31.0, release\\)\n",
-            )]);
-            let fake_path = lying.path().to_string_lossy().into_owned();
-            support::with_env(&[("ELAN_HOME", Some(&fake_path))], || {
-                let project = P::example();
-                project.verify_fails_with("LLV7001");
-            });
+            // Version substrings and Lake's own version cannot establish the
+            // pinned Lean identity; refusal happens before module compilation.
+            for (tool, banner) in [
+                ("lean", "Lean (version 4.31.0, release)"),
+                ("lean", "Lean (version 4.32.10, release)"),
+                ("lean", "Lean (version 4.32.1-rc1, release)"),
+                ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
+                ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
+                ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
+                ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
+            ] {
+                let script = format!("#!/bin/sh\nprintf '%s\\n' '{banner}'\n");
+                let lying = support::fake_toolchain(&[(tool, &script)]);
+                let fake_path = lying.path().to_string_lossy().into_owned();
+                support::with_env(&[("ELAN_HOME", Some(&fake_path))], || {
+                    let project = P::example();
+                    let error = project.verify_fails_with("LLV7001");
+                    assert!(
+                        error.diagnostics.iter().any(|diagnostic| {
+                            diagnostic.message.contains(&format!("{tool} reports"))
+                        }),
+                        "the {tool} version fails preflight: {error:?}"
+                    );
+                });
+            }
         }
         // §22.2: the pinned Lake environment, never updating or fetching.
         "VR-03" => {
@@ -1207,6 +1222,16 @@ pub(crate) fn run(id: &str) {
                         );
                     }
                 }
+                // The one Lean text beside the module's data is the decoder of
+                // core module 1: the released bytes of language 1.0, held as
+                // the frozen data the backend reads (SPEC.md §17.12, RT-02).
+                assert_eq!(
+                    text.matches(lexlean::backend::runtime::frozen_core_decoder())
+                        .count(),
+                    1,
+                    "{} carries the frozen decoder of core module 1 exactly once",
+                    entry.path().display()
+                );
             }
 
             for entry in walkdir::WalkDir::new(root.as_std_path())

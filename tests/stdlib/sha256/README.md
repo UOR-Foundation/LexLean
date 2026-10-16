@@ -9,7 +9,8 @@ SHA-256 response files, used by `SL-02` (SPEC.md §17.22) as an oracle for the
 
 whose SHA-256 is `929ef80b7b3418aca026643f6f248815913b60e01741a44bba9e118067f4c9b8`
 (CAVS 11.0, generated 2011-03-15; the archive's `Readme.txt` describes the
-format). The files keep the archive's CRLF line endings.
+format). The repository stores them with LF line endings (the archive's
+are CRLF), so the bytes differ from the archive's only in that.
 
 | File | Vectors | Message lengths |
 | --- | --- | --- |

@@ -381,6 +381,25 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the runtime's own project (SPEC.md §17.12, *Runtime
+    /// modules*), without build output or a lock.
+    #[must_use]
+    pub fn runtime_project() -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-runtime-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join(lexlean::backend::runtime::PROJECT_DIR);
+        assert!(source.is_dir(), "the runtime project is required");
+        copy_tree(
+            source.as_std_path(),
+            temp.path(),
+            &[".lexlean", "lexlean.lock"],
+        );
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the certification library's own project (SPEC.md
     /// §17.18), without build output or a lock.
     #[must_use]

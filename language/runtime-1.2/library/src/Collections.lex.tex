@@ -1,0 +1,3054 @@
+\begin{lexlean}{Collections}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{runtime.titles@1.0.0}
+\title{Runtime ordered collections}
+\begin{coremodule}
+imports [Init]
+
+constructor LexLeanCollections.Key.mk : @9 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+inductive LexLeanCollections.Key : @10 {
+  all: [LexLeanCollections.Key],
+  class: true,
+  compiled: true,
+  generated: false,
+  inductive: {
+    constructors: [LexLeanCollections.Key.mk],
+    num_indices: 0,
+    num_params: 1,
+    structure: {
+      fields: [{name: compare, binder: e, projection: LexLeanCollections.Key.compare}],
+      parents: []
+    }
+  },
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+recursor LexLeanCollections.Key.rec.{u} : @27 {
+  class: false,
+  generated: true,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.Key.casesOn.{u} : @39 := @53 {
+  all: [LexLeanCollections.Key.casesOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanCollections.Key.compare : @55 := @58 {
+  all: [LexLeanCollections.Key.compare],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  projection: {constructor: LexLeanCollections.Key.mk, from_class: true, index: 0, num_params: 1},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+definition LexLeanCollections.Key.ctorIdx : @61 := @64 {
+  all: [LexLeanCollections.Key.ctorIdx],
+  class: false,
+  generated: false,
+  inline: macro_inline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [protected],
+  transparency: semireducible
+}
+abbrev LexLeanCollections.Key.mk._flat_ctor : @9 := @68 {
+  all: [LexLeanCollections.Key.mk._flat_ctor],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.Key.noConfusionType.{u} : @73 := @104 {
+  all: [LexLeanCollections.Key.noConfusionType],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanCollections.Key.noConfusion.{u} : @126 := @207 {
+  all: [LexLeanCollections.Key.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: regular{arity: 7, lhs: 2, rhs: 4},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected],
+  transparency: reducible
+}
+abbrev LexLeanCollections.Key.mk.noConfusion.{u} : @225 := @254 {
+  all: [LexLeanCollections.Key.mk.noConfusion],
+  class: false,
+  generated: false,
+  no_confusion: per_ctor{fields: 1, arity: 5},
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanCollections.Key.recOn.{u} : @39 := @260 {
+  all: [LexLeanCollections.Key.recOn],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  tags: [protected, aux_recursor],
+  transparency: reducible
+}
+abbrev LexLeanCollections.compareCodes._sparseCasesOn_1.{u} : @275 := @340 {
+  all: [LexLeanCollections.compareCodes._sparseCasesOn_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  sparse: {arity: 4, ind_name: Ordering, interesting_ctors: [Ordering.eq], major_pos: 1},
+  tags: [sparse_cases_on],
+  transparency: reducible
+}
+abbrev LexLeanCollections.compareCodes.match_1.{u_1} : @351 := @368 {
+  all: [LexLeanCollections.compareCodes.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [[1, [0]]],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.compareCodes.match_4.{u_1} : @407 := @453 {
+  all: [LexLeanCollections.compareCodes.match_4],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 0, overlaps: 0, unit_thunk: true},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 4, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], []],
+    num_discrs: 2,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.compareCodes._f : @461 := @515 {
+  all: [LexLeanCollections.compareCodes._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.compareCodes : @517 := @526 {
+  all: [LexLeanCollections.compareCodes],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 517,
+    declarations: [LexLeanCollections.compareCodes],
+    levels: [],
+    num_fixed: 0,
+    perms: [[[], []]],
+    rec_arg_pos: 0,
+    rev_deps: [[[], []]],
+    value: 559
+  },
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 7},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.compareCodes._sunfold : @517 := @579 {
+  all: [LexLeanCollections.compareCodes._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 8},
+  transparency: semireducible
+}
+definition LexLeanCollections.compareCodes._unsafe_rec : @517 := @592 {
+  all: [LexLeanCollections.compareCodes._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+abbrev LexLeanCollections.insertElement.match_1.{u_1} : @610 := @625 {
+  all: [LexLeanCollections.insertElement.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 2, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.insertEntry.match_1.{u_1} : @636 := @651 {
+  all: [LexLeanCollections.insertEntry.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 0, overlaps: 0, unit_thunk: true},
+      {fields: 0, overlaps: 0, unit_thunk: true},
+      {fields: 0, overlaps: 0, unit_thunk: true}
+    ],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.containsElement._f : @662 := @711 {
+  all: [LexLeanCollections.containsElement._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.containsElement : @715 := @727 {
+  all: [LexLeanCollections.containsElement],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 715,
+    declarations: [LexLeanCollections.containsElement],
+    levels: [],
+    num_fixed: 3,
+    perms: [[[0], [1], [2], []]],
+    rec_arg_pos: 3,
+    rev_deps: [[[1, 2, 3], [], [], []]],
+    value: 753
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.containsElement._sunfold : @715 := @765 {
+  all: [LexLeanCollections.containsElement._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.containsElement._unsafe_rec : @715 := @779 {
+  all: [LexLeanCollections.containsElement._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+abbrev LexLeanCollections.insertElement._f : @787 := @831 {
+  all: [LexLeanCollections.insertElement._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.insertElement : @835 := @846 {
+  all: [LexLeanCollections.insertElement],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 835,
+    declarations: [LexLeanCollections.insertElement],
+    levels: [],
+    num_fixed: 3,
+    perms: [[[0], [1], [2], []]],
+    rec_arg_pos: 3,
+    rev_deps: [[[1, 2, 3], [], [], []]],
+    value: 880
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.graphNodes : @887 := @924 {
+  all: [LexLeanCollections.graphNodes],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.insertEntry.match_3.{u_1} : @957 := @990 {
+  all: [LexLeanCollections.insertEntry.match_3],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 3, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 2,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.lookupEntry._f : @1005 := @1066 {
+  all: [LexLeanCollections.lookupEntry._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.lookupEntry : @1072 := @1086 {
+  all: [LexLeanCollections.lookupEntry],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 1072,
+    declarations: [LexLeanCollections.lookupEntry],
+    levels: [],
+    num_fixed: 4,
+    perms: [[[0], [1], [2], [3], []]],
+    rec_arg_pos: 4,
+    rev_deps: [[[2, 3, 4], [4], [], [], []]],
+    value: 1125
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.graphSuccessors : @1129 := @1142 {
+  all: [LexLeanCollections.graphSuccessors],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.reachableFrom._sparseCasesOn_1.{u_1, u} : @1161 := @1215 {
+  all: [LexLeanCollections.reachableFrom._sparseCasesOn_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  sparse: {arity: 5, ind_name: List, interesting_ctors: [List.nil], major_pos: 2},
+  tags: [sparse_cases_on],
+  transparency: reducible
+}
+abbrev LexLeanCollections.reachableFrom.match_1.{u_1} : @1222 := @1238 {
+  all: [LexLeanCollections.reachableFrom.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: [[1, [0]]],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.reachableFrom.match_4.{u_1} : @1267 := @1287 {
+  all: [LexLeanCollections.reachableFrom.match_4],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 3, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], [], []],
+    num_discrs: 3,
+    num_params: 1,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.reachableFrom._f : @1298 := @1407 {
+  all: [LexLeanCollections.reachableFrom._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.reachableFrom : @1413 := @1432 {
+  all: [LexLeanCollections.reachableFrom],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 1413,
+    declarations: [LexLeanCollections.reachableFrom],
+    levels: [],
+    num_fixed: 3,
+    perms: [[[0], [1], [2], [], [], []]],
+    rec_arg_pos: 3,
+    rev_deps: [[[1, 2, 4, 5], [], [], [], [], []]],
+    value: 1511
+  },
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 4},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.graphReachable : @1515 := @1546 {
+  all: [LexLeanCollections.graphReachable],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 5},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.removeElement._f : @1554 := @1584 {
+  all: [LexLeanCollections.removeElement._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.removeElement : @1586 := @1597 {
+  all: [LexLeanCollections.removeElement],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 1586,
+    declarations: [LexLeanCollections.removeElement],
+    levels: [],
+    num_fixed: 3,
+    perms: [[[0], [1], [2], []]],
+    rec_arg_pos: 3,
+    rev_deps: [[[1, 2, 3], [], [], []]],
+    value: 1623
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+abbrev LexLeanCollections.topological._f : @1634 := @1740 {
+  all: [LexLeanCollections.topological._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.topological : @1747 := @1766 {
+  all: [LexLeanCollections.topological],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 1747,
+    declarations: [LexLeanCollections.topological],
+    levels: [],
+    num_fixed: 3,
+    perms: [[[0], [1], [2], [], [], []]],
+    rec_arg_pos: 3,
+    rev_deps: [[[1, 2, 4, 5], [], [], [], [], []]],
+    value: 1839
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.graphTopological : @1843 := @1859 {
+  all: [LexLeanCollections.graphTopological],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 5},
+  transparency: semireducible
+}
+definition LexLeanCollections.insertElement._sunfold : @835 := @1871 {
+  all: [LexLeanCollections.insertElement._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.insertElement._unsafe_rec : @835 := @1886 {
+  all: [LexLeanCollections.insertElement._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+abbrev LexLeanCollections.insertEntry._f : @1897 := @1976 {
+  all: [LexLeanCollections.insertEntry._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.insertEntry : @1982 := @1998 {
+  all: [LexLeanCollections.insertEntry],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 1982,
+    declarations: [LexLeanCollections.insertEntry],
+    levels: [],
+    num_fixed: 5,
+    perms: [[[0], [1], [2], [3], [4], []]],
+    rec_arg_pos: 5,
+    rev_deps: [[[2, 3, 5], [4, 5], [], [], [], []]],
+    value: 2050
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.insertEntry._sunfold : @1982 := @2065 {
+  all: [LexLeanCollections.insertEntry._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.insertEntry._unsafe_rec : @1982 := @2085 {
+  all: [LexLeanCollections.insertEntry._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanCollections.instKeyBool : @2086 := @2091 {
+  all: [LexLeanCollections.instKeyBool],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 2},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyInt : @2093 := @2098 {
+  all: [LexLeanCollections.instKeyInt],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyInt16 : @2100 := @2109 {
+  all: [LexLeanCollections.instKeyInt16],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyInt32 : @2111 := @2120 {
+  all: [LexLeanCollections.instKeyInt32],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyInt64 : @2122 := @2131 {
+  all: [LexLeanCollections.instKeyInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyInt8 : @2133 := @2142 {
+  all: [LexLeanCollections.instKeyInt8],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 15},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyNat : @2143 := @2145 {
+  all: [LexLeanCollections.instKeyNat],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyProd : @2150 := @2177 {
+  all: [LexLeanCollections.instKeyProd],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: [2, 3]},
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 1},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyString : @2179 := @2188 {
+  all: [LexLeanCollections.instKeyString],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  reducibility: regular{height: 24},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyUInt16 : @2190 := @2199 {
+  all: [LexLeanCollections.instKeyUInt16],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyUInt32 : @2201 := @2209 {
+  all: [LexLeanCollections.instKeyUInt32],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyUInt64 : @2211 := @2220 {
+  all: [LexLeanCollections.instKeyUInt64],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.instKeyUInt8 : @2222 := @2231 {
+  all: [LexLeanCollections.instKeyUInt8],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.iterate.match_1.{u_1} : @2247 := @2262 {
+  all: [LexLeanCollections.iterate.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[], []],
+    num_discrs: 2,
+    num_params: 1,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.iterate._f : @2271 := @2304 {
+  all: [LexLeanCollections.iterate._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.iterate : @2308 := @2321 {
+  all: [LexLeanCollections.iterate],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 2308,
+    declarations: [LexLeanCollections.iterate],
+    levels: [],
+    num_fixed: 2,
+    perms: [[[0], [1], [], []]],
+    rec_arg_pos: 2,
+    rev_deps: [[[1, 3], [], [], []]],
+    value: 2341
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.iterate._sunfold : @2308 := @2353 {
+  all: [LexLeanCollections.iterate._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 3},
+  transparency: semireducible
+}
+definition LexLeanCollections.iterate._unsafe_rec : @2308 := @2365 {
+  all: [LexLeanCollections.iterate._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+abbrev LexLeanCollections.iterateUntil.match_1.{u_1} : @2380 := @2393 {
+  all: [LexLeanCollections.iterateUntil.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanCollections.iterateUntil._f : @2403 := @2449 {
+  all: [LexLeanCollections.iterateUntil._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.iterateUntil : @2454 := @2468 {
+  all: [LexLeanCollections.iterateUntil],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 2454,
+    declarations: [LexLeanCollections.iterateUntil],
+    levels: [],
+    num_fixed: 2,
+    perms: [[[0], [1], [], []]],
+    rec_arg_pos: 2,
+    rev_deps: [[[1, 3], [], [], []]],
+    value: 2502
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.iterateUntil._sunfold : @2454 := @2514 {
+  all: [LexLeanCollections.iterateUntil._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 3},
+  transparency: semireducible
+}
+definition LexLeanCollections.iterateUntil._unsafe_rec : @2454 := @2528 {
+  all: [LexLeanCollections.iterateUntil._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+abbrev LexLeanCollections.lessThan._sparseCasesOn_1.{u} : @2535 := @2562 {
+  all: [LexLeanCollections.lessThan._sparseCasesOn_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  sparse: {arity: 4, ind_name: Ordering, interesting_ctors: [Ordering.lt], major_pos: 1},
+  tags: [sparse_cases_on],
+  transparency: reducible
+}
+abbrev LexLeanCollections.lessThan.match_1.{u_1} : @2568 := @2579 {
+  all: [LexLeanCollections.lessThan.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [[1, [0]]],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+definition LexLeanCollections.lessThan : @2583 := @2598 {
+  all: [LexLeanCollections.lessThan],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanCollections.listFold : @2605 := @2615 {
+  all: [LexLeanCollections.listFold],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.lookupEntry._sunfold : @1072 := @2629 {
+  all: [LexLeanCollections.lookupEntry._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.lookupEntry._unsafe_rec : @1072 := @2646 {
+  all: [LexLeanCollections.lookupEntry._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanCollections.mapContains : @2651 := @2664 {
+  all: [LexLeanCollections.mapContains],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapEntries : @2667 := @2670 {
+  all: [LexLeanCollections.mapEntries],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapFold : @2679 := @2699 {
+  all: [LexLeanCollections.mapFold],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapInsert : @2705 := @2717 {
+  all: [LexLeanCollections.mapInsert],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapKeys : @2720 := @2730 {
+  all: [LexLeanCollections.mapKeys],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapLookup : @2735 := @2740 {
+  all: [LexLeanCollections.mapLookup],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+abbrev LexLeanCollections.removeEntry._f : @2749 := @2791 {
+  all: [LexLeanCollections.removeEntry._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanCollections.removeEntry : @2796 := @2809 {
+  all: [LexLeanCollections.removeEntry],
+  class: false,
+  compiled: true,
+  eqn_info: {
+    type: 2796,
+    declarations: [LexLeanCollections.removeEntry],
+    levels: [],
+    num_fixed: 4,
+    perms: [[[0], [1], [2], [3], []]],
+    rec_arg_pos: 4,
+    rev_deps: [[[2, 3, 4], [4], [], [], []]],
+    value: 2843
+  },
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanCollections.mapRemove : @2848 := @2858 {
+  all: [LexLeanCollections.mapRemove],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapSize : @2861 := @2866 {
+  all: [LexLeanCollections.mapSize],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: semireducible
+}
+definition LexLeanCollections.mapValues : @2869 := @2877 {
+  all: [LexLeanCollections.mapValues],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.reachableFrom._sunfold : @1413 := @2893 {
+  all: [LexLeanCollections.reachableFrom._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 5},
+  transparency: semireducible
+}
+definition LexLeanCollections.reachableFrom._unsafe_rec : @1413 := @2913 {
+  all: [LexLeanCollections.reachableFrom._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanCollections.removeElement._sunfold : @1586 := @2925 {
+  all: [LexLeanCollections.removeElement._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.removeElement._unsafe_rec : @1586 := @2940 {
+  all: [LexLeanCollections.removeElement._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanCollections.removeEntry._sunfold : @2796 := @2954 {
+  all: [LexLeanCollections.removeEntry._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.removeEntry._unsafe_rec : @2796 := @2972 {
+  all: [LexLeanCollections.removeEntry._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanCollections.setContains : @2976 := @2984 {
+  all: [LexLeanCollections.setContains],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setDifference : @2988 := @3001 {
+  all: [LexLeanCollections.setDifference],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setElements : @3003 := @3005 {
+  all: [LexLeanCollections.setElements],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanCollections.setFold : @3010 := @3015 {
+  all: [LexLeanCollections.setFold],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setInsert : @3019 := @3027 {
+  all: [LexLeanCollections.setInsert],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setIntersection : @3029 := @3036 {
+  all: [LexLeanCollections.setIntersection],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setRemove : @3038 := @3046 {
+  all: [LexLeanCollections.setRemove],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.setSize : @3048 := @3052 {
+  all: [LexLeanCollections.setSize],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 4},
+  transparency: semireducible
+}
+definition LexLeanCollections.setUnion : @3054 := @3069 {
+  all: [LexLeanCollections.setUnion],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+definition LexLeanCollections.topological._sunfold : @1747 := @3085 {
+  all: [LexLeanCollections.topological._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 5},
+  transparency: semireducible
+}
+definition LexLeanCollections.topological._unsafe_rec : @1747 := @3105 {
+  all: [LexLeanCollections.topological._unsafe_rec],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+
+@0 := Sort 1
+@1 := #0
+@2 := #1
+@3 := Ordering
+@5 := (a._@._internal._hyg.#0 : @1) -> (a._@._internal._hyg.#0 : @2) -> @3
+@6 := LexLeanCollections.Key
+@7 := @6 @2
+@9 := {α : @0} -> (compare : @5) -> @7
+@10 := (α : @0) -> @0
+@11 := @6 @1
+@12 := Sort u
+@13 := (t : @11) -> @12
+@14 := #2
+@16 := (a._@._internal._hyg.#0 : @2) -> (a._@._internal._hyg.#0 : @14) -> @3
+@17 := LexLeanCollections.Key.mk
+@21 := (compare : @16) -> @2 (@17 @14 @1)
+@22 := @6 @14
+@27 := {α : @0} -> {motive : @13} -> (mk : @21) -> (t : @22) -> @14 @1
+@28 := #3
+@30 := (a._@._internal._hyg.#0 : @14) -> (a._@._internal._hyg.#0 : @28) -> @3
+@31 := @17 @28
+@32 := @31 @1
+@34 := (compare : @30) -> @14 @32
+@35 := @14 @2
+@39 := {α : @0} -> {motive : @13} -> (t : @7) -> (mk : @34) -> @35
+@42 := LexLeanCollections.Key.rec.{u} @28 @14
+@43 := #4
+@45 := (a._@._internal._hyg.#0 : @28) -> (a._@._internal._hyg.#0 : @43) -> @3
+@46 := @2 @1
+@53 := fun {α : @0} =>
+  fun {motive : @13} => fun (t : @7) => fun (mk : @34) => @42 (fun (compare : @45) => @46) @2
+@55 := {α : @0} -> [self : @11] -> @16
+@58 := fun (α : @0) =>
+  fun [self : @11] => proj LexLeanCollections.Key LexLeanCollections.Key.compare 0 @1
+@59 := Nat
+@61 := {α : @0} -> (x._@.LexLeanRuntime.Collections.#1842282792._hygCtx._hyg.#9 : @11) -> @59
+@62 := 0
+@64 := fun {α : @0} => fun (x : @11) => @62
+@68 := fun (α : @0) => fun (compare : @5) => @17 @2 @1
+@73 := (P : @12) -> {α : @0} -> (t : @11) -> {α' : @0} -> (t' : @11) -> @12
+@74 := LexLeanCollections.Key.casesOn.{u+1}
+@75 := @74 @28
+@76 := @6 @28
+@79 := @75 (fun (t : @76) => @12) @14
+@83 := @74 @14 (fun (t : @22) => @12) @2
+@84 := HEq.{1}
+@85 := #5
+@86 := #6
+@92 := @84 ((a._@._internal._hyg.#0 : @85) -> (a._@._internal._hyg.#0 : @86) -> @3) @2 @45 @1
+@93 := #7
+@104 := fun (P : @12) =>
+  fun {α : @0} =>
+  fun (t : @11) =>
+  fun {α' : @0} =>
+  fun (t' : @11) =>
+  @79
+    (fun (compare : @45) =>
+    @83
+      (fun (compare : @30) =>
+      (x._@.LexLeanRuntime.Collections.#1842282792._hygCtx._hyg.#10 : (compare_eq : @92) -> @93) ->
+      @93))
+@108 := Eq.{2} @0 @28 @2
+@113 := @84 (@6 @43) @28 @22 @2
+@114 := LexLeanCollections.Key.noConfusionType.{u}
+@126 := {P : @12} ->
+  {α : @0} ->
+  {t : @11} -> {α' : @0} -> {t' : @11} -> (eq_1 : @108) -> (eq_2 : @113) -> @114 @86 @85 @43 @28 @14
+@129 := Eq.ndrec.{u, 2} @0 @85
+@130 := @6 @93
+@134 := @84 @130 @86 @7 @1
+@135 := #9
+@136 := @114 @135
+@137 := #8
+@138 := @136 @137
+@139 := @138 @93
+@145 := @129 (fun {α' : @0} => {t' : @11} -> (eq_2 : @134) -> @139 @14 @2)
+@146 := @6 @85
+@147 := @6 @86
+@151 := @84 @147 @85 @147 @1
+@158 := Eq.ndrec.{u, 1} @130 @86 (fun {t' : @130} => @139 @137 @1)
+@166 := LexLeanCollections.Key.casesOn.{u} @93 (fun {t : @130} => @138 @1 @137 @1) @86
+@168 := (a._@._internal._hyg.#0 : @93) -> (a._@._internal._hyg.#0 : @137) -> @3
+@170 := (a._@._internal._hyg.#0 : @137) -> (a._@._internal._hyg.#0 : @135) -> @3
+@174 := @84 @170 @1 @170 @1
+@175 := #10
+@207 := fun {P : @12} =>
+  fun {α : @0} =>
+  fun {t : @11} =>
+  fun {α' : @0} =>
+  fun {t' : @11} =>
+  fun (eq_1 : @108) =>
+  fun (eq_2 : @113) =>
+  @145
+    (fun {t' : @146} =>
+    fun (eq_2 : @151) =>
+    @158
+      (@166
+        (fun (compare : @168) =>
+        fun (k : (compare_eq : @174) -> @175) =>
+        @1
+          (HEq.refl.{1}
+            ((a._@._internal._hyg.#0 : @135) -> (a._@._internal._hyg.#0 : @175) -> @3)
+            @2)))
+      @2
+      (eq_of_heq.{1} @130 @86 @2 @1))
+    @28
+    @2
+    @14
+    @1
+@208 := Eq.{1}
+@212 := @208 @76 (@31 @2) @32
+@214 := (a._@._internal._hyg.#0 : @43) -> (a._@._internal._hyg.#0 : @85) -> @3
+@219 := (compare_eq : @84 @214 @14 @214 @2) -> @43
+@225 := {α : @0} ->
+  {P : @12} -> {compare : @16} -> {compare' : @30} -> (eq : @212) -> (k : @219) -> @43
+@227 := id.{u} @43
+@230 := LexLeanCollections.Key.noConfusion.{u} @43 @85
+@231 := @17 @85
+@232 := @231 @28
+@234 := @230 @232 @85
+@235 := @231 @14
+@254 := fun {α : @0} =>
+  fun {P : @12} =>
+  fun {compare : @16} =>
+  fun {compare' : @30} =>
+  fun (eq : @212) =>
+  fun (k : @219) => @227 (@234 @235 (Eq.refl.{2} @0 @85) (heq_of_eq.{1} @146 @232 @235 @2) @1)
+@260 := fun {α : @0} => fun {motive : @13} => fun (t : @7) => fun (mk : @34) => @42 @1 @2
+@261 := (t : @3) -> @12
+@262 := Ordering.eq
+@263 := @2 @262
+@264 := Nat.hasNotBit
+@265 := 2
+@266 := @264 @265
+@267 := Ordering.ctorIdx
+@268 := @267 @2
+@269 := @266 @268
+@270 := @28 @14
+@275 := {motive : @261} ->
+  (t : @3) ->
+  (eq : @263) ->
+  (else._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#119 : (h : @269) -> @270) -> @270
+@276 := Ordering.rec.{u}
+@277 := @267 @1
+@278 := @266 @277
+@279 := @43 @2
+@283 := @276
+    (fun (t : @3) =>
+    (else._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#119 : (h : @278) -> @279) -> @279)
+@284 := Ordering.lt
+@285 := @267 @284
+@286 := @266 @285
+@287 := @28 @284
+@288 := (h : @286) -> @287
+@289 := Nat.ne_of_beq_eq_false
+@290 := Nat.land
+@291 := OfNat.ofNat.{0}
+@293 := @291 (annot [borrowed := bool true] @59)
+@294 := 1
+@295 := @293 @294
+@296 := instOfNatNat
+@297 := @296 @294
+@299 := @290 (@295 @297)
+@300 := Nat.shiftRight
+@301 := @300 @265
+@304 := @289 (@299 (@301 @62))
+@305 := @291 @59
+@307 := @305 @294 @297
+@308 := @304 @307
+@309 := Eq.refl.{1}
+@310 := Bool
+@311 := @309 @310
+@312 := Bool.false
+@313 := @311 @312
+@317 := @283
+    (fun (else._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#119 : @288) =>
+    @1 (@308 @313))
+@318 := @267 @262
+@319 := @266 @318
+@320 := @28 @262
+@323 := @317
+    (fun (else._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#119 : (h : @319) -> @320) =>
+    @2)
+@324 := Ordering.gt
+@325 := @267 @324
+@326 := @266 @325
+@327 := @28 @324
+@340 := fun {motive : @261} =>
+  fun (t : @3) =>
+  fun (eq : @263) =>
+  @323
+    (fun (else._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#119 : (h : @326) -> @327) =>
+    @1 (@289 (@299 (@301 @265)) @307 @313))
+    @2
+@341 := Sort u_1
+@342 := (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#108 : @3) -> @341
+@343 := Unit
+@345 := ("_" : @343) -> @14 @262
+@346 := @28 @1
+@347 := (other : @3) -> @346
+@351 := (motive : @342) ->
+  (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#108 : @3) ->
+  (h_1 : @345) -> (h_2 : @347) -> @270
+@352 := LexLeanCollections.compareCodes._sparseCasesOn_1.{u_1}
+@353 := @43 @1
+@354 := fun (x : @3) => @353
+@356 := @352 @354 @14
+@357 := Unit.unit
+@358 := @2 @357
+@359 := @356 @358
+@360 := @267 @14
+@361 := @266 @360
+@362 := @2 @28
+@368 := fun (motive : @342) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#108 : @3) =>
+  fun (h_1 : @345) =>
+  fun (h_2 : @347) =>
+  @359 (fun (h._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#120 : @361) => @362)
+@369 := List.{0}
+@370 := Char
+@371 := @369 @370
+@373 := (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#9.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#28 : @371) ->
+  (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#10.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#31 : @371) ->
+  @341
+@374 := List.nil.{0}
+@375 := @374 @370
+@378 := ("_" : @343) -> @28 @375 @375
+@379 := @85 @375
+@380 := List.cons.{0}
+@381 := @380 @370
+@383 := @381 @2 @1
+@386 := (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#61 : @370) ->
+  (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#62 : @371) -> @379 @383
+@390 := (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#78 : @370) ->
+  (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#79 : @371) -> @86 @383 @375
+@392 := @381 @28 @14
+@398 := (left : @370) -> (lefts : @371) -> (right : @370) -> (rights : @371) -> @135 @392 @383
+@407 := (motive : @373) ->
+  (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#9.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#28 : @371) ->
+  (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#10.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#31 : @371) ->
+  (h_1 : @378) -> (h_2 : @386) -> (h_3 : @390) -> (h_4 : @398) -> @86 @85 @43
+@408 := List.casesOn.{u_1, 0}
+@409 := @408 @370
+@414 := @409 (fun (x : @371) => @93 @1 @85) @85
+@421 := @409 (fun (x : @371) => @93 @375 @1) @43 (@28 @357)
+@422 := @279 @1
+@426 := @414
+    (@421
+      (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#131 : @370) =>
+      fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#132 : @371) => @422))
+@436 := @409 (fun (x : @371) => @135 (@381 @14 @2) @1) @86 (@28 @2 @1)
+@437 := @43 @28
+@438 := @437 @14
+@453 := fun (motive : @373) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#9.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#28 : @371) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#10.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#31 : @371) =>
+  fun (h_1 : @378) =>
+  fun (h_2 : @386) =>
+  fun (h_3 : @390) =>
+  fun (h_4 : @398) =>
+  @426
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#129 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#130 : @371) =>
+    @436
+      (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#133 : @370) =>
+      fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#134 : @371) => @438 @2 @1))
+@454 := List.below.{1, 0}
+@455 := @454 @370
+@456 := (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) -> @3
+@457 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) => @456
+@458 := @455 @457
+@459 := @458 @1
+@461 := (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) -> (f : @459) -> @456
+@462 := LexLeanCollections.compareCodes.match_4.{1}
+@469 := @462
+    (fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#9.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#28 : @371) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#10.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#31 : @371) =>
+    (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#135 : @458 @2) -> @3)
+    @14
+    @1
+@470 := @458 @375
+@482 := @469
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#135 : @470) => @262)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#61 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#62 : @371) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#135 : @470) => @284)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#78 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#79 : @371) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#135 : @458 @383) => @324)
+@483 := @458 @392
+@484 := LexLeanCollections.compareCodes.match_1.{1}
+@486 := @484 (fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#108 : @3) => @3)
+@487 := Ord.compare.{0}
+@490 := @487 @59 instOrdNat
+@491 := UInt32.toNat
+@492 := Char.val
+@499 := @486 (@490 (@491 (@492 @43)) (@491 (@492 @14)))
+@500 := proj PProd PProd.fst 0 @2
+@503 := @499 (fun ("_" : @343) => @500 @14)
+@504 := fun (other : @3) => @1
+@515 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) =>
+  fun (f : @459) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) =>
+  @482
+    (fun (left : @370) =>
+    fun (lefts : @371) =>
+    fun (right : @370) =>
+    fun (rights : @371) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#135 : @483) => @503 @504)
+    @2
+@517 := (a._@._internal._hyg.#0 : @371) -> (a._@._internal._hyg.#0 : @371) -> @3
+@518 := List.brecOn.{1, 0}
+@526 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) =>
+  @518 @370 @457 @2 LexLeanCollections.compareCodes._f @1
+@531 := @462
+    (fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#9.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#28 : @371) =>
+    fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx.#10.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#31 : @371) =>
+    @3)
+    @2
+    @1
+@539 := @531
+    (fun ("_" : @343) => @262)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#61 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#62 : @371) => @284)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#78 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#79 : @371) => @324)
+@546 := @486 (@490 (@491 (@492 @28)) (@491 (@492 @2)))
+@547 := LexLeanCollections.compareCodes
+@552 := @546 (fun ("_" : @343) => @547 @28 @2) @504
+@559 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) =>
+  @539
+    (fun (left : @370) => fun (lefts : @371) => fun (right : @370) => fun (rights : @371) => @552)
+@579 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) =>
+  annot [sunfoldMatch := bool true]
+  (@531
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @262)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#61 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#62 : @371) =>
+    annot [sunfoldMatchAlt := bool true] @284)
+    (fun (head._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#78 : @370) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#79 : @371) =>
+    annot [sunfoldMatchAlt := bool true] @324)
+    (fun (left : @370) =>
+    fun (lefts : @371) =>
+    fun (right : @370) => fun (rights : @371) => annot [sunfoldMatchAlt := bool true] @552))
+@592 := fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#9 : @371) =>
+  fun (x._@.LexLeanRuntime.Collections.#1464907066._hygCtx._hyg.#10 : @371) =>
+  @539
+    (fun (left : @370) =>
+    fun (lefts : @371) =>
+    fun (right : @370) =>
+    fun (rights : @371) =>
+    @546 (fun ("_" : @343) => LexLeanCollections.compareCodes._unsafe_rec @28 @2) @504)
+@593 := @369 @1
+@594 := (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx.#12.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#23 : @593) ->
+  @341
+@595 := @369 @2
+@596 := @374 @28
+@598 := ("_" : @343) -> @14 @596
+@599 := @369 @43
+@605 := (other : @28) -> (rest : @599) -> @43 (@380 @85 @2 @1)
+@610 := {κ : @0} ->
+  (motive : @594) ->
+  (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx.#12.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#23 : @595) ->
+  (h_1 : @598) -> (h_2 : @605) -> @270
+@611 := @408 @43
+@612 := fun (x : @599) => @353
+@615 := @611 @612 @14 @358
+@616 := @369 @85
+@625 := fun {κ : @0} =>
+  fun (motive : @594) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx.#12.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#23 : @595) =>
+  fun (h_1 : @598) =>
+  fun (h_2 : @605) =>
+  @615
+    (fun (head._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#85 : @43) =>
+    fun (tail._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#86 : @616) => @35 @1)
+@626 := (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#73 : @3) -> @341
+@628 := ("_" : @343) -> @14 @284
+@629 := ("_" : @343) -> @320
+@631 := ("_" : @343) -> @43 @324
+@636 := (motive : @626) ->
+  (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#73 : @3) ->
+  (h_1 : @628) -> (h_2 : @629) -> (h_3 : @631) -> @437
+@637 := Ordering.casesOn.{u_1}
+@638 := @85 @1
+@651 := fun (motive : @626) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#73 : @3) =>
+  fun (h_1 : @628) =>
+  fun (h_2 : @629) => fun (h_3 : @631) => @637 (fun (x : @3) => @638) @28 (@14 @357) @358 (@1 @357)
+@652 := @369 @14
+@653 := @454 @28
+@654 := @369 @28
+@655 := fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @654) => @310
+@657 := @653 @655 @1
+@662 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] ->
+  (key : @2) ->
+  (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) -> (f : @657) -> @310
+@663 := LexLeanCollections.insertElement.match_1.{1}
+@664 := @663 @43
+@665 := @454 @85
+@667 := @665 (fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @616) => @310)
+@672 := @664
+    (fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx.#11.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#22 : @599) =>
+    (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#66 : @667 @1) -> @310)
+    @2
+@673 := @374 @85
+@677 := @672
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#66 : @667 @673) => @312)
+@678 := @454 @86
+@679 := @369 @86
+@681 := @678 (fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @679) => @310)
+@682 := @380 @86
+@684 := @682 @2 @1
+@685 := @681 @684
+@686 := LexLeanCollections.insertEntry.match_1.{1}
+@688 := @686 (fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#47 : @3) => @310)
+@689 := LexLeanCollections.Key.compare
+@690 := @689 @93
+@693 := @690 @86 @85 @14
+@694 := @688 @693
+@695 := fun ("_" : @343) => @312
+@696 := @694 @695
+@697 := Bool.true
+@698 := fun ("_" : @343) => @697
+@699 := @696 @698
+@700 := fun ("_" : @343) => @500
+@711 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) =>
+  fun (f : @657) =>
+  @677
+    (fun (other : @43) =>
+    fun (rest : @616) =>
+    fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#66 : @685) => @699 @700)
+    @1
+@715 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] ->
+  (key : @2) -> (a._@._internal._hyg.#0 : @652) -> @310
+@716 := @518 @28
+@727 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) =>
+  @716 @655 @1 (LexLeanCollections.containsElement._f @28 @14 @2)
+@728 := @663 @28
+@731 := @728
+    (fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx.#11.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#22 : @654) =>
+    @310)
+    @1
+@732 := @731 @695
+@733 := @689 @85
+@736 := @733 @43 @28 @2
+@739 := @688 @736 @695 @698
+@740 := LexLeanCollections.containsElement
+@746 := @739 (fun ("_" : @343) => @740 @86 @85 @43 @2)
+@753 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) =>
+  @732 (fun (other : @28) => fun (rest : @599) => @746)
+@765 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) =>
+  annot [sunfoldMatch := bool true]
+  (@731
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @312)
+    (fun (other : @28) => fun (rest : @599) => annot [sunfoldMatchAlt := bool true] @746))
+@779 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#195034084._hygCtx._hyg.#11 : @652) =>
+  @732
+    (fun (other : @28) =>
+    fun (rest : @599) =>
+    @739 (fun ("_" : @343) => LexLeanCollections.containsElement._unsafe_rec @86 @85 @43 @2))
+@780 := fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @654) => @599
+@782 := @653 @780 @1
+@787 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] ->
+  (key : @2) ->
+  (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) -> (f : @782) -> @599
+@789 := @665 (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @616) => @679)
+@794 := @664
+    (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx.#12.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#23 : @599) =>
+    (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#87 : @789 @1) -> @679)
+    @2
+@795 := @789 @673
+@796 := @682 @43
+@797 := @374 @86
+@801 := @794
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#87 : @795) => @796 @797)
+@802 := @369 @93
+@805 := @678
+    (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @679) => @802)
+    @684
+@806 := @369 @137
+@809 := @686 (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#52 : @3) => @806) @693
+@810 := @380 @137
+@811 := @810 @86
+@812 := @810 @28
+@813 := @812 @14
+@816 := @809 (fun ("_" : @343) => @811 @813)
+@817 := fun ("_" : @343) => @813
+@818 := @816 @817
+@820 := fun ("_" : @343) => @812 @500
+@831 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) =>
+  fun (f : @782) =>
+  @801
+    (fun (other : @43) =>
+    fun (rest : @616) =>
+    fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#87 : @805) => @818 @820)
+    @1
+@833 := (key : @2) -> (a._@._internal._hyg.#0 : @652) -> @654
+@835 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] -> @833
+@846 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) =>
+  @716 @780 @1 (LexLeanCollections.insertElement._f @28 @14 @2)
+@849 := @728
+    (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx.#12.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#23 : @654) =>
+    @599)
+    @1
+@851 := @380 @43 @14
+@852 := @374 @43
+@853 := @851 @852
+@855 := @849 (fun ("_" : @343) => @853)
+@858 := @686 (fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#52 : @3) => @679) @736
+@859 := @682 @14
+@860 := @859 @2
+@863 := @858 (fun ("_" : @343) => @796 @860)
+@864 := fun ("_" : @343) => @860
+@865 := @863 @864
+@866 := LexLeanCollections.insertElement
+@868 := @866 @86 @85
+@873 := @865 (fun ("_" : @343) => @859 (@868 @43 @2))
+@880 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) =>
+  @855 (fun (other : @28) => fun (rest : @599) => @873)
+@881 := Prod.{0, 0}
+@882 := @881 @2
+@884 := @369 (@882 @595)
+@887 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1738817631._hygCtx._hyg.#3 : @11] -> (graph : @884) -> @652
+@888 := List.foldl.{0, 0}
+@889 := @888 @652
+@890 := @881 @14
+@892 := @889 (@890 @652)
+@893 := @881 @28
+@894 := @893 @654
+@901 := @888 @599 @43 (fun (inner : @599) => fun (node : @85) => @868 @1 @2)
+@903 := @866 @43 @28
+@904 := Prod.fst.{0, 0}
+@910 := @901 (@903 (@904 @43 @599 @1) @2)
+@911 := Prod.snd.{0, 0}
+@924 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1738817631._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  @892 (fun (acc : @652) => fun (entry : @894) => @910 (@911 @43 @599 @1)) (@374 @14) @1
+@926 := @369 (@882 @1)
+@927 := (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx.#22.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#33 : @926) ->
+  @341
+@928 := @890 @2
+@929 := @369 @928
+@930 := @881 @43
+@931 := @930 @28
+@934 := ("_" : @343) -> @14 (@374 @931)
+@935 := @881 @86
+@936 := @935 @85
+@937 := @369 @936
+@938 := @881 @93
+@939 := @938 @86
+@940 := @380 @939
+@941 := Prod.mk.{0, 0}
+@951 := (other : @43) -> (stored : @43) -> (rest : @937) -> @85 (@940 (@941 @93 @86 @14 @2) @1)
+@957 := {κ : @0} ->
+  {ν : @0} ->
+  (motive : @927) ->
+  (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx.#22.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#33 : @929) ->
+  (h_1 : @934) -> (h_2 : @951) -> @270
+@958 := @881 @85
+@959 := @958 @43
+@960 := @408 @959
+@961 := @369 @959
+@965 := @960 (fun (x : @961) => @353) @14 @358
+@968 := Prod.casesOn.{u_1, 0, 0} @93 @86
+@969 := @881 @137
+@970 := @969 @93
+@971 := @380 @970
+@990 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun (motive : @927) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx.#22.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#33 : @929) =>
+  fun (h_1 : @934) =>
+  fun (h_2 : @951) =>
+  @965
+    (fun (head._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#123 : @959) =>
+    fun (tail._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#124 : @937) =>
+    @968
+      (fun (x : @939) => @86 (@971 @1 @2))
+      @2
+      (fun (fst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#125 : @93) =>
+      fun (snd._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#126 : @93) => @422 @14))
+@991 := @893 @14
+@992 := @369 @991
+@993 := @454 @931
+@994 := @369 @931
+@995 := Option.{0}
+@996 := @995 @43
+@997 := fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @994) => @996
+@999 := @993 @997 @1
+@1005 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] ->
+  (key : @14) ->
+  (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) -> (f : @999) -> @996
+@1006 := LexLeanCollections.insertEntry.match_3.{1}
+@1008 := @1006 @85 @43
+@1009 := @454 @936
+@1010 := @995 @86
+@1012 := @1009 (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @937) => @1010)
+@1017 := @1008
+    (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx.#17.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#28 : @961) =>
+    (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#82 : @1012 @1) -> @1010)
+    @2
+@1018 := @374 @936
+@1019 := @1012 @1018
+@1020 := Option.none.{0}
+@1024 := @1017
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#82 : @1019) => @1020 @86)
+@1025 := @369 @939
+@1026 := @454 @970
+@1027 := @369 @970
+@1030 := @1026
+    (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @1027) => @995 @137)
+@1031 := @941 @137
+@1032 := @1031 @93
+@1036 := @971 (@1032 @14 @2) @1
+@1037 := @1030 @1036
+@1040 := @686 (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#60 : @3) => @995 @135)
+@1044 := @689 @135 @93 @86 @28
+@1048 := @1040 @1044 (fun ("_" : @343) => @1020 @135)
+@1049 := Option.some.{0}
+@1066 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) =>
+  fun (f : @999) =>
+  @1024
+    (fun (other : @85) =>
+    fun (stored : @85) =>
+    fun (rest : @1025) =>
+    fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#82 : @1037) =>
+    @1048 (fun ("_" : @343) => @1049 @135 @28) @700)
+    @1
+@1067 := @995 @28
+@1072 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] ->
+  (key : @14) -> (a._@._internal._hyg.#0 : @992) -> @1067
+@1073 := @518 @931
+@1086 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) =>
+  @1073 @997 @1 (LexLeanCollections.lookupEntry._f @43 @28 @14 @2)
+@1088 := @1006 @43 @28
+@1091 := @1088
+    (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx.#17.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#28 : @994) =>
+    @996)
+    @1
+@1092 := @1020 @43
+@1094 := @1091 (fun ("_" : @343) => @1092)
+@1095 := @995 @93
+@1097 := @686 (fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#60 : @3) => @1095)
+@1100 := @690 @85 @43 @14
+@1108 := @1097 @1100 (fun ("_" : @343) => @1020 @93) (fun ("_" : @343) => @1049 @93 @14)
+@1109 := LexLeanCollections.lookupEntry
+@1116 := @1108 (fun ("_" : @343) => @1109 @137 @93 @86 @85 @2)
+@1125 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) =>
+  @1094 (fun (other : @43) => fun (stored : @43) => fun (rest : @937) => @1116)
+@1129 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#4251190188._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) -> (node : @14) -> @654
+@1142 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#4251190188._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) => fun (node : @14) => Option.getD.{0} @654 (@1109 @28 @654 @14 @1 @2) @596
+@1143 := Sort u+1
+@1144 := List.{u}
+@1146 := (t : @1144 @1) -> @341
+@1147 := @1144 @2
+@1148 := List.nil.{u}
+@1150 := @2 (@1148 @14)
+@1151 := @264 @294
+@1152 := List.ctorIdx.{u}
+@1153 := @1152 @28
+@1161 := {α : @1143} ->
+  {motive : @1146} ->
+  (t : @1147) ->
+  (nil : @1150) ->
+  (else._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#158 : (h : @1151 (@1153 @2)) ->
+  @270) ->
+  @270
+@1179 := List.rec.{u_1, u}
+    @28
+    (fun (t : @1144 @28) =>
+    (else._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#158 : (h : @1151
+      (@1152 @43 @1)) ->
+    @279) ->
+    @279)
+    (fun (else._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#158 : (h : @1151
+      (@1153 (@1148 @28))) ->
+    @28 (@1148 @43)) =>
+    @2)
+@1180 := @1144 @43
+@1183 := @1151 (@1152 @85 @1)
+@1184 := @85 @2
+@1186 := (else._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#158 : (h : @1183) ->
+  @1184) ->
+  @1184
+@1187 := @1152 @86
+@1188 := List.cons.{u}
+@1198 := (h : @1151 (@1187 (@1188 @86 @14 @2))) -> @86 (@1188 @93 @28 @14)
+@1199 := @300 @294
+@1205 := @1 (@289 (@299 (@1199 @294)) @307 @313)
+@1215 := fun {α : @1143} =>
+  fun {motive : @1146} =>
+  fun (t : @1147) =>
+  fun (nil : @1150) =>
+  @1179
+    (fun (head : @28) =>
+    fun (tail : @1180) =>
+    fun (tail_ih : @1186) =>
+    fun (else._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#158 : @1198) => @1205)
+    @2
+@1216 := (next._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#129 : @593) -> @341
+@1217 := (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#138 : @654) -> @346
+@1222 := {κ : @0} ->
+  (motive : @1216) ->
+  (next._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#129 : @595) ->
+  (h_1 : @598) -> (h_2 : @1217) -> @270
+@1238 := fun {κ : @0} =>
+  fun (motive : @1216) =>
+  fun (next._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#129 : @595) =>
+  fun (h_1 : @598) =>
+  fun (h_2 : @1217) =>
+  LexLeanCollections.reachableFrom._sparseCasesOn_1.{u_1, 0}
+    @43
+    @612
+    @14
+    @358
+    (fun (h._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#159 : @1151
+      (List.ctorIdx.{0} @43 @14)) =>
+    @362)
+@1241 := (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#25.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#52 : @59) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#26.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#55 : @595) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#27.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#58 : @652) ->
+  @341
+@1244 := @305 @62 (@296 @62)
+@1249 := (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#66 : @599) ->
+  (seen : @616) -> @85 @1244 @2 @1
+@1250 := Nat.succ
+@1251 := @1250 @14
+@1257 := (fuel : @59) -> (frontier : @679) -> (seen : @802) -> @93 @1251 @2 @1
+@1267 := {κ : @0} ->
+  (motive : @1241) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#25.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#52 : @59) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#26.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#55 : @652) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#27.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#58 : @654) ->
+  (h_1 : @1249) -> (h_2 : @1257) -> @85 @43 @28 @14
+@1268 := Nat.casesOn.{u_1}
+@1287 := fun {κ : @0} =>
+  fun (motive : @1241) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#25.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#52 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#26.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#55 : @652) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#27.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#58 : @654) =>
+  fun (h_1 : @1249) =>
+  fun (h_2 : @1257) =>
+  @1268
+    (fun (x : @59) => @86 @1 @43 @28)
+    @43
+    (@362 @14)
+    (fun (n._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#166 : @59) => @46 @43 @28)
+@1288 := Nat.below.{1}
+@1290 := (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @599) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @616) -> @679
+@1293 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) => @1290)
+    @1
+@1298 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) ->
+  (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) -> (f : @1293) -> @1290
+@1299 := LexLeanCollections.reachableFrom.match_4.{1}
+@1300 := @1299 @86
+@1301 := @369 @175
+@1302 := #11
+@1303 := @369 @1302
+@1304 := #12
+@1305 := @369 @1304
+@1309 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @1301) ->
+    (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @1303) -> @1305)
+@1318 := @1300
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#25.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#52 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#26.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#55 : @802) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#27.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#58 : @806) =>
+    (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#167 : @1309 @14) -> @1301)
+    @28
+    @2
+    @1
+@1319 := @369 @135
+@1328 := @1318
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#66 : @679) =>
+    fun (seen : @802) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#167 : @1288
+      (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+      (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @1319) ->
+      (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @1301) -> @1303)
+      @1244) =>
+    @2)
+@1329 := @1309 @1251
+@1331 := @888 @1301 @175
+@1333 := @888 @1305 @1304
+@1334 := #13
+@1335 := ite.{1}
+@1336 := #14
+@1338 := @1335 (@369 @1336)
+@1339 := @208 @310
+@1340 := Bool.or
+@1343 := @740 @1336 @1334 @1
+@1347 := @1340 (@1343 @85) (@1343 @2)
+@1350 := @1338 (@1339 @1347 @697)
+@1351 := instDecidableEqBool
+@1355 := @1350 (@1351 @1347 @697) @2
+@1359 := @866 @1336 @1334 @1 @2
+@1364 := @1333 (fun (acc2 : @1305) => fun (succ : @1334) => @1355 @1359) @2
+@1365 := LexLeanCollections.graphSuccessors
+@1369 := @1365 @1304 @1302 @175 @1
+@1376 := @1331 (fun (acc : @1301) => fun (node : @1302) => @1364 @1369) (@374 @175) @14
+@1377 := LexLeanCollections.reachableFrom.match_1.{1}
+@1383 := @1377
+    @1302
+    (fun (next._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#129 : @1303) => @1305)
+    @1
+    (fun ("_" : @343) => @28)
+@1384 := proj PProd PProd.fst 0 @14
+@1407 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+  fun (f : @1293) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @599) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @616) =>
+  @1328
+    (fun (fuel : @59) =>
+    fun (frontier : @802) =>
+    fun (seen : @806) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#167 : @1329) =>
+    let next : @1301 := @1376;
+    @1383
+      (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#138 : @1303) =>
+      @1384 @2 (@1333 (fun (acc : @1305) => fun (key : @1334) => @1359) @28 @2)))
+    @14
+@1413 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) ->
+  (a._@._internal._hyg.#0 : @59) ->
+  (a._@._internal._hyg.#0 : @654) -> (a._@._internal._hyg.#0 : @599) -> @616
+@1414 := Nat.brecOn.{1}
+@1432 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @599) =>
+  @1414
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @679) ->
+    (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @802) -> @806)
+    @14
+    (LexLeanCollections.reachableFrom._f @85 @43 @28)
+    @2
+    @1
+@1433 := @1299 @85
+@1440 := @1433
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#25.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#52 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#26.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#55 : @679) =>
+    fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx.#27.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#58 : @802) =>
+    @806)
+    @14
+    @2
+    @1
+@1443 := @1440
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#66 : @616) =>
+    fun (seen : @679) => @1)
+@1445 := @888 @806 @137
+@1446 := @1335 @1305
+@1448 := @740 @1304 @1302
+@1449 := @1448 @1
+@1453 := @1340 (@1449 @43) (@1449 @2)
+@1460 := @1446 (@1339 @1453 @697) (@1351 @1453 @697) @2
+@1464 := @866 @1304 @1302 @1 @2
+@1469 := @1331 (fun (acc2 : @1301) => fun (succ : @1302) => @1460 @1464) @2
+@1473 := @1365 @175 @135 @137 @1
+@1480 := @1445 (fun (acc : @806) => fun (node : @135) => @1469 @1473) (@374 @137) @2
+@1484 := @1377
+    @135
+    (fun (next._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#129 : @1319) => @1301)
+    @1
+@1485 := fun ("_" : @343) => @14
+@1486 := @1484 @1485
+@1487 := LexLeanCollections.reachableFrom
+@1492 := @1487 @175 @135 @137 @43 @2
+@1497 := @1331 (fun (acc : @1301) => fun (key : @1302) => @1464) @14 @2
+@1500 := @1486
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#138 : @1319) => @1492 @1497)
+@1511 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @599) =>
+  @1443
+    (fun (fuel : @59) =>
+    fun (frontier : @679) => fun (seen : @802) => let next : @806 := @1480; @1500)
+@1515 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#2047078506._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) -> (start : @14) -> @654
+@1518 := @1487 @28 @14 @2
+@1527 := HAdd.hAdd.{0, 0, 0} @59 @59 @59 (instHAdd.{0} @59 instAddNat)
+@1528 := List.length.{0}
+@1529 := @1528 @28
+@1530 := LexLeanCollections.graphNodes
+@1537 := @1518 (@1527 (@1529 (@1530 @28 @14 @2)) @307)
+@1540 := @380 @28 @1 @596
+@1546 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2047078506._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) => fun (start : @14) => @1537 @1540 @1540
+@1547 := fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @654) => @599
+@1549 := @653 @1547 @1
+@1554 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] ->
+  (key : @2) ->
+  (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) -> (f : @1549) -> @599
+@1556 := @665 (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @616) => @679)
+@1584 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) =>
+  fun (f : @1549) =>
+  @664
+    (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx.#12.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#23 : @599) =>
+    (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#77 : @1556 @1) -> @679)
+    @2
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#77 : @1556 @673) => @797)
+    (fun (other : @43) =>
+    fun (rest : @616) =>
+    fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#77 : @678
+      (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @679) => @802)
+      @684) =>
+    @686
+      (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#50 : @3) => @806)
+      @693
+      @817
+      @1485
+      @820)
+    @1
+@1586 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] -> @833
+@1597 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) =>
+  @716 @1547 @1 (LexLeanCollections.removeElement._f @28 @14 @2)
+@1600 := @728
+    (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx.#12.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#23 : @654) =>
+    @599)
+    @1
+@1602 := @1600 (fun ("_" : @343) => @852)
+@1606 := @686
+    (fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#50 : @3) => @679)
+    @736
+    @864
+@1607 := fun ("_" : @343) => @2
+@1608 := @1606 @1607
+@1609 := LexLeanCollections.removeElement
+@1616 := @1608 (fun ("_" : @343) => @859 (@1609 @86 @85 @43 @2))
+@1623 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) =>
+  @1602 (fun (other : @28) => fun (rest : @599) => @1616)
+@1626 := (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @599) ->
+  (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @616) -> @995 @679
+@1629 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) => @1626)
+    @1
+@1634 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) ->
+  (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) -> (f : @1629) -> @1626
+@1639 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @1301) ->
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @1303) -> @995 @1305)
+@1649 := @1300
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#28.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#55 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#29.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#58 : @802) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#30.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#61 : @806) =>
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#171 : @1639 @14) -> @995 @1301)
+    @28
+    @2
+    @1
+@1650 := @995 @1303
+@1655 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @1319) ->
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @1301) -> @1650)
+    @1244
+@1656 := @995 @1319
+@1657 := @1335 @1656
+@1658 := List.isEmpty.{0}
+@1660 := @1658 @135 @14
+@1666 := @1657 (@1339 @1660 @697) (@1351 @1660 @697)
+@1667 := @1049 @1319
+@1668 := List.reverse.{0}
+@1674 := @1666 (@1667 (@1668 @135 @2)) (@1020 @1319)
+@1678 := @1649
+    (fun (remaining : @679) =>
+    fun (order : @802) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#171 : @1655) => @1674)
+@1679 := @1639 @1251
+@1682 := @663
+    @175
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#120 : @1301) => @1650)
+@1683 := List.filter.{0}
+@1684 := @1683 @175
+@1685 := List.all.{0}
+@1687 := @1685 @1302 @28
+@1688 := Bool.not
+@1697 := @1682
+    (@1684 (fun (node : @175) => @1687 (fun (other : @1302) => @1688 (@1448 @2 @1369))) @14)
+@1698 := @1335 @1650
+@1700 := @1658 @1302 @28
+@1740 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+  fun (f : @1629) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @599) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @616) =>
+  @1678
+    (fun (fuel : @59) =>
+    fun (remaining : @802) =>
+    fun (order : @806) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#171 : @1679) =>
+    @1697
+      (fun ("_" : @343) =>
+      @1698 (@1339 @1700 @697) (@1351 @1700 @697) (@1049 @1303 (@1668 @1302 @14)) (@1020 @1303))
+      (fun (ready : @175) =>
+      fun (tail._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#144 : @1303) =>
+      @1384 (@1609 @1304 @1302 @2 @43) (@380 @1304 @2 @28)))
+    @14
+@1747 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) ->
+  (a._@._internal._hyg.#0 : @59) ->
+  (a._@._internal._hyg.#0 : @654) -> (a._@._internal._hyg.#0 : @599) -> @995 @616
+@1748 := @995 @806
+@1766 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @599) =>
+  @1414
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @679) ->
+    (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @802) -> @1748)
+    @14
+    (LexLeanCollections.topological._f @85 @43 @28)
+    @2
+    @1
+@1773 := @1433
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#28.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#55 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#29.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#58 : @679) =>
+    fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx.#30.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#61 : @802) =>
+    @1748)
+    @14
+    @2
+    @1
+@1775 := @1335 (@995 @802)
+@1777 := @1658 @93 @2
+@1790 := @1775 (@1339 @1777 @697) (@1351 @1777 @697) (@1049 @802 (@1668 @93 @1)) (@1020 @802)
+@1793 := @1773 (fun (remaining : @616) => fun (order : @679) => @1790)
+@1812 := @663
+    @137
+    (fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#120 : @806) => @1656)
+    (@1683
+      @137
+      (fun (node : @137) => @1685 @135 @14 (fun (other : @135) => @1688 (@740 @175 @135 @2 @1473)))
+      @2)
+    (fun ("_" : @343) => @1674)
+@1813 := LexLeanCollections.topological
+@1817 := @1813 @175 @135 @137 @43
+@1821 := @1609 @175 @135 @2 @28
+@1822 := @1817 @1821
+@1825 := @380 @175 @2 @14
+@1829 := @1812
+    (fun (ready : @137) =>
+    fun (tail._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#144 : @1319) => @1822 @1825)
+@1839 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @599) =>
+  @1793 (fun (fuel : @59) => fun (remaining : @679) => fun (order : @802) => @1829)
+@1843 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#624393543._hygCtx._hyg.#3 : @11] ->
+  (graph : @884) -> @995 @652
+@1859 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#624393543._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  have nodes : @652 := @1530 @14 @2 @1; @1813 @28 @14 @2 (@1527 (@1529 @1) @307) @1 @596
+@1871 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) =>
+  annot [sunfoldMatch := bool true]
+  (@849
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @853)
+    (fun (other : @28) => fun (rest : @599) => annot [sunfoldMatchAlt := bool true] @873))
+@1886 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#3779199783._hygCtx._hyg.#12 : @652) =>
+  @855
+    (fun (other : @28) =>
+    fun (rest : @599) =>
+    @865 (fun ("_" : @343) => @859 (LexLeanCollections.insertElement._unsafe_rec @86 @85 @43 @2)))
+@1887 := @454 @959
+@1888 := fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @961) => @937
+@1890 := @1887 @1888 @1
+@1897 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] ->
+  (key : @14) ->
+  (value : @14) ->
+  (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) -> (f : @1890) -> @937
+@1899 := @1006 @86 @85
+@1902 := @454
+    @939
+    (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @1025) => @1027)
+@1907 := @1899
+    (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx.#22.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#33 : @937) =>
+    (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#127 : @1902 @1) -> @1027)
+    @2
+@1908 := @374 @939
+@1917 := @1907
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#127 : @1902 @1908) =>
+    @971 (@1032 @85 @43) (@374 @970))
+@1919 := @881 @135 @137
+@1920 := @454 @1919
+@1921 := @369 @1919
+@1923 := @881 @175 @135
+@1924 := @369 @1923
+@1926 := @1920 (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @1921) => @1924)
+@1927 := @380 @1919
+@1929 := @941 @135 @137
+@1934 := @1926 (@1927 (@1929 @14 @2) @1)
+@1936 := @881 @1302 @175
+@1944 := @686
+    (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#73 : @3) => @369 @1936)
+    (@689 @175 @137 @93 @28)
+@1945 := @380 @1936
+@1947 := @941 @1302 @175
+@1950 := @1945 (@1947 @137 @93)
+@1953 := @1945 (@1947 @43 @28)
+@1976 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (value : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) =>
+  fun (f : @1890) =>
+  @1917
+    (fun (other : @86) =>
+    fun (stored : @86) =>
+    fun (rest : @1027) =>
+    fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#127 : @1934) =>
+    @1944
+      (fun ("_" : @343) => @1950 (@1953 @14))
+      (fun ("_" : @343) => @1950 @14)
+      (fun ("_" : @343) => @1953 @500))
+    @1
+@1982 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] ->
+  (key : @14) -> (value : @14) -> (a._@._internal._hyg.#0 : @994) -> @961
+@1998 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (value : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) =>
+  @518 @959 @1888 @1 (LexLeanCollections.insertEntry._f @85 @43 @28 @14 @2)
+@2001 := @1008
+    (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx.#22.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#33 : @961) =>
+    @937)
+    @1
+@2002 := @380 @936
+@2003 := @941 @86
+@2008 := @2002 (@2003 @85 @28 @14) @1018
+@2010 := @2001 (fun ("_" : @343) => @2008)
+@2017 := @686
+    (fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#73 : @3) => @1921)
+    (@689 @137 @86 @85 @14)
+@2020 := @1927 (@1929 @86 @85)
+@2023 := @1927 (@1929 @28 @14)
+@2030 := @2017 (fun ("_" : @343) => @2020 (@2023 @2)) (fun ("_" : @343) => @2020 @2)
+@2031 := LexLeanCollections.insertEntry
+@2040 := @2030 (fun ("_" : @343) => @2023 (@2031 @135 @137 @93 @86 @85 @2))
+@2050 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (value : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) =>
+  @2010 (fun (other : @85) => fun (stored : @85) => fun (rest : @1025) => @2040)
+@2065 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (value : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) =>
+  annot [sunfoldMatch := bool true]
+  (@2001
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @2008)
+    (fun (other : @85) =>
+    fun (stored : @85) => fun (rest : @1025) => annot [sunfoldMatchAlt := bool true] @2040))
+@2085 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (value : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#2107087126._hygCtx._hyg.#22 : @994) =>
+  @2010
+    (fun (other : @85) =>
+    fun (stored : @85) =>
+    fun (rest : @1025) =>
+    @2030
+      (fun ("_" : @343) =>
+      @2023 (LexLeanCollections.insertEntry._unsafe_rec @135 @137 @93 @86 @85 @2)))
+@2086 := @6 @310
+@2091 := @17 @310 (@487 @310 instOrdBool)
+@2092 := Int
+@2093 := @6 @2092
+@2094 := @17 @2092
+@2097 := @487 @2092 instOrdInt
+@2098 := @2094 @2097
+@2099 := Int16
+@2100 := @6 @2099
+@2101 := @17 @2099
+@2102 := Int16.toInt
+@2109 := @2101 (fun (left : @2099) => fun (right : @2099) => @2097 (@2102 @2) (@2102 @1))
+@2110 := Int32
+@2111 := @6 @2110
+@2112 := @17 @2110
+@2113 := Int32.toInt
+@2120 := @2112 (fun (left : @2110) => fun (right : @2110) => @2097 (@2113 @2) (@2113 @1))
+@2121 := Int64
+@2122 := @6 @2121
+@2123 := @17 @2121
+@2124 := Int64.toInt
+@2131 := @2123 (fun (left : @2121) => fun (right : @2121) => @2097 (@2124 @2) (@2124 @1))
+@2132 := Int8
+@2133 := @6 @2132
+@2134 := @17 @2132
+@2135 := Int8.toInt
+@2142 := @2134 (fun (left : @2132) => fun (right : @2132) => @2097 (@2135 @2) (@2135 @1))
+@2143 := @6 @59
+@2145 := @17 @59 @490
+@2150 := {α : @0} ->
+  {β : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1247148035._hygCtx._hyg.#4 : @7] ->
+  [inst._@.LexLeanRuntime.Collections.#1247148035._hygCtx._hyg.#7 : @7] -> @6 @991
+@2151 := @17 @991
+@2153 := @484 (fun (x._@.LexLeanRuntime.Collections.#1247148035._hygCtx._hyg.#34 : @3) => @3)
+@2154 := @733 @28
+@2156 := @904 @85 @43
+@2161 := @2153 (@2154 (@2156 @2) (@2156 @1))
+@2163 := @911 @86 @85
+@2177 := fun {α : @0} =>
+  fun {β : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1247148035._hygCtx._hyg.#4 : @7] =>
+  fun [inst._@.LexLeanRuntime.Collections.#1247148035._hygCtx._hyg.#7 : @7] =>
+  @2151
+    (fun (left : @991) =>
+    fun (right : @931) => @2161 (fun ("_" : @343) => @2154 (@2163 @14) (@2163 @2)) @504)
+@2178 := String
+@2179 := @6 @2178
+@2180 := @17 @2178
+@2181 := String.toList
+@2188 := @2180 (fun (left : @2178) => fun (right : @2178) => @547 (@2181 @2) (@2181 @1))
+@2189 := UInt16
+@2190 := @6 @2189
+@2191 := @17 @2189
+@2192 := UInt16.toNat
+@2199 := @2191 (fun (left : @2189) => fun (right : @2189) => @490 (@2192 @2) (@2192 @1))
+@2200 := UInt32
+@2201 := @6 @2200
+@2209 := @17 @2200 (fun (left : @2200) => fun (right : @2200) => @490 (@491 @2) (@491 @1))
+@2210 := UInt64
+@2211 := @6 @2210
+@2212 := @17 @2210
+@2213 := UInt64.toNat
+@2220 := @2212 (fun (left : @2210) => fun (right : @2210) => @490 (@2213 @2) (@2213 @1))
+@2221 := UInt8
+@2222 := @6 @2221
+@2223 := @17 @2221
+@2224 := UInt8.toNat
+@2231 := @2223 (fun (left : @2221) => fun (right : @2221) => @490 (@2224 @2) (@2224 @1))
+@2233 := (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#11.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#30 : @59) ->
+  (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#12.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#33 : @2) ->
+  @341
+@2236 := (state : @28) -> @28 @1244 @1
+@2237 := @1250 @2
+@2241 := (count : @59) -> (state : @85) -> @85 @2237 @1
+@2247 := {σ : @0} ->
+  (motive : @2233) ->
+  (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#11.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#30 : @59) ->
+  (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#12.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#33 : @14) ->
+  (h_1 : @2236) -> (h_2 : @2241) -> @438
+@2262 := fun {σ : @0} =>
+  fun (motive : @2233) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#11.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#30 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#12.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#33 : @14) =>
+  fun (h_1 : @2236) =>
+  fun (h_2 : @2241) =>
+  @1268
+    (fun (x : @59) => @638 @28)
+    @28
+    (@2 @14)
+    (fun (n._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#60 : @59) => @46 @28)
+@2263 := (a._@._internal._hyg.#0 : @1) -> @2
+@2264 := (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @28) -> @43
+@2267 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) => @2264)
+    @1
+@2271 := {σ : @0} ->
+  (step : @2263) ->
+  (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) -> (f : @2267) -> @2264
+@2272 := LexLeanCollections.iterate.match_1.{1}
+@2273 := @2272 @43
+@2276 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @93) -> @137)
+@2290 := @2273
+    (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#11.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#30 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#12.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#33 : @85) =>
+    (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#61 : @2276 @2) -> @93)
+    @14
+    @1
+    (fun (state : @43) =>
+    fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#61 : @1288
+      (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+      (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @86) -> @93)
+      @1244) =>
+    @2)
+@2291 := @2276 @2237
+@2292 := proj PProd PProd.fst 0 @1
+@2293 := @86 @2
+@2304 := fun {σ : @0} =>
+  fun (step : @2263) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+  fun (f : @2267) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @28) =>
+  @2290
+    (fun (count : @59) =>
+    fun (state : @85) =>
+    fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#61 : @2291) => @2292 @2293)
+    @2
+@2308 := {σ : @0} ->
+  (step : @2263) -> (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @14) -> @28
+@2321 := fun {σ : @0} =>
+  fun (step : @2263) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @14) =>
+  @1414
+    (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @43) -> @85)
+    @2
+    (LexLeanCollections.iterate._f @28 @14)
+    @1
+@2322 := @2272 @28
+@2327 := @2322
+    (fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#11.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#30 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx.#12.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#33 : @43) =>
+    @85)
+    @2
+    @1
+@2329 := @2327 (fun (state : @28) => @1)
+@2334 := LexLeanCollections.iterate @85 @43 @2 @353
+@2341 := fun {σ : @0} =>
+  fun (step : @2263) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @14) =>
+  @2329 (fun (count : @59) => fun (state : @43) => @2334)
+@2342 := annot [sunfoldMatchAlt := bool true] @1
+@2353 := fun {σ : @0} =>
+  fun (step : @2263) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @14) =>
+  annot [sunfoldMatch := bool true]
+  (@2327
+    (fun (state : @28) => @2342)
+    (fun (count : @59) => fun (state : @43) => annot [sunfoldMatchAlt := bool true] @2334))
+@2365 := fun {σ : @0} =>
+  fun (step : @2263) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#11 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1202121004._hygCtx._hyg.#12 : @14) =>
+  @2329
+    (fun (count : @59) =>
+    fun (state : @43) => LexLeanCollections.iterate._unsafe_rec @85 @43 @2 @353)
+@2367 := (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#64 : @995 @1) -> @341
+@2368 := @995 @2
+@2371 := ("_" : @343) -> @14 (@1020 @28)
+@2375 := (next : @28) -> @28 (@1049 @43 @1)
+@2380 := {σ : @0} ->
+  (motive : @2367) ->
+  (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#64 : @2368) ->
+  (h_1 : @2371) -> (h_2 : @2375) -> @270
+@2393 := fun {σ : @0} =>
+  fun (motive : @2367) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#64 : @2368) =>
+  fun (h_1 : @2371) =>
+  fun (h_2 : @2375) =>
+  Option.casesOn.{u_1, 0}
+    @43
+    (fun (x : @996) => @353)
+    @14
+    @358
+    (fun (val._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#84 : @43) => @46)
+@2394 := (a._@._internal._hyg.#0 : @1) -> @2368
+@2396 := (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @28) -> @930 @310
+@2399 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) => @2396)
+    @1
+@2403 := {σ : @0} ->
+  (step : @2394) ->
+  (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) -> (f : @2399) -> @2396
+@2404 := @969 @310
+@2407 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @93) -> @2404)
+@2408 := @2407 @2
+@2409 := @938 @310
+@2415 := @2273
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx.#14.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#33 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx.#15.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#36 : @85) =>
+    (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#90 : @2408) -> @2409)
+    @14
+    @1
+@2419 := @1288
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @86) -> @2409)
+    @1244
+@2421 := @2003 @310 @2
+@2425 := @2415
+    (fun (state : @43) =>
+    fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#90 : @2419) => @2421 @312)
+@2426 := @2407 @2237
+@2427 := LexLeanCollections.iterateUntil.match_1.{1}
+@2449 := fun {σ : @0} =>
+  fun (step : @2394) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+  fun (f : @2399) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @28) =>
+  @2425
+    (fun (fuel : @59) =>
+    fun (state : @85) =>
+    fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#90 : @2426) =>
+    @2427
+      @93
+      (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#64 : @1095) => @2404)
+      @2293
+      (fun ("_" : @343) => @1031 @310 @14 @697)
+      (fun (next : @93) => @500 @1))
+    @2
+@2454 := {σ : @0} ->
+  (step : @2394) -> (a._@._internal._hyg.#0 : @59) -> (a._@._internal._hyg.#0 : @14) -> @893 @310
+@2455 := @958 @310
+@2468 := fun {σ : @0} =>
+  fun (step : @2394) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @14) =>
+  @1414
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+    (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @43) -> @2455)
+    @2
+    (LexLeanCollections.iterateUntil._f @28 @14)
+    @1
+@2473 := @2322
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx.#14.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#33 : @59) =>
+    fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx.#15.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#36 : @43) =>
+    @2455)
+    @2
+    @1
+@2477 := @941 @43 @310 @1 @312
+@2479 := @2473 (fun (state : @28) => @2477)
+@2488 := @2427
+    @85
+    (fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#64 : @995 @85) => @935 @310)
+    @353
+    (fun ("_" : @343) => @2421 @697)
+@2495 := @2488 (fun (next : @85) => LexLeanCollections.iterateUntil @86 @85 @14 @1)
+@2502 := fun {σ : @0} =>
+  fun (step : @2394) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @14) =>
+  @2479 (fun (fuel : @59) => fun (state : @43) => @2495)
+@2514 := fun {σ : @0} =>
+  fun (step : @2394) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @14) =>
+  annot [sunfoldMatch := bool true]
+  (@2473
+    (fun (state : @28) => annot [sunfoldMatchAlt := bool true] @2477)
+    (fun (fuel : @59) => fun (state : @43) => annot [sunfoldMatchAlt := bool true] @2495))
+@2528 := fun {σ : @0} =>
+  fun (step : @2394) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#14 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#3335273952._hygCtx._hyg.#15 : @14) =>
+  @2479
+    (fun (fuel : @59) =>
+    fun (state : @43) =>
+    @2488 (fun (next : @85) => LexLeanCollections.iterateUntil._unsafe_rec @86 @85 @14 @1))
+@2529 := @2 @284
+@2535 := {motive : @261} ->
+  (t : @3) ->
+  (lt : @2529) ->
+  (else._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#29 : (h : @1151 @268) -> @270) ->
+  @270
+@2562 := fun {motive : @261} =>
+  fun (t : @3) =>
+  fun (lt : @2529) =>
+  @276
+    (fun (t : @3) =>
+    (else._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#29 : (h : @1151 @277) -> @279) ->
+    @279)
+    (fun (else._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#29 : (h : @1151 @285) ->
+    @287) =>
+    @2)
+    (fun (else._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#29 : (h : @1151 @318) ->
+    @320) =>
+    @1205)
+    (fun (else._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#29 : (h : @1151 @325) ->
+    @327) =>
+    @1 (@289 (@299 (@1199 @265)) @307 @313))
+    @2
+@2563 := (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#18 : @3) -> @341
+@2564 := (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#25 : @3) -> @346
+@2568 := (motive : @2563) ->
+  (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#18 : @3) ->
+  (h_1 : @628) -> (h_2 : @2564) -> @270
+@2579 := fun (motive : @2563) =>
+  fun (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#18 : @3) =>
+  fun (h_1 : @628) =>
+  fun (h_2 : @2564) =>
+  LexLeanCollections.lessThan._sparseCasesOn_1.{u_1}
+    @354
+    @14
+    @358
+    (fun (h._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#30 : @1151 @360) => @362)
+@2583 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#3 : @11] ->
+  (left : @2) -> (right : @14) -> @310
+@2598 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#3 : @11] =>
+  fun (left : @2) =>
+  fun (right : @14) =>
+  LexLeanCollections.lessThan.match_1.{1}
+    (fun (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#18 : @3) => @310)
+    (@689 @28 @14 @2 @1)
+    @698
+    (fun (x._@.LexLeanRuntime.Collections.#739993983._hygCtx._hyg.#25 : @3) => @312)
+@2600 := (a._@._internal._hyg.#0 : @1) -> (a._@._internal._hyg.#0 : @14) -> @14
+@2605 := {α : @0} -> {σ : @0} -> (step : @2600) -> (initial : @2) -> (values : @654) -> @28
+@2606 := @888 @28
+@2610 := @2606 @43 @14 @2 @1
+@2615 := fun {α : @0} =>
+  fun {σ : @0} => fun (step : @2600) => fun (initial : @2) => fun (values : @654) => @2610
+@2629 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) =>
+  annot [sunfoldMatch := bool true]
+  (@1091
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @1092)
+    (fun (other : @43) =>
+    fun (stored : @43) => fun (rest : @937) => annot [sunfoldMatchAlt := bool true] @1116))
+@2646 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1977705028._hygCtx._hyg.#17 : @992) =>
+  @1094
+    (fun (other : @43) =>
+    fun (stored : @43) =>
+    fun (rest : @937) =>
+    @1108 (fun ("_" : @343) => LexLeanCollections.lookupEntry._unsafe_rec @137 @93 @86 @85 @2))
+@2651 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#3152258033._hygCtx._hyg.#4 : @7] ->
+  (map : @929) -> (key : @28) -> @310
+@2653 := Option.isSome.{0} @28
+@2658 := @1109 @43 @28 @14 @1 @2
+@2664 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3152258033._hygCtx._hyg.#4 : @7] =>
+  fun (map : @929) => fun (key : @28) => @2653 @2658
+@2667 := {κ : @0} -> {ν : @0} -> (map : @926) -> @929
+@2670 := fun {κ : @0} => fun {ν : @0} => fun (map : @926) => @1
+@2673 := (a._@._internal._hyg.#0 : @1) ->
+  (a._@._internal._hyg.#0 : @28) -> (a._@._internal._hyg.#0 : @28) -> @28
+@2679 := {κ : @0} -> {ν : @0} -> {β : @0} -> (step : @2673) -> (initial : @2) -> (map : @994) -> @28
+@2699 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun {β : @0} =>
+  fun (step : @2673) =>
+  fun (initial : @2) =>
+  fun (map : @994) =>
+  @2606
+    @959
+    (fun (state : @28) => fun (entry : @936) => @279 (@904 @93 @86 @1) (@911 @93 @86 @1))
+    @2
+    @1
+@2705 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#3257357875._hygCtx._hyg.#4 : @7] ->
+  (map : @929) -> (key : @28) -> (value : @28) -> @961
+@2717 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3257357875._hygCtx._hyg.#4 : @7] =>
+  fun (map : @929) => fun (key : @28) => fun (value : @28) => @2031 @85 @43 @28 @2 @1 @14
+@2720 := {κ : @0} -> {ν : @0} -> (map : @926) -> @652
+@2722 := List.map.{0, 0} @928
+@2730 := fun {κ : @0} => fun {ν : @0} => fun (map : @926) => @2722 @14 (@904 @14 @2) @1
+@2735 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#3506101749._hygCtx._hyg.#4 : @7] ->
+  (map : @929) -> (key : @28) -> @1067
+@2740 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3506101749._hygCtx._hyg.#4 : @7] =>
+  fun (map : @929) => fun (key : @28) => @2658
+@2741 := fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @994) => @961
+@2743 := @993 @2741 @1
+@2749 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] ->
+  (key : @14) ->
+  (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) -> (f : @2743) -> @961
+@2751 := @1009 (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @937) => @1025)
+@2760 := @1008
+    (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx.#21.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#32 : @961) =>
+    (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#103 : @2751 @1) -> @1025)
+    @2
+    (fun ("_" : @343) =>
+    fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#103 : @2751 @1018) => @1908)
+@2763 := @1026
+    (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @1027) => @1921)
+    @1036
+@2766 := @686
+    (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#66 : @3) => @1924)
+    @1044
+@2772 := @380 @1923 (@941 @175 @135 @43 @28)
+@2791 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) =>
+  fun (f : @2743) =>
+  @2760
+    (fun (other : @85) =>
+    fun (stored : @85) =>
+    fun (rest : @1025) =>
+    fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#103 : @2763) =>
+    @2766 (fun ("_" : @343) => @2772 @14) @1485 (fun ("_" : @343) => @2772 @500))
+    @1
+@2796 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] ->
+  (key : @14) -> (a._@._internal._hyg.#0 : @992) -> @994
+@2809 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) =>
+  @1073 @2741 @1 (LexLeanCollections.removeEntry._f @43 @28 @14 @2)
+@2812 := @1088
+    (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx.#21.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#32 : @994) =>
+    @961)
+    @1
+@2813 := @374 @959
+@2815 := @2812 (fun ("_" : @343) => @2813)
+@2818 := @686
+    (fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#66 : @3) => @1027)
+    @1100
+@2821 := @971 (@1032 @28 @14)
+@2825 := @2818 (fun ("_" : @343) => @2821 @2) @1607
+@2826 := LexLeanCollections.removeEntry
+@2834 := @2825 (fun ("_" : @343) => @2821 (@2826 @137 @93 @86 @85 @2))
+@2843 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) =>
+  @2815 (fun (other : @43) => fun (stored : @43) => fun (rest : @937) => @2834)
+@2848 := {κ : @0} ->
+  {ν : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#4196104989._hygCtx._hyg.#4 : @7] ->
+  (map : @929) -> (key : @28) -> @994
+@2858 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#4196104989._hygCtx._hyg.#4 : @7] =>
+  fun (map : @929) => fun (key : @28) => @2826 @43 @28 @14 @1 @2
+@2861 := {κ : @0} -> {ν : @0} -> (map : @926) -> @59
+@2866 := fun {κ : @0} => fun {ν : @0} => fun (map : @926) => @1528 @928 @1
+@2869 := {κ : @0} -> {ν : @0} -> (map : @926) -> @595
+@2877 := fun {κ : @0} => fun {ν : @0} => fun (map : @926) => @2722 @2 (@911 @14 @2) @1
+@2893 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @599) =>
+  annot [sunfoldMatch := bool true]
+  (@1440
+    (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#66 : @616) =>
+    fun (seen : @679) => @2342)
+    (fun (fuel : @59) =>
+    fun (frontier : @679) =>
+    fun (seen : @802) => annot [sunfoldMatchAlt := bool true] (have next : @806 := @1480; @1500)))
+@2913 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#25 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#26 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#27 : @599) =>
+  @1443
+    (fun (fuel : @59) =>
+    fun (frontier : @679) =>
+    fun (seen : @802) =>
+    let next : @806 := @1480;
+    @1486
+      (fun (x._@.LexLeanRuntime.Collections.#1946731190._hygCtx._hyg.#138 : @1319) =>
+      LexLeanCollections.reachableFrom._unsafe_rec @175 @135 @137 @43 @2 @1497))
+@2925 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) =>
+  annot [sunfoldMatch := bool true]
+  (@1600
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @852)
+    (fun (other : @28) => fun (rest : @599) => annot [sunfoldMatchAlt := bool true] @1616))
+@2940 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#3 : @11] =>
+  fun (key : @2) =>
+  fun (x._@.LexLeanRuntime.Collections.#2556190753._hygCtx._hyg.#12 : @652) =>
+  @1602
+    (fun (other : @28) =>
+    fun (rest : @599) =>
+    @1608 (fun ("_" : @343) => @859 (LexLeanCollections.removeElement._unsafe_rec @86 @85 @43 @2)))
+@2954 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) =>
+  annot [sunfoldMatch := bool true]
+  (@2812
+    (fun ("_" : @343) => annot [sunfoldMatchAlt := bool true] @2813)
+    (fun (other : @43) =>
+    fun (stored : @43) => fun (rest : @937) => annot [sunfoldMatchAlt := bool true] @2834))
+@2972 := fun {κ : @0} =>
+  fun {ν : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#4 : @7] =>
+  fun (key : @14) =>
+  fun (x._@.LexLeanRuntime.Collections.#1251870671._hygCtx._hyg.#21 : @992) =>
+  @2815
+    (fun (other : @43) =>
+    fun (stored : @43) =>
+    fun (rest : @937) =>
+    @2825
+      (fun ("_" : @343) => @2821 (LexLeanCollections.removeEntry._unsafe_rec @137 @93 @86 @85 @2)))
+@2976 := {κ : @0} ->
+  [inst._@.LexLeanRuntime.Collections.#32684359._hygCtx._hyg.#3 : @11] ->
+  (set : @595) -> (key : @14) -> @310
+@2984 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#32684359._hygCtx._hyg.#3 : @11] =>
+  fun (set : @595) => fun (key : @14) => @740 @28 @14 @1 @2
+@2986 := (left : @595) -> (right : @652) -> @654
+@2988 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#2549248247._hygCtx._hyg.#3 : @11] -> @2986
+@2989 := @1683 @28
+@2993 := @740 @43 @28 @1 @2
+@3001 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2549248247._hygCtx._hyg.#3 : @11] =>
+  fun (left : @595) => fun (right : @652) => @2989 (fun (key : @28) => @1688 @2993) @2
+@3003 := {κ : @0} -> (set : @593) -> @595
+@3005 := fun {κ : @0} => fun (set : @593) => @1
+@3010 := {κ : @0} -> {σ : @0} -> (step : @2600) -> (initial : @2) -> (set : @654) -> @28
+@3015 := fun {κ : @0} =>
+  fun {σ : @0} => fun (step : @2600) => fun (initial : @2) => fun (set : @654) => @2610
+@3017 := (set : @595) -> (key : @14) -> @654
+@3019 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#2540969060._hygCtx._hyg.#3 : @11] -> @3017
+@3027 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#2540969060._hygCtx._hyg.#3 : @11] =>
+  fun (set : @595) => fun (key : @14) => @866 @28 @14 @1 @2
+@3029 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#1636857412._hygCtx._hyg.#3 : @11] -> @2986
+@3036 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1636857412._hygCtx._hyg.#3 : @11] =>
+  fun (left : @595) => fun (right : @652) => @2989 (fun (key : @28) => @2993) @2
+@3038 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#3193298438._hygCtx._hyg.#3 : @11] -> @3017
+@3046 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#3193298438._hygCtx._hyg.#3 : @11] =>
+  fun (set : @595) => fun (key : @14) => @1609 @28 @14 @1 @2
+@3048 := {κ : @0} -> (set : @593) -> @59
+@3052 := fun {κ : @0} => fun (set : @593) => @1528 @2 @1
+@3054 := {κ : @0} -> [inst._@.LexLeanRuntime.Collections.#146523864._hygCtx._hyg.#3 : @11] -> @2986
+@3069 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#146523864._hygCtx._hyg.#3 : @11] =>
+  fun (left : @595) =>
+  fun (right : @652) =>
+  @888 @654 @28 (fun (acc : @654) => fun (key : @43) => @866 @85 @43 @1 @2) @2 @1
+@3085 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @599) =>
+  annot [sunfoldMatch := bool true]
+  (@1773
+    (fun (remaining : @616) => fun (order : @679) => annot [sunfoldMatchAlt := bool true] @1790)
+    (fun (fuel : @59) =>
+    fun (remaining : @679) => fun (order : @802) => annot [sunfoldMatchAlt := bool true] @1829))
+@3105 := fun {κ : @0} =>
+  fun [inst._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#3 : @11] =>
+  fun (graph : @884) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#28 : @59) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#29 : @654) =>
+  fun (x._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#30 : @599) =>
+  @1793
+    (fun (fuel : @59) =>
+    fun (remaining : @679) =>
+    fun (order : @802) =>
+    @1812
+      (fun (ready : @137) =>
+      fun (tail._@.LexLeanRuntime.Collections.#1862785990._hygCtx._hyg.#144 : @1319) =>
+      LexLeanCollections.topological._unsafe_rec @175 @135 @137 @43 @1821 @1825))
+\end{coremodule}
+\end{lexlean}

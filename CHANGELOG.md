@@ -47,6 +47,25 @@ versions, and the entries below say what each tag does and does not claim.
   example gates (`verify-examples`, `check-golden`) and
   `check-production-export` compares its packages. `SL-01` brings the
   register to 382 IDs.
+- Child deadlines remain active while reading inherited output pipes after
+  the direct child exits (#132). The process group stays registered until
+  both readers finish, so a timeout or an embedding host can end the remaining
+  group through the existing termination path (`SE-06`, SPEC.md §25.5).
+- Toolchain preflight compares the complete reported Lean version in Lean and
+  Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
+  suffixes, and a matching version elsewhere in the banner with `LLV7001`.
+- Production results state each output's effects (SPEC.md §24.7, §17.13,
+  `PX-13`, no new diagnostic code), step 3 of #105. A target output of
+  `lexlean/production-result/2` lists the effects its realization can exhibit,
+  exactly those eligibility requires of the root on that target, and the
+  schema states what `recursion` asks of the host: a stack its input-dependent
+  depth fits, whose exhaustion aborts the process. `lexlean production build`
+  reports how many outputs need such a stack. The result schema lives outside
+  the compiler-semantics ID (§21.2), so no identity, package, golden, or
+  verified record changes; `api/schemas/versions.toml` gains the
+  `production-result/2` row beside the released `/1` row.
+  `PX-13` brings the register to 382 IDs.
+
 - Certificates write a list of any length as a term Lean elaborates without
   binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
   `[…]` macro splits a literal of more than 32 elements in halves under
@@ -200,6 +219,37 @@ versions, and the entries below say what each tag does and does not claim.
   text and refuses a name outside the table, a row the text does not use,
   a row citing a non-primitive, and a primitive no row cites. The runtime
   text is unchanged, so no runtime digest, package, or semantic ID changes.
+- The runtime of generated Lean is LexLean source (SPEC.md §17.12,
+  *Runtime modules*, `RT-01`..`RT-04`, LexLean #90). The portable primitives,
+  the ordered collections, the model predicates, and the reasoning lemmas of
+  language 1.2 were Rust string constants the backend spliced into every
+  module that used them, one copy per module; they are now four native core
+  modules of the embedded project `language/runtime-1.2/library/`
+  (`LexLeanRuntime.Portable`, `.Collections`, `.Models`, `.Reasoning`),
+  migrated once and losslessly (`tests/runtime-library/MIGRATION.md`), which
+  a generated module imports. A verification compiles the runtime modules a
+  project uses before the project's own, replays them, and audits each of
+  their declarations against its exact axioms. A runtime name is
+  `LexLeanRuntime.x`, no longer `<module>.LexLeanRuntime.x`, so the native
+  preservation and certification libraries' references to the copies were
+  renamed, by a pairing of the calculus modules' constants walked through
+  their kernel terms. Languages 1.0 and 1.1 are frozen: their released
+  runtime text is data under `language/runtime-1.2/frozen/`, which their
+  backends alone read, and their output is byte-identical. The decoder of
+  core module 2 is the one Lean text of the language-1.2 compiler not
+  generated from a native module, since it is what loads them. The probe and
+  axiom-audit modules are typed data the backend renders. `LexLeanRuntime`
+  moves from the reserved roots to the library roots (a project without a
+  production root may take it). The differential oracle (§17.19) does not
+  follow a call into another module, so it now refuses the roots whose
+  compiled closure calls a collection template or a reasoner's iteration as
+  `unresolved-external-call`, and generates the two list roots it refused
+  before; `oracle/known-differences.toml` (version 3, with `KD-13`
+  `output-buffer`: the oracle returns a list into a buffer its caller passes)
+  and `oracle/known-non-overlap.toml` (version 2) record what it answers, and
+  the harness passes such a buffer. The language-1.2 compiler-semantics ID
+  changes, and every language-1.2 lock, golden, fixture expectation,
+  production-export package, and verified record is regenerated.
 - `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
   no new diagnostic code). A read of a binding that nothing after it reads
   is a move and a projection of a pair component that nothing after it
@@ -338,6 +388,10 @@ versions, and the entries below say what each tag does and does not claim.
   variable numbering, with the same nodes, closures, externals, and
   inductives. The register is unchanged
   in size (350 IDs, 74 codes); `TL-03`, `TL-05`, and `NE-04` are reworded.
+- The preservation case `SP-05` reads the verified production export shared
+  with `PX-01`, removing one full verification of the production example
+  within `bdd` (#141). Its artifact assertions and six rejection fixtures
+  remain, and running the case alone lazily performs the real export.
 - The normative CI gate runs in two legs at once (SPEC.md §9.4, `RP-14`, no new
   ID or code): `examples`, which is about three quarters of the gate's time on
   the runner, and the other eleven recipes of `vv` in their order, each leg a
@@ -347,6 +401,22 @@ versions, and the entries below say what each tag does and does not claim.
   whole. The gate's wall time becomes the longer leg, about 2 h 40 min where the
   last full run took 3 h 16 min (an estimate from that run's timings). Each leg
   uploads its own `acceptance-gate-evidence-<leg>`.
+- Production bundle replay binds the compiler version to the producing
+  attestation and refuses an absent, empty, or non-string version with
+  `LLV7102`, including a result whose identity was recomputed after changing
+  its compiler version (`PX-07`, #136).
+- Production replay also binds the attested compiler-semantics digest to the
+  result, requires a verified `lexlean/attestation/2` envelope, and checks the
+  complete Lean-version fields in its Lean and Lake records (`PX-07`, #142).
+  The compiler input's own Lean version and commit must match the same pin;
+  reading that identity requires JSON objects and preserves support for
+  deeply nested LCNF payloads.
+  Missing or malformed facts and inconsistent compiler identities fail with
+  `LLV7102`; self-consistent historical crate versions remain supported.
+- Production bundle replay preserves literal filename characters when it
+  encodes path components, refuses non-UTF-8 names, and rejects duplicate
+  inventory paths. An extra backslash-named file or a canonical file moved to
+  such a name can no longer hide behind another bundle path (`PX-07`, #133).
 - Production export contract (SPEC.md §24.7, `PX-01`..`PX-12`, `CL-23`,
   `LLC0201`..`LLC0204`, `LLV7101`, `LLV7102`): a stable, versioned façade,
   `lexlean::api::production`, through which a consumer such as PrismPM
@@ -471,6 +541,11 @@ versions, and the entries below say what each tag does and does not claim.
   supported-host job drops the `cargo build` its `cargo test` repeated (SPEC.md
   §8.3). Pinned by `conformance_rp_14` and the unit tests of
   `repo_conformance::evidence`; no register ID or code is added.
+- Filesystem confinement rejects Windows drive prefixes in every segment of
+  a configured project-relative path before joining it (#138, SPEC.md §10.1,
+  §25.1, `CF-03`, `SE-01`). Both absolute and drive-relative forms are refused
+  on every host; colon names without a drive prefix retain their existing
+  path policy.
 - A host that embeds the library can end the children the library started
   (SPEC.md §17.17, §24.6, `CL-22`): `lexlean::verify::end_live_children` ends
   every child process group the library started in this process and has not
@@ -1320,6 +1395,20 @@ versions, and the entries below say what each tag does and does not claim.
 - The host legs of CI may run for 120 minutes, where they were cut off at 60:
   the Intel macOS leg takes 51 to 61 minutes, and a leg cancelled at its limit
   is not a result about the code.
+- `conformance_rs_12` no longer reports a slow runner as a different claim
+  (#145; test hardening, no compiler change, no new diagnostic code). Its
+  planted verification of a copy of the `compiler` project expects Lean to
+  refuse the planted transcriptions with `LLV7002`; on four runs a runner
+  stall made Lean's children take 5 to 20 times their usual time, one hit
+  the 300 s default of `child_timeout_ms`, and the case saw `LLS8002`
+  instead. The scratch copy now allows 900 s, so the case again states only
+  what Lean said about the planted module. The committed `compiler` project,
+  its limits, and `verified_compiler()` are unchanged.
+- The start-order case of the verifier pool no longer reads the scheduler
+  (#148; test hardening, no compiler change). It recorded the order in which
+  four workers ran, not the order in which they claimed their items, and
+  failed 82 of 600 runs beside eight busy loops and once on an Intel macOS
+  host leg; it now observes the claims through two workers.
 
 ## 0.3.0
 
