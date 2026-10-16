@@ -137,3 +137,31 @@ Feature: proofs
     When it is rendered and verified, copies add a tactic member to the form and to a unit-variant proof, a copy unfolds a later definition, a language-1.1 module uses the form, and a copy states a false linear claim
     Then the generated Lean is the fixed intros, Boolean-comparison rewriting, and omega script, with subst_vars and the unfolded weight measure where the form names it, and verifies
     And the extra members, the later definition, and the language-1.1 use fail with LLT4001 and the false claim checks but fails verification with LLV7002
+
+  @PF-20 @build
+  Scenario: Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only.
+    Given the committed fold-laws example, whose integer-kernel theorems state order over Int and UInt8
+    When it is rendered and verified, a copy orders an Int against a Nat, a copy orders two strings, and a language-1.1 module orders two Int values
+    Then the generated Lean writes each order with Lean's `<=` and `<` on the operands' own type and verifies
+    And the mixed operands, the strings, and the language-1.1 use fail with LLT4001
+
+  @PF-21 @build
+  Scenario: The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one.
+    Given the committed fold-laws example, whose clamped requantization step, truncating division, and fixed-width order theorems are proved by linear_arithmetic
+    When it is rendered and verified, and copies state a clamp bound one too small, a quotient identity with the wrong remainder sign, and a fixed-width order one past its literal
+    Then the generated Lean is the fixed script: the runtime bridges and the registered rewrites, the fixed-width bit reading, the split of every if and match, and omega, and it verifies for all inputs
+    And each false copy checks but fails verification with LLV7002
+
+  @PF-22 @build
+  Scenario: The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances.
+    Given the shipped runtime and the committed fold-laws example
+    When the runtime is built, a copy of the law registry names a declaration the module lacks or registers a law twice, the example is verified, and copies state a fold equality that is false
+    Then the laws module is a native core module importing the portable and collection runtimes with every row's axioms pinned, and the registry's rewrites and laws are its declarations
+    And the planted registries are refused, the example's fold equalities over lists, sets, and maps verify for all inputs, every decide proof is of a closed statement, and each false copy fails verification with LLV7002
+
+  @PF-23 @build
+  Scenario: The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove.
+    Given the committed fold-laws example, whose single-pass statistics and parity theorems are proved by law
+    When it is rendered and verified, copies name an unregistered law, drop an argument, pass an argument of the wrong type, drop the premise, name a later theorem as the premise, a language-1.1 module uses the form, and a copy applies the pair law to a swapped statement
+    Then the generated Lean applies the registered theorem with explicit type arguments, arguments, and premises, and verifies
+    And each malformed copy and the language-1.1 use fail with LLT4001 and the swapped statement fails verification with LLV7002

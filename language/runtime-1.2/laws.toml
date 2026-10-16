@@ -1,0 +1,114 @@
+# The fold laws of language 1.2 (SPEC.md §17.12, *Fold laws*): what the
+# runtime module `LexLeanRuntime.Laws` states, as the compiler reads it.
+#
+# `rewrites` is the ordered rewrite set the `linear_arithmetic` proof form
+# applies after the runtime bridges; `law` lists the laws a `law` proof
+# applies by name, each with its explicit type parameters and parameter
+# types in the semantic schema and the number of premises a prior theorem
+# discharges. Every Lean name below is a declaration of the module, which
+# the runtime build checks; the module itself is the authority for what each
+# law states.
+
+spec = "lexlean/runtime-laws/1"
+module = "LexLeanRuntime.Laws"
+
+rewrites = [
+  "LexLeanLaws.lessThan_nat",
+  "LexLeanLaws.lessThan_int",
+  "LexLeanLaws.lessThan_int8",
+  "LexLeanLaws.lessThan_int16",
+  "LexLeanLaws.lessThan_int32",
+  "LexLeanLaws.lessThan_int64",
+  "LexLeanLaws.lessThan_uint8",
+  "LexLeanLaws.lessThan_uint16",
+  "LexLeanLaws.lessThan_uint32",
+  "LexLeanLaws.lessThan_uint64",
+  "LexLeanLaws.quotient_nat",
+  "LexLeanLaws.quotient_int",
+  "LexLeanLaws.remainder_nat",
+  "LexLeanLaws.remainder_int",
+  "LexLeanLaws.tdiv_ediv",
+  "LexLeanLaws.tmod_emod",
+  "LexLeanLaws.length_list",
+  "LexLeanLaws.append_list",
+  "LexLeanLaws.setFold_listFold",
+  "LexLeanLaws.mapFold_listFold",
+  "LexLeanLaws.setSize_length",
+  "LexLeanLaws.mapSize_length",
+  "LexLeanLaws.setElements_self",
+  "LexLeanLaws.mapEntries_self",
+  "LexLeanLaws.listFold_nil",
+  "LexLeanLaws.listFold_append",
+  "LexLeanLaws.listFold_prepend",
+  "LexLeanLaws.listFold_extend",
+  "LexLeanLaws.listFold_add_nat",
+  "LexLeanLaws.listFold_add_nat_self",
+  "LexLeanLaws.listFold_add_int",
+  "LexLeanLaws.listFold_add_int_self",
+  "LexLeanLaws.listFold_sub_int",
+  "LexLeanLaws.listFold_sub_int_self",
+  "LexLeanLaws.sumNat_nil",
+  "LexLeanLaws.sumNat_cons",
+  "LexLeanLaws.sumInt_nil",
+  "LexLeanLaws.sumInt_cons",
+  "LexLeanLaws.sumNat_add",
+  "LexLeanLaws.sumInt_add",
+  "LexLeanLaws.sumInt_sub",
+  "LexLeanLaws.sumInt_neg",
+  "LexLeanLaws.sumInt_neg_self",
+  "LexLeanLaws.sumNat_mul",
+  "LexLeanLaws.sumInt_mul",
+  "LexLeanLaws.sumNat_mul_self",
+  "LexLeanLaws.sumInt_mul_self",
+  "LexLeanLaws.sumNat_mul_right",
+  "LexLeanLaws.sumInt_mul_right",
+  "LexLeanLaws.sumNat_const",
+  "LexLeanLaws.sumInt_const",
+  "LexLeanLaws.sumNat_append",
+  "LexLeanLaws.sumInt_append",
+  "LexLeanLaws.sumNat_reverse",
+  "LexLeanLaws.sumInt_reverse",
+]
+
+# A function that commutes with one fold's step carries that fold to the
+# fold of the other step: h (list_fold f z xs) = list_fold g (h z) xs, given
+# a prior theorem stating h (f a x) = g (h a) x for all a and x.
+[[law]]
+name = "list_fold_fusion"
+lean = "LexLeanLaws.listFold_fusion"
+type_parameters = ["A", "S", "T"]
+premises = 1
+parameters = [
+  { kind = "function", parameters = [{ kind = "parameter", name = "S" }, { kind = "parameter", name = "A" }], result = { kind = "parameter", name = "S" } },
+  { kind = "function", parameters = [{ kind = "parameter", name = "T" }, { kind = "parameter", name = "A" }], result = { kind = "parameter", name = "T" } },
+  { kind = "function", parameters = [{ kind = "parameter", name = "S" }], result = { kind = "parameter", name = "T" } },
+  { kind = "parameter", name = "S" },
+  { kind = "list", element = { kind = "parameter", name = "A" } },
+]
+
+# Two folds over one list are one fold over the pair of their states.
+[[law]]
+name = "list_fold_pair"
+lean = "LexLeanLaws.listFold_pair"
+type_parameters = ["A", "S", "T"]
+premises = 0
+parameters = [
+  { kind = "function", parameters = [{ kind = "parameter", name = "S" }, { kind = "parameter", name = "A" }], result = { kind = "parameter", name = "S" } },
+  { kind = "function", parameters = [{ kind = "parameter", name = "T" }, { kind = "parameter", name = "A" }], result = { kind = "parameter", name = "T" } },
+  { kind = "parameter", name = "S" },
+  { kind = "parameter", name = "T" },
+  { kind = "list", element = { kind = "parameter", name = "A" } },
+]
+
+# A fold over an appended list continues the fold of the first part.
+[[law]]
+name = "list_fold_append"
+lean = "LexLeanLaws.listFold_append"
+type_parameters = ["A", "S"]
+premises = 0
+parameters = [
+  { kind = "function", parameters = [{ kind = "parameter", name = "S" }, { kind = "parameter", name = "A" }], result = { kind = "parameter", name = "S" } },
+  { kind = "parameter", name = "S" },
+  { kind = "list", element = { kind = "parameter", name = "A" } },
+  { kind = "list", element = { kind = "parameter", name = "A" } },
+]

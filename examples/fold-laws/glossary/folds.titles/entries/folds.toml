@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "folds"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "folds"
+channel = "text"
+surface = "Fold equalities"
+canonical_source = true
+features = ["sentence-case", "singular"]
