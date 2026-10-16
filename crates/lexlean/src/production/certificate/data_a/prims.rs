@@ -170,6 +170,7 @@ impl<'a> Writer<'_, 'a> {
                     })?;
                     let alpha = self.lean_ty(&element)?;
                     let index = self.runtime_const(site, "listIndex")?;
+                    let index = self.b.app(index, alpha);
                     PrimRule {
                         lemma: "prim_index_list".to_owned(),
                         hints: vec![("α", alpha)],

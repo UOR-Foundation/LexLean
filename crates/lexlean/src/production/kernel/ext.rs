@@ -398,7 +398,7 @@ impl Builder {
     }
 
     fn show_at(&self, term: Term, names: &mut Vec<String>, depth: usize) -> String {
-        if depth > 40 {
+        if depth > 4000 {
             return "…".to_owned();
         }
         match &self.nodes[term] {
@@ -520,9 +520,23 @@ impl Builder {
             return;
         }
         match (&self.nodes[pattern], &self.nodes[actual]) {
-            (CoreNode::App { f, x }, CoreNode::App { f: g, x: y }) => {
-                self.solve(*f, *g, solved);
-                self.solve(*x, *y, solved);
+            (CoreNode::App { .. }, CoreNode::App { .. }) => {
+                // Two applications are compared argument by argument only when
+                // they apply the same head to as many arguments: otherwise one
+                // is a definition applied that the other unfolds, which the
+                // kernel compares.
+                let (head, args) = self.spine(pattern);
+                let (other_head, other_args) = self.spine(actual);
+                let same_head = match (&self.nodes[head], &self.nodes[other_head]) {
+                    (CoreNode::Const { n, .. }, CoreNode::Const { n: m, .. }) => n == m,
+                    (CoreNode::BVar { i }, CoreNode::BVar { i: j }) => i == j,
+                    _ => head == other_head,
+                };
+                if same_head && args.len() == other_args.len() {
+                    for (a, b) in args.iter().zip(&other_args) {
+                        self.solve(*a, *b, solved);
+                    }
+                }
             }
             (
                 CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. },

@@ -443,7 +443,7 @@ impl Writer<'_, '_> {
         } else {
             self.b.konst(&format!("{type_name}.instNeg"))
         };
-        self.b.apps(neg, &[ty, ty, instance, positive])
+        self.b.apps(neg, &[ty, instance, positive])
     }
 
     pub(super) fn bytes_term(&mut self, hex: &str) -> Result<Term, String> {

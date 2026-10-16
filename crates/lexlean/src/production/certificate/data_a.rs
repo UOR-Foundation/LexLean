@@ -263,7 +263,7 @@ impl<'g, 'a> Writer<'g, 'a> {
             }
         }
         if let Some((module, rest)) = name.split_once(".LexLeanRuntime.") {
-            if self.runtime_modules.contains(module) {
+            if module == super::SEMANTICS_MODULE || self.runtime_modules.contains(module) {
                 return Ok(runtime_axioms(rest));
             }
         }
@@ -331,6 +331,14 @@ impl<'g, 'a> Writer<'g, 'a> {
             return Err(format!(
                 "the row `{full}` of certificate A has a loose bound variable"
             ));
+        }
+        if std::env::var("LEXLEAN_SHOW").is_ok_and(|wanted| full.ends_with(&wanted)) {
+            let text = format!("{full} : {}\n:= {}\n", self.b.show(ty), self.b.show(value));
+            if let Ok(path) = std::env::var("LEXLEAN_SHOW_FILE") {
+                let _ = std::fs::write(path, text);
+            } else {
+                eprintln!("{text}");
+            }
         }
         let axioms = self.row_axiom_set(&[ty, value])?;
         self.row_axioms.insert(full.clone(), axioms.clone());

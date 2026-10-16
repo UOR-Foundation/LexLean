@@ -72,6 +72,7 @@ pub const LIBRARY_MODULES: [&str; 7] = [
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
 const SEMANTICS: &str = "LexLeanTarget.TargetSemantics";
+const SEMANTICS_MODULE: &str = SEMANTICS;
 const NAT_BOUND: &str = "18446744073709551616";
 
 /// One generated certificate module.

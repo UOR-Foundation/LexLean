@@ -48,8 +48,15 @@ impl<'a> Writer<'_, 'a> {
         self.b.apps(conv, &[p, env, e, rel])
     }
 
-    /// The width predicate and value a derivation's type relates.
-    pub(super) fn rel_parts(&self, ty: Term) -> Result<(Term, Term), String> {
+    /// The width predicate and value a derivation's type relates. A type
+    /// under `let` bindings relates the bindings applied to each.
+    pub(super) fn rel_parts(&mut self, ty: Term) -> Result<(Term, Term), String> {
+        if let crate::ir::core::CoreNode::Let { n, t, v, body, d } = self.b.node(ty).clone() {
+            let (fits, value) = self.rel_parts(body)?;
+            let fits = self.b.let_node(&n, t, v, fits, d);
+            let value = self.b.let_node(&n, t, v, value, d);
+            return Ok((fits, value));
+        }
         let (_, args) = self.b.spine(ty);
         let observation = args.get(3).copied().ok_or("a derivation type with no relation")?;
         let (_, parts) = self.b.spine(observation);
@@ -63,12 +70,12 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// The width predicate of a derivation.
-    pub(super) fn fits_of(&self, pf: Pf) -> Result<Term, String> {
+    pub(super) fn fits_of(&mut self, pf: Pf) -> Result<Term, String> {
         Ok(self.rel_parts(pf.ty)?.0)
     }
 
     /// The value of a derivation.
-    pub(super) fn value_of(&self, pf: Pf) -> Result<Term, String> {
+    pub(super) fn value_of(&mut self, pf: Pf) -> Result<Term, String> {
         Ok(self.rel_parts(pf.ty)?.1)
     }
 
@@ -528,7 +535,22 @@ impl<'a> Writer<'_, 'a> {
                     Expr::First { value } | Expr::Second { value } => value.as_ref(),
                     _ => return Err("the lowering of a projection is not first or second".to_owned()),
                 };
+                let ty = self.infer(value, scope)?;
+                let (left, right) = match &ty {
+                    SemanticType::Product { left, right } => (left.as_ref(), right.as_ref()),
+                    _ => return Err("a projection of a non-product".to_owned()),
+                };
                 let inner = self.prove(value, inner_expr, scope)?;
+                // The pair's encoding unfolds to the pair of its components'.
+                let src = self.src(value, scope)?;
+                let (alpha, beta) = (self.lean_ty(left)?, self.lean_ty(right)?);
+                let fst = self.b.konst00("Prod.fst");
+                let fst = self.b.apps(fst, &[alpha, beta, src]);
+                let snd = self.b.konst00("Prod.snd");
+                let snd = self.b.apps(snd, &[alpha, beta, src]);
+                let (enc_left, enc_right) = (self.enc(left)?, self.enc(right)?);
+                let a = self.b.app(enc_left, fst);
+                let b = self.b.app(enc_right, snd);
                 let name = if matches!(term, SemanticTerm::First { value: _ }) {
                     "conv_first"
                 } else {
@@ -536,7 +558,7 @@ impl<'a> Writer<'_, 'a> {
                 };
                 self.apply(
                     name,
-                    &[("p", p), ("env", env)],
+                    &[("p", p), ("env", env), ("a", a), ("b", b)],
                     &[Given::Proof(inner.proof, inner.ty)],
                 )
             }
@@ -706,7 +728,8 @@ impl<'a> Writer<'_, 'a> {
         let mut out = self.built(scope, cursor, &[], nil)?;
         for (item, node) in items.iter().zip(spine).rev() {
             let h = self.value_of(*item)?;
-            let t = self.list_payload(self.value_of(out)?)?;
+            let tail_value = self.value_of(out)?;
+            let t = self.list_payload(tail_value)?;
             let construct = self.apply("construct_cons", &[("h", h), ("t", t)], &[])?;
             out = self.built(scope, node, &[*item, out], construct)?;
         }
@@ -878,8 +901,11 @@ impl<'a> Writer<'_, 'a> {
         let else_branch = self.guarded(condition_src, fls, else_pf)?;
         self.apply(
             "conv_cond",
-            &[("p", p), ("env", env), ("P", predicate), ("V", value_fn), ("b", condition_src)],
+            &[("p", p), ("env", env)],
             &[
+                Given::Term(predicate),
+                Given::Term(value_fn),
+                Given::Term(condition_src),
                 Given::Proof(tested.proof, tested.ty),
                 Given::Proof(then_branch.0, then_branch.1),
                 Given::Proof(else_branch.0, else_branch.1),
@@ -926,27 +952,25 @@ impl<'a> Writer<'_, 'a> {
         let enc = self.enc(&local_ty)?;
         let encoded = self.b.app(enc, free);
         let name = self.nat_u(number);
-        let value_ty = self.value_ty();
-        let nat = self.b.konst("Nat");
-        let entry = self.b.pair(nat, value_ty, name, encoded);
-        let entry_ty = self.b.pair_ty(nat, value_ty);
-        let cons = self.b.konst0("List.cons");
-        let env = self.b.apps(cons, &[entry_ty, entry, scope.env]);
+        let env = self.extend_env(scope.env, &[number], &[encoded])?;
         let inner = self.bind(scope, vec![(local, generic)], &[free], env);
         let rest = self.prove(body, body_expr, &inner)?;
         let (p, outer) = (self.prog, scope.env);
         let target = self.ty_term(ty);
         let applied = self.apply(
             "conv_let",
-            &[("p", p), ("env", outer), ("t", target)],
+            &[("p", p), ("env", outer), ("t", target), ("x", name)],
             &[
                 Given::Proof(bound.proof, bound.ty),
                 Given::Proof(rest.proof, rest.ty),
             ],
         )?;
-        let label = super::super::identifier(&binder.name);
-        let proof = self.b.let_over(&label, lean, bound_src, free, applied.proof);
-        let ty = self.b.let_over(&label, lean, bound_src, free, applied.ty);
+        // The binding is substituted, not bound: the type of the derivation
+        // stays the `Conv` of the lowered `let` for the derivation above it to
+        // read, and the kernel sees the same term either way.
+        let _ = lean;
+        let proof = self.b.substitute(applied.proof, &[free], &[bound_src]);
+        let ty = self.b.substitute(applied.ty, &[free], &[bound_src]);
         Ok(Pf { proof, ty })
     }
 
