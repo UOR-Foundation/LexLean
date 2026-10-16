@@ -3024,21 +3024,38 @@ pub fn run(id: &str) {
                 .iter()
                 .find(|entry| entry.root.ends_with("groveRoot"))
                 .expect("the recursive-tree root is certified");
+            let data = grove
+                .certificate
+                .data
+                .as_ref()
+                .expect("certificate A is data");
+            let module = &grove.certificate.module;
+            let rows: Vec<&lexlean::ir::core::CoreDeclaration> = data.declarations.iter().collect();
+            let has = |short: &str| rows.iter().any(|row| row.name.starts_with(&format!("{module}.{short}")));
+            // The recursive group's validators are one mutual group of rows.
+            assert!(
+                rows.iter().any(|row| {
+                    row.name.starts_with(&format!("{module}.__valid_"))
+                        && row.all.as_ref().is_some_and(|all| all.len() > 1)
+                }),
+                "the recursive tree's certificate states its validators as a mutual group"
+            );
             for needed in [
-                "mutual\ndef __valid_",
-                "theorem __viff_",
-                "theorem __vrel_",
-                "theorem __vinv_",
-                "LexLeanPreservation.invList_eqs",
-                "theorem entry_accepts",
-                "theorem entry_refuses",
-                "def accepts",
+                "__viff_",
+                "__vrel_",
+                "__vinv_",
+                "entry_accepts",
+                "entry_refuses",
+                "accepts",
             ] {
-                assert!(
-                    grove.certificate.text.contains(needed),
-                    "the recursive tree's certificate states `{needed}`"
-                );
+                assert!(has(needed), "the recursive tree's certificate states `{needed}`");
             }
+            assert!(
+                data.nodes.iter().any(|node| matches!(node,
+                    lexlean::ir::core::CoreNode::Const { n, .. }
+                        if n == "LexLeanPreservation.invList_eqs")),
+                "the recursive tree's certificate applies the library's invList_eqs"
+            );
             // A validator called from inside the program is refused by the
             // lowering's audit, as is an entry the validators do not match.
             let checked = support::checked_project(&coverage);

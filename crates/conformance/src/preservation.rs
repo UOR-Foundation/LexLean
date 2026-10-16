@@ -984,18 +984,21 @@ fn witnesses(
     // The names the encoders of the arguments unfold through: the ones
     // certificate A defines and the library's.
     let mut names: Vec<String> = Vec::new();
-    for line in certificate_a.text.lines() {
-        if let Some(rest) = line.strip_prefix("def ") {
-            let name: String = rest
-                .chars()
-                .take_while(|character| character.is_alphanumeric() || *character == '_')
-                .collect();
-            if ["__enc_", "__aux_", "__items_", "__L_", "__O_"]
-                .iter()
-                .any(|prefix| name.starts_with(prefix))
-            {
-                names.push(format!("{}.{name}", certificate_a.module));
-            }
+    let data = certificate_a
+        .data
+        .as_ref()
+        .expect("certificate A is held as data");
+    for row in &data.declarations {
+        let name = row
+            .name
+            .strip_prefix(&format!("{}.", certificate_a.module))
+            .unwrap_or(&row.name);
+        if ["__enc_", "__aux_", "__items_", "__L_", "__O_"]
+            .iter()
+            .any(|prefix| name.starts_with(prefix))
+            && !name.ends_with("._unsafe_rec")
+        {
+            names.push(row.name.clone());
         }
     }
     for (at, found) in composed.text.match_indices("LexLeanPreservation.enc") {
