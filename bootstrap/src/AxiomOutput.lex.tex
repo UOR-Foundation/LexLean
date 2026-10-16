@@ -57,18 +57,12 @@ definition{
 }
 
 definition{
-  name: digitStepDown,
-  parameters: [state : (Nat * Bytes)],
-  result: (Option (Nat * Bytes)),
-  body: (if ((first state) =? 0) then (ctor Option.none [(Nat * Bytes)]) else (ctor Option.some [(Nat * Bytes)] ((prim quotient (first state) 10 0 : Nat), (cat (Text::sliceOr (text "0123456789") (prim remainder (first state) 10 0 : Nat) 1) (second state))))),
-  executable: true
-}
-
-definition{
   name: decimal,
   parameters: [number : Nat],
   result: Bytes,
-  body: (if (number =? 0) then (text "0") else (second (first (prim iterate_until (fun (state : (Nat * Bytes)) => (digitStepDown state)) 20 (number, 0x) : ((Nat * Bytes) * Bool))))),
+  body: (match (prim checked_convert number : (Option UInt64))
+    | Option.some small => (text (prim format_decimal small : String))
+    | Option.none => (text "overflow")),
   executable: true
 }
 
@@ -132,7 +126,7 @@ definition{
   name: isLater,
   parameters: [byte : UInt8],
   result: Bool,
-  body: ((isFirst byte) || (((inRange byte (48 : UInt8) (57 : UInt8)) || (prim equal byte (63 : UInt8) : Bool)) || (prim equal byte (39 : UInt8) : Bool))),
+  body: (if (isFirst byte) then true else (if (inRange byte (48 : UInt8) (57 : UInt8)) then true else (if (prim equal byte (63 : UInt8) : Bool) then true else (prim equal byte (39 : UInt8) : Bool)))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -141,7 +135,7 @@ definition{
   name: nameMode,
   parameters: [mode : Nat, byte : UInt8],
   result: Nat,
-  body: (if (mode =? 2) then 2 else (if (prim equal byte (46 : UInt8) : Bool) then (if (mode =? 1) then 0 else 2) else (if (isFirst byte) then 1 else (if ((mode =? 1) && (isLater byte)) then 1 else 2)))),
+  body: (if (mode =? 2) then 2 else (if (prim equal byte (46 : UInt8) : Bool) then (if (mode =? 1) then 0 else 2) else (if (isFirst byte) then 1 else (if (mode =? 1) then (if (isLater byte) then 1 else 2) else 2)))),
   axioms: [Quot.sound, propext],
   executable: true
 }
