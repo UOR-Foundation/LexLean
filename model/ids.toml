@@ -2157,6 +2157,12 @@ suite = "production-export"
 statement = "Each production export schema under api/schemas validates the values the façade produces and refuses an unknown field, and its SHA-256 is recorded under its exact spec version in api/schemas/versions.toml, so that a schema changed without a new version fails the gate."
 
 [[id]]
+id = "PX-13"
+level = "build"
+suite = "production-export"
+statement = "Every output of a production result states the effects its realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there, so an output that can recurse says that it needs a host stack its input-dependent depth fits, and the export report counts those outputs."
+
+[[id]]
 id = "TL-01"
 level = "build"
 suite = "tooling"
@@ -2252,7 +2258,6 @@ level = "build"
 suite = "authoring"
 statement = "A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics."
 
-
 [[id]]
 id = "AU-06"
 level = "build"
@@ -2264,7 +2269,6 @@ id = "AU-07"
 level = "build"
 suite = "authoring"
 statement = "No product source is the output of a generator: every `.lex.tex` source of `compiler/`, `language/`, and `examples/` is written and edited as source, and no writer of the repository (the generators `cargo xtask check-calculus` compares and rewrites) emits one of them except the four fixture modules of `compiler/` (`TargetFixtures`, `ReasoningFixtures`, `GnafFixtures`, `GnafCertificates`), generated from committed fixtures, requests, and certificates, and the extraction adapter's module, generated from the registry the pinned Lean answers; a source emitted by any other writer is a defect."
-
 
 [[id]]
 id = "AU-08"

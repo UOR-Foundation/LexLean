@@ -57,8 +57,8 @@ pub mod project;
 #[doc(hidden)]
 pub mod source;
 #[doc(hidden)]
-pub mod text_laws;
 pub mod surface;
+pub mod text_laws;
 #[doc(hidden)]
 pub mod verify;
 
