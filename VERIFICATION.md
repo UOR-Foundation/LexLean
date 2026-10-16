@@ -1254,6 +1254,64 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### the fold laws can fail
+
+Integer order, `linear_arithmetic` over the runtime, the fold laws, and the
+`law` form (#117, `PF-20`..`PF-23`). Each defect was planted in the working
+tree, the case named was run with `cargo test -p repo-conformance
+--all-features --test conformance -- <case>` (Linux x86-64, pinned Lean
+4.32.1), and the plant was reverted. Each case passes on the reverted tree.
+
+Planted (a): order typed over `Nat` only under language 1.2 (the Int and
+fixed-width arm of `le`/`lt` disabled). `conformance_pf_20`: the committed
+corpus no longer links.
+
+```text
+check succeeds: LexLeanError { ... code: DiagnosticCode("LLT4001"), message: "phase link: order left operand has type Int, expected Nat", primary: Some(Span { path: "src/Kernels.lex.tex", ... }) ... }
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 389 filtered out
+```
+
+Planted (b): the script without `all_goals (repeat' split)`.
+`conformance_pf_21` refuses the rendered script (`the fixed script with the
+unfolded definition`). The same compiler run by `lexlean verify` on a copy of
+`examples/fold-laws` shows what the split is for: Lean refuses the first
+kernel whose zero-divisor `if` is left unsplit, with
+`error[LLV7002]: Lean rejected FoldLaws.Kernels (error): omega could not
+prove the goal` at `src/Kernels.lex.tex:79` (`halving_shrinks`).
+
+Planted (c): the backend leaves out one registered rewrite
+(`LexLeanLaws.listFold_add_nat_self`) from the script. `conformance_pf_22`,
+whose expected script is read from the committed registry rather than from
+the compiler, refuses the rendered Lean of `doubled_total`
+(`proofs.rs:1087`).
+
+Planted (d): the rewrite removed from `language/runtime-1.2/laws.toml`
+itself. The registry is language data hashed into the language-1.2
+compiler-semantics ID (§21.2), so `conformance_pf_22` fails before any
+backend runs, on the identity: `LLC0102: lexlean.lock is stale or
+noncanonical` (`the compiler semantics changed since locking`). A registry
+that names a declaration the module lacks, or registers a law twice, and a
+laws row that only bounds its axioms are refused by the runtime build. Those
+three are plants the case makes itself, each asserted by its message.
+
+Planted (e): the argument types of a `law` application unchecked.
+`conformance_pf_23`: the copy that passes `true` for a `Nat` argument links
+(`check fails` is not met).
+
+```text
+thread 'conformance_pf_23' panicked at crates/conformance/src/support.rs:619:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 389 filtered out
+```
+
+The false statements are refused by Lean in every run of the cases, not only
+when planted. `conformance_pf_21` refuses a clamp bound one too small, a
+quotient identity without the remainder's sign, and a fixed-width order one
+past its literal. `conformance_pf_22` refuses a doubled fold equated to a sum
+and a count, the reverse's sum equated to a count, and a map's entries summed
+as its keys twice. `conformance_pf_23` refuses the pair law applied to a
+swapped statement. Each assertion names exactly the refused theorems.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`

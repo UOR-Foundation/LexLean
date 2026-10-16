@@ -1,0 +1,143 @@
+\begin{lexlean}{Kernels}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{folds.titles@1.0.0}
+\title{Integer kernels}
+\begin{semanticmodule}
+definition{
+  name: requantize,
+  parameters: [x : Int],
+  result: Int,
+  body: (let q : Int := (prim quotient (prim subtract (prim multiply (prim subtract x (-20 : Int) : Int) (9365133 : Int) : Int) (-2147483648 : Int) : Int) (4294967296 : Int) (0 : Int) : Int); (if (prim less_than q (0 : Int) : Bool) then (0 : Int) else (if (prim less_than (255 : Int) q : Bool) then (255 : Int) else q))),
+  axioms: [propext],
+  executable: true
+}
+
+theorem{
+  name: requantize_monotone,
+  parameters: [x : Int, y : Int],
+  statement: ((x <= y) -> ((requantize x) <= (requantize y))),
+  proof: linear_arithmetic{definitions: [requantize]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: requantize_runtime_monotone,
+  parameters: [x : Int, y : Int],
+  statement: (((prim less_than y x : Bool) = false) -> ((prim less_than (requantize y) (requantize x) : Bool) = false)),
+  proof: linear_arithmetic{definitions: [requantize]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: requantize_low,
+  parameters: [x : Int],
+  statement: ((0 : Int) <= (requantize x)),
+  proof: linear_arithmetic{definitions: [requantize]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: requantize_high,
+  parameters: [x : Int],
+  statement: ((requantize x) <= (255 : Int)),
+  proof: linear_arithmetic{definitions: [requantize]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: truncating_division,
+  parameters: [a : Int],
+  statement: ((prim subtract (prim multiply (prim quotient a (7 : Int) (0 : Int) : Int) (7 : Int) : Int) (prim negate (prim remainder a (7 : Int) (0 : Int) : Int) : Int) : Int) = a),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: truncating_division_negative,
+  parameters: [a : Int],
+  statement: ((prim subtract (prim multiply (prim quotient a (-7 : Int) (0 : Int) : Int) (-7 : Int) : Int) (prim negate (prim remainder a (-7 : Int) (0 : Int) : Int) : Int) : Int) = a),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: truncation_toward_zero,
+  parameters: [a : Int],
+  statement: (((prim less_than a (0 : Int) : Bool) = true) -> ((prim less_than (0 : Int) (prim remainder a (7 : Int) (0 : Int) : Int) : Bool) = false)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: division_by_zero,
+  parameters: [a : Int, z : Int],
+  statement: ((prim quotient a (0 : Int) z : Int) = z),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: halving_shrinks,
+  parameters: [n : Nat],
+  statement: ((prim quotient n 2 0 : Nat) <= n),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: byte_order,
+  parameters: [x : UInt8, y : UInt8, z : UInt8],
+  statement: ((x <= y) -> ((y < z) -> (x < z))),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: byte_ceiling,
+  parameters: [x : UInt8],
+  statement: (x <= (255 : UInt8)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: byte_literal,
+  parameters: [x : UInt8],
+  statement: ((x <= (5 : UInt8)) -> (x < (6 : UInt8))),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: signed_byte_order,
+  parameters: [x : Int8, y : Int8],
+  statement: (((prim less_than x y : Bool) = true) -> (x < y)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: signed_byte_floor,
+  parameters: [x : Int8],
+  statement: (((prim less_than x (-128 : Int8) : Bool) = false) /\ (x <= (127 : Int8))),
+  proof: linear_arithmetic{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: byte_equality,
+  parameters: [x : UInt8, y : UInt8],
+  statement: (((prim equal x y : Bool) = true) -> (x <= y)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: requantize_closed,
+  parameters: [],
+  statement: ((requantize (100 : Int)) = (0 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

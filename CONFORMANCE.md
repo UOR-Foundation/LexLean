@@ -393,6 +393,10 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `PF-17` | `build` | native_decide is never accepted or generated. |
 | `PF-18` | `build` | Lean proof failures remap to the smallest originating LexLean proof or statement span. |
 | `PF-19` | `build` | The language-1.2 linear_arithmetic proof form names only the prior document definitions it unfolds, lowers to one fixed omega script, proves true linear obligations, and is refused by Lean on a false one. |
+| `PF-20` | `build` | Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only. |
+| `PF-21` | `build` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. |
+| `PF-22` | `build` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. |
+| `PF-23` | `build` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. |
 
 ## reasoning
 
