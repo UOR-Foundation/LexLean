@@ -12,7 +12,7 @@
 # version disagree.
 
 spec = "lexlean/oracle-overlap/1"
-version = 2
+version = 3
 
 [[construct]]
 key = "type.type"
@@ -393,3 +393,27 @@ probe = "Reasoning.Main.gradeLevel"
 refusal = "unresolved-external-call"
 scope = "closure"
 reason = "Reasoner closures iterate with definitions of the runtime module a generated module imports (§17.12), which the oracle's exporter does not follow, so the oracle refuses them as unresolved external calls; the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
+
+[[construct]]
+key = "declaration.tokenizer"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean refuses a root whose closure reaches it (registry disposition formal-only: its elaborated definitions apply the embedded text-laws library, which no production target realizes), and the oracle has no counterpart of a declaration elaborated in linking, so neither compiler realizes it."
+
+[[construct]]
+key = "declaration.context_window"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean does not elaborate it in this release (registry disposition formal-only: refused by linking before any closure is formed), so no root of either compiler realizes it."
+
+[[construct]]
+key = "declaration.text_generator"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean does not elaborate it in this release (registry disposition formal-only: refused by linking before any closure is formed), so no root of either compiler realizes it."
+
+[[construct]]
+key = "declaration.text_classifier"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean does not elaborate it in this release (registry disposition formal-only: refused by linking before any closure is formed), so no root of either compiler realizes it."
