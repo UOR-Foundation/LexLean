@@ -354,11 +354,10 @@ impl<'a> Writer<'_, 'a> {
     /// The four rows of a validator whose type is not in a recursive group.
     fn plain_validator(&mut self, boundary: &Boundary, index: u64) -> Result<(), String> {
         let validator = boundary.get(index)?.clone();
-        if let Validation::Document { fields } = &validator.kind {
-            let fields = fields.clone();
-            return self.plain_document(boundary, &validator, &fields);
+        if let Validation::Document { fields: _ } = &validator.kind {
+            return self.plain_document(boundary, &validator);
         }
-        let [valid, inv, viff, vrel] = self.library_validator(boundary, &validator)?;
+        let [valid, inv, viff, vrel] = self.library_validator(&validator)?;
         self.push_family(Family::Valid, &validator, valid)?;
         self.push_family(Family::Inv, &validator, inv)?;
         self.push_family(Family::Viff, &validator, viff)?;
@@ -384,11 +383,7 @@ impl<'a> Writer<'_, 'a> {
     /// `(valid, inv, viff, vrel)` of a container or trivial validator, by the
     /// library's definitions, propositions, decision theorems, and templates.
     #[allow(clippy::too_many_lines)]
-    fn library_validator(
-        &mut self,
-        boundary: &Boundary,
-        validator: &Validator,
-    ) -> Result<[Term; 4], String> {
+    fn library_validator(&mut self, validator: &Validator) -> Result<[Term; 4], String> {
         let site = Site {
             module: validator.module.clone(),
             substitution: BTreeMap::new(),
@@ -716,7 +711,6 @@ impl<'a> Writer<'_, 'a> {
         let vrel = self
             .b
             .lam_over("__v", EXPLICIT, validator.lean, x, relation.proof);
-        let _ = boundary;
         Ok([valid, inv, viff, vrel])
     }
 
@@ -845,13 +839,7 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// A document type's validator outside any recursion: by its eliminator.
-    fn plain_document(
-        &mut self,
-        boundary: &Boundary,
-        validator: &Validator,
-        fields: &[Vec<Option<u64>>],
-    ) -> Result<(), String> {
-        let _ = fields;
+    fn plain_document(&mut self, boundary: &Boundary, validator: &Validator) -> Result<(), String> {
         let constructors = self.plain_constructors(&validator.ty)?;
         let ctors = self.constructor_specs(validator, &constructors)?;
         let group = Group {
@@ -972,8 +960,40 @@ impl<'a> Writer<'_, 'a> {
         Ok(())
     }
 
+    /// The validators outside a group that its members call, which bring
+    /// axioms: the group's records name them all in each record (see
+    /// [`Self::unsafe_records`]).
+    fn external_axiom_callees(&mut self, group: &Group, order: &[(u64, usize)]) -> Vec<u64> {
+        let mut callees = BTreeSet::new();
+        for (_, position) in order {
+            for ctor in &group.positions[*position].ctors {
+                for check in &ctor.checks {
+                    if ctor.recursive[check.field].is_none() {
+                        callees.insert(check.validator);
+                    }
+                }
+            }
+        }
+        callees
+            .into_iter()
+            .filter(|callee| {
+                let name = format!("{}.__valid_{callee}", self.name);
+                self.constant_axioms(&name)
+                    .is_ok_and(|axioms| !axioms.is_empty())
+            })
+            .collect()
+    }
+
     /// The implementation records of a group's `__valid_k`: direct recursion
     /// by the eliminator of each type, calling the records of the others.
+    ///
+    /// The records call one another, and Lean computes the axioms of a
+    /// definition in a cycle with a cache that a call still in progress cuts
+    /// short: which record sees the axioms of a callee that only another
+    /// record names depends on the order the declarations are visited in. So
+    /// that every record's axioms are the same whatever that order is, each
+    /// names (in a `let` the code generator drops) every callee outside the
+    /// group that brings axioms, so each record sees them directly.
     fn unsafe_records(
         &mut self,
         boundary: &Boundary,
@@ -981,6 +1001,20 @@ impl<'a> Writer<'_, 'a> {
         order: &[(u64, usize)],
     ) -> Result<(), String> {
         let bool = self.bool_ty();
+        let external = self.external_axiom_callees(group, order);
+        let mut ballast: Option<(Term, Term)> = None;
+        for callee in external.iter().rev() {
+            let validator = boundary.get(*callee)?;
+            let ty = self.b.arrow(validator.lean, bool);
+            let constant = self.valid_const(*callee);
+            ballast = Some(match ballast {
+                None => (ty, constant),
+                Some((rest_ty, rest)) => (
+                    self.b.pair_ty(ty, rest_ty),
+                    self.b.pair(ty, rest_ty, constant, rest),
+                ),
+            });
+        }
         let mut names = Vec::new();
         for (member, position) in order {
             let validator = boundary.get(*member)?.clone();
@@ -1001,7 +1035,12 @@ impl<'a> Writer<'_, 'a> {
                 let lifted = self.b.lift(bool, 1, 0);
                 self.b.lam("_", EXPLICIT, validator.lean, lifted)
             };
-            let cases = self.cases_on(&validator.ty, free, motive, one, &minors)?;
+            let mut cases = self.cases_on(&validator.ty, free, motive, one, &minors)?;
+            if let Some((ballast_ty, ballast_value)) = ballast {
+                cases = self
+                    .b
+                    .let_node("_callees", ballast_ty, ballast_value, cases, false);
+            }
             let value = self
                 .b
                 .lam_over("__v", EXPLICIT, validator.lean, free, cases);
@@ -2239,7 +2278,6 @@ impl<'a> Writer<'_, 'a> {
             CoreLevel::Zero,
             &[overflow_case, value_case],
         )?;
-        let _ = (checked, obs);
         let mut proof = base;
         let mut callers = trues;
         // The invariants' conjunction, taken apart from the first.
@@ -2375,7 +2413,6 @@ impl<'a> Writer<'_, 'a> {
             // `false`: the goal holds whatever follows.
             let mut at_false = callers.clone();
             at_false[index] = fls;
-            let false_goal = self.entry_goal(sig, &at_false, rhs);
             let false_accepted = all_true(self, &at_false);
             let false_refuted = self.b.app(not, false_accepted);
             let on_false = {
@@ -2383,7 +2420,6 @@ impl<'a> Writer<'_, 'a> {
                 let value_wrap = self.lp("Obs.value");
                 let value = self.b.app(value_wrap, none);
                 let refl = self.refl(obs, value);
-                let _ = false_goal;
                 self.b.lam_over("__n", EXPLICIT, false_refuted, free, refl)
             };
             let cases = self.cases_on(
