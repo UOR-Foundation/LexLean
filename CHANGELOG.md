@@ -15,6 +15,23 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The first component of the compiler's own pipeline as language-1.2 source:
+  the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/` is a language-1.2 project beside `compiler/` and `stdlib/`
+  under the module prefix `LexLeanBoot`; its `AxiomOutput` module declares
+  `parseAuditOutput` and `isClosedLeanName` as production roots for
+  `rust-std`. A project cannot import another's modules, so `Text` is a copy
+  of the standard library's without its `production` declarations, compared
+  with `stdlib/src/Text.lex.tex` on every run. `BS-01` runs the committed
+  golden vectors of `tests/golden/axiom-parser/` and a seeded corpus of
+  generated, wrapped, and mutated audit outputs against the Rust parser
+  `verify::axiom` (the stage-0 oracle, unchanged) under the calculus
+  evaluator and under the pinned rustc, detects seven planted defects, and,
+  under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones under
+  `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
+  example-gate records. `BS-01` brings the register to 389 IDs.
 - The standard library's first member: bytes and text over `Bytes`
   (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
   language-1.2 project beside `compiler/` under the module prefix

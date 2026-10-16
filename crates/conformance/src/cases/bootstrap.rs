@@ -1023,8 +1023,8 @@ const PLANTS: [Plant; 7] = [
     },
     Plant {
         label: "a name segment may begin with a digit",
-        site: "(((inRange byte (65 : UInt8) (90 : UInt8)) || (inRange byte (97 : UInt8) (122 : UInt8))) || (prim equal byte (95 : UInt8) : Bool))",
-        replacement: "((((inRange byte (65 : UInt8) (90 : UInt8)) || (inRange byte (97 : UInt8) (122 : UInt8))) || (prim equal byte (95 : UInt8) : Bool)) || (inRange byte (48 : UInt8) (57 : UInt8)))",
+        site: "(if (inRange byte (65 : UInt8) (90 : UInt8)) then true else (if (inRange byte (97 : UInt8) (122 : UInt8)) then true else (prim equal byte (95 : UInt8) : Bool)))",
+        replacement: "(if (inRange byte (48 : UInt8) (57 : UInt8)) then true else (if (inRange byte (65 : UInt8) (90 : UInt8)) then true else (if (inRange byte (97 : UInt8) (122 : UInt8)) then true else (prim equal byte (95 : UInt8) : Bool))))",
         root: "isClosedLeanName",
     },
     Plant {

@@ -176,7 +176,7 @@ definition{
   name: whiteLength,
   parameters: [subject : Bytes, position : Nat],
   result: Nat,
-  body: (if (if (byteIn subject position (9 : UInt8) (13 : UInt8)) then true else (byteIs subject position (32 : UInt8))) then 1 else (if (byteIs subject position (194 : UInt8)) then (if (if (byteIs subject (position + 1) (133 : UInt8)) then true else (byteIs subject (position + 1) (160 : UInt8))) then 2 else 0) else (if (byteIs subject position (225 : UInt8)) then (if (if (byteIs subject (position + 1) (154 : UInt8)) then (byteIs subject (position + 2) (128 : UInt8)) else false) then 3 else 0) else (if (byteIs subject position (226 : UInt8)) then (if (byteIs subject (position + 1) (128 : UInt8)) then (if (if (byteIn subject (position + 2) (128 : UInt8) (138 : UInt8)) then true else (if (byteIs subject (position + 2) (168 : UInt8)) then true else (if (byteIs subject (position + 2) (169 : UInt8)) then true else (byteIs subject (position + 2) (175 : UInt8))))) then 3 else 0) else (if (if (byteIs subject (position + 1) (129 : UInt8)) then (byteIs subject (position + 2) (159 : UInt8)) else false) then 3 else 0)) else (if (byteIs subject position (227 : UInt8)) then (if (if (byteIs subject (position + 1) (128 : UInt8)) then (byteIs subject (position + 2) (128 : UInt8)) else false) then 3 else 0) else 0))))),
+  body: (if (if (byteIn subject position (9 : UInt8) (13 : UInt8)) then true else (if (byteIs subject position (32 : UInt8)) then true else false)) then 1 else (if (byteIs subject position (194 : UInt8)) then (if (if (byteIs subject (position + 1) (133 : UInt8)) then true else (if (byteIs subject (position + 1) (160 : UInt8)) then true else false)) then 2 else 0) else (if (byteIs subject position (225 : UInt8)) then (if (if (byteIs subject (position + 1) (154 : UInt8)) then (if (byteIs subject (position + 2) (128 : UInt8)) then true else false) else false) then 3 else 0) else (if (byteIs subject position (226 : UInt8)) then (if (byteIs subject (position + 1) (128 : UInt8)) then (if (if (byteIn subject (position + 2) (128 : UInt8) (138 : UInt8)) then true else (if (byteIs subject (position + 2) (168 : UInt8)) then true else (if (byteIs subject (position + 2) (169 : UInt8)) then true else (if (byteIs subject (position + 2) (175 : UInt8)) then true else false)))) then 3 else 0) else (if (if (byteIs subject (position + 1) (129 : UInt8)) then (if (byteIs subject (position + 2) (159 : UInt8)) then true else false) else false) then 3 else 0)) else (if (byteIs subject position (227 : UInt8)) then (if (if (byteIs subject (position + 1) (128 : UInt8)) then (if (byteIs subject (position + 2) (128 : UInt8)) then true else false) else false) then 3 else 0) else 0))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -314,7 +314,7 @@ definition{
   name: decimal,
   parameters: [number : Nat],
   result: Bytes,
-  body: (if (number =? 0) then (text "0") else (significant (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes))),
+  body: (let zero : Bytes := (text "0"); (let digits : Bytes := (significant (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)); (if (number =? 0) then zero else digits))),
   executable: true
 }
 
@@ -333,7 +333,7 @@ definition{
   result: Bool,
   body: (let digits : Bytes := (match (stripPrefix raw (text "+"))
     | Option.some unsigned => unsigned
-    | Option.none => raw); (if (0 <? (prim length digits : Nat)) then (if (allDigits digits) then (fitsWord (significant digits)) else false) else false)),
+    | Option.none => raw); (let fits : Bool := (fitsWord (significant digits)); (if (0 <? (prim length digits : Nat)) then (if (allDigits digits) then fits else false) else false))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -362,10 +362,10 @@ definition{
   parameters: [column : Bytes, rest : Bytes],
   result: (Option Bytes),
   body: (match (splitOnce column (text "-"))
-    | Option.some span => (if (if (isCount (first span)) then (isCount (second span)) else false) then (match (splitOnce rest (text ":"))
-      | Option.some tail => (if (isCount (first tail)) then (afterLabel (second tail)) else (ctor Option.none [Bytes]))
-      | Option.none => (ctor Option.none [Bytes])) else (ctor Option.none [Bytes]))
-    | Option.none => (if (isCount column) then (afterLabel rest) else (ctor Option.none [Bytes]))),
+    | Option.some span => (let low : Bytes := (first span); (let high : Bytes := (second span); (match (splitOnce rest (text ":"))
+      | Option.some tail => (let stop_column : Bytes := (first tail); (let after : Bytes := (second tail); (let labeled : (Option Bytes) := (afterLabel after); (if (isCount low) then (if (isCount high) then (if (isCount stop_column) then labeled else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])))))
+      | Option.none => (ctor Option.none [Bytes]))))
+    | Option.none => (let labeled : (Option Bytes) := (afterLabel rest); (if (isCount column) then labeled else (ctor Option.none [Bytes])))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -377,7 +377,7 @@ definition{
   body: (match (splitOnce line (text ":"))
     | Option.some head => (match (splitOnce (second head) (text ":"))
       | Option.some middle => (match (splitOnce (second middle) (text ":"))
-        | Option.some tail => (if (isCount (first middle)) then (afterLocation (first tail) (second tail)) else (ctor Option.none [Bytes]))
+        | Option.some tail => (let line_number : Bytes := (first middle); (let column : Bytes := (first tail); (let rest : Bytes := (second tail); (let located_rest : (Option Bytes) := (afterLocation column rest); (if (isCount line_number) then located_rest else (ctor Option.none [Bytes]))))))
         | Option.none => (ctor Option.none [Bytes]))
       | Option.none => (ctor Option.none [Bytes]))
     | Option.none => (ctor Option.none [Bytes])),
@@ -400,7 +400,11 @@ definition{
   name: terminates,
   parameters: [payload : Bytes],
   result: Bool,
-  body: (if (Text::endsWith payload (text "]")) then true else (Text::endsWith payload (text " does not depend on any axioms"))),
+  body: (match (stripSuffix payload (text "]"))
+    | Option.some bracketed => true
+    | Option.none => (match (stripSuffix payload (text " does not depend on any axioms"))
+      | Option.some sentence => true
+      | Option.none => false)),
   executable: true
 }
 
@@ -504,7 +508,7 @@ definition{
   parameters: [payload : Bytes, body : Bytes],
   result: (Result (Bytes * (List Bytes)) Bytes),
   body: (match (splitLast body (text "' depends on axioms: ["))
-    | Option.some split => (if (isClosedLeanName (first split)) then (axiomList (first split) (second split)) else (malformed (notLean (first split))))
+    | Option.some split => (let name : Bytes := (first split); (let list : Bytes := (second split); (let listed_axioms : (Result (Bytes * (List Bytes)) Bytes) := (axiomList name list); (let refused : (Result (Bytes * (List Bytes)) Bytes) := (malformed (notLean name)); (if (isClosedLeanName name) then listed_axioms else refused)))))
     | Option.none => (unrecognized payload)),
   axioms: [Quot.sound, propext],
   executable: true
@@ -517,7 +521,7 @@ definition{
   body: (match (stripPrefix payload (text "'"))
     | Option.none => (unrecognized payload)
     | Option.some rest => (match (stripSuffix rest (text "' does not depend on any axioms"))
-      | Option.some name => (if (isClosedLeanName name) then (parsed name (nil Bytes)) else (malformed (notLean name)))
+      | Option.some name => (let accepted : (Result (Bytes * (List Bytes)) Bytes) := (parsed name (nil Bytes)); (let refused : (Result (Bytes * (List Bytes)) Bytes) := (malformed (notLean name)); (if (isClosedLeanName name) then accepted else refused)))
       | Option.none => (match (stripSuffix rest (text "]"))
         | Option.some body => (listed payload body)
         | Option.none => (unrecognized payload)))),
@@ -571,7 +575,7 @@ definition{
   name: continuation,
   parameters: [line : Bytes],
   result: (Option Bytes),
-  body: (if (startsWhite line) then (if (0 =? (prim length (trimmed line) : Nat)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (trimmed line))) else (ctor Option.none [Bytes])),
+  body: (let cleaned : Bytes := (trimmed line); (if (startsWhite line) then (if (0 =? (prim length cleaned : Nat)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] cleaned)) else (ctor Option.none [Bytes]))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -600,9 +604,9 @@ definition{
     | Result.error rejection => state
     | Result.ok entries => (let want : Bytes := (match (project entry expected)
       | Option.some name => name
-      | Option.none => 0x); (if (prim equal (project entry declaration) want : Bool) then (match (insertEntry (project entry declaration) (project entry axioms) entries)
+      | Option.none => 0x); (let duplicate : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (text "duplicate record for ") (quoted (project entry declaration))) (ctor Option.some [Bytes] want)); (let mismatch : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (cat (cat (text "expected a record for ") (quoted want)) (text ", found ")) (quoted (project entry declaration))) (ctor Option.some [Bytes] want)); (if (prim equal (project entry declaration) want : Bool) then (match (insertEntry (project entry declaration) (project entry axioms) entries)
       | Option.some inserted => (ctor Result.ok [(List (Bytes * (List Bytes))), Rejection] inserted)
-      | Option.none => (refuse (cat (text "duplicate record for ") (quoted (project entry declaration))) (ctor Option.some [Bytes] want))) else (refuse (cat (cat (cat (text "expected a record for ") (quoted want)) (text ", found ")) (quoted (project entry declaration))) (ctor Option.some [Bytes] want))))),
+      | Option.none => duplicate) else mismatch))))),
   axioms: [propext],
   executable: true
 }
@@ -614,7 +618,7 @@ definition{
   body: (match scan
     | Scan.stopped rejection => (ctor Result.error [(List (Bytes * (List Bytes))), Rejection] rejection)
     | Scan.inside records remaining payload about => (refuse (cat (text "unterminated axiom payload: ") payload) about)
-    | Scan.between records remaining => (if ((listLength [Record] records) =? (listLength [Bytes] expected)) then (prim list_fold (fun (state : (Result (List (Bytes * (List Bytes))) Rejection)) (entry : Record) => (auditStep state entry)) (ctor Result.ok [(List (Bytes * (List Bytes))), Rejection] (nil (Bytes * (List Bytes)))) (reversed [Record] records) : (Result (List (Bytes * (List Bytes))) Rejection)) else (refuse (cat (cat (cat (text "expected ") (decimal (listLength [Bytes] expected))) (text " audit records, found ")) (decimal (listLength [Record] records))) (ctor Option.none [Bytes])))),
+    | Scan.between records remaining => (let counted : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (cat (cat (text "expected ") (decimal (listLength [Bytes] expected))) (text " audit records, found ")) (decimal (listLength [Record] records))) (ctor Option.none [Bytes])); (if ((listLength [Record] records) =? (listLength [Bytes] expected)) then (prim list_fold (fun (state : (Result (List (Bytes * (List Bytes))) Rejection)) (entry : Record) => (auditStep state entry)) (ctor Result.ok [(List (Bytes * (List Bytes))), Rejection] (nil (Bytes * (List Bytes)))) (reversed [Record] records) : (Result (List (Bytes * (List Bytes))) Rejection)) else counted))),
   axioms: [propext],
   executable: true
 }
