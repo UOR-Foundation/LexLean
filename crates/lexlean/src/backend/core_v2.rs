@@ -48,7 +48,7 @@
 //! Lean module, which the decoder therefore imports in full.
 
 /// The imports the decoder of core module 2 adds after `import Lean`.
-pub const LEAN_CORE_DECODER_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
+pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
 
 /// The decoder module of core module 2, spliced after the generated module's
 /// header.

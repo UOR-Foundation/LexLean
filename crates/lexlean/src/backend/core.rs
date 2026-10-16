@@ -1138,7 +1138,7 @@ pub fn lean_text(core: &CoreModule) -> Result<String, Diagnostic> {
     }
     text.push_str("import Lean\n");
     if core.version() == 2 {
-        text.push_str(crate::backend::core_v2::LEAN_CORE_DECODER_V2_IMPORTS);
+        text.push_str(crate::backend::core_v2::LEAN_CORE_V2_IMPORTS);
     }
     text.push_str(
         "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
