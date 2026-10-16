@@ -758,7 +758,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `spec` | Exactly `lexlean/project/1`. |
 | `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |
 | `language` | Language version: `1.0`, `1.1`, or `1.2`. |
-| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
+| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanLaws`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
 | `source_roots` | Nonempty, unique, sorted project-relative directories. |
 | `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |
 | `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |
@@ -2689,12 +2689,13 @@ either backend runs; they do not defer to what Lean would accept.
    so no part of a data declaration is free; language-1.1 modules keep their
    historical count.
 10. **Binder hygiene.** The backend refers to the module's own declarations,
-    to the built-in names it emits (`And`, `Bool`, `ByteArray`, `Except`,
-    `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`, `LexLeanModels`,
-    `LexLeanReasoning`, `LexLeanRuntime`, `List`, `Nat`, `Option`,
-    `Ordering`, `Prod`, `Prop`, `Result`, `String`, `Type`,
-    `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `congr`, `decide`,
-    `false`, `id`, `rfl`, `true`, `true_and`), and to every imported declaration through
+    to the built-in names it emits (`And`, `BitVec`, `Bool`, `ByteArray`,
+    `Except`, `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`,
+    `LexLeanLaws`, `LexLeanModels`, `LexLeanReasoning`, `LexLeanRuntime`,
+    `List`, `Nat`, `Option`, `Ordering`, `Prod`, `Prop`, `Result`, `String`,
+    `Type`, `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `beq_iff_eq`,
+    `congr`, `decide`, `decide_eq_false_iff_not`, `decide_eq_true_eq`,
+    `false`, `id`, `reduceIte`, `rfl`, `true`, `true_and`), and to every imported declaration through
     the project's module prefix, all without qualification. In a
     `lexlean/semantic-module/2` module no binder (a type parameter, a value
     parameter, or a pattern, `let`, quantifier, lambda, or proof binder) is

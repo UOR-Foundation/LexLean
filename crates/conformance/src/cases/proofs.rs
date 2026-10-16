@@ -137,7 +137,9 @@ fn refused_theorems(project: &P, file: &str, error: &lexlean::LexLeanError) -> V
         .filter_map(|diagnostic| diagnostic.primary.as_ref())
         .filter(|span| span.path.ends_with(file))
         .filter_map(|span| {
-            let before = &source[..span.byte_start.min(source.len())];
+            // The span may open at the declaration itself, so the block
+            // that holds it starts at or before the span's first byte.
+            let before = &source[..(span.byte_start + "theorem{".len()).min(source.len())];
             let block = before.rfind("theorem{")?;
             let rest = &source[block..];
             let start = rest.find("  name: ")? + "  name: ".len();
@@ -931,7 +933,7 @@ pub(crate) fn run(id: &str) {
             );
             assert!(
                 kernels.contains(&format!(
-                    "(requantize (x) <= (255 : Int))) := by\n{}",
+                    "(requantize (x) <= (255 : Int)) := by\n{}",
                     linear_script(&["requantize"])
                 )),
                 "the fixed script with the unfolded definition\n{kernels}"
@@ -1087,7 +1089,7 @@ pub(crate) fn run(id: &str) {
             let folds = support::lean_text(&build, "Folds");
             assert!(
                 folds.contains(&format!(
-                    "(total (xs) + total (xs)))) := by\n{}",
+                    "(total (xs) + total (xs))) := by\n{}",
                     linear_script(&["doubledTotal", "total"])
                 )),
                 "{folds}"

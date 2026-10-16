@@ -2917,8 +2917,9 @@ pub fn reserved_module_segment(name: &str) -> Option<&str> {
 
 /// The names the backend writes without qualification (see
 /// [`is_backend_bare_name`]).
-pub const BACKEND_BARE_NAMES: [&str; 37] = [
+pub const BACKEND_BARE_NAMES: [&str; 43] = [
     "And",
+    "BitVec",
     "Bool",
     "ByteArray",
     "Except",
@@ -2929,6 +2930,7 @@ pub const BACKEND_BARE_NAMES: [&str; 37] = [
     "Int64",
     "Int8",
     "LexLeanCollections",
+    "LexLeanLaws",
     "LexLeanModels",
     "LexLeanReasoning",
     "LexLeanRuntime",
@@ -2948,10 +2950,14 @@ pub const BACKEND_BARE_NAMES: [&str; 37] = [
     "Unit",
     "and_congr",
     "and_true",
+    "beq_iff_eq",
     "congr",
     "decide",
+    "decide_eq_false_iff_not",
+    "decide_eq_true_eq",
     "false",
     "id",
+    "reduceIte",
     "rfl",
     "true",
     "true_and",
