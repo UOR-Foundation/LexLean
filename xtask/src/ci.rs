@@ -244,6 +244,47 @@ pub fn ci_hints(arguments: &[String]) -> Result<(), Fail> {
     Ok(())
 }
 
+/// Check the committed partition of an example's verification (SPEC.md §9.4):
+/// every module elaborated by one shard and replayed by one, every import
+/// elaborated by the shard or one it needs, the join needing every other
+/// shard. With the committed hints, print what each shard is expected to
+/// elaborate, as a reader of the plan would want to know; the estimate is
+/// evidence, never an input.
+pub fn ci_shards(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::shards::{check, import_graph, Plan, PLAN_FILE};
+    let plan = Plan::read(root)?;
+    let example = root.join("examples").join(&plan.project);
+    if !example.join("lexlean.toml").is_file() {
+        return Err(format!("{PLAN_FILE}: `{}` is no example directory", plan.project).into());
+    }
+    let graph = import_graph(&example)?;
+    let lines = check(&plan, &graph)?;
+    let hints = std::fs::read_to_string(root.join(".github/verify-hints.json"))
+        .ok()
+        .and_then(|text| lexlean::verify::operational::Operational::parse_hints(&text).ok());
+    for (line, (name, shard)) in lines.iter().zip(&plan.shards) {
+        let expected: u64 = hints.as_ref().map_or(0, |hints| {
+            shard
+                .elaborate
+                .iter()
+                .filter_map(|module| hints.get(module).map(|hint| hint.wall_ms))
+                .sum()
+        });
+        println!(
+            "ci-shards: {line}; elaboration expected {} s",
+            expected / 1000
+        );
+        let _ = name;
+    }
+    println!(
+        "ci-shards: {PLAN_FILE}: {} shards run the {} modules of `{}` once each (§9.4)",
+        plan.shards.len(),
+        graph.len(),
+        plan.project
+    );
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::hints_from_telemetry;

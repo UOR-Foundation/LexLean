@@ -411,7 +411,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 386, "§31 has 386 rows");
+            assert_eq!(table.len(), 387, "§31 has 387 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -922,19 +922,59 @@ pub(crate) fn run(id: &str) {
         // width and keeps no cache, filter, or skipped recipe.
         "RP-14" => {
             let ci = root_file(".github/workflows/ci.yml");
-            assert!(
-                ci.contains("    runs-on: ubuntu-24.04\n    # Native Atlas"),
-                "the normative job runs on the standard runner"
-            );
             for variable in ["vars.", "inputs."] {
                 assert!(
                     !ci.contains(variable),
                     "the gate selects no runner and no profile from outside the file: `{variable}`"
                 );
             }
+            // The jobs of the file, each with its lines: a key at two spaces
+            // of indentation under `jobs:` opens one.
+            let jobs_text = &ci[ci.find("\njobs:\n").expect("a jobs section") + 7..];
+            let mut jobs: Vec<(String, String)> = Vec::new();
+            for line in jobs_text.lines() {
+                if line.starts_with("  ")
+                    && !line.starts_with("   ")
+                    && line.trim_end().ends_with(':')
+                {
+                    jobs.push((line.trim().trim_end_matches(':').to_owned(), String::new()));
+                } else if let Some((_, body)) = jobs.last_mut() {
+                    body.push_str(line);
+                    body.push('\n');
+                }
+            }
+            let job = |name: &str| -> &str {
+                &jobs
+                    .iter()
+                    .find(|(key, _)| key == name)
+                    .unwrap_or_else(|| panic!("§9.4: the job `{name}`"))
+                    .1
+            };
+            let atlas_jobs: Vec<&(String, String)> = jobs
+                .iter()
+                .filter(|(key, _)| key.starts_with("atlas-"))
+                .collect();
+            assert!(!atlas_jobs.is_empty(), "§9.4: the Atlas jobs");
+            // Every gate job runs on the standard runner (§9.4); only the host
+            // matrix runs elsewhere, on the hosts of §8.3.
+            for (key, body) in &jobs {
+                if key == "host-matrix" {
+                    continue;
+                }
+                assert!(
+                    body.contains("\n    runs-on: ubuntu-24.04\n"),
+                    "§9.4: the job `{key}` runs on the standard runner"
+                );
+                assert!(
+                    body.contains("\n    timeout-minutes: 360\n"),
+                    "§9.4: the job `{key}` has the six-hour limit"
+                );
+            }
             // The resource profile (§22.11) is chosen by the leg's matrix row
-            // and by nothing else: each variable is set once, on the gate job,
-            // from the row.
+            // and by nothing else: each variable is set once on the gate job,
+            // from the row. An Atlas job names the examples profile itself,
+            // once, the same on every shard.
+            let vv = job("vv");
             for (variable, line) in [
                 ("LEXLEAN_VERIFY_WIDTH", "      LEXLEAN_VERIFY_WIDTH: ${{ matrix.width }}\n"),
                 (
@@ -945,29 +985,47 @@ pub(crate) fn run(id: &str) {
                     "LEXLEAN_VERIFY_HINTS",
                     "      LEXLEAN_VERIFY_HINTS: ${{ matrix.hints && format('{0}/{1}', github.workspace, matrix.hints) || '' }}\n",
                 ),
+                (
+                    "LEXLEAN_EXAMPLES_PART",
+                    "      LEXLEAN_EXAMPLES_PART: ${{ matrix.examples_part }}\n",
+                ),
             ] {
-                assert_eq!(ci.matches(variable).count(), 1, "§9.4: `{variable}` is set once");
-                assert!(ci.contains(line), "§9.4: `{variable}` is read from the matrix row");
+                assert_eq!(vv.matches(variable).count(), 1, "§9.4: `{variable}` is set once on the gate job");
+                assert!(vv.contains(line), "§9.4: `{variable}` is read from the matrix row");
             }
-            assert!(ci.contains("timeout-minutes: 360"));
+            for (key, body) in &atlas_jobs {
+                for line in [
+                    "      LEXLEAN_VERIFY_WIDTH: \"2\"\n",
+                    "      LEXLEAN_VERIFY_MEMORY_KIB: \"12582912\"\n",
+                    "      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json\n",
+                    "      LEXLEAN_EXAMPLES_PARTS: ${{ github.workspace }}/ci-parts\n",
+                    "      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/ci-evidence\n",
+                ] {
+                    assert_eq!(body.matches(line).count(), 1, "§9.4: `{key}` sets {line:?} once");
+                }
+                assert_eq!(
+                    body.matches("LEXLEAN_EXAMPLES_PART:").count(),
+                    1,
+                    "§9.4: `{key}` names its part once"
+                );
+            }
             // The gate is one matrix job whose legs run the recipes of `vv`
             // (§9.4): every recipe exactly once, in the order of `vv` within a
             // leg, each leg through the one gate command.
-            let vv: Vec<String> = just_recipes(&root_file("Justfile"))
+            let recipes_of_vv: Vec<String> = just_recipes(&root_file("Justfile"))
                 .get("vv")
                 .expect("§9.2: the Justfile defines vv")
                 .0
                 .split_whitespace()
                 .map(str::to_owned)
                 .collect();
-            let job = &ci[..ci.find("\n  host-matrix:").expect("the host matrix")];
-            // A matrix row: `- { part: <name>, recipes: "...", width: "...",
-            // memory_kib: "...", hints: "..." }`.
+            // A matrix row: `- { part: <name>, recipes: "...", examples_part:
+            // "...", width: "...", memory_kib: "...", hints: "..." }`.
             let field = |row: &str, name: &str| -> Option<String> {
                 let start = row.find(&format!(" {name}: \""))? + name.len() + 4;
                 Some(row[start..start + row[start..].find('"')?].to_owned())
             };
-            let rows: Vec<&str> = job
+            let rows: Vec<&str> = vv
                 .lines()
                 .filter(|line| line.trim().starts_with("- { part: "))
                 .collect();
@@ -985,20 +1043,27 @@ pub(crate) fn run(id: &str) {
             );
             assert!(legs.len() >= 2, "the gate runs in legs: {legs:?}");
             // The leg that runs `examples` verifies at width 2 with the
-            // committed hints and a 12 GiB budget; every other leg names no
-            // profile, which is the default (§9.4, §22.11). The values are the
+            // committed hints and a 12 GiB budget, and every example but the
+            // one the Atlas jobs verify as parts; every other leg names no
+            // profile and no part (§9.4, §22.11). The values are the
             // verifier's to accept: a width it refuses, or hints it cannot
             // read, would fail the gate as `LLV7017` before any stage ran, so
             // they are parsed here with the verifier's own functions.
             for (row, leg) in rows.iter().zip(&legs) {
-                let profile = ["width", "memory_kib", "hints"].map(|name| {
+                let profile = ["width", "memory_kib", "hints", "examples_part"].map(|name| {
                     field(row, name).unwrap_or_else(|| panic!("§9.4: the row {row} names `{name}`"))
                 });
                 if leg.iter().any(|recipe| recipe == "examples") {
                     assert_eq!(
                         profile,
-                        ["2", "12582912", ".github/verify-hints.json"].map(str::to_owned),
-                        "§9.4: the examples leg's profile"
+                        [
+                            "2",
+                            "12582912",
+                            ".github/verify-hints.json",
+                            "without:uor-atlas"
+                        ]
+                        .map(str::to_owned),
+                        "§9.4: the examples leg's profile and part"
                     );
                     assert_eq!(
                         lexlean::verify::operational::Operational::parse_width(Some(&profile[0]))
@@ -1011,13 +1076,13 @@ pub(crate) fn run(id: &str) {
                     .expect("the committed hints are a hints file the verifier reads");
                     assert!(
                         hints.contains_key("LexLeanExample.CensusCert4"),
-                        "the hints cover the Atlas module that dominates the leg"
+                        "the hints cover the Atlas module that dominates the verification"
                     );
                 } else {
                     assert_eq!(
                         profile,
-                        ["", "", ""].map(str::to_owned),
-                        "§9.4: a leg that does not run examples names no profile: {row}"
+                        ["", "", "", ""].map(str::to_owned),
+                        "§9.4: a leg that does not run examples names no profile and no part: {row}"
                     );
                 }
             }
@@ -1026,7 +1091,7 @@ pub(crate) fn run(id: &str) {
                 let positions: Vec<usize> = leg
                     .iter()
                     .map(|recipe| {
-                        vv.iter().position(|name| name == recipe).unwrap_or_else(|| {
+                        recipes_of_vv.iter().position(|name| name == recipe).unwrap_or_else(|| {
                             panic!("§9.4: the leg {leg:?} runs `{recipe}`, which is not a recipe of vv")
                         })
                     })
@@ -1037,7 +1102,7 @@ pub(crate) fn run(id: &str) {
                 );
             }
             ran.sort();
-            let mut all: Vec<&String> = vv.iter().collect();
+            let mut all: Vec<&String> = recipes_of_vv.iter().collect();
             all.sort();
             assert_eq!(
                 ran, all,
@@ -1058,12 +1123,206 @@ pub(crate) fn run(id: &str) {
                 )),
                 "a leg marks the end of its last recipe as the summary reads it"
             );
-            // The Atlas assertions are chosen by the leg's recipes, never by
-            // what the log happens to hold.
+            // The leg's assertion is chosen by its recipes, never by what the
+            // log happens to hold, and it refuses a leg that verified Atlas,
+            // which the join verifies.
             assert!(
-                ci.contains("case \" ${{ matrix.recipes }} \" in")
-                    && ci.contains("*\" examples \"*)"),
-                "the leg that runs examples asserts that Atlas verified"
+                vv.contains("case \" ${{ matrix.recipes }} \" in")
+                    && vv.contains("*\" examples \"*)")
+                    && vv.contains(
+                        "if grep -F \"verify-examples: uor-atlas\" ci-evidence/vv.txt; then"
+                    ),
+                "the leg that runs examples asserts that it verified the examples and not Atlas"
+            );
+            // The Atlas jobs run every shard of the committed plan exactly
+            // once, each after the jobs of the shards it needs, and the join
+            // asserts that Atlas verified (§9.4). The plan itself is checked
+            // as `cargo xtask ci-shards` checks it.
+            let plan = crate::shards::Plan::read(support::repo_root().as_std_path())
+                .expect("§9.4: the committed plan reads");
+            assert_eq!(plan.project, "uor-atlas");
+            let graph = crate::shards::import_graph(
+                support::repo_root()
+                    .join("examples")
+                    .join(&plan.project)
+                    .as_std_path(),
+            )
+            .expect("the Atlas import graph reads from its committed build");
+            crate::shards::check(&plan, &graph)
+                .expect("§9.4: the plan runs every process once in import order");
+            // Which job runs which shard: a literal part, or the rows of a
+            // `matrix: { shard: [...] }` with the part naming `matrix.shard`.
+            let mut runs: std::collections::BTreeMap<String, String> =
+                std::collections::BTreeMap::new();
+            let mut needs: std::collections::BTreeMap<String, Vec<String>> =
+                std::collections::BTreeMap::new();
+            for (key, body) in &atlas_jobs {
+                let listed: Vec<String> = body
+                    .lines()
+                    .find_map(|line| line.trim().strip_prefix("needs: ["))
+                    .map(|rest| {
+                        rest.trim_end_matches(']')
+                            .split(',')
+                            .map(|name| name.trim().to_owned())
+                            .filter(|name| !name.is_empty())
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                needs.insert((*key).clone(), listed);
+                let part = body
+                    .lines()
+                    .find_map(|line| line.trim().strip_prefix("LEXLEAN_EXAMPLES_PART: "))
+                    .unwrap_or_else(|| panic!("§9.4: `{key}` names its part"));
+                let shards: Vec<String> = if part == "join:uor-atlas" {
+                    vec![crate::shards::JOIN.to_owned()]
+                } else if part == "shard:uor-atlas:${{ matrix.shard }}" {
+                    let matrix = body
+                        .lines()
+                        .find_map(|line| {
+                            line.trim()
+                                .strip_prefix("strategy: { fail-fast: false, matrix: { shard: [")
+                        })
+                        .unwrap_or_else(|| panic!("§9.4: `{key}` runs the shards of its matrix"));
+                    matrix
+                        .split(']')
+                        .next()
+                        .unwrap_or_default()
+                        .split(',')
+                        .map(|name| name.trim().to_owned())
+                        .collect()
+                } else {
+                    let name = part.strip_prefix("shard:uor-atlas:").unwrap_or_else(|| {
+                        panic!("§9.4: `{key}` runs a shard of Atlas or the join: {part}")
+                    });
+                    assert!(
+                        !body.contains("matrix:"),
+                        "§9.4: `{key}` runs one shard and has no matrix"
+                    );
+                    vec![name.to_owned()]
+                };
+                for shard in shards {
+                    assert!(
+                        plan.shards.contains_key(&shard),
+                        "§9.4: `{key}` runs `{shard}`, which is no shard of the plan"
+                    );
+                    assert!(
+                        runs.insert(shard.clone(), (*key).clone()).is_none(),
+                        "§9.4: the shard `{shard}` is run by two jobs"
+                    );
+                }
+                assert!(
+                    body.contains(
+                        "    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}\n"
+                    ),
+                    "§9.4: `{key}` waits only for a pull request to leave draft"
+                );
+                assert!(
+                    body.contains("name: acceptance-gate-evidence-atlas-")
+                        && body.contains("path: ci-evidence\n"),
+                    "§9.4: `{key}` uploads its evidence under a name of its own"
+                );
+                assert!(
+                    body.contains(" ci-summary --evidence ci-evidence\n"),
+                    "§9.4: `{key}` summarizes its run"
+                );
+            }
+            for shard in plan.shards.keys() {
+                assert!(
+                    runs.contains_key(shard),
+                    "§9.4: the shard `{shard}` is run by no job"
+                );
+            }
+            // The job graph orders each shard after the jobs of the shards it
+            // needs, directly or through another job; a shard never needs one
+            // of its own job's rows, which run at once.
+            let after = |job_key: &str| -> std::collections::BTreeSet<String> {
+                let mut closure = std::collections::BTreeSet::new();
+                let mut stack = vec![job_key.to_owned()];
+                while let Some(key) = stack.pop() {
+                    for need in needs.get(&key).map(Vec::as_slice).unwrap_or_default() {
+                        if closure.insert(need.clone()) {
+                            stack.push(need.clone());
+                        }
+                    }
+                }
+                closure
+            };
+            for (shard, plan_shard) in &plan.shards {
+                let job_key = &runs[shard];
+                let before = after(job_key);
+                for need in &plan_shard.needs {
+                    let need_job = &runs[need];
+                    assert!(
+                        need_job != job_key && before.contains(need_job),
+                        "§9.4: `{shard}` runs in `{job_key}`, which does not wait for `{need_job}`, the job of `{need}` it needs"
+                    );
+                }
+            }
+            // The one build of the gate's executable is the prefix job's, from
+            // its clean checkout; every other Atlas job takes it and the
+            // shards' output from the run, and the shards upload their output
+            // under their names. Nothing crosses runs: no cache action, no
+            // artifact of another run.
+            let prefix_job = &runs["prefix"];
+            assert_eq!(
+                ci.matches("cargo build").count(),
+                1,
+                "ci.yml builds the gate's executable once"
+            );
+            assert!(
+                job(prefix_job).contains("        run: cargo build --locked --package xtask\n")
+                    && job(prefix_job).contains("name: atlas-xtask\n")
+                    && job(prefix_job).contains("path: target/debug/xtask\n"),
+                "§9.4: the prefix job builds the executable from its clean checkout and uploads it"
+            );
+            for (key, body) in &atlas_jobs {
+                if key == prefix_job {
+                    assert!(
+                        !body.contains("download-artifact"),
+                        "the prefix job takes nothing from the run"
+                    );
+                    continue;
+                }
+                assert!(
+                    body.contains("          pattern: atlas-*\n")
+                        && body.contains("          path: ci-parts\n")
+                        && body.contains("chmod +x ci-parts/atlas-xtask/xtask\n")
+                        && body.contains("ci-parts/atlas-xtask/xtask verify-examples 2>&1 | tee ci-evidence/vv.txt\n"),
+                    "§9.4: `{key}` takes the executable and the shards from the run and runs the gate's recipe through it"
+                );
+                assert!(
+                    !body.contains("run-id") && !body.contains("github-token"),
+                    "§9.4: `{key}` reads the artifacts of this run only"
+                );
+            }
+            for (shard, job_key) in &runs {
+                if shard == crate::shards::JOIN {
+                    assert!(
+                        !job(job_key).contains("name: atlas-part-"),
+                        "the join uploads no part"
+                    );
+                    continue;
+                }
+                let body = job(job_key);
+                let uploaded = if body.contains("matrix: { shard: [") {
+                    "name: atlas-part-${{ matrix.shard }}\n".to_owned()
+                } else {
+                    format!("name: atlas-part-{shard}\n")
+                };
+                assert!(
+                    body.contains(&uploaded),
+                    "§9.4: `{job_key}` uploads the output of `{shard}`"
+                );
+            }
+            let join_job = job(&runs[crate::shards::JOIN]);
+            assert!(
+                join_job.contains("grep -F \"verify-examples: uor-atlas verified (attestation \" ci-evidence/vv.txt")
+                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 267 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
+                "the join asserts that Atlas verified"
+            );
+            assert!(
+                ci.contains("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n"),
+                "§9.4: a pull request marked ready runs the jobs that waited for it"
             );
             for forbidden in [
                 "actions/cache",
@@ -1075,25 +1334,37 @@ pub(crate) fn run(id: &str) {
             ] {
                 assert!(!ci.contains(forbidden), "ci.yml has no `{forbidden}`");
             }
-            // A condition appears only on the two evidence steps, in exactly
-            // one form, as a step's own key: not on the job (a skipped job is a
-            // skipped gate), not on the gate step, and never one that is
-            // narrower than "unless the run was cancelled" (a gate that is
-            // skipped on pull requests is the weaker PR-only gate).
-            let mut conditions = 0;
+            // A condition appears in two forms and nowhere else: a step's
+            // `if: ${{ !cancelled() }}` on the summary and evidence steps, so
+            // that a failed run still reports, and a job's draft condition on
+            // the Atlas jobs. Never on the gate step, and never one narrower
+            // than those (a gate skipped on pull requests is the weaker
+            // PR-only gate).
+            let mut step_conditions = 0;
+            let mut draft_conditions = 0;
             for (index, line) in ci.lines().enumerate() {
                 if line.trim_start().starts_with("if:") {
-                    conditions += 1;
-                    assert_eq!(
-                        line, "        if: ${{ !cancelled() }}",
-                        "ci.yml:{}: the only condition allowed is a step's `if: ${{{{ !cancelled() }}}}`",
-                        index + 1
-                    );
+                    match line {
+                        "        if: ${{ !cancelled() }}" => step_conditions += 1,
+                        "    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}" => {
+                            draft_conditions += 1;
+                        }
+                        other => panic!(
+                            "ci.yml:{}: a condition other than a step's `!cancelled()` or an Atlas job's draft condition: {other}",
+                            index + 1
+                        ),
+                    }
                 }
             }
             assert_eq!(
-                conditions, 2,
-                "the summary step and the evidence upload carry it"
+                step_conditions,
+                2 + 2 * atlas_jobs.len(),
+                "the summary step and the evidence upload of every gate job carry it"
+            );
+            assert_eq!(
+                draft_conditions,
+                atlas_jobs.len(),
+                "every Atlas job and no other waits for a pull request to leave draft"
             );
             let gate_step = &ci[ci
                 .find("      - name: Run the normative acceptance gate")
@@ -1124,7 +1395,7 @@ pub(crate) fn run(id: &str) {
             // profile, locking, and features build the crate's library and
             // binary, so a separate build step is time spent on nothing the
             // test does not already require (§8.3).
-            let matrix = &ci[ci.find("\n  host-matrix:").expect("the host matrix")..];
+            let matrix = job("host-matrix");
             assert_eq!(
                 matrix
                     .matches("cargo test --locked --workspace --all-features --no-fail-fast\n")
@@ -1132,19 +1403,6 @@ pub(crate) fn run(id: &str) {
                 1,
                 "the host matrix runs the workspace's tests once, and reports every failing test of the host, not the first binary's"
             );
-            assert!(
-                !ci.contains("cargo build"),
-                "ci.yml has no `cargo build` step: the host matrix's `cargo test` builds the crate"
-            );
-            // The supported-host matrix keeps its four other legs.
-            for host in [
-                "ubuntu-24.04-arm",
-                "macos-15-intel",
-                "macos-15",
-                "windows-2022",
-            ] {
-                assert!(ci.contains(host), "the host matrix keeps {host}");
-            }
             // The honesty and reproducibility workflows stay separate.
             assert!(root_file(".github/workflows/honesty.yml").contains("just model spec-links"));
             assert!(root_file(".github/workflows/reproducibility.yml").contains("run: just repro"));
