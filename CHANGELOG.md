@@ -325,6 +325,10 @@ versions, and the entries below say what each tag does and does not claim.
   variable numbering, with the same nodes, closures, externals, and
   inductives. The register is unchanged
   in size (350 IDs, 74 codes); `TL-03`, `TL-05`, and `NE-04` are reworded.
+- The preservation case `SP-05` reads the verified production export shared
+  with `PX-01`, removing one full verification of the production example
+  within `bdd` (#141). Its artifact assertions and six rejection fixtures
+  remain, and running the case alone lazily performs the real export.
 - The normative CI gate runs in two legs at once (SPEC.md §9.4, `RP-14`, no new
   ID or code): `examples`, which is about three quarters of the gate's time on
   the runner, and the other eleven recipes of `vv` in their order, each leg a
