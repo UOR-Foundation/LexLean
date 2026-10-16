@@ -337,7 +337,7 @@ impl<'a> Writer<'_, 'a> {
 
     /// The types of a position's functions as one: the pair type
     /// `PProd a (PProd b c)`, or for statements `a ∧ b ∧ c`.
-    fn pack_types(&mut self, tys: &[Term], relation: bool) -> Term {
+    pub(super) fn pack_types(&mut self, tys: &[Term], relation: bool) -> Term {
         let Some((first, rest)) = tys.split_first() else {
             return self.b.konst("PUnit");
         };
@@ -356,7 +356,7 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// The pair of values of types `tys`.
-    fn pack_values(&mut self, tys: &[Term], values: &[Term], relation: bool) -> Term {
+    pub(super) fn pack_values(&mut self, tys: &[Term], values: &[Term], relation: bool) -> Term {
         let (first, rest) = (values[0], &values[1..]);
         if rest.is_empty() {
             return first;
@@ -374,7 +374,7 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// The component `index` of a packed value of types `tys`.
-    fn unpack(&mut self, tys: &[Term], index: usize, packed: Term, relation: bool) -> Term {
+    pub(super) fn unpack(&mut self, tys: &[Term], index: usize, packed: Term, relation: bool) -> Term {
         if tys.len() == 1 {
             return packed;
         }
@@ -689,6 +689,7 @@ impl<'a> Writer<'_, 'a> {
             ),
             terms,
             env,
+            path: Vec::new(),
         };
         let top = &program.functions[member.index as usize].body;
         let (match_ty, scrutinee_expr, arms) = match top {
@@ -924,7 +925,7 @@ impl<'a> Writer<'_, 'a> {
 
 /// The component `index` of a packed value of types `tys`, built on the
 /// builder alone.
-fn unpack_with(
+pub(super) fn unpack_with(
     b: &mut crate::production::kernel::Builder,
     tys: &[Term],
     index: usize,
@@ -957,7 +958,7 @@ fn unpack_with(
 }
 
 /// The pair type of `tys`, built on the builder alone.
-fn pack_types_with(b: &mut crate::production::kernel::Builder, tys: &[Term], relation: bool) -> Term {
+pub(super) fn pack_types_with(b: &mut crate::production::kernel::Builder, tys: &[Term], relation: bool) -> Term {
     let Some((first, rest)) = tys.split_first() else {
         return b.konst("PUnit");
     };
@@ -972,5 +973,28 @@ fn pack_types_with(b: &mut crate::production::kernel::Builder, tys: &[Term], rel
         let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
         let head = b.konst_at("PProd", vec![one.clone(), one]);
         b.apps(head, &[*first, packed])
+    }
+}
+
+/// The pair of values of types `tys`, built on the builder alone.
+pub(super) fn pack_values_with(
+    b: &mut crate::production::kernel::Builder,
+    tys: &[Term],
+    values: &[Term],
+    relation: bool,
+) -> Term {
+    let (first, rest) = (values[0], &values[1..]);
+    if rest.is_empty() {
+        return first;
+    }
+    let packed_ty = pack_types_with(b, &tys[1..], relation);
+    let packed = pack_values_with(b, &tys[1..], rest, relation);
+    if relation {
+        let intro = b.konst("And.intro");
+        b.apps(intro, &[tys[0], packed_ty, first, packed])
+    } else {
+        let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+        let head = b.konst_at("PProd.mk", vec![one.clone(), one]);
+        b.apps(head, &[tys[0], packed_ty, first, packed])
     }
 }

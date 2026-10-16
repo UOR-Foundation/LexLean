@@ -5,8 +5,10 @@
 use super::super::{element_of, Ctx};
 use super::{CompTerms, LocalTerm, Pf, Scope, Writer, EXPLICIT};
 use crate::calculus::{Arm, Expr, Shape, Ty};
+use crate::ir::core::CoreLevel;
 use crate::ir::semantic::{
     SemanticBranch, SemanticEdge, SemanticMapEntry, SemanticPrimitive, SemanticTerm, SemanticType,
+    Step,
 };
 use crate::production::kernel::{Given, Term};
 use crate::production::source::{Constructor, Local, Source};
@@ -425,7 +427,12 @@ impl<'a> Writer<'_, 'a> {
                     fits_args.extend(passed.fits);
                 }
                 let list = self.operands(env, &proofs)?;
-                let rel = self.call_relation(index, &relation_args)?;
+                let recursive = self.wf.as_ref().is_some_and(|state| state.index == index);
+                let rel = if recursive {
+                    self.wf_call(index, arguments, &relation_args, scope)?
+                } else {
+                    self.call_relation(index, &relation_args)?
+                };
                 self.apply(
                     "conv_call",
                     &[("p", p), ("env", env)],
@@ -484,7 +491,7 @@ impl<'a> Writer<'_, 'a> {
                     _ => return Err("the lowering of && is not a cond".to_owned()),
                 };
                 let else_term = SemanticTerm::Bool { value: false };
-                self.conditional_of(Selection::And, left, right, &else_term, (c, t, e), scope)
+                self.conditional_of(Selection::And, None, left, right, &else_term, (c, t, e), scope)
             }
             SemanticTerm::Or { left, right } => {
                 let (c, t, e) = match expr {
@@ -496,7 +503,7 @@ impl<'a> Writer<'_, 'a> {
                     _ => return Err("the lowering of || is not a cond".to_owned()),
                 };
                 let then_term = SemanticTerm::Bool { value: true };
-                self.conditional_of(Selection::Or, left, &then_term, right, (c, t, e), scope)
+                self.conditional_of(Selection::Or, None, left, &then_term, right, (c, t, e), scope)
             }
             SemanticTerm::Not { value } => {
                 let operand_exprs = match expr {
@@ -847,13 +854,26 @@ impl<'a> Writer<'_, 'a> {
         scope: &Scope,
     ) -> Result<Pf, String> {
         let result_ty = self.infer(whole, scope)?;
-        self.conditional_of(Selection::If(result_ty), condition, then_value, else_value, exprs, scope)
+        let node = self.node_of(scope, whole);
+        self.conditional_of(
+            Selection::If(result_ty),
+            node,
+            condition,
+            then_value,
+            else_value,
+            exprs,
+            scope,
+        )
     }
 
-    /// A conditional whose value is selected as `kind` says.
+    /// A conditional whose value is selected as `kind` says. A numbered
+    /// `if` of a well-founded body (`node`) is written by cases on its
+    /// condition with the equation each arm was taken by.
+    #[allow(clippy::too_many_arguments)]
     fn conditional_of(
         &mut self,
         kind: Selection,
+        node: Option<usize>,
         condition: &SemanticTerm,
         then_value: &SemanticTerm,
         else_value: &SemanticTerm,
@@ -862,14 +882,39 @@ impl<'a> Writer<'_, 'a> {
     ) -> Result<Pf, String> {
         let (p, env) = (self.prog, scope.env);
         let tested = self.prove(condition, exprs.0, scope)?;
-        let then_pf = self.prove(then_value, exprs.1, scope)?;
-        let else_pf = self.prove(else_value, exprs.2, scope)?;
+        let equations = node.map(|_| (self.b.free(), self.b.free()));
+        let (then_scope, else_scope) = match (node, equations) {
+            (Some(node), Some((on_true, on_false))) => (
+                Self::entering(scope, Step::If { node, polarity: true }, on_true, &[]),
+                Self::entering(scope, Step::If { node, polarity: false }, on_false, &[]),
+            ),
+            _ => (scope.clone(), scope.clone()),
+        };
+        let then_pf = self.prove(then_value, exprs.1, &then_scope)?;
+        let else_pf = self.prove(else_value, exprs.2, &else_scope)?;
         let condition_src = self.src(condition, scope)?;
         let bool = self.b.konst("Bool");
         let guard = self.b.free();
         let then_fits = self.fits_of(then_pf)?;
         let else_fits = self.fits_of(else_pf)?;
-        let fits_body = self.ite(bool, guard, then_fits, else_fits);
+        let fits_body = match equations {
+            None => self.ite(bool, guard, then_fits, else_fits),
+            Some((on_true, on_false)) => {
+                let (tru, fls) = (self.tru(), self.fls());
+                let true_eq = self.eq(bool, guard, tru);
+                let false_eq = self.eq(bool, guard, fls);
+                let then_arm = self.arm_lambda(&[], (on_true, true_eq), then_fits);
+                let else_arm = self.arm_lambda(&[], (on_false, false_eq), else_fits);
+                let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+                self.equation_cases(
+                    &SemanticType::Bool,
+                    guard,
+                    bool,
+                    one,
+                    vec![(0, else_arm), (1, then_arm)],
+                )?
+            }
+        };
         let predicate = self.b.lam_over("__b", EXPLICIT, bool, guard, fits_body);
         let encoded = match &kind {
             Selection::If(result_ty) => {
@@ -877,7 +922,25 @@ impl<'a> Writer<'_, 'a> {
                 let encoder = self.enc(result_ty)?;
                 let then_src = self.src(then_value, scope)?;
                 let else_src = self.src(else_value, scope)?;
-                let selected = self.ite(lean, guard, then_src, else_src);
+                let selected = match equations {
+                    None => self.ite(lean, guard, then_src, else_src),
+                    Some(_) => {
+                        let (tru, fls) = (self.tru(), self.fls());
+                        let true_eq = self.eq(bool, guard, tru);
+                        let false_eq = self.eq(bool, guard, fls);
+                        let (unused_true, unused_false) = (self.b.free(), self.b.free());
+                        let then_arm = self.arm_lambda(&[], (unused_true, true_eq), then_src);
+                        let else_arm = self.arm_lambda(&[], (unused_false, false_eq), else_src);
+                        let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+                        self.equation_cases(
+                            &SemanticType::Bool,
+                            guard,
+                            lean,
+                            one,
+                            vec![(0, else_arm), (1, then_arm)],
+                        )?
+                    }
+                };
                 self.b.app(encoder, selected)
             }
             Selection::And => {
@@ -897,8 +960,8 @@ impl<'a> Writer<'_, 'a> {
         let value_fn = self.b.lam_over("__b", EXPLICIT, bool, guard, encoded);
         let tru = self.tru();
         let fls = self.fls();
-        let then_branch = self.guarded(condition_src, tru, then_pf)?;
-        let else_branch = self.guarded(condition_src, fls, else_pf)?;
+        let then_branch = self.guarded(condition_src, tru, then_pf, equations.map(|pair| pair.0))?;
+        let else_branch = self.guarded(condition_src, fls, else_pf, equations.map(|pair| pair.1))?;
         self.apply(
             "conv_cond",
             &[("p", p), ("env", env)],
@@ -913,15 +976,24 @@ impl<'a> Writer<'_, 'a> {
         )
     }
 
-    /// `fun (h : cond = value) => proof`, with its type.
-    fn guarded(&mut self, condition: Term, value: Term, pf: Pf) -> Result<(Term, Term), String> {
+    /// `fun (h : cond = value) => proof`, with its type; `hypothesis` is the
+    /// free variable the proof reads the equation by, when it does.
+    fn guarded(
+        &mut self,
+        condition: Term,
+        value: Term,
+        pf: Pf,
+        hypothesis: Option<Term>,
+    ) -> Result<(Term, Term), String> {
         let bool = self.b.konst("Bool");
         let ty = self.eq(bool, condition, value);
-        let hypothesis = self.b.free();
+        let hypothesis = match hypothesis {
+            Some(hypothesis) => hypothesis,
+            None => self.b.free(),
+        };
         let proof = self.b.lam_over("_", EXPLICIT, ty, hypothesis, pf.proof);
-        let lifted = self.b.lift(pf.ty, 1, 0);
-        let pi = self.b.pi("_", EXPLICIT, ty, lifted);
-        Ok((proof, pi))
+        let result = self.b.pi_over("_", EXPLICIT, ty, hypothesis, pf.ty);
+        Ok((proof, result))
     }
 
     // --- Let ----------------------------------------------------------------

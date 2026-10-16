@@ -376,15 +376,32 @@ impl<'a> Writer<'_, 'a> {
                                 ),
                                 terms: set.terms.clone(),
                                 env,
+                                path: Vec::new(),
                             };
                             let program = self.gen.program;
                             let body_expr = &program.functions[*index as usize].body;
                             let pf = self.prove(body, body_expr, &scope)?;
                             self.function_rows(*index, &sig, pf, env)?;
                         }
-                        Recursion::Structural { .. } | Recursion::WellFounded { .. } => {
+                        Recursion::WellFounded { termination, group } => {
+                            self.wf_definition(
+                                *index,
+                                &module,
+                                &name,
+                                &type_arguments,
+                                &locals,
+                                &result,
+                                body,
+                                &termination,
+                                &group,
+                                site,
+                                type_parameters,
+                                recursive,
+                            )?;
+                        }
+                        Recursion::Structural { .. } => {
                             return Err(format!(
-                                "`{module}.{name}` is recursive, which the data certificate does not yet write"
+                                "`{module}.{name}` is structurally recursive outside a structural component"
                             ));
                         }
                     }
@@ -423,6 +440,7 @@ impl<'a> Writer<'_, 'a> {
                         ),
                         terms: Vec::new(),
                         env,
+                        path: Vec::new(),
                     };
                     let program = self.gen.program;
                     let body_expr = &program.functions[*index as usize].body;
@@ -452,6 +470,7 @@ impl<'a> Writer<'_, 'a> {
                         ctx,
                         terms: set.terms.clone(),
                         env,
+                        path: Vec::new(),
                     };
                     let denotation = self.src(body, &scope)?;
                     let sig = self.signature(*index, &clocals, &set, &result, denotation)?;
@@ -467,7 +486,7 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// The denotation of a definition instance applied to its locals.
-    fn denotation(
+    pub(super) fn denotation(
         &mut self,
         module: &str,
         name: &str,

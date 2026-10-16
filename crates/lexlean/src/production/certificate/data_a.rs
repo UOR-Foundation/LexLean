@@ -30,7 +30,7 @@ use crate::ir::core::{
     CoreAxiomPolicy, CoreBinderInfo, CoreDeclKind, CoreDeclaration, CoreModule, CoreReducibility,
     CoreSafety, CoreTransparency, CORE_SPEC_2,
 };
-use crate::ir::semantic::SemanticType;
+use crate::ir::semantic::{MemberRef, SemanticTerm, SemanticType, Step};
 
 mod boundary;
 mod calls;
@@ -44,6 +44,7 @@ mod rows;
 mod src;
 mod structural;
 mod templates;
+mod wf;
 
 pub(super) const LIB: &str = "LexLeanPreservation";
 pub(super) const SEM: &str = "LexLeanTarget.TargetSemantics";
@@ -111,6 +112,39 @@ pub(super) struct Scope {
     pub(super) ctx: Ctx,
     pub(super) terms: Vec<LocalTerm>,
     pub(super) env: Term,
+    /// The numbered `if` and `match` arms of a well-founded body that enclose
+    /// the term, outermost first.
+    pub(super) path: Vec<PathStep>,
+}
+
+/// One enclosing arm of a well-founded body: the free variable standing for
+/// the equation the arm was selected by, and for a `match` the free variables
+/// of the arm's fields.
+#[derive(Clone)]
+pub(super) struct PathStep {
+    pub(super) step: Step,
+    pub(super) hypothesis: Term,
+    pub(super) fields: Vec<Term>,
+}
+
+/// One recursive call of a well-founded body: the arm it lies in, its
+/// arguments, and the theorem that its arguments decrease the measure.
+#[derive(Clone)]
+pub(super) struct WfSite {
+    pub(super) path: Vec<Step>,
+    pub(super) arguments: Vec<SemanticTerm>,
+    pub(super) evidence: MemberRef,
+}
+
+/// The well-founded definition whose relation is being derived.
+#[derive(Clone)]
+pub(super) struct WfState {
+    pub(super) index: u64,
+    pub(super) sites: Vec<WfSite>,
+    /// The definition's type arguments, as Lean types.
+    pub(super) type_arguments: Vec<Term>,
+    /// The free variables of the definition's parameters.
+    pub(super) parameters: Vec<Term>,
 }
 
 impl Scope {
@@ -145,6 +179,8 @@ pub(super) struct Writer<'g, 'a> {
     exprs: HashMap<*const Expr, Term>,
     /// The signature of each function whose relation has been stated.
     pub(super) sigs: HashMap<u64, rows::Sig>,
+    /// The well-founded definition under derivation.
+    pub(super) wf: Option<WfState>,
 }
 
 impl<'g, 'a> Writer<'g, 'a> {
@@ -176,6 +212,7 @@ impl<'g, 'a> Writer<'g, 'a> {
             prog,
             exprs: HashMap::new(),
             sigs: HashMap::new(),
+            wf: None,
         }
     }
 

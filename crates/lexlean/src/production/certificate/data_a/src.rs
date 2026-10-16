@@ -65,7 +65,7 @@ impl Writer<'_, '_> {
         ))
     }
 
-    fn member_const(&mut self, member: &MemberRef, site: &Site) -> Result<Term, String> {
+    pub(super) fn member_const(&mut self, member: &MemberRef, site: &Site) -> Result<Term, String> {
         let name = self.member_name(member, site)?;
         Ok(self.b.konst(&name))
     }
@@ -740,7 +740,25 @@ impl Writer<'_, '_> {
                 let condition = self.src(condition, scope)?;
                 let then_value = self.src(then_value, scope)?;
                 let else_value = self.src(else_value, scope)?;
-                self.ite(ty, condition, then_value, else_value)
+                if self.node_of(scope, term).is_some() {
+                    let bool = self.b.konst("Bool");
+                    let (tru, fls) = (self.tru(), self.fls());
+                    let (on_true, on_false) = (self.b.free(), self.b.free());
+                    let true_eq = self.eq(bool, condition, tru);
+                    let false_eq = self.eq(bool, condition, fls);
+                    let then_arm = self.arm_lambda(&[], (on_true, true_eq), then_value);
+                    let else_arm = self.arm_lambda(&[], (on_false, false_eq), else_value);
+                    let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+                    self.equation_cases(
+                        &SemanticType::Bool,
+                        condition,
+                        ty,
+                        one,
+                        vec![(0, else_arm), (1, then_arm)],
+                    )?
+                } else {
+                    self.ite(ty, condition, then_value, else_value)
+                }
             }
             SemanticTerm::Match {
                 scrutinee,
@@ -996,6 +1014,8 @@ impl Writer<'_, '_> {
         let result_ty = self.infer(term, scope)?;
         let result = self.lean_ty(&result_ty)?;
         let discriminant = self.src(scrutinee, scope)?;
+        let numbered = self.node_of(scope, term).is_some();
+        let carrier = self.lean_ty(&scrutinee_ty)?;
         let mut alternatives = Vec::new();
         for branch in branches {
             let locals = self.gen.branch_locals(branch, scrutinee, &scope.ctx)?;
@@ -1007,17 +1027,39 @@ impl Writer<'_, '_> {
             }
             let inner = self.bind(scope, locals.clone(), &frees, scope.env);
             let mut body = self.src(&branch.body, &inner)?;
-            for (position, (local, _)) in locals.iter().enumerate().rev() {
-                body = self.b.lam_over(
-                    &super::super::identifier(&local.name),
-                    super::EXPLICIT,
-                    types[position],
-                    frees[position],
-                    body,
-                );
-            }
             let (constructor, _) = self.gen.source.branch(branch, &scrutinee_ty, &scope.ctx.site)?;
+            if numbered {
+                let value = self.constructor_value(&constructor, &scrutinee_ty, branch, &frees, scope)?;
+                let equation = self.eq(carrier, discriminant, value);
+                let hypothesis = self.b.free();
+                let binders: Vec<(String, Term, Term)> = locals
+                    .iter()
+                    .enumerate()
+                    .map(|(position, (local, _))| {
+                        (
+                            super::super::identifier(&local.name),
+                            types[position],
+                            frees[position],
+                        )
+                    })
+                    .collect();
+                body = self.arm_lambda(&binders, (hypothesis, equation), body);
+            } else {
+                for (position, (local, _)) in locals.iter().enumerate().rev() {
+                    body = self.b.lam_over(
+                        &super::super::identifier(&local.name),
+                        super::EXPLICIT,
+                        types[position],
+                        frees[position],
+                        body,
+                    );
+                }
+            }
             alternatives.push((self.constructor_position(&constructor)?, body));
+        }
+        if numbered {
+            let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+            return self.equation_cases(&scrutinee_ty, discriminant, result, one, alternatives);
         }
         alternatives.sort_by_key(|(position, _)| *position);
         let minors: Vec<Term> = alternatives.into_iter().map(|(_, body)| body).collect();

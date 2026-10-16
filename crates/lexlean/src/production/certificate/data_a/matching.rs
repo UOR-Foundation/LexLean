@@ -5,7 +5,7 @@
 use super::{Pf, Scope, Writer, EXPLICIT};
 use crate::calculus::{Arm, Expr};
 use crate::ir::core::CoreLevel;
-use crate::ir::semantic::{SemanticBranch, SemanticTerm, SemanticType};
+use crate::ir::semantic::{SemanticBranch, SemanticTerm, SemanticType, Step};
 use crate::production::kernel::{Given, Term};
 use crate::production::source::Constructor;
 
@@ -174,6 +174,7 @@ impl<'a> Writer<'_, 'a> {
         let bound = self.b.free();
         let hypothesis = self.b.free();
         let bool = self.b.konst("Bool");
+        let node = self.node_of(scope, whole);
         // Per constructor, in declaration order: the arm's width predicate,
         // value, and derivation, each abstracted over the arm's fields.
         let mut fits_minors: Vec<(usize, Term)> = Vec::new();
@@ -194,7 +195,19 @@ impl<'a> Writer<'_, 'a> {
                 fields.push(self.b.app(enc, *free));
             }
             let arm_env = self.extend_env(env, &arm.binders, &fields)?;
-            let inner = self.bind(scope, locals.clone(), &frees, arm_env);
+            let mut inner = self.bind(scope, locals.clone(), &frees, arm_env);
+            let equation_free = self.b.free();
+            if let Some(node) = node {
+                inner = Self::entering(
+                    &inner,
+                    Step::Match {
+                        node,
+                        branch: position,
+                    },
+                    equation_free,
+                    &frees,
+                );
+            }
             let body_pf = self.prove(&branch.body, &arm.body, &inner)?;
             let fits = self.fits_of(body_pf)?;
             let body_src = self.src(&branch.body, &inner)?;
@@ -210,16 +223,37 @@ impl<'a> Writer<'_, 'a> {
                 proof = self.arm_miss(env, encoded, arms, earlier, proof)?;
             }
             let ctor_position = self.constructor_position(&constructor)?;
-            let wrap = |writer: &mut Self, term: Term| {
-                let mut out = term;
-                for (index, (local, _)) in locals.iter().enumerate().rev() {
-                    out = writer.b.lam_over(
-                        &super::super::identifier(&local.name),
-                        EXPLICIT,
+            let binders: Vec<(String, Term, Term)> = locals
+                .iter()
+                .enumerate()
+                .map(|(index, (local, _))| {
+                    (
+                        super::super::identifier(&local.name),
                         types[index],
                         frees[index],
-                        out,
-                    );
+                    )
+                })
+                .collect();
+            if node.is_some() {
+                // The arm is taken by an equation the decrease evidence of a
+                // recursive call within it reads: each of the predicate, the
+                // value, and the derivation carries it as a hypothesis.
+                let lean_value = self.constructor_value(&constructor, &scrutinee_ty, branch, &frees, scope)?;
+                let of_bound = self.eq(lean_scrutinee, bound, lean_value);
+                let of_scrutinee = self.eq(lean_scrutinee, scrutinee_src, lean_value);
+                let unused = self.b.free();
+                let fits_arm = self.arm_lambda(&binders, (equation_free, of_bound), fits);
+                let value_arm = self.arm_lambda(&binders, (unused, of_bound), body_src);
+                let proof_arm = self.arm_lambda(&binders, (equation_free, of_scrutinee), proof.proof);
+                fits_minors.push((ctor_position, fits_arm));
+                value_minors.push((ctor_position, value_arm));
+                proof_minors.push((ctor_position, proof_arm));
+                continue;
+            }
+            let wrap = |writer: &mut Self, term: Term| {
+                let mut out = term;
+                for (name, ty, free) in binders.iter().rev() {
+                    out = writer.b.lam_over(name, EXPLICIT, *ty, *free, out);
                 }
                 out
             };
@@ -231,16 +265,32 @@ impl<'a> Writer<'_, 'a> {
             minors.sort_by_key(|(position, _)| *position);
             minors.into_iter().map(|(_, term)| term).collect()
         };
+        let sorted_with = |minors: &Vec<(usize, Term)>| minors.clone();
         let (fits_terms, value_terms, proof_terms) = (
-            sorted(fits_minors),
-            sorted(value_minors),
-            sorted(proof_minors),
+            sorted(fits_minors.clone()),
+            sorted(value_minors.clone()),
+            sorted(proof_minors.clone()),
         );
         // G a = the arms' predicates by cases on a; W a = the encoding of the
         // arms' values by cases on a.
-        let g_body = self.cases_on_const(&scrutinee_ty, bound, bool, &fits_terms)?;
+        let one = CoreLevel::Succ(Box::new(CoreLevel::Zero));
+        let g_body = if node.is_some() {
+            self.equation_cases(&scrutinee_ty, bound, bool, one.clone(), sorted_with(&fits_minors))?
+        } else {
+            self.cases_on_const(&scrutinee_ty, bound, bool, &fits_terms)?
+        };
         let g = self.b.lam_over("__a", EXPLICIT, lean_scrutinee, bound, g_body);
-        let w_inner = self.cases_on_const(&scrutinee_ty, bound, result_lean, &value_terms)?;
+        let w_inner = if node.is_some() {
+            self.equation_cases(
+                &scrutinee_ty,
+                bound,
+                result_lean,
+                one,
+                sorted_with(&value_minors),
+            )?
+        } else {
+            self.cases_on_const(&scrutinee_ty, bound, result_lean, &value_terms)?
+        };
         let w_body = self.b.app(result_enc, w_inner);
         let w = self.b.lam_over("__a", EXPLICIT, lean_scrutinee, bound, w_body);
         // ha : ∀ a, sv = a → ConvA p env (enc a) arms (Rel (G a) (W a)),
@@ -252,17 +302,32 @@ impl<'a> Writer<'_, 'a> {
         let rel = self.rel(g_a, w_a);
         let conv_a = self.lp("ConvA");
         let target = self.b.apps(conv_a, &[p, env, encoded_bound, arms_term, rel]);
-        let motive = self
-            .b
-            .lam_over("__a", EXPLICIT, lean_scrutinee, bound, target);
-        let cases = self.cases_on(
-            &scrutinee_ty,
-            bound,
-            motive,
-            CoreLevel::Zero,
-            &proof_terms,
-        )?;
         let equation = self.eq(lean_scrutinee, scrutinee_src, bound);
+        let cases = if node.is_some() {
+            let dependent = self.b.arrow(equation, target);
+            let motive = self
+                .b
+                .lam_over("__a", EXPLICIT, lean_scrutinee, bound, dependent);
+            let cases = self.cases_on(
+                &scrutinee_ty,
+                bound,
+                motive,
+                CoreLevel::Zero,
+                &proof_terms,
+            )?;
+            self.b.app(cases, hypothesis)
+        } else {
+            let motive = self
+                .b
+                .lam_over("__a", EXPLICIT, lean_scrutinee, bound, target);
+            self.cases_on(
+                &scrutinee_ty,
+                bound,
+                motive,
+                CoreLevel::Zero,
+                &proof_terms,
+            )?
+        };
         let with_hypothesis = self
             .b
             .lam_over("__h", EXPLICIT, equation, hypothesis, cases);
