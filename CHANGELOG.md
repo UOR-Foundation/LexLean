@@ -31,7 +31,7 @@ versions, and the entries below say what each tag does and does not claim.
   under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones under
   `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
-  example-gate records. `BS-01` brings the register to 392 IDs.
+  example-gate records. `BS-01` brings the register to 393 IDs.
 - The standard library's first member: bytes and text over `Bytes`
   (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
   language-1.2 project beside `compiler/` under the module prefix
