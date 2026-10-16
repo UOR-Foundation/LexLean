@@ -9036,6 +9036,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PF-17` | `proofs` | native_decide is never accepted or generated. | §16.12, §18.2 |
 | `PF-18` | `proofs` | Lean proof failures remap to the smallest originating LexLean proof or statement span. | §20.4 |
 | `PF-19` | `proofs` | The language-1.2 linear_arithmetic proof form names only the prior document definitions it unfolds, lowers to one fixed omega script, proves true linear obligations, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-20` | `proofs` | Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only. | §17.12 |
+| `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
+| `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -9276,7 +9280,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules it uses and splices none, and the only string literal of the compiler's source that holds Lean declarations under a namespace is the decoder of core module 2, which loads native modules and so cannot be one; a planted runtime text constant, raw or escaped, is found. | §17.12, §18.1 |
 
-**Total required capability IDs:** 386.
+**Total required capability IDs:** 390.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
