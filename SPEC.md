@@ -6536,9 +6536,12 @@ every block is read by position (`index` below the length, `0x80` at it, zero
 beyond it, and the two length words from `quotient` and `remainder` of the
 bit length); the schedule is a sixteen-word window advanced each round; the
 sixty-four rounds are `iterate` over a record of the working variables, the
-window, and the remaining round constants; and the digest is the record
-`Digest` of eight `UInt32` or, for `sha256Hex`, its lowercase hexadecimal as
-`Bytes`, each nibble a comparison by `equal`. Its roots and oracles:
+window, and the round number, whose constant is a balanced search by `<?`;
+and the digest is the record `Digest` of eight `UInt32` or, for `sha256Hex`,
+its lowercase hexadecimal as `Bytes`, each nibble a balanced test of its bits
+by `bit_and` and `equal`. Both lookups are balanced rather than linear because
+a rendered package's program is canonical JSON read under a fixed nesting
+bound (§17.16), and a linear chain of sixty-four is past it. Its roots and oracles:
 
 | Member | Oracles |
 | --- | --- |
