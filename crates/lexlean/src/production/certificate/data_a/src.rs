@@ -72,8 +72,8 @@ impl Writer<'_, '_> {
 
     /// A runtime function of the module `site` is read in.
     fn runtime(&mut self, site: &Site, namespace: &str, name: &str) -> Result<Term, String> {
-        let module = self.gen.source.lean_module(&site.module)?;
-        Ok(self.b.konst(&format!("{module}.{namespace}.{name}")))
+        let _ = site;
+        Ok(self.b.konst(&format!("{namespace}.{name}")))
     }
 
     // --- Instances --------------------------------------------------------

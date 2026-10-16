@@ -266,13 +266,14 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
 
 /// The Lean roots this compiler ships or generates beside a project's own:
 /// the certificates and their audit (`LexLeanPreserve`, `LexLeanAudit`), the
-/// runtime and the model and collection helpers its generated modules open
-/// (`LexLeanRuntime`, `LexLeanCollections`, `LexLeanModels`, `LexLeanReasoning`,
-/// `LexLeanCore`), and what the extraction and the probes compile
-/// (`LexLeanExtract`, `LexLeanProbe`, `LexLeanIdentityProbe`,
-/// `LexLeanTokenProbe`). The roots of the certificate library itself,
-/// [`LIBRARY_ROOTS`], are the two a project may take (the compiler's own
-/// project and the library's project do), but not for a module with a
+/// namespaces of the runtime modules' collection, model, reasoning, and
+/// fold-law definitions (`LexLeanCollections`, `LexLeanModels`,
+/// `LexLeanReasoning`, `LexLeanLaws`),
+/// the native-module decoder (`LexLeanCore`), and what the extraction and the
+/// probes compile (`LexLeanExtract`, `LexLeanProbe`, `LexLeanIdentityProbe`,
+/// `LexLeanTokenProbe`). The roots of the shipped libraries themselves,
+/// [`LIBRARY_ROOTS`], are the three a project may take (the compiler's own
+/// project and the libraries' projects do), but not for a module with a
 /// production root.
 pub const SHIPPED_ROOTS: [&str; 11] = [
     "LexLeanAudit",
@@ -280,20 +281,22 @@ pub const SHIPPED_ROOTS: [&str; 11] = [
     "LexLeanCore",
     "LexLeanExtract",
     "LexLeanIdentityProbe",
+    "LexLeanLaws",
     "LexLeanModels",
     "LexLeanPreserve",
     "LexLeanProbe",
     "LexLeanReasoning",
-    "LexLeanRuntime",
     "LexLeanTokenProbe",
 ];
 
 /// The roots of the modules the certificates import: the calculus modules
-/// (`LexLeanTarget`) and the proof library (`LexLeanPreservation`). A project
-/// may name its modules under one, since each is itself a LexLean project the
-/// repository ships, but the certificates of a root of such a project would
-/// import its module as the library's: its modules have no production root.
-pub const LIBRARY_ROOTS: [&str; 2] = ["LexLeanPreservation", "LexLeanTarget"];
+/// (`LexLeanTarget`), the proof library (`LexLeanPreservation`), and the
+/// runtime modules every generated language-1.2 module that uses the runtime
+/// imports (`LexLeanRuntime`). A project may name its modules under one,
+/// since each is itself a LexLean project the repository ships, but the
+/// certificates of a root of such a project would import its module as the
+/// library's: its modules have no production root.
+pub const LIBRARY_ROOTS: [&str; 3] = ["LexLeanPreservation", "LexLeanRuntime", "LexLeanTarget"];
 
 /// Whether `root` is one of the [`LIBRARY_ROOTS`].
 #[must_use]
@@ -1088,7 +1091,7 @@ mod reserved_root_tests {
             "LeanIR",
             "IO",
             "LexLeanPreserve",
-            "LexLeanRuntime",
+            "LexLeanCollections",
             "LexLeanAudit",
         ] {
             assert!(is_reserved_module_root(reserved), "{reserved}");
@@ -1098,6 +1101,7 @@ mod reserved_root_tests {
             "LexLeanExample",
             "LexLeanTarget",
             "LexLeanPreservation",
+            "LexLeanRuntime",
             "LexLeanExamples",
             "Leanish",
             "Initial",

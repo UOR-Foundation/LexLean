@@ -252,8 +252,8 @@ impl<'a> Writer<'_, 'a> {
 
     /// A runtime constant of the module `site` is read in.
     fn runtime_const(&mut self, site: &Site, name: &str) -> Result<Term, String> {
-        let module = self.gen.source.lean_module(&site.module)?;
-        Ok(self.b.konst(&format!("{module}.LexLeanRuntime.{name}")))
+        let _ = site;
+        Ok(self.b.konst(&format!("LexLeanRuntime.{name}")))
     }
 
     /// The proof of a primitive term.

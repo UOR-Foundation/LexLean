@@ -51,6 +51,62 @@ versions, and the entries below say what each tag does and does not claim.
   stage 3 of #89, certificate A) is still Lean text, so the data certificate is
   rendered outside the module system until they follow. Languages 1.0 and 1.1 have no certificates and are
   untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
+- Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
+  no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
+  integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
+  `Nat` only. `linear_arithmetic` now reads the runtime: `less_than`,
+  `equal`, `negate`, `quotient`, `remainder` (truncating division by a
+  literal included), and fixed-width order and equality become linear
+  arithmetic, every `if` and `match` left in the goal is split, and `omega`
+  decides each case. The fold laws are LexLean source, the native runtime
+  module `LexLeanRuntime.Laws` (`tests/runtime-library/LAWS.md`). It holds
+  the normal form of additive list, set, and map folds as sums, their
+  linearity, and their invariance under permutation, append, and reverse,
+  which `linear_arithmetic` rewrites with, plus fusion, the fold of a pair,
+  and the fold of an append. The closed `law` proof form applies one of
+  these registered laws (`language/runtime-1.2/laws.toml`) with linking
+  checks. `examples/fold-laws` verifies integer kernels and fold equalities
+  for all inputs, with `decide` only on closed instances. The
+  language-1.2 compiler-semantics ID changes (`semantic_ir` 11,
+  `lean_backend` 18, `proof_lowering` 3), and every language-1.2 lock,
+  golden, fixture expectation, calculus package, production export, and
+  verified record is regenerated. The register holds 391 IDs.
+
+- The runtime gates read what they claimed to (#154, follow-up to #144; no new
+  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
+  literal of the compiler's source outside unit-test items, in production code
+  after a test module, with or without a `namespace` line (a declaration
+  under a runtime name is one), written whole or in literals joined by
+  `concat!`, an array, `+` or `format!`; its statement now also asserts
+  what it said of generated modules: every committed language-1.2 module
+  imports the runtime modules whose constants it names and declares nothing
+  under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
+  with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
+  plants the second direction of the axiom check. Every directory that holds a
+  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
+  beside the sources no longer reads as source. No compiled behavior changes.
+- UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
+  `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
+  minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of
+  Atlas, whose import chain through `Census` and `CensusCert4` no schedule on
+  one runner finishes in under about 65 minutes. `.github/verify-shards.json`
+  partitions Atlas's verification into fourteen shards and a join, checked by
+  `cargo xtask ci-shards` against the import graph of the committed build:
+  every module elaborated by one shard and replayed by one, every import
+  elaborated by the shard or by one it needs. The verifier runs as one part
+  through `lexlean::verify_part` (`verify::partition`): a shard runs the
+  prelude whole, then elaborates, replays, and audits the modules of its plan
+  with the `.olean` files of the shards it needs, and writes its records; the
+  join reads every shard's records, judges each as its stage does, and
+  publishes through the same policy, attestation, and publication as the whole
+  verification, byte-identical to it and with the same attestation identity
+  (`VR-23`, on `peano-arithmetic`). `cargo xtask verify-examples` runs the
+  part `LEXLEAN_EXAMPLES_PART` names: `without:uor-atlas` on the examples leg,
+  `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs; unset, the
+  recipe is unchanged. `ci.yml` runs the shards as jobs after the jobs of the
+  shards they need, from the one executable the `prefix` job builds, with the
+  shards' output as artifacts of the run and nothing across runs, and not while
+  a pull request is a draft. The register has 382 IDs.
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining
@@ -223,6 +279,37 @@ versions, and the entries below say what each tag does and does not claim.
   text and refuses a name outside the table, a row the text does not use,
   a row citing a non-primitive, and a primitive no row cites. The runtime
   text is unchanged, so no runtime digest, package, or semantic ID changes.
+- The runtime of generated Lean is LexLean source (SPEC.md §17.12,
+  *Runtime modules*, `RT-01`..`RT-04`, LexLean #90). The portable primitives,
+  the ordered collections, the model predicates, and the reasoning lemmas of
+  language 1.2 were Rust string constants the backend spliced into every
+  module that used them, one copy per module; they are now four native core
+  modules of the embedded project `language/runtime-1.2/library/`
+  (`LexLeanRuntime.Portable`, `.Collections`, `.Models`, `.Reasoning`),
+  migrated once and losslessly (`tests/runtime-library/MIGRATION.md`), which
+  a generated module imports. A verification compiles the runtime modules a
+  project uses before the project's own, replays them, and audits each of
+  their declarations against its exact axioms. A runtime name is
+  `LexLeanRuntime.x`, no longer `<module>.LexLeanRuntime.x`, so the native
+  preservation and certification libraries' references to the copies were
+  renamed, by a pairing of the calculus modules' constants walked through
+  their kernel terms. Languages 1.0 and 1.1 are frozen: their released
+  runtime text is data under `language/runtime-1.2/frozen/`, which their
+  backends alone read, and their output is byte-identical. The decoder of
+  core module 2 is the one Lean text of the language-1.2 compiler not
+  generated from a native module, since it is what loads them. The probe and
+  axiom-audit modules are typed data the backend renders. `LexLeanRuntime`
+  moves from the reserved roots to the library roots (a project without a
+  production root may take it). The differential oracle (§17.19) does not
+  follow a call into another module, so it now refuses the roots whose
+  compiled closure calls a collection template or a reasoner's iteration as
+  `unresolved-external-call`, and generates the two list roots it refused
+  before; `oracle/known-differences.toml` (version 3, with `KD-13`
+  `output-buffer`: the oracle returns a list into a buffer its caller passes)
+  and `oracle/known-non-overlap.toml` (version 2) record what it answers, and
+  the harness passes such a buffer. The language-1.2 compiler-semantics ID
+  changes, and every language-1.2 lock, golden, fixture expectation,
+  production-export package, and verified record is regenerated.
 - `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
   no new diagnostic code). A read of a binding that nothing after it reads
   is a move and a projection of a pair component that nothing after it

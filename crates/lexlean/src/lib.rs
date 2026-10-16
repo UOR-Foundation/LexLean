@@ -61,10 +61,11 @@ pub mod surface;
 #[doc(hidden)]
 pub mod verify;
 
+pub use api::verify_part;
 pub use api::{
     BuildRequest, BuiltUnit, CheckRequest, CheckedUnit, CheckedUnitSummary, Engine, FormatRequest,
     FormatResultSet, LockRequest, LockResult, ModuleArtifacts, ProjectResultSet, Selection,
-    VerifiedProject, VerifiedUnit, VerifyRequest,
+    VerifiedProject, VerifiedUnit, VerifyPart, VerifyPartOutcome, VerifyPlan, VerifyRequest,
 };
 pub use artifact::content_id::Sha256Digest;
 pub use artifact::snapshot::{
@@ -179,6 +180,7 @@ fn is_v1_2_file(path: &str) -> bool {
         || path == crate::production::REGISTRY_PATH
         || path.starts_with("language/lcnf-1.2/")
         || path.starts_with("language/preservation-1.2/")
+        || path.starts_with("language/runtime-1.2/")
         || path == "schemas/compiler-input.schema.json"
         || path == "schemas/gnaf-certificate-fixture.schema.json"
         || path == "schemas/gnaf-certificate.schema.json"

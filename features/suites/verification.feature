@@ -133,7 +133,7 @@ Feature: verification
     And neither JSON status is `verified` and neither stdout contains `kernel-checked`
 
   @VR-19 @build
-  Scenario: The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists.
+  Scenario: The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. The one Lean text a generated Atlas module carries beside its data is the decoder of core module 1: the released language-1.0 bytes, held as the frozen data `language/runtime-1.2/frozen/core-decoder-1.txt`, the one declared exception to Lean generated from native modules.
     Given the committed native Atlas source and generated module graph
     When the release tree is audited without the completed one-time migration inputs
     Then every native source module has exactly one generated Lean module
@@ -160,3 +160,10 @@ Feature: verification
     When it is verified with and without telemetry
     Then the verified directories are byte-identical and the telemetry directory holds stage, frontier and process lines of the closed vocabulary
     And a verified directory in which a telemetry key is planted is refused
+
+  @VR-23 @build
+  Scenario: A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, or a join missing a record, is refused.
+    Given a committed multi-module example project and a plan of two shards and a join over its import graph
+    When it is verified whole and as the parts of one run
+    Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
+    And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused

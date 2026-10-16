@@ -413,6 +413,10 @@ pub struct Contract {
     /// The parameters the side takes by reference rather than by value, by
     /// position.
     pub borrowed: Vec<usize>,
+    /// Whether the side returns its list result into a buffer the caller
+    /// passes, answering how much it wrote (the oracle's memory profile).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub output_buffer: bool,
     /// Where the Rust text of the oracle's signature disagrees with its own
     /// intermediate representation: empty for LexLean, whose signature is
     /// derived from its program.
@@ -632,7 +636,32 @@ fn oracle_contract(
         .defs
         .get(name)
         .ok_or_else(|| format!("the oracle's IR has no definition `{name}`"))?;
-    let signature = rust_signature(source, name)?;
+    let mut signature = rust_signature(source, name)?;
+    let flat = |text: &str| text.replace("crate::", "o::").replace(' ', "");
+    // The oracle returns a list into a buffer its caller passes, one more
+    // parameter than its IR states (`output: &mut [T]`), and answers the
+    // number of elements written, or `OutputTooSmall`: a convention of its
+    // memory profile, recorded as such, not a parameter of the root.
+    let mut drift = Vec::new();
+    let output_buffer = match result {
+        IrTy::List(element) if signature.0.len() == parameters.len() + 1 => {
+            let buffer = signature.0.pop().expect("the buffer parameter");
+            let expected = format!("&mut [{}]", rust_type(element));
+            if flat(&expected) != flat(&buffer) {
+                drift.push(format!(
+                    "output buffer: the IR states `{expected}`, the crate `{buffer}`"
+                ));
+            }
+            if flat(&signature.1) != flat("Result<usize, crate::ComputeError>") {
+                drift.push(format!(
+                    "output buffer: the crate answers `{}`, not the number of elements written",
+                    signature.1
+                ));
+            }
+            true
+        }
+        _ => false,
+    };
     if signature.0.len() != parameters.len() {
         return Err(format!(
             "the IR gives `{name}` {} parameters and the crate {}",
@@ -640,12 +669,12 @@ fn oracle_contract(
             signature.0.len()
         ));
     }
-    let failure = signature.1.ends_with("crate::ComputeError>");
+    // A buffered result is fallible for the buffer alone; whether the call
+    // can overflow is then what it does, which the differential runs.
+    let failure = !output_buffer && signature.1.ends_with("crate::ComputeError>");
     // The text must say what the IR says: a signature the oracle's own IR
     // does not describe is a finding about the oracle, whichever of the two
     // is wrong.
-    let flat = |text: &str| text.replace("crate::", "o::").replace(' ', "");
-    let mut drift = Vec::new();
     for (at, ((_, ty), text)) in parameters.iter().zip(&signature.0).enumerate() {
         let expected = match ty {
             IrTy::List(element) => format!("&[{}]", rust_type(element)),
@@ -667,7 +696,7 @@ fn oracle_contract(
     } else {
         signature.1.clone()
     };
-    if flat(&rust_type(result)) != flat(&result_text) {
+    if !output_buffer && flat(&rust_type(result)) != flat(&result_text) {
         drift.push(format!(
             "result: the IR states `{}`, the crate `{}`",
             rust_type(result),
@@ -690,11 +719,37 @@ fn oracle_contract(
             result: ir_shape(ir, result, &mut Vec::new()),
             failure,
             borrowed,
+            output_buffer,
             drift,
         },
         signature,
     ))
 }
+
+/// Whether the oracle's signature returns a list through a buffer its
+/// caller passes ([`oracle_contract`] has removed the buffer parameter).
+fn buffered(result: &IrTy, signature: &(Vec<String>, String)) -> bool {
+    matches!(result, IrTy::List(_))
+        && signature.1.replace(' ', "") == "Result<usize,crate::ComputeError>"
+}
+
+/// A value of `ty` to fill an output buffer with before the call writes it.
+fn filler(ty: &IrTy) -> Result<String, String> {
+    Ok(match ty {
+        IrTy::Unit => "()".into(),
+        IrTy::Bool => "false".into(),
+        IrTy::Nat => "0u64".into(),
+        IrTy::Int => "0i128".into(),
+        IrTy::Fixed(name) => format!("0{name}"),
+        IrTy::Tuple(left, right) => format!("({}, {})", filler(left)?, filler(right)?),
+        IrTy::Option(_) => "None".into(),
+        other => return Err(format!("no filler for a buffered `{}`", rust_type(other))),
+    })
+}
+
+/// The elements an output buffer holds: more than any case of the corpus
+/// writes, so `OutputTooSmall` is never the answer of a call that fits.
+const OUTPUT_CAPACITY: usize = 1 << 14;
 
 // ---- rendering calls into the oracle's crate -------------------------------
 
@@ -983,6 +1038,8 @@ fn oracle_harness(
         .ok_or_else(|| format!("no definition `{function}`"))?;
     let fallible = signature.1.ends_with("crate::ComputeError>");
     let result_show = show(ir, result, "value", 0)?;
+    // The buffered call yields `Result<Vec<T>, ComputeError>`, shown as an
+    // unbuffered fallible list would be.
     let mut out = String::new();
     out.push_str("#![deny(unsafe_code)]\nextern crate alloc;\nuse oracle_crate as o;\n");
     out.push_str(COUNTING);
@@ -1003,7 +1060,23 @@ fn oracle_harness(
                 format!("a{position}")
             });
         }
-        let call = format!("o::{function}({})", passed.join(", "));
+        let call = if buffered(result, signature) {
+            let IrTy::List(element) = result else {
+                unreachable!("a buffered result is a list")
+            };
+            format!(
+                "{{ let mut output = alloc::vec![{}; {OUTPUT_CAPACITY}]; o::{function}({}).map(|written| output[..written].to_vec()) }}",
+                filler(element)?,
+                passed
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once("&mut output[..]".to_owned()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        } else {
+            format!("o::{function}({})", passed.join(", "))
+        };
         let printing = if fallible {
             format!(
                 "Ok(value) => {result_show}, Err(error) => format!(\"{{{{\\\"kind\\\":\\\"overflow\\\",\\\"detail\\\":\\\"{{error:?}}\\\"}}}}\")"
@@ -1051,6 +1124,40 @@ pub fn stage(project: &P) -> Staged {
     let library = dir.path().join("lib");
     let source = dir.path().join("src");
     std::fs::create_dir_all(&library).expect("lib");
+    let compile = |module: &str, text: &str| {
+        let relative = module.replace('.', "/");
+        let path = source.join(format!("{relative}.lean"));
+        std::fs::create_dir_all(path.parent().expect("parent")).expect("source dir");
+        std::fs::write(&path, text).expect("source");
+        let object = library.join(format!("{relative}.olean"));
+        std::fs::create_dir_all(object.parent().expect("parent")).expect("lib dir");
+        let ran =
+            crate::preservation::pinned_with("lean", dir.path(), std::slice::from_ref(&library))
+                .arg(format!("--root={}", source.display()))
+                .arg("-o")
+                .arg(&object)
+                .arg(&path)
+                .output()
+                .expect("lean runs");
+        assert!(
+            ran.status.success(),
+            "the pinned Lean rejects the module {module} that LexLean generated:\n{}{}",
+            String::from_utf8_lossy(&ran.stdout),
+            String::from_utf8_lossy(&ran.stderr)
+        );
+    };
+    // The runtime modules the generated modules import (SPEC.md §17.12),
+    // first, in their dependency order.
+    for runtime in lexlean::backend::runtime::imported_by(
+        rendered
+            .modules
+            .iter()
+            .map(|module| module.lean_text.as_str()),
+    )
+    .expect("the shipped runtime")
+    {
+        compile(&runtime.name, &runtime.text);
+    }
     let names: BTreeSet<&str> = rendered
         .modules
         .iter()
@@ -1072,30 +1179,7 @@ pub fn stage(project: &P) -> Staged {
                 later.push(module);
                 continue;
             }
-            let relative = module.lean_module.replace('.', "/");
-            let path = source.join(format!("{relative}.lean"));
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("source dir");
-            std::fs::write(&path, &module.lean_text).expect("source");
-            let object = library.join(format!("{relative}.olean"));
-            std::fs::create_dir_all(object.parent().expect("parent")).expect("lib dir");
-            let ran = crate::preservation::pinned_with(
-                "lean",
-                dir.path(),
-                std::slice::from_ref(&library),
-            )
-            .arg(format!("--root={}", source.display()))
-            .arg("-o")
-            .arg(&object)
-            .arg(&path)
-            .output()
-            .expect("lean runs");
-            assert!(
-                ran.status.success(),
-                "the pinned Lean rejects the module {} that LexLean generated:\n{}{}",
-                module.lean_module,
-                String::from_utf8_lossy(&ran.stdout),
-                String::from_utf8_lossy(&ran.stderr)
-            );
+            compile(&module.lean_module, &module.lean_text);
             done.insert(module.lean_module.clone());
         }
         remaining = later;
@@ -1182,6 +1266,7 @@ pub fn eligible_roots(project: &P) -> Vec<(String, String, Accepted)> {
                 failure: lexlean::calculus::rust::fallible_functions(&lowered.program)
                     .expect("a valid program")[0],
                 borrowed: Vec::new(),
+                output_buffer: false,
                 drift: Vec::new(),
             };
             let mut root_cases: Vec<Case> = cases
@@ -2023,6 +2108,10 @@ pub fn differences(run: &RootRun, executed: Option<&Result<Executed, String>>) -
             if !contract.borrowed.is_empty() {
                 let (l, o) = evidence(serde_json::json!({"borrowed": contract.borrowed}));
                 push(DiffKind::Contract, "borrowed-parameter".into(), l, o);
+            }
+            if contract.output_buffer != accepted.contract.output_buffer {
+                let (l, o) = evidence(Json::Null);
+                push(DiffKind::Contract, "output-buffer".into(), l, o);
             }
             match executed {
                 None => {}
@@ -3155,6 +3244,7 @@ pub fn fixture_root(fixture: &str, source: &str) -> RootRun {
         failure: lexlean::calculus::rust::fallible_functions(&fixture.program)
             .expect("a valid program")[0],
         borrowed: Vec::new(),
+        output_buffer: false,
         drift: Vec::new(),
     };
     let case = Case {

@@ -1362,9 +1362,9 @@ abbrev _private.LexLeanCertification.Check.#0.LexLeanTarget.Certification.reduct
 @1952 := proof(@1941 proof(@1948 proof(@1949 @1945)))
 @1953 := LexLeanTarget.Gnaf.Capacity.domain
 @1955 := proof(@333 proof(@1953 @1946))
-@1956 := LexLeanTarget.Gnaf.LexLeanRuntime.length
+@1956 := LexLeanRuntime.length
 @1957 := @1956 @1828
-@1958 := LexLeanTarget.Gnaf.LexLeanRuntime.instLengthableList
+@1958 := LexLeanRuntime.instLengthableList
 @1960 := @1957 (@1958 @1827)
 @1961 := proof(@1830 @217)
 @1965 := proof(@1941 proof(@1952 proof(@1955 proof(@1960 @1961))))
@@ -1518,7 +1518,7 @@ abbrev _private.LexLeanCertification.Check.#0.LexLeanTarget.Certification.reduct
   (h : @2204) -> @2205 (fun (g : @57) => @2211 (@179 (@1829 @2212 @1833) (@100 @15 @10 @88)))
 @2227 := proof(Decidable.casesOn.{0})
 @2228 := proof(Bool.not)
-@2229 := proof(LexLeanTarget.Certification.LexLeanRuntime.equal)
+@2229 := proof(LexLeanRuntime.equal)
 @2230 := proof(String)
 @2236 := proof(proof(@2229 @2230)
       proof(proof(proof(instBEqOfDecidableEq.{0}) @2230) proof(instDecidableEqString)))
@@ -1670,10 +1670,10 @@ abbrev _private.LexLeanCertification.Check.#0.LexLeanTarget.Certification.reduct
 @2486 := proof(proof(@188 @2475) @79)
 @2487 := proof(@2484 @2486)
 @2488 := proof(@635 @2477)
-@2489 := proof(LexLeanTarget.Certification.LexLeanRuntime.length)
+@2489 := proof(LexLeanRuntime.length)
 @2490 := proof(LexLeanTarget.Certification.Premise)
 @2492 := proof(@2489 proof(@3 @2490))
-@2493 := proof(LexLeanTarget.Certification.LexLeanRuntime.instLengthableList)
+@2493 := proof(LexLeanRuntime.instLengthableList)
 @2495 := proof(@2492 proof(@2493 @2490))
 @2496 := proof(LexLeanTarget.Certification.Certificate.premises)
 @2497 := proof(@2496 @301)

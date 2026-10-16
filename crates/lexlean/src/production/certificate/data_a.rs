@@ -48,7 +48,6 @@ mod templates;
 mod wf;
 
 pub(super) const LIB: &str = "LexLeanPreservation";
-pub(super) const SEM: &str = "LexLeanTarget.TargetSemantics";
 
 /// The kind of a row of the module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,8 +173,6 @@ pub(super) struct Writer<'g, 'a> {
     /// The declared exact axioms of each declaration of the source, by its
     /// Lean name.
     declared: HashMap<String, Vec<String>>,
-    /// The generated modules, which each carry the runtime.
-    runtime_modules: BTreeSet<String>,
     /// `module.__prog`.
     pub(super) prog: Term,
     /// The rendering of each expression of the program, by address.
@@ -191,9 +188,7 @@ impl<'g, 'a> Writer<'g, 'a> {
         let mut b = Builder::new();
         let prog = b.konst(&format!("{name}.__prog"));
         let mut declared = HashMap::new();
-        let mut runtime_modules = BTreeSet::new();
         for linked in gen.source.modules.values() {
-            runtime_modules.insert(linked.lean_module.to_owned());
             for declaration in linked.semantic.lowered_declarations() {
                 let mut axioms = declaration.axioms().to_vec();
                 axioms.sort();
@@ -228,7 +223,6 @@ impl<'g, 'a> Writer<'g, 'a> {
             rows: Vec::new(),
             row_axioms: BTreeMap::new(),
             declared,
-            runtime_modules,
             prog,
             exprs: HashMap::new(),
             sigs: HashMap::new(),
@@ -244,10 +238,6 @@ impl<'g, 'a> Writer<'g, 'a> {
 
     pub(super) fn lp(&mut self, name: &str) -> Term {
         self.b.konst(&format!("{LIB}.{name}"))
-    }
-
-    pub(super) fn sem(&mut self, name: &str) -> Term {
-        self.b.konst(&format!("{SEM}.{name}"))
     }
 
     /// A row of this module, by its short name.
@@ -325,15 +315,11 @@ impl<'g, 'a> Writer<'g, 'a> {
                 return Ok(axioms.clone());
             }
         }
-        if let Some((module, rest)) = name.split_once(".LexLeanRuntime.") {
-            if module == super::SEMANTICS_MODULE || self.runtime_modules.contains(module) {
-                return Ok(runtime_axioms(rest));
-            }
+        if let Some(rest) = name.strip_prefix("LexLeanRuntime.") {
+            return Ok(runtime_axioms(rest));
         }
-        if let Some((module, rest)) = name.split_once(".LexLeanCollections.") {
-            if self.runtime_modules.contains(module) {
-                return Ok(collections_axioms(rest));
-            }
+        if let Some(rest) = name.strip_prefix("LexLeanCollections.") {
+            return Ok(collections_axioms(rest));
         }
         Ok(Vec::new())
     }

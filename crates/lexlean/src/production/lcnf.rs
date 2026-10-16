@@ -35,8 +35,8 @@ pub const EXTRACTION_SPEC: &str = "lexlean/lcnf-extraction/2";
 /// The tag of the canonical compiler input.
 pub const INPUT_SPEC: &str = "lexlean/compiler-input/2";
 
-/// The Lean namespaces of the fixed runtimes every generated module may
-/// carry, below the module's own name.
+/// The Lean namespaces of the runtime modules (§17.12) a production closure
+/// may reach: the portable primitives and the ordered collections.
 pub const RUNTIME_NAMESPACES: [&str; 2] = ["LexLeanRuntime", "LexLeanCollections"];
 
 /// The syntax kind of the signature probe the adapter registers.
@@ -150,14 +150,12 @@ pub fn driver_name(semantic_hex32: &str) -> String {
     format!("LexLeanExtract.X{semantic_hex32}")
 }
 
-/// Whether a qualified name is a member of a generated module's runtime.
+/// Whether a qualified name is a member of the runtime modules.
 #[must_use]
-pub fn is_runtime_member(name: &str, modules: &BTreeSet<String>) -> bool {
-    modules.iter().any(|module| {
-        RUNTIME_NAMESPACES
-            .iter()
-            .any(|namespace| name.starts_with(&format!("{module}.{namespace}.")))
-    })
+pub fn is_runtime_member(name: &str) -> bool {
+    RUNTIME_NAMESPACES
+        .iter()
+        .any(|namespace| name.starts_with(&format!("{namespace}.")))
 }
 
 fn texts(values: &[String]) -> ToolTerm {
@@ -1369,7 +1367,13 @@ fn compiler_input_nested(
             raw.roots
         )));
     }
-    let module_set: BTreeSet<String> = modules.iter().cloned().collect();
+    // The runtime modules (§17.12) are generated modules too: the extraction
+    // reports their constants with the project's, so that the runtime members
+    // a closure reaches are told apart.
+    let mut module_set: BTreeSet<String> = modules.iter().cloned().collect();
+    if let Ok(runtime) = crate::backend::runtime::modules() {
+        module_set.extend(runtime.iter().map(|module| module.name.clone()));
+    }
     if !unique(raw.constants.iter().map(|constant| &constant.name))
         || !unique(raw.externals.iter().map(|external| &external.name))
     {
@@ -1585,7 +1589,7 @@ fn compiler_input_nested(
         let (runtime, source): (BTreeSet<String>, BTreeSet<String>) = members
             .iter()
             .cloned()
-            .partition(|member| is_runtime_member(member, &module_set));
+            .partition(|member| is_runtime_member(member));
         // Lean's closure of every root must be exactly the eligibility
         // analysis's: a member only Lean reaches is a dependency the
         // analysis dropped, and a member only the analysis reaches is one

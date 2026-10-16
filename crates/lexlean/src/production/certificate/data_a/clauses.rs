@@ -122,8 +122,8 @@ impl Writer<'_, '_> {
     /// The name of a declaration of the collections runtime of the module
     /// `site` is read in.
     pub(super) fn collections_name(&self, site: &Site, name: &str) -> Result<String, String> {
-        let module = self.gen.source.lean_module(&site.module)?;
-        Ok(format!("{module}.LexLeanCollections.{name}"))
+        let _ = site;
+        Ok(format!("LexLeanCollections.{name}"))
     }
 
     /// A declaration of the collections runtime.

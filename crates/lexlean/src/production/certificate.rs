@@ -70,8 +70,6 @@ pub const LIBRARY_MODULES: [&str; 7] = [
 ];
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
-const SEMANTICS: &str = "LexLeanTarget.TargetSemantics";
-const SEMANTICS_MODULE: &str = SEMANTICS;
 
 /// One generated certificate module.
 #[derive(Debug, Clone, PartialEq, Eq)]

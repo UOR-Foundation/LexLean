@@ -99,8 +99,8 @@ impl<'a> Writer<'_, 'a> {
                         encoded.push(self.b.app(enc, *p));
                     }
                     let list = self.b.list(value_ty, &encoded);
-                    let append = self.sem("LexLeanRuntime.append");
-                    let instance = self.sem("LexLeanRuntime.instAppendableList");
+                    let append = self.b.konst("LexLeanRuntime.append");
+                    let instance = self.b.konst("LexLeanRuntime.instAppendableList");
                     let instance = self.b.app(instance, value_ty);
                     let arguments = self.b.apps(append, &[captures_ty, instance, fc, list]);
                     let fits_applied = self.b.apps(ff, &ps);

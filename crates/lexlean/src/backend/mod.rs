@@ -8,6 +8,7 @@ pub mod latex;
 pub mod lean;
 pub mod lean_tokens;
 pub mod pdf;
+pub mod runtime;
 pub mod semantic;
 pub mod tooling;
 

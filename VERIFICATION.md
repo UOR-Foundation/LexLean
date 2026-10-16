@@ -1254,6 +1254,64 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### the fold laws can fail
+
+Integer order, `linear_arithmetic` over the runtime, the fold laws, and the
+`law` form (#117, `PF-20`..`PF-23`). Each defect was planted in the working
+tree, the case named was run with `cargo test -p repo-conformance
+--all-features --test conformance -- <case>` (Linux x86-64, pinned Lean
+4.32.1), and the plant was reverted. Each case passes on the reverted tree.
+
+Planted (a): order typed over `Nat` only under language 1.2 (the Int and
+fixed-width arm of `le`/`lt` disabled). `conformance_pf_20`: the committed
+corpus no longer links.
+
+```text
+check succeeds: LexLeanError { ... code: DiagnosticCode("LLT4001"), message: "phase link: order left operand has type Int, expected Nat", primary: Some(Span { path: "src/Kernels.lex.tex", ... }) ... }
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 389 filtered out
+```
+
+Planted (b): the script without `all_goals (repeat' split)`.
+`conformance_pf_21` refuses the rendered script (`the fixed script with the
+unfolded definition`). The same compiler run by `lexlean verify` on a copy of
+`examples/fold-laws` shows what the split is for: Lean refuses the first
+kernel whose zero-divisor `if` is left unsplit, with
+`error[LLV7002]: Lean rejected FoldLaws.Kernels (error): omega could not
+prove the goal` at `src/Kernels.lex.tex:79` (`halving_shrinks`).
+
+Planted (c): the backend leaves out one registered rewrite
+(`LexLeanLaws.listFold_add_nat_self`) from the script. `conformance_pf_22`,
+whose expected script is read from the committed registry rather than from
+the compiler, refuses the rendered Lean of `doubled_total`
+(`proofs.rs:1087`).
+
+Planted (d): the rewrite removed from `language/runtime-1.2/laws.toml`
+itself. The registry is language data hashed into the language-1.2
+compiler-semantics ID (§21.2), so `conformance_pf_22` fails before any
+backend runs, on the identity: `LLC0102: lexlean.lock is stale or
+noncanonical` (`the compiler semantics changed since locking`). A registry
+that names a declaration the module lacks, or registers a law twice, and a
+laws row that only bounds its axioms are refused by the runtime build. Those
+three are plants the case makes itself, each asserted by its message.
+
+Planted (e): the argument types of a `law` application unchecked.
+`conformance_pf_23`: the copy that passes `true` for a `Nat` argument links
+(`check fails` is not met).
+
+```text
+thread 'conformance_pf_23' panicked at crates/conformance/src/support.rs:619:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 389 filtered out
+```
+
+The false statements are refused by Lean in every run of the cases, not only
+when planted. `conformance_pf_21` refuses a clamp bound one too small, a
+quotient identity without the remainder's sign, and a fixed-width order one
+past its literal. `conformance_pf_22` refuses a doubled fold equated to a sum
+and a count, the reverse's sum equated to a count, and a map's entries summed
+as its keys twice. `conformance_pf_23` refuses the pair law applied to a
+swapped statement. Each assertion names exactly the refused theorems.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
@@ -7731,6 +7789,243 @@ Removed: each edit was restored; `conformance_au_01`..`conformance_au_12` pass. 
 arbitrary canonical JSON values (`surface::generic`), and every alternative of
 the schema its own sample (`surface::semantic`), as unit tests of the
 `lexlean` crate.
+
+## UOR Atlas as the parts of one run (Issue #131)
+
+Issue #131 asked why every pull request's gate takes three hours and what
+would shorten it without a weaker proof obligation. On `main` at `514e95ad`
+(CI run 38716449420) the `examples` leg took 178 minutes, 156 of them the
+verification of UOR Atlas (elaboration 5,047 s, replay 4,286 s); the `rest`
+leg took 76 minutes. Atlas's 66 modules are not independent: 63 of its sources
+declare `\importmodule`, the generated Lean imports them as `public import`,
+and the chain `Roots → Blocks → Places → Group → Census → CensusCert4`, then
+`CensusComplete → Closure → ClosurePairs → ClosurePairCert* → … → Atlas`, is 20
+deep. From the committed hints and the measured replays, the elaboration of
+that chain up to `CensusCert4` (2,687 s) and the replay of `CensusCert4`
+(1,229 s) bound any schedule of today's modules at about 65 minutes, however
+many runners it has; a single 16 GB runner at width 2 cannot overlap the four
+modules that peak near 15 GiB with anything, which is where the other 90
+minutes went. The maintainer's reading on the issue, that a content-addressed
+certificate of main's proof would skip Atlas on five of the 34 merged pull
+requests once its key covered the compiler sources, stands; `§9.4`'s sentence
+on caches is unchanged.
+
+What changed is where the processes run, not which run. Atlas's verification
+is partitioned into the shards of `.github/verify-shards.json`, each a job of
+its own clean checkout on the standard runner: `prefix` elaborates the import
+closure of `CensusCert4` (15 modules, 1,399 s of elaboration); `cert4` that
+module alone; `census-a` to `census-d` the other `CensusCert*` modules, the
+replays of the prefix, and the modules that import only the prefix; `closure`
+the three modules every later one imports; `orbit` and `pairs-a` to `pairs-d`
+the rest; `cert4-replay` the one replay that takes 20 minutes; and the `join`
+the last four modules, then every shard's records, the attestation, and the
+comparison with `expected/verify`. The critical path is `prefix` (23 minutes
+of elaboration at width 2), `cert4` (22), `closure` (3), the `pairs` shards (11
+each), the join (under 2), plus each job's set-up: the Lean toolchain and,
+once, the Rust build of the gate's executable, which the `prefix` job uploads
+and the other jobs take from the run. That is an estimate of 80 to 90 minutes
+for the Atlas side against 178; the first CI run of the change is the
+measurement, and the `rest` leg (76 minutes, 64 of them `bdd`) is then the
+longer one.
+
+The verifier runs as one part through `lexlean::verify_part`
+(`verify::partition`, SPEC.md §9.4, §22.11). A shard runs the prelude whole
+(certificate generation, the preflights, staging, the generated-source audit,
+the probe), seeds the placed set with the modules whose `.olean` arrived from
+the shards it needs, elaborates the modules of its plan in the same
+topological frontiers, replays and audits the modules its plan names, and
+moves its `.olean` tree (intermediates included, a later shard's elaboration
+reads them) and its process records to its output directory; it publishes
+nothing. The join does the same for its own plan, reads every other part's
+records (`ChildRecord::from_json`, which checks each stream against its
+digest), judges an imported elaboration as the elaboration stage judges its
+own (exit 0, silent), an imported replay as the replay stage does (exit 0,
+else `LLV7003`), and an imported audit member as the audit stage does (exit 0,
+silent, its printed set parsed against the member's declarations, else
+`LLV7004`), and assembles the attestation's process list in the canonical
+order of §22.11 (`partition::elaboration_order`: the frontiers in module
+order, then replays in sorted name, then the family) from whichever part
+produced each record. A module without a record from any part, a record of a
+process no module owns, two parts that wrote the same `.olean` or record, and
+a shard whose plan elaborates a module before its imports (`module order did
+not converge: … imports …`) are refused. A part is defined for a project
+without production roots and without PDF rendering; Atlas is such a project.
+
+`VR-23` verifies `peano-arithmetic` whole and as two shards and a join over
+its committed import graph (the first frontier; the second, replaying both;
+the rest), and requires the join's verified directory to equal the whole's
+byte for byte with the same attestation ID, then refuses the three plans
+above. `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
+job, each job waiting (through the job graph) for the jobs of the shards its
+shard needs and never for a row of its own matrix, the examples profile on
+every Atlas job, the one `cargo build` in the `prefix` job and every other job
+taking the executable and the shards' output from the run (`pattern:
+atlas-*`, never a `run-id`), the shard output uploaded under the shard's name,
+the join asserting Atlas's two lines, the draft condition on every Atlas job
+and no other, and the `ready_for_review` type that reruns them. The plan
+itself is checked by `cargo xtask ci-shards` and inside `RP-14` by
+`repo_conformance::shards::check`.
+
+### the partition can fail
+
+Each record is a defect planted in `.github/verify-shards.json` or `ci.yml`,
+then `cargo test -p repo-conformance --test conformance -- --exact
+conformance_rp_14` (the plan's defects also fail `cargo xtask ci-shards` with
+the same line), and the failure, after which the file was restored.
+
+- **a module replayed by two shards** (`CensusCert4` added to `census-a`'s
+  replay): `` `LexLeanExample.CensusCert4` is replayed by `census-a` and by
+  `cert4-replay` ``.
+- **a shard elaborating a module before its imports** (`cert4` with no needs):
+  `` shard `cert4` elaborates `LexLeanExample.CensusCert4`, whose import
+  `LexLeanExample.CensusClosure` is elaborated by no shard it needs ``.
+- **a module elaborated by no shard** (`Atlas` dropped from the join):
+  `` `LexLeanExample.Atlas` is elaborated by no shard ``.
+- **a job that no longer waits for the shards it needs** (`atlas-closure` with
+  `needs: [atlas-prefix]`): `` §9.4: `closure` runs in `atlas-closure`, which
+  does not wait for `atlas-l1`, the job of `cert4` it needs ``.
+- **an Atlas job without the draft condition** (`atlas-l3`): `` §9.4:
+  `atlas-l3` waits only for a pull request to leave draft ``.
+- **a second `cargo build`** (in `atlas-closure`): `ci.yml builds the gate's
+  executable once` (`left: 2, right: 1`).
+- **a shard run by two jobs** (`pairs-a` added to `atlas-l1`'s matrix):
+  `` §9.4: the shard `pairs-a` is run by two jobs ``.
+- **the examples leg verifying every example** (`examples_part` emptied):
+  `§9.4: the examples leg's profile and part` (`left: [.., ""]`, `right: [..,
+  "without:uor-atlas"]`).
+- **a cache action in a shard job**: `` ci.yml has no `actions/cache` ``.
+- **the join reading another run's artifacts** (`run-id` on its download):
+  `` §9.4: `atlas-join` reads the artifacts of this run only ``.
+
+Two defects were found by the cases and not by review: a shard exported the
+`.olean` files it had imported along with its own, so the join refused the
+duplicate (`` `oleans/PeanoArithmetic/Addition.ir` was written by two parts of
+the run ``; `export` now moves only the modules of the shard's plan), and the
+join assembled the imported elaboration and replay records into the
+attestation without publishing them, so the directory it published had no
+`process/lean/PeanoArithmetic.Addition.json` and `verify-examples` refused it
+against `expected/verify` (R10). Both are what `VR-23` and the end-to-end run
+of `verify-examples` as two shards and a join of `peano-arithmetic` now check.
+### runtime modules can fail
+
+Five plants, each on the committed tree and each restored after its run.
+Commands: `cargo test -p repo-conformance --all-features --test conformance
+-- <case> --exact` for the first four; for the fifth, `lexlean lock && lexlean
+verify` in a copy of `examples/collections`, where pinned Lean is the oracle.
+
+1. A hand-written runtime text put back in the semantic backend (a
+   `COLLECTIONS_RUNTIME` string constant appended to `backend/semantic.rs`).
+2. The frozen language-1.1 portable runtime changed in one name
+   (`index` to `indez` in `language/runtime-1.2/frozen/portable-runtime-1.1.txt`).
+3. A generated Lean copy of a runtime module committed beside its source
+   (`language/runtime-1.2/library/LexLeanRuntime/Portable.lean`).
+4. A preservation-library reference to a per-module runtime copy put back
+   (`@244 := LexLeanRuntime.index` to
+   `@244 := LexLeanTarget.TargetSemantics.LexLeanRuntime.index` in the notation of
+   `Core.lex.tex`).
+5. A runtime row pinning an axiom its declaration does not use
+   (`LexLeanCollections.insertEntry` pinned to `exact{axioms: [propext]}` in
+   `Collections.lex.tex`).
+
+```text
+thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:494:9:
+assertion `left == right` failed: the semantic backend carries no runtime text
+  left: [2966]
+ right: []
+thread 'conformance_rt_02' panicked at crates/conformance/src/cases/runtime.rs:260:5:
+the frozen portable runtime is the released language-1.1 output
+thread 'conformance_rt_01' panicked at crates/conformance/src/cases/runtime.rs:88:9:
+.../language/runtime-1.2/library/LexLeanRuntime/Portable.lean: a Lean file lies in the runtime project
+thread 'conformance_rt_01' panicked at crates/conformance/src/cases/runtime.rs:199:21:
+.../language/preservation-1.2/library/src/Core.lex.tex: a runtime copy `…TargetSemantics.LexLeanRuntime.index
+@247 := @2` is named inside a module
+error[LLV7005]: `LexLeanCollections.insertEntry` of the runtime module `LexLeanRuntime.Collections` violates its exact axiom policy: observed []
+  --> lexlean.toml:1:1
+```
+
+Removed: each file was restored, and `RT-01`..`RT-04` pass on the restored
+tree.
+
+### the runtime gates, read again (Issue #154)
+
+`RT-04` had cut each compiler source at its first `#[cfg(test)]`, asked a
+literal for a `namespace` line and a declaration, and read one literal at a
+time; #154 reproduced a text that passed. Each shape below is now planted on
+the committed tree and restored after its run
+(`cargo test -p repo-conformance --all-features --test conformance --
+conformance_rt_04 --exact`); the same shapes, and the ones that must not be
+found, are asserted by the case itself.
+
+1. Production code after the first test module of the verifier: a
+   `const PLANTED: &str = "public def LexLeanRuntime.listFold : Nat := 0";`
+   after `HEAVY_FRACTION` in `verify/mod.rs`, which follows the module that
+   ends at line 2694.
+2. A declaration under a runtime name and no `namespace` line, as a string
+   constant appended to `backend/semantic.rs`.
+3. The same text written with `concat!` (`namespace LexLeanCollections`,
+   `public def listFold : Nat := 0`, `end LexLeanCollections` as three
+   literals).
+4. The same under a `format!` template
+   (`public def LexLeanReasoning.{name} : Nat := 0`).
+
+```text
+thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:765:5:
+assertion `left == right` failed: the only Lean runtime text in the compiler is the decoder of core module 2
+  left: [("backend/core_v2.rs", 34), ("verify/mod.rs", 2731)]
+ right: [("backend/core_v2.rs", 34)]
+  left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2965)]     (2 and 3)
+  left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2966)]     (4)
+```
+
+What the gate cannot see is said here and not left to a reader: a text built
+at run time from parts declared apart (a name in one constant, a template in
+another) is not a literal or a run of literals, and `RT-04` does not read it.
+What bounds that is the other half of its statement, which is checked over
+the output: a generated language-1.2 module that declares under a runtime
+namespace, or names a runtime constant without importing the module that
+declares it, is refused (planted in the case: the committed module of the
+collections example with its runtime imports dropped, and with a runtime
+namespace appended).
+
+`RT-03`'s axiom check compares the observed and the pinned sets in both
+directions (`LLV7005`); the fifth plant of the section above pinned an axiom a
+declaration does not use, and the case now also plants the other:
+`LexLeanCollections.compareCodes._sparseCasesOn_1` pinned to
+`exact{axioms: []}` in `Collections.lex.tex`, which uses `propext`:
+
+```text
+error[LLV7005]: `LexLeanCollections.compareCodes._sparseCasesOn_1` violates its exact axiom policy: observed [propext]
+  --> lexlean.toml:1:1
+```
+
+A runtime declaration whose body changes and still type-checks
+(`@3159 := 64` to `65` in `Portable.lex.tex`, a width constant of
+`checkedMultiplyInt64`) is not caught by `RT-01`..`RT-04`: all four pass with
+it planted, because it is a well-typed change that pins the same axioms. It is
+caught by the identity discipline, which is the gate for any normative byte:
+the language-1.2 compiler-semantics ID changes, so `lexlean lock --check` in
+each language-1.2 example refuses its lock,
+
+```text
+error[LLC0102]: lexlean.lock is stale or noncanonical; run `lexlean lock`
+  --> lexlean.lock:1:1
+```
+
+and a verification after relocking differs from the committed record of the
+example (`examples/collections/expected/verify/audit/LexLeanAudit.Aea7d3fe….*`
+against `LexLeanAudit.A65452ac….*`; the audit prefix is a function of the
+identity); `cargo xtask verify-examples` compares those records, so the change
+stays red until every record is regenerated, which is a diff a review reads. No
+runtime-specific oracle of a declaration's body exists beyond those pins, and
+none is claimed.
+
+`RT-02`'s statement that the frozen files belong to no older identity was a
+grep of `SPEC.md` for the path; it now recomputes the three IDs from disk
+(`RP-10`'s recomputation, shared) and finds, with either frozen file changed
+by one byte, the language-1.0 and 1.1 IDs unchanged and the 1.2 ID changed.
+The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
+a Cargo target directory named `target-check` in the checkout, `RT-01` and
+`SP-12` failed on its Lean files before and pass now.
 
 ## The planted verification of the compiler project (Issue #145)
 
