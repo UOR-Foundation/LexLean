@@ -192,7 +192,6 @@ definition{
   parameters: [position : Nat],
   result: UInt32,
   body: (if (position <? 32) then (if (position <? 16) then (if (position <? 8) then (if (position <? 4) then (if (position <? 2) then (if (position <? 1) then (1116352408 : UInt32) else (1899447441 : UInt32)) else (if (position <? 3) then (3049323471 : UInt32) else (3921009573 : UInt32))) else (if (position <? 6) then (if (position <? 5) then (961987163 : UInt32) else (1508970993 : UInt32)) else (if (position <? 7) then (2453635748 : UInt32) else (2870763221 : UInt32)))) else (if (position <? 12) then (if (position <? 10) then (if (position <? 9) then (3624381080 : UInt32) else (310598401 : UInt32)) else (if (position <? 11) then (607225278 : UInt32) else (1426881987 : UInt32))) else (if (position <? 14) then (if (position <? 13) then (1925078388 : UInt32) else (2162078206 : UInt32)) else (if (position <? 15) then (2614888103 : UInt32) else (3248222580 : UInt32))))) else (if (position <? 24) then (if (position <? 20) then (if (position <? 18) then (if (position <? 17) then (3835390401 : UInt32) else (4022224774 : UInt32)) else (if (position <? 19) then (264347078 : UInt32) else (604807628 : UInt32))) else (if (position <? 22) then (if (position <? 21) then (770255983 : UInt32) else (1249150122 : UInt32)) else (if (position <? 23) then (1555081692 : UInt32) else (1996064986 : UInt32)))) else (if (position <? 28) then (if (position <? 26) then (if (position <? 25) then (2554220882 : UInt32) else (2821834349 : UInt32)) else (if (position <? 27) then (2952996808 : UInt32) else (3210313671 : UInt32))) else (if (position <? 30) then (if (position <? 29) then (3336571891 : UInt32) else (3584528711 : UInt32)) else (if (position <? 31) then (113926993 : UInt32) else (338241895 : UInt32)))))) else (if (position <? 48) then (if (position <? 40) then (if (position <? 36) then (if (position <? 34) then (if (position <? 33) then (666307205 : UInt32) else (773529912 : UInt32)) else (if (position <? 35) then (1294757372 : UInt32) else (1396182291 : UInt32))) else (if (position <? 38) then (if (position <? 37) then (1695183700 : UInt32) else (1986661051 : UInt32)) else (if (position <? 39) then (2177026350 : UInt32) else (2456956037 : UInt32)))) else (if (position <? 44) then (if (position <? 42) then (if (position <? 41) then (2730485921 : UInt32) else (2820302411 : UInt32)) else (if (position <? 43) then (3259730800 : UInt32) else (3345764771 : UInt32))) else (if (position <? 46) then (if (position <? 45) then (3516065817 : UInt32) else (3600352804 : UInt32)) else (if (position <? 47) then (4094571909 : UInt32) else (275423344 : UInt32))))) else (if (position <? 56) then (if (position <? 52) then (if (position <? 50) then (if (position <? 49) then (430227734 : UInt32) else (506948616 : UInt32)) else (if (position <? 51) then (659060556 : UInt32) else (883997877 : UInt32))) else (if (position <? 54) then (if (position <? 53) then (958139571 : UInt32) else (1322822218 : UInt32)) else (if (position <? 55) then (1537002063 : UInt32) else (1747873779 : UInt32)))) else (if (position <? 60) then (if (position <? 58) then (if (position <? 57) then (1955562222 : UInt32) else (2024104815 : UInt32)) else (if (position <? 59) then (2227730452 : UInt32) else (2361852424 : UInt32))) else (if (position <? 62) then (if (position <? 61) then (2428436474 : UInt32) else (2756734187 : UInt32)) else (if (position <? 63) then (3204031479 : UInt32) else (3329325298 : UInt32))))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -237,9 +236,9 @@ definition{
 
 definition{
   name: wordAt,
-  parameters: [message : Bytes, size : Nat, position : Nat],
+  parameters: [b0 : UInt32, b1 : UInt32, b2 : UInt32, b3 : UInt32],
   result: UInt32,
-  body: (prim bit_or (shiftLeft (byteAt message size position) (24 : UInt32)) (prim bit_or (shiftLeft (byteAt message size (position + 1)) (16 : UInt32)) (prim bit_or (shiftLeft (byteAt message size (position + 2)) (8 : UInt32)) (byteAt message size (position + 3)) : UInt32) : UInt32) : UInt32),
+  body: (prim bit_or (shiftLeft b0 (24 : UInt32)) (prim bit_or (shiftLeft b1 (16 : UInt32)) (prim bit_or (shiftLeft b2 (8 : UInt32)) b3 : UInt32) : UInt32) : UInt32),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -257,7 +256,7 @@ definition{
   name: scheduleWord,
   parameters: [message : Bytes, size : Nat, total : Nat, position : Nat],
   result: UInt32,
-  body: (if ((position + 8) =? total) then (wordOfNat (prim quotient (prim multiply size 8 : Nat) 4294967296 0 : Nat)) else (if ((position + 4) =? total) then (wordOfNat (prim remainder (prim multiply size 8 : Nat) 4294967296 0 : Nat)) else (wordAt message size position))),
+  body: (if ((position + 8) =? total) then (wordOfNat (prim quotient (prim multiply size 8 : Nat) 4294967296 0 : Nat)) else (if ((position + 4) =? total) then (wordOfNat (prim remainder (prim multiply size 8 : Nat) 4294967296 0 : Nat)) else (wordAt (byteAt message size position) (byteAt message size (position + 1)) (byteAt message size (position + 2)) (byteAt message size (position + 3))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
