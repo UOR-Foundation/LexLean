@@ -90,7 +90,7 @@ statement = "The ordinary workspace test phase excludes repo-conformance, the bd
 id = "RP-14"
 level = "build"
 suite = "repository"
-statement = "The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence."
+statement = "The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other leg at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence."
 
 [[id]]
 id = "CF-01"
@@ -1257,6 +1257,12 @@ suite = "verification"
 statement = "Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate."
 
 [[id]]
+id = "VR-23"
+level = "build"
+suite = "verification"
+statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, or a join missing a record, is refused."
+
+[[id]]
 id = "CL-01"
 level = "build"
 suite = "cli-api"
@@ -2330,4 +2336,4 @@ statement = "A verification compiles every runtime module that a project's gener
 id = "RT-04"
 level = "build"
 suite = "runtime"
-statement = "No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules it uses and splices none, and the only string literal of the compiler's source that holds Lean declarations under a namespace is the decoder of core module 2, which loads native modules and so cannot be one; a planted runtime text constant, raw or escaped, is found."
+statement = "No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found."
