@@ -522,5 +522,55 @@ theorem{
   statement: ((streamCode (spillStream (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (nil Nat)))))))))))))) = 14),
   proof: decide{}
 }
+
+definition{
+  name: deriveScaleMultiplier,
+  parameters: [inputScaleBits : Int, weightScaleBits : Int, outputScaleBits : Int],
+  result: (Option Int),
+  body: (Recognizer::scaleRatioRound32 inputScaleBits weightScaleBits outputScaleBits),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: deriveChannelMultipliers,
+  parameters: [inputScaleBits : Int, weightScaleBits : (List Int), outputScaleBits : Int],
+  result: (Option (List Int)),
+  body: (Recognizer::scaleMultipliersRound32 inputScaleBits weightScaleBits outputScaleBits),
+  axioms: [propext],
+  executable: true
+}
+
+theorem{
+  name: corpus_scale_ratio_rounds_up,
+  parameters: [],
+  statement: ((deriveScaleMultiplier (998277249 : Int) (1000693826 : Int) (1017370378 : Int)) = (ctor Option.some [Int] (4250229 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: corpus_scale_ratio_rounds_down,
+  parameters: [],
+  statement: ((deriveScaleMultiplier (1023410176 : Int) (1017370378 : Int) (1039516303 : Int)) = (ctor Option.some [Int] (22369621 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: corpus_scale_ratio_tie_even,
+  parameters: [],
+  statement: (((deriveScaleMultiplier (1065353217 : Int) (1069547520 : Int) (1140850688 : Int)) = (ctor Option.some [Int] (12582914 : Int))) /\ ((deriveScaleMultiplier (1065353219 : Int) (1069547520 : Int) (1140850688 : Int)) = (ctor Option.some [Int] (12582916 : Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: corpus_scale_multipliers,
+  parameters: [],
+  statement: ((deriveChannelMultipliers (998277249 : Int) (cons (1000593162 : Int) (cons (1000693826 : Int) (nil Int))) (1017370378 : Int)) = (ctor Option.some [(List Int)] (cons (4210752 : Int) (cons (4250229 : Int) (nil Int))))),
+  proof: decide{},
+  axioms: [propext]
+}
 \end{semanticmodule}
 \end{lexlean}
