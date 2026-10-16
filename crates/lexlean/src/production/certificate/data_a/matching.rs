@@ -18,7 +18,7 @@ impl<'a> Writer<'_, 'a> {
         &mut self,
         env: Term,
         encoded: Term,
-        arms: &'a [Arm],
+        arms: &[Arm],
         position: usize,
         fields: &[Term],
         extended: Term,
@@ -55,7 +55,7 @@ impl<'a> Writer<'_, 'a> {
         &mut self,
         env: Term,
         encoded: Term,
-        arms: &'a [Arm],
+        arms: &[Arm],
         position: usize,
         later: Pf,
     ) -> Result<Pf, String> {

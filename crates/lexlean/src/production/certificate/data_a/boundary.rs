@@ -23,7 +23,7 @@ use super::super::{checked, components, element_of, option_value, parts, Validat
 use super::recplan::{PositionKind, RecCtor, RecPlan};
 use super::rows::Sig;
 use super::{Pf, RowKind, Writer, EXPLICIT};
-use crate::calculus::{Expr, Ty};
+use crate::calculus::{Expr, Function, Shape, Ty};
 use crate::ir::core::CoreLevel;
 use crate::ir::semantic::SemanticType;
 use crate::production::kernel::{Given, Term};
@@ -1547,13 +1547,14 @@ impl<'a> Writer<'_, 'a> {
             .parameters
             .first()
             .ok_or("a validator without a parameter")?;
+        let expected = self.expected_validator(validator, function)?;
         let body = match spec.arm {
             Some(arm_index) => {
                 let Expr::Match {
                     ty: match_ty,
                     scrutinee,
                     arms,
-                } = &function.body
+                } = &expected.body
                 else {
                     return Err(format!(
                         "the validator {} was lowered to something other than a match",
@@ -1605,7 +1606,7 @@ impl<'a> Writer<'_, 'a> {
                     vars: vec![(parameter, encoded)],
                     pair: Some((fields[0], fields[1])),
                 };
-                self.chain_pf(&binding, base, &function.body, &checks, spec.direct)?
+                self.chain_pf(&binding, base, &expected.body, &checks, spec.direct)?
             }
         };
         let function_term = self.function_term(function)?;
@@ -1630,7 +1631,162 @@ impl<'a> Writer<'_, 'a> {
             ],
             &[Given::Refl, Given::Refl, Given::Proof(body.proof, body.ty)],
         )?;
+        self.forget_expression(&expected.body);
         Ok(introduced.proof)
+    }
+
+    /// The function the lowering builds for a container or document
+    /// validator, from the layout's kind and the same builders the lowering
+    /// uses. The program's own function is only read for the types of its
+    /// parameter: the derivation follows what the source calls for, so a
+    /// program that differs is refused by the kernel where the derived body
+    /// meets the program's.
+    fn expected_validator(
+        &self,
+        validator: &Validator,
+        program_function: &Function,
+    ) -> Result<Function, String> {
+        use crate::calculus::library::validators;
+        let index = validator.index;
+        let parameter = program_function
+            .types
+            .first()
+            .ok_or("a validator without a parameter type")?;
+        let mismatch =
+            || format!("the validator {index} has a parameter type its kind cannot have");
+        Ok(match &validator.kind {
+            Validation::List { element } => {
+                let Ty::List { element: ty } = parameter else {
+                    return Err(mismatch());
+                };
+                validators::list_of(index, *element, ty)
+            }
+            Validation::Option { value } => {
+                let Ty::Option { value: ty } = parameter else {
+                    return Err(mismatch());
+                };
+                validators::option_of(*value, ty)
+            }
+            Validation::Pair { left, right } => {
+                let Ty::Pair { left: a, right: b } = parameter else {
+                    return Err(mismatch());
+                };
+                validators::pair_of(*left, *right, a, b)
+            }
+            Validation::Result { ok, error } => {
+                let Ty::Result { ok: a, error: b } = parameter else {
+                    return Err(mismatch());
+                };
+                validators::result_of(*ok, *error, a, b)
+            }
+            Validation::Document { fields } => {
+                let Ty::Adt { index: adt } = parameter else {
+                    return Err(mismatch());
+                };
+                validators::document(*adt, fields)
+            }
+            Validation::Trivial | Validation::Set | Validation::Map { value: _ } => {
+                return Err(format!(
+                    "the validator {index} is not written by a derivation"
+                ));
+            }
+        })
+    }
+
+    /// The body the lowering gives an entry: each checked parameter's
+    /// validator called on it with the refusal otherwise, around the root's
+    /// call, as `some`.
+    fn expected_entry(
+        &self,
+        program_function: &Function,
+        validators: &[Option<u64>],
+    ) -> Result<Expr, String> {
+        let Ty::Option { value: _ } = &program_function.result else {
+            return Err("the entry does not return an option".to_owned());
+        };
+        let outcome = program_function.result.clone();
+        let arguments = (0..validators.len() as u64)
+            .map(|name| Expr::Var { name })
+            .collect();
+        let mut body = Expr::Build {
+            shape: Shape::Some,
+            ty: outcome.clone(),
+            operands: vec![Expr::Call {
+                function: 0,
+                operands: arguments,
+            }],
+        };
+        for (position, validator) in validators.iter().enumerate().rev() {
+            if let Some(validator) = validator {
+                body = Expr::Cond {
+                    condition: Box::new(Expr::Call {
+                        function: *validator,
+                        operands: vec![Expr::Var {
+                            name: position as u64,
+                        }],
+                    }),
+                    then_branch: Box::new(body),
+                    else_branch: Box::new(Expr::Build {
+                        shape: Shape::None,
+                        ty: outcome.clone(),
+                        operands: Vec::new(),
+                    }),
+                };
+            }
+        }
+        Ok(body)
+    }
+
+    /// Drop the renderings cached for the parts of an expression that is
+    /// about to be freed: the cache is keyed by address, and a later
+    /// expression built at a freed address must not meet them.
+    fn forget_expression(&mut self, expr: &Expr) {
+        self.exprs.remove(&std::ptr::from_ref(expr));
+        match expr {
+            Expr::Let { bound, body, .. } => {
+                self.forget_expression(bound);
+                self.forget_expression(body);
+            }
+            Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.forget_expression(condition);
+                self.forget_expression(then_branch);
+                self.forget_expression(else_branch);
+            }
+            Expr::Match {
+                scrutinee, arms, ..
+            } => {
+                self.forget_expression(scrutinee);
+                for arm in arms {
+                    self.forget_expression(&arm.body);
+                }
+            }
+            Expr::Build { operands, .. }
+            | Expr::Call { operands, .. }
+            | Expr::Prim { operands, .. } => {
+                for operand in operands {
+                    self.forget_expression(operand);
+                }
+            }
+            Expr::Closure { captures, .. } => {
+                for capture in captures {
+                    self.forget_expression(capture);
+                }
+            }
+            Expr::Apply { target, operands } => {
+                self.forget_expression(target);
+                for operand in operands {
+                    self.forget_expression(operand);
+                }
+            }
+            Expr::First { value } | Expr::Second { value } | Expr::Field { value, .. } => {
+                self.forget_expression(value);
+            }
+            Expr::Value { .. } | Expr::Var { .. } => {}
+        }
     }
 
     /// `conv_var` for the variable `name`, bound to `value` in `env`.
@@ -1767,7 +1923,7 @@ impl<'a> Writer<'_, 'a> {
         &mut self,
         binding: &Binding,
         env: Term,
-        expr: &'a Expr,
+        expr: &Expr,
         checks: &[Checked],
         direct: bool,
     ) -> Result<Pf, String> {
@@ -1978,8 +2134,9 @@ impl<'a> Writer<'_, 'a> {
         }
         let empty = self.empty_env();
         let env = self.extend_env(empty, &function.parameters, &encoded)?;
-        let mut layers: Vec<(usize, u64, &'a Expr, &'a Expr)> = Vec::new();
-        let mut cursor = &function.body;
+        let expected_body = self.expected_entry(function, validators)?;
+        let mut layers: Vec<(usize, u64, &Expr, &Expr)> = Vec::new();
+        let mut cursor = &expected_body;
         for (position, validator) in &checked {
             let Expr::Cond {
                 condition,
@@ -2143,6 +2300,7 @@ impl<'a> Writer<'_, 'a> {
                 Given::Proof(current.proof, current.ty),
             ],
         )?;
+        self.forget_expression(&expected_body);
         let run = self.apply(
             "run_of_funRel",
             &[],
