@@ -2481,6 +2481,44 @@ Removed: all seven were restored (the unit test of the audit,
 dependency with no role, a role with no dependency, and a SPEC without the
 table).
 
+### inherited output remains subject to the child deadline (Issue #132)
+
+A leader can exit successfully while a descendant still holds stdout or
+stderr. The runner now keeps its existing timeout and process-group guard
+active until the leader has exited and both output readers have finished;
+joining the readers cannot bypass the deadline. Timeout and host shutdown
+still use the existing termination path. `SE-06` also exercises a finite
+descendant holding stdout after its leader exits; the crate's unit tests
+cover each stream separately, group cleanup, and a descendant that finishes
+within its deadline with the successful status and output retained.
+
+Before the fix, `cargo test -p lexlean --lib a_timeout_bounds_` ran both
+inherited-pipe regressions and both failed in 3.00 seconds: `expect_err`
+received a successful `ChildRecord` with `exit_code: 0` after the finite
+descendant completed, despite `child_timeout_ms = 200`.
+
+The separate serialized host regression, `cargo test -p lexlean --test
+end_children an_embedding_host_ends_a_group_after_its_leader_exits`, failed
+in 0.02 seconds before the fix:
+
+```text
+the group stays registered while its output is being read
+  left: []
+ right: [ChildGroupEnd { group: 102, outcome: Ended }]
+```
+
+The case waits until the leader is actually reaped before asking the host
+to end the remaining group, and its descendant is finite even when the
+assertion fails. These process-group assertions run on Unix; the existing
+Windows tree-termination implementation is unchanged.
+
+After the fix, all seven timeout unit cases pass in 1.21 seconds, the
+hosting regression passes in 0.03 seconds, and `conformance_se_06` passes in
+1.79 seconds. Formatting, workspace/all-target Clippy with warnings denied,
+and the model/spec-link audits pass. The existing hosting suite passed nine
+cases in the sandbox; its real-signal case passes outside that sandbox in
+0.04 seconds, where SIGINT and SIGTERM reach its child host.
+
 ### a host ends the children the library started
 
 A host that embeds the library (`lexlean::cli::run`, a service, a test
@@ -7069,7 +7107,7 @@ SPEC.md §24.7; `PX-01`..`PX-12` and `CL-23`. The Lean-backed cases share three 
 
 ### production export can fail
 
-The production export contract (§24.7, `PX-01`..`PX-12`, `CL-23`). Each record
+The production export contract (§24.7, `PX-01`..`PX-13`, `CL-23`). Each record
 below is a defect planted in a clean tree at the commit that introduced the
 contract, the command run, and the failure observed (verbatim, paths
 shortened), after which the defect was removed.
@@ -7148,6 +7186,23 @@ shortened), after which the defect was removed.
   order, the axioms, an optimality claimed without evidence, the GNAF verdict),
   an added file, and a removed file are each `LLV7102`, and a symlink is
   `LLS8001`.
+
+- **an output's effects not checked against eligibility** (`PX-13`). The
+  comparison of a result's per-output effects with the root's eligibility was
+  planted to ignore `recursion` (`kept(effects) != kept(required)` in
+  `effects_agree`, `crates/conformance/src/cases/production_export.rs`).
+  Command: `cargo test -p repo-conformance --all-features --test conformance
+  conformance_px_13` (Windows, toolchain hidden, so the platform-independent
+  assertions ran). Expected: an output with `recursion` dropped is accepted.
+
+  ```text
+  thread 'conformance_px_13' (22224) panicked at crates\conformance\src\cases\production_export.rs:1501:60:
+  dropped: ()
+  ```
+
+  Removed: the comparison was restored; `conformance_px_13` passes. On a host
+  with the pinned toolchain the case also exports `production-coverage` and
+  requires each of its 49 outputs to state exactly its eligibility's effects.
 
 ## Template recursion (Issue #105)
 
@@ -7672,3 +7727,29 @@ runs (231 s to 237 s) and is left alone until it fails.
 
 Removed: the edit was restored; `conformance_rs_12` passes in 691 s on the
 idle host (737 s before the change).
+
+## Exact toolchain version fields (Issue #134)
+
+The existing `VR-02` owner (SPEC.md §8.2, §22.2) also refuses patch-prefix
+collisions and prerelease suffixes in both tool banners, and a banner whose
+unrelated version equals the pin. These use the owner's existing verified
+fixture; every wrong banner fails in preflight before module compilation.
+
+Planted: retain the old substring comparison in the behavior-preserving
+`reports_pinned_version` extraction. Command:
+`cargo test -p lexlean --lib verify::toolchain::tests::version_banners_require_the_exact_lean_version -- --exact --nocapture`.
+Observed:
+
+```text
+thread 'verify::toolchain::tests::version_banners_require_the_exact_lean_version' panicked:
+lean: Lean (version 4.32.10, release)
+test result: FAILED. 0 passed; 1 failed
+```
+
+The fixed comparison reads the complete Lean version field of each banner.
+The unit case covers real pinned Lean/Lake formats, other patches,
+prereleases, unrelated occurrences of the pin, and malformed banners.
+
+Validated after the fix: the unit case and `conformance_vr_02` pass (the
+latter in 4.76 s), as do formatting, workspace/all-target Clippy with warnings
+denied, model/spec-link audits, and all five BDD meta-gate tests.
