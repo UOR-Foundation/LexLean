@@ -1239,6 +1239,7 @@ pub(crate) fn run(id: &str) {
                 .filter_entry(|entry| {
                     ![".git", ".lake", ".lexlean", "expected", "target"]
                         .contains(&entry.file_name().to_string_lossy().as_ref())
+                        && !support::holds_cache_tag(entry)
                 })
                 .flatten()
                 .filter(|entry| {

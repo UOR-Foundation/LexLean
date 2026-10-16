@@ -181,7 +181,9 @@ pub fn tree_digest(root: &Path, pin: &Pin) -> Result<(String, usize), String> {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            !(entry.file_type().is_dir() && matches!(name.as_ref(), ".git" | ".lake" | "target"))
+            !(entry.file_type().is_dir()
+                && (matches!(name.as_ref(), ".git" | ".lake" | "target")
+                    || crate::support::holds_cache_tag(entry)))
         })
     {
         let entry = entry.map_err(|error| error.to_string())?;
@@ -439,7 +441,9 @@ fn copy_tree(from: &Path, to: &Path, pin: &Pin, root: &Path) -> Result<(), Strin
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            !(entry.file_type().is_dir() && matches!(name.as_ref(), ".git" | ".lake" | "target"))
+            !(entry.file_type().is_dir()
+                && (matches!(name.as_ref(), ".git" | ".lake" | "target")
+                    || crate::support::holds_cache_tag(entry)))
         })
     {
         let entry = entry.map_err(|error| error.to_string())?;

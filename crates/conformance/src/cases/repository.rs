@@ -452,7 +452,11 @@ pub(crate) fn run(id: &str) {
                 .into_iter()
                 .filter_entry(|e| {
                     let name = e.file_name().to_string_lossy();
-                    name != "target" && name != ".git" && name != ".lexlean" && name != "expected"
+                    name != "target"
+                        && name != ".git"
+                        && name != ".lexlean"
+                        && name != "expected"
+                        && !support::holds_cache_tag(e)
                 })
                 .flatten()
             {
@@ -528,32 +532,7 @@ pub(crate) fn run(id: &str) {
         }
         // §21.2: the embedded semantics ID equals a clean disk recomputation.
         "RP-10" => {
-            let mut files: Vec<(String, Vec<u8>)> = Vec::new();
-            for dir in [
-                "language",
-                "schemas",
-                "tests/golden/axiom-parser",
-                "tests/golden/canonical-json",
-            ] {
-                for entry in walkdir::WalkDir::new(root.join(dir).as_std_path())
-                    .into_iter()
-                    .flatten()
-                {
-                    if entry.file_type().is_file() {
-                        let relative = format!(
-                            "{dir}/{}",
-                            entry
-                                .path()
-                                .strip_prefix(root.join(dir).as_std_path())
-                                .expect("under dir")
-                                .to_string_lossy()
-                                .replace('\\', "/")
-                        );
-                        files.push((relative, std::fs::read(entry.path()).expect("read")));
-                    }
-                }
-            }
-            files.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+            let files = support::normative_rows();
             let borrowed: Vec<(&str, &[u8])> = files
                 .iter()
                 .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
@@ -568,65 +547,9 @@ pub(crate) fn run(id: &str) {
             // §21.2: the older languages' IDs are the same digest over the
             // tree minus the files SPEC.md lists as introduced later. The
             // lists are read from the specification, not from the compiler.
-            let spec = support::spec_text();
-            let section = spec
-                .split("### 21.2 Compiler-semantics ID")
-                .nth(1)
-                .and_then(|rest| rest.split("### 21.3").next())
-                .expect("§21.2");
-            let listed = |start: &str, end: &str| -> Vec<String> {
-                let text = section
-                    .split(start)
-                    .nth(1)
-                    .and_then(|rest| rest.split(end).next())
-                    .unwrap_or_else(|| panic!("§21.2 states `{start}`"));
-                let mut out = Vec::new();
-                for item in text.split('`').skip(1).step_by(2) {
-                    match (item.find('{'), item.find('}')) {
-                        (Some(open), Some(close)) => {
-                            for choice in item[open + 1..close].split(',') {
-                                out.push(format!(
-                                    "{}{choice}{}",
-                                    &item[..open],
-                                    &item[close + 1..]
-                                ));
-                            }
-                        }
-                        _ => out.push(item.to_owned()),
-                    }
-                }
-                assert!(!out.is_empty(), "§21.2 lists the files after `{start}`");
-                out
-            };
-            let only_1_2 = listed(
-                "The language-1.1 ID excludes the files introduced solely for 1.2:",
-                "The language-1.0 ID",
-            );
-            let only_1_1 = listed(
-                "excludes the files introduced solely for 1.1:",
-                "Adding a file",
-            );
-            let excluded = |path: &str, lists: &[&Vec<String>]| {
-                lists.iter().any(|list| {
-                    list.iter().any(|item| {
-                        if item.ends_with('/') {
-                            path.starts_with(item.as_str())
-                        } else {
-                            path == item
-                        }
-                    })
-                })
-            };
-            let filtered = |lists: &[&Vec<String>]| {
-                let kept: Vec<(&str, &[u8])> = borrowed
-                    .iter()
-                    .copied()
-                    .filter(|(path, _)| !excluded(path, lists))
-                    .collect();
-                support::identity_tree_digest(&kept)
-            };
-            let eleven = filtered(&[&only_1_2]);
-            let ten = filtered(&[&only_1_2, &only_1_1]);
+            let (only_1_2, only_1_1) = support::introduced_later();
+            let (ten, eleven, twelve) = support::semantics_ids(&borrowed);
+            assert_eq!(twelve, recomputed, "RP-10: the 1.2 ID");
             assert_eq!(
                 eleven,
                 lexlean::compiler_semantics_id_for("1.1"),

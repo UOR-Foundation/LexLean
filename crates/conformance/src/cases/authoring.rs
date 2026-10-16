@@ -65,7 +65,10 @@ fn corpus() -> Vec<(String, Json)> {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
@@ -607,7 +610,10 @@ fn one_surface() {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
@@ -708,7 +714,10 @@ fn tooling_corpus() -> Vec<(String, Json)> {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
@@ -1095,7 +1104,10 @@ fn no_other_authoring_path() {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
@@ -1145,7 +1157,10 @@ fn authoring_api() {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != "target" && name != ".git" && name != ".lexlean"
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
         })
         .flatten()
     {
