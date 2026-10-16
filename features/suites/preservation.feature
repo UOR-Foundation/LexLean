@@ -99,3 +99,11 @@ Feature: preservation
     When certificate E of each root is built as a core module, rendered by the core backend, recorded in the notation, and verified under the pinned Lean
     Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
     And a wrong lemma application, a changed statement, a forged crate reference, and an added axiom are each refused
+
+  @SP-15 @build
+  Scenario: Certificate A of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, the semantic source of the root's closure, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, so that no Lean text template for certificate A remains in the production compiler; its program literal, encoders, width predicates, relation theorems, validators, and entry are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly, and a wrong lemma application, a changed statement, a forged program literal, or an added axiom is refused.
+    Given every production root of the committed examples, the lowered programs, the semantic source of each root's closure, and the native preservation library
+    When certificate A of each root is built as a core module, rendered by the core backend, recorded in the notation, and verified under the pinned Lean
+    Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
+    And every theorem's statement is definitionally the one the committed text certificate elaborated to
+    And a wrong lemma application, a changed statement, a forged program literal, and an added axiom are each refused
