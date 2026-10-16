@@ -433,9 +433,8 @@ impl<'a> Writer<'_, 'a> {
                     let head = self.lp("ascSet_inv");
                     self.b.apps(head, &[kappa, cmp])
                 };
-                let element = match parameter {
-                    Ty::List { element } => element.as_ref(),
-                    other => return Err(format!("a set validator over {other:?}")),
+                let Ty::List { element } = parameter else {
+                    return Err("a set validator over something other than a list".to_owned());
                 };
                 let t = self.ty_term(element);
                 hints.extend([("κ", kappa), ("ek", ek), ("cmp", cmp), ("t", t)]);
@@ -477,14 +476,13 @@ impl<'a> Writer<'_, 'a> {
                     let head = self.lp("ascMap_inv");
                     self.b.apps(head, &[kappa, nu, cmp, valid_v, inv_v, viff_v])
                 };
-                let (tk, tw) = match parameter {
-                    Ty::List { element } => match element.as_ref() {
-                        Ty::Pair { left, right } => (left.as_ref(), right.as_ref()),
-                        other => return Err(format!("a map validator over entries {other:?}")),
-                    },
-                    other => return Err(format!("a map validator over {other:?}")),
+                let Ty::List { element } = parameter else {
+                    return Err("a map validator over something other than a list".to_owned());
                 };
-                let (tk, tw) = (self.ty_term(tk), self.ty_term(tw));
+                let Ty::Pair { left, right } = element.as_ref() else {
+                    return Err("a map validator over entries that are not pairs".to_owned());
+                };
+                let (tk, tw) = (self.ty_term(left), self.ty_term(right));
                 let fv = self.nat_u(*value);
                 hints.extend([
                     ("κ", kappa),
@@ -532,10 +530,10 @@ impl<'a> Writer<'_, 'a> {
                     let head = self.lp("validList_inv");
                     self.b.apps(head, &[alpha, valid_e, inv_e, viff_e])
                 };
-                let t = match parameter {
-                    Ty::List { element } => self.ty_term(element),
-                    other => return Err(format!("a list validator over {other:?}")),
+                let Ty::List { element: stored } = parameter else {
+                    return Err("a list validator over something other than a list".to_owned());
                 };
+                let t = self.ty_term(stored);
                 let fv = self.nat_u(*element);
                 hints.extend([("α", alpha), ("ea", ea), ("fv", fv), ("t", t)]);
                 let applied = self.apply(
@@ -572,10 +570,12 @@ impl<'a> Writer<'_, 'a> {
                     let head = self.lp("validOption_inv");
                     self.b.apps(head, &[alpha, valid_v, inv_v, viff_v])
                 };
-                let t = match parameter {
-                    Ty::Option { value } => self.ty_term(value),
-                    other => return Err(format!("an option validator over {other:?}")),
+                let Ty::Option { value: stored } = parameter else {
+                    return Err(
+                        "an option validator over something other than an option".to_owned()
+                    );
                 };
+                let t = self.ty_term(stored);
                 let fv = self.nat_u(*value);
                 hints.extend([("α", alpha), ("ea", ea), ("fv", fv), ("t", t)]);
                 let applied = self.apply(
@@ -615,10 +615,14 @@ impl<'a> Writer<'_, 'a> {
                         &[alpha, beta, valid_a, valid_b, inv_a, inv_b, viff_a, viff_b],
                     )
                 };
-                let (ta, tb) = match parameter {
-                    Ty::Pair { left, right } => (self.ty_term(left), self.ty_term(right)),
-                    other => return Err(format!("a pair validator over {other:?}")),
+                let Ty::Pair {
+                    left: first,
+                    right: second,
+                } = parameter
+                else {
+                    return Err("a pair validator over something other than a pair".to_owned());
                 };
+                let (ta, tb) = (self.ty_term(first), self.ty_term(second));
                 let (fa, fb) = (self.nat_u(*left), self.nat_u(*right));
                 hints.extend([
                     ("α", alpha),
@@ -666,13 +670,19 @@ impl<'a> Writer<'_, 'a> {
                     let head = self.lp("validExcept_inv");
                     self.b.apps(
                         head,
-                        &[epsilon, alpha, valid_e, valid_a, inv_e, inv_a, viff_e, viff_a],
+                        &[
+                            epsilon, alpha, valid_e, valid_a, inv_e, inv_a, viff_e, viff_a,
+                        ],
                     )
                 };
-                let (ta, te) = match parameter {
-                    Ty::Result { ok, error } => (self.ty_term(ok), self.ty_term(error)),
-                    other => return Err(format!("a result validator over {other:?}")),
+                let Ty::Result {
+                    ok: stored_ok,
+                    error: stored_error,
+                } = parameter
+                else {
+                    return Err("a result validator over something other than a result".to_owned());
                 };
+                let (ta, te) = (self.ty_term(stored_ok), self.ty_term(stored_error));
                 let (fa, fe) = (self.nat_u(*ok), self.nat_u(*error));
                 hints.extend([
                     ("α", alpha),
@@ -863,11 +873,7 @@ impl<'a> Writer<'_, 'a> {
     /// The validators of a recursive group of document types and the
     /// containers nested in them, which are mutually structural.
     #[allow(clippy::too_many_lines)]
-    fn recursive_validators(
-        &mut self,
-        boundary: &Boundary,
-        members: &[u64],
-    ) -> Result<(), String> {
+    fn recursive_validators(&mut self, boundary: &Boundary, members: &[u64]) -> Result<(), String> {
         let document = members
             .iter()
             .find_map(|index| {
@@ -889,7 +895,9 @@ impl<'a> Writer<'_, 'a> {
                 .iter()
                 .filter_map(|index| boundary.validators.get(index))
                 .find(|validator| self.gen.source.type_text(&validator.ty) == wanted)
-                .ok_or_else(|| format!("`{wanted}` is in a recursive group but has no validator"))?;
+                .ok_or_else(|| {
+                    format!("`{wanted}` is in a recursive group but has no validator")
+                })?;
             positions.push(GroupPosition {
                 validator: validator.clone(),
                 ctors: self.constructor_specs(validator, &entry.constructors)?,
@@ -936,7 +944,10 @@ impl<'a> Writer<'_, 'a> {
         };
         let mut order: Vec<(u64, usize)> = Vec::new();
         for member in members {
-            order.push((*member, position_of(*member).ok_or("a member outside the group")?));
+            order.push((
+                *member,
+                position_of(*member).ok_or("a member outside the group")?,
+            ));
         }
         let valid = self.family_values(boundary, Family::Valid, &group)?;
         let mut names = Vec::new();
@@ -1039,13 +1050,9 @@ impl<'a> Writer<'_, 'a> {
                 let step = self
                     .b
                     .lam_over("__x1", EXPLICIT, list_ty, tail_x, step_body);
-                let step = self
-                    .b
-                    .lam_over("__x0", EXPLICIT, element_ty, head_x, step);
+                let step = self.b.lam_over("__x0", EXPLICIT, element_ty, head_x, step);
                 let lemma = self.lp("invList_eqs");
-                let proof = self
-                    .b
-                    .apps(lemma, &[alpha, inv_e, inv_k, base, step, x]);
+                let proof = self.b.apps(lemma, &[alpha, inv_e, inv_k, base, step, x]);
                 (library, proof)
             }
             Validation::Option { value } => {
@@ -1090,9 +1097,7 @@ impl<'a> Writer<'_, 'a> {
         };
         let claim = self.iff(inv_at, library);
         let ty = self.b.pi_over("__v", EXPLICIT, validator.lean, x, claim);
-        let value = self
-            .b
-            .lam_over("__v", EXPLICIT, validator.lean, x, proof);
+        let value = self.b.lam_over("__v", EXPLICIT, validator.lean, x, proof);
         self.push_row(
             &format!("__vinv_{}", validator.index),
             RowKind::Theorem,
@@ -1126,13 +1131,9 @@ impl<'a> Writer<'_, 'a> {
             let head = self.b.konst("Iff.refl");
             let mut minor = self.b.app(head, at);
             for (index, free) in frees.iter().enumerate().rev() {
-                minor = self.b.lam_over(
-                    &format!("__x{index}"),
-                    EXPLICIT,
-                    types[index],
-                    *free,
-                    minor,
-                );
+                minor =
+                    self.b
+                        .lam_over(&format!("__x{index}"), EXPLICIT, types[index], *free, minor);
             }
             minors.push(minor);
         }
@@ -1149,9 +1150,10 @@ impl<'a> Writer<'_, 'a> {
         let ty = &position.validator.ty;
         match &position.validator.kind {
             Validation::Document { fields: _ } => {
-                let (member, arguments) = match ty {
-                    SemanticType::Named { member, arguments } => (member, arguments),
-                    other => return Err(format!("a document validator over {other:?}")),
+                let SemanticType::Named { member, arguments } = ty else {
+                    return Err(
+                        "a document validator over a type that is not a document".to_owned()
+                    );
                 };
                 let shape = self.gen.source.document(ty)?;
                 let name = shape
@@ -1212,9 +1214,9 @@ impl<'a> Writer<'_, 'a> {
                 all.extend_from_slice(fields);
                 Ok(self.b.apps(head, &all))
             }
-            Validation::Trivial | Validation::Set | Validation::Map { value: _ } => Err(
-                "a validator without constructors".to_owned(),
-            ),
+            Validation::Trivial | Validation::Set | Validation::Map { value: _ } => {
+                Err("a validator without constructors".to_owned())
+            }
         }
     }
 
@@ -1380,13 +1382,9 @@ impl<'a> Writer<'_, 'a> {
             }
         }
         for (index, free) in xs.iter().enumerate().rev() {
-            minor = self.b.lam_over(
-                &format!("__x{index}"),
-                EXPLICIT,
-                types[index],
-                *free,
-                minor,
-            );
+            minor = self
+                .b
+                .lam_over(&format!("__x{index}"), EXPLICIT, types[index], *free, minor);
         }
         Ok(minor)
     }
@@ -1512,36 +1510,42 @@ impl<'a> Writer<'_, 'a> {
             .ok_or("a validator without a parameter")?;
         let body = match spec.arm {
             Some(arm_index) => {
-                let (match_ty, scrutinee, arms) = match &function.body {
-                    Expr::Match {
-                        ty,
-                        scrutinee,
-                        arms,
-                    } => (ty, scrutinee.as_ref(), arms.as_slice()),
-                    _ => {
-                        return Err(format!(
-                            "the validator {} was lowered to something other than a match",
-                            validator.index
-                        ));
-                    }
+                let Expr::Match {
+                    ty: match_ty,
+                    scrutinee,
+                    arms,
+                } = &function.body
+                else {
+                    return Err(format!(
+                        "the validator {} was lowered to something other than a match",
+                        validator.index
+                    ));
                 };
+                let (scrutinee, arms) = (scrutinee.as_ref(), arms.as_slice());
                 let arm = arms
                     .get(arm_index)
                     .ok_or("a validator lowered to fewer arms")?;
                 let inner = self.extend_env(base, &arm.binders, &fields)?;
-                let mut vars: Vec<(u64, Term)> =
-                    arm.binders.iter().copied().zip(fields.iter().copied()).collect();
+                let mut vars: Vec<(u64, Term)> = arm
+                    .binders
+                    .iter()
+                    .copied()
+                    .zip(fields.iter().copied())
+                    .collect();
                 vars.push((parameter, encoded));
                 let binding = Binding { vars, pair: None };
                 let derived = self.chain_pf(&binding, inner, &arm.body, &checks, spec.direct)?;
-                let mut arms_pf = self.arm_hit(base, encoded, arms, arm_index, &fields, inner, derived)?;
+                let mut arms_pf =
+                    self.arm_hit(base, encoded, arms, arm_index, &fields, inner, derived)?;
                 for earlier in (0..arm_index).rev() {
                     arms_pf = self.arm_miss(base, encoded, arms, earlier, arms_pf)?;
                 }
-                let name = match scrutinee {
-                    Expr::Var { name } => *name,
-                    _ => return Err("a validator matches on something other than its argument".to_owned()),
+                let Expr::Var { name } = scrutinee else {
+                    return Err(
+                        "a validator matches on something other than its argument".to_owned()
+                    );
                 };
+                let name = *name;
                 let tested = self.variable_pf(base, name, encoded)?;
                 let t = self.ty_term(match_ty);
                 let prog = self.prog;
@@ -1641,7 +1645,9 @@ impl<'a> Writer<'_, 'a> {
             | Expr::Closure { .. }
             | Expr::Apply { .. }
             | Expr::Prim { .. }
-            | Expr::Field { .. } => Err("a validator calls with an argument it does not build".to_owned()),
+            | Expr::Field { .. } => {
+                Err("a validator calls with an argument it does not build".to_owned())
+            }
         }
     }
 
@@ -1653,18 +1659,18 @@ impl<'a> Writer<'_, 'a> {
         expr: &Expr,
         check: &Checked,
     ) -> Result<Pf, String> {
-        let operands = match expr {
-            Expr::Call {
-                function,
-                operands,
-            } if *function == check.validator.index && operands.len() == 1 => operands,
-            _ => {
-                return Err(format!(
-                    "the validator was lowered without the call of {}",
-                    check.validator.index
-                ));
-            }
+        let Expr::Call { function, operands } = expr else {
+            return Err(format!(
+                "the validator was lowered without the call of {}",
+                check.validator.index
+            ));
         };
+        if *function != check.validator.index || operands.len() != 1 {
+            return Err(format!(
+                "the validator was lowered with another call than {}",
+                check.validator.index
+            ));
+        }
         let argument = self.argument_pf(binding, env, &operands[0])?;
         let list = self.operands(env, &[argument])?;
         let ty = self.vrel_claim(&check.validator, check.x);
@@ -1681,16 +1687,18 @@ impl<'a> Writer<'_, 'a> {
 
     /// A built Boolean.
     fn boolean_pf(&mut self, env: Term, expr: &Expr, value: bool) -> Result<Pf, String> {
-        let (shape, ty) = match expr {
-            Expr::Build {
-                shape,
-                ty,
-                operands,
-            } if operands.is_empty() => (*shape, ty),
-            _ => {
-                return Err("a validator was lowered without the Boolean it returns".to_owned());
-            }
+        let Expr::Build {
+            shape,
+            ty,
+            operands,
+        } = expr
+        else {
+            return Err("a validator was lowered without the Boolean it returns".to_owned());
         };
+        if !operands.is_empty() {
+            return Err("a validator builds a Boolean from operands".to_owned());
+        }
+        let shape = *shape;
         let empty = self.operands(env, &[])?;
         let construct = self.apply(
             if value {
@@ -1728,18 +1736,19 @@ impl<'a> Writer<'_, 'a> {
             [] => self.boolean_pf(env, expr, true),
             [only] if direct => self.call_pf(binding, env, expr, only),
             [first, rest @ ..] => {
-                let (condition, then_branch, else_branch) = match expr {
-                    Expr::Cond {
-                        condition,
-                        then_branch,
-                        else_branch,
-                    } => (condition.as_ref(), then_branch.as_ref(), else_branch.as_ref()),
-                    _ => {
-                        return Err(
-                            "a validator was lowered without the test of a check".to_owned()
-                        );
-                    }
+                let Expr::Cond {
+                    condition,
+                    then_branch,
+                    else_branch,
+                } = expr
+                else {
+                    return Err("a validator was lowered without the test of a check".to_owned());
                 };
+                let (condition, then_branch, else_branch) = (
+                    condition.as_ref(),
+                    then_branch.as_ref(),
+                    else_branch.as_ref(),
+                );
                 let tested = self.call_pf(binding, env, condition, first)?;
                 let continued = self.chain_pf(binding, env, then_branch, rest, direct)?;
                 let refused = self.boolean_pf(env, else_branch, false)?;
@@ -1933,37 +1942,46 @@ impl<'a> Writer<'_, 'a> {
         let mut layers: Vec<(usize, u64, &'a Expr, &'a Expr)> = Vec::new();
         let mut cursor = &function.body;
         for (position, validator) in &checked {
-            match cursor {
-                Expr::Cond {
-                    condition,
-                    then_branch,
-                    else_branch,
-                } => {
-                    match condition.as_ref() {
-                        Expr::Call {
-                            function: callee,
-                            operands,
-                        } if callee == validator && operands.len() == 1 => {}
-                        _ => {
-                            return Err(format!(
-                                "the entry was lowered without the call of the validator {validator}"
-                            ));
-                        }
-                    }
-                    layers.push((*position, *validator, then_branch.as_ref(), else_branch.as_ref()));
-                    cursor = then_branch.as_ref();
-                }
-                _ => return Err("the entry was lowered without a test of a validator".to_owned()),
-            }
-        }
-        let (shape, outcome_ty_program) = match cursor {
-            Expr::Build {
-                shape,
-                ty,
+            let Expr::Cond {
+                condition,
+                then_branch,
+                else_branch,
+            } = cursor
+            else {
+                return Err("the entry was lowered without a test of a validator".to_owned());
+            };
+            let Expr::Call {
+                function: callee,
                 operands,
-            } if operands.len() == 1 => (*shape, ty),
-            _ => return Err("the entry was lowered without the root's call".to_owned()),
+            } = condition.as_ref()
+            else {
+                return Err("the entry tests something other than a validator's call".to_owned());
+            };
+            if callee != validator || operands.len() != 1 {
+                return Err(format!(
+                    "the entry was lowered without the call of the validator {validator}"
+                ));
+            }
+            layers.push((
+                *position,
+                *validator,
+                then_branch.as_ref(),
+                else_branch.as_ref(),
+            ));
+            cursor = then_branch.as_ref();
+        }
+        let Expr::Build {
+            shape,
+            ty: outcome_ty_program,
+            operands,
+        } = cursor
+        else {
+            return Err("the entry was lowered without the root's call".to_owned());
         };
+        if operands.len() != 1 {
+            return Err("the entry builds its result from another number of operands".to_owned());
+        }
+        let shape = *shape;
         let mut argument_pfs = Vec::new();
         for (position, number) in function.parameters.iter().enumerate() {
             argument_pfs.push(self.variable_pf(env, *number, encoded[position])?);
@@ -2004,10 +2022,7 @@ impl<'a> Writer<'_, 'a> {
         let mut current = self.apply(
             "Conv.fits_eq",
             &[("f'", sig.fits_applied)],
-            &[
-                Given::Proof(built.proof, built.ty),
-                Given::Term(equation),
-            ],
+            &[Given::Proof(built.proof, built.ty), Given::Term(equation)],
         )?;
         let some = self.ts("Value.some");
         let mut fits_inside = sig.fits_applied;
@@ -2025,7 +2040,8 @@ impl<'a> Writer<'_, 'a> {
             let value = self.b.lam_over("__c", EXPLICIT, bool, guard, on_value);
             let test = self.valid_at(*validator, x);
             // The test: the validator's relation at the parameter.
-            let argument = self.variable_pf(env, function.parameters[*position], encoded[*position])?;
+            let argument =
+                self.variable_pf(env, function.parameters[*position], encoded[*position])?;
             let list = self.operands(env, &[argument])?;
             let relation_head = self.vrel_const(*validator);
             let relation = self.b.app(relation_head, x);
@@ -2082,7 +2098,11 @@ impl<'a> Writer<'_, 'a> {
                 ("fn", function_term),
                 ("env", env),
             ],
-            &[Given::Refl, Given::Refl, Given::Proof(current.proof, current.ty)],
+            &[
+                Given::Refl,
+                Given::Refl,
+                Given::Proof(current.proof, current.ty),
+            ],
         )?;
         let run = self.apply(
             "run_of_funRel",
@@ -2090,9 +2110,10 @@ impl<'a> Writer<'_, 'a> {
             &[Given::Proof(introduced.proof, introduced.ty)],
         )?;
         let run_conv = self.lp("RunConv");
-        let statement = self
-            .b
-            .apps(run_conv, &[prog, entry_index, sig.arguments, denote_entry_at]);
+        let statement = self.b.apps(
+            run_conv,
+            &[prog, entry_index, sig.arguments, denote_entry_at],
+        );
         let entry_value_term = self.lambdas(&sig.rel_binders, run.proof);
         let entry_ty = self.pis(&sig.rel_binders, statement);
         self.push_row("entry", RowKind::Theorem, entry_ty, entry_value_term)?;
@@ -2102,14 +2123,8 @@ impl<'a> Writer<'_, 'a> {
         let some_obs = self.lp("someObs");
         let accepted_obs = self.b.app(some_obs, denote_at);
         let hypothesis = self.b.free();
-        let accepts_proof = self.entry_accepts_proof(
-            sig,
-            &checked,
-            &frees,
-            &tests,
-            &accepts_terms,
-            hypothesis,
-        )?;
+        let accepts_proof =
+            self.entry_accepts_proof(sig, &checked, &frees, &tests, &accepts_terms, hypothesis)?;
         let accepted = self.obs_eq(denote_entry_at, accepted_obs);
         let accepted_pi = self
             .b
@@ -2126,14 +2141,8 @@ impl<'a> Writer<'_, 'a> {
             accepted_value,
         )?;
         let hypothesis = self.b.free();
-        let refusal = self.entry_refuses_proof(
-            sig,
-            &checked,
-            &frees,
-            &tests,
-            &accepts_terms,
-            hypothesis,
-        )?;
+        let refusal =
+            self.entry_refuses_proof(sig, &checked, &frees, &tests, &accepts_terms, hypothesis)?;
         let not = self.b.konst("Not");
         let refused_hypothesis = self.b.app(not, accepts_at);
         let value_wrap = self.lp("Obs.value");
@@ -2152,14 +2161,18 @@ impl<'a> Writer<'_, 'a> {
 
     /// The program's refusal: `build none`.
     fn refusal_pf(&mut self, env: Term, expr: &Expr) -> Result<Pf, String> {
-        let (shape, ty) = match expr {
-            Expr::Build {
-                shape,
-                ty,
-                operands,
-            } if operands.is_empty() => (*shape, ty),
-            _ => return Err("the entry was lowered without its refusal".to_owned()),
+        let Expr::Build {
+            shape,
+            ty,
+            operands,
+        } = expr
+        else {
+            return Err("the entry was lowered without its refusal".to_owned());
         };
+        if !operands.is_empty() {
+            return Err("the entry's refusal builds from operands".to_owned());
+        }
+        let shape = *shape;
         let empty = self.operands(env, &[])?;
         let construct = self.apply("construct_none", &[], &[])?;
         let shape = self.shape_term(shape);
@@ -2253,8 +2266,7 @@ impl<'a> Writer<'_, 'a> {
             };
             let viff = {
                 let head = self.viff_const(*validator);
-                let at = self.b.app(head, frees[checked[index].0]);
-                at
+                self.b.app(head, frees[checked[index].0])
             };
             let decided = self.is_true(*test);
             let equation = {
@@ -2273,10 +2285,7 @@ impl<'a> Writer<'_, 'a> {
             };
             let rewrite = self.b.konst_at(
                 "Eq.ndrec",
-                vec![
-                    CoreLevel::Zero,
-                    CoreLevel::Succ(Box::new(CoreLevel::Zero)),
-                ],
+                vec![CoreLevel::Zero, CoreLevel::Succ(Box::new(CoreLevel::Zero))],
             );
             proof = self
                 .b
@@ -2300,7 +2309,7 @@ impl<'a> Writer<'_, 'a> {
         hypothesis: Term,
     ) -> Result<Term, String> {
         let bool = self.bool_ty();
-        let (tru, fls) = (self.tru(), self.fls());
+        let fls = self.fls();
         let none = self.ts("Value.none");
         let wrap = self.lp("Obs.value");
         let rhs = self.b.app(wrap, none);
@@ -2360,7 +2369,9 @@ impl<'a> Writer<'_, 'a> {
             let refuted = self.b.app(not, accepted);
             let claim = self.b.arrow(refuted, goal);
             // The motive abstracts the variable at `index`.
-            let abstracted = self.b.lam_over("__b", EXPLICIT, bool, variables[index], claim);
+            let abstracted = self
+                .b
+                .lam_over("__b", EXPLICIT, bool, variables[index], claim);
             // `false`: the goal holds whatever follows.
             let mut at_false = callers.clone();
             at_false[index] = fls;
@@ -2430,7 +2441,8 @@ impl<'a> Writer<'_, 'a> {
             let invariant = invariants[index];
             let holds = {
                 let head = self.b.konst("Iff.mp");
-                self.b.apps(head, &[decided, invariant, viff, equations[index]])
+                self.b
+                    .apps(head, &[decided, invariant, viff, equations[index]])
             };
             let intro = self.b.konst("And.intro");
             inv_proof = self
@@ -2453,7 +2465,9 @@ impl Writer<'_, '_> {
             _ => return Err("temporary".to_owned()),
         };
         let lean = self.lean_ty(ty)?;
-        let instance = self.b.konst(&format!("{module}.LexLeanCollections.{instance}"));
+        let instance = self
+            .b
+            .konst(&format!("{module}.LexLeanCollections.{instance}"));
         let compare = self
             .b
             .konst(&format!("{module}.LexLeanCollections.Key.compare"));
