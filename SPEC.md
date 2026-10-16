@@ -491,6 +491,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── oracle/
 │   ├── preservation-library/
 │   ├── production-export/
+│   ├── stdlib/
 │   └── tooling/
 ├── tooling/
 │   └── schemas/
@@ -6488,6 +6489,30 @@ realizes a library template, and no member recurses itself. Theorems over the
 members wait for equality of `Bytes` by evaluation; until then the module's
 behavior is held by the differential (`SL-01`).
 
+The second module, `Sha256`, is FIPS 180-4 SHA-256 (#126, stage 1), stated
+over the closed primitive vocabulary of §17.12 and nothing else: addition
+modulo 2^32 is `checked_add` of the two operands widened to `UInt64` by
+`checked_convert`, narrowed by `bit_and` and `checked_convert`; a rotation is
+two shifts and `bit_or`; the message is never padded as bytes, every word of
+every block is read by position (`index` below the length, `0x80` at it, zero
+beyond it, and the two length words from `quotient` and `remainder` of the
+bit length); the schedule is a sixteen-word window advanced each round; the
+sixty-four rounds are `iterate` over a record of the working variables, the
+window, and the remaining round constants; and the digest is the record
+`Digest` of eight `UInt32` or, for `sha256Hex`, its lowercase hexadecimal as
+`Bytes`, each nibble a comparison by `equal`. Its roots and oracles:
+
+| Member | Oracles |
+| --- | --- |
+| `sha256 (message : Bytes) : Digest` | the FIPS 180-4 example digests, as theorems in the module by reflexivity and under the differential |
+| `sha256Hex (message : Bytes) : Bytes` | the FIPS 180-4 example digests, every vector of the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` files under `tests/stdlib/sha256/`, and the `sha2` crate on a seeded corpus whose lengths cover every padding boundary |
+
+A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is
+never resolved by adopting the oracle's digest. The module is the first stage
+of #126: the compiler's own identities (§8, §21) are still computed by the
+`sha2` crate, and switching them to the module is the second stage, which
+waits on the measured cost of the rendered package against `sha2`.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9265,8 +9290,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
 | `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
+| `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
 
-**Total required capability IDs:** 382.
+**Total required capability IDs:** 383.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
