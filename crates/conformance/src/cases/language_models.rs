@@ -67,10 +67,17 @@ fn tokenized() -> P {
 
 /// The names of what one tokenizer elaborates to, in order.
 fn elaborated_names(name: &str) -> Vec<String> {
-    ["pieces", "size", "encode", "decode", "encodeText", "decodeText"]
-        .iter()
-        .map(|member| format!("{name}.{member}"))
-        .collect()
+    [
+        "pieces",
+        "size",
+        "encode",
+        "decode",
+        "encodeText",
+        "decodeText",
+    ]
+    .iter()
+    .map(|member| format!("{name}.{member}"))
+    .collect()
 }
 
 /// LM-01 (§17.12): a tokenizer is a closed declaration over a vocabulary
@@ -105,7 +112,13 @@ fn lm_01() {
                     .first()
                     .map(|parameter| parameter["type"]["kind"].as_str().expect("kind").to_owned())
                     .unwrap_or_default();
-                (input, declaration["result"]["kind"].as_str().expect("kind").to_owned())
+                (
+                    input,
+                    declaration["result"]["kind"]
+                        .as_str()
+                        .expect("kind")
+                        .to_owned(),
+                )
             })
             .collect();
         assert_eq!(
@@ -140,13 +153,20 @@ fn lm_01() {
         "LexLeanText.encodeTextBytes",
         "LexLeanText.allBelow",
     ] {
-        assert!(lean.contains(applied), "the generated Lean applies {applied}");
+        assert!(
+            lean.contains(applied),
+            "the generated Lean applies {applied}"
+        );
     }
     assert!(
         !lean.contains("namespace LexLeanText") && !lean.contains("def encodeWith"),
         "no law is spliced into the generated module"
     );
-    for theorem in ["Digits.roundtrip", "Digits.in_range", "Digits.text_roundtrip"] {
+    for theorem in [
+        "Digits.roundtrip",
+        "Digits.in_range",
+        "Digits.text_roundtrip",
+    ] {
         assert!(
             lean.contains(&format!("public theorem {theorem}")),
             "the generated Lean states {theorem}"
@@ -213,7 +233,9 @@ fn lm_02() {
     )
     .expect("attestation parses");
     assert_eq!(attestation["status"], "verified");
-    let rows = attestation["declarations"].as_array().expect("declarations");
+    let rows = attestation["declarations"]
+        .as_array()
+        .expect("declarations");
     for tokenizer in ["Digits", "Raw"] {
         for law in ["roundtrip", "in_range", "text_roundtrip"] {
             let name = format!("{LEAN_MODULE}.{tokenizer}.{law}");
@@ -368,9 +390,9 @@ fn lm_13() {
             .find(|declaration| declaration.name == qualified)
             .unwrap_or_else(|| panic!("the native data declares `{qualified}`"));
         assert!(
-            row.axioms
-                .iter()
-                .all(|axiom| ["Classical.choice", "Quot.sound", "propext"].contains(&axiom.as_str())),
+            row.axioms.iter().all(
+                |axiom| ["Classical.choice", "Quot.sound", "propext"].contains(&axiom.as_str())
+            ),
             "{qualified} pins its axioms within the standard three: {:?}",
             row.axioms
         );

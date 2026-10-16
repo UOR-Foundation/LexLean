@@ -3791,6 +3791,14 @@ terms are ordinary closure members, and a natural-number counter of its
 ledger is subject to the same width rule as any natural number, so a root
 that runs a reasoner admits `overflow` where the target requires it.
 
+Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
+(`declaration.tokenizer`, `declaration.context_window`,
+`declaration.text_generator`, `declaration.text_classifier`): a
+tokenizer's elaborated definitions are reported with that construct and
+apply the embedded text-laws library, which no production target realizes,
+so a root whose closure reaches one fails, and its generated theorems are in
+no closure; the other three are not elaborated by linking in this release.
+
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
 violation nearest the root, the closure member it occurs in, and the call path

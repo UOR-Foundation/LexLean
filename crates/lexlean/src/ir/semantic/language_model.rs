@@ -236,7 +236,11 @@ fn register_library(env: &mut Environment<'_>) {
             vec![strings(), SemanticType::String],
             tokens(),
         ),
-        (names::ENCODE_TEXT_BYTES, vec![SemanticType::String], tokens()),
+        (
+            names::ENCODE_TEXT_BYTES,
+            vec![SemanticType::String],
+            tokens(),
+        ),
         (
             names::DECODE_TEXT,
             vec![strings(), tokens()],
@@ -441,7 +445,10 @@ fn check_tokenizer(
             model::eq(
                 library(
                     names::ALL_BELOW,
-                    vec![apply(&size, Vec::new()), apply(&encode, vec![model::var(BYTES)])],
+                    vec![
+                        apply(&size, Vec::new()),
+                        apply(&encode, vec![model::var(BYTES)]),
+                    ],
                 ),
                 SemanticTerm::Bool { value: true },
             ),
@@ -575,7 +582,10 @@ mod tests {
             names::DECODE_TEXT,
             names::ALL_BELOW,
         ] {
-            assert!(names::ALL.contains(&name), "{name} is required of the library");
+            assert!(
+                names::ALL.contains(&name),
+                "{name} is required of the library"
+            );
         }
     }
 }

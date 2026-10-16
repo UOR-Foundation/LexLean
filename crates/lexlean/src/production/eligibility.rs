@@ -286,7 +286,7 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
 /// the primitive keys, which [`PRIMITIVES`] enumerates. The conformance suite
 /// checks this list, the primitive keys, and the declaration keys against
 /// the registry rows in both directions.
-pub const STRUCTURAL_KEYS: [&str; 88] = [
+pub const STRUCTURAL_KEYS: [&str; 92] = [
     "type.type",
     "type.parameter",
     "type.nat",
@@ -375,6 +375,10 @@ pub const STRUCTURAL_KEYS: [&str; 88] = [
     "declaration.inference_rule",
     "declaration.verifier",
     "declaration.reasoner",
+    "declaration.tokenizer",
+    "declaration.context_window",
+    "declaration.text_generator",
+    "declaration.text_classifier",
 ];
 
 /// The registry key of a type, before its arguments are visited.

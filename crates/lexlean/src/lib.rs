@@ -58,6 +58,7 @@ pub mod project;
 pub mod source;
 #[doc(hidden)]
 pub mod surface;
+#[doc(hidden)]
 pub mod text_laws;
 #[doc(hidden)]
 pub mod verify;

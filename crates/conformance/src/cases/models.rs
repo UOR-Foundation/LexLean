@@ -76,7 +76,12 @@ fn declaration_mut<'a>(data: &'a mut Json, name: &str) -> &'a mut Json {
 }
 
 /// Edit one declaration of one module in place.
-pub(super) fn edit_declaration(project: &P, module: &str, name: &str, edit: impl FnOnce(&mut Json)) {
+pub(super) fn edit_declaration(
+    project: &P,
+    module: &str,
+    name: &str,
+    edit: impl FnOnce(&mut Json),
+) {
     let mut data = module_data(project, module);
     edit(declaration_mut(&mut data, name));
     write_module_data(project, module, &data);
