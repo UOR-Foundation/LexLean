@@ -342,7 +342,21 @@ impl<'a> Writer<'_, 'a> {
         let _ = whole;
         let operand_exprs = match expr {
             Expr::Prim { operands, .. } if operands.len() == arguments.len() => operands,
-            _ => return Err("the lowering of a primitive is not a primitive".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of a primitive is not a primitive".to_owned())
+            }
         };
         let rule = self.prim_rule(operation, &types, &result, &site)?;
         let mut proofs = Vec::new();

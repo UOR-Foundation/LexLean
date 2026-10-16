@@ -41,10 +41,9 @@ mod data_a;
 use super::eligibility::BUILTIN_OWNERS;
 use super::lean_list::{array, list, list_by};
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
-use super::source::{Constructor, Local, Site, Source};
+use super::source::{Local, Site, Source};
 use super::RootReport;
-use crate::backend::semantic::{hypothesis, identifier as semantic_identifier, string_literal};
-use crate::calculus::library::Template;
+use crate::backend::semantic::{identifier as semantic_identifier, string_literal};
 use crate::calculus::{
     Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value,
 };
@@ -72,7 +71,6 @@ pub const LIBRARY_MODULES: [&str; 7] = [
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
 const SEMANTICS: &str = "LexLeanTarget.TargetSemantics";
-const NAT_BOUND: &str = "18446744073709551616";
 const SEMANTICS_MODULE: &str = SEMANTICS;
 
 /// One generated certificate module.
@@ -220,15 +218,8 @@ struct CLocal {
     /// The local's type as the generic declaration writes it, before the
     /// instance's type arguments are substituted.
     generic: SemanticType,
-    companion: Option<Companion>,
-}
-
-#[derive(Clone)]
-struct Companion {
-    fits: String,
-    index: String,
-    captures: String,
-    relation: String,
+    /// Whether the local is function-typed, so carries a companion.
+    has_companion: bool,
 }
 
 /// What a well-founded body numbers: the hypothesis of each `if` and
@@ -301,7 +292,7 @@ impl Ctx {
             .extend(extra.into_iter().map(|(local, generic)| CLocal {
                 local,
                 generic,
-                companion: None,
+                has_companion: false,
             }));
         out
     }
@@ -311,11 +302,9 @@ impl Ctx {
 #[derive(Clone)]
 enum Recursion {
     None,
-    /// Structural recursion on parameter `argument` by top-level equations;
-    /// a mutual group's label.
+    /// Structural recursion on parameter `argument` by top-level equations.
     Structural {
         argument: String,
-        mutual: Option<String>,
     },
     /// Well-founded recursion with the source's measure and evidence.
     WellFounded {
@@ -1021,16 +1010,6 @@ pub fn render_program(program: &Program) -> Result<String, String> {
 
 // --- Rendering the source -----------------------------------------------------
 
-/// A Lean binder for a function-typed local's companion.
-fn companion_names(stem: &str) -> Companion {
-    Companion {
-        fits: format!("__ff_{stem}"),
-        index: format!("__fi_{stem}"),
-        captures: format!("__fc_{stem}"),
-        relation: format!("__fh_{stem}"),
-    }
-}
-
 /// The parameter and result types of a closed function type.
 fn function_type(ty: &SemanticType) -> Option<(&[SemanticType], &SemanticType)> {
     match ty {
@@ -1495,17 +1474,14 @@ impl Gen<'_> {
 }
 
 impl Gen<'_> {
-    /// A scope binding `locals` in order, function-typed ones with companions
-    /// named by `stem` and position.
-    fn scope(locals: &[(Local, SemanticType)], stem: &str) -> Vec<CLocal> {
+    /// A scope binding `locals` in order, function-typed ones with companions.
+    fn scope(locals: &[(Local, SemanticType)]) -> Vec<CLocal> {
         locals
             .iter()
-            .enumerate()
-            .map(|(position, (local, generic))| CLocal {
+            .map(|(local, generic)| CLocal {
                 local: local.clone(),
                 generic: generic.clone(),
-                companion: function_type(&local.ty)
-                    .map(|_| companion_names(&format!("{stem}{position}"))),
+                has_companion: function_type(&local.ty).is_some(),
             })
             .collect()
     }
@@ -2010,7 +1986,6 @@ impl<'a> Gen<'a> {
                             Some(argument) => (
                                 Recursion::Structural {
                                     argument: argument.clone(),
-                                    mutual: mutual.clone(),
                                 },
                                 Hypotheses::new(),
                             ),
@@ -2020,7 +1995,7 @@ impl<'a> Gen<'a> {
                     let ctx = Ctx::new(
                         site.clone(),
                         instance_parameters.clone(),
-                        Self::scope(&locals, ""),
+                        Self::scope(&locals),
                         hypotheses,
                         index,
                     );
@@ -2333,7 +2308,7 @@ impl<'a> Gen<'a> {
                 type_parameters,
             }) => {
                 let mut locals = captures.clone();
-                locals.extend(Self::scope(parameters, "p"));
+                locals.extend(Self::scope(parameters));
                 Ok(Ctx::new(
                     site.clone(),
                     type_parameters.clone(),
@@ -2540,7 +2515,7 @@ impl<'a> Gen<'a> {
                     index,
                     Subject::Lambda {
                         site: site.clone(),
-                        captures: Self::scope(&captured, "c"),
+                        captures: Self::scope(&captured),
                         parameters,
                         body,
                         hypotheses: ctx.hypotheses.clone(),

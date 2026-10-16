@@ -76,11 +76,6 @@ impl Writer<'_, '_> {
         Ok(self.b.konst(&format!("{module}.{namespace}.{name}")))
     }
 
-    fn runtime_name(&self, site: &Site, namespace: &str, name: &str) -> Result<String, String> {
-        let module = self.gen.source.lean_module(&site.module)?;
-        Ok(format!("{module}.{namespace}.{name}"))
-    }
-
     // --- Instances --------------------------------------------------------
 
     fn fixed_name(ty: &SemanticType) -> Result<&'static str, String> {
@@ -130,10 +125,36 @@ impl Writer<'_, '_> {
     }
 
     /// The `ToMathInt` instance of an operand of `checkedConvert`.
-    fn to_math_int(&mut self, site: &Site, ty: &SemanticType) -> Result<Term, String> {
+    fn math_int_instance(&mut self, site: &Site, ty: &SemanticType) -> Result<Term, String> {
         match ty {
             SemanticType::Int => self.runtime(site, "LexLeanRuntime", "instToMathIntInt"),
-            _ => {
+            SemanticType::Type
+            | SemanticType::Parameter { .. }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Prop
+            | SemanticType::Unit
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::Option { .. }
+            | SemanticType::Result { .. }
+            | SemanticType::List { .. }
+            | SemanticType::Named { .. }
+            | SemanticType::Product { .. }
+            | SemanticType::Function { .. }
+            | SemanticType::Map { .. }
+            | SemanticType::Set { .. }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 let name = Self::fixed_name(ty)?;
                 let to = self.runtime(site, "LexLeanRuntime", "Fixed.toToMathInt")?;
                 let fixed = self.lean_ty(ty)?;
@@ -225,7 +246,55 @@ impl Writer<'_, '_> {
             SemanticPrimitive::CheckedMultiply => Some("checkedMultiplyInt64"),
             SemanticPrimitive::CheckedNegate => Some("checkedNegateInt64"),
             SemanticPrimitive::CheckedQuotient => Some("checkedQuotientInt64"),
-            _ => None,
+            SemanticPrimitive::Subtract
+            | SemanticPrimitive::Multiply
+            | SemanticPrimitive::Quotient
+            | SemanticPrimitive::Remainder
+            | SemanticPrimitive::Negate
+            | SemanticPrimitive::CheckedConvert
+            | SemanticPrimitive::BitAnd
+            | SemanticPrimitive::BitOr
+            | SemanticPrimitive::BitXor
+            | SemanticPrimitive::BitNot
+            | SemanticPrimitive::ShiftLeft
+            | SemanticPrimitive::ShiftRight
+            | SemanticPrimitive::Append
+            | SemanticPrimitive::Length
+            | SemanticPrimitive::Index
+            | SemanticPrimitive::Slice
+            | SemanticPrimitive::Utf8Encode
+            | SemanticPrimitive::Utf8Decode
+            | SemanticPrimitive::CompareBytes
+            | SemanticPrimitive::Equal
+            | SemanticPrimitive::SplitExact
+            | SemanticPrimitive::Join
+            | SemanticPrimitive::ParseDecimal
+            | SemanticPrimitive::FormatDecimal
+            | SemanticPrimitive::MapInsert
+            | SemanticPrimitive::MapRemove
+            | SemanticPrimitive::MapLookup
+            | SemanticPrimitive::MapContains
+            | SemanticPrimitive::MapSize
+            | SemanticPrimitive::MapKeys
+            | SemanticPrimitive::MapValues
+            | SemanticPrimitive::MapEntries
+            | SemanticPrimitive::MapFold
+            | SemanticPrimitive::SetInsert
+            | SemanticPrimitive::SetRemove
+            | SemanticPrimitive::SetContains
+            | SemanticPrimitive::SetSize
+            | SemanticPrimitive::SetElements
+            | SemanticPrimitive::SetUnion
+            | SemanticPrimitive::SetIntersection
+            | SemanticPrimitive::SetDifference
+            | SemanticPrimitive::SetFold
+            | SemanticPrimitive::ListFold
+            | SemanticPrimitive::Iterate
+            | SemanticPrimitive::IterateUntil
+            | SemanticPrimitive::GraphSuccessors
+            | SemanticPrimitive::GraphReachable
+            | SemanticPrimitive::GraphTopological
+            | SemanticPrimitive::LessThan => None,
         };
         if let Some(special) = special {
             if *result == int64 {
@@ -255,11 +324,39 @@ impl Writer<'_, '_> {
                 let from = first.ok_or("a conversion without an operand")?;
                 let to = match result {
                     SemanticType::Option { value } => value.as_ref(),
-                    _ => return Err("a conversion to a non-option".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Product { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a conversion to a non-option".to_owned())
+                    }
                 };
                 leading.push(self.lean_ty(from)?);
                 leading.push(self.lean_ty(to)?);
-                leading.push(self.to_math_int(site, from)?);
+                leading.push(self.math_int_instance(site, from)?);
                 leading.push(self.fixed_instance(site, to)?);
             }
             SemanticPrimitive::Subtract
@@ -292,7 +389,58 @@ impl Writer<'_, '_> {
                 let class = match operation {
                     SemanticPrimitive::Append => "Appendable",
                     SemanticPrimitive::Length => "Lengthable",
-                    _ => "Sliceable",
+                    SemanticPrimitive::Subtract
+                    | SemanticPrimitive::Multiply
+                    | SemanticPrimitive::Quotient
+                    | SemanticPrimitive::Remainder
+                    | SemanticPrimitive::Negate
+                    | SemanticPrimitive::CheckedConvert
+                    | SemanticPrimitive::CheckedAdd
+                    | SemanticPrimitive::CheckedSubtract
+                    | SemanticPrimitive::CheckedMultiply
+                    | SemanticPrimitive::CheckedNegate
+                    | SemanticPrimitive::CheckedQuotient
+                    | SemanticPrimitive::BitAnd
+                    | SemanticPrimitive::BitOr
+                    | SemanticPrimitive::BitXor
+                    | SemanticPrimitive::BitNot
+                    | SemanticPrimitive::ShiftLeft
+                    | SemanticPrimitive::ShiftRight
+                    | SemanticPrimitive::Index
+                    | SemanticPrimitive::Slice
+                    | SemanticPrimitive::Utf8Encode
+                    | SemanticPrimitive::Utf8Decode
+                    | SemanticPrimitive::CompareBytes
+                    | SemanticPrimitive::Equal
+                    | SemanticPrimitive::SplitExact
+                    | SemanticPrimitive::Join
+                    | SemanticPrimitive::ParseDecimal
+                    | SemanticPrimitive::FormatDecimal
+                    | SemanticPrimitive::MapInsert
+                    | SemanticPrimitive::MapRemove
+                    | SemanticPrimitive::MapLookup
+                    | SemanticPrimitive::MapContains
+                    | SemanticPrimitive::MapSize
+                    | SemanticPrimitive::MapKeys
+                    | SemanticPrimitive::MapValues
+                    | SemanticPrimitive::MapEntries
+                    | SemanticPrimitive::MapFold
+                    | SemanticPrimitive::SetInsert
+                    | SemanticPrimitive::SetRemove
+                    | SemanticPrimitive::SetContains
+                    | SemanticPrimitive::SetSize
+                    | SemanticPrimitive::SetElements
+                    | SemanticPrimitive::SetUnion
+                    | SemanticPrimitive::SetIntersection
+                    | SemanticPrimitive::SetDifference
+                    | SemanticPrimitive::SetFold
+                    | SemanticPrimitive::ListFold
+                    | SemanticPrimitive::Iterate
+                    | SemanticPrimitive::IterateUntil
+                    | SemanticPrimitive::GraphSuccessors
+                    | SemanticPrimitive::GraphReachable
+                    | SemanticPrimitive::GraphTopological
+                    | SemanticPrimitive::LessThan => "Sliceable",
                 };
                 leading.push(self.sequence_instance(site, class, ty)?);
             }
@@ -308,7 +456,33 @@ impl Writer<'_, '_> {
                             "instIndexableByteArrayUInt8",
                         )?);
                     }
-                    _ => {
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Product { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
                         let element = self.lean_ty(&element_of(ty)?)?;
                         leading.push(element);
                         let head = self.runtime(site, "LexLeanRuntime", "instIndexableList")?;
@@ -324,7 +498,35 @@ impl Writer<'_, '_> {
             SemanticPrimitive::ParseDecimal => {
                 let target = match result {
                     SemanticType::Option { value } => value.as_ref(),
-                    _ => return Err("a decimal parse to a non-option".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Product { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a decimal parse to a non-option".to_owned())
+                    }
                 };
                 leading.push(self.lean_ty(target)?);
                 leading.push(self.decimal_instance(site, target)?);
@@ -386,7 +588,32 @@ impl Writer<'_, '_> {
             SemanticType::String => {
                 self.runtime(site, "LexLeanRuntime", &format!("inst{class}String"))
             }
-            _ => {
+            SemanticType::Type
+            | SemanticType::Parameter { .. }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Prop
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::Ordering
+            | SemanticType::Option { .. }
+            | SemanticType::Result { .. }
+            | SemanticType::List { .. }
+            | SemanticType::Named { .. }
+            | SemanticType::Product { .. }
+            | SemanticType::Function { .. }
+            | SemanticType::Map { .. }
+            | SemanticType::Set { .. }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
                 let element = self.lean_ty(&element_of(ty)?)?;
                 let head = self.runtime(site, "LexLeanRuntime", &format!("inst{class}List"))?;
                 Ok(self.b.app(head, element))
@@ -441,7 +668,35 @@ impl Writer<'_, '_> {
             Constructor::Ok | Constructor::Error => {
                 let (ok, error) = match ty {
                     SemanticType::Result { ok, error } => (ok.as_ref(), error.as_ref()),
-                    _ => return Err("a result constructor at a non-result type".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Product { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a result constructor at a non-result type".to_owned())
+                    }
                 };
                 let ok = self.lean_ty(ok)?;
                 let error = self.lean_ty(error)?;
@@ -708,7 +963,35 @@ impl Writer<'_, '_> {
                         }
                         (self.document_name(member)?, params)
                     }
-                    _ => return Err("a projection from a non-document".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Product { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a projection from a non-document".to_owned())
+                    }
                 };
                 let head = self.b.konst(&format!("{}.{field}", owner.0));
                 let value = self.src(value, scope)?;
@@ -826,7 +1109,35 @@ impl Writer<'_, '_> {
                 let ty = self.infer(term, scope)?;
                 let (alpha, beta) = match &ty {
                     SemanticType::Product { left, right } => (left.as_ref(), right.as_ref()),
-                    _ => return Err("a pair of a non-product type".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a pair of a non-product type".to_owned())
+                    }
                 };
                 let alpha = self.lean_ty(alpha)?;
                 let beta = self.lean_ty(beta)?;
@@ -838,7 +1149,35 @@ impl Writer<'_, '_> {
                 let ty = self.infer(value, scope)?;
                 let (alpha, beta) = match &ty {
                     SemanticType::Product { left, right } => (left.as_ref(), right.as_ref()),
-                    _ => return Err("a projection of a non-product".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a projection of a non-product".to_owned())
+                    }
                 };
                 let alpha = self.lean_ty(alpha)?;
                 let beta = self.lean_ty(beta)?;
@@ -986,7 +1325,35 @@ impl Writer<'_, '_> {
         let shape = self.gen.source.document(ty)?;
         let (member, arguments) = match ty {
             SemanticType::Named { member, arguments } => (member, arguments),
-            _ => return Err("a record of a non-document type".to_owned()),
+            SemanticType::Type
+            | SemanticType::Parameter { .. }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Prop
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::Option { .. }
+            | SemanticType::Result { .. }
+            | SemanticType::List { .. }
+            | SemanticType::Product { .. }
+            | SemanticType::Function { .. }
+            | SemanticType::Map { .. }
+            | SemanticType::Set { .. }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
+                return Err("a record of a non-document type".to_owned())
+            }
         };
         let owner = self.document_name(member)?;
         let mut all = Vec::new();

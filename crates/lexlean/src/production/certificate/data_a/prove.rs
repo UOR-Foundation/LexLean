@@ -2,16 +2,13 @@
 //! of the preservation library per construct, applied at the program
 //! expression the lowering produced for it.
 
-use super::super::{element_of, Ctx};
-use super::{CompTerms, LocalTerm, Pf, Scope, Writer, EXPLICIT};
-use crate::calculus::{Arm, Expr, Shape, Ty};
+use super::super::element_of;
+use super::{LocalTerm, Pf, Scope, Writer, EXPLICIT};
+use crate::calculus::{Expr, Shape};
 use crate::ir::core::CoreLevel;
-use crate::ir::semantic::{
-    SemanticBranch, SemanticEdge, SemanticMapEntry, SemanticPrimitive, SemanticTerm, SemanticType,
-    Step,
-};
+use crate::ir::semantic::{SemanticEdge, SemanticMapEntry, SemanticTerm, SemanticType, Step};
 use crate::production::kernel::{Given, Term};
-use crate::production::source::{Constructor, Local, Source};
+use crate::production::source::{Constructor, Source};
 
 /// What the proof of an argument contributes to its callee's relation.
 pub(super) struct Passed {
@@ -40,14 +37,6 @@ impl<'a> Writer<'_, 'a> {
     pub(super) fn rel(&mut self, fits: Term, value: Term) -> Term {
         let rel = self.lp("Rel");
         self.b.apps(rel, &[fits, value])
-    }
-
-    /// `Conv p env e (Rel fits value)`.
-    pub(super) fn conv_ty(&mut self, env: Term, e: Term, fits: Term, value: Term) -> Term {
-        let conv = self.lp("Conv");
-        let rel = self.rel(fits, value);
-        let p = self.prog;
-        self.b.apps(conv, &[p, env, e, rel])
     }
 
     /// The width predicate and value a derivation's type relates. A type
@@ -119,7 +108,20 @@ impl<'a> Writer<'_, 'a> {
                 ty,
                 operands,
             } => (*shape, ty, operands),
-            _ => return Err("the lowering of a construction is not a build".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of a construction is not a build".to_owned())
+            }
         };
         if exprs.len() != operands.len() {
             return Err(format!(
@@ -184,7 +186,20 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::Var { name } => {
                 let number = match expr {
                     Expr::Var { name } => *name,
-                    _ => return Err(format!("the lowering of `{name}` is not a variable")),
+                    Expr::Value { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err(format!("the lowering of `{name}` is not a variable"))
+                    }
                 };
                 let (local, terms) = scope.lookup(name)?;
                 let local = local.clone();
@@ -205,7 +220,20 @@ impl<'a> Writer<'_, 'a> {
             | SemanticTerm::Bytes { hex: _ } => {
                 let (ty, value) = match expr {
                     Expr::Value { ty, value } => (ty, value),
-                    _ => return Err("the lowering of a literal is not a value".to_owned()),
+                    Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of a literal is not a value".to_owned())
+                    }
                 };
                 let ty = self.ty_term(ty);
                 let value = self.value_term(value)?;
@@ -241,7 +269,21 @@ impl<'a> Writer<'_, 'a> {
                     Expr::Build { operands, .. } if operands.len() == 2 => {
                         (&operands[0], &operands[1])
                     }
-                    _ => return Err("the lowering of a cons is not a build of two".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of a cons is not a build of two".to_owned())
+                    }
                 };
                 let ty = self.infer(term, scope)?;
                 let head_pf = self.prove(head, head_expr, scope)?;
@@ -343,7 +385,20 @@ impl<'a> Writer<'_, 'a> {
                 let index = self.gen.instance_index(&module, &resolved.name, &[])?;
                 let function = match expr {
                     Expr::Call { function, .. } => *function,
-                    _ => return Err("the lowering of an instance is not a call".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of an instance is not a call".to_owned())
+                    }
                 };
                 if function != index {
                     return Err(format!(
@@ -364,7 +419,20 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::Project { value, field } => {
                 let (inner_expr, index) = match expr {
                     Expr::Field { value, index } => (value.as_ref(), *index),
-                    _ => return Err("the lowering of a projection is not a field".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. } => {
+                        return Err("the lowering of a projection is not a field".to_owned())
+                    }
                 };
                 let ty = self.infer(value, scope)?;
                 let shape = self.gen.source.document(&ty)?;
@@ -415,7 +483,20 @@ impl<'a> Writer<'_, 'a> {
                 let index = self.gen.instance_index(&module, &function.name, &closed)?;
                 let (callee, operand_exprs) = match expr {
                     Expr::Call { function, operands } => (*function, operands),
-                    _ => return Err("the lowering of a call is not a call".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of a call is not a call".to_owned())
+                    }
                 };
                 if callee != index {
                     return Err(format!("a call of function {index} lowered to {callee}"));
@@ -460,7 +541,20 @@ impl<'a> Writer<'_, 'a> {
                         then_branch.as_ref(),
                         else_branch.as_ref(),
                     ),
-                    _ => return Err("the lowering of a conditional is not a cond".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of a conditional is not a cond".to_owned())
+                    }
                 };
                 self.conditional(term, condition, then_value, else_value, (c, t, e), scope)
             }
@@ -499,7 +593,20 @@ impl<'a> Writer<'_, 'a> {
                         then_branch.as_ref(),
                         else_branch.as_ref(),
                     ),
-                    _ => return Err("the lowering of && is not a cond".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of && is not a cond".to_owned())
+                    }
                 };
                 let else_term = SemanticTerm::Bool { value: false };
                 self.conditional_of(
@@ -523,7 +630,20 @@ impl<'a> Writer<'_, 'a> {
                         then_branch.as_ref(),
                         else_branch.as_ref(),
                     ),
-                    _ => return Err("the lowering of || is not a cond".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of || is not a cond".to_owned())
+                    }
                 };
                 let then_term = SemanticTerm::Bool { value: true };
                 self.conditional_of(
@@ -539,7 +659,20 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::Not { value } => {
                 let operand_exprs = match expr {
                     Expr::Prim { operands, .. } => operands,
-                    _ => return Err("the lowering of ! is not a primitive".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of ! is not a primitive".to_owned())
+                    }
                 };
                 let inner = self.prove(value, &operand_exprs[0], scope)?;
                 let src = self.src(value, scope)?;
@@ -571,14 +704,52 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::First { value } | SemanticTerm::Second { value } => {
                 let inner_expr = match expr {
                     Expr::First { value } | Expr::Second { value } => value.as_ref(),
-                    _ => {
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::Field { .. } => {
                         return Err("the lowering of a projection is not first or second".to_owned())
                     }
                 };
                 let ty = self.infer(value, scope)?;
                 let (left, right) = match &ty {
                     SemanticType::Product { left, right } => (left.as_ref(), right.as_ref()),
-                    _ => return Err("a projection of a non-product".to_owned()),
+                    SemanticType::Type
+                    | SemanticType::Parameter { .. }
+                    | SemanticType::Nat
+                    | SemanticType::Bool
+                    | SemanticType::Prop
+                    | SemanticType::Unit
+                    | SemanticType::Int
+                    | SemanticType::Int8
+                    | SemanticType::Int16
+                    | SemanticType::Int32
+                    | SemanticType::Int64
+                    | SemanticType::UInt8
+                    | SemanticType::UInt16
+                    | SemanticType::UInt32
+                    | SemanticType::UInt64
+                    | SemanticType::String
+                    | SemanticType::Bytes
+                    | SemanticType::Ordering
+                    | SemanticType::Option { .. }
+                    | SemanticType::Result { .. }
+                    | SemanticType::List { .. }
+                    | SemanticType::Named { .. }
+                    | SemanticType::Function { .. }
+                    | SemanticType::Map { .. }
+                    | SemanticType::Set { .. }
+                    | SemanticType::ContractViolation
+                    | SemanticType::ReasoningFailure => {
+                        return Err("a projection of a non-product".to_owned())
+                    }
                 };
                 let inner = self.prove(value, inner_expr, scope)?;
                 // The pair's encoding unfolds to the pair of its components'.
@@ -739,7 +910,18 @@ impl<'a> Writer<'_, 'a> {
     fn operand_exprs(&self, expr: &'a Expr) -> Result<&'a [Expr], String> {
         match expr {
             Expr::Build { operands, .. } => Ok(operands),
-            _ => Err("the lowering of a construction is not a build".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => Err("the lowering of a construction is not a build".to_owned()),
         }
     }
 
@@ -751,7 +933,19 @@ impl<'a> Writer<'_, 'a> {
                 operands,
                 ..
             } if operands.len() == 2 => Ok((&operands[0], &operands[1])),
-            _ => {
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
                 Err("a literal collection lowered to something other than a cons chain".to_owned())
             }
         }
@@ -838,7 +1032,35 @@ impl<'a> Writer<'_, 'a> {
     ) -> Result<Term, String> {
         let (member, arguments) = match ty {
             SemanticType::Named { member, arguments } => (member, arguments),
-            _ => return Err("a projection from a non-document".to_owned()),
+            SemanticType::Type
+            | SemanticType::Parameter { .. }
+            | SemanticType::Nat
+            | SemanticType::Bool
+            | SemanticType::Prop
+            | SemanticType::Unit
+            | SemanticType::Int
+            | SemanticType::Int8
+            | SemanticType::Int16
+            | SemanticType::Int32
+            | SemanticType::Int64
+            | SemanticType::UInt8
+            | SemanticType::UInt16
+            | SemanticType::UInt32
+            | SemanticType::UInt64
+            | SemanticType::String
+            | SemanticType::Bytes
+            | SemanticType::Ordering
+            | SemanticType::Option { .. }
+            | SemanticType::Result { .. }
+            | SemanticType::List { .. }
+            | SemanticType::Product { .. }
+            | SemanticType::Function { .. }
+            | SemanticType::Map { .. }
+            | SemanticType::Set { .. }
+            | SemanticType::ContractViolation
+            | SemanticType::ReasoningFailure => {
+                return Err("a projection from a non-document".to_owned())
+            }
         };
         let owner = self.document_name(member)?;
         let head = self.b.konst(&format!("{owner}.{field}"));
@@ -861,7 +1083,21 @@ impl<'a> Writer<'_, 'a> {
     ) -> Result<Pf, String> {
         let operand_exprs = match expr {
             Expr::Prim { operands, .. } if operands.len() == 2 => operands,
-            _ => return Err("the lowering of an arithmetic term is not a primitive".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of an arithmetic term is not a primitive".to_owned())
+            }
         };
         let l = self.prove(left, &operand_exprs[0], scope)?;
         let r = self.prove(right, &operand_exprs[1], scope)?;
@@ -1069,7 +1305,18 @@ impl<'a> Writer<'_, 'a> {
                 bound,
                 body,
             } => (*name, ty, bound.as_ref(), body.as_ref()),
-            _ => return Err("the lowering of a let is not a let".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Apply { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => return Err("the lowering of a let is not a let".to_owned()),
         };
         let (local, generic) = self.gen.let_local(binder, &scope.ctx);
         let local_ty = local.ty.clone();

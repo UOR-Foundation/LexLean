@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use super::super::{function_type, identifier, CLocal, Ctx, Hypotheses, Recursion, Subject};
 use super::{CompTerms, LocalTerm, Pf, RowKind, Scope, Writer, EXPLICIT};
 use crate::calculus::Expr;
-use crate::ir::semantic::{MemberRef, SemanticParameter, SemanticTerm, SemanticType};
+use crate::ir::semantic::{MemberRef, SemanticParameter, SemanticType};
 use crate::production::kernel::{Given, Term};
 use crate::production::source::{Local, Site};
 
@@ -355,7 +355,7 @@ impl<'a> Writer<'_, 'a> {
                     site,
                     type_parameters,
                 } => {
-                    let clocals = Gen::scope(&locals, "");
+                    let clocals = Gen::scope(&locals);
                     match recursion {
                         Recursion::None => {
                             if recursive {
@@ -543,7 +543,7 @@ impl<'a> Writer<'_, 'a> {
                 )
             })
             .collect();
-        let clocals = Gen::scope(&locals, "");
+        let clocals = Gen::scope(&locals);
         let set = self.local_set(0, &clocals)?;
         let head = self.b.konst(&root_lean);
         let values: Vec<Term> = set.terms.iter().map(|terms| terms.value).collect();
@@ -595,11 +595,6 @@ impl<'a> Writer<'_, 'a> {
             proof,
             ty: sig.statement,
         })
-    }
-
-    /// Subject lookups for tools that read a function's definition.
-    pub(super) fn is_term_var(term: &SemanticTerm) -> bool {
-        matches!(term, SemanticTerm::Var { name: _ })
     }
 
     /// A record (instance or document value) of closed type `ty`.

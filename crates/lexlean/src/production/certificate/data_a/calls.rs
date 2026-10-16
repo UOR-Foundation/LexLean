@@ -186,7 +186,20 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::Var { name } => {
                 let number = match expr {
                     Expr::Var { name } => *name,
-                    _ => return Err(format!("the lowering of `{name}` is not a variable")),
+                    Expr::Value { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err(format!("the lowering of `{name}` is not a variable"))
+                    }
                 };
                 let (_, terms) = scope.lookup(name)?;
                 let companion = terms
@@ -217,7 +230,20 @@ impl<'a> Writer<'_, 'a> {
             } => {
                 let (function, capture_exprs) = match expr {
                     Expr::Closure { function, captures } => (*function, captures),
-                    _ => return Err("the lowering of a lambda is not a closure".to_owned()),
+                    Expr::Value { .. }
+                    | Expr::Var { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err("the lowering of a lambda is not a closure".to_owned())
+                    }
                 };
                 let index = self.gen.next_lambda(scope.ctx.function)?;
                 if index != function {
@@ -252,7 +278,20 @@ impl<'a> Writer<'_, 'a> {
                     encoded.push(self.encoded_local(&local, terms)?);
                     let number = match capture_expr {
                         Expr::Var { name } => *name,
-                        _ => return Err("a capture lowered to other than a variable".to_owned()),
+                        Expr::Value { .. }
+                        | Expr::Let { .. }
+                        | Expr::Cond { .. }
+                        | Expr::Match { .. }
+                        | Expr::Build { .. }
+                        | Expr::Call { .. }
+                        | Expr::Closure { .. }
+                        | Expr::Apply { .. }
+                        | Expr::Prim { .. }
+                        | Expr::First { .. }
+                        | Expr::Second { .. }
+                        | Expr::Field { .. } => {
+                            return Err("a capture lowered to other than a variable".to_owned())
+                        }
                     };
                     let value = *encoded.last().ok_or("a capture")?;
                     let x = self.nat_u(number);
@@ -427,7 +466,20 @@ impl<'a> Writer<'_, 'a> {
     ) -> Result<Pf, String> {
         let (target_expr, operand_exprs) = match expr {
             Expr::Apply { target, operands } => (target.as_ref(), operands.as_slice()),
-            _ => return Err("the lowering of an application is not an apply".to_owned()),
+            Expr::Value { .. }
+            | Expr::Var { .. }
+            | Expr::Let { .. }
+            | Expr::Cond { .. }
+            | Expr::Match { .. }
+            | Expr::Build { .. }
+            | Expr::Call { .. }
+            | Expr::Closure { .. }
+            | Expr::Prim { .. }
+            | Expr::First { .. }
+            | Expr::Second { .. }
+            | Expr::Field { .. } => {
+                return Err("the lowering of an application is not an apply".to_owned())
+            }
         };
         let (p, env) = (self.prog, scope.env);
         let mut srcs = Vec::new();
@@ -440,7 +492,20 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::Var { name } => {
                 let number = match target_expr {
                     Expr::Var { name } => *name,
-                    _ => return Err(format!("the lowering of `{name}` is not a variable")),
+                    Expr::Value { .. }
+                    | Expr::Let { .. }
+                    | Expr::Cond { .. }
+                    | Expr::Match { .. }
+                    | Expr::Build { .. }
+                    | Expr::Call { .. }
+                    | Expr::Closure { .. }
+                    | Expr::Apply { .. }
+                    | Expr::Prim { .. }
+                    | Expr::First { .. }
+                    | Expr::Second { .. }
+                    | Expr::Field { .. } => {
+                        return Err(format!("the lowering of `{name}` is not a variable"))
+                    }
                 };
                 let (_, terms) = scope.lookup(name)?;
                 let companion = terms
@@ -594,7 +659,18 @@ impl<'a> Writer<'_, 'a> {
         for arg in args {
             let (_, body) = match self.b.node(ty) {
                 crate::ir::core::CoreNode::Forall { t, v, .. } => (*t, *v),
-                _ => return Err("a relation hypothesis applied past its binders".to_owned()),
+                crate::ir::core::CoreNode::BVar { .. }
+                | crate::ir::core::CoreNode::Sort { .. }
+                | crate::ir::core::CoreNode::Const { .. }
+                | crate::ir::core::CoreNode::App { .. }
+                | crate::ir::core::CoreNode::Lambda { .. }
+                | crate::ir::core::CoreNode::Let { .. }
+                | crate::ir::core::CoreNode::Nat { .. }
+                | crate::ir::core::CoreNode::String { .. }
+                | crate::ir::core::CoreNode::Mdata { .. }
+                | crate::ir::core::CoreNode::Projection { .. } => {
+                    return Err("a relation hypothesis applied past its binders".to_owned())
+                }
             };
             term = self.b.app(term, *arg);
             ty = self.b.instantiate_beta(body, *arg);
@@ -627,7 +703,47 @@ impl<'a> Writer<'_, 'a> {
                 }
                 Ok(out)
             }
-            _ => Ok(Vec::new()),
+            SemanticTerm::Var { .. }
+            | SemanticTerm::Nat { .. }
+            | SemanticTerm::Integer { .. }
+            | SemanticTerm::String { .. }
+            | SemanticTerm::Bytes { .. }
+            | SemanticTerm::Primitive { .. }
+            | SemanticTerm::Bool { .. }
+            | SemanticTerm::Unit
+            | SemanticTerm::Nil { .. }
+            | SemanticTerm::Cons { .. }
+            | SemanticTerm::Record { .. }
+            | SemanticTerm::Constructor { .. }
+            | SemanticTerm::InstanceValue { .. }
+            | SemanticTerm::Project { .. }
+            | SemanticTerm::Call { .. }
+            | SemanticTerm::If { .. }
+            | SemanticTerm::Match { .. }
+            | SemanticTerm::Eq { .. }
+            | SemanticTerm::Le { .. }
+            | SemanticTerm::Lt { .. }
+            | SemanticTerm::Add { .. }
+            | SemanticTerm::Beq { .. }
+            | SemanticTerm::Ble { .. }
+            | SemanticTerm::Blt { .. }
+            | SemanticTerm::And { .. }
+            | SemanticTerm::PropAnd { .. }
+            | SemanticTerm::Or { .. }
+            | SemanticTerm::Not { .. }
+            | SemanticTerm::Implies { .. }
+            | SemanticTerm::Iff { .. }
+            | SemanticTerm::Forall { .. }
+            | SemanticTerm::Let { .. }
+            | SemanticTerm::Pair { .. }
+            | SemanticTerm::First { .. }
+            | SemanticTerm::Second { .. }
+            | SemanticTerm::Apply { .. }
+            | SemanticTerm::FunctionRef { .. }
+            | SemanticTerm::MapLiteral { .. }
+            | SemanticTerm::SetLiteral { .. }
+            | SemanticTerm::GraphLiteral { .. }
+            | SemanticTerm::CheckedApply { .. } => Ok(Vec::new()),
         }
     }
 }
