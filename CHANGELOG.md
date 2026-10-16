@@ -15,6 +15,9 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Toolchain preflight compares the complete reported Lean version in Lean and
+  Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
+  suffixes, and a matching version elsewhere in the banner with `LLV7001`.
 - Production results state each output's effects (SPEC.md §24.7, §17.13,
   `PX-13`, no new diagnostic code), step 3 of #105. A target output of
   `lexlean/production-result/2` lists the effects its realization can exhibit,
@@ -1321,6 +1324,15 @@ versions, and the entries below say what each tag does and does not claim.
 - The host legs of CI may run for 120 minutes, where they were cut off at 60:
   the Intel macOS leg takes 51 to 61 minutes, and a leg cancelled at its limit
   is not a result about the code.
+- `conformance_rs_12` no longer reports a slow runner as a different claim
+  (#145; test hardening, no compiler change, no new diagnostic code). Its
+  planted verification of a copy of the `compiler` project expects Lean to
+  refuse the planted transcriptions with `LLV7002`; on four runs a runner
+  stall made Lean's children take 5 to 20 times their usual time, one hit
+  the 300 s default of `child_timeout_ms`, and the case saw `LLS8002`
+  instead. The scratch copy now allows 900 s, so the case again states only
+  what Lean said about the planted module. The committed `compiler` project,
+  its limits, and `verified_compiler()` are unchanged.
 
 ## 0.3.0
 
