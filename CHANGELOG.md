@@ -15,6 +15,13 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
 - The runtime gates read what they claimed to (#154, follow-up to #144; no new
   diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
   literal of the compiler's source outside unit-test items, in production code

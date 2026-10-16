@@ -1260,7 +1260,7 @@ statement = "Performance telemetry is written only to the CI evidence directory 
 id = "VR-23"
 level = "build"
 suite = "verification"
-statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, or a join missing a record, is refused."
+statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused."
 
 [[id]]
 id = "CL-01"

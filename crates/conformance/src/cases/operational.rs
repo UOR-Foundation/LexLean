@@ -905,4 +905,39 @@ fn parts_equal_the_whole() {
         text.contains("from any part of the run") && text.contains(&rest[0]),
         "{text}"
     );
+    // A join refuses a record that another `leanchecker` ran: the second
+    // shard's replay record of a module names an executable that is not the
+    // join's, as a part on a different toolchain would have written it.
+    let replayed = &first[0];
+    let record_path = dir("b")
+        .join("process")
+        .join("leanchecker")
+        .join(format!("{replayed}.json"));
+    let text = std::fs::read_to_string(record_path.as_std_path()).expect("the replay record");
+    let recorded = serde_json::from_str::<serde_json::Value>(&text).expect("the record parses")
+        ["executable_sha256"]
+        .as_str()
+        .expect("the record names its executable")
+        .to_owned();
+    let planted = "0".repeat(recorded.len());
+    assert_ne!(recorded, planted);
+    std::fs::write(
+        record_path.as_std_path(),
+        text.replacen(&recorded, &planted, 1),
+    )
+    .expect("plant another executable");
+    let error = run_part(VerifyPart::Join {
+        plan: plan(&rest, &rest),
+        parts: vec![dir("a"), dir("b")],
+    })
+    .map(|_| ())
+    .expect_err("a record of another leanchecker");
+    support::expect_code(&error, "LLI9001");
+    let text = error.to_string();
+    assert!(
+        text.contains(&format!("replay record of `{replayed}`"))
+            && text.contains(&planted)
+            && text.contains(&recorded),
+        "{text}"
+    );
 }

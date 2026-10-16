@@ -7721,14 +7721,23 @@ order, then replays in sorted name, then the family) from whichever part
 produced each record. A module without a record from any part, a record of a
 process no module owns, two parts that wrote the same `.olean` or record, and
 a shard whose plan elaborates a module before its imports (`module order did
-not converge: … imports …`) are refused. A part is defined for a project
-without production roots and without PDF rendering; Atlas is such a project.
+not converge: … imports …`) are refused. Before it judges any imported
+record, the join requires its `executable_sha256` to be the join's own digest
+of the tool that produced it (`partition::check_toolchain`): `lean` for an
+elaboration or an audit member, `leanchecker` for a replay, else `LLI9001`
+naming the record and both digests. In a whole verification that holds by
+construction; across the jobs of a run it held because every job installs the
+same pinned toolchain, which was a practice and not a check (the maintainer's
+review of #152). A part is defined for a project without production roots and
+without PDF rendering; Atlas is such a project.
 
 `VR-23` verifies `peano-arithmetic` whole and as two shards and a join over
 its committed import graph (the first frontier; the second, replaying both;
 the rest), and requires the join's verified directory to equal the whole's
 byte for byte with the same attestation ID, then refuses the three plans
-above. `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
+above and a join handed the second shard's replay record of a module with its
+`executable_sha256` rewritten to zeros (`` the imported replay record of
+`PeanoArithmetic.…` ``, with both digests). `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
 job, each job waiting (through the job graph) for the jobs of the shards its
 shard needs and never for a row of its own matrix, the examples profile on
 every Atlas job, the one `cargo build` in the `prefix` job and every other job
@@ -7769,6 +7778,14 @@ the same line), and the failure, after which the file was restored.
 - **a cache action in a shard job**: `` ci.yml has no `actions/cache` ``.
 - **the join reading another run's artifacts** (`run-id` on its download):
   `` §9.4: `atlas-join` reads the artifacts of this run only ``.
+- **the join no longer checking the toolchain of what it imports** (the
+  `partition::check_toolchain` call removed from `verify::run_part`), then
+  `cargo test -p repo-conformance --all-features --test conformance -- --exact
+  conformance_vr_23`: the join accepted the replay record of another
+  `leanchecker` and published, and the case failed at its refusal, `a record
+  of another leanchecker: ()`. The unit test
+  `verify::partition::tests::a_part_output_round_trips_its_oleans_and_records`
+  holds the same refusal on the function itself.
 
 Two defects were found by the cases and not by review: a shard exported the
 `.olean` files it had imported along with its own, so the join refused the
