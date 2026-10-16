@@ -15,6 +15,13 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The decoder of a version 2 core module no longer takes a derived row from
+  the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
+  the pinned Lean reserves (matcher equations and splitters, definition
+  equations and unfolding theorems, sparse `else_eq`) is made by Lean's own
+  reserved-name action and refused unless it equals the row. Every one of the
+  preservation library's 7,071 derived rows is remade exactly; no source,
+  lock, or compiler-semantics ID changes.
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining

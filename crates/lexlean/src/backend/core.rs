@@ -1136,8 +1136,12 @@ pub fn lean_text(core: &CoreModule) -> Result<String, Diagnostic> {
     for import in &core.imports {
         text.push_str(&format!("public import {import}\n"));
     }
+    text.push_str("import Lean\n");
+    if core.version() == 2 {
+        text.push_str(crate::backend::core_v2::LEAN_CORE_DECODER_V2_IMPORTS);
+    }
     text.push_str(
-        "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
+        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
     );
     text.push_str(if core.version() == 2 {
         crate::backend::core_v2::LEAN_CORE_DECODER_V2

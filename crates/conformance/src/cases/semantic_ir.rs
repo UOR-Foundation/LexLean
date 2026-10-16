@@ -2492,6 +2492,78 @@ pub(crate) fn run(id: &str) {
             );
             refused.assert_no_backend_output_with("LLS8002");
         }
+        "SM-33" => {
+            // `V2Fixture.one.eq_1` is a name the pinned Lean reserves: its
+            // equation theorem `one = 1` proved by `Eq.refl Nat one` (node 9).
+            // Node 10 proves the same statement differently.
+            let module = |edit: &dyn Fn(&mut serde_json::Value)| -> String {
+                let level = serde_json::json!([{"k": "s", "a": {"k": "z"}}]);
+                let mut data = serde_json::json!({
+                    "spec": "lexlean/core-module/2",
+                    "imports": ["Init"],
+                    "nodes": [
+                        {"k": "c", "n": "Nat", "u": []},
+                        {"k": "n", "v": "1"},
+                        {"k": "c", "n": "V2Fixture.one", "u": []},
+                        {"k": "c", "n": "Eq", "u": level},
+                        {"k": "a", "f": 3, "x": 0},
+                        {"k": "a", "f": 4, "x": 2},
+                        {"k": "a", "f": 5, "x": 1},
+                        {"k": "c", "n": "Eq.refl", "u": level},
+                        {"k": "a", "f": 7, "x": 0},
+                        {"k": "a", "f": 8, "x": 2},
+                        {"k": "a", "f": 8, "x": 1}
+                    ],
+                    "proof_nodes": [9, 10],
+                    "declarations": [
+                        {"name": "V2Fixture.one", "kind": "definition", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "reducibility": {"kind": "regular", "height": 1},
+                         "policy": {"kind": "exact", "axioms": []}, "type": 0, "value": 1},
+                        {"name": "V2Fixture.one.eq_1", "kind": "theorem", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "policy": {"kind": "exact", "axioms": []}, "type": 6, "value": 9}
+                    ]
+                });
+                edit(&mut data);
+                let text = serde_json::to_string(&data).expect("canonical JSON");
+                format!(
+                    "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{coremodule}}\n\\coredata{{{text}}}\n\\end{{coremodule}}\n\\end{{lexlean}}\n"
+                )
+            };
+            let project_of = |source: &str| {
+                let project = P::example();
+                project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+                project.write("src/Main.lex.tex", source);
+                project.relock();
+                project
+            };
+            let accepted = project_of(&module(&|_| {}));
+            accepted.build_ok();
+            if !support::lean_backed("SM-33") {
+                return;
+            }
+            let _ = support::verify_ok(&accepted);
+            // A derived row the construction makes differently, and a reserved
+            // name the construction does not make, are refused by the decoder.
+            for (what, edit, message) in [
+                (
+                    "a derived row with another proof",
+                    (&|data: &mut serde_json::Value| data["declarations"][1]["value"] = 10.into())
+                        as &dyn Fn(&mut serde_json::Value),
+                    "is not what the elaborator's construction makes",
+                ),
+                (
+                    "a reserved name the construction does not make",
+                    &|data| data["declarations"][1]["name"] = "V2Fixture.one.eq_2".into(),
+                    "bears a name the elaborator reserves, and its construction does not make it",
+                ),
+            ] {
+                let refused = project_of(&module(edit));
+                let error = refused.verify_fails_with("LLV7002");
+                assert!(error.to_string().contains(message), "{what}: {error}");
+            }
+        }
         other => panic!("no semantic-ir case is wired for {other}"),
     }
 }

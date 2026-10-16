@@ -1254,6 +1254,63 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### a derived row is what the pinned Lean derives
+
+A version 2 row whose name the pinned Lean reserves is made by Lean's own
+reserved-name action and refused unless it equals the row (`SM-33`, §17.10,
+#91). Run with the pinned Lean 4.32.1 on WSL, on `main` `c183f250` with the
+change. The plants that change the library or the decoder were run with
+`lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift`, the compiler rebuilt for each, and the
+file restored with `git checkout`. Unplanted, the same command verifies
+(`verified 2 modules`): all 7,071 derived rows of the library are remade
+exactly.
+
+Planted (a): the value of the derived row
+`entriesOf.match_3.eq_1` in `src/RustMatches.lex.tex` replaced by its own
+type node (`@234896` to `@234887`). Expected: the theorem Lean's matcher
+equations make differs from the row, and the module is refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustMatches` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustMatches.#0.LexLeanPreservation.Rust.entriesOf.match_3.eq_1':
+  core declaration '_private.LexLeanPreservation.RustMatches.0.LexLeanPreservation.Rust.entriesOf.match_3.eq_1' is not what the elaborator's construction makes
+```
+
+Planted (b): a remade sparse `casesOn` no longer entered in Lean's sparse
+`casesOn` cache (`crates/lexlean/src/backend/core_v2.rs`, the loop over the
+two keys made empty). Expected: the splitter proof of a matcher finds no
+cached constant under the private key, makes its own, and differs from the
+row.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustLemmas` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustLemmas.#0.LexLeanPreservation.Rust.sem_part.match_1_1.eq_2':
+  core declaration '_private.LexLeanPreservation.RustLemmas.0.LexLeanPreservation.Rust.sem_part.match_1_1.eq_2' is not what the elaborator's construction makes
+```
+
+Planted (c): the decoder's own constants kept in the cache (the filter at the
+start of `decodeAndAdd` removed). Expected: the splitter of
+`entriesOf.match_3` takes the decoder's `addOneUnchecked._sparseCasesOn_1`,
+cached under the same key, instead of the module's constant.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustMatches` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustMatches.#0.LexLeanPreservation.Rust.entriesOf.match_3.eq_2':
+  core declaration '_private.LexLeanPreservation.RustMatches.0.LexLeanPreservation.Rust.entriesOf.match_3.eq_2' is not what the elaborator's construction makes
+```
+
+Planted (d): the comparison in `sameAsRow` disabled (its condition prefixed
+with `true ||`). Command: `cargo test -p repo-conformance --test conformance
+-- conformance_sm_33`. Expected: the fixture whose `eq_1` has another proof of
+the same statement is no longer refused.
+
+```text
+thread 'conformance_sm_33' panicked at crates/conformance/src/support.rs:641:14:
+verify fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 386 filtered out
+```
+
+Removed: every plant was reverted; `conformance_sm_33`, `conformance_sm_31`,
+`conformance_sp_12`, and `conformance_rp_07` pass, and `cargo xtask check-fixtures` holds 269 fixtures equal (on `main` `32afe5da`).
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
