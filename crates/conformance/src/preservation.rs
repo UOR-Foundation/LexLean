@@ -2927,8 +2927,162 @@ mod dev {
             }
             None => {
                 audit(&result.audit_output, &built).expect("the axiom audit");
-                eprintln!("{} certificates A: compiled, replayed, audited", built.len());
+                eprintln!(
+                    "{} certificates A: compiled, replayed, audited",
+                    built.len()
+                );
             }
         }
+    }
+
+    /// The statement oracle of certificate A (`SP-15`): for each selected root
+    /// (`LEXLEAN_EXAMPLE`, `LEXLEAN_ROOTS` as in [`dev_certificate_a`]),
+    /// certificate A as data is compiled beside the committed text
+    /// certificate A of the same root with its namespace renamed to
+    /// `<module>.Old`, and an oracle module compares, for every row both
+    /// hold, the type of the data's row, its own names read as the old
+    /// module's, with the type of the old row by `Lean.Meta.isDefEq`. The
+    /// bodies of the definitions are compared and counted, not required: a
+    /// recursive width predicate is a different, equally proved, definition.
+    #[test]
+    #[ignore = "the oracle behind tests/preservation-certificates/A-STATEMENTS.md"]
+    fn dev_oracle_a() {
+        let example = std::env::var("LEXLEAN_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let only: Option<Vec<usize>> = std::env::var("LEXLEAN_ROOTS").ok().map(|list| {
+            list.split(',')
+                .filter_map(|item| item.trim().parse().ok())
+                .collect()
+        });
+        let project = P::copy_example(&example);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+        let limits = support::limits(&project);
+        let mut built = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            if only.as_ref().is_some_and(|list| !list.contains(&index)) {
+                continue;
+            }
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            match certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                limits.max_file_bytes,
+            ) {
+                Ok(certificate) => built.push((index, certificate)),
+                Err(diagnostic) => {
+                    eprintln!("R{index} {}: {}", root.report.root, diagnostic.message);
+                }
+            }
+        }
+        let rendered = support::rendered(&project);
+        let user: Vec<(String, String)> = rendered
+            .modules
+            .iter()
+            .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
+            .collect();
+        let certificates: Vec<Certificate> = built
+            .iter()
+            .map(|(_, certificate)| certificate.clone())
+            .collect();
+        let staged = workspace(&user, &certificates).expect("the workspace stages");
+        let scratch = tempfile::Builder::new()
+            .prefix("lexlean-oracle-a-")
+            .tempdir()
+            .expect("tempdir");
+        let result = check(&staged, scratch.path());
+        if let Some((module, output)) = &result.failure {
+            let head: String = output.lines().take(40).collect::<Vec<_>>().join("\n");
+            panic!("`{module}` was rejected:\n{head}");
+        }
+        let base = support::repo_root()
+            .join("examples")
+            .join(&example)
+            .join("expected/verify/preserve/LexLeanPreserve")
+            .join(format!("C{hex32}"));
+        let mut compared = 0usize;
+        let mut bodies = (0usize, 0usize);
+        for (index, certificate) in &built {
+            let module = &certificate.module;
+            let committed =
+                std::fs::read_to_string(base.join(format!("R{index}.lean")).as_std_path())
+                    .unwrap_or_else(|error| {
+                        panic!("the committed certificate of R{index}: {error}")
+                    });
+            let old = format!("{module}.Old");
+            let renamed = committed
+                .replace(
+                    &format!("namespace {module}\n"),
+                    &format!("namespace {old}\n"),
+                )
+                .replace(&format!("end {module}"), &format!("end {old}"));
+            assert_ne!(renamed, committed, "R{index}: the namespace is renamed");
+            let output = compile_text(scratch.path(), &old, &renamed);
+            assert!(
+                output.status.success(),
+                "R{index}: the committed text certificate compiles: {}",
+                joined(&output)
+            );
+            let data = certificate.data.as_ref().expect("certificate A is data");
+            let rows: Vec<String> = data
+                .declarations
+                .iter()
+                .map(|row| {
+                    row.name
+                        .strip_prefix(&format!("{module}."))
+                        .unwrap_or(&row.name)
+                        .to_owned()
+                })
+                .collect();
+            let pairs: Vec<String> = rows
+                .iter()
+                .map(|row| format!("(`{module}.{row}, `{old}.{row})"))
+                .collect();
+            let oracle = format!(
+                "import {module}\nimport {old}\nimport Lean\nopen Lean Meta\n\
+                 def swapRoot (new old : Name) (e : Expr) : Expr :=\n  e.replace fun\n    | .const n us =>\n      if new.isPrefixOf n && !old.isPrefixOf n then some (.const (n.replacePrefix new old) us) else none\n    | _ => none\n\
+                 run_cmd Lean.Elab.Command.liftTermElabM do\n  let pairs : List (Name × Name) := [{}]\n  let mut types : Nat := 0\n  let mut same : Nat := 0\n  let mut total : Nat := 0\n  for (new, old) in pairs do\n    let env ← getEnv\n    let some n := env.find? new | throwError \"{{new}}: not in the environment\"\n    let some o := env.find? old | throwError \"{{old}}: the committed certificate lacks the row\"\n    unless (← isDefEq (swapRoot `{module} `{old} n.type) o.type) do\n      throwError \"{{new}}: the statement differs from {{old}}\"\n    types := types + 1\n    if let (some a, some b) := (n.value?, o.value?) then\n      total := total + 1\n      if (← isDefEq (swapRoot `{module} `{old} a) b) then same := same + 1\n  logInfo m!\"SP-15 oracle: {{types}} statements equal; bodies {{same}} of {{total}}\"\n",
+                pairs.join(", ")
+            );
+            let name = format!("{module}.Oracle");
+            let output = compile_text(scratch.path(), &name, &oracle);
+            let text = joined(&output);
+            assert!(
+                output.status.success(),
+                "R{index}: the statements of {module} are the committed certificate's:\n{}",
+                text.lines().take(20).collect::<Vec<_>>().join("\n")
+            );
+            eprintln!("R{index} {module}: {}", text.trim());
+            compared += rows.len();
+            if let Some(found) = text.split("bodies ").nth(1) {
+                let mut numbers = found.split(" of ");
+                if let (Some(same), Some(total)) = (
+                    numbers.next().and_then(|n| n.trim().parse::<usize>().ok()),
+                    numbers
+                        .next()
+                        .and_then(|n| n.split_whitespace().next())
+                        .and_then(|n| n.parse::<usize>().ok()),
+                ) {
+                    bodies.0 += same;
+                    bodies.1 += total;
+                }
+            }
+        }
+        eprintln!(
+            "SP-15 oracle: {} certificates A, {compared} rows, definition bodies equal {} of {}",
+            built.len(),
+            bodies.0,
+            bodies.1
+        );
     }
 }

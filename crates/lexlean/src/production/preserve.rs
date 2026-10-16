@@ -1636,7 +1636,10 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             ),
                             ("module", Json::Str(root.certificate.module.clone())),
                             ("theorem", Json::Str(root.certificate.theorem.clone())),
-                            ("byte_length", Json::from_usize(root.certificate.text.len())),
+                            (
+                                "byte_length",
+                                Json::from_usize(recorded_bytes(&root.certificate).len()),
+                            ),
                             (
                                 "program",
                                 Json::object(vec![
@@ -1650,7 +1653,7 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             (
                                 "sha256",
                                 Json::Str(
-                                    Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
+                                    Sha256Digest::of(recorded_bytes(&root.certificate)).to_hex(),
                                 ),
                             ),
                             (
