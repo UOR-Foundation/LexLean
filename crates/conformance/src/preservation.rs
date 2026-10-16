@@ -1776,7 +1776,60 @@ fn expected_declarations(
         Origin::Definition { .. } | Origin::Instance { .. } | Origin::Lambda { .. } => {
             vec![format!("__rel_{function}")]
         }
-        Origin::Validator { .. } => vec![format!("__vrel_{function}")],
+        // The relations of validators that call one another are one
+        // recursion of the group's recursors, whose every row contains every
+        // minor premise: the kernel refuses the first of them it adds.
+        Origin::Validator { .. } => {
+            let calls = |from: usize| -> Vec<usize> {
+                // From the layout's kinds, which the source decides, not
+                // from the bodies, which a planted defect changes.
+                use lexlean::production::lower::Validation;
+                match &lowered.layout.functions[from] {
+                    Origin::Validator { kind, .. } => match kind {
+                        Validation::Trivial | Validation::Set => Vec::new(),
+                        Validation::Map { value: callee }
+                        | Validation::List { element: callee }
+                        | Validation::Option { value: callee } => vec![*callee as usize],
+                        Validation::Pair { left, right } => {
+                            vec![*left as usize, *right as usize]
+                        }
+                        Validation::Result { ok, error } => vec![*ok as usize, *error as usize],
+                        Validation::Document { fields } => fields
+                            .iter()
+                            .flatten()
+                            .flatten()
+                            .map(|callee| *callee as usize)
+                            .collect(),
+                    },
+                    _ => Vec::new(),
+                }
+            };
+            let reach = |from: usize| -> Vec<usize> {
+                let mut seen = vec![from];
+                let mut next = 0;
+                while next < seen.len() {
+                    for callee in calls(seen[next]) {
+                        if !seen.contains(&callee)
+                            && matches!(lowered.layout.functions[callee], Origin::Validator { .. })
+                        {
+                            seen.push(callee);
+                        }
+                    }
+                    next += 1;
+                }
+                seen
+            };
+            let forward = reach(function);
+            let mut group: Vec<usize> = forward
+                .into_iter()
+                .filter(|other| reach(*other).contains(&function))
+                .collect();
+            group.sort_unstable();
+            group
+                .into_iter()
+                .map(|member| format!("__vrel_{member}"))
+                .collect()
+        }
         Origin::Entry { .. } => vec!["entry".to_owned()],
         Origin::Template {
             template,
