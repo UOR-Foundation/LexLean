@@ -352,4 +352,34 @@
 \noindent Kind: \texttt{theorem}.\par
 \noindent Statement: \texttt{(streamCode (spillStream ((10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: ([] : List (Nat))))))))))))))) = 14)}.\par
 \noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{deriveScaleMultiplier}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(inputScaleBits : Int) (weightScaleBits : Int) (outputScaleBits : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Int)}.\par
+\noindent Definition: \texttt{Models.Recognizer.scaleRatioRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{deriveChannelMultipliers}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (Int))}.\par
+\noindent Definition: \texttt{Models.Recognizer.scaleMultipliersRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{corpus\_scale\_ratio\_rounds\_up}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(deriveScaleMultiplier ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{corpus\_scale\_ratio\_rounds\_down}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(deriveScaleMultiplier ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{corpus\_scale\_ratio\_tie\_even}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((deriveScaleMultiplier ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int))) /\textbackslash{} (deriveScaleMultiplier ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{corpus\_scale\_multipliers}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(deriveChannelMultipliers ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
 \end{document}
