@@ -2328,7 +2328,7 @@ pub fn run(id: &str) {
                     let module = row["module"].as_str().expect("a module");
                     let text = std::fs::read(
                         root.join("preserve")
-                            .join(lexlean::production::preserve::module_path(module)),
+                            .join(lexlean::production::preserve::notation_path(module)),
                     )
                     .expect("the published certificate");
                     assert_eq!(
