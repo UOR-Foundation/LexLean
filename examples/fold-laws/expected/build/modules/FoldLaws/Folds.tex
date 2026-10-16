@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{total}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Nat) (v : Nat) => (acc + v))) (0) (xs) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{count}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Nat) (\_v : Nat) => (acc + 1))) (0) (xs) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{doubledTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Nat) (v : Nat) => ((acc + v) + v))) (0) (xs) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{weighted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Nat) (v : Nat) => (acc + ((LexLeanRuntime.multiply (3) (v) : Nat) + 1)))) (0) (xs) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reversed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Nat)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (Nat)) (v : Nat) => (v :: acc))) (([] : List (Nat))) (xs) : List (Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{balance}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(opening : Int) (movements : List (Int))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Int) (v : Int) => (LexLeanRuntime.subtract (acc) (v) : Int))) (opening) (movements) : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{credit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(opening : Int) (movements : List (Int))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : Int) (v : Int) => (LexLeanRuntime.subtract (acc) ((LexLeanRuntime.negate (v) : Int)) : Int))) (opening) (movements) : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Set (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.setFold ((fun (acc : Nat) (v : Nat) => (acc + v))) (0) (s) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setDoubled}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(s : Set (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.setFold ((fun (acc : Nat) (v : Nat) => (acc + (LexLeanRuntime.multiply (2) (v) : Nat)))) (0) (s) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{entryTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(m : Map (Nat) (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, k, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.mapFold ((fun (acc : Nat) (k : Nat) (v : Nat) => (acc + (k + v)))) (0) (m) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{keyTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(m : Map (Nat) (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, k, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.mapFold ((fun (acc : Nat) (k : Nat) (\_v : Nat) => (acc + k))) (0) (m) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{valueTotal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(m : Map (Nat) (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, k, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.mapFold ((fun (acc : Nat) (\_k : Nat) (v : Nat) => (acc + v))) (0) (m) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{doubled\_total}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{(doubledTotal (xs) = (total (xs) + total (xs)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{count\_is\_length}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{(count (xs) = (LexLeanRuntime.length (xs) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{weighted\_total}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{(weighted (xs) = ((LexLeanRuntime.multiply (3) (total (xs)) : Nat) + count (xs)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{total\_append\_commutes}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (ys : List (Nat))}.\par
+\noindent Statement: \texttt{(total ((LexLeanRuntime.append (xs) (ys) : List (Nat))) = total ((LexLeanRuntime.append (ys) (xs) : List (Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{total\_reversed}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Statement: \texttt{(total (reversed (xs)) = total (xs))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{balance\_credit}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(opening : Int) (movements : List (Int))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.subtract (balance (opening) (movements)) (opening) : Int) = (LexLeanRuntime.subtract (opening) (credit (opening) (movements)) : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{set\_doubled}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(s : Set (Nat))}.\par
+\noindent Statement: \texttt{(setDoubled (s) = (LexLeanRuntime.multiply (2) (setTotal (s)) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{map\_split}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(m : Map (Nat) (Nat))}.\par
+\noindent Statement: \texttt{(entryTotal (m) = (keyTotal (m) + valueTotal (m)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{doubled\_total\_closed}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(doubledTotal ((1 :: (2 :: (3 :: ([] : List (Nat)))))) = 12)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

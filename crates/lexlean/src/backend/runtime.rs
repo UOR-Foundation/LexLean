@@ -51,6 +51,10 @@ pub const MODELS: &str = "LexLeanRuntime.Models";
 /// The reasoning propositions and lemmas (`LexLeanReasoning`).
 pub const REASONING: &str = "LexLeanRuntime.Reasoning";
 
+/// The fold laws (`LexLeanLaws`): the bridges and laws `linear_arithmetic`
+/// rewrites with and a `law` proof applies.
+pub const LAWS: &str = "LexLeanRuntime.Laws";
+
 /// The released bytes of the language-1.1 portable runtime, which a
 /// language-1.1 semantic module splices inside its namespace.
 pub const FROZEN_PORTABLE_PATH: &str = "language/runtime-1.2/frozen/portable-runtime-1.1.txt";
@@ -185,7 +189,51 @@ fn build(read: &dyn Fn(&str) -> Result<String, String>) -> Result<Vec<RuntimeMod
             declarations,
         });
     }
+    check_laws(&modules, crate::ir::semantic::laws::registry()?)?;
     Ok(modules)
+}
+
+/// The fold-law registry names only declarations of its module: every
+/// rewrite and every law is a theorem `linear_arithmetic` or `law` can
+/// cite.
+fn check_laws(
+    modules: &[RuntimeModule],
+    registry: &crate::ir::semantic::laws::Registry,
+) -> Result<(), String> {
+    let path = crate::ir::semantic::laws::REGISTRY_PATH;
+    let module = modules
+        .iter()
+        .find(|module| module.name == registry.module)
+        .ok_or_else(|| format!("{path}: `{}` is not a runtime module", registry.module))?;
+    for name in registry
+        .rewrites
+        .iter()
+        .chain(registry.laws.iter().map(|law| &law.lean))
+    {
+        if !module
+            .declarations
+            .iter()
+            .any(|(declared, _)| declared == name)
+        {
+            return Err(format!(
+                "{path}: `{name}` is not a declaration of `{}`",
+                registry.module
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Check a fold-law registry read from `text` against the shipped runtime:
+/// the conformance gate plants defects in the registry this way.
+///
+/// # Errors
+///
+/// Returns the first reason the registry is refused.
+pub fn check_laws_registry(text: &str) -> Result<(), String> {
+    let registry = crate::ir::semantic::laws::check_registry(text)?;
+    let modules = modules().map_err(|diagnostic| diagnostic.message)?;
+    check_laws(modules, &registry)
 }
 
 /// Check a runtime read from `read` instead of the embedded one: the
@@ -297,11 +345,17 @@ mod tests {
                 super::PORTABLE,
                 super::COLLECTIONS,
                 super::MODELS,
-                super::REASONING
+                super::REASONING,
+                super::LAWS
             ]
         );
-        let reasoning = modules.last().expect("the reasoning module");
-        assert_eq!(reasoning.imports, [super::PORTABLE, super::COLLECTIONS]);
+        for imported_by_both in [super::REASONING, super::LAWS] {
+            let module = modules
+                .iter()
+                .find(|module| module.name == imported_by_both)
+                .expect("a registered module");
+            assert_eq!(module.imports, [super::PORTABLE, super::COLLECTIONS]);
+        }
         assert!(modules.iter().all(|module| !module.declarations.is_empty()));
     }
 
