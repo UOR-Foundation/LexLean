@@ -939,10 +939,7 @@ pub(crate) fn run(id: &str) {
                 "the fixed script with the unfolded definition\n{kernels}"
             );
             assert!(
-                kernels.contains(&format!(
-                    "(x < (6 : UInt8)))) := by\n{}",
-                    linear_script(&[])
-                )),
+                kernels.contains(&format!("(x < (6 : UInt8))) := by\n{}", linear_script(&[]))),
                 "the fixed script without definitions\n{kernels}"
             );
             let _ = support::verify_ok_backed("PF-21", &project);
