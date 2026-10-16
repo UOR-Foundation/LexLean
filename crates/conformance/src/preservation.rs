@@ -2941,7 +2941,7 @@ mod dev {
     /// certificate A of the same root with its namespace renamed to
     /// `<module>.Old`, and an oracle module compares, for every row both
     /// hold, the type of the data's row, its own names read as the old
-    /// module's, with the type of the old row by `Lean.Meta.isDefEq`. The
+    /// module's, with the type of the old row by the kernel's definitional equality (`Lean.Kernel.isDefEq`, which unfolds a `match` to its eliminator as the checker does). The
     /// bodies of the definitions are compared and counted, not required: a
     /// recursive width predicate is a different, equally proved, definition.
     #[test]
@@ -3025,7 +3025,8 @@ mod dev {
                     &format!("namespace {module}\n"),
                     &format!("namespace {old}\n"),
                 )
-                .replace(&format!("end {module}"), &format!("end {old}"));
+                .replace(&format!("end {module}"), &format!("end {old}"))
+                .replace(&format!("_root_.{module}."), &format!("_root_.{old}."));
             assert_ne!(renamed, committed, "R{index}: the namespace is renamed");
             let output = compile_text(scratch.path(), &old, &renamed);
             assert!(
@@ -3048,10 +3049,18 @@ mod dev {
                 .iter()
                 .map(|row| format!("(`{module}.{row}, `{old}.{row})"))
                 .collect();
+            let show = if std::env::var("LEXLEAN_ORACLE_SHOW").is_ok() {
+                format!(
+                    "      logInfo m!\"NEW {{swapRoot `{module} `{old} n.type}}\\nOLD {{o.type}}\"\n"
+                )
+            } else {
+                String::new()
+            };
             let oracle = format!(
                 "import {module}\nimport {old}\nimport Lean\nopen Lean Meta\n\
                  def swapRoot (new old : Name) (e : Expr) : Expr :=\n  e.replace fun\n    | .const n us =>\n      if new.isPrefixOf n && !old.isPrefixOf n then some (.const (n.replacePrefix new old) us) else none\n    | _ => none\n\
-                 run_cmd Lean.Elab.Command.liftTermElabM do\n  let pairs : List (Name × Name) := [{}]\n  let mut types : Nat := 0\n  let mut same : Nat := 0\n  let mut total : Nat := 0\n  for (new, old) in pairs do\n    let env ← getEnv\n    let some n := env.find? new | throwError \"{{new}}: not in the environment\"\n    let some o := env.find? old | throwError \"{{old}}: the committed certificate lacks the row\"\n    unless (← isDefEq (swapRoot `{module} `{old} n.type) o.type) do\n      throwError \"{{new}}: the statement differs from {{old}}\"\n    types := types + 1\n    if let (some a, some b) := (n.value?, o.value?) then\n      total := total + 1\n      if (← isDefEq (swapRoot `{module} `{old} a) b) then same := same + 1\n  logInfo m!\"SP-15 oracle: {{types}} statements equal; bodies {{same}} of {{total}}\"\n",
+                 def kdef (a b : Expr) : MetaM Bool := do\n  ofExceptKernelException (Kernel.isDefEq (← getEnv) {{}} a b)\n\
+                 run_cmd Lean.Elab.Command.liftTermElabM do\n  let pairs : List (Name × Name) := [{}]\n  let mut types : Nat := 0\n  let mut same : Nat := 0\n  let mut total : Nat := 0\n  let mut bad : Nat := 0\n  for (new, old) in pairs do\n    let env ← getEnv\n    let some n := env.find? new | throwError \"{{new}}: not in the environment\"\n    let some o := env.find? old | throwError \"{{old}}: the committed certificate lacks the row\"\n    if (← kdef (swapRoot `{module} `{old} n.type) o.type) then\n      types := types + 1\n    else\n      logWarning m!\"{{new}}: the statement differs from {{old}}\"\n      bad := bad + 1\n{show}    if let (some a, some b) := (n.value?, o.value?) then\n      total := total + 1\n      if (← kdef (swapRoot `{module} `{old} a) b) then same := same + 1\n  if bad > 0 then throwError \"{{bad}} statements differ\"\n  logInfo m!\"SP-15 oracle: {{types}} statements equal; bodies {{same}} of {{total}}\"\n",
                 pairs.join(", ")
             );
             let name = format!("{module}.Oracle");
@@ -3060,7 +3069,7 @@ mod dev {
             assert!(
                 output.status.success(),
                 "R{index}: the statements of {module} are the committed certificate's:\n{}",
-                text.lines().take(20).collect::<Vec<_>>().join("\n")
+                text.lines().take(4000).collect::<Vec<_>>().join("\n")
             );
             eprintln!("R{index} {module}: {}", text.trim());
             compared += rows.len();
