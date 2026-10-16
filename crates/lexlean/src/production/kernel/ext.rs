@@ -107,12 +107,9 @@ impl Builder {
                         d,
                     },
                     CoreNode::Mdata { m, x } => CoreNode::Mdata { m, x: at(&x) },
-                    CoreNode::Projection { n, s, i, x } => CoreNode::Projection {
-                        n,
-                        s,
-                        i,
-                        x: at(&x),
-                    },
+                    CoreNode::Projection { n, s, i, x } => {
+                        CoreNode::Projection { n, s, i, x: at(&x) }
+                    }
                     atom @ (CoreNode::BVar { .. }
                     | CoreNode::Sort { .. }
                     | CoreNode::Const { .. }
@@ -486,7 +483,9 @@ impl Builder {
             CoreNode::Nat { v } => v.clone(),
             CoreNode::String { v } => format!(
                 "{:?}",
-                v.iter().filter_map(|c| char::from_u32(*c)).collect::<String>()
+                v.iter()
+                    .filter_map(|c| char::from_u32(*c))
+                    .collect::<String>()
             ),
             CoreNode::App { .. } => {
                 let (head, args) = self.spine(term);
@@ -556,18 +555,18 @@ impl Builder {
             return false;
         }
         match &self.nodes[term] {
-            CoreNode::Const { n, .. } => {
-                n.starts_with(META) || (free_too && n.starts_with(FREE))
-            }
+            CoreNode::Const { n, .. } => n.starts_with(META) || (free_too && n.starts_with(FREE)),
             CoreNode::BVar { .. }
             | CoreNode::Sort { .. }
             | CoreNode::Nat { .. }
             | CoreNode::String { .. } => false,
             CoreNode::App { f, x } => {
-                self.placeholder_walk(*f, seen, free_too) || self.placeholder_walk(*x, seen, free_too)
+                self.placeholder_walk(*f, seen, free_too)
+                    || self.placeholder_walk(*x, seen, free_too)
             }
             CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
-                self.placeholder_walk(*t, seen, free_too) || self.placeholder_walk(*v, seen, free_too)
+                self.placeholder_walk(*t, seen, free_too)
+                    || self.placeholder_walk(*v, seen, free_too)
             }
             CoreNode::Let { t, v, body, .. } => {
                 self.placeholder_walk(*t, seen, free_too)
@@ -939,7 +938,11 @@ impl Open {
     /// Solve the placeholders of a binder's type against the type of the
     /// argument it takes, without giving the argument.
     pub fn solve_domain(&mut self, b: &Builder, binder: &str, actual: Term) {
-        if let Some(found) = self.binders.iter().find(|candidate| candidate.name == binder) {
+        if let Some(found) = self
+            .binders
+            .iter()
+            .find(|candidate| candidate.name == binder)
+        {
             let domain = found.domain;
             b.solve(domain, actual, &mut self.solved);
         }

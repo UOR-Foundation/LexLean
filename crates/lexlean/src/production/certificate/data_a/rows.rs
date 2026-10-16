@@ -3,9 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use super::super::{
-    function_type, identifier, CLocal, Ctx, Hypotheses, Recursion, Subject,
-};
+use super::super::{function_type, identifier, CLocal, Ctx, Hypotheses, Recursion, Subject};
 use super::{CompTerms, LocalTerm, Pf, RowKind, Scope, Writer, EXPLICIT};
 use crate::calculus::Expr;
 use crate::ir::semantic::{MemberRef, SemanticParameter, SemanticTerm, SemanticType};
@@ -272,7 +270,10 @@ impl<'a> Writer<'_, 'a> {
             .ok_or_else(|| format!("the program has no function {index}"))?;
         let function = self.function_term(function)?;
         let (_, parts) = self.b.spine(sig.statement);
-        let observation = parts.get(3).copied().ok_or("a statement with no observation")?;
+        let observation = parts
+            .get(3)
+            .copied()
+            .ok_or("a statement with no observation")?;
         let p = self.prog;
         let fi = self.nat_u(index);
         self.apply(
@@ -285,11 +286,7 @@ impl<'a> Writer<'_, 'a> {
                 ("fn", function),
                 ("env", env),
             ],
-            &[
-                Given::Refl,
-                Given::Refl,
-                Given::Proof(body.proof, body.ty),
-            ],
+            &[Given::Refl, Given::Refl, Given::Proof(body.proof, body.ty)],
         )
     }
 
@@ -314,7 +311,12 @@ impl<'a> Writer<'_, 'a> {
         let proof = self.relation_proof(index, sig, env, body)?;
         let rel_value = self.lambdas(&sig.rel_binders, proof.proof);
         let rel_ty = self.pis(&sig.rel_binders, sig.statement);
-        self.push_row(&format!("__rel_{index}"), RowKind::Theorem, rel_ty, rel_value)
+        self.push_row(
+            &format!("__rel_{index}"),
+            RowKind::Theorem,
+            rel_ty,
+            rel_value,
+        )
     }
 
     /// One strongly connected component of the relation graph.
@@ -362,8 +364,10 @@ impl<'a> Writer<'_, 'a> {
                                 ));
                             }
                             let set = self.local_set(*index, &clocals)?;
-                            let denotation = self.denotation(&module, &name, &type_arguments, &set)?;
-                            let sig = self.signature(*index, &clocals, &set, &result, denotation)?;
+                            let denotation =
+                                self.denotation(&module, &name, &type_arguments, &set)?;
+                            let sig =
+                                self.signature(*index, &clocals, &set, &result, denotation)?;
                             self.sigs.insert(*index, sig.clone());
                             let env = self.entry_env(*index, &clocals, &set.terms)?;
                             let scope = Scope {
@@ -461,10 +465,7 @@ impl<'a> Writer<'_, 'a> {
                     let ctx = self.gen.lambda_ctx(*index)?;
                     let clocals = ctx.locals.clone();
                     let set = self.local_set(*index, &clocals)?;
-                    let result = self
-                        .gen
-                        .source
-                        .infer(body, &ctx.sources(), &ctx.site)?;
+                    let result = self.gen.source.infer(body, &ctx.sources(), &ctx.site)?;
                     let env = self.entry_env(*index, &clocals, &set.terms)?;
                     let scope = Scope {
                         ctx,
@@ -561,7 +562,9 @@ impl<'a> Writer<'_, 'a> {
                 crate::ir::core::CoreLevel::Zero,
             ))],
         );
-        let observation = self.b.apps(cond, &[obs, sig.fits_applied, valued, overflow]);
+        let observation = self
+            .b
+            .apps(cond, &[obs, sig.fits_applied, valued, overflow]);
         let denote_value = self.lambdas(&sig.fits_binders, observation);
         let denote_ty = self.pis(&sig.fits_binders, obs);
         self.push_row(
@@ -576,11 +579,7 @@ impl<'a> Writer<'_, 'a> {
         let entry = self.nat_u(0);
         let rel = self.rel(sig.fits_applied, sig.value);
         let root_ty = self.b.apps(run_conv, &[prog, entry, sig.arguments, rel]);
-        let root = self.apply(
-            "run_of_funRel",
-            &[],
-            &[Given::Proof(rel0.proof, rel0.ty)],
-        )?;
+        let root = self.apply("run_of_funRel", &[], &[Given::Proof(rel0.proof, rel0.ty)])?;
         let root_value = self.lambdas(&sig.rel_binders, root.proof);
         let root_pi = self.pis(&sig.rel_binders, root_ty);
         self.push_row("root", RowKind::Theorem, root_pi, root_value)?;

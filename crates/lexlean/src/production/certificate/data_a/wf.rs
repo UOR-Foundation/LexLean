@@ -19,7 +19,9 @@
 use super::structural::pack_values_with;
 use super::{PathStep, Pf, RowKind, Scope, WfSite, WfState, Writer, EXPLICIT};
 use crate::ir::core::CoreLevel;
-use crate::ir::semantic::{SemanticParameter, SemanticTerm, SemanticType, Step, SemanticTermination};
+use crate::ir::semantic::{
+    SemanticParameter, SemanticTerm, SemanticTermination, SemanticType, Step,
+};
 use crate::production::certificate::{CLocal, Ctx, Gen, Hypotheses};
 use crate::production::kernel::{Builder, Term};
 use crate::production::source::{Local, Site};
@@ -52,8 +54,20 @@ fn same_step(a: Step, b: Step) -> bool {
                 branch: second,
             },
         ) => left == right && first == second,
-        (Step::If { node: _, polarity: _ }, Step::Match { node: _, branch: _ })
-        | (Step::Match { node: _, branch: _ }, Step::If { node: _, polarity: _ }) => false,
+        (
+            Step::If {
+                node: _,
+                polarity: _,
+            },
+            Step::Match { node: _, branch: _ },
+        )
+        | (
+            Step::Match { node: _, branch: _ },
+            Step::If {
+                node: _,
+                polarity: _,
+            },
+        ) => false,
     }
 }
 
@@ -70,12 +84,7 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// `scope` inside the arm `step`, taken by the equation `hypothesis`.
-    pub(super) fn entering(
-        scope: &Scope,
-        step: Step,
-        hypothesis: Term,
-        fields: &[Term],
-    ) -> Scope {
+    pub(super) fn entering(scope: &Scope, step: Step, hypothesis: Term, fields: &[Term]) -> Scope {
         let mut out = scope.clone();
         out.path.push(PathStep {
             step,
@@ -168,9 +177,9 @@ impl<'a> Writer<'_, 'a> {
         let plain = self.call_relation(index, relation_args)?;
         let fits_name = format!("{}.__fits_{index}", self.name);
         let call_name = format!("{}.__wfcall_{index}", self.name);
-        let ty = self
-            .b
-            .rewrite_apps(plain.ty, &mut |b: &mut Builder, name: &str, args: &[Term]| {
+        let ty = self.b.rewrite_apps(
+            plain.ty,
+            &mut |b: &mut Builder, name: &str, args: &[Term]| {
                 if name != fits_name {
                     return None;
                 }
@@ -178,7 +187,8 @@ impl<'a> Writer<'_, 'a> {
                 let mut all = args.to_vec();
                 all.push(evidence);
                 Some(b.apps(head, &all))
-            });
+            },
+        );
         let proof_head = self.own(&format!("__wfrel_{index}"));
         let mut all = relation_args.to_vec();
         all.push(evidence);
@@ -338,15 +348,17 @@ impl<'a> Writer<'_, 'a> {
         let ih = self.b.free();
         let fits_with_ih = {
             let (call_name, tys) = (call_name.clone(), tys.clone());
-            self.b
-                .rewrite_apps(fits_raw, &mut |b: &mut Builder, name: &str, args: &[Term]| {
+            self.b.rewrite_apps(
+                fits_raw,
+                &mut |b: &mut Builder, name: &str, args: &[Term]| {
                     if name != call_name {
                         return None;
                     }
                     let (evidence, rest) = args.split_last()?;
                     let packed = pack_values_with(b, &tys, rest, false);
                     Some(b.apps(ih, &[packed, *evidence]))
-                })
+                },
+            )
         };
         let fits_body = self.b.substitute(fits_with_ih, &params, &projections);
         let y = self.b.free();
@@ -358,7 +370,10 @@ impl<'a> Writer<'_, 'a> {
         let fits_motive = self.b.lam("_", EXPLICIT, domain, bool);
         let fix = self.b.konst_at("WellFounded.fix", vec![one(), one()]);
         let fix_at = |b: &mut Builder, at: Term| {
-            b.apps(fix, &[domain, fits_motive, rel, well_founded, fits_step, at])
+            b.apps(
+                fix,
+                &[domain, fits_motive, rel, well_founded, fits_step, at],
+            )
         };
         let fits_fix = fix_at(&mut self.b, packed);
         let fits_value = self.lambdas(&sig.fits_binders, fits_fix);
@@ -423,9 +438,13 @@ impl<'a> Writer<'_, 'a> {
         let encoded_var = self.b.app(encoder, value_var);
         let moved_value_statement =
             self.statement_of(index, sig.arguments, sig.fits_applied, encoded_var);
-        let value_motive = self
-            .b
-            .lam_over("__d", EXPLICIT, lean_result, value_var, moved_value_statement);
+        let value_motive = self.b.lam_over(
+            "__d",
+            EXPLICIT,
+            lean_result,
+            value_var,
+            moved_value_statement,
+        );
         let (definition, definition_args) = self.b.spine(denotation);
         let definition_name = match self.b.node(definition).clone() {
             crate::ir::core::CoreNode::Const { n, .. } => n,
@@ -454,8 +473,9 @@ impl<'a> Writer<'_, 'a> {
             let tys = tys.clone();
             let fits_name = fits_name.clone();
             let (call_name, rel_name) = (call_name.clone(), rel_name.clone());
-            self.b
-                .rewrite_apps(by_value, &mut |b: &mut Builder, name: &str, args: &[Term]| {
+            self.b.rewrite_apps(
+                by_value,
+                &mut |b: &mut Builder, name: &str, args: &[Term]| {
                     if name == call_name {
                         let (_, rest) = args.split_last()?;
                         let head = b.konst(&fits_name);
@@ -467,7 +487,8 @@ impl<'a> Writer<'_, 'a> {
                         return Some(b.apps(ihr, &[packed, *evidence]));
                     }
                     None
-                })
+                },
+            )
         };
         let rel_body = self.b.substitute(transported, &params, &projections);
         let statement_at = |writer: &mut Self, at: Term| -> Vec<Term> {
@@ -491,7 +512,9 @@ impl<'a> Writer<'_, 'a> {
         let rel_motive = self
             .b
             .lam_over("__x", EXPLICIT, domain, motive_var, motive_body);
-        let rel_fix = self.b.konst_at("WellFounded.fix", vec![one(), CoreLevel::Zero]);
+        let rel_fix = self
+            .b
+            .konst_at("WellFounded.fix", vec![one(), CoreLevel::Zero]);
         let rel_fixed = self.b.apps(
             rel_fix,
             &[domain, rel_motive, rel, well_founded, rel_step, packed],
@@ -507,15 +530,17 @@ impl<'a> Writer<'_, 'a> {
         // The implementation record of the predicate: direct recursion.
         let direct = {
             let (call_name, unsafe_name) = (call_name, unsafe_name);
-            self.b
-                .rewrite_apps(fits_raw, &mut |b: &mut Builder, name: &str, args: &[Term]| {
+            self.b.rewrite_apps(
+                fits_raw,
+                &mut |b: &mut Builder, name: &str, args: &[Term]| {
                     if name != call_name {
                         return None;
                     }
                     let (_, rest) = args.split_last()?;
                     let head = b.konst(&unsafe_name);
                     Some(b.apps(head, rest))
-                })
+                },
+            )
         };
         let unsafe_value = self.lambdas(&sig.fits_binders, direct);
         let unsafe_ty = self.pis(&sig.fits_binders, bool);

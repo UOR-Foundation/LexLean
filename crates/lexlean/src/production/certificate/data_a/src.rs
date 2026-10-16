@@ -137,8 +137,7 @@ impl Writer<'_, '_> {
                 let name = Self::fixed_name(ty)?;
                 let to = self.runtime(site, "LexLeanRuntime", "Fixed.toToMathInt")?;
                 let fixed = self.lean_ty(ty)?;
-                let instance =
-                    self.runtime(site, "LexLeanRuntime", &format!("instFixed{name}"))?;
+                let instance = self.runtime(site, "LexLeanRuntime", &format!("instFixed{name}"))?;
                 Ok(self.b.apps(to, &[fixed, instance]))
             }
         }
@@ -287,9 +286,7 @@ impl Writer<'_, '_> {
                 };
                 leading.push(self.runtime(site, "LexLeanRuntime", instance)?);
             }
-            SemanticPrimitive::Append
-            | SemanticPrimitive::Length
-            | SemanticPrimitive::Slice => {
+            SemanticPrimitive::Append | SemanticPrimitive::Length | SemanticPrimitive::Slice => {
                 let ty = first.ok_or("a sequence operation without an operand")?;
                 leading.push(self.lean_ty(ty)?);
                 let class = match operation {
@@ -548,7 +545,10 @@ impl Writer<'_, '_> {
                 for argument in arguments {
                     params.push(self.lean_ty(argument)?);
                 }
-                (self.b.konst_at(&format!("{owner}.casesOn"), vec![level]), params)
+                (
+                    self.b.konst_at(&format!("{owner}.casesOn"), vec![level]),
+                    params,
+                )
             }
             SemanticType::Product { left, right } => {
                 let left = self.lean_ty(left)?;
@@ -616,7 +616,11 @@ impl Writer<'_, '_> {
 
     // --- The denotation ---------------------------------------------------
 
-    pub(super) fn src_all(&mut self, terms: &[SemanticTerm], scope: &Scope) -> Result<Vec<Term>, String> {
+    pub(super) fn src_all(
+        &mut self,
+        terms: &[SemanticTerm],
+        scope: &Scope,
+    ) -> Result<Vec<Term>, String> {
         terms.iter().map(|term| self.src(term, scope)).collect()
     }
 
@@ -1027,9 +1031,13 @@ impl Writer<'_, '_> {
             }
             let inner = self.bind(scope, locals.clone(), &frees, scope.env);
             let mut body = self.src(&branch.body, &inner)?;
-            let (constructor, _) = self.gen.source.branch(branch, &scrutinee_ty, &scope.ctx.site)?;
+            let (constructor, _) =
+                self.gen
+                    .source
+                    .branch(branch, &scrutinee_ty, &scope.ctx.site)?;
             if numbered {
-                let value = self.constructor_value(&constructor, &scrutinee_ty, branch, &frees, scope)?;
+                let value =
+                    self.constructor_value(&constructor, &scrutinee_ty, branch, &frees, scope)?;
                 let equation = self.eq(carrier, discriminant, value);
                 let hypothesis = self.b.free();
                 let binders: Vec<(String, Term, Term)> = locals

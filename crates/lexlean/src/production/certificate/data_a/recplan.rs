@@ -286,7 +286,11 @@ impl Writer<'_, '_> {
         match &entry.kind {
             PositionKind::Block { index: _ } => {
                 let shape = self.gen.source.document(&entry.ty)?;
-                Ok(shape.fields.iter().map(|fields| ctor(fields.clone())).collect())
+                Ok(shape
+                    .fields
+                    .iter()
+                    .map(|fields| ctor(fields.clone()))
+                    .collect())
             }
             PositionKind::Builtin => Ok(entry.constructors.clone()),
             PositionKind::Aux(aux) => {

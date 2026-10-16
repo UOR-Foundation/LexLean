@@ -34,8 +34,8 @@ use crate::ir::semantic::{MemberRef, SemanticTerm, SemanticType, Step};
 
 mod boundary;
 mod calls;
-mod lean;
 mod encoders;
+mod lean;
 mod matching;
 mod prims;
 mod prove;
@@ -55,7 +55,9 @@ pub(super) enum RowKind {
     Theorem,
     /// A definition; `compiled` is whether the code generator runs over it,
     /// which the differential evaluator needs of `denote` and what it calls.
-    Definition { compiled: bool },
+    Definition {
+        compiled: bool,
+    },
     /// The compiler's implementation record of a recursive definition: the
     /// same function written with direct recursion, for the code generator,
     /// which has no code for a recursor. The members of one mutual group

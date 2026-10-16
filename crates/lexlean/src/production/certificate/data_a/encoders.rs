@@ -2,9 +2,9 @@
 //! `__enc_k` for each type, and for a recursive group of types the auxiliary
 //! encoders of the containers nested in them with their bundles.
 
-use super::recplan::{PositionKind, RecPlan};
-use super::super::data::AuxKind;
 use super::super::components;
+use super::super::data::AuxKind;
+use super::recplan::{PositionKind, RecPlan};
 use super::{RowKind, Writer, EXPLICIT};
 use crate::ir::core::CoreLevel;
 use crate::ir::semantic::SemanticType;
@@ -260,12 +260,13 @@ impl<'a> Writer<'_, 'a> {
                         }
                     }
                 }
-                let body =
-                    self.constructor_encoding(&plan, position, ctor, &frees, &hypotheses)?;
+                let body = self.constructor_encoding(&plan, position, ctor, &frees, &hypotheses)?;
                 let mut minor = body;
                 for (index, hypothesis) in hypotheses.iter().enumerate().rev() {
                     if let (Some(free), Some(ty)) = (hypothesis, hypothesis_types[index]) {
-                        minor = self.b.lam_over(&format!("__ih{index}"), EXPLICIT, ty, *free, minor);
+                        minor =
+                            self.b
+                                .lam_over(&format!("__ih{index}"), EXPLICIT, ty, *free, minor);
                     }
                 }
                 for (index, free) in frees.iter().enumerate().rev() {
@@ -294,14 +295,11 @@ impl<'a> Writer<'_, 'a> {
             args.extend(minors.iter().copied());
             args.push(free);
             let applied = self.b.apps(recursor, &args);
-            let value = self.b.lam_over("__v", EXPLICIT, domains[position], free, applied);
+            let value = self
+                .b
+                .lam_over("__v", EXPLICIT, domains[position], free, applied);
             let row_ty = self.b.arrow(domains[position], results[position]);
-            self.push_row(
-                &name,
-                RowKind::Definition { compiled: true },
-                row_ty,
-                value,
-            )?;
+            self.push_row(&name, RowKind::Definition { compiled: true }, row_ty, value)?;
             names.push(name);
         }
         self.group_rows(&names);
@@ -349,7 +347,9 @@ impl<'a> Writer<'_, 'a> {
                 results[position],
                 &cases_minors,
             )?;
-            let value = self.b.lam_over("__v", EXPLICIT, domains[position], free, cases);
+            let value = self
+                .b
+                .lam_over("__v", EXPLICIT, domains[position], free, cases);
             let row_ty = self.b.arrow(domains[position], results[position]);
             self.push_row(&unsafe_names[position], RowKind::Partial, row_ty, value)?;
         }

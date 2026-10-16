@@ -5,6 +5,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use super::super::{CLocal, Ctx, Gen, Hypotheses, Recursion, Subject};
 use super::recplan::RecPlan;
 use super::rows::{Binder, LocalSet, Sig};
 use super::{LocalTerm, Pf, RowKind, Scope, Writer, EXPLICIT};
@@ -13,7 +14,6 @@ use crate::ir::core::CoreLevel;
 use crate::ir::semantic::{SemanticTerm, SemanticType};
 use crate::production::kernel::{Given, Term};
 use crate::production::source::{Local, Site};
-use super::super::{CLocal, Ctx, Gen, Hypotheses, Recursion, Subject};
 
 /// One function of a structurally recursive group.
 struct Member<'a> {
@@ -71,7 +71,11 @@ impl<'a> Writer<'_, 'a> {
             else {
                 return Err(format!("function {index} is not a definition"));
             };
-            let Recursion::Structural { argument, mutual: _ } = recursion else {
+            let Recursion::Structural {
+                argument,
+                mutual: _,
+            } = recursion
+            else {
                 return Err(format!("`{module}.{name}` is not structurally recursive"));
             };
             let clocals = Gen::scope(&locals, "");
@@ -94,7 +98,10 @@ impl<'a> Writer<'_, 'a> {
                     1
                 }
             };
-            let fits_arg = clocals[..arg_position].iter().map(|l| width(l, false)).sum();
+            let fits_arg = clocals[..arg_position]
+                .iter()
+                .map(|l| width(l, false))
+                .sum();
             let rel_arg = clocals[..arg_position].iter().map(|l| width(l, true)).sum();
             members.push(Member {
                 index: *index,
@@ -374,7 +381,13 @@ impl<'a> Writer<'_, 'a> {
     }
 
     /// The component `index` of a packed value of types `tys`.
-    pub(super) fn unpack(&mut self, tys: &[Term], index: usize, packed: Term, relation: bool) -> Term {
+    pub(super) fn unpack(
+        &mut self,
+        tys: &[Term],
+        index: usize,
+        packed: Term,
+        relation: bool,
+    ) -> Term {
         if tys.len() == 1 {
             return packed;
         }
@@ -610,9 +623,7 @@ impl<'a> Writer<'_, 'a> {
         let mut chosen = None;
         for (branch_index, branch) in branches.iter().enumerate() {
             let (constructor, fields) =
-                self.gen
-                    .source
-                    .branch(branch, &argument_ty, &member.site)?;
+                self.gen.source.branch(branch, &argument_ty, &member.site)?;
             if self.constructor_position(&constructor)? == ctor {
                 chosen = Some((branch_index, branch, constructor, fields));
                 break;
@@ -745,7 +756,12 @@ impl<'a> Writer<'_, 'a> {
         let match_ty_term = self.ty_term(match_ty);
         let matched = self.apply(
             "conv_match",
-            &[("p", p), ("env", env), ("t", match_ty_term), ("arms", arms_term)],
+            &[
+                ("p", p),
+                ("env", env),
+                ("t", match_ty_term),
+                ("arms", arms_term),
+            ],
             &[
                 Given::Proof(tested.proof, tested.ty),
                 Given::Proof(chain.proof, chain.ty),
@@ -765,8 +781,14 @@ impl<'a> Writer<'_, 'a> {
             .b
             .substitute(member.sig.statement, &member.sig.rel_params, &to);
         let (_, parts) = self.b.spine(statement);
-        let observation = parts.get(3).copied().ok_or("a statement with no observation")?;
-        let arguments = parts.get(2).copied().ok_or("a statement with no arguments")?;
+        let observation = parts
+            .get(3)
+            .copied()
+            .ok_or("a statement with no observation")?;
+        let arguments = parts
+            .get(2)
+            .copied()
+            .ok_or("a statement with no arguments")?;
         let function = self.function_term(&program.functions[member.index as usize])?;
         let fi = self.nat_u(member.index);
         let funrel = self.apply(
@@ -854,7 +876,11 @@ impl<'a> Writer<'_, 'a> {
                 if hypothesis.position != call_position {
                     return None;
                 }
-                let packed = if relation { hypothesis.rel } else { hypothesis.fits };
+                let packed = if relation {
+                    hypothesis.rel
+                } else {
+                    hypothesis.fits
+                };
                 let (tys, frees) = tys_cache.get(&(call_position, relation))?;
                 let at: Vec<Term> = tys
                     .iter()
@@ -914,13 +940,16 @@ impl<'a> Writer<'_, 'a> {
         let direct_body = self.b.substitute(direct_body, &from_fits, &to_fits);
         let mut direct = direct_body;
         for (index, free) in field_frees.iter().enumerate().rev() {
-            direct = self
-                .b
-                .lam_over(&format!("__x{index}"), EXPLICIT, field_types[index], *free, direct);
+            direct = self.b.lam_over(
+                &format!("__x{index}"),
+                EXPLICIT,
+                field_types[index],
+                *free,
+                direct,
+            );
         }
         Ok((fits_inner, rel_inner, direct, constructed))
     }
-
 }
 
 /// The component `index` of a packed value of types `tys`, built on the
@@ -958,7 +987,11 @@ pub(super) fn unpack_with(
 }
 
 /// The pair type of `tys`, built on the builder alone.
-pub(super) fn pack_types_with(b: &mut crate::production::kernel::Builder, tys: &[Term], relation: bool) -> Term {
+pub(super) fn pack_types_with(
+    b: &mut crate::production::kernel::Builder,
+    tys: &[Term],
+    relation: bool,
+) -> Term {
     let Some((first, rest)) = tys.split_first() else {
         return b.konst("PUnit");
     };

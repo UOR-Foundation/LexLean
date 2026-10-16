@@ -60,7 +60,10 @@ impl<'a> Writer<'_, 'a> {
             return Ok((fits, value));
         }
         let (_, args) = self.b.spine(ty);
-        let observation = args.get(3).copied().ok_or("a derivation type with no relation")?;
+        let observation = args
+            .get(3)
+            .copied()
+            .ok_or("a derivation type with no relation")?;
         let (_, parts) = self.b.spine(observation);
         match parts.as_slice() {
             [fits, value] => Ok((*fits, *value)),
@@ -452,7 +455,11 @@ impl<'a> Writer<'_, 'a> {
                         condition,
                         then_branch,
                         else_branch,
-                    } => (condition.as_ref(), then_branch.as_ref(), else_branch.as_ref()),
+                    } => (
+                        condition.as_ref(),
+                        then_branch.as_ref(),
+                        else_branch.as_ref(),
+                    ),
                     _ => return Err("the lowering of a conditional is not a cond".to_owned()),
                 };
                 self.conditional(term, condition, then_value, else_value, (c, t, e), scope)
@@ -487,11 +494,23 @@ impl<'a> Writer<'_, 'a> {
                         condition,
                         then_branch,
                         else_branch,
-                    } => (condition.as_ref(), then_branch.as_ref(), else_branch.as_ref()),
+                    } => (
+                        condition.as_ref(),
+                        then_branch.as_ref(),
+                        else_branch.as_ref(),
+                    ),
                     _ => return Err("the lowering of && is not a cond".to_owned()),
                 };
                 let else_term = SemanticTerm::Bool { value: false };
-                self.conditional_of(Selection::And, None, left, right, &else_term, (c, t, e), scope)
+                self.conditional_of(
+                    Selection::And,
+                    None,
+                    left,
+                    right,
+                    &else_term,
+                    (c, t, e),
+                    scope,
+                )
             }
             SemanticTerm::Or { left, right } => {
                 let (c, t, e) = match expr {
@@ -499,11 +518,23 @@ impl<'a> Writer<'_, 'a> {
                         condition,
                         then_branch,
                         else_branch,
-                    } => (condition.as_ref(), then_branch.as_ref(), else_branch.as_ref()),
+                    } => (
+                        condition.as_ref(),
+                        then_branch.as_ref(),
+                        else_branch.as_ref(),
+                    ),
                     _ => return Err("the lowering of || is not a cond".to_owned()),
                 };
                 let then_term = SemanticTerm::Bool { value: true };
-                self.conditional_of(Selection::Or, None, left, &then_term, right, (c, t, e), scope)
+                self.conditional_of(
+                    Selection::Or,
+                    None,
+                    left,
+                    &then_term,
+                    right,
+                    (c, t, e),
+                    scope,
+                )
             }
             SemanticTerm::Not { value } => {
                 let operand_exprs = match expr {
@@ -540,7 +571,9 @@ impl<'a> Writer<'_, 'a> {
             SemanticTerm::First { value } | SemanticTerm::Second { value } => {
                 let inner_expr = match expr {
                     Expr::First { value } | Expr::Second { value } => value.as_ref(),
-                    _ => return Err("the lowering of a projection is not first or second".to_owned()),
+                    _ => {
+                        return Err("the lowering of a projection is not first or second".to_owned())
+                    }
                 };
                 let ty = self.infer(value, scope)?;
                 let (left, right) = match &ty {
@@ -718,7 +751,9 @@ impl<'a> Writer<'_, 'a> {
                 operands,
                 ..
             } if operands.len() == 2 => Ok((&operands[0], &operands[1])),
-            _ => Err("a literal collection lowered to something other than a cons chain".to_owned()),
+            _ => {
+                Err("a literal collection lowered to something other than a cons chain".to_owned())
+            }
         }
     }
 
@@ -773,7 +808,10 @@ impl<'a> Writer<'_, 'a> {
         let value = self.value_ty();
         let map = self.b.konst_at(
             "List.map",
-            vec![crate::ir::core::CoreLevel::Zero, crate::ir::core::CoreLevel::Zero],
+            vec![
+                crate::ir::core::CoreLevel::Zero,
+                crate::ir::core::CoreLevel::Zero,
+            ],
         );
         let t = self.b.apps(map, &[alpha, value, e, tail_src]);
         self.apply("construct_cons", &[("h", h), ("t", t)], &[])
@@ -885,8 +923,24 @@ impl<'a> Writer<'_, 'a> {
         let equations = node.map(|_| (self.b.free(), self.b.free()));
         let (then_scope, else_scope) = match (node, equations) {
             (Some(node), Some((on_true, on_false))) => (
-                Self::entering(scope, Step::If { node, polarity: true }, on_true, &[]),
-                Self::entering(scope, Step::If { node, polarity: false }, on_false, &[]),
+                Self::entering(
+                    scope,
+                    Step::If {
+                        node,
+                        polarity: true,
+                    },
+                    on_true,
+                    &[],
+                ),
+                Self::entering(
+                    scope,
+                    Step::If {
+                        node,
+                        polarity: false,
+                    },
+                    on_false,
+                    &[],
+                ),
             ),
             _ => (scope.clone(), scope.clone()),
         };
@@ -960,8 +1014,10 @@ impl<'a> Writer<'_, 'a> {
         let value_fn = self.b.lam_over("__b", EXPLICIT, bool, guard, encoded);
         let tru = self.tru();
         let fls = self.fls();
-        let then_branch = self.guarded(condition_src, tru, then_pf, equations.map(|pair| pair.0))?;
-        let else_branch = self.guarded(condition_src, fls, else_pf, equations.map(|pair| pair.1))?;
+        let then_branch =
+            self.guarded(condition_src, tru, then_pf, equations.map(|pair| pair.0))?;
+        let else_branch =
+            self.guarded(condition_src, fls, else_pf, equations.map(|pair| pair.1))?;
         self.apply(
             "conv_cond",
             &[("p", p), ("env", env)],
@@ -1045,5 +1101,4 @@ impl<'a> Writer<'_, 'a> {
         let ty = self.b.substitute(applied.ty, &[free], &[bound_src]);
         Ok(Pf { proof, ty })
     }
-
 }

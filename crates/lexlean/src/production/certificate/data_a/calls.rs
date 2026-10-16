@@ -133,9 +133,13 @@ impl<'a> Writer<'_, 'a> {
         }
         let mut out = body(self, &frees)?;
         for position in (0..frees.len()).rev() {
-            out = self
-                .b
-                .lam_over(&format!("__p{position}"), EXPLICIT, types[position], frees[position], out);
+            out = self.b.lam_over(
+                &format!("__p{position}"),
+                EXPLICIT,
+                types[position],
+                frees[position],
+                out,
+            );
         }
         Ok(out)
     }
@@ -288,9 +292,7 @@ impl<'a> Writer<'_, 'a> {
                     .iter()
                     .map(|argument| self.gen.source.close(argument, &scope.ctx.site))
                     .collect();
-                let index = self
-                    .gen
-                    .instance_index(&module, &function.name, &closed)?;
+                let index = self.gen.instance_index(&module, &function.name, &closed)?;
                 let list = self.operands(env, &[])?;
                 let fi = self.nat_u(index);
                 let proof = self.apply(
