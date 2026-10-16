@@ -37,7 +37,7 @@ const LEAN_BACKED: [&str; 14] = [
 
 pub(crate) fn run(id: &str) {
     // The operational cases (§22.11, §22.12) gate their own Lean-backed halves.
-    if matches!(id, "VR-20" | "VR-21" | "VR-22") {
+    if matches!(id, "VR-20" | "VR-21" | "VR-22" | "VR-23") {
         super::operational::run(id);
         return;
     }

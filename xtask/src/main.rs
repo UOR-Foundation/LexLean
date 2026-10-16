@@ -39,6 +39,7 @@ fn main() -> ExitCode {
         "check-test-inventory" => ci::check_test_inventory(&root),
         "ci-summary" => ci::ci_summary(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
         "ci-hints" => ci::ci_hints(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "ci-shards" => ci::ci_shards(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
@@ -63,6 +64,8 @@ fn main() -> ExitCode {
                  ci-summary              §9.4: summarize ci-evidence/ (recipe, stage, module times; memory)\n\
                  ci-hints                §22.11: scheduling hints from a verifier telemetry file\n\
                                          (--from verify-telemetry.jsonl --out hints.json)\n\
+                 ci-shards               §9.4: the committed partition of an example's verification\n\
+                                         runs every process once in import order\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
                  validate                validate-model then validate-spec-links\n\
@@ -159,7 +162,18 @@ fn engine_for(dir: &Path) -> Result<lexlean::Engine, Fail> {
 /// probe and audit modules, process records with the platform-bound fields
 /// normalized) must equal it, and `--write` regenerates them.
 fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
-    let dirs = example_dirs(root)?;
+    let part = ExamplesPart::from_environment()?;
+    let dirs: Vec<PathBuf> = example_dirs(root)?
+        .into_iter()
+        .filter(|dir| part.includes(&dir.file_name().unwrap_or_default().to_string_lossy()))
+        .collect();
+    if dirs.is_empty() {
+        return Err(format!(
+            "§9.4: the part `{}` names no example directory",
+            part.describe()
+        )
+        .into());
+    }
     for dir in dirs {
         let started = std::time::Instant::now();
         let name = dir
@@ -224,11 +238,84 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             })
             .map_err(|error| format!("{name}: build: {error}"))?;
         lap("build");
-        let verified = engine
-            .verify(lexlean::VerifyRequest {
-                selection: lexlean::Selection::Entrypoints,
-            })
-            .map_err(|error| format!("{name}: verify: {error}"))?;
+        // The part of the gate this job is (§9.4): a shard of one example's
+        // verification runs the processes its plan names and leaves; the join
+        // publishes and is compared like a whole verification.
+        let verified = match &part {
+            ExamplesPart::Shard {
+                example,
+                shard,
+                parts,
+            } if *example == name => {
+                let plan = repo_conformance::shards::Plan::read(root)?;
+                let shard_plan = shard_plan(&plan, &name, shard)?;
+                let imports: Vec<Utf8PathBuf> = plan
+                    .needs_closure(shard)?
+                    .into_iter()
+                    .map(|need| utf8(&parts.join(need)))
+                    .collect::<Result<_, _>>()?;
+                let output = utf8(&parts.join(shard))?;
+                let outcome = engine
+                    .verify_part(
+                        lexlean::VerifyRequest {
+                            selection: lexlean::Selection::Entrypoints,
+                        },
+                        lexlean::VerifyPart::Shard {
+                            plan: shard_plan,
+                            imports,
+                            output,
+                        },
+                    )
+                    .map_err(|error| format!("{name}: verify (shard {shard}): {error}"))?;
+                lap("verify");
+                let lexlean::VerifyPartOutcome::Shard { output, processes } = outcome else {
+                    return Err(format!("{name}: shard `{shard}` published a verification").into());
+                };
+                println!(
+                    "verify-examples: {name} took {} s",
+                    started.elapsed().as_secs()
+                );
+                println!(
+                    "verify-examples: {name}: shard `{shard}` ran {processes} processes into {output}"
+                );
+                append_example_telemetry(&name, started, &steps, Some(shard));
+                continue;
+            }
+            ExamplesPart::Join { example, parts } if *example == name => {
+                let plan = repo_conformance::shards::Plan::read(root)?;
+                let join_plan = shard_plan(&plan, &name, repo_conformance::shards::JOIN)?;
+                let others: Vec<Utf8PathBuf> = plan
+                    .shards
+                    .keys()
+                    .filter(|shard| shard.as_str() != repo_conformance::shards::JOIN)
+                    .map(|shard| utf8(&parts.join(shard)))
+                    .collect::<Result<_, _>>()?;
+                let outcome = engine
+                    .verify_part(
+                        lexlean::VerifyRequest {
+                            selection: lexlean::Selection::Entrypoints,
+                        },
+                        lexlean::VerifyPart::Join {
+                            plan: join_plan,
+                            parts: others,
+                        },
+                    )
+                    .map_err(|error| format!("{name}: verify (join): {error}"))?;
+                let lexlean::VerifyPartOutcome::Verified(verified) = outcome else {
+                    return Err(format!("{name}: the join published no verification").into());
+                };
+                println!(
+                    "verify-examples: {name}: joined {} shards",
+                    plan.shards.len() - 1
+                );
+                verified
+            }
+            _ => engine
+                .verify(lexlean::VerifyRequest {
+                    selection: lexlean::Selection::Entrypoints,
+                })
+                .map_err(|error| format!("{name}: verify: {error}"))?,
+        };
         lap("verify");
         // The wall-clock of each example is printed so that a run that
         // approaches the CI job limit shows where its time went.
@@ -256,22 +343,7 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             "verify-examples: {name} verified-digest {}",
             ci::tree_digest(verified.root.as_std_path())?
         );
-        if let Some(directory) = std::env::var_os(lexlean::verify::operational::TELEMETRY_VARIABLE)
-            .filter(|value| !value.is_empty())
-        {
-            lexlean::verify::telemetry::append(
-                Path::new(&directory),
-                "examples-telemetry.jsonl",
-                &serde_json::json!({
-                    "event": "example",
-                    "example": name,
-                    "wall_ms": u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
-                    "process_width": lexlean::verify::operational::Operational::from_environment()
-                        .map_or(0, |operational| operational.width()),
-                    "steps": steps,
-                }),
-            );
-        }
+        append_example_telemetry(&name, started, &steps, None);
 
         let records = normalized_verify_records(verified.root.as_std_path())?;
         let expected_root = dir.join("expected").join("verify");
@@ -305,6 +377,156 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
         );
     }
     Ok(())
+}
+
+/// The variable that names the part of the `examples` recipe a CI job runs
+/// (SPEC.md §9.4). Unset or empty, the recipe verifies every example whole.
+pub const EXAMPLES_PART_VARIABLE: &str = "LEXLEAN_EXAMPLES_PART";
+
+/// The variable that names the directory the parts of a sharded example
+/// exchange their output through: one subdirectory per shard, named after
+/// it. Required by a shard or join part.
+pub const EXAMPLES_PARTS_VARIABLE: &str = "LEXLEAN_EXAMPLES_PARTS";
+
+/// Which part of the `examples` recipe a job runs (§9.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ExamplesPart {
+    /// Every example, whole.
+    All,
+    /// Every example but one, whole.
+    Without(String),
+    /// One shard of one example's verification.
+    Shard {
+        example: String,
+        shard: String,
+        parts: PathBuf,
+    },
+    /// The join of one example's verification.
+    Join { example: String, parts: PathBuf },
+}
+
+impl ExamplesPart {
+    /// Read the part from the environment: `without:<example>`,
+    /// `shard:<example>:<shard>`, or `join:<example>`; unset or empty is
+    /// every example whole.
+    fn from_environment() -> Result<Self, Fail> {
+        let value = std::env::var_os(EXAMPLES_PART_VARIABLE).unwrap_or_default();
+        let text = value
+            .to_str()
+            .ok_or_else(|| format!("{EXAMPLES_PART_VARIABLE}: the value is not Unicode"))?;
+        Self::parse(text, || {
+            std::env::var_os(EXAMPLES_PARTS_VARIABLE)
+                .filter(|value| !value.is_empty())
+                .map(PathBuf::from)
+                .ok_or_else(|| {
+                    format!("{EXAMPLES_PARTS_VARIABLE}: a shard or join part names the directory the parts exchange their output through").into()
+                })
+        })
+    }
+
+    fn parse(text: &str, parts: impl Fn() -> Result<PathBuf, Fail>) -> Result<Self, Fail> {
+        let fields: Vec<&str> = text.split(':').collect();
+        let malformed = || -> Fail {
+            format!(
+                "{EXAMPLES_PART_VARIABLE}: `{text}` is not a part: expected empty, `without:<example>`, `shard:<example>:<shard>`, or `join:<example>`"
+            )
+            .into()
+        };
+        let named = |field: &str| -> Result<String, Fail> {
+            if field.is_empty() || field.contains(['/', '\\', '.']) {
+                return Err(malformed());
+            }
+            Ok(field.to_owned())
+        };
+        match fields.as_slice() {
+            [""] => Ok(Self::All),
+            ["without", example] => Ok(Self::Without(named(example)?)),
+            ["shard", example, shard] => Ok(Self::Shard {
+                example: named(example)?,
+                shard: named(shard)?,
+                parts: parts()?,
+            }),
+            ["join", example] => Ok(Self::Join {
+                example: named(example)?,
+                parts: parts()?,
+            }),
+            _ => Err(malformed()),
+        }
+    }
+
+    /// Does this part run the example directory named `name`?
+    fn includes(&self, name: &str) -> bool {
+        match self {
+            Self::All => true,
+            Self::Without(example) => example != name,
+            Self::Shard { example, .. } | Self::Join { example, .. } => example == name,
+        }
+    }
+
+    fn describe(&self) -> String {
+        match self {
+            Self::All => "all".to_owned(),
+            Self::Without(example) => format!("without:{example}"),
+            Self::Shard { example, shard, .. } => format!("shard:{example}:{shard}"),
+            Self::Join { example, .. } => format!("join:{example}"),
+        }
+    }
+}
+
+/// The plan of one shard of `example`, as the verifier takes it.
+fn shard_plan(
+    plan: &repo_conformance::shards::Plan,
+    example: &str,
+    shard: &str,
+) -> Result<lexlean::VerifyPlan, Fail> {
+    if plan.project != example {
+        return Err(format!(
+            "§9.4: {} partitions `{}`, and the part names `{example}`",
+            repo_conformance::shards::PLAN_FILE,
+            plan.project
+        )
+        .into());
+    }
+    let found = plan.shards.get(shard).ok_or_else(|| {
+        format!(
+            "§9.4: {} has no shard `{shard}`",
+            repo_conformance::shards::PLAN_FILE
+        )
+    })?;
+    Ok(lexlean::VerifyPlan {
+        elaborate: found.elaborate.clone(),
+        replay: found.replay.clone(),
+    })
+}
+
+/// One `example` event of the CI evidence (§22.12): the example, what each
+/// step took, and the part that ran it when the example ran as a part.
+fn append_example_telemetry(
+    name: &str,
+    started: std::time::Instant,
+    steps: &serde_json::Map<String, serde_json::Value>,
+    shard: Option<&str>,
+) {
+    if let Some(directory) = std::env::var_os(lexlean::verify::operational::TELEMETRY_VARIABLE)
+        .filter(|value| !value.is_empty())
+    {
+        let mut event = serde_json::json!({
+            "event": "example",
+            "example": name,
+            "wall_ms": u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            "process_width": lexlean::verify::operational::Operational::from_environment()
+                .map_or(0, |operational| operational.width()),
+            "steps": steps,
+        });
+        if let Some(shard) = shard {
+            event["shard"] = serde_json::Value::String(shard.to_owned());
+        }
+        lexlean::verify::telemetry::append(
+            Path::new(&directory),
+            "examples-telemetry.jsonl",
+            &event,
+        );
+    }
 }
 
 /// The verification records that are platform independent after
@@ -975,5 +1197,58 @@ mod tests {
             untouched["argv"][1],
             "/home/someone/.elan/toolchains/x/bin/leanchecker"
         );
+    }
+}
+
+#[cfg(test)]
+mod examples_part_tests {
+    use super::ExamplesPart;
+    use std::path::PathBuf;
+
+    #[test]
+    fn a_part_is_read_from_its_text_and_a_shard_needs_the_parts_directory() {
+        let parts = || Ok(PathBuf::from("parts"));
+        assert_eq!(
+            ExamplesPart::parse("", parts).expect("empty"),
+            ExamplesPart::All
+        );
+        assert_eq!(
+            ExamplesPart::parse("without:uor-atlas", parts).expect("without"),
+            ExamplesPart::Without("uor-atlas".to_owned())
+        );
+        assert_eq!(
+            ExamplesPart::parse("shard:uor-atlas:pairs-a", parts).expect("shard"),
+            ExamplesPart::Shard {
+                example: "uor-atlas".to_owned(),
+                shard: "pairs-a".to_owned(),
+                parts: PathBuf::from("parts"),
+            }
+        );
+        assert_eq!(
+            ExamplesPart::parse("join:uor-atlas", parts).expect("join"),
+            ExamplesPart::Join {
+                example: "uor-atlas".to_owned(),
+                parts: PathBuf::from("parts"),
+            }
+        );
+        for malformed in [
+            "all",
+            "shard:uor-atlas",
+            "join:",
+            "without:../x",
+            "shard:a:b:c",
+        ] {
+            assert!(
+                ExamplesPart::parse(malformed, parts).is_err(),
+                "{malformed}"
+            );
+        }
+        let no_parts = || Err("no parts directory".into());
+        assert!(ExamplesPart::parse("join:uor-atlas", no_parts).is_err());
+        assert!(ExamplesPart::parse("without:uor-atlas", no_parts).is_ok());
+        let shard = ExamplesPart::parse("shard:uor-atlas:prefix", parts).expect("shard");
+        assert!(shard.includes("uor-atlas") && !shard.includes("compiler"));
+        assert!(ExamplesPart::Without("uor-atlas".to_owned()).includes("compiler"));
+        assert_eq!(shard.describe(), "shard:uor-atlas:prefix");
     }
 }

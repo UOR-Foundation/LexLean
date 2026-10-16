@@ -3,6 +3,7 @@
 //! deterministic allow-list environment, checked limits, and the exact
 //! path-replacement normalization.
 
+use std::collections::BTreeSet;
 use std::io::Read;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -222,6 +223,79 @@ impl ChildRecord {
             fields.push(("module", Json::Str(module.clone())));
         }
         Json::object(fields)
+    }
+
+    /// A record read back from the JSON [`Self::to_json`] wrote, as a later
+    /// part of a verification reads an earlier part's (§9.4). The stream
+    /// digests are checked against the streams: a record whose text and
+    /// digest disagree was not written by the verifier.
+    ///
+    /// # Errors
+    ///
+    /// A value that is not a process record.
+    pub fn from_json(json: &Json) -> Result<Self, String> {
+        let Json::Obj(fields) = json else {
+            return Err("a process record is an object".to_owned());
+        };
+        let text = |name: &str| -> Result<String, String> {
+            match fields.get(name) {
+                Some(Json::Str(text)) => Ok(text.clone()),
+                _ => Err(format!("`{name}` is a required string")),
+            }
+        };
+        let argv = match fields.get("argv") {
+            Some(Json::Arr(items)) => items
+                .iter()
+                .map(|item| match item {
+                    Json::Str(text) => Ok(text.clone()),
+                    _ => Err("`argv` holds strings".to_owned()),
+                })
+                .collect::<Result<Vec<String>, String>>()?,
+            _ => return Err("`argv` is a required array".to_owned()),
+        };
+        let exit_code = match fields.get("exit_code") {
+            Some(Json::Int(code)) => {
+                i32::try_from(*code).map_err(|_| "`exit_code` is an i32".to_owned())?
+            }
+            _ => return Err("`exit_code` is a required integer".to_owned()),
+        };
+        let stdout = text("stdout")?;
+        let stderr = text("stderr")?;
+        for (name, stream) in [("stdout_sha256", &stdout), ("stderr_sha256", &stderr)] {
+            if text(name)? != Sha256Digest::of(stream.as_bytes()).to_hex() {
+                return Err(format!("`{name}` is not the digest of the stream"));
+            }
+        }
+        let module = match fields.get("module") {
+            None => None,
+            Some(Json::Str(module)) => Some(module.clone()),
+            Some(_) => return Err("`module` is a string".to_owned()),
+        };
+        let known: BTreeSet<&str> = [
+            "tool",
+            "argv",
+            "exit_code",
+            "executable_sha256",
+            "stdout",
+            "stderr",
+            "stdout_sha256",
+            "stderr_sha256",
+            "module",
+        ]
+        .into_iter()
+        .collect();
+        if let Some(unknown) = fields.keys().find(|key| !known.contains(key.as_str())) {
+            return Err(format!("`{unknown}` is not a field of a process record"));
+        }
+        Ok(Self {
+            tool: text("tool")?,
+            module,
+            argv,
+            exit_code,
+            stdout,
+            stderr,
+            executable_sha256: Sha256Digest::from_hex(&text("executable_sha256")?)?,
+        })
     }
 }
 
