@@ -7737,70 +7737,70 @@
 'LexLeanPreservation.encOption.eq_2' does not depend on any axioms
 'LexLeanPreservation.encPair.eq_1' does not depend on any axioms
 'LexLeanPreservation.encUnit.eq_1' does not depend on any axioms
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R0.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R1.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R2.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R3.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R4.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R5.root' depends on axioms: [propext, Classical.choice, Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R0.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R1.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R2.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R3.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R4.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R5.root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R0.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R1.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R1.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R1.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R1.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R2.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R2.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R2.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R2.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R3.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R3.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R3.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R3.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R4.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R4.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R5.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R5.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R0.Compose.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0.Compose.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R0.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R0.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R1.Compose.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R1.Compose.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R1.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R1.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R2.Compose.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R2.Compose.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R2.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R2.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R3.Compose.RustCore.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R3.Compose.RustCore.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R3.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R3.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R4.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R4.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
-'LexLeanPreserve.C5b9de8515611f71fcd6b0d239b90187e.R5.Compose.RustStd.root' depends on axioms: [propext,
+'LexLeanPreserve.C8b4ddd633568e02cb00e48501ea9dbc5.R5.Compose.RustStd.root' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -- statement vocabulary

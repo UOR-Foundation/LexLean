@@ -57,11 +57,12 @@ wraps the module as a `.lex.tex` source.
 
 The source carries a title from the project glossary
 `language/text-1.2/library/glossary/text.titles`, so the library project passes
-the closed-lexicon checks like any project. The committed module
-(`language/text-1.2/library/src/LexLeanText.lex.tex`, 32,188 bytes) is the
-exporter's output re-pointed at that glossary; the canonical exporter output of
-the same run (32,196 bytes) differs only in that header line and is otherwise
-byte-identical.
+the closed-lexicon checks like any project. The module
+(`language/text-1.2/library/src/LexLeanText.lex.tex`) is the exporter's output
+re-pointed at that glossary, which differs from the canonical exporter output of
+the same run only in that header line. It is committed in the authoring notation
+(SPEC.md §17.21), written by `lexlean fmt` from that data: the notation prints
+the same module, and `AU-04` requires it of every language-1.2 source.
 
 ## Equivalence
 
