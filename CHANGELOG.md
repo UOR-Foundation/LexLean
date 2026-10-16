@@ -15,6 +15,26 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- A language-1.2 `tokenizer` elaborates, in linking, to ordinary definitions
+  over the embedded text-laws library and to generated theorems the library
+  proves (SPEC.md §17.12, `LM-01`..`LM-03`, `LM-13`, #30). The library is
+  LexLean source: one native `lexlean/core-module/2` module of the embedded
+  project `language/text-1.2/library`, whose Lean the compiler generates and
+  compiles into the verification's olean root before any module that
+  imports it; the one-time migration of the hand-written proof is recorded
+  in `tests/text-laws/MIGRATION.md` and no authored Lean implementation of
+  the laws exists in the release tree. A tokenizer over a `utf8_lines`
+  vocabulary artifact of role `vocabulary` elaborates to `pieces`, `size`,
+  `encode`, `decode`, `encodeText`, and `decodeText`, and generates
+  `roundtrip`, `in_range`, and `text_roundtrip`, each proved by one library
+  lemma after unfolding exactly the named definitions; a vocabulary of
+  another role or schema, or a tokenizer with type parameters, is refused
+  with `LLT4006`, and a scheme outside `byte_level` and `longest_match` is a
+  schema violation (`LLT4001`). The language-1.2 `semantic_ir`,
+  `lean_backend`, and `latex_backend` versions move to 11, 18, and 12, so
+  every language-1.2 lock, golden, fixture, and verification record is
+  regenerated. The register holds 395 IDs.
+
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining
