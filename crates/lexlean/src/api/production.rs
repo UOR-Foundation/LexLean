@@ -1341,7 +1341,12 @@ fn build_inner(
                     &rendering.composed.theorem,
                 ),
             ] {
-                let path = certificate_path(module);
+                // Certificate E is kernel-term data, recorded in the authoring
+                // notation (SPEC.md §17.17); A and B are Lean text.
+                let path = match role {
+                    CertificateRole::E => crate::production::preserve::notation_path(module),
+                    CertificateRole::A | CertificateRole::B => certificate_path(module),
+                };
                 certificates.push(CertificateRef {
                     role,
                     module: module.clone(),
@@ -1828,7 +1833,15 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                         && stated_certificate.module == module
                         && stated_certificate.theorem == theorem
                         && stated_certificate.file.path
-                            == format!("evidence/certificates/{}", certificate_path(module))
+                            == format!(
+                                "evidence/certificates/{}",
+                                match role {
+                                    CertificateRole::E =>
+                                        crate::production::preserve::notation_path(module),
+                                    CertificateRole::A | CertificateRole::B =>
+                                        certificate_path(module),
+                                }
+                            )
                         && (
                             stated_certificate.file.byte_length,
                             stated_certificate.file.sha256,

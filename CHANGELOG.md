@@ -15,6 +15,24 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
+  stage 5 of #27). The composition certificate of every production root is no
+  longer written as Lean text by `production/certificate.rs`: the compiler
+  builds it as a native core module of schema `lexlean/core-module/2`, the
+  lemma types read from the native preservation library and instantiated
+  binder by binder (`production/kernel.rs`), the recursive groups' theorems as
+  recursor terms, and the one core backend renders it to the Lean verification
+  compiles. The verify record holds the module in the authoring notation
+  (`…/Compose/RustStd.lex.tex` in place of `.lean`), which reads back to the
+  data byte for byte, and `preservation.json` binds those bytes. A certificate
+  held as data is audited row by row (imports, kinds, safety, exact axiom
+  policies, forbidden constants) and the audit module prints and checks the
+  axioms of every one of its rows. The statements of the 76 certificates E of
+  the four corpora are those the text stated, kernel term for kernel term
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
+  still Lean text, so the data certificate is rendered outside the module
+  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
 - Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
   no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
   integer type with `<=` and `<`, by mathematical value; language 1.1 keeps

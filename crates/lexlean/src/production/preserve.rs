@@ -128,6 +128,10 @@ pub struct StagedFile {
     pub path: String,
     pub module: String,
     pub text: String,
+    /// The record of a certificate held as kernel data: its authoring
+    /// notation, which the verify record holds in place of the Lean the
+    /// decoder compiles.
+    pub source: Option<String>,
 }
 
 /// The files a project's certificates compile in, and their order.
@@ -167,6 +171,11 @@ struct Native {
     texts: BTreeMap<String, String>,
     /// The declarations a Lean command can name, with their exact axioms.
     declarations: Vec<LibraryDeclaration>,
+    /// The native modules themselves, by name: the kernel data a certificate
+    /// built as data reads its lemma types from.
+    modules: BTreeMap<String, crate::ir::core::CoreModule>,
+    /// Every declaration row by name: its module and its position.
+    rows: BTreeMap<String, (String, usize)>,
 }
 
 /// The embedded module list, checked for its tag and toolchain.
@@ -298,6 +307,8 @@ fn build_native(
 ) -> Result<Native, String> {
     let mut texts = BTreeMap::new();
     let mut declarations = Vec::new();
+    let mut modules = BTreeMap::new();
+    let mut rows = BTreeMap::new();
     let mut seen_modules: BTreeSet<String> = BTreeSet::new();
     let mut names = BTreeSet::new();
     // The source that first declared each equation lemma, by name.
@@ -375,11 +386,17 @@ fn build_native(
         let text = crate::backend::core::lean_text(&core)
             .map_err(|diagnostic| format!("{path}: {}", diagnostic.message))?;
         texts.insert(module.clone(), text);
+        for (position, row) in core.declarations.iter().enumerate() {
+            rows.insert(row.name.clone(), (module.clone(), position));
+        }
+        modules.insert(module.clone(), core);
         seen_modules.insert(module.clone());
     }
     Ok(Native {
         texts,
         declarations,
+        modules,
+        rows,
     })
 }
 
@@ -422,6 +439,121 @@ fn native() -> Result<&'static Native, Diagnostic> {
     NATIVE.get_or_init(load_native).as_ref().map_err(internal)
 }
 
+/// A declaration of the native library by name, with the module that holds
+/// it: the kernel data a certificate built as data reads a lemma's type
+/// from (SPEC.md §17.17).
+///
+/// # Errors
+///
+/// A name no native module declares, or a library that does not load.
+pub(crate) fn native_declaration(
+    name: &str,
+) -> Result<
+    (
+        &'static crate::ir::core::CoreModule,
+        &'static crate::ir::core::CoreDeclaration,
+    ),
+    String,
+> {
+    let native = native().map_err(|diagnostic| diagnostic.message.clone())?;
+    let (module, position) = native
+        .rows
+        .get(name)
+        .ok_or_else(|| format!("the preservation library declares no `{name}`"))?;
+    let core = native
+        .modules
+        .get(module)
+        .ok_or_else(|| format!("the library has no module `{module}`"))?;
+    Ok((core, &core.declarations[*position]))
+}
+
+/// The exact axioms the registry records for a library declaration.
+///
+/// # Errors
+///
+/// A name no native module declares.
+pub(crate) fn library_axioms(name: &str) -> Result<Vec<String>, String> {
+    let (_, declaration) = native_declaration(name)?;
+    Ok(declaration.policy.axioms().to_vec())
+}
+
+/// Audit a certificate held as kernel data, row by row and node by node
+/// (SP-14): it imports only modules of the environment, declares only
+/// theorems, definitions, and abbreviations, every one of them safe, with its
+/// axioms pinned exactly, and names no forbidden constant in any spelling. A
+/// certificate as data has no text to scan: the schema admits no axiom and
+/// no tactic, and the kernel checks every term.
+///
+/// # Errors
+///
+/// The first rule the module breaks.
+pub fn audit_core(
+    module: &crate::ir::core::CoreModule,
+    environment: &BTreeSet<String>,
+) -> Result<(), String> {
+    use crate::ir::core::{CoreAxiomPolicy, CoreDeclKind, CoreNode};
+    for import in &module.imports {
+        if !environment.contains(import) {
+            return Err(format!("the import `{import}` is outside the environment"));
+        }
+    }
+    for row in &module.declarations {
+        if row.generated {
+            return Err(format!("the row `{}` is marked generated", row.name));
+        }
+        if !matches!(
+            row.kind,
+            CoreDeclKind::Theorem | CoreDeclKind::Definition | CoreDeclKind::Abbrev
+        ) {
+            return Err(format!(
+                "the row `{}` declares a {:?}, which a certificate does not",
+                row.name, row.kind
+            ));
+        }
+        if row.safety.is_some() {
+            return Err(format!("the row `{}` is not a safe definition", row.name));
+        }
+        if !matches!(row.policy, CoreAxiomPolicy::Exact(_)) {
+            return Err(format!(
+                "the row `{}` does not pin its axioms exactly",
+                row.name
+            ));
+        }
+    }
+    for node in &module.nodes {
+        if let CoreNode::Const { n, .. } = node {
+            if n.split('.')
+                .any(|segment| FORBIDDEN_CONSTANTS.contains(&segment))
+            {
+                return Err(format!("the forbidden constant `{n}`"));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Audit a certificate: as data when it is held as data, else token by token
+/// as text.
+fn audit_certificate(
+    certificate: &Certificate,
+    environment: &BTreeSet<String>,
+) -> Result<(), String> {
+    match &certificate.data {
+        Some(data) => audit_core(data, environment),
+        None => audit_tokens(&certificate.text, environment),
+    }
+}
+
+/// The bytes a verify record holds for a certificate: the notation of one
+/// held as data, else its Lean text.
+#[must_use]
+pub fn recorded_bytes(certificate: &Certificate) -> &[u8] {
+    match &certificate.source {
+        Some(source) => source.as_bytes(),
+        None => certificate.text.as_bytes(),
+    }
+}
+
 /// The library registry: the module list the project ships and every
 /// declaration of the native modules a Lean command can name, with its exact
 /// axioms.
@@ -450,6 +582,17 @@ pub fn module_text(module: &str) -> Result<&'static str, Diagnostic> {
         .get(module)
         .map(String::as_str)
         .ok_or_else(|| internal(format!("the library has no module `{module}`")))
+}
+
+/// The path of a certificate held as kernel data in a verify record: the
+/// module's path with the authoring notation's extension (SPEC.md §17.21.8).
+#[must_use]
+pub fn notation_path(module: &str) -> String {
+    let path = module_path(module);
+    match path.strip_suffix(".lean") {
+        Some(stem) => format!("{stem}.lex.tex"),
+        None => format!("{path}.lex.tex"),
+    }
 }
 
 /// The modules a Lean source imports.
@@ -520,6 +663,17 @@ fn audit_text(library: &Library, certificates: &[Certificate]) -> String {
     }
     for certificate in certificates {
         text.push_str(&format!("#print axioms {}\n", certificate.theorem));
+    }
+    // A certificate held as data pins the axioms of every row: the audit
+    // prints them all, so a row whose policy lies is refused.
+    for certificate in certificates {
+        if let Some(data) = &certificate.data {
+            for row in &data.declarations {
+                if row.name != certificate.theorem {
+                    text.push_str(&format!("#print axioms {}\n", row.name));
+                }
+            }
+        }
     }
     text.push_str(&format!("#print \"{VOCABULARY_MARKER}\"\n"));
     for (name, statement) in VOCABULARY {
@@ -1101,6 +1255,7 @@ fn runtime_files<'a>(
             path: module_path(&runtime.name),
             text: runtime.text.clone(),
             module: runtime.name.clone(),
+            source: None,
         })
         .collect())
 }
@@ -1131,6 +1286,7 @@ pub fn workspace(
             path: module_path(&runtime.name),
             text: runtime.text.clone(),
             module: runtime.name.clone(),
+            source: None,
         });
     }
     for module in TARGET_MODULES
@@ -1146,6 +1302,7 @@ pub fn workspace(
             path: module_path(&module),
             text: text.to_owned(),
             module,
+            source: None,
         });
     }
     for (module, text) in ordered(user)? {
@@ -1161,11 +1318,12 @@ pub fn workspace(
             path: module_path(&module),
             module,
             text,
+            source: None,
         });
     }
     environment.extend(user.iter().map(|(module, _)| module.clone()));
     for certificate in certificates {
-        audit_tokens(&certificate.text, &environment).map_err(|reason| {
+        audit_certificate(certificate, &environment).map_err(|reason| {
             internal(format!(
                 "the certificate `{}`: {reason}",
                 certificate.module
@@ -1182,6 +1340,7 @@ pub fn workspace(
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
             text: certificate.text.clone(),
+            source: certificate.source.clone(),
         });
     }
     Ok(Workspace {
@@ -1194,6 +1353,7 @@ pub fn workspace(
             path: module_path(AUDIT_MODULE),
             module: AUDIT_MODULE.to_owned(),
             text: audit_text(&library, certificates),
+            source: None,
         },
     })
 }
@@ -1284,6 +1444,27 @@ pub fn audit(output: &str, certificates: &[Certificate]) -> Result<(), String> {
                 ));
             }
         }
+        if let Some(data) = &certificate.data {
+            for row in &data.declarations {
+                let mut pinned = row.policy.axioms().to_vec();
+                pinned.sort();
+                match printed.get(&row.name) {
+                    Some(axioms) if *axioms == pinned => {}
+                    Some(axioms) => {
+                        return Err(format!(
+                            "the certificate row `{}` depends on {axioms:?}, its policy pins {pinned:?}",
+                            row.name
+                        ));
+                    }
+                    None => {
+                        return Err(format!(
+                            "the audit printed no axioms for the certificate row `{}`",
+                            row.name
+                        ));
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -1340,12 +1521,13 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
             path: module_path(&module),
             text: text.to_owned(),
             module,
+            source: None,
         });
     }
     imports.extend(modules.iter().cloned());
     let mut staged = Vec::new();
     for certificate in certificates {
-        audit_tokens(&certificate.text, &imports).map_err(|reason| {
+        audit_certificate(certificate, &imports).map_err(|reason| {
             internal(format!(
                 "the certificate `{}`: {reason}",
                 certificate.module
@@ -1358,6 +1540,7 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
             text: certificate.text.clone(),
+            source: certificate.source.clone(),
         });
     }
     Ok(Stage {
@@ -1367,6 +1550,7 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
             path: module_path(AUDIT_MODULE),
             module: AUDIT_MODULE.to_owned(),
             text: audit_text(&library, certificates),
+            source: None,
         },
     })
 }
@@ -1613,14 +1797,16 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                                         ),
                                                         (
                                                             "byte_length",
-                                                            Json::from_usize(composed.text.len()),
+                                                            Json::from_usize(
+                                                                recorded_bytes(composed).len(),
+                                                            ),
                                                         ),
                                                         (
                                                             "sha256",
                                                             Json::Str(
-                                                                Sha256Digest::of(
-                                                                    composed.text.as_bytes(),
-                                                                )
+                                                                Sha256Digest::of(recorded_bytes(
+                                                                    composed,
+                                                                ))
                                                                 .to_hex(),
                                                             ),
                                                         ),
@@ -1644,6 +1830,15 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
 /// rejection concerns.
 #[must_use]
 pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    // A certificate held as data is added by the decoder, whose message
+    // names the declaration the kernel refused.
+    if let Some(named) = output.lines().find_map(|line| {
+        let (_, rest) = line.split_once("native core declaration '")?;
+        let (name, _) = rest.split_once('\'')?;
+        name.rsplit('.').next().map(str::to_owned)
+    }) {
+        return Some(named);
+    }
     let line: usize = output.lines().find_map(|line| {
         let (_, rest) = line.split_once(".lean:")?;
         let (number, rest) = rest.split_once(':')?;
