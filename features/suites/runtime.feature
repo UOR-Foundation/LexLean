@@ -25,8 +25,8 @@ Feature: runtime
     And the planted row fails with LLV7005
 
   @RT-04 @build
-  Scenario: No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules it uses and splices none, and the only string literal of the compiler's source that holds Lean declarations under a namespace is the decoder of core module 2, which loads native modules and so cannot be one; a planted runtime text constant, raw or escaped, is found.
-    Given the source of the compiler
-    When every string literal outside its unit tests is read for Lean declarations under a namespace
-    Then the only one is the decoder of core module 2
-    And a runtime text constant planted in the semantic backend, raw or escaped, is found
+  Scenario: No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found.
+    Given the source of the compiler and every committed generated language-1.2 module
+    When every string literal outside its unit-test items, and every run of literals written together, is read for a runtime namespace opened or declared under, and for a declaration inside a namespace
+    Then the only one is the decoder of core module 2, and every generated module that names a runtime constant imports the runtime module that declares it and declares nothing under a runtime namespace
+    And a runtime text planted in the semantic backend, raw or escaped, with or without a namespace line, split by concat!, an array or format!, or in production code after a unit test module, is found, a runtime text inside a unit-test item is not, and a generated module without its runtime imports or with a runtime declaration is refused

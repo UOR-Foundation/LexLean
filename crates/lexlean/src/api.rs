@@ -47,6 +47,54 @@ pub struct VerifyRequest {
     pub selection: Selection,
 }
 
+/// Which modules one part of a verification runs (SPEC.md §9.4): full Lean
+/// module names, as the verifier labels its processes (§22.11).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct VerifyPlan {
+    /// The modules the part elaborates.
+    pub elaborate: Vec<String>,
+    /// The modules the part replays and audits.
+    pub replay: Vec<String>,
+}
+
+/// One part of a verification run as several parts on several hosts of one
+/// run (SPEC.md §9.4). Every process of the verification runs exactly once
+/// across the parts; the join publishes what a whole verification publishes.
+pub enum VerifyPart {
+    /// A shard: the plan's processes, written to `output`; nothing published.
+    Shard {
+        /// The processes of this shard.
+        plan: VerifyPlan,
+        /// The output directories of the parts whose `.olean` files this
+        /// shard's elaborations import.
+        imports: Vec<Utf8PathBuf>,
+        /// Where the shard writes its `.olean` files and process records; it
+        /// must not exist or must be empty.
+        output: Utf8PathBuf,
+    },
+    /// The join: the plan's processes, every other part's records, then the
+    /// attestation and publication.
+    Join {
+        /// The processes of the join itself.
+        plan: VerifyPlan,
+        /// The output directories of every other part.
+        parts: Vec<Utf8PathBuf>,
+    },
+}
+
+/// What a part of a verification produced.
+pub enum VerifyPartOutcome {
+    /// A shard's output directory, and the number of processes it ran.
+    Shard {
+        /// The output directory.
+        output: Utf8PathBuf,
+        /// The elaborations, replays, and audit members it ran.
+        processes: usize,
+    },
+    /// The join's published verification.
+    Verified(VerifiedProject),
+}
+
 /// A format request.
 pub struct FormatRequest {
     /// The selection.
@@ -938,6 +986,19 @@ impl Engine {
     }
 
     fn verify_inner(&self, request: &VerifyRequest) -> Result<VerifiedProject, LexLeanError> {
+        match self.verify_part_inner(request, &crate::verify::Part::Whole)? {
+            VerifyPartOutcome::Verified(verified) => Ok(verified),
+            VerifyPartOutcome::Shard { .. } => Err(host_failure(
+                "the whole verification published no verified directory".to_owned(),
+            )),
+        }
+    }
+
+    fn verify_part_inner(
+        &self,
+        request: &VerifyRequest,
+        part: &crate::verify::Part<'_>,
+    ) -> Result<VerifyPartOutcome, LexLeanError> {
         // The operational settings (§22.11, §22.12) are resolved before any
         // work, so that a malformed width is refused without a build having
         // been published, and they are handed to the verifier whole: nothing
@@ -967,10 +1028,22 @@ impl Engine {
         // stage, and the verified-set publication (§21.8).
         let guard = acquire_lock(&self.project)?;
         publish_build_locked(&self.project, &rendered, &guard)?;
-        let outcome =
-            crate::verify::run(&self.project, &lock, &checked, &mut rendered, &operational)?;
+        let outcome = crate::verify::run_part(
+            &self.project,
+            &lock,
+            &checked,
+            &mut rendered,
+            &operational,
+            part,
+        )?;
         drop(guard);
-        Ok(VerifiedProject {
+        let outcome = match outcome {
+            crate::verify::PartOutcome::Shard { output, processes } => {
+                return Ok(VerifyPartOutcome::Shard { output, processes });
+            }
+            crate::verify::PartOutcome::Verified(outcome) => outcome,
+        };
+        Ok(VerifyPartOutcome::Verified(VerifiedProject {
             source_id: checked.source_id,
             semantic_id: checked.semantic_id,
             build_id: rendered.build_id,
@@ -989,7 +1062,7 @@ impl Engine {
                     )
                 })
                 .collect(),
-        })
+        }))
     }
 
     /// Format a selection canonically, or exact-byte compare (§23.5). The
@@ -1355,4 +1428,50 @@ pub fn command_result_json(
         fields.push(("explanation", Json::Str(text.to_owned())));
     }
     Json::object(fields)
+}
+
+/// Verify a project as one part of a verification run as several
+/// parts (SPEC.md §9.4): a shard runs the processes its plan names and
+/// writes them to its output directory; the join runs its own, reads
+/// every other part's, and publishes through the same pipeline as
+/// [`Engine::verify`]. It is repository tooling for the CI gate, not one of
+/// the stable entry points of §24.1. A part is defined for a project without production
+/// roots and without PDF rendering.
+pub fn verify_part(
+    engine: &Engine,
+    request: VerifyRequest,
+    part: VerifyPart,
+) -> Result<VerifyPartOutcome, LexLeanError> {
+    let plan_of = |plan: &VerifyPlan| crate::verify::Plan {
+        elaborate: plan.elaborate.iter().cloned().collect(),
+        replay: plan.replay.iter().cloned().collect(),
+    };
+    match &part {
+        VerifyPart::Shard {
+            plan,
+            imports,
+            output,
+        } => {
+            let plan = plan_of(plan);
+            engine.bound(
+                "verify",
+                engine.verify_part_inner(
+                    &request,
+                    &crate::verify::Part::Shard {
+                        plan: &plan,
+                        imports,
+                        output,
+                    },
+                ),
+            )
+        }
+        VerifyPart::Join { plan, parts } => {
+            let plan = plan_of(plan);
+            engine.bound(
+                "verify",
+                engine
+                    .verify_part_inner(&request, &crate::verify::Part::Join { plan: &plan, parts }),
+            )
+        }
+    }
 }
