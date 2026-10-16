@@ -7030,7 +7030,7 @@ SPEC.md §24.7; `PX-01`..`PX-12` and `CL-23`. The Lean-backed cases share three 
 
 ### production export can fail
 
-The production export contract (§24.7, `PX-01`..`PX-12`, `CL-23`). Each record
+The production export contract (§24.7, `PX-01`..`PX-13`, `CL-23`). Each record
 below is a defect planted in a clean tree at the commit that introduced the
 contract, the command run, and the failure observed (verbatim, paths
 shortened), after which the defect was removed.
@@ -7109,6 +7109,23 @@ shortened), after which the defect was removed.
   order, the axioms, an optimality claimed without evidence, the GNAF verdict),
   an added file, and a removed file are each `LLV7102`, and a symlink is
   `LLS8001`.
+
+- **an output's effects not checked against eligibility** (`PX-13`). The
+  comparison of a result's per-output effects with the root's eligibility was
+  planted to ignore `recursion` (`kept(effects) != kept(required)` in
+  `effects_agree`, `crates/conformance/src/cases/production_export.rs`).
+  Command: `cargo test -p repo-conformance --all-features --test conformance
+  conformance_px_13` (Windows, toolchain hidden, so the platform-independent
+  assertions ran). Expected: an output with `recursion` dropped is accepted.
+
+  ```text
+  thread 'conformance_px_13' (22224) panicked at crates\conformance\src\cases\production_export.rs:1501:60:
+  dropped: ()
+  ```
+
+  Removed: the comparison was restored; `conformance_px_13` passes. On a host
+  with the pinned toolchain the case also exports `production-coverage` and
+  requires each of its 49 outputs to state exactly its eligibility's effects.
 
 ## Template recursion (Issue #105)
 
