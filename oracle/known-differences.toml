@@ -11,22 +11,17 @@
 # run when the rows and the version disagree.
 
 spec = "lexlean/oracle-differences/1"
-version = 2
+version = 3
 
 [[difference]]
 id = "KD-01"
 kind = "acceptance"
 key = "oracle-refuses:escaping-local-function"
-reason = "The oracle lowers a local function only when it is saturated, non-escaping, and acyclic (its subset contract). The Lean LexLean generates for these roots holds a local function that escapes: a lambda or function reference handed to another definition, the dictionary closures of LexLean's ordered-collection templates (key orders, folds, iteration, graph search), the structural-recursion helpers Lean compiles recursive and nested data to, and the transition functions of model and reasoner elaborations. LexLean realizes these through its own calculus (§17.14); the oracle's domain does not contain them."
+reason = "The oracle lowers a local function only when it is saturated, non-escaping, and acyclic (its subset contract). The Lean LexLean generates for these roots holds a local function that escapes: a lambda or function reference handed to another definition, the step closures LexLean's ordered-collection folds and iterations take, the structural-recursion helpers Lean compiles recursive and nested data to, and the transition functions of model and reasoner elaborations. LexLean realizes these through its own calculus (§17.14); the oracle's domain does not contain them."
 roots = [
   "Coverage.Colls.folds",
-  "Coverage.Colls.graphs",
   "Coverage.Colls.iterations",
-  "Coverage.Colls.keyTypes",
   "Coverage.Colls.mapFolding",
-  "Coverage.Colls.mapOps",
-  "Coverage.Colls.setOps",
-  "Coverage.Colls.stringGraph",
   "Coverage.Main.higher",
   "Coverage.Main.treeTotal",
   "Coverage.RecRoots.rewrite",
@@ -36,26 +31,11 @@ roots = [
   "Models.Main.classify",
   "Models.Main.classifyChecked",
   "Models.Main.respond",
-  "OracleProbe.ProbeGraphReachable.reachableRoot",
-  "OracleProbe.ProbeGraphSuccessors.successorsRoot",
-  "OracleProbe.ProbeGraphTopological.topologicalRoot",
   "OracleProbe.ProbeIterate.iterateRoot",
   "OracleProbe.ProbeIterateUntil.iterateUntilRoot",
   "OracleProbe.ProbeListFold.listFoldRoot",
-  "OracleProbe.ProbeMapContains.mapContainsRoot",
   "OracleProbe.ProbeMapFold.mapFoldRoot",
-  "OracleProbe.ProbeMapInsert.mapInsertRoot",
-  "OracleProbe.ProbeMapKeys.mapKeysRoot",
-  "OracleProbe.ProbeMapLookup.mapLookupRoot",
-  "OracleProbe.ProbeMapRemove.mapRemoveRoot",
-  "OracleProbe.ProbeMapValues.mapValuesRoot",
-  "OracleProbe.ProbeSetContains.setContainsRoot",
-  "OracleProbe.ProbeSetDifference.setDifferenceRoot",
   "OracleProbe.ProbeSetFold.setFoldRoot",
-  "OracleProbe.ProbeSetInsert.setInsertRoot",
-  "OracleProbe.ProbeSetIntersection.setIntersectionRoot",
-  "OracleProbe.ProbeSetRemove.setRemoveRoot",
-  "OracleProbe.ProbeSetUnion.setUnionRoot",
   "Production.Main.quadruple",
   "Reasoning.Main.doseLevel",
   "Reasoning.Main.planLeft",
@@ -67,33 +47,51 @@ roots = [
 id = "KD-02"
 kind = "acceptance"
 key = "oracle-refuses:opaque-lowering"
-reason = "The oracle has no monomorphization (its documented limit): a definition that remains parameterized by a type after Lean's compiler lowers to a type expression it has no rendering for. In the Lean LexLean generates these are its generic definitions instantiated at a use site (firstOr, unbox, identity), a definition that takes a function (twice), and the polymorphic accessors and iterations of the collection templates (mapSize, setSize, setElements, mapEntries, iterateUntil). LexLean monomorphizes at lowering (§17.17)."
+reason = "The oracle has no monomorphization (its documented limit): a definition that remains parameterized by a type after Lean's compiler lowers to a type expression it has no rendering for. In the Lean LexLean generates these are its generic definitions instantiated at a use site (firstOr, unbox, identity), a definition that takes a function (twice). LexLean monomorphizes at lowering (§17.17)."
 roots = [
-  "Coverage.Boundary.groveRoot",
   "Coverage.Main.records",
   "OracleProbe.ProbeFunctionRef.referenceRoot",
   "OracleProbe.ProbeGeneric.genericRoot",
-  "OracleProbe.ProbeMapEntries.mapEntriesRoot",
-  "OracleProbe.ProbeMapSize.mapSizeRoot",
-  "OracleProbe.ProbeSetElements.setElementsRoot",
-  "OracleProbe.ProbeSetSize.setSizeRoot",
   "Production.Main.headOr",
-  "Reasoning.Main.gatewayLevel",
-  "Reasoning.Main.gradeLevel",
-  "Reasoning.Main.triageLevel",
-  "Reasoning.Main.triageSteps",
 ]
 
 [[difference]]
 id = "KD-03"
 kind = "acceptance"
 key = "oracle-refuses:unresolved-external-call"
-reason = "The oracle's operators are the Nat operations of its subset contract and its own exported definitions; a call of any other constant has nothing to call. Here those are the mathematical-integer operations (Int.neg) and the partner of a mutually recursive pair (isEven and isOdd), which its exporter does not follow. LexLean realizes the mathematical integer in 64 bits with explicit overflow and compiles mutual recursion through its own structural helpers (§17.13)."
+reason = "The oracle's operators are the Nat operations of its subset contract and its own exported definitions; a call of any other constant has nothing to call. Here those are the mathematical-integer operations (Int.neg) and the partner of a mutually recursive pair (isEven and isOdd), which its exporter does not follow, and every definition of the runtime modules a generated module imports (§17.12) that Lean's compiler keeps a call: the ordered-collection templates of maps, sets, and graphs, and the iteration the reasoners run with. LexLean realizes the mathematical integer in 64 bits with explicit overflow and compiles mutual recursion through its own structural helpers (§17.13)."
 roots = [
+  "Coverage.Boundary.groveRoot",
+  "Coverage.Colls.graphs",
+  "Coverage.Colls.keyTypes",
+  "Coverage.Colls.mapOps",
+  "Coverage.Colls.setOps",
+  "Coverage.Colls.stringGraph",
   "Coverage.Main.intOps",
   "Coverage.Main.mapped",
   "Coverage.Main.parity",
+  "OracleProbe.ProbeGraphReachable.reachableRoot",
+  "OracleProbe.ProbeGraphSuccessors.successorsRoot",
+  "OracleProbe.ProbeGraphTopological.topologicalRoot",
   "OracleProbe.ProbeInt.intRoot",
+  "OracleProbe.ProbeMapContains.mapContainsRoot",
+  "OracleProbe.ProbeMapInsert.mapInsertRoot",
+  "OracleProbe.ProbeMapKeys.mapKeysRoot",
+  "OracleProbe.ProbeMapLookup.mapLookupRoot",
+  "OracleProbe.ProbeMapRemove.mapRemoveRoot",
+  "OracleProbe.ProbeMapSize.mapSizeRoot",
+  "OracleProbe.ProbeMapValues.mapValuesRoot",
+  "OracleProbe.ProbeSetContains.setContainsRoot",
+  "OracleProbe.ProbeSetDifference.setDifferenceRoot",
+  "OracleProbe.ProbeSetInsert.setInsertRoot",
+  "OracleProbe.ProbeSetIntersection.setIntersectionRoot",
+  "OracleProbe.ProbeSetRemove.setRemoveRoot",
+  "OracleProbe.ProbeSetSize.setSizeRoot",
+  "OracleProbe.ProbeSetUnion.setUnionRoot",
+  "Reasoning.Main.gatewayLevel",
+  "Reasoning.Main.gradeLevel",
+  "Reasoning.Main.triageLevel",
+  "Reasoning.Main.triageSteps",
 ]
 
 [[difference]]
@@ -157,6 +155,8 @@ key = "borrowed-parameter"
 reason = "The oracle takes a list parameter as a borrowed slice, &[T] (its documented memory profile); LexLean takes List<T>, a shared persistent list, by value. The elements are the same and the differential passes the same ones; how a collection crosses the boundary is a deliberate difference of ABI."
 roots = [
   "Coverage.Prims.sequences",
+  "OracleProbe.ProbeMapEntries.mapEntriesRoot",
+  "OracleProbe.ProbeSetElements.setElementsRoot",
   "Production.Main.sumAll",
 ]
 
@@ -188,4 +188,14 @@ key = "both-refuse:codegen-OpaqueType"
 reason = "LexLean rejects this root (LLT4005: a named type at the boundary that has no runtime representation) and the oracle's generator refuses it as well, at its own structured stage (an opaque type), after the export. Same verdict, the oracle's own reason."
 roots = [
   "LanguageTwelve.Main.measure",
+]
+
+[[difference]]
+id = "KD-13"
+kind = "contract"
+key = "output-buffer"
+reason = "The oracle returns a list result into a buffer its caller passes and answers how many elements it wrote, failing with OutputTooSmall when the buffer is short (its documented memory profile); LexLean returns the list. The differential passes a buffer larger than any case writes and compares the elements written; how a collection crosses the boundary is a deliberate difference of ABI."
+roots = [
+  "OracleProbe.ProbeMapEntries.mapEntriesRoot",
+  "OracleProbe.ProbeSetElements.setElementsRoot",
 ]

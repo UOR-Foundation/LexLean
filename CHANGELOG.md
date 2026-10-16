@@ -187,6 +187,37 @@ versions, and the entries below say what each tag does and does not claim.
   text and refuses a name outside the table, a row the text does not use,
   a row citing a non-primitive, and a primitive no row cites. The runtime
   text is unchanged, so no runtime digest, package, or semantic ID changes.
+- The runtime of generated Lean is LexLean source (SPEC.md §17.12,
+  *Runtime modules*, `RT-01`..`RT-04`, LexLean #90). The portable primitives,
+  the ordered collections, the model predicates, and the reasoning lemmas of
+  language 1.2 were Rust string constants the backend spliced into every
+  module that used them, one copy per module; they are now four native core
+  modules of the embedded project `language/runtime-1.2/library/`
+  (`LexLeanRuntime.Portable`, `.Collections`, `.Models`, `.Reasoning`),
+  migrated once and losslessly (`tests/runtime-library/MIGRATION.md`), which
+  a generated module imports. A verification compiles the runtime modules a
+  project uses before the project's own, replays them, and audits each of
+  their declarations against its exact axioms. A runtime name is
+  `LexLeanRuntime.x`, no longer `<module>.LexLeanRuntime.x`, so the native
+  preservation and certification libraries' references to the copies were
+  renamed, by a pairing of the calculus modules' constants walked through
+  their kernel terms. Languages 1.0 and 1.1 are frozen: their released
+  runtime text is data under `language/runtime-1.2/frozen/`, which their
+  backends alone read, and their output is byte-identical. The decoder of
+  core module 2 is the one Lean text of the language-1.2 compiler not
+  generated from a native module, since it is what loads them. The probe and
+  axiom-audit modules are typed data the backend renders. `LexLeanRuntime`
+  moves from the reserved roots to the library roots (a project without a
+  production root may take it). The differential oracle (§17.19) does not
+  follow a call into another module, so it now refuses the roots whose
+  compiled closure calls a collection template or a reasoner's iteration as
+  `unresolved-external-call`, and generates the two list roots it refused
+  before; `oracle/known-differences.toml` (version 3, with `KD-13`
+  `output-buffer`: the oracle returns a list into a buffer its caller passes)
+  and `oracle/known-non-overlap.toml` (version 2) record what it answers, and
+  the harness passes such a buffer. The language-1.2 compiler-semantics ID
+  changes, and every language-1.2 lock, golden, fixture expectation,
+  production-export package, and verified record is regenerated.
 - `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
   no new diagnostic code). A read of a binding that nothing after it reads
   is a move and a projection of a pair component that nothing after it

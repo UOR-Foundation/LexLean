@@ -450,25 +450,19 @@ pub fn run(id: &str) {
                 halvings.declarations,
                 ["Production.Kernel.countdown", "Production.Main.halvings"]
             );
-            assert_eq!(
-                halvings.runtime,
-                ["Production.Kernel.LexLeanRuntime.subtract"]
-            );
+            assert_eq!(halvings.runtime, ["LexLeanRuntime.subtract"]);
             assert_eq!(halvings.erased, ["Production.Kernel.countdown_decreases"]);
             assert_eq!(
                 closure("shapeArea").declarations,
                 ["Production.Kernel.area", "Production.Main.shapeArea"]
             );
-            assert_eq!(
-                closure("shapeArea").runtime,
-                ["Production.Kernel.LexLeanRuntime.multiply"]
-            );
+            assert_eq!(closure("shapeArea").runtime, ["LexLeanRuntime.multiply"]);
             assert_eq!(
                 closure("checkedSum").runtime,
                 [
-                    "Production.Main.LexLeanRuntime.checkedAdd",
-                    "Production.Main.LexLeanRuntime.checkedFromInt",
-                    "Production.Main.LexLeanRuntime.instFixedUInt32"
+                    "LexLeanRuntime.checkedAdd",
+                    "LexLeanRuntime.checkedFromInt",
+                    "LexLeanRuntime.instFixedUInt32"
                 ]
             );
             // The monomorphization plan travels with the closure.

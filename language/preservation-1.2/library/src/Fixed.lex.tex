@@ -3843,7 +3843,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @93 := instOfNatNat
 @95 := proof(@92 proof(@93 @91))
 @96 := @11 @95
-@97 := proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.magnitudeInt64)
+@97 := proof(LexLeanRuntime.magnitudeInt64)
 @98 := proof(@97 @30)
 @99 := @96 @98
 @100 := proof(@97 @6)
@@ -3857,7 +3857,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @111 := proof(fun ("_" : @5) => @110)
 @112 := @109 @111
 @113 := @12 @48
-@114 := proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.signedMagnitudeInt64)
+@114 := proof(LexLeanRuntime.signedMagnitudeInt64)
 @118 := proof(fun (value : @1) => proof(@113 proof(proof(@114 @30) @14)))
 @123 := fun (mm : @47) =>
   fun (left : @48) => fun (right : @48) => have negative : @42 := @86; @112 @118
@@ -3922,9 +3922,9 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @217 := proof(LexLeanPreservation.decimalFits.match_1.{1})
 @219 := proof(@217
       proof(fun (x._@.LexLeanPreservation.Fixed.#3868683585._hygCtx._hyg.#16 : @191) => @42))
-@220 := LexLeanTarget.TargetSemantics.LexLeanRuntime.parseDecimal
+@220 := LexLeanRuntime.parseDecimal
 @221 := @220 @190
-@222 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instDecimalInt
+@222 := LexLeanRuntime.instDecimalInt
 @223 := @221 @222
 @224 := @223 @14
 @225 := @219 @224
@@ -4023,7 +4023,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @432 := Nat.below.{0}
 @437 := @284 @25 @11 @6 @30 @14
 @438 := @389 @437
-@439 := LexLeanTarget.TargetSemantics.LexLeanRuntime.divideMagnitudeInt64
+@439 := LexLeanRuntime.divideMagnitudeInt64
 @444 := @439 @25 @11 @6 @30 @14
 @452 := @432
     (fun (x._@.LexLeanPreservation.Fixed.#2001401917._hygCtx._hyg.#80 : @41) =>
@@ -4291,7 +4291,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @934 := (f : @41) ->
   (s : @1) -> (m : @1) -> (a : @1) -> (n : @42) -> @921 (@922 @276 @25 @11 @6 @30 @14)
 @935 := @913 @437
-@936 := LexLeanTarget.TargetSemantics.LexLeanRuntime.multiplyMagnitudeInt64
+@936 := LexLeanRuntime.multiplyMagnitudeInt64
 @941 := @936 @25 @11 @6 @30 @14
 @949 := @432
     (fun (x._@.LexLeanPreservation.Fixed.#2066290204._hygCtx._hyg.#82 : @41) =>
@@ -4519,9 +4519,9 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1409 := @12 @1387
 @1410 := LexLeanPreservation.Rel
 @1411 := @1410 @143
-@1412 := LexLeanTarget.TargetSemantics.LexLeanRuntime.bitAnd
+@1412 := LexLeanRuntime.bitAnd
 @1413 := @1412 @1386
-@1414 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedInt16
+@1414 := LexLeanRuntime.instFixedInt16
 @1423 := (a : @1386) -> (b : @1386) -> @1408 (@1409 (@1411 (@1397 (@1413 @1414 @30 @14))))
 @1425 := proof(proof(rfl.{1}) @1388)
 @1428 := proof(fun (a : @1386) => proof(fun (b : @1386) => proof(@1425 @1407)))
@@ -4534,7 +4534,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1438 := @1390 (@1393 @1436)
 @1439 := @1389 @1438
 @1440 := @1412 @1429
-@1441 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedInt32
+@1441 := LexLeanRuntime.instFixedInt32
 @1450 := (a : @1429) -> (b : @1429) -> @1439 (@1409 (@1411 (@1430 (@1440 @1441 @30 @14))))
 @1453 := proof(fun (a : @1429) => proof(fun (b : @1429) => proof(@1425 @1438)))
 @1454 := LexLeanTarget.TargetSyntax.Value.i64
@@ -4545,7 +4545,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1462 := @1390 (@1393 @1460)
 @1463 := @1389 @1462
 @1464 := @1412 @48
-@1465 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedInt64
+@1465 := LexLeanRuntime.instFixedInt64
 @1474 := (a : @48) -> (b : @48) -> @1463 (@1409 (@1411 (@1454 (@1464 @1465 @30 @14))))
 @1477 := proof(fun (a : @48) => proof(fun (b : @48) => proof(@1425 @1462)))
 @1478 := Int8
@@ -4557,7 +4557,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1487 := @1390 (@1393 @1485)
 @1488 := @1389 @1487
 @1489 := @1412 @1478
-@1490 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedInt8
+@1490 := LexLeanRuntime.instFixedInt8
 @1499 := (a : @1478) -> (b : @1478) -> @1488 (@1409 (@1411 (@1479 (@1489 @1490 @30 @14))))
 @1502 := proof(fun (a : @1478) => proof(fun (b : @1478) => proof(@1425 @1487)))
 @1503 := UInt16
@@ -4569,7 +4569,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1512 := @1390 (@1393 @1510)
 @1513 := @1389 @1512
 @1514 := @1412 @1503
-@1515 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedUInt16
+@1515 := LexLeanRuntime.instFixedUInt16
 @1524 := (a : @1503) -> (b : @1503) -> @1513 (@1409 (@1411 (@1504 (@1514 @1515 @30 @14))))
 @1527 := proof(fun (a : @1503) => proof(fun (b : @1503) => proof(@1425 @1512)))
 @1528 := UInt32
@@ -4581,7 +4581,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1537 := @1390 (@1393 @1535)
 @1538 := @1389 @1537
 @1539 := @1412 @1528
-@1540 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedUInt32
+@1540 := LexLeanRuntime.instFixedUInt32
 @1549 := (a : @1528) -> (b : @1528) -> @1538 (@1409 (@1411 (@1529 (@1539 @1540 @30 @14))))
 @1552 := proof(fun (a : @1528) => proof(fun (b : @1528) => proof(@1425 @1537)))
 @1553 := LexLeanTarget.TargetSyntax.Value.u64
@@ -4592,7 +4592,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1561 := @1390 (@1393 @1559)
 @1562 := @1389 @1561
 @1563 := @1412 @1
-@1564 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedUInt64
+@1564 := LexLeanRuntime.instFixedUInt64
 @1573 := (a : @1) -> (b : @1) -> @1562 (@1409 (@1411 (@1553 (@1563 @1564 @30 @14))))
 @1576 := proof(fun (a : @1) => proof(fun (b : @1) => proof(@1425 @1561)))
 @1577 := UInt8
@@ -4604,13 +4604,13 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1586 := @1390 (@1393 @1584)
 @1587 := @1389 @1586
 @1588 := @1412 @1577
-@1589 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instFixedUInt8
+@1589 := LexLeanRuntime.instFixedUInt8
 @1598 := (a : @1577) -> (b : @1577) -> @1587 (@1409 (@1411 (@1578 (@1588 @1589 @30 @14))))
 @1601 := proof(fun (a : @1577) => proof(fun (b : @1577) => proof(@1425 @1586)))
 @1603 := @1391 LexLeanTarget.TargetSyntax.Prim.bitNot
 @1605 := @1390 (@1603 @1404)
 @1606 := @1389 @1605
-@1607 := LexLeanTarget.TargetSemantics.LexLeanRuntime.bitNot
+@1607 := LexLeanRuntime.bitNot
 @1615 := (a : @1386) -> @1606 (@1409 (@1411 (@1397 (@1607 @1386 @1414 @14))))
 @1617 := proof(fun (a : @1386) => proof(@1425 @1605))
 @1619 := @1390 (@1603 @1435)
@@ -4637,7 +4637,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1710 := @1391 LexLeanTarget.TargetSyntax.Prim.bitOr
 @1712 := @1390 (@1710 @1405)
 @1713 := @1389 @1712
-@1714 := LexLeanTarget.TargetSemantics.LexLeanRuntime.bitOr
+@1714 := LexLeanRuntime.bitOr
 @1724 := (a : @1386) -> (b : @1386) -> @1713 (@1409 (@1411 (@1397 (@1714 @1386 @1414 @30 @14))))
 @1727 := proof(fun (a : @1386) => proof(fun (b : @1386) => proof(@1425 @1712)))
 @1729 := @1390 (@1710 @1436)
@@ -4669,7 +4669,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1841 := @1391 LexLeanTarget.TargetSyntax.Prim.bitXor
 @1843 := @1390 (@1841 @1405)
 @1844 := @1389 @1843
-@1845 := LexLeanTarget.TargetSemantics.LexLeanRuntime.bitXor
+@1845 := LexLeanRuntime.bitXor
 @1855 := (a : @1386) -> (b : @1386) -> @1844 (@1409 (@1411 (@1397 (@1845 @1386 @1414 @30 @14))))
 @1858 := proof(fun (a : @1386) => proof(fun (b : @1386) => proof(@1425 @1843)))
 @1860 := @1390 (@1841 @1436)
@@ -4718,7 +4718,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @1999 := @1389 (@1390 (@1996 @1405))
 @2000 := LexLeanPreservation.encOption
 @2002 := @2000 @1386 @1397
-@2003 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedAdd
+@2003 := LexLeanRuntime.checkedAdd
 @2005 := @2003 @1386 @1414
 @2007 := @2005 @30 @14
 @2011 := @1999 (@1409 (@1411 (@2002 @2007)))
@@ -4860,7 +4860,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @2242 (fun (val._@.LexLeanPreservation.Fixed.#1511081506._hygCtx._hyg.#83 : @48) => @34)
 @2251 := @1389 (@1390 (@1996 @1460))
 @2253 := @2000 @48 @1454
-@2254 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedAddInt64
+@2254 := LexLeanRuntime.checkedAddInt64
 @2256 := @2254 @30 @14
 @2260 := @2251 (@1409 (@1411 (@2253 @2256)))
 @2262 := (a : @48) -> (b : @48) -> @2260
@@ -5241,7 +5241,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @1988 (fun (val._@.LexLeanPreservation.Fixed.#2520646439._hygCtx._hyg.#83 : @1386) => @34)
 @2945 := @1391 LexLeanTarget.TargetSyntax.Prim.checkedMul
 @2948 := @1389 (@1390 (@2945 @1405))
-@2949 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedMultiply
+@2949 := LexLeanRuntime.checkedMultiply
 @2951 := @2949 @1386 @1414
 @2953 := @2951 @30 @14
 @2957 := @2948 (@1409 (@1411 (@2002 @2953)))
@@ -5339,7 +5339,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @3140 := (mm : @47) ->
   (h0 : @920) -> (hs : @934) -> (a : @48) -> (b : @48) -> @3127 (@1409 (@1411 (@2253 @3131)))
 @3141 := proof(@2265 @3131)
-@3142 := proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedMultiplyInt64)
+@3142 := proof(LexLeanRuntime.checkedMultiplyInt64)
 @3144 := proof(proof(@3142 @30) @14)
 @3145 := proof(@3141 @3144)
 @3146 := proof(@566 @3145)
@@ -5705,7 +5705,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @1988 (fun (val._@.LexLeanPreservation.Fixed.#3745472986._hygCtx._hyg.#77 : @1386) => @34)
 @3820 := @1391 LexLeanTarget.TargetSyntax.Prim.checkedNeg
 @3823 := @1389 (@1390 (@3820 @1404))
-@3824 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedNegate
+@3824 := LexLeanRuntime.checkedNegate
 @3826 := @3824 @1386 @1414
 @3827 := @3826 @14
 @3831 := @3823 (@1409 (@1411 (@2002 @3827)))
@@ -5796,7 +5796,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   fun (h_2 : @2233) =>
   @2242 (fun (val._@.LexLeanPreservation.Fixed.#1109204030._hygCtx._hyg.#77 : @48) => @34)
 @3992 := @1389 (@1390 (@3820 @1459))
-@3993 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedNegateInt64
+@3993 := LexLeanRuntime.checkedNegateInt64
 @3994 := @3993 @14
 @3998 := @3992 (@1409 (@1411 (@2253 @3994)))
 @3999 := (a : @48) -> @3998
@@ -5887,7 +5887,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @1988 (fun (val._@.LexLeanPreservation.Fixed.#146566966._hygCtx._hyg.#83 : @1386) => @34)
 @4158 := @1391 LexLeanTarget.TargetSyntax.Prim.checkedQuot
 @4161 := @1389 (@1390 (@4158 @1405))
-@4162 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedQuotient
+@4162 := LexLeanRuntime.checkedQuotient
 @4164 := @4162 @1386 @1414
 @4166 := @4164 @30 @14
 @4170 := @4161 (@1409 (@1411 (@2002 @4166)))
@@ -5985,7 +5985,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @4353 := (dm : @128) ->
   (h0 : @400) -> (hs : @431) -> (a : @48) -> (b : @48) -> @4340 (@1409 (@1411 (@2253 @4344)))
 @4354 := proof(@2265 @4344)
-@4355 := proof(LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedQuotientInt64)
+@4355 := proof(LexLeanRuntime.checkedQuotientInt64)
 @4357 := proof(proof(@4355 @30) @14)
 @4358 := proof(@4354 @4357)
 @4359 := proof(@566 @4358)
@@ -6360,7 +6360,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @1988 (fun (val._@.LexLeanPreservation.Fixed.#1888020707._hygCtx._hyg.#83 : @1386) => @34)
 @5056 := @1391 LexLeanTarget.TargetSyntax.Prim.checkedSub
 @5059 := @1389 (@1390 (@5056 @1405))
-@5060 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedSubtract
+@5060 := LexLeanRuntime.checkedSubtract
 @5062 := @5060 @1386 @1414
 @5064 := @5062 @30 @14
 @5068 := @5059 (@1409 (@1411 (@2002 @5064)))
@@ -6453,7 +6453,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   fun (h_2 : @2233) =>
   @2242 (fun (val._@.LexLeanPreservation.Fixed.#2588844300._hygCtx._hyg.#83 : @48) => @34)
 @5238 := @1389 (@1390 (@5056 @1460))
-@5239 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedSubtractInt64
+@5239 := LexLeanRuntime.checkedSubtractInt64
 @5241 := @5239 @30 @14
 @5245 := @5238 (@1409 (@1411 (@2253 @5241)))
 @5247 := (a : @48) -> (b : @48) -> @5245
@@ -6732,10 +6732,10 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @5770 := LexLeanTarget.TargetSyntax.IntKind.i16
 @5772 := @1391 (@5769 @5770)
 @5775 := @1389 (@1390 (@5772 @1404))
-@5776 := LexLeanTarget.TargetSemantics.LexLeanRuntime.checkedConvert
+@5776 := LexLeanRuntime.checkedConvert
 @5777 := @5776 @1386
 @5778 := @5777 @1386
-@5779 := LexLeanTarget.TargetSemantics.LexLeanRuntime.Fixed.toToMathInt
+@5779 := LexLeanRuntime.Fixed.toToMathInt
 @5781 := @5779 @1386 @1414
 @5783 := @5778 @5781 @1414
 @5784 := @5783 @14
@@ -8204,7 +8204,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @8534 := @1389 (@1390 (@5772 @8531))
 @8535 := @5776 @190
 @8536 := @8535 @1386
-@8537 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instToMathIntInt
+@8537 := LexLeanRuntime.instToMathIntInt
 @8539 := @8536 @8537 @1414
 @8540 := @8539 @14
 @8544 := @8534 (@1409 (@1411 (@2002 @8540)))
@@ -10014,7 +10014,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @11940 := @1390 (@11938 @1405)
 @11941 := @1389 @11940
 @11942 := LexLeanTarget.TargetSyntax.Value.bool
-@11943 := LexLeanTarget.TargetSemantics.LexLeanRuntime.equal
+@11943 := LexLeanRuntime.equal
 @11956 := (a : @1386) ->
   (b : @1386) ->
   @11941 (@1409 (@1411 (@11942 (@11943 @1386 (@55 @1386 instDecidableEqInt16) @30 @14))))
@@ -10056,9 +10056,9 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @12093 := @1390 (@12091 @1404)
 @12094 := @1389 @12093
 @12095 := LexLeanTarget.TargetSyntax.Value.string
-@12096 := LexLeanTarget.TargetSemantics.LexLeanRuntime.formatDecimal
+@12096 := LexLeanRuntime.formatDecimal
 @12097 := @12096 @1386
-@12098 := LexLeanTarget.TargetSemantics.LexLeanRuntime.instDecimalOfFixedOfToString
+@12098 := LexLeanRuntime.instDecimalOfFixedOfToString
 @12102 := @12098 @1386 @1414 instToStringInt16
 @12109 := (a : @1386) -> @12094 (@1409 (@1411 (@12095 (@12097 @12102 @14))))
 @12111 := proof(fun (a : @1386) => proof(@1425 @12093))
@@ -10628,7 +10628,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @13205 := @1391 LexLeanTarget.TargetSyntax.Prim.shiftLeft
 @13206 := @1399 @1534
 @13209 := @1389 (@1390 (@13205 @13206))
-@13210 := LexLeanTarget.TargetSemantics.LexLeanRuntime.shiftLeft
+@13210 := LexLeanRuntime.shiftLeft
 @13212 := @13210 @1386 @1414
 @13214 := @13212 @30 @14
 @13218 := @13209 (@1409 (@1411 (@2002 @13214)))
@@ -11004,7 +11004,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
   @1988 (fun (val._@.LexLeanPreservation.Fixed.#1327459530._hygCtx._hyg.#83 : @1386) => @34)
 @13927 := @1391 LexLeanTarget.TargetSyntax.Prim.shiftRight
 @13930 := @1389 (@1390 (@13927 @13206))
-@13931 := LexLeanTarget.TargetSemantics.LexLeanRuntime.shiftRight
+@13931 := LexLeanRuntime.shiftRight
 @13933 := @13931 @1386 @1414
 @13935 := @13933 @30 @14
 @13939 := @13930 (@1409 (@1411 (@2002 @13935)))

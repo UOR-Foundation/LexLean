@@ -7663,6 +7663,45 @@ arbitrary canonical JSON values (`surface::generic`), and every alternative of
 the schema its own sample (`surface::semantic`), as unit tests of the
 `lexlean` crate.
 
+### runtime modules can fail
+
+Five plants, each on the committed tree and each restored after its run.
+Commands: `cargo test -p repo-conformance --all-features --test conformance
+-- <case> --exact` for the first four; for the fifth, `lexlean lock && lexlean
+verify` in a copy of `examples/collections`, where pinned Lean is the oracle.
+
+1. A hand-written runtime text put back in the semantic backend (a
+   `COLLECTIONS_RUNTIME` string constant appended to `backend/semantic.rs`).
+2. The frozen language-1.1 portable runtime changed in one name
+   (`index` to `indez` in `language/runtime-1.2/frozen/portable-runtime-1.1.txt`).
+3. A generated Lean copy of a runtime module committed beside its source
+   (`language/runtime-1.2/library/LexLeanRuntime/Portable.lean`).
+4. A preservation-library reference to a per-module runtime copy put back
+   (`@244 := LexLeanRuntime.index` to
+   `@244 := LexLeanTarget.TargetSemantics.LexLeanRuntime.index` in the notation of
+   `Core.lex.tex`).
+5. A runtime row pinning an axiom its declaration does not use
+   (`LexLeanCollections.insertEntry` pinned to `exact{axioms: [propext]}` in
+   `Collections.lex.tex`).
+
+```text
+thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:494:9:
+assertion `left == right` failed: the semantic backend carries no runtime text
+  left: [2966]
+ right: []
+thread 'conformance_rt_02' panicked at crates/conformance/src/cases/runtime.rs:260:5:
+the frozen portable runtime is the released language-1.1 output
+thread 'conformance_rt_01' panicked at crates/conformance/src/cases/runtime.rs:88:9:
+.../language/runtime-1.2/library/LexLeanRuntime/Portable.lean: a Lean file lies in the runtime project
+thread 'conformance_rt_01' panicked at crates/conformance/src/cases/runtime.rs:199:21:
+.../language/preservation-1.2/library/src/Core.lex.tex: a runtime copy `…TargetSemantics.LexLeanRuntime.index
+@247 := @2` is named inside a module
+error[LLV7005]: `LexLeanCollections.insertEntry` of the runtime module `LexLeanRuntime.Collections` violates its exact axiom policy: observed []
+  --> lexlean.toml:1:1
+```
+
+Removed: each file was restored, and `RT-01`..`RT-04` pass on the restored
+tree.
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted

@@ -68,7 +68,6 @@ pub const LIBRARY_MODULES: [&str; 7] = [
 ];
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
-const SEMANTICS: &str = "LexLeanTarget.TargetSemantics";
 const NAT_BOUND: &str = "18446744073709551616";
 
 /// One generated certificate module.
@@ -1409,13 +1408,6 @@ impl Gen<'_> {
         }
     }
 
-    fn runtime(&self, site: &Site, namespace: &str, operation: &str) -> Result<String, String> {
-        Ok(format!(
-            "{}.{namespace}.{operation}",
-            self.lean_module(&site.module)?
-        ))
-    }
-
     /// A branch pattern at `site`.
     fn pattern(&self, branch: &SemanticBranch, site: &Site) -> Result<String, String> {
         let mut out = self.member(&branch.constructor, site)?;
@@ -1528,7 +1520,7 @@ impl Gen<'_> {
                 };
                 format!(
                     "({}{} : {})",
-                    self.runtime(site, namespace, name)?,
+                    runtime(namespace, name),
                     self.src_terms(arguments, ctx)?,
                     self.ty(&result)?
                 )
@@ -1801,6 +1793,13 @@ impl Gen<'_> {
             }
         })
     }
+}
+
+/// A declaration of the runtime by its namespace and name. The runtime is
+/// one set of imported modules (§17.12), not a copy inside each generated
+/// module, so the name is the same at every site.
+fn runtime(namespace: &str, operation: &str) -> String {
+    format!("{namespace}.{operation}")
 }
 
 /// The runtime namespace and name a primitive is rendered with.
@@ -2179,7 +2178,6 @@ impl Gen<'_> {
         operation: SemanticPrimitive,
         types: &[SemanticType],
         result: &SemanticType,
-        site: &Site,
     ) -> Result<PrimRule, String> {
         let first = types
             .first()
@@ -2230,7 +2228,7 @@ impl Gen<'_> {
                     lemma: lib(&format!("prim_checkedMul_{suffix}")),
                     prefix: if suffix == "i64" {
                         vec![
-                            self.runtime(site, "LexLeanRuntime", "multiplyMagnitudeInt64")?,
+                            runtime("LexLeanRuntime", "multiplyMagnitudeInt64"),
                             "(fun _ _ _ _ => rfl)".to_owned(),
                             "(fun _ _ _ _ _ => rfl)".to_owned(),
                         ]
@@ -2250,7 +2248,7 @@ impl Gen<'_> {
                     lemma: lib(&format!("prim_checkedQuot_{suffix}")),
                     prefix: if suffix == "i64" {
                         vec![
-                            self.runtime(site, "LexLeanRuntime", "divideMagnitudeInt64")?,
+                            runtime("LexLeanRuntime", "divideMagnitudeInt64"),
                             "(fun _ _ _ _ => rfl)".to_owned(),
                             "(fun _ _ _ _ _ => rfl)".to_owned(),
                         ]
@@ -2316,7 +2314,7 @@ impl Gen<'_> {
                             value: Box::new(element),
                         })?,
                         "(fun _ => rfl)".to_owned(),
-                        self.runtime(site, "LexLeanRuntime", "listIndex")?,
+                        runtime("LexLeanRuntime", "listIndex"),
                         "(fun _ => rfl)".to_owned(),
                         "(fun _ _ => rfl)".to_owned(),
                         "(fun _ _ _ => rfl)".to_owned(),
@@ -3178,7 +3176,7 @@ impl Gen<'_> {
             // source's `lessThan` unfolds to the key order by its clauses.
             SemanticPrimitive::LessThan => {
                 let key = types.first().ok_or("a key comparison has no operand")?;
-                let coll = format!("{}.LexLeanCollections", self.lean_module(&site.module)?);
+                let coll = "LexLeanCollections".to_owned();
                 let less = format!("{coll}.lessThan");
                 let list = operands(self.proofs(arguments, ctx)?);
                 return Ok(Proof {
@@ -3246,7 +3244,7 @@ impl Gen<'_> {
             | SemanticPrimitive::GraphReachable
             | SemanticPrimitive::GraphTopological => {}
         }
-        let rule = self.prim_rule(operation, &types, &result, &site)?;
+        let rule = self.prim_rule(operation, &types, &result)?;
         let list = operands(self.proofs(arguments, ctx)?);
         let sources = arguments
             .iter()
@@ -3698,7 +3696,7 @@ impl Gen<'_> {
                     rel_binders.push(format!("({} : Nat)", companion.index));
                     rel_binders.push(format!("({} : List {SYNTAX}.Value)", companion.captures));
                     rel_binders.push(format!(
-                        "({} : ∀{binders}, {} __prog {} ({SEMANTICS}.LexLeanRuntime.append {} {}) ({} ({}{applied}) ({} ({name}{applied}))))",
+                        "({} : ∀{binders}, {} __prog {} (LexLeanRuntime.append {} {}) ({} ({}{applied}) ({} ({name}{applied}))))",
                         companion.relation,
                         lib("FunRel"),
                         companion.index,
@@ -6653,7 +6651,7 @@ impl Gen<'_> {
             .get(&(template.name().to_owned(), tys.clone()))
             .ok_or_else(|| format!("template {} has no instance in the layout", template.name()))?;
         let rendered: Vec<String> = tys.iter().map(render_ty).collect();
-        let coll = format!("{}.LexLeanCollections", self.lean_module(&ctx.site.module)?);
+        let coll = "LexLeanCollections".to_owned();
         let mut proofs = Vec::new();
         let mut values = Vec::new();
         let mut functions = Vec::new();
@@ -8108,8 +8106,8 @@ impl Gen<'_> {
             let mut items: [Vec<String>; 4] = [Vec::new(), Vec::new(), Vec::new(), Vec::new()];
             let mut corollaries = String::new();
             for index in members {
-                let (ty, module, kind) = checks[&index];
-                let stated = self.stated(index, ty, module, kind, recursive)?;
+                let (ty, _, kind) = checks[&index];
+                let stated = self.stated(index, ty, kind, recursive)?;
                 for (slot, text) in items.iter_mut().zip(stated.items) {
                     slot.push(text);
                 }
@@ -8347,7 +8345,6 @@ impl Gen<'_> {
         &self,
         k: u64,
         ty: &SemanticType,
-        module: &str,
         kind: &Validation,
         recursive: bool,
     ) -> Result<Stated, String> {
@@ -8355,7 +8352,7 @@ impl Gen<'_> {
         let value = format!("{SYNTAX}.Value");
         let lean = self.ty(ty)?;
         let enc = self.enc(ty)?;
-        let coll = format!("{}.LexLeanCollections", self.lean_module(module)?);
+        let coll = "LexLeanCollections".to_owned();
         let statements = |valid: &str, inv: &str, viff: &str, vrel: &str| {
             Stated {
             items: [
