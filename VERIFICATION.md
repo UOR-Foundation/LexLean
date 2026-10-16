@@ -7068,7 +7068,7 @@ SPEC.md §24.7; `PX-01`..`PX-12` and `CL-23`. The Lean-backed cases share three 
 
 ### production export can fail
 
-The production export contract (§24.7, `PX-01`..`PX-12`, `CL-23`). Each record
+The production export contract (§24.7, `PX-01`..`PX-13`, `CL-23`). Each record
 below is a defect planted in a clean tree at the commit that introduced the
 contract, the command run, and the failure observed (verbatim, paths
 shortened), after which the defect was removed.
@@ -7147,6 +7147,23 @@ shortened), after which the defect was removed.
   order, the axioms, an optimality claimed without evidence, the GNAF verdict),
   an added file, and a removed file are each `LLV7102`, and a symlink is
   `LLS8001`.
+
+- **an output's effects not checked against eligibility** (`PX-13`). The
+  comparison of a result's per-output effects with the root's eligibility was
+  planted to ignore `recursion` (`kept(effects) != kept(required)` in
+  `effects_agree`, `crates/conformance/src/cases/production_export.rs`).
+  Command: `cargo test -p repo-conformance --all-features --test conformance
+  conformance_px_13` (Windows, toolchain hidden, so the platform-independent
+  assertions ran). Expected: an output with `recursion` dropped is accepted.
+
+  ```text
+  thread 'conformance_px_13' (22224) panicked at crates\conformance\src\cases\production_export.rs:1501:60:
+  dropped: ()
+  ```
+
+  Removed: the comparison was restored; `conformance_px_13` passes. On a host
+  with the pinned toolchain the case also exports `production-coverage` and
+  requires each of its 49 outputs to state exactly its eligibility's effects.
 
 ## Template recursion (Issue #105)
 
@@ -7671,3 +7688,29 @@ runs (231 s to 237 s) and is left alone until it fails.
 
 Removed: the edit was restored; `conformance_rs_12` passes in 691 s on the
 idle host (737 s before the change).
+
+## Exact toolchain version fields (Issue #134)
+
+The existing `VR-02` owner (SPEC.md §8.2, §22.2) also refuses patch-prefix
+collisions and prerelease suffixes in both tool banners, and a banner whose
+unrelated version equals the pin. These use the owner's existing verified
+fixture; every wrong banner fails in preflight before module compilation.
+
+Planted: retain the old substring comparison in the behavior-preserving
+`reports_pinned_version` extraction. Command:
+`cargo test -p lexlean --lib verify::toolchain::tests::version_banners_require_the_exact_lean_version -- --exact --nocapture`.
+Observed:
+
+```text
+thread 'verify::toolchain::tests::version_banners_require_the_exact_lean_version' panicked:
+lean: Lean (version 4.32.10, release)
+test result: FAILED. 0 passed; 1 failed
+```
+
+The fixed comparison reads the complete Lean version field of each banner.
+The unit case covers real pinned Lean/Lake formats, other patches,
+prereleases, unrelated occurrences of the pin, and malformed banners.
+
+Validated after the fix: the unit case and `conformance_vr_02` pass (the
+latter in 4.76 s), as do formatting, workspace/all-target Clippy with warnings
+denied, model/spec-link audits, and all five BDD meta-gate tests.

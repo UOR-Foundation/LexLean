@@ -13,6 +13,11 @@ spec = "lexlean/production-result/1"
 sha256 = "85dbe9bde4f190a693f20a53d3e7397bba5d449033f6630fb9753cf938c7334d"
 
 [[version]]
+schema = "production-result"
+spec = "lexlean/production-result/2"
+sha256 = "314723f517cd6af0894a051fe27bbe40cafc0ada06da1d29e669075ff347a7f4"
+
+[[version]]
 schema = "target-descriptor"
 spec = "lexlean/target-descriptor/1"
 sha256 = "1af1e2cd10896f963b1ff71743cf2461577a25906980bd59cf35d8c34d381363"

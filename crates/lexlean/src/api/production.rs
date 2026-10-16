@@ -26,7 +26,7 @@ use crate::error::LexLeanError;
 /// The schema tag of a production request.
 pub const REQUEST_SPEC: &str = "lexlean/production-request/1";
 /// The schema tag of a production result.
-pub const RESULT_SPEC: &str = "lexlean/production-result/1";
+pub const RESULT_SPEC: &str = "lexlean/production-result/2";
 /// The schema tag of one target descriptor.
 pub const TARGET_SPEC: &str = "lexlean/target-descriptor/1";
 /// The schema tag of the target-descriptor document.
@@ -425,7 +425,7 @@ pub fn targets_document() -> Result<Vec<u8>, LexLeanError> {
 // Result
 // ---------------------------------------------------------------------------
 
-/// A production result (`lexlean/production-result/1`).
+/// A production result (`lexlean/production-result/2`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductionResult {
@@ -526,6 +526,11 @@ pub struct TargetOutput {
     pub entry: Entry,
     /// Its certification.
     pub certification: Certification,
+    /// The effects its realization can exhibit on this target, ascending:
+    /// exactly those eligibility requires of the root there (§17.13). With
+    /// `recursion`, the host must give the call a stack its depth fits, a
+    /// depth bounded only by the input; exhausting it aborts the process.
+    pub effects: Vec<String>,
 }
 
 /// An exporting package.
@@ -655,6 +660,17 @@ impl ProductionResult {
     pub fn to_json(&self) -> Vec<u8> {
         canonical_bytes(self)
     }
+
+    /// The outputs whose realization can recurse, each of which needs a host
+    /// stack its input-dependent depth fits (§17.13).
+    #[must_use]
+    pub fn recursive_outputs(&self) -> usize {
+        self.roots
+            .iter()
+            .flat_map(|root| &root.outputs)
+            .filter(|output| output.effects.iter().any(|effect| effect == "recursion"))
+            .count()
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -752,30 +768,6 @@ struct AttestationFacts {
     preservation: (u64, Sha256Digest),
 }
 
-fn reports_pinned_lean_version(tool: &str, banner: &str) -> bool {
-    if banner.contains(['\n', '\r']) {
-        return false;
-    }
-    // Lake's own version does not identify Lean; only the whole enclosed
-    // Lean version field can establish the pin the result states.
-    let version = match tool {
-        "lean" => banner
-            .strip_prefix("Lean (version ")
-            .and_then(|rest| rest.strip_suffix(')'))
-            .and_then(|rest| rest.split_once(", "))
-            .filter(|(_, details)| !details.is_empty())
-            .map(|(version, _)| version),
-        "lake" => banner
-            .strip_prefix("Lake version ")
-            .and_then(|rest| rest.strip_suffix(')'))
-            .and_then(|rest| rest.split_once(" (Lean version "))
-            .filter(|(lake, _)| !lake.is_empty() && !lake.contains(char::is_whitespace))
-            .map(|(_, version)| version),
-        _ => None,
-    };
-    version == Some(crate::LEAN_VERSION)
-}
-
 fn require_attested_toolchain(body: &BTreeMap<String, Json>) -> Result<(), String> {
     let Some(Json::Obj(toolchain)) = body.get("toolchain") else {
         return Err("attestation.json states no `toolchain` object".to_owned());
@@ -791,7 +783,7 @@ fn require_attested_toolchain(body: &BTreeMap<String, Json>) -> Result<(), Strin
                 "attestation.json states no string `toolchain.{tool}.version_output`"
             ));
         };
-        if !reports_pinned_lean_version(tool, banner) {
+        if !crate::verify::toolchain::reports_pinned_version(tool, banner) {
             return Err(format!(
                 "attestation.json `toolchain.{tool}.version_output` does not report Lean {}",
                 crate::LEAN_VERSION
@@ -937,7 +929,7 @@ struct Planned {
     request: RootRequest,
     program_bytes: Vec<u8>,
     entry: u64,
-    packages: Vec<(TargetRef, Manifest, package::Package)>,
+    packages: Vec<(TargetRef, Manifest, package::Package, Vec<String>)>,
     evidence: Option<CheckedEvidence>,
 }
 
@@ -1170,7 +1162,21 @@ fn build_inner(
                     ),
                 ))
             })?;
-            packages.push((target.clone(), manifest, rendered));
+            let effects = root
+                .report
+                .targets
+                .iter()
+                .find(|row| row.target == target.id)
+                .map(|row| {
+                    let ids: BTreeSet<String> = row
+                        .effects
+                        .iter()
+                        .map(|effect| effect.effect.clone())
+                        .collect();
+                    ids.into_iter().collect()
+                })
+                .unwrap_or_default();
+            packages.push((target.clone(), manifest, rendered, effects));
         }
         let evidence = match request
             .evidence
@@ -1294,7 +1300,7 @@ fn build_inner(
             ),
         };
         let mut outputs = Vec::new();
-        for (target, manifest, rendered) in plan.packages {
+        for (target, manifest, rendered, effects) in plan.packages {
             let rendering = preserved
                 .renderings
                 .iter()
@@ -1374,6 +1380,7 @@ fn build_inner(
                     axioms: preservation.library.axioms.clone(),
                     certificates,
                 },
+                effects,
             });
         }
         let optimality = match plan.evidence {
