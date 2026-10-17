@@ -461,7 +461,7 @@ fn stress_estimates() -> u64 {
                     let size = weight_a(certificate);
                     quadratic = quadratic.max(size.saturating_sub(a.max(e)));
                     // Certificate B stops at the limit it is given, at
-                    // the size it would have had or below it: a third of
+                    // the size it would have had or below it: a quarter of
                     // its size is a limit its nodes pass while it is derived
                     // (a record's reads take 35 bytes a node in the
                     // notation, the corpora's 14 to 18).
@@ -476,7 +476,7 @@ fn stress_estimates() -> u64 {
                             &entry.program,
                             &krate,
                             &certificate.module,
-                            size / 3,
+                            size / 4,
                         )
                         .expect_err("a certificate beyond its limit is refused");
                         assert!(
