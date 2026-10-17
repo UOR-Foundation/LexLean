@@ -15,6 +15,16 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
+  job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
+  A draft pull request runs the `rest` leg and no other job (about 23 runner
+  minutes instead of about 300); a ready pull request, a request, and a push to
+  `main` run the whole gate; a push to `main` that merges a head whose tree it
+  equals runs nothing when a pull request run of that head passed every job,
+  the join of Atlas, every host, and every leg, and says which run. The legs of
+  the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
+  to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
+  The register is unchanged: the statement of `RP-14` is extended.
 - The decoder of a version 2 core module no longer takes a derived row from
   the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
   the pinned Lean reserves (matcher equations and splitters, definition

@@ -8457,3 +8457,38 @@ derived from them alone (the compiler-semantics, source, semantic, and build
 IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
+
+## The plan of a CI run can fail (RP-14, #131)
+
+`.github/ci-plan.sh` decides what a run of `ci.yml` is: the `rest` leg for a
+draft pull request, the whole gate for a ready pull request, a request, and a
+push, and nothing for a push that merges a head whose tree it equals when the
+whole gate passed on that head. A decision that skips jobs is a gate that can
+pass without evidence, so `RP-14` runs the script in a scratch repository with a
+stand-in for `gh` against planted events (a draft, a ready pull request, a
+request, a push, a merge that lands its head's tree with a run that passed
+every job, and each way that evidence can fall short) and requires the whole
+gate everywhere the evidence is not complete. Each defect below was planted,
+`cargo test -p repo-conformance --test conformance conformance_rp_14 -- --exact`
+run, and the defect removed. The observed lines are the case's own.
+
+| Planted defect | Observed |
+| --- | --- |
+| the tree of the merge is not compared with the tree of its second parent | `ci-plan.sh` returns no job for a merge that changed the tree (`repository.rs:381`, left: nothing, right: the whole gate) |
+| a job that did not conclude `success` is accepted | `§9.4: a skipped job is not the whole gate passing` |
+| the join of Atlas is not required of the run | `§9.4: no Atlas join is not the whole gate passing` |
+| the number of hosts is not compared with the host matrix | `§9.4: no host is not the whole gate passing` |
+| a draft pull request runs the whole gate | `repository.rs:322`, the draft is not the `rest` leg alone |
+| a failed query of the runs is read as a pass | `repository.rs:336`, a failed call is not the whole gate |
+| the `rest` row of `.github/vv-rows.json` is renamed | `§9.4: the leg a draft pull request runs is the one named `rest`` |
+| the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
+| an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
+| `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
+
+The script's decisions are run on Linux, where the gate runs; on another host of the matrix the case reads the files and skips them. (The first full run of this change failed on Windows for that reason: the stand-in for `gh` was put on a `PATH` written with `:`, so the script found no run and, failing closed, chose the whole gate, which the case refused.)
+
+Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
+(the case was changed before the workflow). The two defects that a stand-in `gh`
+cannot show, a run of another repository's pull request and a run that did not
+pass, are pinned by the script's own query (`event=pull_request&status=success`,
+`head_repository.full_name`), which the case reads.
