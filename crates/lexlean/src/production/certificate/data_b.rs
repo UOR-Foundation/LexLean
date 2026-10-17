@@ -656,8 +656,8 @@ pub fn render(
     Ok((data, text, source))
 }
 
-/// The crates of `crates` as definitions `__crate<i> : RustSyntax.Crate` of
-/// one native core module, rendered like a certificate: the Rust machine the
+/// The crates of `crates` as computable definitions `__crate<i> :
+/// RustSyntax.Crate` of one native core module, rendered like a certificate: the Rust machine the
 /// conformance cases run evaluates a crate by its term, which is the same
 /// term certificate B states its theorem about.
 ///
@@ -695,7 +695,7 @@ pub fn crates_module(module: &str, crates: &[&Crate]) -> Result<(CoreModule, Str
         let ty = writer.rs("Crate");
         writer.push_row(
             &format!("__crate{position}"),
-            RowKind::Definition { compiled: false },
+            RowKind::Definition { compiled: true },
             ty,
             value,
         )?;
