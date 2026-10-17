@@ -423,10 +423,6 @@ impl Builder {
         if let Some(&done) = memo.get(&term) {
             return done;
         }
-        if self.meta_clean(term) {
-            return term;
-        }
-        WALKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let out = match self.nodes[term].clone() {
             CoreNode::Const { n, .. } => map.get(&n).copied().unwrap_or(term),
             CoreNode::BVar { .. }
@@ -798,6 +794,10 @@ impl Builder {
         if let Some(&done) = memo.get(&term) {
             return done;
         }
+        if self.meta_clean(term) {
+            return term;
+        }
+        WALKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let out = match self.nodes[term].clone() {
             CoreNode::Const { n, .. } => map.get(&n).copied().unwrap_or(term),
             CoreNode::BVar { .. }
