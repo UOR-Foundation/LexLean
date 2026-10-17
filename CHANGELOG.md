@@ -22,6 +22,23 @@ versions, and the entries below say what each tag does and does not claim.
   reserved-name action and refused unless it equals the row. Every one of the
   preservation library's 7,071 derived rows is remade exactly; no source,
   lock, or compiler-semantics ID changes.
+- The first component of the compiler's own pipeline as language-1.2 source:
+  the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/` is a language-1.2 project beside `compiler/` and `stdlib/`
+  under the module prefix `LexLeanBoot`; its `AxiomOutput` module declares
+  `parseAuditOutput` and `isClosedLeanName` as production roots for
+  `rust-std`. A project cannot import another's modules, so `Text` is a copy
+  of the standard library's without its `production` declarations, compared
+  with `stdlib/src/Text.lex.tex` on every run. `BS-01` runs the committed
+  golden vectors of `tests/golden/axiom-parser/` and a seeded corpus of
+  generated, wrapped, and mutated audit outputs against the Rust parser
+  `verify::axiom` (the stage-0 oracle, unchanged) under the calculus
+  evaluator and under the pinned rustc, detects seven planted defects, and,
+  under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones under
+  `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
+  example-gate records. `BS-01` brings the register to 398 IDs.
 - A language-1.2 `tokenizer` elaborates, in linking, to ordinary definitions
   over the embedded text-laws library and to generated theorems the library
   proves (SPEC.md §17.12, `LM-01`..`LM-03`, `LM-13`, #30). The library is

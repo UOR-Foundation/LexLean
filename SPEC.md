@@ -6653,6 +6653,77 @@ realizes a library template, and no member recurses itself. Theorems over the
 members wait for equality of `Bytes` by evaluation; until then the module's
 behavior is held by the differential (`SL-01`).
 
+### 17.23 The bootstrap project
+
+The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
+components of LexLean's own pipeline that are authored as language-1.2 source
+and compiled by LexLean's production pipeline to certified Rust packages, so
+that the compiler's logic is eventually only `.lex.tex` (the self-hosting plan
+of issue 92). It is written in the authoring notation (§17.21) under the
+module prefix `LexLeanBoot`, and passes the gates of §28.6 as the standard
+library does. The Rust it replaces stays in the tree as the *stage-0 oracle*
+until the fixed point of that plan; a component is added only with a
+differential against that Rust, and is never a source of the Rust.
+
+A project reads only its own source roots (§10.1: a source root is a
+project-relative path that names no parent directory, and a symbolic link is
+refused), so a project cannot import another's modules. The module `Text` of
+the standard library (§17.22) is therefore present in `bootstrap/src/` as a
+copy of `stdlib/src/Text.lex.tex` in which the `production` declarations are
+removed, so that the copy is a library of the project and republishes none of
+the standard library's packages. `BS-01` compares the copy with the standard
+library's module on every run, and it is removed when a project can depend on
+another.
+
+The first component is the axiom-output parser (§22.5), the module
+`AxiomOutput`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `parseAuditOutput (stdout : Bytes) (expected : List Bytes) : Result (List (Bytes * List Bytes)) Rejection` | `verify::axiom::parse_audit_output` |
+| `isClosedLeanName (raw : Bytes) : Bool` | `ir::core::is_closed_lean_name` |
+
+The parser is the function of §22.5 on the bytes of valid UTF-8 text: the
+lines of `stdout` (`str::lines`), white space as Unicode `White_Space`
+(`str::trim`, `char::is_whitespace`) and not the ASCII white space of
+`Text.trim`, the optional information envelope, the reassembly of a record
+wrapped at the format width, the payload grammar with a duplicate-free axiom
+list sorted bytewise, and the rejection of a missing, duplicate, extra,
+reordered, or malformed record. The result is first-order data (§17.13 rule 1):
+`Result.ok` of the observed axioms per declaration, as an association list
+ascending by the declaration's bytes (the order of a `BTreeMap`), or
+`Result.error` of a `Rejection`, a structure of the diagnostic's `message` and
+the `declaration` it is about when the parser attributes it to exactly one
+expected declaration, as the oracle's `AuditFailure` does. The one diagnostic
+of the parser is `LLV7004`, the code of every `Rejection`; it is registered
+in the oracle and not carried in the data, so a host raises it from the
+rejection. The root takes no capability: it is the pure function whose host
+entry is the boundary of issue 92, and its input is the audit output the
+driver has read.
+
+A message is the oracle's message to the byte; a count in a message is written
+in base ten by the module, which has no formatting of a `Nat`. The
+association list is in the order of the sorted declaration names, so that a
+duplicated expected name is the rejection `duplicate record for` as it is for
+the oracle's map.
+
+`BS-01` holds both roots to the oracle. The lowered program of
+`parseAuditOutput` is run under the calculus evaluator (§17.14) on every
+committed golden vector of `tests/golden/axiom-parser/` (each line of
+`accepted.txt` and `rejected.txt`, each blank-line separated record of
+`accepted-wrapped.txt`, and each file whole against its declarations), and the
+rendered `rust-std` packages of both roots (§17.16), compiled by the pinned
+rustc, are run on a seeded corpus: records built from the payload grammar and
+its boundaries (names at the edges of the closed grammar, axiom lists of every
+length, every envelope shape and every malformed one, every Unicode white
+space), wrapped at every width, and mutated (a record dropped, duplicated,
+reordered, added, truncated, oversized, or given a stray byte). The outcome
+of a run is the result, the rejection's message, and its declaration, and one
+difference fails the case. Planted defects in the source are each detected by
+the same differential. Under the pinned Lean, the production export (§24.7)
+certifies both roots, and its packages are the committed ones under
+`tests/production-export/bootstrap/`.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9451,6 +9522,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
+| `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 
 
 | `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
@@ -9458,7 +9530,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 398.
+**Total required capability IDs:** 399.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
