@@ -530,11 +530,11 @@ fn weight_a(certificate: &lexlean::production::certificate::Certificate) -> u64 
         .map_or(certificate.text.len(), String::len) as u64
 }
 
-/// The size of the largest certificate of a root: A by its recorded weight,
-/// B and E by their text.
+/// The size of the largest certificate of a root: A and B by their recorded weight,
+/// E by its text.
 fn largest_certificate(entry: &preservation::Certified) -> u64 {
     std::iter::once(weight_a(&entry.certificate))
-        .chain(entry.renderings.iter().map(|(_, b)| b.text.len() as u64))
+        .chain(entry.renderings.iter().map(|(_, b)| weight_a(b)))
         .chain(entry.composed.iter().map(|(_, e)| e.text.len() as u64))
         .max()
         .unwrap_or(0)
@@ -547,10 +547,10 @@ fn assert_floor(label: &str, entry: &preservation::Certified) {
         .saturating_mul(lexlean::production::lower::CERTIFICATE_BYTES_PER_SLOT);
     for (target, certificate) in &entry.renderings {
         assert!(
-            floor <= certificate.text.len() as u64,
+            floor <= weight_a(certificate),
             "{label} {} ({target}): the floor {floor} is above certificate B, {} bytes",
             entry.root,
-            certificate.text.len()
+            weight_a(certificate)
         );
     }
 }
@@ -569,7 +569,7 @@ fn assert_bounds(label: &str, entry: &preservation::Certified) {
         entry
             .renderings
             .iter()
-            .map(|(_, certificate)| certificate.text.len() as u64)
+            .map(|(_, certificate)| weight_a(certificate))
             .collect(),
     );
     let e = smallest(
