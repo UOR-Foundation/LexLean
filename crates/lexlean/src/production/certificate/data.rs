@@ -1338,20 +1338,20 @@ impl<'g, 'a> Composer<'g, 'a> {
 
 /// A container the kernel nests in a recursive group of document types: an
 /// auxiliary inductive type of the group's recursors, with its own motive.
-struct Aux {
+pub(super) struct Aux {
     /// The container as the source writes it, which certificate A's nested
     /// auxiliary encoder is registered under.
-    original: SemanticType,
+    pub(super) original: SemanticType,
     /// The container as Lean sees it: a set as a list, a map as a list of
     /// pairs.
-    canonical: SemanticType,
-    kind: AuxKind,
+    pub(super) canonical: SemanticType,
+    pub(super) kind: AuxKind,
     /// Certificate A's auxiliary for the container (`__items_n`, `__aux_n`).
-    nested_index: u64,
+    pub(super) nested_index: u64,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum AuxKind {
+pub(super) enum AuxKind {
     List,
     Option,
     Prod,
@@ -1377,7 +1377,7 @@ struct Group {
 
 /// A type as Lean's kernel sees it: a set is a list, a map a list of pairs,
 /// a contract violation or reasoning failure a pair of Booleans.
-fn canonical(ty: &SemanticType) -> SemanticType {
+pub(super) fn canonical(ty: &SemanticType) -> SemanticType {
     match ty {
         SemanticType::Set { element } | SemanticType::List { element } => SemanticType::List {
             element: Box::new(canonical(element)),
@@ -2066,7 +2066,7 @@ impl Composer<'_, '_> {
 /// itself: the element of a list, set, or map (its entries), the value of an
 /// option, the two components of a pair, and the error then the value of a
 /// result.
-fn container_parts(ty: &SemanticType) -> Result<Vec<SemanticType>, String> {
+pub(super) fn container_parts(ty: &SemanticType) -> Result<Vec<SemanticType>, String> {
     Ok(match ty {
         SemanticType::List { element } | SemanticType::Set { element } => {
             vec![element.as_ref().clone()]
@@ -2113,7 +2113,7 @@ fn container_parts(ty: &SemanticType) -> Result<Vec<SemanticType>, String> {
 }
 
 /// The type arguments a document type is instantiated at.
-fn type_arguments(ty: &SemanticType) -> Vec<SemanticType> {
+pub(super) fn type_arguments(ty: &SemanticType) -> Vec<SemanticType> {
     match ty {
         SemanticType::Named {
             member: _,
@@ -2153,7 +2153,7 @@ fn type_arguments(ty: &SemanticType) -> Vec<SemanticType> {
 }
 
 /// The member a document type names.
-fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
+pub(super) fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
     match ty {
         SemanticType::Named {
             member,

@@ -960,23 +960,41 @@ pub fn run_part(
                     target: row.target.clone(),
                     certificate: certificate_b.into_certificate(),
                     composed,
-                    crate_text: crate::calculus::rust::ast::print(&rendered),
+                    crate_text: crate::calculus::rust::ast::print(&rendered)
+                        .map_err(|reason| fail(internal(reason)))?,
                     entry: lowered.entry(),
                 });
             }
-            for generated in std::iter::once(&generated).chain(
-                renderings
-                    .iter()
-                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed]),
+            // Every certificate held as data weighs what it is recorded as,
+            // the notation: the Lean text is the core backend's rendering,
+            // and its size is the backend's, not the certificate's.
+            let weight_a = generated
+                .source
+                .as_ref()
+                .map_or(generated.text.len(), String::len);
+            for (generated, weight) in std::iter::once((&generated, weight_a)).chain(
+                renderings.iter().flat_map(|rendering| {
+                    [
+                        (
+                            &rendering.certificate,
+                            crate::production::preserve::recorded_bytes(&rendering.certificate)
+                                .len(),
+                        ),
+                        (
+                            &rendering.composed,
+                            crate::production::preserve::recorded_bytes(&rendering.composed).len(),
+                        ),
+                    ]
+                }),
             ) {
-                if generated.text.len() as u64 > limits.max_file_bytes {
+                if weight as u64 > limits.max_file_bytes {
                     return Err(fail(Diagnostic::new(
                     code!("LLS8002"),
                     format!(
                         "max_file_bytes exceeded in phase certificates: configured {}, `{}` is {} bytes",
                         limits.max_file_bytes,
                         generated.module,
-                        generated.text.len()
+                        weight
                     ),
                 )));
                 }
@@ -984,8 +1002,9 @@ pub fn run_part(
             for rendering in &renderings {
                 budget
                     .charge(
-                        rendering.certificate.text.len()
-                            + rendering.composed.text.len()
+                        crate::production::preserve::recorded_bytes(&rendering.certificate).len()
+                            + crate::production::preserve::recorded_bytes(&rendering.composed)
+                                .len()
                             + rendering.crate_text.len(),
                         &root.report.root,
                         "its certificates B and E and its crates",
@@ -993,7 +1012,7 @@ pub fn run_part(
                     .map_err(fail)?;
             }
             budget
-                .charge(generated.text.len(), &root.report.root, "its certificate A")
+                .charge(weight_a, &root.report.root, "its certificate A")
                 .map_err(fail)?;
             certified.push(CertifiedRoot {
                 root: root.report.root.clone(),

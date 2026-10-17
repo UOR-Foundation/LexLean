@@ -637,7 +637,7 @@ theorem LexLeanRuntime.slice.eq_1 : @5459 := @5466 {
   tags: [backward_defeq],
   transparency: semireducible
 }
-theorem LexLeanTarget.TargetSemantics.fromOrdering.eq_1 : @5487 := @5489 {
+theorem LexLeanTarget.TargetSemantics.fromOrdering.eq_1 : @5500 := @5502 {
   all: [LexLeanTarget.TargetSemantics.fromOrdering.eq_1],
   class: false,
   generated: false,
@@ -645,14 +645,14 @@ theorem LexLeanTarget.TargetSemantics.fromOrdering.eq_1 : @5487 := @5489 {
   tags: [backward_defeq],
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.eq_1.{u_1} : @5514 := @5521 {
+theorem _private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.eq_1.{u_1} : @5527 := @5534 {
   all: ["_private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.eq_1"],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-abbrev _private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.splitter.{u_1} : @5525 := @5502 {
+abbrev _private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.splitter.{u_1} : @5538 := @5515 {
   all: ["_private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.splitter"],
   class: false,
   compiled: true,
@@ -662,28 +662,28 @@ abbrev _private.LexLeanPreservation.Primitives.#0.ByteArray.get!.match_1.splitte
   reducibility: abbrev{},
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_1.{u_1} : @5547 := @5553 {
+theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_1.{u_1} : @5560 := @5566 {
   all: ["_private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_1"],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_2.{u_1} : @5565 := @5571 {
+theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_2.{u_1} : @5578 := @5584 {
   all: ["_private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_2"],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_3.{u_1} : @5583 := @5589 {
+theorem _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_3.{u_1} : @5596 := @5602 {
   all: ["_private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.eq_3"],
   class: false,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.splitter.{u_1} : @5600 := @5535 {
+abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.splitter.{u_1} : @5613 := @5548 {
   all: [
     "_private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrdering.match_1.splitter"
   ],
@@ -3601,67 +3601,70 @@ abbrev _private.LexLeanPreservation.Primitives.#0.LexLeanPreservation.encOrderin
       proof(fun (value : @11) =>
         proof(fun (start : @0) => proof(fun (count : @0) => proof(proof(@40 @1903) @5446))))))
 @5467 := @730 @683
-@5468 := @2826 @776
-@5475 := @731 (@766 @5468 @779) (@790 @5468 @779) @662
-@5476 := @2826 @785
-@5487 := (order : @681) -> @5467 (@5475 (@731 (@766 @5476 @779) (@790 @5476 @779) @670 @677))
-@5489 := proof(fun (order : @681) => proof(@918 @683))
-@5491 := (x._@.Init.Data.ByteArray.Basic.#2959036029._hygCtx.#13.Init.Data.ByteArray.Basic.#2959036029._hygCtx._hyg.#32 : @2353) ->
+@5468 := UInt8.ofNat
+@5473 := @7 (@50 (@123 (@5468 @64) @52))
+@5478 := @7 (@50 (@123 (@5468 @116) @52))
+@5481 := @2826 (@774 @5473 @5478)
+@5488 := @731 (@766 @5481 @779) (@790 @5481 @779) @662
+@5489 := @2826 @785
+@5500 := (order : @681) -> @5467 (@5488 (@731 (@766 @5489 @779) (@790 @5489 @779) @670 @677))
+@5502 := proof(fun (order : @681) => proof(@918 @683))
+@5504 := (x._@.Init.Data.ByteArray.Basic.#2959036029._hygCtx.#13.Init.Data.ByteArray.Basic.#2959036029._hygCtx._hyg.#32 : @2353) ->
   (x._@.Init.Data.ByteArray.Basic.#2959036029._hygCtx.#14.Init.Data.ByteArray.Basic.#2959036029._hygCtx._hyg.#35 : @0) ->
   @3059
-@5496 := (bs : @3) -> (i : @0) -> @1445 (@7 @11) @8
-@5497 := Eq.{u_1}
-@5498 := @7 @693
-@5500 := @1452 @5498 @11
-@5501 := @5497 @5500
-@5502 := ByteArray.get!.match_1.{u_1}
-@5506 := @5502 @1452 @5498 @11 @8
-@5514 := (motive : @5491) -> (bs : @3) -> (i : @0) -> (h_1 : @5496) -> @5501 @5506 (@8 @693 @11)
-@5515 := proof(Eq.refl.{u_1})
-@5521 := proof(fun (motive._@._hyg.#4 : @5491) =>
+@5509 := (bs : @3) -> (i : @0) -> @1445 (@7 @11) @8
+@5510 := Eq.{u_1}
+@5511 := @7 @693
+@5513 := @1452 @5511 @11
+@5514 := @5510 @5513
+@5515 := ByteArray.get!.match_1.{u_1}
+@5519 := @5515 @1452 @5511 @11 @8
+@5527 := (motive : @5504) -> (bs : @3) -> (i : @0) -> (h_1 : @5509) -> @5514 @5519 (@8 @693 @11)
+@5528 := proof(Eq.refl.{u_1})
+@5534 := proof(fun (motive._@._hyg.#4 : @5504) =>
     proof(fun (bs._@._hyg.#5 : @3) =>
       proof(fun (i._@._hyg.#6 : @0) =>
-        proof(fun (h_1._@._hyg.#7 : @5496) => proof(proof(@5515 @5500) @5506)))))
-@5525 := (motive : @5491) ->
+        proof(fun (h_1._@._hyg.#7 : @5509) => proof(proof(@5528 @5513) @5519)))))
+@5538 := (motive : @5504) ->
   (x._@.Init.Data.ByteArray.Basic.#2959036029._hygCtx.#13.Init.Data.ByteArray.Basic.#2959036029._hygCtx._hyg.#32 : @2353) ->
   (x._@.Init.Data.ByteArray.Basic.#2959036029._hygCtx.#14.Init.Data.ByteArray.Basic.#2959036029._hygCtx._hyg.#35 : @0) ->
-  (h_1 : @5496) -> @1648
-@5526 := (x._@.LexLeanPreservation.Values.#2684605419._hygCtx.#5.LexLeanPreservation.Values.#2684605419._hygCtx._hyg.#16 : @681) ->
+  (h_1 : @5509) -> @1648
+@5539 := (x._@.LexLeanPreservation.Values.#2684605419._hygCtx.#5.LexLeanPreservation.Values.#2684605419._hygCtx._hyg.#16 : @681) ->
   @3059
-@5528 := ("_" : @1441) -> @11 @658
-@5530 := ("_" : @1441) -> @693 @667
-@5531 := @1452 @674
-@5532 := ("_" : @1441) -> @5531
-@5533 := @1452 @658
-@5534 := @5497 @5533
-@5535 := LexLeanPreservation.encOrdering.match_1.{u_1}
-@5536 := @5535 @1452
-@5540 := @5536 @658 @693 @11 @8
-@5547 := (motive : @5526) ->
-  (h_1 : @5528) -> (h_2 : @5530) -> (h_3 : @5532) -> @5534 @5540 (@693 @1464)
-@5553 := proof(fun (motive._@._hyg.#3 : @5526) =>
-    proof(fun (h_1._@._hyg.#4 : @5528) =>
-      proof(fun (h_2._@._hyg.#5 : @5530) =>
-        proof(fun (h_3._@._hyg.#6 : @5532) => proof(proof(@5515 @5533) @5540)))))
-@5554 := @1452 @667
-@5555 := @5497 @5554
-@5559 := @5536 @667 @693 @11 @8
-@5565 := (motive : @5526) -> (h_1 : @5528) -> (h_2 : @5530) -> (h_3 : @5532) -> @5555 @5559 @1465
-@5571 := proof(fun (motive._@._hyg.#8 : @5526) =>
-    proof(fun (h_1._@._hyg.#9 : @5528) =>
-      proof(fun (h_2._@._hyg.#10 : @5530) =>
-        proof(fun (h_3._@._hyg.#11 : @5532) => proof(proof(@5515 @5554) @5559)))))
-@5572 := @5497 @5531
-@5576 := @5536 @674 @693 @11 @8
-@5583 := (motive : @5526) ->
-  (h_1 : @5528) -> (h_2 : @5530) -> (h_3 : @5532) -> @5572 @5576 (@8 @1464)
-@5589 := proof(fun (motive._@._hyg.#13 : @5526) =>
-    proof(fun (h_1._@._hyg.#14 : @5528) =>
-      proof(fun (h_2._@._hyg.#15 : @5530) =>
-        proof(fun (h_3._@._hyg.#16 : @5532) => proof(proof(@5515 @5531) @5576)))))
-@5600 := (motive : @5526) ->
+@5541 := ("_" : @1441) -> @11 @658
+@5543 := ("_" : @1441) -> @693 @667
+@5544 := @1452 @674
+@5545 := ("_" : @1441) -> @5544
+@5546 := @1452 @658
+@5547 := @5510 @5546
+@5548 := LexLeanPreservation.encOrdering.match_1.{u_1}
+@5549 := @5548 @1452
+@5553 := @5549 @658 @693 @11 @8
+@5560 := (motive : @5539) ->
+  (h_1 : @5541) -> (h_2 : @5543) -> (h_3 : @5545) -> @5547 @5553 (@693 @1464)
+@5566 := proof(fun (motive._@._hyg.#3 : @5539) =>
+    proof(fun (h_1._@._hyg.#4 : @5541) =>
+      proof(fun (h_2._@._hyg.#5 : @5543) =>
+        proof(fun (h_3._@._hyg.#6 : @5545) => proof(proof(@5528 @5546) @5553)))))
+@5567 := @1452 @667
+@5568 := @5510 @5567
+@5572 := @5549 @667 @693 @11 @8
+@5578 := (motive : @5539) -> (h_1 : @5541) -> (h_2 : @5543) -> (h_3 : @5545) -> @5568 @5572 @1465
+@5584 := proof(fun (motive._@._hyg.#8 : @5539) =>
+    proof(fun (h_1._@._hyg.#9 : @5541) =>
+      proof(fun (h_2._@._hyg.#10 : @5543) =>
+        proof(fun (h_3._@._hyg.#11 : @5545) => proof(proof(@5528 @5567) @5572)))))
+@5585 := @5510 @5544
+@5589 := @5549 @674 @693 @11 @8
+@5596 := (motive : @5539) ->
+  (h_1 : @5541) -> (h_2 : @5543) -> (h_3 : @5545) -> @5585 @5589 (@8 @1464)
+@5602 := proof(fun (motive._@._hyg.#13 : @5539) =>
+    proof(fun (h_1._@._hyg.#14 : @5541) =>
+      proof(fun (h_2._@._hyg.#15 : @5543) =>
+        proof(fun (h_3._@._hyg.#16 : @5545) => proof(proof(@5528 @5544) @5589)))))
+@5613 := (motive : @5539) ->
   (x._@.LexLeanPreservation.Values.#2684605419._hygCtx.#5.LexLeanPreservation.Values.#2684605419._hygCtx._hyg.#16 : @681) ->
   (h_1 : ("_" : @1441) -> @693 @658) ->
-  (h_2 : ("_" : @1441) -> @5554) -> (h_3 : ("_" : @1441) -> @1445 @674) -> @1445 @1452
+  (h_2 : ("_" : @1441) -> @5567) -> (h_3 : ("_" : @1441) -> @1445 @674) -> @1445 @1452
 \end{coremodule}
 \end{lexlean}

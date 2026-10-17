@@ -12,7 +12,7 @@
 # version disagree.
 
 spec = "lexlean/oracle-overlap/1"
-version = 3
+version = 4
 
 [[construct]]
 key = "type.type"
@@ -147,6 +147,22 @@ probe = "OracleProbe.ProbeConvert.convertRoot"
 refusal = "codegen-PolymorphicType"
 scope = "construct"
 reason = "Checked conversions between widths go through LexLeanRuntime.Fixed, a type-class dictionary structure parameterized by the scalar type, which the oracle refuses as a polymorphic type."
+
+[[construct]]
+key = "primitive.to_int"
+kind = "oracle-refuses"
+probe = "Coverage.Prims.widenings"
+refusal = "unresolved-external-call"
+scope = "closure"
+reason = "A widening conversion (`to_int`) elaborates in linking to bit tests over the source width and a balanced sum over `Int` (§17.12), which reaches the oracle's exporter as an unresolved mathematical-integer call (`Int.neg`); LexLean lowers `to_int` directly from the Semantic IR to one `Prim.conv` instruction (§17.14)."
+
+[[construct]]
+key = "primitive.to_nat"
+kind = "oracle-refuses"
+probe = "Coverage.Prims.widenings"
+refusal = "unresolved-external-call"
+scope = "closure"
+reason = "Realized in the corpus by the combined widening root `Coverage.Prims.widenings`, whose closure also widens signed fixed-width integers over `Int` and is refused by the oracle's exporter for its mathematical-integer call (`Int.neg`); LexLean lowers `to_nat` directly from the Semantic IR to one `Prim.conv` instruction (§17.14)."
 
 [[construct]]
 key = "primitive.map_insert"

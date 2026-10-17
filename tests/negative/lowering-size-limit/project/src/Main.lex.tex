@@ -2,166 +2,821 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-definition{
-  name: g16,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: 0,
-  executable: true
+inductive{
+  name: E,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: c0, fields: []},
+    {name: c1, fields: []},
+    {name: c2, fields: []},
+    {name: c3, fields: []},
+    {name: c4, fields: []},
+    {name: c5, fields: []},
+    {name: c6, fields: []},
+    {name: c7, fields: []},
+    {name: c8, fields: []},
+    {name: c9, fields: []},
+    {name: c10, fields: []},
+    {name: c11, fields: []},
+    {name: c12, fields: []},
+    {name: c13, fields: []},
+    {name: c14, fields: []},
+    {name: c15, fields: []},
+    {name: c16, fields: []},
+    {name: c17, fields: []},
+    {name: c18, fields: []},
+    {name: c19, fields: []},
+    {name: c20, fields: []},
+    {name: c21, fields: []},
+    {name: c22, fields: []},
+    {name: c23, fields: []},
+    {name: c24, fields: []},
+    {name: c25, fields: []},
+    {name: c26, fields: []},
+    {name: c27, fields: []},
+    {name: c28, fields: []},
+    {name: c29, fields: []},
+    {name: c30, fields: []},
+    {name: c31, fields: []},
+    {name: c32, fields: []},
+    {name: c33, fields: []},
+    {name: c34, fields: []},
+    {name: c35, fields: []},
+    {name: c36, fields: []},
+    {name: c37, fields: []},
+    {name: c38, fields: []},
+    {name: c39, fields: []},
+    {name: c40, fields: []},
+    {name: c41, fields: []},
+    {name: c42, fields: []},
+    {name: c43, fields: []},
+    {name: c44, fields: []},
+    {name: c45, fields: []},
+    {name: c46, fields: []},
+    {name: c47, fields: []},
+    {name: c48, fields: []},
+    {name: c49, fields: []},
+    {name: c50, fields: []},
+    {name: c51, fields: []},
+    {name: c52, fields: []},
+    {name: c53, fields: []},
+    {name: c54, fields: []},
+    {name: c55, fields: []},
+    {name: c56, fields: []},
+    {name: c57, fields: []},
+    {name: c58, fields: []},
+    {name: c59, fields: []},
+    {name: c60, fields: []},
+    {name: c61, fields: []},
+    {name: c62, fields: []},
+    {name: c63, fields: []},
+    {name: c64, fields: []},
+    {name: c65, fields: []},
+    {name: c66, fields: []},
+    {name: c67, fields: []},
+    {name: c68, fields: []},
+    {name: c69, fields: []},
+    {name: c70, fields: []},
+    {name: c71, fields: []},
+    {name: c72, fields: []},
+    {name: c73, fields: []},
+    {name: c74, fields: []},
+    {name: c75, fields: []},
+    {name: c76, fields: []},
+    {name: c77, fields: []},
+    {name: c78, fields: []},
+    {name: c79, fields: []},
+    {name: c80, fields: []},
+    {name: c81, fields: []},
+    {name: c82, fields: []},
+    {name: c83, fields: []},
+    {name: c84, fields: []},
+    {name: c85, fields: []},
+    {name: c86, fields: []},
+    {name: c87, fields: []},
+    {name: c88, fields: []},
+    {name: c89, fields: []},
+    {name: c90, fields: []},
+    {name: c91, fields: []},
+    {name: c92, fields: []},
+    {name: c93, fields: []},
+    {name: c94, fields: []},
+    {name: c95, fields: []},
+    {name: c96, fields: []},
+    {name: c97, fields: []},
+    {name: c98, fields: []},
+    {name: c99, fields: []},
+    {name: c100, fields: []},
+    {name: c101, fields: []},
+    {name: c102, fields: []},
+    {name: c103, fields: []},
+    {name: c104, fields: []},
+    {name: c105, fields: []},
+    {name: c106, fields: []},
+    {name: c107, fields: []},
+    {name: c108, fields: []},
+    {name: c109, fields: []},
+    {name: c110, fields: []},
+    {name: c111, fields: []},
+    {name: c112, fields: []},
+    {name: c113, fields: []},
+    {name: c114, fields: []},
+    {name: c115, fields: []},
+    {name: c116, fields: []},
+    {name: c117, fields: []},
+    {name: c118, fields: []},
+    {name: c119, fields: []},
+    {name: c120, fields: []},
+    {name: c121, fields: []},
+    {name: c122, fields: []},
+    {name: c123, fields: []},
+    {name: c124, fields: []},
+    {name: c125, fields: []},
+    {name: c126, fields: []},
+    {name: c127, fields: []},
+    {name: c128, fields: []},
+    {name: c129, fields: []},
+    {name: c130, fields: []},
+    {name: c131, fields: []},
+    {name: c132, fields: []},
+    {name: c133, fields: []},
+    {name: c134, fields: []},
+    {name: c135, fields: []},
+    {name: c136, fields: []},
+    {name: c137, fields: []},
+    {name: c138, fields: []},
+    {name: c139, fields: []},
+    {name: c140, fields: []},
+    {name: c141, fields: []},
+    {name: c142, fields: []},
+    {name: c143, fields: []},
+    {name: c144, fields: []},
+    {name: c145, fields: []},
+    {name: c146, fields: []},
+    {name: c147, fields: []},
+    {name: c148, fields: []},
+    {name: c149, fields: []},
+    {name: c150, fields: []},
+    {name: c151, fields: []},
+    {name: c152, fields: []},
+    {name: c153, fields: []},
+    {name: c154, fields: []},
+    {name: c155, fields: []},
+    {name: c156, fields: []},
+    {name: c157, fields: []},
+    {name: c158, fields: []},
+    {name: c159, fields: []},
+    {name: c160, fields: []},
+    {name: c161, fields: []},
+    {name: c162, fields: []},
+    {name: c163, fields: []},
+    {name: c164, fields: []},
+    {name: c165, fields: []},
+    {name: c166, fields: []},
+    {name: c167, fields: []},
+    {name: c168, fields: []},
+    {name: c169, fields: []},
+    {name: c170, fields: []},
+    {name: c171, fields: []},
+    {name: c172, fields: []},
+    {name: c173, fields: []},
+    {name: c174, fields: []},
+    {name: c175, fields: []},
+    {name: c176, fields: []},
+    {name: c177, fields: []},
+    {name: c178, fields: []},
+    {name: c179, fields: []},
+    {name: c180, fields: []},
+    {name: c181, fields: []},
+    {name: c182, fields: []},
+    {name: c183, fields: []},
+    {name: c184, fields: []},
+    {name: c185, fields: []},
+    {name: c186, fields: []},
+    {name: c187, fields: []},
+    {name: c188, fields: []},
+    {name: c189, fields: []},
+    {name: c190, fields: []},
+    {name: c191, fields: []},
+    {name: c192, fields: []},
+    {name: c193, fields: []},
+    {name: c194, fields: []},
+    {name: c195, fields: []},
+    {name: c196, fields: []},
+    {name: c197, fields: []},
+    {name: c198, fields: []},
+    {name: c199, fields: []},
+    {name: c200, fields: []},
+    {name: c201, fields: []},
+    {name: c202, fields: []},
+    {name: c203, fields: []},
+    {name: c204, fields: []},
+    {name: c205, fields: []},
+    {name: c206, fields: []},
+    {name: c207, fields: []},
+    {name: c208, fields: []},
+    {name: c209, fields: []},
+    {name: c210, fields: []},
+    {name: c211, fields: []},
+    {name: c212, fields: []},
+    {name: c213, fields: []},
+    {name: c214, fields: []},
+    {name: c215, fields: []},
+    {name: c216, fields: []},
+    {name: c217, fields: []},
+    {name: c218, fields: []},
+    {name: c219, fields: []},
+    {name: c220, fields: []},
+    {name: c221, fields: []},
+    {name: c222, fields: []},
+    {name: c223, fields: []},
+    {name: c224, fields: []},
+    {name: c225, fields: []},
+    {name: c226, fields: []},
+    {name: c227, fields: []},
+    {name: c228, fields: []},
+    {name: c229, fields: []},
+    {name: c230, fields: []},
+    {name: c231, fields: []},
+    {name: c232, fields: []},
+    {name: c233, fields: []},
+    {name: c234, fields: []},
+    {name: c235, fields: []},
+    {name: c236, fields: []},
+    {name: c237, fields: []},
+    {name: c238, fields: []},
+    {name: c239, fields: []},
+    {name: c240, fields: []},
+    {name: c241, fields: []},
+    {name: c242, fields: []},
+    {name: c243, fields: []},
+    {name: c244, fields: []},
+    {name: c245, fields: []},
+    {name: c246, fields: []},
+    {name: c247, fields: []},
+    {name: c248, fields: []},
+    {name: c249, fields: []},
+    {name: c250, fields: []},
+    {name: c251, fields: []},
+    {name: c252, fields: []},
+    {name: c253, fields: []},
+    {name: c254, fields: []},
+    {name: c255, fields: []},
+    {name: c256, fields: []},
+    {name: c257, fields: []},
+    {name: c258, fields: []},
+    {name: c259, fields: []},
+    {name: c260, fields: []},
+    {name: c261, fields: []},
+    {name: c262, fields: []},
+    {name: c263, fields: []},
+    {name: c264, fields: []},
+    {name: c265, fields: []},
+    {name: c266, fields: []},
+    {name: c267, fields: []},
+    {name: c268, fields: []},
+    {name: c269, fields: []},
+    {name: c270, fields: []},
+    {name: c271, fields: []},
+    {name: c272, fields: []},
+    {name: c273, fields: []},
+    {name: c274, fields: []},
+    {name: c275, fields: []},
+    {name: c276, fields: []},
+    {name: c277, fields: []},
+    {name: c278, fields: []},
+    {name: c279, fields: []},
+    {name: c280, fields: []},
+    {name: c281, fields: []},
+    {name: c282, fields: []},
+    {name: c283, fields: []},
+    {name: c284, fields: []},
+    {name: c285, fields: []},
+    {name: c286, fields: []},
+    {name: c287, fields: []},
+    {name: c288, fields: []},
+    {name: c289, fields: []},
+    {name: c290, fields: []},
+    {name: c291, fields: []},
+    {name: c292, fields: []},
+    {name: c293, fields: []},
+    {name: c294, fields: []},
+    {name: c295, fields: []},
+    {name: c296, fields: []},
+    {name: c297, fields: []},
+    {name: c298, fields: []},
+    {name: c299, fields: []},
+    {name: c300, fields: []},
+    {name: c301, fields: []},
+    {name: c302, fields: []},
+    {name: c303, fields: []},
+    {name: c304, fields: []},
+    {name: c305, fields: []},
+    {name: c306, fields: []},
+    {name: c307, fields: []},
+    {name: c308, fields: []},
+    {name: c309, fields: []},
+    {name: c310, fields: []},
+    {name: c311, fields: []},
+    {name: c312, fields: []},
+    {name: c313, fields: []},
+    {name: c314, fields: []},
+    {name: c315, fields: []},
+    {name: c316, fields: []},
+    {name: c317, fields: []},
+    {name: c318, fields: []},
+    {name: c319, fields: []},
+    {name: c320, fields: []},
+    {name: c321, fields: []},
+    {name: c322, fields: []},
+    {name: c323, fields: []},
+    {name: c324, fields: []},
+    {name: c325, fields: []},
+    {name: c326, fields: []},
+    {name: c327, fields: []},
+    {name: c328, fields: []},
+    {name: c329, fields: []},
+    {name: c330, fields: []},
+    {name: c331, fields: []},
+    {name: c332, fields: []},
+    {name: c333, fields: []},
+    {name: c334, fields: []},
+    {name: c335, fields: []},
+    {name: c336, fields: []},
+    {name: c337, fields: []},
+    {name: c338, fields: []},
+    {name: c339, fields: []},
+    {name: c340, fields: []},
+    {name: c341, fields: []},
+    {name: c342, fields: []},
+    {name: c343, fields: []},
+    {name: c344, fields: []},
+    {name: c345, fields: []},
+    {name: c346, fields: []},
+    {name: c347, fields: []},
+    {name: c348, fields: []},
+    {name: c349, fields: []},
+    {name: c350, fields: []},
+    {name: c351, fields: []},
+    {name: c352, fields: []},
+    {name: c353, fields: []},
+    {name: c354, fields: []},
+    {name: c355, fields: []},
+    {name: c356, fields: []},
+    {name: c357, fields: []},
+    {name: c358, fields: []},
+    {name: c359, fields: []},
+    {name: c360, fields: []},
+    {name: c361, fields: []},
+    {name: c362, fields: []},
+    {name: c363, fields: []},
+    {name: c364, fields: []},
+    {name: c365, fields: []},
+    {name: c366, fields: []},
+    {name: c367, fields: []},
+    {name: c368, fields: []},
+    {name: c369, fields: []},
+    {name: c370, fields: []},
+    {name: c371, fields: []},
+    {name: c372, fields: []},
+    {name: c373, fields: []},
+    {name: c374, fields: []},
+    {name: c375, fields: []},
+    {name: c376, fields: []},
+    {name: c377, fields: []},
+    {name: c378, fields: []},
+    {name: c379, fields: []},
+    {name: c380, fields: []},
+    {name: c381, fields: []},
+    {name: c382, fields: []},
+    {name: c383, fields: []},
+    {name: c384, fields: []},
+    {name: c385, fields: []},
+    {name: c386, fields: []},
+    {name: c387, fields: []},
+    {name: c388, fields: []},
+    {name: c389, fields: []},
+    {name: c390, fields: []},
+    {name: c391, fields: []},
+    {name: c392, fields: []},
+    {name: c393, fields: []},
+    {name: c394, fields: []},
+    {name: c395, fields: []},
+    {name: c396, fields: []},
+    {name: c397, fields: []},
+    {name: c398, fields: []},
+    {name: c399, fields: []}
+  ]
 }
 
 definition{
-  name: g15,
-  type_parameters: [T],
-  parameters: [x : 'T],
+  name: wide,
+  parameters: [e : E],
   result: Nat,
-  body: (g16 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g14,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g15 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g13,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g14 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g12,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g13 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g11,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g12 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g10,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g11 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g9,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g10 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g8,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g9 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g7,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g8 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g6,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g7 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g5,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g6 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g4,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g5 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g3,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g4 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g2,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g3 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g1,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g2 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: g0,
-  type_parameters: [T],
-  parameters: [x : 'T],
-  result: Nat,
-  body: (g1 [('T * 'T)] (x, x)),
-  executable: true
-}
-
-definition{
-  name: chain,
-  parameters: [n : Nat],
-  result: Nat,
-  body: (g0 [Nat] n),
+  body: (match e
+    | E.c0 => 0
+    | E.c1 => 1
+    | E.c2 => 2
+    | E.c3 => 3
+    | E.c4 => 4
+    | E.c5 => 5
+    | E.c6 => 6
+    | E.c7 => 7
+    | E.c8 => 8
+    | E.c9 => 9
+    | E.c10 => 10
+    | E.c11 => 11
+    | E.c12 => 12
+    | E.c13 => 13
+    | E.c14 => 14
+    | E.c15 => 15
+    | E.c16 => 16
+    | E.c17 => 17
+    | E.c18 => 18
+    | E.c19 => 19
+    | E.c20 => 20
+    | E.c21 => 21
+    | E.c22 => 22
+    | E.c23 => 23
+    | E.c24 => 24
+    | E.c25 => 25
+    | E.c26 => 26
+    | E.c27 => 27
+    | E.c28 => 28
+    | E.c29 => 29
+    | E.c30 => 30
+    | E.c31 => 31
+    | E.c32 => 32
+    | E.c33 => 33
+    | E.c34 => 34
+    | E.c35 => 35
+    | E.c36 => 36
+    | E.c37 => 37
+    | E.c38 => 38
+    | E.c39 => 39
+    | E.c40 => 40
+    | E.c41 => 41
+    | E.c42 => 42
+    | E.c43 => 43
+    | E.c44 => 44
+    | E.c45 => 45
+    | E.c46 => 46
+    | E.c47 => 47
+    | E.c48 => 48
+    | E.c49 => 49
+    | E.c50 => 50
+    | E.c51 => 51
+    | E.c52 => 52
+    | E.c53 => 53
+    | E.c54 => 54
+    | E.c55 => 55
+    | E.c56 => 56
+    | E.c57 => 57
+    | E.c58 => 58
+    | E.c59 => 59
+    | E.c60 => 60
+    | E.c61 => 61
+    | E.c62 => 62
+    | E.c63 => 63
+    | E.c64 => 64
+    | E.c65 => 65
+    | E.c66 => 66
+    | E.c67 => 67
+    | E.c68 => 68
+    | E.c69 => 69
+    | E.c70 => 70
+    | E.c71 => 71
+    | E.c72 => 72
+    | E.c73 => 73
+    | E.c74 => 74
+    | E.c75 => 75
+    | E.c76 => 76
+    | E.c77 => 77
+    | E.c78 => 78
+    | E.c79 => 79
+    | E.c80 => 80
+    | E.c81 => 81
+    | E.c82 => 82
+    | E.c83 => 83
+    | E.c84 => 84
+    | E.c85 => 85
+    | E.c86 => 86
+    | E.c87 => 87
+    | E.c88 => 88
+    | E.c89 => 89
+    | E.c90 => 90
+    | E.c91 => 91
+    | E.c92 => 92
+    | E.c93 => 93
+    | E.c94 => 94
+    | E.c95 => 95
+    | E.c96 => 96
+    | E.c97 => 97
+    | E.c98 => 98
+    | E.c99 => 99
+    | E.c100 => 100
+    | E.c101 => 101
+    | E.c102 => 102
+    | E.c103 => 103
+    | E.c104 => 104
+    | E.c105 => 105
+    | E.c106 => 106
+    | E.c107 => 107
+    | E.c108 => 108
+    | E.c109 => 109
+    | E.c110 => 110
+    | E.c111 => 111
+    | E.c112 => 112
+    | E.c113 => 113
+    | E.c114 => 114
+    | E.c115 => 115
+    | E.c116 => 116
+    | E.c117 => 117
+    | E.c118 => 118
+    | E.c119 => 119
+    | E.c120 => 120
+    | E.c121 => 121
+    | E.c122 => 122
+    | E.c123 => 123
+    | E.c124 => 124
+    | E.c125 => 125
+    | E.c126 => 126
+    | E.c127 => 127
+    | E.c128 => 128
+    | E.c129 => 129
+    | E.c130 => 130
+    | E.c131 => 131
+    | E.c132 => 132
+    | E.c133 => 133
+    | E.c134 => 134
+    | E.c135 => 135
+    | E.c136 => 136
+    | E.c137 => 137
+    | E.c138 => 138
+    | E.c139 => 139
+    | E.c140 => 140
+    | E.c141 => 141
+    | E.c142 => 142
+    | E.c143 => 143
+    | E.c144 => 144
+    | E.c145 => 145
+    | E.c146 => 146
+    | E.c147 => 147
+    | E.c148 => 148
+    | E.c149 => 149
+    | E.c150 => 150
+    | E.c151 => 151
+    | E.c152 => 152
+    | E.c153 => 153
+    | E.c154 => 154
+    | E.c155 => 155
+    | E.c156 => 156
+    | E.c157 => 157
+    | E.c158 => 158
+    | E.c159 => 159
+    | E.c160 => 160
+    | E.c161 => 161
+    | E.c162 => 162
+    | E.c163 => 163
+    | E.c164 => 164
+    | E.c165 => 165
+    | E.c166 => 166
+    | E.c167 => 167
+    | E.c168 => 168
+    | E.c169 => 169
+    | E.c170 => 170
+    | E.c171 => 171
+    | E.c172 => 172
+    | E.c173 => 173
+    | E.c174 => 174
+    | E.c175 => 175
+    | E.c176 => 176
+    | E.c177 => 177
+    | E.c178 => 178
+    | E.c179 => 179
+    | E.c180 => 180
+    | E.c181 => 181
+    | E.c182 => 182
+    | E.c183 => 183
+    | E.c184 => 184
+    | E.c185 => 185
+    | E.c186 => 186
+    | E.c187 => 187
+    | E.c188 => 188
+    | E.c189 => 189
+    | E.c190 => 190
+    | E.c191 => 191
+    | E.c192 => 192
+    | E.c193 => 193
+    | E.c194 => 194
+    | E.c195 => 195
+    | E.c196 => 196
+    | E.c197 => 197
+    | E.c198 => 198
+    | E.c199 => 199
+    | E.c200 => 200
+    | E.c201 => 201
+    | E.c202 => 202
+    | E.c203 => 203
+    | E.c204 => 204
+    | E.c205 => 205
+    | E.c206 => 206
+    | E.c207 => 207
+    | E.c208 => 208
+    | E.c209 => 209
+    | E.c210 => 210
+    | E.c211 => 211
+    | E.c212 => 212
+    | E.c213 => 213
+    | E.c214 => 214
+    | E.c215 => 215
+    | E.c216 => 216
+    | E.c217 => 217
+    | E.c218 => 218
+    | E.c219 => 219
+    | E.c220 => 220
+    | E.c221 => 221
+    | E.c222 => 222
+    | E.c223 => 223
+    | E.c224 => 224
+    | E.c225 => 225
+    | E.c226 => 226
+    | E.c227 => 227
+    | E.c228 => 228
+    | E.c229 => 229
+    | E.c230 => 230
+    | E.c231 => 231
+    | E.c232 => 232
+    | E.c233 => 233
+    | E.c234 => 234
+    | E.c235 => 235
+    | E.c236 => 236
+    | E.c237 => 237
+    | E.c238 => 238
+    | E.c239 => 239
+    | E.c240 => 240
+    | E.c241 => 241
+    | E.c242 => 242
+    | E.c243 => 243
+    | E.c244 => 244
+    | E.c245 => 245
+    | E.c246 => 246
+    | E.c247 => 247
+    | E.c248 => 248
+    | E.c249 => 249
+    | E.c250 => 250
+    | E.c251 => 251
+    | E.c252 => 252
+    | E.c253 => 253
+    | E.c254 => 254
+    | E.c255 => 255
+    | E.c256 => 256
+    | E.c257 => 257
+    | E.c258 => 258
+    | E.c259 => 259
+    | E.c260 => 260
+    | E.c261 => 261
+    | E.c262 => 262
+    | E.c263 => 263
+    | E.c264 => 264
+    | E.c265 => 265
+    | E.c266 => 266
+    | E.c267 => 267
+    | E.c268 => 268
+    | E.c269 => 269
+    | E.c270 => 270
+    | E.c271 => 271
+    | E.c272 => 272
+    | E.c273 => 273
+    | E.c274 => 274
+    | E.c275 => 275
+    | E.c276 => 276
+    | E.c277 => 277
+    | E.c278 => 278
+    | E.c279 => 279
+    | E.c280 => 280
+    | E.c281 => 281
+    | E.c282 => 282
+    | E.c283 => 283
+    | E.c284 => 284
+    | E.c285 => 285
+    | E.c286 => 286
+    | E.c287 => 287
+    | E.c288 => 288
+    | E.c289 => 289
+    | E.c290 => 290
+    | E.c291 => 291
+    | E.c292 => 292
+    | E.c293 => 293
+    | E.c294 => 294
+    | E.c295 => 295
+    | E.c296 => 296
+    | E.c297 => 297
+    | E.c298 => 298
+    | E.c299 => 299
+    | E.c300 => 300
+    | E.c301 => 301
+    | E.c302 => 302
+    | E.c303 => 303
+    | E.c304 => 304
+    | E.c305 => 305
+    | E.c306 => 306
+    | E.c307 => 307
+    | E.c308 => 308
+    | E.c309 => 309
+    | E.c310 => 310
+    | E.c311 => 311
+    | E.c312 => 312
+    | E.c313 => 313
+    | E.c314 => 314
+    | E.c315 => 315
+    | E.c316 => 316
+    | E.c317 => 317
+    | E.c318 => 318
+    | E.c319 => 319
+    | E.c320 => 320
+    | E.c321 => 321
+    | E.c322 => 322
+    | E.c323 => 323
+    | E.c324 => 324
+    | E.c325 => 325
+    | E.c326 => 326
+    | E.c327 => 327
+    | E.c328 => 328
+    | E.c329 => 329
+    | E.c330 => 330
+    | E.c331 => 331
+    | E.c332 => 332
+    | E.c333 => 333
+    | E.c334 => 334
+    | E.c335 => 335
+    | E.c336 => 336
+    | E.c337 => 337
+    | E.c338 => 338
+    | E.c339 => 339
+    | E.c340 => 340
+    | E.c341 => 341
+    | E.c342 => 342
+    | E.c343 => 343
+    | E.c344 => 344
+    | E.c345 => 345
+    | E.c346 => 346
+    | E.c347 => 347
+    | E.c348 => 348
+    | E.c349 => 349
+    | E.c350 => 350
+    | E.c351 => 351
+    | E.c352 => 352
+    | E.c353 => 353
+    | E.c354 => 354
+    | E.c355 => 355
+    | E.c356 => 356
+    | E.c357 => 357
+    | E.c358 => 358
+    | E.c359 => 359
+    | E.c360 => 360
+    | E.c361 => 361
+    | E.c362 => 362
+    | E.c363 => 363
+    | E.c364 => 364
+    | E.c365 => 365
+    | E.c366 => 366
+    | E.c367 => 367
+    | E.c368 => 368
+    | E.c369 => 369
+    | E.c370 => 370
+    | E.c371 => 371
+    | E.c372 => 372
+    | E.c373 => 373
+    | E.c374 => 374
+    | E.c375 => 375
+    | E.c376 => 376
+    | E.c377 => 377
+    | E.c378 => 378
+    | E.c379 => 379
+    | E.c380 => 380
+    | E.c381 => 381
+    | E.c382 => 382
+    | E.c383 => 383
+    | E.c384 => 384
+    | E.c385 => 385
+    | E.c386 => 386
+    | E.c387 => 387
+    | E.c388 => 388
+    | E.c389 => 389
+    | E.c390 => 390
+    | E.c391 => 391
+    | E.c392 => 392
+    | E.c393 => 393
+    | E.c394 => 394
+    | E.c395 => 395
+    | E.c396 => 396
+    | E.c397 => 397
+    | E.c398 => 398
+    | E.c399 => 399),
   executable: true,
-  production: {effects: [], targets: [rust-std]}
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

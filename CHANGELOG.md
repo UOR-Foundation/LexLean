@@ -25,6 +25,20 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The negative fixture `lowering-size-limit` is a match on 400 constructors
+  and no longer the generic chain `g_k<T> = g_{k+1}<(T, T)>` 16 deep, and the
+  cost table of SPEC.md §17.17 *Limits* is the one `COSTS_A` and `COSTS_B`
+  state. Certificates A and B are kernel data in which a repeated type is one
+  node, so the chain verifies (it did not fit under `max_file_bytes` as text)
+  and the lower bound counts no type node; what a small source still makes
+  large is the pairs of arms of a match, which the fixture now uses. The
+  fixture is refused with `LLS8002` in lowering, as before.
+- The preservation library's statement of
+  `LexLeanTarget.TargetSemantics.fromOrdering.eq_1` is the one the elaborator
+  makes for the generated module under the explicit byte-literal spelling
+  (#68): the two byte arrays it compares are written
+  `UInt8.ofNat (nat_lit n)` where they were `OfNat.ofNat`. The embedded library
+  checks a stored equation against the elaborator's and refused the old one.
 - The decoder of a version 2 core module no longer takes a derived row from
   the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
   the pinned Lean reserves (matcher equations and splitters, definition
@@ -32,6 +46,44 @@ versions, and the entries below say what each tag does and does not claim.
   reserved-name action and refused unless it equals the row. Every one of the
   preservation library's 7,071 derived rows is remade exactly; no source,
   lock, or compiler-semantics ID changes.
+- IEEE-754 bit patterns as exact dyadic rationals (#118, SPEC.md §17.12 rule
+  15, `MD-13`, language 1.2 only; the register is 404 rows). `Models.Recognizer`
+  decodes `binary32` and `binary64` bit patterns (and their little-endian
+  `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
+  rejecting out-of-width patterns and the non-finite biased exponents, and
+  derives `round(a * b / c * 2^32)` scale ratios (ties to even) by exact
+  integer division; 43 theorems (39 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
+  `models` example and the register only: no compiler source moves.
+
+- Widening conversions (#114, SPEC.md §17.12 *Widening conversions*, `SM-32`,
+  language 1.2 only). The total primitives `to_int` (any fixed-width integer to
+  `Int`) and `to_nat` (any unsigned fixed-width integer to `Nat`) elaborate in
+  linking to a single-evaluation `let` over bit tests (`bit_and`, `equal`) and a
+  balanced exact sum, so a production root decodes a byte string to integers
+  with no decimal text in its lowered program. Under language 1.0 and 1.1 they
+  are rejected with `LLT4001` and those identities are unchanged. Certificates read
+  elaborated declarations, so the certificate data needs no `to_int`/`to_nat`
+  rule. The register is 404 rows with `SM-32`; the language-1.2
+  compiler-semantics, semantic-IR (`12` to `13`), source, semantic, and build
+  IDs move, and the oracle tables are at versions 4 (`known-differences`) and 4
+  (`known-non-overlap`).
+- The Rust package scaffolding is data (#91 slice 1, SPEC.md §17.16, `RB-10`..`RB-13`, language 1.2).
+  The Cargo manifest's edition, publication, rustc and Clippy lint gates, and the ten allowed
+  lints, each now with its Clippy group, are the declarations of one semantic module,
+  `language/package-1.2/RustPackage.lex.tex`, which the compiler embeds, hashes into the
+  language-1.2 compiler-semantics ID, and reads by decoding its semantic data (it is not
+  evaluated and not spliced). `package::ALLOWED_LINTS` and the manifest template are gone; the
+  crate attributes are derived, `#![no_std]` from `allocation = false` on the target row of
+  `language/production-1.2.toml` and `#![forbid(lint)]` from each gate at `forbid`. No allowed
+  lint is in Clippy's `correctness` group, which the reader refuses and the module states as a
+  theorem; the SPEC §17.16 table equals the module's rows. `lexlean/rust-provenance/1` and the
+  package manifest `lexlean/rust-package/1` gain `effects` (#105 step 3b): the effects of the
+  realization on its profile, which production takes from the root's eligibility and the
+  renderer checks against what the package shows of itself; the `recursion` effect of
+  `language/production-1.2.toml` now says that exhausting the stack aborts the process.
+  Rendered `Cargo.toml` and `src/lib.rs` are byte-identical to the previous renderer's. The
+  language-1.2 compiler-semantics ID moves once; languages 1.0 and 1.1 are unchanged. The
+  register gains `RB-10`..`RB-13`.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
@@ -131,6 +183,45 @@ versions, and the entries below say what each tag does and does not claim.
   `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
   Every CI job installs the same pinned toolchain, so this held by practice
   and is now checked.
+- No Lean source text template remains in the production compiler (SPEC.md §17.17, `SP-17`; stage 4 of #89): the staged audit module is an auxiliary module of typed commands, the calculus-to-Lean-text builders that certificate B's old path left (`render_ty`, `render_value`, `render_program`, `lean_type_text`, `lean_list`, `budget_options`) are deleted or moved to the conformance crate, and a lexer-level scan of `production/` and the auxiliary part of `backend/lean.rs` is shown to fail on a planted template (register 413).
+- Certificate B as kernel-term data (SPEC.md §17.17, `SP-16`; stage 2 of #89).
+  The per-function correspondence of every production root is no longer written
+  as Lean text by `production/rust_cert.rs` and `production/rust_term.rs`: the
+  compiler builds it as a native core module of schema `lexlean/core-module/2`
+  (`production/certificate/data_b`) on the vehicle of certificates E and A. The
+  program and the crate are kernel terms (the crate constructor for constructor
+  as the text printed it), each of the 49 rules of `Corr` is applied with every
+  argument written (the judgment the aligner derives, and the values it holds),
+  `FunOK` is written out as its witnesses and the derivation, and `crate_ok` is
+  a case analysis on the function index in place of a tactic block. The library
+  did not grow: no explicit-argument form was needed, so the language-1.2
+  identity does not move for this stage. The verify record holds the module in
+  the authoring notation (`R<i>/RustStd.lex.tex` in place of `.lean`), which
+  reads back to the data byte for byte, and `preservation.json` and the
+  production export bind those bytes. The statements of the 76 certificates B
+  of the four corpora are those the text stated, up to the kernel's
+  definitional equality (`tests/preservation-certificates/B-STATEMENTS.md`).
+  The aligner moved to `production/certificate/data_b/align.rs`, the Rust-term
+  renderer is gone, and the Rust machine's conformance harness evaluates the
+  crates by the same kernel terms. No diagnostic code is new; the register
+  gains `SP-16` (394 rows).
+- Certificate A as kernel-term data (SPEC.md §17.17, `SP-15`; stage 3 of #89).
+  The preservation certificate of every production root is no longer written as
+  Lean text by `production/certificate.rs`: the compiler builds it as a native
+  core module of schema `lexlean/core-module/2` on the vehicle of
+  certificate E (`production/kernel.rs`), the program literal, encoders, width
+  predicates, relation theorems, validators, and entry as rows, each lemma
+  applied with every argument written, structural and well-founded recursion as
+  recursor and `WellFounded.fix` terms with the source's own decrease theorems,
+  and the collection templates' clause proofs as kernel terms in place of
+  tactics. The verify record holds the module in the authoring notation
+  (`R<i>.lex.tex` in place of `R<i>.lean`), which reads back to the data byte
+  for byte, and `preservation.json` binds those bytes. The statements of the 57
+  certificates A of the four corpora are those the text stated, up to the
+  kernel's definitional equality
+  (`tests/preservation-certificates/A-STATEMENTS.md`). Roughly 5 000 lines of the
+  text generator are gone from `production/certificate.rs`. Certificate B is
+  still Lean text. No diagnostic code is new; the register gains `SP-15` (403 rows).
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler
@@ -145,10 +236,14 @@ versions, and the entries below say what each tag does and does not claim.
   policies, forbidden constants) and the audit module prints and checks the
   axioms of every one of its rows. The statements of the 76 certificates E of
   the four corpora are those the text stated, kernel term for kernel term
-  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
-  still Lean text, so the data certificate is rendered outside the module
-  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificate B (and, until
+  stage 3 of #89, certificate A) is still Lean text, so the data certificate is
+  rendered outside the module system until they follow. Languages 1.0 and 1.1 have no certificates and are
   untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
+- The runtime gates know the fifth runtime namespace (`RT-01`, `RT-04`): the
+  list of runtime namespaces gained `LexLeanLaws` and is asserted equal to the
+  namespaces the shipped runtime declares, so a module added to the runtime
+  cannot escape the gates by its namespace. No identity moves.
 - Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
   no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
   integer type with `<=` and `<`, by mathematical value; language 1.1 keeps

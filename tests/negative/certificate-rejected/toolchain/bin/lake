@@ -1,14 +1,17 @@
 #!/bin/sh
 # Passes every invocation to the pinned lake except `lake env lean` on a
-# preservation certificate, whose program literal first has every natural
-# addition turned into a subtraction; the proof, derived from the source,
-# no longer holds, and verification refuses the certificate (SPEC.md 17.17).
+# certificate A, whose kernel data first has the natural-addition primitive of
+# the target syntax turned into the subtraction, in the program literal and
+# wherever the data names it; the lemma the proof applies still states the
+# addition, the proof no longer holds, and verification refuses the
+# certificate (SPEC.md 17.17).
 real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
 if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   for source; do :; done
   case "$source" in
-    */preserve-src/LexLeanPreserve/C*.lean)
-      sed 's/\.prim \.natAdd/.prim .natSub/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
+    */preserve-src/LexLeanPreserve/C*/R*/*.lean) ;;
+    */preserve-src/LexLeanPreserve/C*/R[0-9]*.lean)
+      sed 's/TargetSyntax\.Prim\.natAdd/TargetSyntax.Prim.natSub/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
       ;;
   esac
 fi
