@@ -1,0 +1,22 @@
+\begin{lexlean}{Util}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Shapes}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: quadPlusOne,
+  parameters: [n : Nat],
+  result: Nat,
+  body: ((Shapes::quad n) + 1),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+theorem{
+  name: quad_plus_one_two,
+  parameters: [],
+  statement: ((quadPlusOne 2) = 9),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

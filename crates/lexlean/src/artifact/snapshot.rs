@@ -30,6 +30,9 @@ pub struct SemanticSnapshot {
 pub struct SnapshotModule {
     name: String,
     lean_module: String,
+    /// The source package the module belongs to (SPEC.md §10.5).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    origin: Option<String>,
     imports: Vec<String>,
     glossary: Vec<String>,
     visible_packages: Vec<String>,
@@ -346,6 +349,7 @@ impl SemanticSnapshot {
             modules.push(SnapshotModule {
                 name: name.clone(),
                 lean_module: module.document.lean_module.clone(),
+                origin: module.document.origin.clone(),
                 imports: module.document.imports.clone(),
                 glossary: module.document.glossary.clone(),
                 visible_packages: module.visible.iter().cloned().collect(),

@@ -8406,3 +8406,54 @@ mismatch (`LLV7013`); the module binds such a call to a `let` first, and
 spells a decimal without `iterate_until`. Lean's exact axiom policy was
 aligned declaration by declaration (`Quot.sound`, `propext` for the `UInt8`
 range checks and byte comparison, as the spike on #92 measured).
+### source packages can fail
+
+The cases of the `packages` suite (`PK-01`..`PK-04`, SPEC.md §10.5) were written
+before the implementation (R3). `conformance_pk_01` first failed, with the
+configuration, the workspace, and the pins in place and the pin comparison not
+yet in `lock --check`, at its first refusal:
+
+```text
+expected LLC0105, found ["LLC0102"] (LLC0102: lexlean.lock is stale or noncanonical; run `lexlean lock`)
+```
+
+Each defect below was planted, the named case run with
+`cargo test -p repo-conformance --test conformance <case> -- --exact --test-threads=1`,
+and the defect removed. The observed lines are the cases' own.
+
+| Planted defect | Case | Observed |
+| --- | --- | --- |
+| the tree digest covers the manifest alone (a source file of the package is not pinned) | `conformance_pk_01` | `the project is refused`: a changed byte of the package is not refused |
+| `check_pins` is not called when linking (a lock read before the package changed is trusted) | `conformance_pk_01` | `linking reads the package again` |
+| a project the workspace file does not list is accepted | `conformance_pk_01` | `expected LLC0108, found ["LLC0102"]` |
+| a symlink in the path of a package is not refused as such | `conformance_pk_01` | `expected LLS8001, found ["LLC0108"]` |
+| two sources may claim one module prefix | `conformance_pk_01` | `two sources claim PkgLib` |
+| an import may name a module of any package of the closure | `conformance_pk_02` | `check fails` (the undeclared import is accepted) |
+| the production roots of a package are analysed | `conformance_pk_04` | `` `PkgBase.Core`: only the importing project's own roots are analysed `` (left: true) |
+| `fmt` visits the modules of a package | `conformance_pk_03` | `` `base:src`: No such file or directory `` (it reads the package as if it were the project) |
+| the build manifest names no origin | `conformance_pk_03` | `the manifest names the origin of a package module` |
+| the attestation names no origin | `conformance_pk_03` | `the modules of a package carry the package as their origin` (left: `Null`) |
+
+One plant was not caught where it was first made: removing `check_pins` from
+`load_locked` alone left `conformance_pk_03` green, because `read_current_lock`
+makes the same comparison first. The comparison at link is the one that reads
+the package after the lock was read, so `conformance_pk_01` now links with a
+lock read before a byte of the package changed and requires `LLC0105`; the
+plant above is the one it caught.
+
+Measured on Linux x86-64 with Lean 4.32.1: `conformance_pk_01` and
+`conformance_pk_02` run in under 3 s, `conformance_pk_03` (the importing
+project formatted, built, and verified, with every module replayed and audited)
+in 185 s, and `conformance_pk_04` (a root whose closure reaches a definition of
+`lib` and of `base` certified and exported) in 188 s.
+
+Languages 1.0 and 1.1 are unchanged. After the schema change, in a scratch
+checkout whose language-1.2 locks were regenerated, `cargo xtask check-golden
+--write` left every file of `nat-add-zero`, `peano-arithmetic`,
+`propositional-logic`, `list-induction`, `semantic-1.1`, and `uor-atlas`
+untouched. The language-1.2 example `language-1.2`, which declares no source
+package, differs from its committed oracles in identities and the digests
+derived from them alone (the compiler-semantics, source, semantic, and build
+IDs, and the digests of its lock and its source map); the committed
+language-1.2 records are regenerated in the wave the maintainer names, not by
+this change.
