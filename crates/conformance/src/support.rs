@@ -501,6 +501,24 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the standard library's project (SPEC.md §17.22),
+    /// without build output or expected records.
+    #[must_use]
+    pub fn stdlib() -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-stdlib-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("stdlib");
+        assert!(
+            source.is_dir(),
+            "the committed standard library project is required"
+        );
+        copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// Assert that a link-time failure also refuses `build` and leaves no
     /// backend output (§17.12). `check` alone never runs a backend, so the
     /// assertion is made against the command that would: the §21.8 mutation

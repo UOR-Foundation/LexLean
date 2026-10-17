@@ -37,6 +37,7 @@ fn main() -> ExitCode {
         "check-production-export" => check_production_export(write),
         "check-package" => check_package(&root),
         "check-test-inventory" => ci::check_test_inventory(&root),
+        "bdd" => ci::bdd(&root),
         "ci-summary" => ci::ci_summary(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
         "ci-hints" => ci::ci_hints(&std::env::args().skip(2).collect::<Vec<_>>()),
         "ci-shards" => ci::ci_shards(&root),
@@ -60,7 +61,10 @@ fn main() -> ExitCode {
                  check-production-export §24.7: the consumer's exported packages equal the committed\n\
                                          packages under tests/production-export\n\
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
-                 check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests\n\
+                 check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests,\n\
+                                         and the parts of .github/bdd-parts.json partition `bdd`\n\
+                 bdd                     §9.2: the repo-conformance suite, or the part LEXLEAN_BDD_PART\n\
+                                         names (§9.4)\n\
                  ci-summary              §9.4: summarize ci-evidence/ (recipe, stage, module times; memory)\n\
                  ci-hints                §22.11: scheduling hints from a verifier telemetry file\n\
                                          (--from verify-telemetry.jsonl --out hints.json)\n\
@@ -143,6 +147,13 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.14: the compiler project is missing".into());
     }
     dirs.push(compiler);
+    // The standard library (§17.22) is source of the product under the same
+    // gates.
+    let stdlib = root.join("stdlib");
+    if !stdlib.join("lexlean.toml").exists() {
+        return Err("§17.22: the standard library project is missing".into());
+    }
+    dirs.push(stdlib);
     Ok(dirs)
 }
 

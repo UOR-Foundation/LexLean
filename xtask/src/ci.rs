@@ -35,11 +35,17 @@ fn recipe_command(justfile: &str, name: &str) -> Result<String, Fail> {
     Err(format!("RP-13: the Justfile has no recipe `{name}` with a command").into())
 }
 
-/// Run `cargo test <arguments> -- --list` and return what it wrote, stdout
-/// and stderr in the order they were written: `cargo` announces each target on
-/// stderr and the harness lists its tests on stdout, so the two have to share
-/// one file to be read together.
-fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fail> {
+/// Run `cargo test <arguments> -- --list <harness>` and return what it
+/// wrote, stdout and stderr in the order they were written: `cargo` announces
+/// each target on stderr and the harness lists its tests on stdout, so the two
+/// have to share one file to be read together. `harness` holds the filters of
+/// a part of `bdd` (§9.4), which select the tests listed as they select the
+/// tests run.
+fn list_tests(
+    root: &Path,
+    arguments: &[String],
+    harness: &[String],
+) -> Result<inventory::Parsed, Fail> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut file = tempfile::tempfile()?;
     let status = Command::new(cargo)
@@ -48,6 +54,7 @@ fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fa
         .arg("test")
         .args(arguments)
         .args(["--", "--list"])
+        .args(harness)
         .stdin(Stdio::null())
         .stdout(Stdio::from(file.try_clone()?))
         .stderr(Stdio::from(file.try_clone()?))
@@ -58,13 +65,66 @@ fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fa
     if !status.success() {
         let tail: Vec<&str> = output.lines().rev().take(20).collect();
         return Err(format!(
-            "RP-13: `cargo test {} -- --list` failed:\n{}",
+            "RP-13: `cargo test {} -- --list{}` failed:\n{}",
             arguments.join(" "),
+            if harness.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", harness.join(" "))
+            },
             tail.into_iter().rev().collect::<Vec<_>>().join("\n")
         )
         .into());
     }
     inventory::parse(&output).map_err(Into::into)
+}
+
+/// The `bdd` recipe (SPEC.md §9.2, §9.4): `cargo test -p repo-conformance
+/// --all-features`, the whole `repo-conformance` suite, or, when
+/// `LEXLEAN_BDD_PART` names a part of `.github/bdd-parts.json`, the same
+/// command with that part's harness filters. Unset or empty, which is what
+/// `just vv` and `release.yml` run, the recipe is the command it always was.
+/// The filters select tests; no case decides whether it runs, and the
+/// inventory proves from the harness's own lists that the parts are the whole
+/// suite, each test in one part (RP-13).
+pub fn bdd(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::bdd_parts::{Plan, CARGO_ARGUMENTS, PART_VARIABLE, PLAN_FILE};
+    let part = std::env::var(PART_VARIABLE)
+        .ok()
+        .filter(|value| !value.is_empty());
+    let mut harness: Vec<String> = Vec::new();
+    if let Some(part) = &part {
+        let plan = Plan::read(root)?;
+        harness.push("--".to_owned());
+        harness.extend(plan.harness_filters(part)?);
+        let what = if *part == plan.remainder {
+            format!(
+                "every test but the {} the other parts name",
+                plan.named_tests().len()
+            )
+        } else {
+            format!("{} conformance cases", plan.parts[part].len())
+        };
+        println!("bdd: the part `{part}` of {PLAN_FILE}: {what} (§9.4)");
+    }
+    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let status = Command::new(cargo)
+        .current_dir(root)
+        .arg("test")
+        .args(CARGO_ARGUMENTS)
+        .args(&harness)
+        .stdin(Stdio::null())
+        .status()?;
+    if !status.success() {
+        return Err(format!(
+            "bdd: `cargo test {}`{} failed",
+            CARGO_ARGUMENTS.join(" "),
+            part.map(|part| format!(" (the part `{part}`)"))
+                .unwrap_or_default()
+        )
+        .into());
+    }
+    Ok(())
 }
 
 /// The names of the binaries that carry the tests of `repo-conformance`:
@@ -104,24 +164,46 @@ fn owned_crates(root: &Path) -> Result<BTreeSet<String>, Fail> {
     Ok(crates)
 }
 
-/// RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`.
+/// RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`,
+/// and the parts of `.github/bdd-parts.json` partition `bdd`.
 pub fn check_test_inventory(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::bdd_parts::{Plan, CARGO_ARGUMENTS, PLAN_FILE};
     let justfile = std::fs::read_to_string(root.join("Justfile"))?;
     let ordinary_line = recipe_command(&justfile, "test")?;
     let owned_line = recipe_command(&justfile, "bdd")?;
+    if owned_line != "cargo xtask bdd" {
+        return Err(format!(
+            "RP-13: the `bdd` recipe is `{owned_line}`, not `cargo xtask bdd`, the command whose arguments the inventory lists"
+        )
+        .into());
+    }
     let reference: Vec<String> = inventory::REFERENCE
         .iter()
         .map(|s| (*s).to_owned())
         .collect();
-    let workspace = list_tests(root, &reference)?;
-    let ordinary = list_tests(root, &inventory::recipe_arguments(&ordinary_line)?)?;
-    let owned = list_tests(root, &inventory::recipe_arguments(&owned_line)?)?;
+    let owned_arguments: Vec<String> = CARGO_ARGUMENTS.iter().map(|s| (*s).to_owned()).collect();
+    let workspace = list_tests(root, &reference, &[])?;
+    let ordinary = list_tests(root, &inventory::recipe_arguments(&ordinary_line)?, &[])?;
+    let owned = list_tests(root, &owned_arguments, &[])?;
     let summary = inventory::compare(&workspace, &ordinary, &owned, &owned_crates(root)?)?;
+    let plan = Plan::read(root)?;
+    let mut parts = Vec::new();
+    for name in plan.names() {
+        let listed = list_tests(root, &owned_arguments, &plan.harness_filters(&name)?)?;
+        parts.push((name, listed));
+    }
+    let count = inventory::compare_parts(&owned, &parts, &plan)?;
     println!(
-        "check-test-inventory: the {} tests of `cargo test {}` are the {} of `test` and the {} of `bdd`, disjoint, none lost (RP-13)",
+        "check-test-inventory: the {} tests of `cargo test {}` are the {} of `test` and the {} of `bdd`, disjoint, none lost; the {count} parts of {PLAN_FILE} ({}) are the {} of `bdd`, each in one part (RP-13)",
         summary.workspace,
         inventory::REFERENCE.join(" "),
         summary.ordinary,
+        summary.owned,
+        parts
+            .iter()
+            .map(|(name, listed)| format!("{name} {}", listed.entries.len()))
+            .collect::<Vec<_>>()
+            .join(", "),
         summary.owned
     );
     Ok(())

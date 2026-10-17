@@ -34,8 +34,46 @@ versions, and the entries below say what each tag does and does not claim.
   never writes a package file. The schema change moves the language-1.2
   compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
   without source packages, keep their bytes apart from that identity. The
-  register gains `PK-01`..`PK-04` (396 rows); `PK-05` (the `bootstrap/` pilot
+  register gains `PK-01`..`PK-04` (397 rows with `SL-01`); `PK-05` (the `bootstrap/` pilot
   imports `stdlib/`) follows #153 and #160.
+- The standard library's first member: bytes and text over `Bytes`
+  (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
+  language-1.2 project beside `compiler/` under the module prefix
+  `LexLeanStd`, written in the authoring notation; its `Text` module declares
+  `startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, and
+  `find` as production roots for `rust-std`, each admitting exactly the
+  effects its closure realizes. `SL-01` runs every member's lowered program
+  under the calculus evaluator and its rendered package under the pinned
+  rustc on a seeded corpus against Rust's `starts_with`, `ends_with`,
+  `trim_ascii`, `lines`, `split`, `join`, and `find`, detects a planted
+  character class in `trim`, and, under the pinned Lean, compares the
+  certified packages the production export publishes with the committed
+  ones under `tests/production-export/stdlib/`. The project passes the
+  example gates (`verify-examples`, `check-golden`) and
+  `check-production-export` compares its packages. `SL-01` brings the
+  register to 393 IDs.
+- The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
+  `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
+  took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of
+  them `bdd`, one test process whose cases sum to 22,708 s over four threads.
+  `.github/bdd-parts.json` names four parts of the `repo-conformance` suite by
+  conformance ID, grouped so the cases that share a fixture built once per test
+  process run in one part, and a remainder, `rest`, that runs every test no
+  part names. The recipe is `cargo xtask bdd`: unset, `LEXLEAN_BDD_PART` leaves
+  it `cargo test -p repo-conformance --all-features`, which `just vv` and
+  `release.yml` run; named, it adds the part's harness filters (`--exact` and
+  its tests, or `--exact` and a `--skip` of every named test). `cargo xtask
+  check-test-inventory` lists every part with its filters and requires the
+  parts to be disjoint and their union to be `bdd`'s list (`RP-13`); `ci.yml`
+  runs each named part on a `bdd-<part>` row of the gate's matrix and the
+  remainder on the `rest` leg, every part on exactly one row (`RP-14`).
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler

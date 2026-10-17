@@ -1278,6 +1278,14 @@ pub fn run_part(
     stages.enter("part-import");
     let mut imported =
         partition::import(part.inputs(), &olean_root, part.publishes()).map_err(fail)?;
+    // Every record another part wrote was run by the toolchain this run's
+    // preflight hashed: the attestation lists them under its digests.
+    partition::check_toolchain(
+        &imported,
+        toolchain.lean.sha256,
+        toolchain.leanchecker.sha256,
+    )
+    .map_err(fail)?;
 
     // The leanchecker identity (module documentation), before any replay:
     // the preflight's toolchain-relative path and digest line, then the

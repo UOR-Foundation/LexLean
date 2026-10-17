@@ -1,0 +1,60 @@
+{
+  "roots": [
+    {
+      "name": "starts_with",
+      "root": "LexLeanStd.Text.startsWith",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "ends_with",
+      "root": "LexLeanStd.Text.endsWith",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "trim",
+      "root": "LexLeanStd.Text.trim",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "split_on",
+      "root": "LexLeanStd.Text.splitOn",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lines",
+      "root": "LexLeanStd.Text.lines",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "join_with",
+      "root": "LexLeanStd.Text.joinWith",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "find",
+      "root": "LexLeanStd.Text.find",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
