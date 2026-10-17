@@ -3251,7 +3251,7 @@ pub fn run(id: &str) {
                 for entry in preservation::certificates(&project) {
                     referenced.extend(referenced_namespaces(&entry.certificate.text, &users));
                     for (_, rendering) in &entry.renderings {
-                        referenced.extend(referenced_namespaces(&rendering.text, &users));
+                        referenced.extend(referenced_namespaces_in(rendering, &users));
                     }
                     for (_, composed) in &entry.composed {
                         referenced.extend(referenced_namespaces_in(composed, &users));

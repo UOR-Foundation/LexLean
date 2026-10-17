@@ -964,17 +964,23 @@ pub fn run_part(
                     entry: lowered.entry(),
                 });
             }
-            // Certificate A weighs what it is recorded as, the notation; B
-            // and E weigh their text.
+            // Certificates A and B weigh what they are recorded as, the
+            // notation; E weighs its text.
             let weight_a = generated
                 .source
                 .as_ref()
                 .map_or(generated.text.len(), String::len);
             for (generated, weight) in std::iter::once((&generated, weight_a)).chain(
-                renderings
-                    .iter()
-                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed])
-                    .map(|certificate| (certificate, certificate.text.len())),
+                renderings.iter().flat_map(|rendering| {
+                    [
+                        (
+                            &rendering.certificate,
+                            crate::production::preserve::recorded_bytes(&rendering.certificate)
+                                .len(),
+                        ),
+                        (&rendering.composed, rendering.composed.text.len()),
+                    ]
+                }),
             ) {
                 if weight as u64 > limits.max_file_bytes {
                     return Err(fail(Diagnostic::new(
@@ -991,7 +997,7 @@ pub fn run_part(
             for rendering in &renderings {
                 budget
                     .charge(
-                        rendering.certificate.text.len()
+                        crate::production::preserve::recorded_bytes(&rendering.certificate).len()
                             + rendering.composed.text.len()
                             + rendering.crate_text.len(),
                         &root.report.root,

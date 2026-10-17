@@ -646,13 +646,17 @@ pub fn render(
     let data = certificate_b_data(program, krate, module, max_bytes)?;
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| diagnostic.message)?;
-    if text.len() as u64 > max_bytes {
+    let source = super::record_source(module, &data, "B")?;
+    // A certificate held as data weighs what it is recorded as, the notation
+    // (as certificate A does): the text carries the decoder and the data a
+    // second time, escaped, which is the backend's form and not the
+    // certificate's size.
+    if source.len() as u64 > max_bytes {
         return Err(format!(
             "{LIMIT}the certificate is {} bytes, beyond the {max_bytes} bytes of max_file_bytes",
-            text.len()
+            source.len()
         ));
     }
-    let source = super::record_source(module, &data, "B")?;
     Ok((data, text, source))
 }
 
