@@ -643,15 +643,9 @@ pub fn render(
     module: &str,
     max_bytes: u64,
 ) -> Result<(CoreModule, String, String), String> {
-    let started = std::time::Instant::now();
     let data = certificate_b_data(program, krate, module, max_bytes)?;
-    let built = started.elapsed();
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| diagnostic.message)?;
-    let rendered = started.elapsed();
-    if std::env::var("LEXLEAN_RULE_TIMES").is_ok() {
-        eprintln!("B: built {built:?}, rendered {:?}", rendered - built);
-    }
     if text.len() as u64 > max_bytes {
         return Err(format!(
             "{LIMIT}the certificate is {} bytes, beyond the {max_bytes} bytes of max_file_bytes",

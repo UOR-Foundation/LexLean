@@ -28,7 +28,6 @@ use crate::ir::core::{CoreBinderInfo, CoreNode};
 /// arguments, the replacement, or `None` to keep the application.
 type Rewrite<'r> = dyn FnMut(&mut Builder, &str, &[Term]) -> Option<Term> + 'r;
 
-pub static WALKED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 const FREE: &str = "\u{1}free.";
 const META: &str = "\u{1}meta.";
 
@@ -797,7 +796,6 @@ impl Builder {
         if self.meta_clean(term) {
             return term;
         }
-        WALKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let out = match self.nodes[term].clone() {
             CoreNode::Const { n, .. } => map.get(&n).copied().unwrap_or(term),
             CoreNode::BVar { .. }

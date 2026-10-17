@@ -507,34 +507,16 @@ impl<'g, 'a> Aligner<'g, 'a> {
         ];
         all.extend(hints.iter().copied());
         let lemma = format!("Rust.Corr.{name}");
-        let t0 = std::time::Instant::now();
         let mut open = self.w.open(&lemma, &all)?;
-        let t1 = std::time::Instant::now();
         open.expect(&self.w.b, conclusion);
-        let t2 = std::time::Instant::now();
-        let mut gives = Vec::new();
         for premise in premises {
-            let g0 = std::time::Instant::now();
             let given = match premise {
                 Prem::Sub(derivation) => Given::Proof(derivation.proof, derivation.ty),
                 Decided => Given::Refl,
             };
             open.give(&mut self.w.b, given)?;
-            gives.push(g0.elapsed().as_micros());
         }
-        let t3 = std::time::Instant::now();
-        let w0 = crate::production::kernel::WALKED.load(std::sync::atomic::Ordering::Relaxed);
         let applied = open.finish(&mut self.w.b)?;
-        let walked = crate::production::kernel::WALKED.load(std::sync::atomic::Ordering::Relaxed) - w0;
-        if std::env::var("LEXLEAN_RULE_TIMES").is_ok() && t0.elapsed().as_millis() > 20 {
-            eprintln!(
-                "RULE {name}: walked {walked} open {:?} expect {:?} gives {:?} finish {:?}",
-                t1 - t0,
-                t2 - t1,
-                gives,
-                t3.elapsed()
-            );
-        }
         self.count_new(applied.term);
         Ok(Pf {
             proof: applied.term,
