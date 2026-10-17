@@ -3492,11 +3492,36 @@ member or value is an ordinary schema failure (`LLT4001`).
     checked applications are realized through their elaborations; contracts
     and evidence are erased (§17.13). Lean extraction of a root sees only
     elaborated definitions.
+15. **IEEE-754 bit patterns as exact dyadic rationals.** Because no floating-point
+    type exists in LexLean, IEEE-754 `binary32` (1 sign bit, 8-bit biased
+    exponent with bias 127, 23-bit trailing significand) and `binary64` (1 sign
+    bit, 11-bit biased exponent with bias 1023, 52-bit trailing significand)
+    parameter bit patterns enter exact integer derivations by decoding to exact
+    dyadic rationals `(sign, mantissa, exponent)` representing
+    $(-1)^{\text{sign}} \cdot \text{mantissa} \cdot 2^{\text{exponent}}$ over
+    `nat` and `int`:
+    - Out-of-width bit patterns and non-finite biased exponents (`255` for
+      `binary32`, `2047` for `binary64`, covering infinities and NaNs) decode
+      to `none`.
+    - Zero and subnormal patterns (`biased = 0`) decode to `mantissa = fraction`
+      and `exponent = -149` (`binary32`) or `exponent = -1074` (`binary64`).
+    - Normal patterns (`1 <= biased <= 254` for `binary32`, `1 <= biased <= 2046`
+      for `binary64`) decode to `mantissa = 2^23 + fraction` and
+      `exponent = biased - 150` (`binary32`) or `mantissa = 2^52 + fraction`
+      and `exponent = biased - 1075` (`binary64`).
+    - Fixed-point scale ratios $\operatorname{round}(a \cdot b / c \cdot 2^{32})$
+      from three `binary32` bit patterns decode $a$, $b$, and $c$ to exact
+      dyadic rationals, reject any `none` operand or a zero divisor
+      ($\text{mantissa}_c = 0$) as `none`, and compute the nearest integer
+      (ties to even) by exact integer Euclidean division and bit-stepping over
+      `iterate_until`, kernel-checked by `decide`.
 
 `examples/models` is the committed instance: a stateful deterministic
 session, a rule policy, a statistical triage and an artifact-backed neural
-recognizer, every composite form, checked boundaries at production roots,
-and every claim kind, all verified by pinned Lean.
+recognizer, IEEE-754 `binary32` and `binary64` dyadic rational decoding and
+exact `round(a * b / c * 2^32)` scale-ratio derivations, every composite
+form, checked boundaries at production roots, and every claim kind, all
+verified by pinned Lean.
 
 #### Reasoning machines (language 1.2)
 
@@ -9479,6 +9504,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `MD-10` | `models` | Model declarations are part of the semantic identity, so changing an artifact byte with its declared digest, a descriptor, a claim, or a check changes the semantic ID, and language-1.2 snapshots carry, schema-valid, every elaborated declaration, generated obligation, cross-check, and required check. | §17.12, §21.4 |
 | `MD-11` | `models` | Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean. | §17.13, §17.14, §22.10 |
 | `MD-12` | `models` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. | §17.12, §28.6 |
+| `MD-13` | `models` | IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation. | §17.12, §28.6 |
 | `RS-01` | `reasoning` | Language 1.2 logic, inference_rule, verifier, and reasoner declarations, the forward, search, and generate_and_verify strategies, the initial_invariant, terminates, observation_invariant, and answer_correct claims, and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member, strategy, or claim outside the closed schema, such as an opaque oracle, a prompt, an unregistered strategy, or an unregistered claim, which fail with LLT4001. | §17.12 |
 | `RS-02` | `reasoning` | A logic names a prior state relation and an optional invariant with a statement-exact preservation theorem and an optional ranking, each of exactly its state type, and an inference rule over a logic is a typed guard, conclusion, and optional binding with a candidate list whose soundness theorem states exactly that the guard implies the relation and whose progress theorem states exactly that the ranking decreases; logics, rules, verifiers, and reasoners may be generic, and a predicate of the wrong signature, an inexact theorem, a rule over another logic than its reasoner's, or a use with the wrong number of type arguments fails with LLT4010. | §17.12 |
 | `RS-03` | `reasoning` | A verifier links an executable Boolean check over a subject and a candidate to a prior proposition-valued specification by statement-exact soundness and optional completeness theorems that Lean restates against the fixed reasoning semantics; an inexact statement or a verifier whose subject or candidate type differs from its reasoner's fails with LLT4010, and a false soundness theorem is refused by verification with LLV7002. | §17.12, §22.6 |
@@ -9554,7 +9580,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 403.
+**Total required capability IDs:** 404.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
