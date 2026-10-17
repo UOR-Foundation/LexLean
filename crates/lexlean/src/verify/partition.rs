@@ -22,6 +22,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use camino::{Utf8Path, Utf8PathBuf};
 
 use crate::artifact::canonical_json::Json;
+use crate::artifact::content_id::Sha256Digest;
 use crate::diagnostic::Diagnostic;
 use crate::verify::child::ChildRecord;
 
@@ -219,6 +220,48 @@ pub fn import(
         )?;
     }
     Ok(imported)
+}
+
+/// Require every imported record to name the executable the join itself
+/// runs: `lean` for an elaboration or an audit member, `leanchecker` for a
+/// replay (§9.4, §22.9).
+///
+/// In a whole verification every record carries the digest of the toolchain
+/// the run's preflight hashed, by construction. Across the parts of a run it
+/// holds only because every job installs the same pinned toolchain, which is
+/// a practice and not a check: a part whose `lean` or `leanchecker` differed
+/// from the join's would otherwise contribute records the attestation then
+/// lists under the join's toolchain digests.
+///
+/// # Errors
+///
+/// The first record, in the order elaborations, replays, audit members, and
+/// by name within each, whose `executable_sha256` is not the join's digest of
+/// the tool that produced it, naming the record and both digests.
+pub fn check_toolchain(
+    imported: &Imported,
+    lean: Sha256Digest,
+    leanchecker: Sha256Digest,
+) -> Result<(), Diagnostic> {
+    for (what, tool, expected, records) in [
+        ("elaboration", "lean", lean, &imported.lean),
+        ("replay", "leanchecker", leanchecker, &imported.leanchecker),
+        ("audit", "lean", lean, &imported.audit),
+    ] {
+        for (name, record) in records {
+            if record.executable_sha256 != expected {
+                return Err(malformed(
+                    &format!("the imported {what} record of `{name}`"),
+                    format!(
+                        "its executable_sha256 is {}, but the `{tool}` of this run's toolchain is {}; every part of a run must run the join's pinned toolchain",
+                        record.executable_sha256.to_hex(),
+                        expected.to_hex()
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Read every `<name><suffix>` of `directory` as a process record keyed by
@@ -521,6 +564,21 @@ mod tests {
         assert!(imported.lean.contains_key("X.M"));
         assert!(imported.leanchecker.is_empty());
         assert!(imported.audit.contains_key("LexLeanAudit.X.M"));
+        // The records name the join's `lean`; a join whose `lean` is another
+        // executable refuses them, naming the record and both digests.
+        let lean = crate::artifact::content_id::Sha256Digest::of(b"lean");
+        let other = crate::artifact::content_id::Sha256Digest::of(b"another lean");
+        check_toolchain(&imported, lean, other).expect("the records name the join's lean");
+        let refused = check_toolchain(&imported, other, other)
+            .expect_err("a record of another lean is refused");
+        let message = format!("{refused:?}");
+        assert!(
+            message.contains("LLI9001")
+                && message.contains("elaboration record of `X.M`")
+                && message.contains(&lean.to_hex())
+                && message.contains(&other.to_hex()),
+            "{message}"
+        );
         // The same part imported twice is a process that ran twice.
         let again = import(&[output.clone(), output.clone()], &olean_root, false);
         assert!(again.is_err(), "a duplicate olean is refused");

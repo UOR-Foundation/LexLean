@@ -1278,6 +1278,14 @@ pub fn run_part(
     stages.enter("part-import");
     let mut imported =
         partition::import(part.inputs(), &olean_root, part.publishes()).map_err(fail)?;
+    // Every record another part wrote was run by the toolchain this run's
+    // preflight hashed: the attestation lists them under its digests.
+    partition::check_toolchain(
+        &imported,
+        toolchain.lean.sha256,
+        toolchain.leanchecker.sha256,
+    )
+    .map_err(fail)?;
 
     // The leanchecker identity (module documentation), before any replay:
     // the preflight's toolchain-relative path and digest line, then the
@@ -2487,11 +2495,20 @@ pub fn run_part(
         )?;
         tail_records.push(audit_record);
         for file in &stage.certificates {
-            write_staged(
-                staging.path(),
-                &format!("preserve/{}", file.path),
-                file.text.as_bytes(),
-            )?;
+            // A certificate held as data is recorded in the authoring
+            // notation; the Lean the decoder compiles is rendered from it.
+            match &file.source {
+                Some(source) => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", preserve::notation_path(&file.module)),
+                    source.as_bytes(),
+                )?,
+                None => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", file.path),
+                    file.text.as_bytes(),
+                )?,
+            }
         }
         // The program each root's certificates are about and the crate each
         // target's certificates B and E are about, published beside them and

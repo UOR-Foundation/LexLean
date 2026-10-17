@@ -31,7 +31,7 @@ versions, and the entries below say what each tag does and does not claim.
   under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones under
   `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
-  example-gate records. `BS-01` brings the register to 393 IDs.
+  example-gate records. `BS-01` brings the register to 394 IDs.
 - The standard library's first member: bytes and text over `Bytes`
   (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
   language-1.2 project beside `compiler/` under the module prefix
@@ -47,7 +47,47 @@ versions, and the entries below say what each tag does and does not claim.
   ones under `tests/production-export/stdlib/`. The project passes the
   example gates (`verify-examples`, `check-golden`) and
   `check-production-export` compares its packages. `SL-01` brings the
-  register to 382 IDs.
+  register to 393 IDs.
+- The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
+  `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
+  took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of
+  them `bdd`, one test process whose cases sum to 22,708 s over four threads.
+  `.github/bdd-parts.json` names four parts of the `repo-conformance` suite by
+  conformance ID, grouped so the cases that share a fixture built once per test
+  process run in one part, and a remainder, `rest`, that runs every test no
+  part names. The recipe is `cargo xtask bdd`: unset, `LEXLEAN_BDD_PART` leaves
+  it `cargo test -p repo-conformance --all-features`, which `just vv` and
+  `release.yml` run; named, it adds the part's harness filters (`--exact` and
+  its tests, or `--exact` and a `--skip` of every named test). `cargo xtask
+  check-test-inventory` lists every part with its filters and requires the
+  parts to be disjoint and their union to be `bdd`'s list (`RP-13`); `ci.yml`
+  runs each named part on a `bdd-<part>` row of the gate's matrix and the
+  remainder on the `rest` leg, every part on exactly one row (`RP-14`).
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
+- Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
+  stage 5 of #27). The composition certificate of every production root is no
+  longer written as Lean text by `production/certificate.rs`: the compiler
+  builds it as a native core module of schema `lexlean/core-module/2`, the
+  lemma types read from the native preservation library and instantiated
+  binder by binder (`production/kernel.rs`), the recursive groups' theorems as
+  recursor terms, and the one core backend renders it to the Lean verification
+  compiles. The verify record holds the module in the authoring notation
+  (`…/Compose/RustStd.lex.tex` in place of `.lean`), which reads back to the
+  data byte for byte, and `preservation.json` binds those bytes. A certificate
+  held as data is audited row by row (imports, kinds, safety, exact axiom
+  policies, forbidden constants) and the audit module prints and checks the
+  axioms of every one of its rows. The statements of the 76 certificates E of
+  the four corpora are those the text stated, kernel term for kernel term
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
+  still Lean text, so the data certificate is rendered outside the module
+  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
 - Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
   no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
   integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
