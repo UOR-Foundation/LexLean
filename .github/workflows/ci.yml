@@ -4,10 +4,11 @@
 # `just vv` is the single gate, run from a clean checkout on Linux x86-64 with
 # the exact pinned toolchains and no build cache: §9.4 says "from a clean
 # checkout", and a restored target directory is not one. CI runs its twelve
-# recipes as legs at once, each its own clean checkout: `examples`, which here
-# verifies every example but UOR Atlas, and `rest`, the other eleven in the
-# order of `vv`. Together they run every recipe of `vv` exactly once, so the
-# gate is the same and the wall time is the longest leg rather than the sum.
+# recipes as the legs of `.github/vv-rows.json` at once, each its own clean
+# checkout: `examples`, which here verifies every example but UOR Atlas, and
+# `rest`, the other eleven in the order of `vv`, with the `bdd` rows below.
+# Together they run every recipe of `vv` exactly once, so the gate is the same
+# and the wall time is the longest leg rather than the sum.
 #
 # `bdd`, the conformance suite, was most of the `rest` leg's time, and it runs
 # as the parts of `.github/bdd-parts.json` (§9.4): each `bdd-<part>` row runs
@@ -28,11 +29,20 @@
 # with `expected/verify` as the leg did. Every process of the verification runs
 # exactly once per run; the executable the shards run is the one the `prefix`
 # shard built from the clean checkout, carried between the jobs of the run as
-# an artifact with the shards' output, and nothing crosses runs. The Atlas
-# jobs do not run while a pull request is a draft; they run when it is marked
-# ready, which the `pull_request` types below include. `honesty` is split out
-# so a claim that has drifted from its evidence reads differently from broken
-# code.
+# an artifact with the shards' output, and nothing crosses runs. `honesty` is
+# split out so a claim that has drifted from its evidence reads differently
+# from broken code.
+#
+# Which runs are the gate (§9.4): the `plan` job decides from the event alone.
+# A pull request that is a draft runs the `rest` leg and nothing else, because
+# a head pushed again before it is final should cost one job and not the whole
+# gate; it is a development signal and the pull request is not mergeable on it.
+# Marking it ready, which the `pull_request` types below include, a push to a
+# ready pull request, a request, and a push to `main` run every job. One push
+# to `main` runs none: a merge whose tree is the tree of its second parent, a
+# pull request head that already contained `main`, when the whole gate passed
+# on that head as a pull request run; the tree is the one that run verified,
+# and the plan records the run. `release.yml` runs `just vv` whole regardless.
 #
 # The gate runs on the standard GitHub-hosted runner (SPEC.md §9.4); no larger
 # runner is part of it. The `examples` leg and every Atlas shard verify at the
@@ -78,19 +88,47 @@ env:
   CARGO_INCREMENTAL: "0"
 
 jobs:
+  # What this run is (SPEC.md §9.4), decided from the event before any job that
+  # costs a runner starts: a draft pull request runs the `rest` leg and nothing
+  # else; a ready pull request, a request, and a push to `main` run the whole
+  # gate, except a push that merges a head whose tree it equals and whose whole
+  # gate passed (it runs nothing and names the run). `.github/ci-plan.sh` is the
+  # decision, and RP-14 runs it against planted events.
+  plan:
+    name: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      full: ${{ steps.plan.outputs.full }}
+      rows: ${{ steps.plan.outputs.rows }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Decide what this run is
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          REPO: ${{ github.repository }}
+        run: .github/ci-plan.sh
+
   vv:
     name: just vv (${{ matrix.part }})
+    needs: [plan]
+    if: ${{ needs.plan.outputs.rows != '[]' }}
     # A failing leg does not cancel the others: each leg's evidence is complete.
+    # The legs are the rows of `.github/vv-rows.json`, or only its `rest` row
+    # while the pull request is a draft.
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { part: examples, recipes: "examples", examples_part: "without:uor-atlas", bdd_part: "", width: "2", memory_kib: "12582912", hints: ".github/verify-hints.json" }
-          - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny", examples_part: "", bdd_part: "rest", width: "", memory_kib: "", hints: "" }
-          - { part: bdd-compiler, recipes: "bdd", examples_part: "", bdd_part: "compiler", width: "", memory_kib: "", hints: "" }
-          - { part: bdd-preservation, recipes: "bdd", examples_part: "", bdd_part: "preservation", width: "", memory_kib: "", hints: "" }
-          - { part: bdd-production, recipes: "bdd", examples_part: "", bdd_part: "production", width: "", memory_kib: "", hints: "" }
-          - { part: bdd-verification, recipes: "bdd", examples_part: "", bdd_part: "verification", width: "", memory_kib: "", hints: "" }
+        include: ${{ fromJSON(needs.plan.outputs.rows) }}
     runs-on: ubuntu-24.04
     # Complete proof coverage is intentionally the long pole. GitHub-hosted
     # jobs permit six hours; a shorter local-style timeout would turn complete
@@ -211,7 +249,8 @@ jobs:
   # `CensusCert4`, the module that dominates the verification.
   atlas-prefix:
     name: atlas (prefix)
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -297,8 +336,8 @@ jobs:
   # `CensusCert*` modules, and the replays of the prefix.
   atlas-l1:
     name: atlas (${{ matrix.shard }})
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: [atlas-prefix]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix]
     strategy: { fail-fast: false, matrix: { shard: [cert4, census-a, census-b, census-c, census-d] } }
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -386,8 +425,8 @@ jobs:
   # The replay of `CensusCert4`, which needs its `.olean` and nothing after it.
   atlas-cert4-replay:
     name: atlas (cert4-replay)
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: [atlas-prefix, atlas-l1]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix, atlas-l1]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -475,8 +514,8 @@ jobs:
   # them imports.
   atlas-closure:
     name: atlas (closure)
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: [atlas-prefix, atlas-l1]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix, atlas-l1]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -564,8 +603,8 @@ jobs:
   # closure modules, and the `ClosurePairCert*` modules in four bins.
   atlas-l3:
     name: atlas (${{ matrix.shard }})
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: [atlas-closure]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-closure]
     strategy: { fail-fast: false, matrix: { shard: [orbit, pairs-a, pairs-b, pairs-c, pairs-d] } }
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -655,8 +694,8 @@ jobs:
   # `expected/verify`.
   atlas-join:
     name: atlas (join)
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: [atlas-prefix, atlas-l1, atlas-cert4-replay, atlas-closure, atlas-l3]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix, atlas-l1, atlas-cert4-replay, atlas-closure, atlas-l3]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -759,6 +798,8 @@ jobs:
   # own `xtask` and `repo-conformance`, which no host in this job runs.
   host-matrix:
     name: build and non-Lean tests (${{ matrix.target }})
+    needs: [plan]
+    if: ${{ needs.plan.outputs.full == 'true' }}
     strategy:
       fail-fast: false
       matrix:
