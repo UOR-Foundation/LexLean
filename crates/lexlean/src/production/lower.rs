@@ -515,14 +515,22 @@ pub struct Costs {
 }
 
 /// What certificate A costs at the least.
+///
+/// Certificate A is recorded as kernel data, whose hash-consing shares every
+/// type and every repeated subterm, so a type node costs nothing here and the
+/// costs are those of what is not shared. They are the largest costs, to the
+/// sixteenth of a byte, that no program of the stress families, the mixed and
+/// random shapes, the wide matches, and the four example corpora has a
+/// certificate A smaller than, with five percent to spare (`conformance_sp_02`
+/// checks every one of them).
 pub const COSTS_A: Costs = Costs {
-    base_bytes: 1080,
-    type_node: 284,
-    expr_node: 176,
+    base_bytes: 5400,
+    type_node: 0,
+    expr_node: 328,
     shape_node: 0,
-    arm_pair: 180,
-    string_byte: 7,
-    hex_digit: 19,
+    arm_pair: 1018,
+    string_byte: 15,
+    hex_digit: 433,
 };
 
 /// What certificate B costs at the least.
