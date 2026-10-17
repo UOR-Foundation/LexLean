@@ -26,6 +26,7 @@ mod lower;
 pub mod moves;
 pub mod package;
 pub mod runtime;
+pub mod scaffold;
 pub mod validate;
 
 use std::collections::BTreeSet;
@@ -139,7 +140,7 @@ pub fn fallible_functions(program: &Program) -> Result<Vec<bool>, String> {
 ///
 /// As [`lower`].
 pub fn render(program: &Program, profile: Profile) -> Result<String, String> {
-    Ok(ast::print(&lower(program, profile)?))
+    ast::print(&lower(program, profile)?)
 }
 
 /// Rust literals of the values of one program in one profile, built through
@@ -193,13 +194,14 @@ pub fn observable(outcome: &super::Outcome) -> Option<serde_json::Value> {
 
 /// The source files of the renderer, by name in `calculus/rust/`, in the
 /// order [`renderer_digest`] frames them.
-pub const RENDERER_FILES: [&str; 7] = [
+pub const RENDERER_FILES: [&str; 8] = [
     "ast.rs",
     "lower.rs",
     "mod.rs",
     "moves.rs",
     "package.rs",
     "runtime.rs",
+    "scaffold.rs",
     "validate.rs",
 ];
 
@@ -225,13 +227,14 @@ mod tests {
     /// compiler-semantics ID.
     #[test]
     fn the_compiler_semantics_records_the_renderer() {
-        let sources: [&[u8]; 7] = [
+        let sources: [&[u8]; 8] = [
             include_bytes!("ast.rs"),
             include_bytes!("lower.rs"),
             include_bytes!("mod.rs"),
             include_bytes!("moves.rs"),
             include_bytes!("package.rs"),
             include_bytes!("runtime.rs"),
+            include_bytes!("scaffold.rs"),
             include_bytes!("validate.rs"),
         ];
         let files: Vec<(&str, &[u8])> = RENDERER_FILES.into_iter().zip(sources).collect();

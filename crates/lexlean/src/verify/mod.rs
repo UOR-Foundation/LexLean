@@ -960,7 +960,8 @@ pub fn run_part(
                     target: row.target.clone(),
                     certificate: certificate_b.into_certificate(),
                     composed,
-                    crate_text: crate::calculus::rust::ast::print(&rendered),
+                    crate_text: crate::calculus::rust::ast::print(&rendered)
+                        .map_err(|reason| fail(internal(reason)))?,
                     entry: lowered.entry(),
                 });
             }

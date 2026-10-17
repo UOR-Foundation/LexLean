@@ -3407,8 +3407,9 @@ Removed: the generator was restored and the packages regenerated;
 
 ### rust lint exceptions and lowering rules are load-bearing
 
-Each of the ten exceptions of `package::ALLOWED_LINTS` was removed in turn
-(its entry renamed to the pedantic `too_many_lines`), and each rendering rule
+Each of the ten exceptions of the package scaffold (the rows of `allowedLints` in
+`language/package-1.2/RustPackage.lex.tex`, which replaced `package::ALLOWED_LINTS`)
+was removed in turn by dropping its row from the module, and each rendering rule
 of §17.16 **Lowering** was disabled in turn; after each plant the packages
 were regenerated and `conformance_rb_06` (with `conformance_rb_01`) ran.
 Expected: a committed package fails its gate, so no exception or rule is
@@ -3417,16 +3418,16 @@ first lint or build error of each:
 
 | Exception removed, or rule disabled | First refusal |
 | --- | --- |
-| `type_complexity` | `very complex type used` |
+| `type_complexity` | `very complex type used. Consider factoring parts into 'type' definitions` |
 | `too_many_arguments` | `this function has too many arguments (8/7)` |
 | `large_enum_variant` | `large size difference between variants` |
-| `result_large_err` | `the Err-variant returned from this function is very large` |
-| `result_unit_err` | ``this returns a `Result<_, ()>` `` |
-| `single_match` | ``you seem to be trying to use `match` for an equality check`` |
-| `manual_unwrap_or` | ``this pattern reimplements `Option::unwrap_or` `` |
-| `manual_unwrap_or_default` | ``match can be simplified with `.unwrap_or_default()` `` |
-| `manual_map` | ``manual implementation of `Option::map` `` |
-| `manual_ok_err` | ``manual implementation of `ok` `` |
+| `result_large_err` | `the 'Err'-variant returned from this function is very large` |
+| `result_unit_err` | `this returns a 'Result<_, ()>'` |
+| `single_match` | `you seem to be trying to use 'match' for an equality check. Consider using 'if'` |
+| `manual_unwrap_or` | `this pattern reimplements 'Option::unwrap_or'` |
+| `manual_unwrap_or_default` | `match can be simplified with '.unwrap_or_default()'` |
+| `manual_map` | `manual implementation of 'Option::map'` |
+| `manual_ok_err` | `manual implementation of 'ok'` |
 | unit result written `-> ()` | `unneeded unit return type` |
 | unit block value written `()` | `unneeded unit expression` |
 | unit binder bound by name | ``unused variable: `v0` `` |
@@ -3456,6 +3457,42 @@ error: very complex type used. Consider factoring parts into `type` definitions
 
 Removed: every exception and rule was restored and the packages
 regenerated; `conformance_rb_06` passes.
+
+
+### rust package scaffold can fail
+
+The scaffold (`RB-10`..`RB-13`) was made to fail by planting a defect in the
+repository itself, running the case, and restoring the file. Each case is
+`cargo test -p repo-conformance --test conformance -- conformance_rb_NN`.
+
+| Plant | Case | First refusal |
+| --- | --- | --- |
+| a manifest constant (`[lints.clippy]` and an `allow`) appended to `package.rs` | `RB-10` | ``the renderer holds the package scaffolding as text beside its module: package.rs: the literal "[lints.clippy] single_match = \"allow\" " states `single_match` `` |
+| an allowed lint of the module moved to `correctness` | `RB-11` | ``allows a lint in Clippy's `correctness` group (§17.16)`` |
+| the `single_match` row dropped from the module | `RB-11` | ``the specification's `single_match` is not the module's`` |
+| the reader's refusal of `correctness` disabled | `RB-11` | the module with a `correctness` row decodes, and the case's `expect_err` fires |
+| the recursion check of the renderer disabled | `RB-13` | `a recursive fixture`: no fixture shows `recursion` |
+| the recursion statement of `language/production-1.2.toml` set back to "explicit failure" | `RB-13` | the statement is printed, and the case demands `aborts the process` |
+| `language/package-1.2/` removed from the files introduced for 1.2 | `RB-12` | `assertion left == right failed` on the language-1.0 identity: the scaffold is hashed into it |
+
+The same defects are planted inside the cases for what a plant in the
+repository cannot reach: a module whose declaration, constructor, field, or
+body shape differs (`RB-10`), a table row changed, dropped, or added on either
+side and a theorem removed or weakened (`RB-11`), the edition, a lint row, and
+a gate changed in a copy of the embedded tree, which must move the language-1.2
+ID alone (`RB-12`), and effects dropped one at a time, unregistered, unordered,
+or stating allocation on `rust-core` (`RB-13`). The ten exceptions are each
+removed by dropping their row of the module in the table above.
+
+Cases that compare to regenerated records (`RB-02`..`RB-05`, `RB-07`, and the
+cases that read a lock, such as `AU-02`, `AU-03`, and `AU-10`..`AU-12`) fail on
+the hand-written tree alone, because the language-1.2 ID and every package's
+`package.json` and `provenance.json` move. `RB-02`..`RB-05` and `RB-07` passed
+on a scratch copy whose Rust packages were rewritten by the writer of
+`check-calculus` (`rust_packages::files`): every `Cargo.toml` and `src/lib.rs`
+was byte-identical to the committed one, and only `package.json`,
+`provenance.json`, and the negative manifests changed. The regeneration of the
+locks and the remaining records is the train's.
 
 ### rust runtime mutation is detected by the differential
 

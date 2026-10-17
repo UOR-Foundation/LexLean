@@ -34,7 +34,7 @@ statement = "A natural-number or mathematical-integer value outside the target w
 
 [[effect]]
 id = "recursion"
-statement = "The realization recurses to a depth bounded only by its input; exhausting the stack stops it with an explicit failure."
+statement = "The realization recurses to a depth bounded only by its input; exhausting the stack aborts the process, and the realization states no failure for it."
 
 [[construct]]
 key = "type.type"

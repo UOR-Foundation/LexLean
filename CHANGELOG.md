@@ -15,6 +15,23 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The Rust package scaffolding is data (#91 slice 1, SPEC.md §17.16, `RB-10`..`RB-13`, language 1.2).
+  The Cargo manifest's edition, publication, rustc and Clippy lint gates, and the ten allowed
+  lints, each now with its Clippy group, are the declarations of one semantic module,
+  `language/package-1.2/RustPackage.lex.tex`, which the compiler embeds, hashes into the
+  language-1.2 compiler-semantics ID, and reads by decoding its semantic data (it is not
+  evaluated and not spliced). `package::ALLOWED_LINTS` and the manifest template are gone; the
+  crate attributes are derived, `#![no_std]` from `allocation = false` on the target row of
+  `language/production-1.2.toml` and `#![forbid(lint)]` from each gate at `forbid`. No allowed
+  lint is in Clippy's `correctness` group, which the reader refuses and the module states as a
+  theorem; the SPEC §17.16 table equals the module's rows. `lexlean/rust-provenance/1` and the
+  package manifest `lexlean/rust-package/1` gain `effects` (#105 step 3b): the effects of the
+  realization on its profile, which production takes from the root's eligibility and the
+  renderer checks against what the package shows of itself; the `recursion` effect of
+  `language/production-1.2.toml` now says that exhausting the stack aborts the process.
+  Rendered `Cargo.toml` and `src/lib.rs` are byte-identical to the previous renderer's. The
+  language-1.2 compiler-semantics ID moves once; languages 1.0 and 1.1 are unchanged. The
+  register gains `RB-10`..`RB-13`.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
