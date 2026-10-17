@@ -3167,7 +3167,14 @@ mod dev {
     }
 
     fn family_sizes() {
-        for (family, project) in crate::stress::families() {
+        let mut projects = crate::stress::families();
+        if std::env::var("LEXLEAN_WIDE").is_ok() {
+            projects = [2, 100, 101, 180]
+                .iter()
+                .map(|arms| (format!("wide match {arms}"), crate::stress::wide_match_default(*arms)))
+                .collect();
+        }
+        for (family, project) in projects {
             let checked = support::checked_project(&project);
             let modules = linked_modules(&checked);
             let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
