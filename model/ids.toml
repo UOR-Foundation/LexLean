@@ -679,6 +679,8 @@ id = "SM-33"
 level = "build"
 suite = "semantic-ir"
 statement = "A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's."
+
+[[id]]
 id = "SM-32"
 level = "build"
 suite = "semantic-ir"
