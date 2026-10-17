@@ -2216,14 +2216,13 @@ pub fn run(id: &str) {
         // §17.17: a list of any length is a term Lean elaborates without
         // binders, in every list position of a witness.
         "SP-13" => {
-            let projects =
-                crate::stress::long_lists(lexlean::production::lean_list::LITERAL_MAX + 1);
+            let projects = crate::stress::long_lists(crate::lean_list::LITERAL_MAX + 1);
             for (shape, project) in &projects {
                 for certified in preservation::certificates(project) {
                     for certificate in certified.all() {
                         let longest = longest_literal(&certificate.text);
                         assert!(
-                            longest <= lexlean::production::lean_list::LITERAL_MAX,
+                            longest <= crate::lean_list::LITERAL_MAX,
                             "{shape}: `{}` writes a list literal of {longest} elements, which Lean splits under `let` binders",
                             certificate.module
                         );
@@ -4531,6 +4530,109 @@ pub fn run(id: &str) {
             eprintln!(
                 "SP-16 plants refused:\n  wrong lemma: {wrong_lemma}\n  changed statement: {changed_statement}\n  forged program: {forged_program}\n  added axiom: {audit_refusal}\n  lying policy: {lying_policy}"
             );
+        }
+        "SP-17" => {
+            use crate::lean_literals::{
+                auxiliary_part_from, is_lean_syntax, scan_repository, scan_source,
+            };
+            let root = repo_root();
+            // The repository holds no Lean source text template.
+            let found = scan_repository(root.as_std_path());
+            assert!(
+                found.is_empty(),
+                "Lean syntax literals in the production compiler: {found:#?}"
+            );
+            // The scan reads the sources: it takes the real source of the
+            // staged audit module and of the backend and finds what is planted
+            // in them, and nothing else.
+            let planted_line = "fn planted(x: u64) -> String {\n    format!(\"theorem t (n : Nat) : n = {x} := by decide\")\n}\n";
+            for relative in [
+                "crates/lexlean/src/production/preserve.rs",
+                "crates/lexlean/src/production/certificate.rs",
+                "crates/lexlean/src/production/lower.rs",
+            ] {
+                let source = std::fs::read_to_string(root.join(relative)).expect("a source reads");
+                let name = relative
+                    .strip_prefix("crates/lexlean/src/")
+                    .expect("prefix");
+                assert!(
+                    scan_source(name, &source, 1).is_empty(),
+                    "{name} is clean as it is"
+                );
+                let at = source.lines().count() + 1;
+                let planted = scan_source(name, &format!("{source}\n{planted_line}"), 1);
+                assert_eq!(
+                    planted.len(),
+                    1,
+                    "{name}: the planted template is reported once: {planted:?}"
+                );
+                assert!(
+                    planted[0].line > at && planted[0].literal.starts_with("theorem t"),
+                    "{name}: the planted template is the one reported: {planted:?}"
+                );
+                eprintln!(
+                    "SP-17 planted in {name}: line {} `{}`",
+                    planted[0].line, planted[0].literal
+                );
+            }
+            // In the auxiliary module part of the backend, a template is
+            // reported, and a command line outside the allow-list too.
+            let backend = std::fs::read_to_string(root.join("crates/lexlean/src/backend/lean.rs"))
+                .expect("the backend reads");
+            let from = auxiliary_part_from(&backend);
+            assert!(from > 1, "the backend has an auxiliary module part");
+            let planted = scan_source(
+                "backend/lean.rs",
+                &format!("{backend}\nfn planted() -> String {{ String::from(\"namespace Planted\\nend Planted\\n\") }}\n"),
+                from,
+            );
+            assert_eq!(
+                planted.len(),
+                1,
+                "the backend's planted template is reported: {planted:?}"
+            );
+            eprintln!(
+                "SP-17 planted in backend/lean.rs: line {} `{}`",
+                planted[0].line, planted[0].literal
+            );
+            // Test code is not production: the same template under
+            // `#[cfg(test)]` is not reported, and the definition separates a
+            // bare word, a diagnostic and Lean.
+            let in_tests = "#[cfg(test)]\nmod tests {\n    fn f() -> &'static str { \"theorem t : True := trivial\" }\n}\nfn g() {}\n";
+            assert!(
+                scan_source("production/x.rs", in_tests, 1).is_empty(),
+                "test code is not scanned"
+            );
+            for lean in [
+                "theorem t : True := trivial",
+                "def f (x : Nat) : Nat := x",
+                "import Lean",
+                "fun x => x",
+                "(.option {})",
+                "#print axioms {}",
+                "set_option maxHeartbeats 0\\n",
+            ] {
+                assert!(is_lean_syntax(lean), "`{lean}` is Lean syntax");
+            }
+            for plain in [
+                "inductive",
+                "theorem ",
+                "instance `{module}.{name}` is recursive",
+                "a match on a pair splits it",
+                "function {index} lowered",
+            ] {
+                assert!(!is_lean_syntax(plain), "`{plain}` is not Lean syntax");
+            }
+            // Every allow-list entry is used: one that matches nothing is a
+            // hole that no longer has a reason.
+            for (file, beginning, reason) in crate::lean_literals::ALLOWED {
+                let source = std::fs::read_to_string(root.join("crates/lexlean/src").join(file))
+                    .expect("an allowed file reads");
+                assert!(
+                    source.contains(&format!("\"{beginning}")),
+                    "the allow-list entry {file} `{beginning}` ({reason}) matches nothing"
+                );
+            }
         }
         _ => panic!("no preservation case is wired for {id}"),
     }

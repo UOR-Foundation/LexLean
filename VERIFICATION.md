@@ -1534,6 +1534,66 @@ nothing published, as it did when the overlay edited the text. Before
 `conformance_sp_16` had an arm, the same command failed with `no preservation
 case is wired for SP-16`, the red step of R3.
 
+### no Lean source text template remains in the production compiler
+
+`conformance_sp_17` reads the Rust sources with a lexer
+(`crates/conformance/src/lean_literals.rs`): comments, plain, raw and byte
+strings, character literals and lifetimes the way the Rust lexer reads them,
+every item under `#[cfg(test)]` dropped, and each remaining string literal
+tested for Lean syntax. It covers every source under
+`crates/lexlean/src/production/` and the probe and audit module part of
+`crates/lexlean/src/backend/lean.rs` (from the section "Probe and audit
+modules"; the rest of the file renders the lexicon terms of the program a user
+wrote, which is what the backend is for).
+
+A literal is Lean syntax when it holds one of: `:=`, `=>`, `↦`, `→`, `∀`, `∃`,
+`⟨`, `⟩`, `(.`, `«`, `@[`; a `fun` binder; a line of `#print`, `#check`,
+`#eval`, `import`, `namespace`, `set_option`, `universe`, or `open` with more
+after it; a parenthesized application of a capitalized name (`(Option {})`); or,
+when the literal holds a `:`, a line of `theorem`, `def`, `example`,
+`instance`, `structure`, `inductive`, or `abbrev` with more after it. A bare
+word (`"inductive"`) is a name, and an English diagnostic carries none of the
+above. The allow-list is 11 entries, each with its reason in the source: the
+printouts of kernel terms that developers read (`kernel/ext.rs`, the
+`LEXLEAN_ROWS` and `LEXLEAN_SHOW` printouts), the quote of one segment of a Lean
+name (`certificate.rs`), and the closed commands the auxiliary module renderer
+writes (`backend/lean.rs`). The case also requires every allow-list entry to
+match a literal that exists, so an entry cannot outlive its reason.
+
+Planted templates, each reported by the scan on the real source of the file
+with the template appended, and nothing else reported:
+
+```text
+SP-17 planted in production/preserve.rs: line 2032 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in production/certificate.rs: line 3139 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in production/lower.rs: line 3729 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in backend/lean.rs: line 2714 `namespace Planted\nend Planted\n`
+```
+
+The same template under `#[cfg(test)]` is not reported, and the definition
+accepts seven Lean literals and refuses five plain ones (the case lists them).
+
+Before it ran, the scan found the templates the survey of #89 named, not only
+the audit module: the `render_ty`, `render_value`, `render_prim`, `render_expr`
+and `render_program` builders of the calculus as Lean text (certificate B's old
+path; the program is a kernel-term row now), `lean_type_text` (the runtime
+spelling of a type, now the structure `RuntimeType` that the differential
+harness spells in the conformance crate), the harness's value printer and list
+literals (moved to the conformance crate, which writes the Lean of its own
+`#eval` inputs), and the unused `budget_options`. The staged audit module is an
+`AuxiliaryModule` of typed commands (`PrintAxioms`, `PrintMarker`, `PrintName`,
+`CheckName`), rendered without the `module` header: Lean refuses a `module`
+file that imports a file that is not one
+(`cannot import non-`module` A from `module``), and the certificates are
+rendered outside the module system by `lean_text_legacy`, because the user
+modules they import are not exposed to a `module` certificate. Retiring that
+rendering changes every certificate's text and so every record, which waits
+for the regeneration; the audit module keeps the unheaded form only because it
+imports them. Its text is the text of before, except that four library
+declarations whose last segment is the Lean token `at` (`Rust.RC.at`,
+`RCB.at`, `RCI.at`, `RCL.at`) are now quoted as every auxiliary module quotes a
+reserved segment (`RC.«at»`), the same name to Lean.
+
 ### certificate E is kernel-term data and a defect in it is refused
 
 Certificate E of a root is a native core module the compiler builds

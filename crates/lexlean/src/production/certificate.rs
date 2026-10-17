@@ -40,14 +40,11 @@ mod data_a;
 pub mod data_b;
 
 use super::eligibility::BUILTIN_OWNERS;
-use super::lean_list::{array, list, list_by};
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Local, Site, Source};
 use super::RootReport;
-use crate::backend::semantic::{identifier as semantic_identifier, string_literal};
-use crate::calculus::{
-    Arm, Expr, Function, IntKind, OrderingValue, Prim, Program, Shape, Ty, Value,
-};
+use crate::backend::semantic::identifier as semantic_identifier;
+use crate::calculus::{IntKind, Program, Ty};
 use crate::code;
 use crate::diagnostic::Diagnostic;
 use crate::ir::semantic::{
@@ -103,7 +100,7 @@ pub struct SourceConstructor {
     pub fields: Vec<SemanticType>,
 }
 
-/// The Lean spelling of a closed source type and, for a document type, its
+/// The runtime type of a closed source type and, for a document type, its
 /// constructors in declaration order (a structure has one). The
 /// differential evaluator writes its sampled source values with these, so
 /// Lean reads exactly the values the realization's interpreter receives.
@@ -114,9 +111,9 @@ pub struct SourceConstructor {
 pub fn source_type(
     modules: &BTreeMap<String, super::eligibility::LinkedModule<'_>>,
     ty: &SemanticType,
-) -> Result<(String, Vec<SourceConstructor>), Diagnostic> {
+) -> Result<(RuntimeType, Vec<SourceConstructor>), Diagnostic> {
     let source = Source { modules };
-    let lean = lean_type_text(&source, ty, false).map_err(internal)?;
+    let lean = runtime_type(&source, ty).map_err(internal)?;
     let constructors = match ty {
         SemanticType::Named {
             member,
@@ -600,77 +597,75 @@ fn identifier(name: &str) -> String {
 
 // --- Rendering the target program -------------------------------------------
 
-/// The Lean spelling of a type; a generic one may name the type
-/// parameters a wrapper binds.
-fn lean_type_text(source: &Source<'_>, ty: &SemanticType, generic: bool) -> Result<String, String> {
+/// A closed source type as the runtime spells it, by the structure of its
+/// Lean type and not by its text: the differential evaluator writes its
+/// sampled values and their types from this.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuntimeType {
+    /// A type of Lean's prelude with no arguments, by name.
+    Atom(&'static str),
+    /// `Option` of a type.
+    Option(Box<RuntimeType>),
+    /// `Except` of the error and the value.
+    Except(Box<RuntimeType>, Box<RuntimeType>),
+    /// `List` of a type.
+    List(Box<RuntimeType>),
+    /// `Prod` of two types.
+    Prod(Box<RuntimeType>, Box<RuntimeType>),
+    /// A function type: its parameters, then its result.
+    Function(Vec<RuntimeType>, Box<RuntimeType>),
+    /// A document type by its qualified Lean name, applied to its arguments.
+    Named(String, Vec<RuntimeType>),
+}
+
+fn runtime_type(source: &Source<'_>, ty: &SemanticType) -> Result<RuntimeType, String> {
+    let again = |ty: &SemanticType| runtime_type(source, ty).map(Box::new);
     Ok(match ty {
-        SemanticType::Nat => "Nat".to_owned(),
-        SemanticType::Bool => "Bool".to_owned(),
-        SemanticType::Unit => "Unit".to_owned(),
-        SemanticType::Int => "Int".to_owned(),
-        SemanticType::Int8 => "Int8".to_owned(),
-        SemanticType::Int16 => "Int16".to_owned(),
-        SemanticType::Int32 => "Int32".to_owned(),
-        SemanticType::Int64 => "Int64".to_owned(),
-        SemanticType::UInt8 => "UInt8".to_owned(),
-        SemanticType::UInt16 => "UInt16".to_owned(),
-        SemanticType::UInt32 => "UInt32".to_owned(),
-        SemanticType::UInt64 => "UInt64".to_owned(),
-        SemanticType::String => "String".to_owned(),
-        SemanticType::Bytes => "ByteArray".to_owned(),
-        SemanticType::Ordering => "Ordering".to_owned(),
-        SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
-            "(Prod Bool Bool)".to_owned()
-        }
-        SemanticType::Option { value } => {
-            format!("(Option {})", lean_type_text(source, value, generic)?)
-        }
-        SemanticType::Result { ok, error } => {
-            format!(
-                "(Except {} {})",
-                lean_type_text(source, error, generic)?,
-                lean_type_text(source, ok, generic)?
-            )
-        }
-        SemanticType::List { element } | SemanticType::Set { element } => {
-            format!("(List {})", lean_type_text(source, element, generic)?)
-        }
-        SemanticType::Product { left, right } => {
-            format!(
-                "(Prod {} {})",
-                lean_type_text(source, left, generic)?,
-                lean_type_text(source, right, generic)?
-            )
-        }
-        SemanticType::Map { key, value } => format!(
-            "(List (Prod {} {}))",
-            lean_type_text(source, key, generic)?,
-            lean_type_text(source, value, generic)?
+        SemanticType::Nat => RuntimeType::Atom("Nat"),
+        SemanticType::Bool => RuntimeType::Atom("Bool"),
+        SemanticType::Unit => RuntimeType::Atom("Unit"),
+        SemanticType::Int => RuntimeType::Atom("Int"),
+        SemanticType::Int8 => RuntimeType::Atom("Int8"),
+        SemanticType::Int16 => RuntimeType::Atom("Int16"),
+        SemanticType::Int32 => RuntimeType::Atom("Int32"),
+        SemanticType::Int64 => RuntimeType::Atom("Int64"),
+        SemanticType::UInt8 => RuntimeType::Atom("UInt8"),
+        SemanticType::UInt16 => RuntimeType::Atom("UInt16"),
+        SemanticType::UInt32 => RuntimeType::Atom("UInt32"),
+        SemanticType::UInt64 => RuntimeType::Atom("UInt64"),
+        SemanticType::String => RuntimeType::Atom("String"),
+        SemanticType::Bytes => RuntimeType::Atom("ByteArray"),
+        SemanticType::Ordering => RuntimeType::Atom("Ordering"),
+        SemanticType::ContractViolation | SemanticType::ReasoningFailure => RuntimeType::Prod(
+            Box::new(RuntimeType::Atom("Bool")),
+            Box::new(RuntimeType::Atom("Bool")),
         ),
-        SemanticType::Function { parameters, result } => {
-            let mut out = String::from("(");
-            for parameter in parameters {
-                out.push_str(&lean_type_text(source, parameter, generic)?);
-                out.push_str(" -> ");
-            }
-            out.push_str(&lean_type_text(source, result, generic)?);
-            out.push(')');
-            out
+        SemanticType::Option { value } => RuntimeType::Option(again(value)?),
+        SemanticType::Result { ok, error } => RuntimeType::Except(again(error)?, again(ok)?),
+        SemanticType::List { element } | SemanticType::Set { element } => {
+            RuntimeType::List(again(element)?)
         }
+        SemanticType::Product { left, right } => RuntimeType::Prod(again(left)?, again(right)?),
+        SemanticType::Map { key, value } => {
+            RuntimeType::List(Box::new(RuntimeType::Prod(again(key)?, again(value)?)))
+        }
+        SemanticType::Function { parameters, result } => RuntimeType::Function(
+            parameters
+                .iter()
+                .map(|parameter| runtime_type(source, parameter))
+                .collect::<Result<_, _>>()?,
+            again(result)?,
+        ),
         SemanticType::Named { member, arguments } => {
             let module = member.module.clone().ok_or("an unanchored document type")?;
-            let mut out = format!(
-                "({}",
-                identifier(&format!("{}.{}", source.lean_module(&module)?, member.name))
-            );
-            for argument in arguments {
-                out.push(' ');
-                out.push_str(&lean_type_text(source, argument, generic)?);
-            }
-            out.push(')');
-            out
+            RuntimeType::Named(
+                identifier(&format!("{}.{}", source.lean_module(&module)?, member.name)),
+                arguments
+                    .iter()
+                    .map(|argument| runtime_type(source, argument))
+                    .collect::<Result<_, _>>()?,
+            )
         }
-        SemanticType::Parameter { name } if generic => identifier(name),
         SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
             return Err(format!(
                 "`{}` has no runtime encoding",
@@ -678,340 +673,6 @@ fn lean_type_text(source: &Source<'_>, ty: &SemanticType, generic: bool) -> Resu
             ));
         }
     })
-}
-
-fn kind_ctor(kind: IntKind) -> &'static str {
-    kind.name()
-}
-
-/// A calculus type as a `TargetSyntax.Ty` term.
-#[must_use]
-pub fn render_ty(ty: &Ty) -> String {
-    match ty {
-        Ty::Unit => ".unit".to_owned(),
-        Ty::Bool => ".bool".to_owned(),
-        Ty::Nat => ".nat".to_owned(),
-        Ty::Int => ".int".to_owned(),
-        Ty::Fixed { width } => format!("(.fixed .{})", kind_ctor(*width)),
-        Ty::String => ".string".to_owned(),
-        Ty::Bytes => ".bytes".to_owned(),
-        Ty::Ordering => ".ordering".to_owned(),
-        Ty::Option { value } => format!("(.option {})", render_ty(value)),
-        Ty::Result { ok, error } => format!("(.result {} {})", render_ty(ok), render_ty(error)),
-        Ty::List { element } => format!("(.list {})", render_ty(element)),
-        Ty::Pair { left, right } => format!("(.pair {} {})", render_ty(left), render_ty(right)),
-        Ty::Adt { index } => format!("(.adt {index})"),
-        Ty::Fn { parameters, result } => format!(
-            "(.fn {} {})",
-            list(parameters.iter().map(render_ty)),
-            render_ty(result)
-        ),
-    }
-}
-
-fn signed(text: &str) -> String {
-    if text.starts_with('-') {
-        format!("({text})")
-    } else {
-        text.to_owned()
-    }
-}
-
-fn bytes_literal(hex: &str) -> Result<String, String> {
-    let mut values = Vec::new();
-    let digits = hex.as_bytes();
-    if !digits.len().is_multiple_of(2) {
-        return Err(format!("byte literal `{hex}` has odd length"));
-    }
-    for pair in digits.chunks(2) {
-        let text = std::str::from_utf8(pair).map_err(|_| "a non-ASCII byte literal")?;
-        values.push(
-            u8::from_str_radix(text, 16)
-                .map_err(|_| format!("byte literal `{hex}` is not hexadecimal"))?
-                .to_string(),
-        );
-    }
-    Ok(format!("ByteArray.mk {}", array(values)))
-}
-
-/// A calculus value as a `TargetSyntax.Value` term.
-///
-/// # Errors
-///
-/// Returns the reason a byte literal is malformed.
-pub fn render_value(value: &Value) -> Result<String, String> {
-    Ok(match value {
-        Value::Unit => ".unit".to_owned(),
-        Value::Bool { value } => format!("(.bool {value})"),
-        Value::Nat { value } => format!("(.nat {value})"),
-        Value::Int { value } => format!("(.int {})", signed(value)),
-        Value::U8 { value } => format!("(.u8 {value})"),
-        Value::U16 { value } => format!("(.u16 {value})"),
-        Value::U32 { value } => format!("(.u32 {value})"),
-        Value::U64 { value } => format!("(.u64 {value})"),
-        Value::I8 { value } => format!("(.i8 {})", signed(value)),
-        Value::I16 { value } => format!("(.i16 {})", signed(value)),
-        Value::I32 { value } => format!("(.i32 {})", signed(value)),
-        Value::I64 { value } => format!("(.i64 {})", signed(value)),
-        Value::String { value } => format!("(.string {})", string_literal(value)),
-        Value::Bytes { hex } => format!("(.bytes ({}))", bytes_literal(hex)?),
-        Value::Ordering { value } => format!(
-            "(.ordering .{})",
-            match value {
-                OrderingValue::Lt => "less",
-                OrderingValue::Eq => "same",
-                OrderingValue::Gt => "more",
-            }
-        ),
-        Value::None => ".none".to_owned(),
-        Value::Some { value } => format!("(.some {})", render_value(value)?),
-        Value::Ok { value } => format!("(.ok {})", render_value(value)?),
-        Value::Error { value } => format!("(.error {})", render_value(value)?),
-        Value::List { items } => format!(
-            "(.list {})",
-            list(
-                items
-                    .iter()
-                    .map(render_value)
-                    .collect::<Result<Vec<_>, _>>()?
-            )
-        ),
-        Value::Pair { left, right } => {
-            format!("(.pair {} {})", render_value(left)?, render_value(right)?)
-        }
-        Value::Adt {
-            constructor,
-            fields,
-        } => format!(
-            "(.adt {constructor} {})",
-            list(
-                fields
-                    .iter()
-                    .map(render_value)
-                    .collect::<Result<Vec<_>, _>>()?
-            )
-        ),
-        Value::Closure { function, captures } => format!(
-            "(.closure {function} {})",
-            list(
-                captures
-                    .iter()
-                    .map(render_value)
-                    .collect::<Result<Vec<_>, _>>()?
-            )
-        ),
-    })
-}
-
-fn render_shape(shape: Shape) -> String {
-    match shape {
-        Shape::None => ".none".to_owned(),
-        Shape::Some => ".some".to_owned(),
-        Shape::Ok => ".ok".to_owned(),
-        Shape::Error => ".error".to_owned(),
-        Shape::Nil => ".nil".to_owned(),
-        Shape::Cons => ".cons".to_owned(),
-        Shape::Zero => ".zero".to_owned(),
-        Shape::Succ => ".succ".to_owned(),
-        Shape::Pair => ".pair".to_owned(),
-        Shape::True => ".true".to_owned(),
-        Shape::False => ".false".to_owned(),
-        Shape::Unit => ".unit".to_owned(),
-        Shape::Lt => ".lt".to_owned(),
-        Shape::Eq => ".eq".to_owned(),
-        Shape::Gt => ".gt".to_owned(),
-        Shape::Adt { constructor } => format!("(.adt {constructor})"),
-    }
-}
-
-fn render_prim(prim: &Prim) -> String {
-    match prim {
-        Prim::NatAdd => ".natAdd".to_owned(),
-        Prim::NatSub => ".natSub".to_owned(),
-        Prim::NatMul => ".natMul".to_owned(),
-        Prim::NatQuot => ".natQuot".to_owned(),
-        Prim::NatRem => ".natRem".to_owned(),
-        Prim::NatEq => ".natEq".to_owned(),
-        Prim::NatLe => ".natLe".to_owned(),
-        Prim::NatLt => ".natLt".to_owned(),
-        Prim::IntAdd => ".intAdd".to_owned(),
-        Prim::IntSub => ".intSub".to_owned(),
-        Prim::IntMul => ".intMul".to_owned(),
-        Prim::IntNeg => ".intNeg".to_owned(),
-        Prim::IntQuot => ".intQuot".to_owned(),
-        Prim::IntRem => ".intRem".to_owned(),
-        Prim::CheckedAdd => ".checkedAdd".to_owned(),
-        Prim::CheckedSub => ".checkedSub".to_owned(),
-        Prim::CheckedMul => ".checkedMul".to_owned(),
-        Prim::CheckedNeg => ".checkedNeg".to_owned(),
-        Prim::CheckedQuot => ".checkedQuot".to_owned(),
-        Prim::BitAnd => ".bitAnd".to_owned(),
-        Prim::BitOr => ".bitOr".to_owned(),
-        Prim::BitXor => ".bitXor".to_owned(),
-        Prim::BitNot => ".bitNot".to_owned(),
-        Prim::ShiftLeft => ".shiftLeft".to_owned(),
-        Prim::ShiftRight => ".shiftRight".to_owned(),
-        Prim::Equal => ".equal".to_owned(),
-        Prim::BoolNot => ".boolNot".to_owned(),
-        Prim::BoolAnd => ".boolAnd".to_owned(),
-        Prim::BoolOr => ".boolOr".to_owned(),
-        Prim::Append => ".append".to_owned(),
-        Prim::Length => ".length".to_owned(),
-        Prim::Index => ".index".to_owned(),
-        Prim::Slice => ".slice".to_owned(),
-        Prim::Utf8Encode => ".utf8Encode".to_owned(),
-        Prim::Utf8Decode => ".utf8Decode".to_owned(),
-        Prim::CompareBytes => ".compareBytes".to_owned(),
-        Prim::SplitExact => ".splitExact".to_owned(),
-        Prim::Join => ".join".to_owned(),
-        Prim::FormatDecimal => ".formatDecimal".to_owned(),
-        Prim::Compare => ".compare".to_owned(),
-        Prim::Convert { target } => format!("(.convert .{})", kind_ctor(*target)),
-        Prim::ParseDecimal { target } => format!("(.parseDecimal {})", render_ty(target)),
-    }
-}
-
-fn render_exprs(exprs: &[Expr]) -> Result<String, String> {
-    Ok(list(
-        exprs
-            .iter()
-            .map(render_expr)
-            .collect::<Result<Vec<_>, _>>()?,
-    ))
-}
-
-fn numbers(names: &[u64]) -> String {
-    list(names.iter().map(u64::to_string))
-}
-
-fn render_expr(expr: &Expr) -> Result<String, String> {
-    Ok(match expr {
-        Expr::Value { ty, value } => format!("(.value {} {})", render_ty(ty), render_value(value)?),
-        Expr::Var { name } => format!("(.var {name})"),
-        Expr::Let {
-            name,
-            ty,
-            bound,
-            body,
-        } => format!(
-            "(.«let» {name} {} {} {})",
-            render_ty(ty),
-            render_expr(bound)?,
-            render_expr(body)?
-        ),
-        Expr::Cond {
-            condition,
-            then_branch,
-            else_branch,
-        } => format!(
-            "(.cond {} {} {})",
-            render_expr(condition)?,
-            render_expr(then_branch)?,
-            render_expr(else_branch)?
-        ),
-        Expr::Match {
-            ty,
-            scrutinee,
-            arms,
-        } => format!(
-            "(.«match» {} {} {})",
-            render_ty(ty),
-            render_expr(scrutinee)?,
-            list(
-                arms.iter()
-                    .map(
-                        |Arm {
-                             shape,
-                             binders,
-                             body,
-                         }| {
-                            Ok(format!(
-                                "(.arm {} {} {})",
-                                render_shape(*shape),
-                                numbers(binders),
-                                render_expr(body)?
-                            ))
-                        }
-                    )
-                    .collect::<Result<Vec<_>, String>>()?
-            )
-        ),
-        Expr::Build {
-            shape,
-            ty,
-            operands,
-        } => format!(
-            "(.build {} {} {})",
-            render_shape(*shape),
-            render_ty(ty),
-            render_exprs(operands)?
-        ),
-        Expr::Call { function, operands } => {
-            format!("(.call {function} {})", render_exprs(operands)?)
-        }
-        Expr::Closure { function, captures } => {
-            format!("(.closure {function} {})", render_exprs(captures)?)
-        }
-        Expr::Apply { target, operands } => format!(
-            "(.apply {} {})",
-            render_expr(target)?,
-            render_exprs(operands)?
-        ),
-        Expr::Prim {
-            operation,
-            operands,
-        } => format!(
-            "(.prim {} {})",
-            render_prim(operation),
-            render_exprs(operands)?
-        ),
-        Expr::First { value } => format!("(.first {})", render_expr(value)?),
-        Expr::Second { value } => format!("(.second {})", render_expr(value)?),
-        Expr::Field { value, index } => format!("(.field {} {index})", render_expr(value)?),
-    })
-}
-
-/// A program as a `TargetSyntax.Program` term.
-///
-/// # Errors
-///
-/// Returns the reason a literal is malformed.
-pub fn render_program(program: &Program) -> Result<String, String> {
-    let adts = program.adts.iter().map(|adt| {
-        format!(
-            "{{ constructors := {} }}",
-            list(
-                adt.constructors
-                    .iter()
-                    .map(|fields| list(fields.iter().map(render_ty)))
-            )
-        )
-    });
-    let functions = program
-        .functions
-        .iter()
-        .map(
-            |Function {
-                 parameters,
-                 types,
-                 result,
-                 body,
-             }| {
-                Ok::<String, String>(format!(
-                    "\n    {{ parameters := {}, types := {}, result := {},\n      body := {} }}",
-                    numbers(parameters),
-                    list(types.iter().map(render_ty)),
-                    render_ty(result),
-                    render_expr(body)?
-                ))
-            },
-        )
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(format!(
-        "{{ adts := {}, functions := {} }}",
-        list_by(adts, ",\n    "),
-        list_by(functions, ",")
-    ))
 }
 
 // --- Rendering the source -----------------------------------------------------

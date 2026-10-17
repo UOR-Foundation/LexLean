@@ -115,3 +115,10 @@ Feature: preservation
     Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
     And every theorem's statement is definitionally the one the committed text certificate elaborated to
     And a wrong lemma application, a changed statement, a forged program literal, an added axiom, and a row whose policy lies are each refused
+
+  @SP-17 @build
+  Scenario: No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not.
+    Given the Rust sources of the production compiler and of the auxiliary module renderer of the Lean backend
+    When every string literal outside test code is read by a lexer and tested for Lean syntax
+    Then no literal is Lean syntax outside the allow-list, and the staged audit module is an auxiliary module of typed commands
+    And a planted template in a production source and in the auxiliary module part of the backend is each reported, and a literal in test code is not

@@ -159,6 +159,7 @@ versions, and the entries below say what each tag does and does not claim.
   `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
   Every CI job installs the same pinned toolchain, so this held by practice
   and is now checked.
+- No Lean source text template remains in the production compiler (SPEC.md §17.17, `SP-17`; stage 4 of #89): the staged audit module is an auxiliary module of typed commands, the calculus-to-Lean-text builders that certificate B's old path left (`render_ty`, `render_value`, `render_program`, `lean_type_text`, `lean_list`, `budget_options`) are deleted or moved to the conformance crate, and a lexer-level scan of `production/` and the auxiliary part of `backend/lean.rs` is shown to fail on a planted template (register 413).
 - Certificate B as kernel-term data (SPEC.md §17.17, `SP-16`; stage 2 of #89).
   The per-function correspondence of every production root is no longer written
   as Lean text by `production/rust_cert.rs` and `production/rust_term.rs`: the

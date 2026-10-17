@@ -814,27 +814,6 @@ pub fn measure_program(program: &Program) -> Measure {
     out
 }
 
-/// The `set_option` lines every certificate about a program starts with,
-/// besides those every certificate has: the removal of both of the pinned
-/// Lean's heartbeat budgets (`maxHeartbeats` 200 000 and
-/// `synthInstance.maxHeartbeats` 20 000 by default).
-///
-/// Certificate B states every arm of a match after the arms before it, and
-/// the pinned Lean spends allocations on that faster than any bound this
-/// project could state (a match on 200 constructors needs between 300 000 and
-/// 400 000 heartbeats, one on 300 needs more than 3 800 000); a function
-/// returning a large literal (a program carrying its parameters as data)
-/// costs `isDefEq` as much again; and exhausting a budget in the middle of a
-/// proof ends as a type mismatch that blames a valid certificate. The budgets
-/// were lifted only above 100 arms, which left every other large program to
-/// that misreading. The budget that remains is the wall clock,
-/// `child_timeout_ms`, whose exhaustion is a registered limit (`LLS8002`) and
-/// not a verdict on the certificate.
-#[must_use]
-pub fn budget_options(_program: &Program) -> String {
-    "set_option maxHeartbeats 0\nset_option synthInstance.maxHeartbeats 0\n".to_owned()
-}
-
 /// The size of a program: the nodes of every type and expression in it.
 #[must_use]
 pub fn program_nodes(program: &Program) -> u64 {
