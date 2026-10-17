@@ -4926,13 +4926,15 @@ bound does not see, the guarantee below stops. Certificate B is not bounded
 from these counts. The rendering of a field read prints the record's whole
 pattern, and a derivation repeats the types and patterns of the nodes around
 the node it derives, so the crate and certificate B grow with the square of a
-record's arity or of the depth of a nesting (a record of 800 fields copied
-field by field has 640 000 pattern entries in 800 reads, and a certificate B
-of 13 MB from 2400 program nodes). The lowering therefore also counts the
+record's arity or of the depth of a nesting, which no count of the program's
+nodes bounds. Certificate B is weighed by the notation it is recorded in. A
+record of 100 fields copied field by field has 10 000 pattern entries in its
+field reads and a certificate B of 393 291 bytes (39 bytes an entry at most);
+one of 800 fields has 640 000 entries. The lowering therefore also counts the
 pattern entries of the field reads, each at the arity of the record the
 expression read is stated to have and at that of the widest record where the
-program does not state it, and refuses a root whose entries, at 16 bytes each
-(the least measured is 22), would take more than `max_file_bytes` of
+program does not state it, and refuses a root whose entries, at 8 bytes each (a
+floor, not a measured least), would take more than `max_file_bytes` of
 certificate B: the crate is built after this, so a program that large is never
 rendered.
 
