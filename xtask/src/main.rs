@@ -154,6 +154,13 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.22: the standard library project is missing".into());
     }
     dirs.push(stdlib);
+    // The bootstrap project (§17.23) holds the compiler's own components as
+    // language-1.2 source under the same gates.
+    let bootstrap = root.join("bootstrap");
+    if !bootstrap.join("lexlean.toml").exists() {
+        return Err("§17.23: the bootstrap project is missing".into());
+    }
+    dirs.push(bootstrap);
     Ok(dirs)
 }
 

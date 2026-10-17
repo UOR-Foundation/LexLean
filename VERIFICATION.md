@@ -8302,3 +8302,51 @@ failure, after which the file was restored.
   check-test-inventory` refuses it as well: `` RP-13: the `bdd` recipe is
   `cargo test -p repo-conformance --all-features`, not `cargo xtask bdd`, the
   command whose arguments the inventory lists ``.
+
+### the bootstrap axiom-output parser can fail its oracle (SPEC.md §17.23)
+
+`BS-01` holds the two production roots of `LexLeanBoot.AxiomOutput` to the
+Rust they replace, `verify::axiom::parse_audit_output` and
+`ir::core::is_closed_lean_name`. The committed vectors of
+`tests/golden/axiom-parser/` (28 runs: 13 accepted, 15 rejected, every line,
+every wrapped record, and each file whole) run under the calculus evaluator;
+both roots' rendered `rust-std` packages, compiled by the pinned rustc, run
+12,000 generated audit outputs and 40,000 names. A run compares the result,
+the rejection's message, and the declaration it is attributed to. The case
+passed in 413 s locally, with the production export under the pinned Lean, and
+makes each of these plants on a copy of the source on every run:
+
+- **the continuation loses its space.** `-- conformance_bs_01`:
+
+  ```text
+  plant detected: the continuation joins without the space the unwrapped form has: run 48 on "'A.b' depends on axioms: [propext,\n  'C.d' does not depend on any axioms" ["A.b"]: the program gives error {"`A.b' depends on axioms: [propext,'C.d` is not a Lean name", some "A.b"}, the oracle error {"`A.b' depends on axioms: [propext, 'C.d` is not a Lean name", some "A.b"}
+  ```
+
+- **U+0085 is not white space** (the parser trims with `char::is_whitespace`,
+  not ASCII white space): run 34, the program rejects
+  `"\u{85}'A.b' does not depend on any axioms\u{a0}\n"` where the oracle
+  accepts it.
+- **a location number may exceed `usize`**: run 150, `A.lean:18446744073709551616:0: info: ...`
+  is accepted by the program and rejected by the oracle.
+- **axioms ordered descending**: run 1, the program yields
+  `["propext", "Quot.sound", "Classical.choice"]` where the oracle yields
+  `["Classical.choice", "Quot.sound", "propext"]`.
+- **a rejected line loses its declaration**: run 11, the program gives
+  `none` where the oracle attributes `unrecognized audit line: ...` to
+  `Demo.M.unknown`.
+- **a name segment may begin with a digit**: `isClosedLeanName` of `"9"`,
+  the program `true`, the oracle `false`.
+- **the duplicate record check is dropped**: run 76, two records for `A.b`
+  are accepted where the oracle says ``duplicate record for `A.b` ``.
+
+Removed: the source was not changed (the plants are made on copies).
+
+Authoring found three shapes the certificate generator does not accept, each
+reduced in a scratch project before being avoided in the source (reported on
+#92): a user call that is the whole `then` or `else` of an `if` (or the right
+operand of `&&`/`||`), and an `iterate_until` whose initial state holds a
+parameter, are each rejected by certificate A with an application type
+mismatch (`LLV7013`); the module binds such a call to a `let` first, and
+spells a decimal without `iterate_until`. Lean's exact axiom policy was
+aligned declaration by declaration (`Quot.sound`, `propext` for the `UInt8`
+range checks and byte comparison, as the spike on #92 measured).
