@@ -965,17 +965,27 @@ pub fn run_part(
                     entry: lowered.entry(),
                 });
             }
-            // Certificate A weighs what it is recorded as, the notation; B
-            // and E weigh their text.
+            // Every certificate held as data weighs what it is recorded as,
+            // the notation: the Lean text is the core backend's rendering,
+            // and its size is the backend's, not the certificate's.
             let weight_a = generated
                 .source
                 .as_ref()
                 .map_or(generated.text.len(), String::len);
             for (generated, weight) in std::iter::once((&generated, weight_a)).chain(
-                renderings
-                    .iter()
-                    .flat_map(|rendering| [&rendering.certificate, &rendering.composed])
-                    .map(|certificate| (certificate, certificate.text.len())),
+                renderings.iter().flat_map(|rendering| {
+                    [
+                        (
+                            &rendering.certificate,
+                            crate::production::preserve::recorded_bytes(&rendering.certificate)
+                                .len(),
+                        ),
+                        (
+                            &rendering.composed,
+                            crate::production::preserve::recorded_bytes(&rendering.composed).len(),
+                        ),
+                    ]
+                }),
             ) {
                 if weight as u64 > limits.max_file_bytes {
                     return Err(fail(Diagnostic::new(
@@ -992,8 +1002,9 @@ pub fn run_part(
             for rendering in &renderings {
                 budget
                     .charge(
-                        rendering.certificate.text.len()
-                            + rendering.composed.text.len()
+                        crate::production::preserve::recorded_bytes(&rendering.certificate).len()
+                            + crate::production::preserve::recorded_bytes(&rendering.composed)
+                                .len()
                             + rendering.crate_text.len(),
                         &root.report.root,
                         "its certificates B and E and its crates",

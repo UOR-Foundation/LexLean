@@ -15,7 +15,6 @@ pub mod lean_list;
 pub mod lower;
 pub mod preserve;
 pub mod rust_cert;
-pub mod rust_term;
 pub(crate) mod source;
 
 use std::collections::{BTreeMap, BTreeSet};

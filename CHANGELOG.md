@@ -159,6 +159,27 @@ versions, and the entries below say what each tag does and does not claim.
   `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
   Every CI job installs the same pinned toolchain, so this held by practice
   and is now checked.
+- Certificate B as kernel-term data (SPEC.md §17.17, `SP-16`; stage 2 of #89).
+  The per-function correspondence of every production root is no longer written
+  as Lean text by `production/rust_cert.rs` and `production/rust_term.rs`: the
+  compiler builds it as a native core module of schema `lexlean/core-module/2`
+  (`production/certificate/data_b`) on the vehicle of certificates E and A. The
+  program and the crate are kernel terms (the crate constructor for constructor
+  as the text printed it), each of the 49 rules of `Corr` is applied with every
+  argument written (the judgment the aligner derives, and the values it holds),
+  `FunOK` is written out as its witnesses and the derivation, and `crate_ok` is
+  a case analysis on the function index in place of a tactic block. The library
+  did not grow: no explicit-argument form was needed, so the language-1.2
+  identity does not move for this stage. The verify record holds the module in
+  the authoring notation (`R<i>/RustStd.lex.tex` in place of `.lean`), which
+  reads back to the data byte for byte, and `preservation.json` and the
+  production export bind those bytes. The statements of the 76 certificates B
+  of the four corpora are those the text stated, up to the kernel's
+  definitional equality (`tests/preservation-certificates/B-STATEMENTS.md`).
+  The aligner moved to `production/certificate/data_b/align.rs`, the Rust-term
+  renderer is gone, and the Rust machine's conformance harness evaluates the
+  crates by the same kernel terms. No diagnostic code is new; the register
+  gains `SP-16` (394 rows).
 - Certificate A as kernel-term data (SPEC.md §17.17, `SP-15`; stage 3 of #89).
   The preservation certificate of every production root is no longer written as
   Lean text by `production/certificate.rs`: the compiler builds it as a native

@@ -107,3 +107,11 @@ Feature: preservation
     Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
     And every theorem's statement is definitionally the one the committed text certificate elaborated to
     And a wrong lemma application, a changed statement, a forged program literal, and an added axiom are each refused
+
+  @SP-16 @build
+  Scenario: Certificate B of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the rendered crate, and the recorded types of the preservation library's correspondence rules, every argument and universe level explicit, so that no Lean text template for certificate B remains in the production compiler; its program and crate literals, flags, per-function derivations, and assembly are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly and the audit module prints and checks them, and a wrong lemma application, a changed statement, a forged program literal, an added axiom, or a row whose policy lies is refused.
+    Given every production root of the committed examples, the lowered programs, the rendered crates, and the native preservation library
+    When certificate B of each root is built as a core module, rendered by the core backend, recorded in the notation, and verified under the pinned Lean
+    Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
+    And every theorem's statement is definitionally the one the committed text certificate elaborated to
+    And a wrong lemma application, a changed statement, a forged program literal, an added axiom, and a row whose policy lies are each refused

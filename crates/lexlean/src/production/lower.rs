@@ -533,15 +533,17 @@ pub const COSTS_A: Costs = Costs {
     hex_digit: 433,
 };
 
-/// What certificate B costs at the least.
+/// What certificate B costs at the least, in the authoring notation it is
+/// recorded in and weighed by, which takes about a quarter of the bytes of its
+/// Lean text.
 pub const COSTS_B: Costs = Costs {
-    base_bytes: 800,
+    base_bytes: 200,
     type_node: 0,
-    expr_node: 1072,
-    shape_node: 89,
+    expr_node: 268,
+    shape_node: 22,
     arm_pair: 0,
-    string_byte: 23,
-    hex_digit: 59,
+    string_byte: 6,
+    hex_digit: 15,
 };
 
 /// What certificate E costs at the least.
@@ -844,10 +846,11 @@ pub fn program_nodes(program: &Program) -> u64 {
 /// least: a read of a record of `n` fields prints a pattern of `n` entries
 /// into the crate's term, into the statement of the function, and into the
 /// derivation, and the smallest of the three families measured (a record of
-/// `n` fields copied field by field) has 22 bytes in each slot. The least
+/// `n` fields copied field by field) has 22 bytes of Lean text in each slot,
+/// and about half that in the notation it is weighed by. The least
 /// is used because a refusal on it is a refusal of a certificate that is
 /// certainly too large.
-pub const CERTIFICATE_BYTES_PER_SLOT: u64 = 16;
+pub const CERTIFICATE_BYTES_PER_SLOT: u64 = 8;
 
 /// The entries of the patterns the Rust rendering of `program` prints for
 /// its field reads: for each read of a field of a record, the arity of that

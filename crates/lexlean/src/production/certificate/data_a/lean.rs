@@ -13,7 +13,7 @@ impl Writer<'_, '_> {
     // --- Numbers and Booleans ---------------------------------------------
 
     /// `n : Nat` as the elaborator writes a numeral.
-    pub(super) fn nat_lit(&mut self, n: &str) -> Term {
+    pub(in crate::production::certificate) fn nat_lit(&mut self, n: &str) -> Term {
         let raw = self.b.nat_text(n);
         let nat = self.b.konst("Nat");
         let of_nat = self.b.konst0("OfNat.ofNat");
@@ -22,19 +22,19 @@ impl Writer<'_, '_> {
         self.b.apps(of_nat, &[nat, raw, inst])
     }
 
-    pub(super) fn nat_u(&mut self, n: u64) -> Term {
+    pub(in crate::production::certificate) fn nat_u(&mut self, n: u64) -> Term {
         self.nat_lit(&n.to_string())
     }
 
-    pub(super) fn tru(&mut self) -> Term {
+    pub(in crate::production::certificate) fn tru(&mut self) -> Term {
         self.b.konst("Bool.true")
     }
 
-    pub(super) fn fls(&mut self) -> Term {
+    pub(in crate::production::certificate) fn fls(&mut self) -> Term {
         self.b.konst("Bool.false")
     }
 
-    pub(super) fn boolean(&mut self, value: bool) -> Term {
+    pub(in crate::production::certificate) fn boolean(&mut self, value: bool) -> Term {
         if value {
             self.tru()
         } else {
@@ -350,11 +350,11 @@ impl Writer<'_, '_> {
 
     // --- The target program -----------------------------------------------
 
-    fn int_kind(&mut self, kind: IntKind) -> Term {
+    pub(in crate::production::certificate) fn int_kind(&mut self, kind: IntKind) -> Term {
         self.ts(&format!("IntKind.{}", kind.name()))
     }
 
-    pub(super) fn ty_term(&mut self, ty: &Ty) -> Term {
+    pub(in crate::production::certificate) fn ty_term(&mut self, ty: &Ty) -> Term {
         match ty {
             Ty::Unit => self.ts("Ty.unit"),
             Ty::Bool => self.ts("Ty.bool"),
@@ -407,7 +407,11 @@ impl Writer<'_, '_> {
     }
 
     /// A numeral of a fixed-width or mathematical integer type.
-    pub(super) fn int_literal(&mut self, type_name: &str, text: &str) -> Term {
+    pub(in crate::production::certificate) fn int_literal(
+        &mut self,
+        type_name: &str,
+        text: &str,
+    ) -> Term {
         let (negative, digits) = match text.strip_prefix('-') {
             Some(rest) => (true, rest),
             None => (false, text),
@@ -565,7 +569,7 @@ impl Writer<'_, '_> {
         self.b.app(head, number)
     }
 
-    pub(super) fn shape_term(&mut self, shape: Shape) -> Term {
+    pub(in crate::production::certificate) fn shape_term(&mut self, shape: Shape) -> Term {
         let name = match shape {
             Shape::None => "none",
             Shape::Some => "some",
@@ -648,7 +652,10 @@ impl Writer<'_, '_> {
     }
 
     /// A match arm as a `TargetSyntax.Arm` term.
-    pub(super) fn arm_term(&mut self, arm: &Arm) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn arm_term(
+        &mut self,
+        arm: &Arm,
+    ) -> Result<Term, String> {
         let Arm {
             shape,
             binders,
@@ -662,7 +669,10 @@ impl Writer<'_, '_> {
     }
 
     /// A list of match arms.
-    pub(super) fn arms_list(&mut self, arms: &[Arm]) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn arms_list(
+        &mut self,
+        arms: &[Arm],
+    ) -> Result<Term, String> {
         let ty = self.ts("Arm");
         let items = arms
             .iter()
@@ -680,14 +690,17 @@ impl Writer<'_, '_> {
         Ok(self.b.list(ty, &items))
     }
 
-    pub(super) fn numbers_term(&mut self, numbers: &[u64]) -> Term {
+    pub(in crate::production::certificate) fn numbers_term(&mut self, numbers: &[u64]) -> Term {
         let nat = self.b.konst("Nat");
         let items: Vec<Term> = numbers.iter().map(|n| self.nat_u(*n)).collect();
         self.b.list(nat, &items)
     }
 
     /// A program expression as a `TargetSyntax.Expr` term.
-    pub(super) fn expr_term(&mut self, expr: &Expr) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn expr_term(
+        &mut self,
+        expr: &Expr,
+    ) -> Result<Term, String> {
         let key = std::ptr::from_ref(expr);
         if let Some(&done) = self.exprs.get(&key) {
             return Ok(done);
@@ -799,7 +812,10 @@ impl Writer<'_, '_> {
     }
 
     /// The function `function` of the program as a `TargetSyntax.Function`.
-    pub(super) fn function_term(&mut self, function: &Function) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn function_term(
+        &mut self,
+        function: &Function,
+    ) -> Result<Term, String> {
         let Function {
             parameters,
             types,
@@ -817,7 +833,7 @@ impl Writer<'_, '_> {
     }
 
     /// `__prog`'s value: the lowered program as a `TargetSyntax.Program`.
-    pub(super) fn program_value(&mut self) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn program_value(&mut self) -> Result<Term, String> {
         let program: &Program = self.gen.program;
         let adt_ty = self.ts("Adt");
         let ty = self.ts("Ty");

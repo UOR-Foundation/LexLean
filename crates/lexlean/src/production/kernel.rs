@@ -16,7 +16,7 @@
 //! axioms from the library registry, and hands the finished nodes to a
 //! [`CoreModule`].
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::ir::core::{CoreBinderInfo, CoreLevel, CoreModule, CoreNode};
 
@@ -54,6 +54,16 @@ pub struct Builder {
     lemmas: BTreeSet<String>,
     /// The next placeholder number ([`ext`]).
     fresh: usize,
+    /// The nodes known to mention no lemma placeholder ([`ext`]): a term the
+    /// generator substitutes for a placeholder is never walked again.
+    clean: std::cell::RefCell<HashSet<Term>>,
+    /// The lemmas opened so far, by name: a lemma's placeholders are the same
+    /// for every application, each of which keeps its own solutions, so its
+    /// type is instantiated once.
+    opened: HashMap<String, ext::Open>,
+    /// The loose-variable bound of every node a walk has passed
+    /// ([`Self::has_loose`]).
+    loose: std::cell::RefCell<HashMap<Term, usize>>,
 }
 
 /// The empty binder name, which the notation writes as `_`.
@@ -378,25 +388,72 @@ impl Builder {
     /// Whether `term` mentions a loose variable at or above `cutoff`.
     #[must_use]
     pub fn has_loose(&self, term: Term, cutoff: usize) -> bool {
-        match &self.nodes[term] {
-            CoreNode::BVar { i } => *i >= cutoff,
-            CoreNode::Sort { .. }
-            | CoreNode::Const { .. }
-            | CoreNode::Nat { .. }
-            | CoreNode::String { .. } => false,
-            CoreNode::App { f, x } => self.has_loose(*f, cutoff) || self.has_loose(*x, cutoff),
-            CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
-                self.has_loose(*t, cutoff) || self.has_loose(*v, cutoff + 1)
-            }
-            CoreNode::Let { t, v, body, .. } => {
-                self.has_loose(*t, cutoff)
-                    || self.has_loose(*v, cutoff)
-                    || self.has_loose(*body, cutoff + 1)
-            }
-            CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => {
-                self.has_loose(*x, cutoff)
-            }
+        self.loose_bound(term) > cutoff
+    }
+
+    /// The least `k` such that every loose variable of `term` is below `k`
+    /// (zero for a closed term), remembered for every node it passes: the
+    /// DAG is shared, and a walk that does not remember is as long as the
+    /// tree it unfolds to.
+    fn loose_bound(&self, root: Term) -> usize {
+        if let Some(&known) = self.loose.borrow().get(&root) {
+            return known;
         }
+        let mut stack: Vec<(Term, bool)> = vec![(root, false)];
+        let mut found: HashMap<Term, usize> = HashMap::new();
+        while let Some((term, expanded)) = stack.pop() {
+            if found.contains_key(&term) {
+                continue;
+            }
+            if let Some(&known) = self.loose.borrow().get(&term) {
+                found.insert(term, known);
+                continue;
+            }
+            let children: Vec<Term> = match &self.nodes[term] {
+                CoreNode::BVar { i } => {
+                    found.insert(term, i + 1);
+                    continue;
+                }
+                CoreNode::Sort { .. }
+                | CoreNode::Const { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. } => {
+                    found.insert(term, 0);
+                    continue;
+                }
+                CoreNode::App { f, x } => vec![*f, *x],
+                CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => vec![*t, *v],
+                CoreNode::Let { t, v, body, .. } => vec![*t, *v, *body],
+                CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => vec![*x],
+            };
+            if !expanded {
+                stack.push((term, true));
+                for child in children {
+                    stack.push((child, false));
+                }
+                continue;
+            }
+            let bound = |child: Term| found.get(&child).copied().unwrap_or(0);
+            let value = match &self.nodes[term] {
+                CoreNode::App { f, x } => bound(*f).max(bound(*x)),
+                CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
+                    bound(*t).max(bound(*v).saturating_sub(1))
+                }
+                CoreNode::Let { t, v, body, .. } => {
+                    bound(*t).max(bound(*v)).max(bound(*body).saturating_sub(1))
+                }
+                CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => bound(*x),
+                CoreNode::BVar { .. }
+                | CoreNode::Sort { .. }
+                | CoreNode::Const { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. } => 0,
+            };
+            found.insert(term, value);
+        }
+        let result = found[&root];
+        self.loose.borrow_mut().extend(found);
+        result
     }
 
     // --- Importing from another module ------------------------------------

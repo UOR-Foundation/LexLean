@@ -4,12 +4,15 @@
 # natural addition turned into its subtraction: the rendering no longer
 # realizes the program, no derivation relates them, and verification
 # refuses the certificate while certificate A still holds (SPEC.md 17.17).
+# The certificate is kernel-term data rendered by the core backend, so the
+# swap is made in the data the Lean text carries: the constant node of the
+# runtime item, which the crate literal and the derivations share.
 real="$(dirname "$(readlink -f "$(dirname "$0")/lean")")/lake"
 if [ "$1" = "env" ] && [ "$2" = "lean" ]; then
   for source; do :; done
   case "$source" in
     */preserve-src/LexLeanPreserve/C*/R*/Rust*.lean)
-      sed 's/(\.runtime \.natAdd)/(.runtime .natSub)/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
+      sed 's/RustSyntax\.Item\.natAdd/RustSyntax.Item.natSub/g' "$source" > "$source.tmp" && mv "$source.tmp" "$source"
       ;;
   esac
 fi

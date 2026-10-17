@@ -221,7 +221,12 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                         &module_b,
                         &module_e,
                         fallible,
-                        composed.text.len() as u64 / 2,
+                        composed
+                            .source
+                            .as_ref()
+                            .map_or(composed.text.len(), String::len)
+                            as u64
+                            / 2,
                     ))
                 })
                 .collect();
@@ -1154,6 +1159,16 @@ pub fn certify(project: &P, name: &str) -> Report {
     let differential = crate::differential::compare(&text, &denotes)
         .unwrap_or_else(|failures| panic!("{name}: differential:\n{failures}"));
     let crates = crate::machine::crates(&certified);
+    let compiled = compile_text(
+        scratch.path(),
+        crate::machine::CRATES_MODULE,
+        &crate::machine::crate_module(&crates),
+    );
+    assert!(
+        compiled.status.success(),
+        "{name}: the crates' module was rejected:\n{}",
+        joined(&compiled)
+    );
     let path = scratch.path().join("src/LexLeanPreserve/Machine.lean");
     std::fs::write(&path, crate::machine::module(&crates, &cases)).expect("write");
     let output = lean(scratch.path(), &[path.display().to_string()]);
@@ -2555,15 +2570,25 @@ pub fn entry_renderings(certified: &[Certified]) -> Vec<Rendering> {
     out
 }
 
-/// The rules of the correspondence a certificate's derivations use.
+/// The rules of the correspondence a certificate's derivations use: the
+/// constructors of `Corr` its data names.
+///
+/// # Panics
+///
+/// Panics when the certificate is not held as data.
 #[must_use]
-pub fn rules_used(text: &str) -> std::collections::BTreeSet<String> {
-    text.split("(Corr.")
-        .skip(1)
-        .map(|rest| {
-            rest.chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect()
+pub fn rules_used(certificate: &Certificate) -> std::collections::BTreeSet<String> {
+    certificate
+        .data
+        .as_ref()
+        .expect("certificate B is data")
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            lexlean::ir::core::CoreNode::Const { n, .. } => n
+                .strip_prefix("LexLeanPreservation.Rust.Corr.")
+                .map(str::to_owned),
+            _ => None,
         })
         .collect()
 }
@@ -2627,14 +2652,22 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
                 .expect("the site was counted");
             let base = format!("LexLeanPreserve.Planted.{mutation:?}F{index}N{function}O{ordinal}");
             let stale_module = format!("{base}.Stale");
-            let stale_text = rendering
-                .certificate
-                .text
-                .replace(
-                    &lexlean::production::rust_term::crate_term(&rendering.krate),
-                    &lexlean::production::rust_term::crate_term(&mutated),
+            let stale_data = lexlean::production::certificate::data_b::renamed(
+                &lexlean::production::certificate::data_b::restated_over(
+                    rendering
+                        .certificate
+                        .data
+                        .as_ref()
+                        .expect("certificate B is data"),
+                    &rendering.certificate.module,
+                    &mutated,
                 )
-                .replace(&rendering.certificate.module, &stale_module);
+                .expect("the derivation is restated over the mutated crate"),
+                &rendering.certificate.module,
+                &stale_module,
+            );
+            let stale_text = lexlean::backend::core::lean_text_legacy(&stale_data, &stale_module)
+                .expect("the restatement renders");
             let mut modules = vec![(stale_module, stale_text)];
             let realigned_module = format!("{base}.Realigned");
             let unaligned =

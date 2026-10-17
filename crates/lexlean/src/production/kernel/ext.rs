@@ -541,8 +541,64 @@ impl Builder {
     /// Whether `term` mentions a lemma's placeholder, a binder nothing solved.
     #[must_use]
     pub fn has_unsolved(&self, term: Term) -> bool {
-        let mut seen = std::collections::HashSet::new();
-        self.placeholder_walk(term, &mut seen, false)
+        !self.meta_clean(term)
+    }
+
+    /// Whether `term` mentions no lemma placeholder. A node that mentions
+    /// none is remembered, so the big values a lemma's binders are solved to
+    /// (the arms of a match, the lists a derivation threads) are walked once
+    /// and not at every rule applied: without this a match of `n` arms costs
+    /// `n²`.
+    fn meta_clean(&self, root: Term) -> bool {
+        if self.clean.borrow().contains(&root) {
+            return true;
+        }
+        let mut status: HashMap<Term, bool> = HashMap::new();
+        let mut stack: Vec<(Term, bool)> = vec![(root, false)];
+        while let Some((term, expanded)) = stack.pop() {
+            if status.contains_key(&term) {
+                continue;
+            }
+            if self.clean.borrow().contains(&term) {
+                status.insert(term, true);
+                continue;
+            }
+            let children: Vec<Term> = match &self.nodes[term] {
+                CoreNode::Const { n, .. } => {
+                    status.insert(term, !n.starts_with(META));
+                    continue;
+                }
+                CoreNode::BVar { .. }
+                | CoreNode::Sort { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. } => {
+                    status.insert(term, true);
+                    continue;
+                }
+                CoreNode::App { f, x } => vec![*f, *x],
+                CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => vec![*t, *v],
+                CoreNode::Let { t, v, body, .. } => vec![*t, *v, *body],
+                CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => vec![*x],
+            };
+            if !expanded {
+                stack.push((term, true));
+                for child in children {
+                    stack.push((child, false));
+                }
+                continue;
+            }
+            let all = children
+                .iter()
+                .all(|child| status.get(child).copied().unwrap_or(false));
+            status.insert(term, all);
+        }
+        let mut clean = self.clean.borrow_mut();
+        for (term, ok) in &status {
+            if *ok {
+                clean.insert(*term);
+            }
+        }
+        status[&root]
     }
 
     fn placeholder_walk(
@@ -737,6 +793,9 @@ impl Builder {
         if let Some(&done) = memo.get(&term) {
             return done;
         }
+        if self.meta_clean(term) {
+            return term;
+        }
         let out = match self.nodes[term].clone() {
             CoreNode::Const { n, .. } => map.get(&n).copied().unwrap_or(term),
             CoreNode::BVar { .. }
@@ -799,6 +858,15 @@ impl Builder {
         ty: Term,
         hints: &[(&str, Term)],
     ) -> Result<Open, String> {
+        if let Some(template) = self.opened.get(name) {
+            let mut open = template.clone();
+            for binder in &open.binders {
+                if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder.name) {
+                    open.solved.insert(binder.id, *hint);
+                }
+            }
+            return Ok(open);
+        }
         let mut open = Open {
             name: name.to_owned(),
             head,
@@ -811,9 +879,6 @@ impl Builder {
         while let CoreNode::Forall { n, b, t, v } = &self.nodes[ty] {
             let (binder, info, domain, body) = (n.clone(), *b, *t, *v);
             let (id, placeholder) = self.meta();
-            if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder) {
-                open.solved.insert(id, *hint);
-            }
             open.binders.push(OpenBinder {
                 name: binder,
                 explicit: info == CoreBinderInfo::Explicit,
@@ -824,6 +889,12 @@ impl Builder {
             ty = self.instantiate_beta(body, placeholder);
         }
         open.conclusion = ty;
+        self.opened.insert(name.to_owned(), open.clone());
+        for binder in &open.binders {
+            if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder.name) {
+                open.solved.insert(binder.id, *hint);
+            }
+        }
         Ok(open)
     }
 

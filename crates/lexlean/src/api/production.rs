@@ -914,11 +914,6 @@ fn require_compiler_input_identity(bytes: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
-/// The verified-directory path of a certificate module.
-fn certificate_path(module: &str) -> String {
-    format!("{}.lean", module.replace('.', "/"))
-}
-
 // ---------------------------------------------------------------------------
 // Build
 // ---------------------------------------------------------------------------
@@ -1292,8 +1287,8 @@ fn build_inner(
             )));
         }
         let program = add(format!("evidence/program/R{index}.json"), program_bytes);
-        // Certificates A and E are kernel-term data, recorded in the
-        // authoring notation (SPEC.md §17.17); B is Lean text.
+        // Certificates A, B and E are kernel-term data, recorded in the
+        // authoring notation (SPEC.md §17.17).
         let a_path = crate::production::preserve::notation_path(&preserved.module);
         let certificate_a = CertificateRef {
             role: CertificateRole::A,
@@ -1346,12 +1341,7 @@ fn build_inner(
                     &rendering.composed.theorem,
                 ),
             ] {
-                let path = match role {
-                    CertificateRole::A | CertificateRole::E => {
-                        crate::production::preserve::notation_path(module)
-                    }
-                    CertificateRole::B => certificate_path(module),
-                };
+                let path = crate::production::preserve::notation_path(module);
                 certificates.push(CertificateRef {
                     role,
                     module: module.clone(),
@@ -1840,11 +1830,7 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                         && stated_certificate.file.path
                             == format!(
                                 "evidence/certificates/{}",
-                                match role {
-                                    CertificateRole::A | CertificateRole::E =>
-                                        crate::production::preserve::notation_path(module),
-                                    CertificateRole::B => certificate_path(module),
-                                }
+                                crate::production::preserve::notation_path(module)
                             )
                         && (
                             stated_certificate.file.byte_length,
