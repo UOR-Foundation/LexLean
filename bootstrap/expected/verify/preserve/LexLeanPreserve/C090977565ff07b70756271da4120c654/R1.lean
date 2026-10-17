@@ -12,7 +12,7 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
 set_option linter.unusedVariables false
-namespace LexLeanPreserve.Cadb40bbfc73b1dc6b7a95dab0c348a27.R1
+namespace LexLeanPreserve.C090977565ff07b70756271da4120c654.R1
 
 def __prog : _root_.LexLeanTarget.TargetSyntax.Program :=
   { adts := [{ constructors := [[.bytes, (.option .bytes)]] },
@@ -837,4 +837,4 @@ def denote (stdout : ByteArray) (expected : (List ByteArray)) : _root_.LexLeanPr
 theorem root (stdout : ByteArray) (expected : (List ByteArray)) : _root_.LexLeanPreservation.RunConv __prog 0 [(_root_.LexLeanTarget.TargetSyntax.Value.bytes stdout), ((_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.bytes) expected)] (_root_.LexLeanPreservation.Rel (__fits_0 stdout expected) ((_root_.LexLeanPreservation.encExcept __enc_0 (_root_.LexLeanPreservation.encList (_root_.LexLeanPreservation.encPair _root_.LexLeanTarget.TargetSyntax.Value.bytes (_root_.LexLeanPreservation.encList _root_.LexLeanTarget.TargetSyntax.Value.bytes)))) (LexLeanBoot.AxiomOutput.parseAuditOutput stdout expected))) :=
   _root_.LexLeanPreservation.run_of_funRel (__rel_0 stdout expected)
 
-end LexLeanPreserve.Cadb40bbfc73b1dc6b7a95dab0c348a27.R1
+end LexLeanPreserve.C090977565ff07b70756271da4120c654.R1
