@@ -160,3 +160,11 @@ Feature: verification
     When it is verified with and without telemetry
     Then the verified directories are byte-identical and the telemetry directory holds stage, frontier and process lines of the closed vocabulary
     And a verified directory in which a telemetry key is planted is refused
+
+  @VR-23 @build
+  Scenario: A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused.
+    Given a committed multi-module example project and a plan of two shards and a join over its import graph
+    When it is verified whole and as the parts of one run
+    Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
+    And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused
+    And a join reading a replay record whose executable digest is not its own leanchecker's is refused

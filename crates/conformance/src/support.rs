@@ -24,6 +24,16 @@ pub fn repo_root() -> Utf8PathBuf {
         .to_path_buf()
 }
 
+/// Whether a walked directory is build output: one that holds a
+/// `CACHEDIR.TAG`, which Cargo writes in every target directory whatever the
+/// directory is called, so a build directory kept beside the checkout's
+/// sources (`target-check`, say) is skipped like `target` and is not read as
+/// a source tree.
+#[must_use]
+pub fn holds_cache_tag(entry: &walkdir::DirEntry) -> bool {
+    entry.file_type().is_dir() && entry.path().join("CACHEDIR.TAG").is_file()
+}
+
 /// A proof library (SPEC.md §17.17, §17.18) is LexLean source and has no
 /// independently authored Lean implementation anywhere in the release tree, the
 /// permanent condition `VR-19` states of the Atlas: no Lean file lies under a
@@ -45,7 +55,9 @@ pub fn assert_library_has_no_handwritten_lean(prefix: &str, oracle: &str) {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            !(entry.file_type().is_dir() && matches!(name.as_ref(), "target" | ".git" | ".lexlean"))
+            !(entry.file_type().is_dir()
+                && (matches!(name.as_ref(), "target" | ".git" | ".lexlean")
+                    || holds_cache_tag(entry)))
         });
     for entry in walker.flatten() {
         let path = entry.path();
@@ -123,6 +135,14 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
         SnapshotSemanticDeclaration::Verifier { subject, candidate, .. } => {
             ty(&subject.r#type) + ty(&candidate.r#type)
         }
+        SnapshotSemanticDeclaration::Tokenizer { type_parameters, vocabulary, axioms, .. } => {
+            type_parameters.len() + vocabulary.type_arguments.len() + axioms.len()
+        }
+        SnapshotSemanticDeclaration::ContextWindow { capacity, .. } => *capacity as usize,
+        SnapshotSemanticDeclaration::TextGenerator { max_tokens, scorer, .. } => {
+            *max_tokens as usize + scorer.type_arguments.len()
+        }
+        SnapshotSemanticDeclaration::TextClassifier { model, .. } => model.type_arguments.len(),
         SnapshotSemanticDeclaration::Reasoner { observe, rules, strategy, answer, claims, .. } => {
             observe.as_ref().map_or(0, term)
                 + rules.len()
@@ -253,6 +273,11 @@ fn prove(value: &SnapshotProof) -> usize {
         SnapshotProof::Apply { type_arguments, arguments, .. } => {
             type_arguments.iter().map(ty).sum::<usize>() + arguments.iter().map(term).sum::<usize>()
         }
+        SnapshotProof::Law { type_arguments, arguments, premises, .. } => {
+            type_arguments.iter().map(ty).sum::<usize>()
+                + arguments.iter().map(term).sum::<usize>()
+                + premises.len()
+        }
     }
 }
 "#,
@@ -360,6 +385,30 @@ impl P {
         copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
         let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
         Self { temp, root }
+    }
+
+    /// A fresh copy of the committed source-package workspace
+    /// (`tests/packages/workspace`, SPEC.md §10.5): `root` is the member
+    /// project `member` (`app`, `lib`, or `base`), and the workspace itself is
+    /// [`Self::workspace_dir`]. The members carry no lock and no build output.
+    #[must_use]
+    pub fn package_workspace(member: &str) -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-packages-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("tests/packages/workspace");
+        assert!(source.is_dir(), "the package workspace fixture is required");
+        copy_tree(source.as_std_path(), temp.path(), &[]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().join(member)).expect("utf8 tempdir");
+        assert!(root.is_dir(), "`{member}` is a member of the fixture");
+        Self { temp, root }
+    }
+
+    /// The directory holding the project copies of [`Self::package_workspace`].
+    #[must_use]
+    pub fn workspace_dir(&self) -> Utf8PathBuf {
+        Utf8PathBuf::from_path_buf(self.temp.path().to_path_buf()).expect("utf8 tempdir")
     }
 
     /// A fresh copy of the preservation library's own project (SPEC.md
@@ -475,6 +524,36 @@ impl P {
         );
         copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
         let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
+    /// A fresh copy of the bootstrap project (SPEC.md §17.23), without build
+    /// output or expected records, beside the standard library it imports as a
+    /// source package (§10.5) and the repository's workspace file.
+    #[must_use]
+    pub fn bootstrap() -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-bootstrap-case-")
+            .tempdir()
+            .expect("tempdir");
+        for member in ["bootstrap", "stdlib"] {
+            let source = repo_root().join(member);
+            assert!(
+                source.is_dir(),
+                "the committed `{member}` project is required"
+            );
+            copy_tree(
+                source.as_std_path(),
+                &temp.path().join(member),
+                &[".lexlean", "expected"],
+            );
+        }
+        std::fs::copy(
+            repo_root().join("lexlean-workspace.toml").as_std_path(),
+            temp.path().join("lexlean-workspace.toml"),
+        )
+        .expect("the workspace file");
+        let root = Utf8PathBuf::from_path_buf(temp.path().join("bootstrap")).expect("utf8");
         Self { temp, root }
     }
 
@@ -2273,6 +2352,131 @@ pub fn identity_tree_digest(rows: &[(&str, &[u8])]) -> lexlean::artifact::conten
         .map(|(path, bytes)| (*path, bytes.as_ref()))
         .collect();
     lexlean::artifact::content_id::tree_digest(&borrowed)
+}
+
+/// The normative tree the compiler-semantics ID is the digest of, read from
+/// disk: every file of `language/`, `schemas/` and the two golden fixture
+/// directories, as (path, bytes) rows in bytewise path order (SPEC.md §21.2).
+///
+/// # Panics
+///
+/// Panics when a file cannot be read.
+#[must_use]
+pub fn normative_rows() -> Vec<(String, Vec<u8>)> {
+    let root = repo_root();
+    let mut files: Vec<(String, Vec<u8>)> = Vec::new();
+    for dir in [
+        "language",
+        "schemas",
+        "tests/golden/axiom-parser",
+        "tests/golden/canonical-json",
+    ] {
+        for entry in walkdir::WalkDir::new(root.join(dir).as_std_path())
+            .into_iter()
+            .flatten()
+        {
+            if entry.file_type().is_file() {
+                let relative = format!(
+                    "{dir}/{}",
+                    entry
+                        .path()
+                        .strip_prefix(root.join(dir).as_std_path())
+                        .expect("under dir")
+                        .to_string_lossy()
+                        .replace('\\', "/")
+                );
+                files.push((relative, std::fs::read(entry.path()).expect("read")));
+            }
+        }
+    }
+    files.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+    files
+}
+
+/// The files `SPEC.md` §21.2 lists as introduced solely for language 1.2 and
+/// solely for language 1.1: the older languages' compiler-semantics IDs leave
+/// them out. Read from the specification, not from the compiler.
+///
+/// # Panics
+///
+/// Panics when §21.2 does not state a list.
+#[must_use]
+pub fn introduced_later() -> (Vec<String>, Vec<String>) {
+    let spec = spec_text();
+    let section = spec
+        .split("### 21.2 Compiler-semantics ID")
+        .nth(1)
+        .and_then(|rest| rest.split("### 21.3").next())
+        .expect("§21.2");
+    let listed = |start: &str, end: &str| -> Vec<String> {
+        let text = section
+            .split(start)
+            .nth(1)
+            .and_then(|rest| rest.split(end).next())
+            .unwrap_or_else(|| panic!("§21.2 states `{start}`"));
+        let mut out = Vec::new();
+        for item in text.split('`').skip(1).step_by(2) {
+            match (item.find('{'), item.find('}')) {
+                (Some(open), Some(close)) => {
+                    for choice in item[open + 1..close].split(',') {
+                        out.push(format!("{}{choice}{}", &item[..open], &item[close + 1..]));
+                    }
+                }
+                _ => out.push(item.to_owned()),
+            }
+        }
+        assert!(!out.is_empty(), "§21.2 lists the files after `{start}`");
+        out
+    };
+    (
+        listed(
+            "The language-1.1 ID excludes the files introduced solely for 1.2:",
+            "The language-1.0 ID",
+        ),
+        listed(
+            "excludes the files introduced solely for 1.1:",
+            "Adding a file",
+        ),
+    )
+}
+
+/// The compiler-semantics IDs of languages 1.0, 1.1 and 1.2 recomputed from
+/// rows of the normative tree (path and bytes, in bytewise path order): 1.2
+/// over every row, and the older two over the rows §21.2 does not list as
+/// introduced later (`RP-10`).
+#[must_use]
+pub fn semantics_ids(
+    rows: &[(&str, &[u8])],
+) -> (
+    lexlean::artifact::content_id::Sha256Digest,
+    lexlean::artifact::content_id::Sha256Digest,
+    lexlean::artifact::content_id::Sha256Digest,
+) {
+    let (only_1_2, only_1_1) = introduced_later();
+    let excluded = |path: &str, lists: &[&Vec<String>]| {
+        lists.iter().any(|list| {
+            list.iter().any(|item| {
+                if item.ends_with('/') {
+                    path.starts_with(item.as_str())
+                } else {
+                    path == item
+                }
+            })
+        })
+    };
+    let filtered = |lists: &[&Vec<String>]| {
+        let kept: Vec<(&str, &[u8])> = rows
+            .iter()
+            .copied()
+            .filter(|(path, _)| !excluded(path, lists))
+            .collect();
+        identity_tree_digest(&kept)
+    };
+    (
+        filtered(&[&only_1_2, &only_1_1]),
+        filtered(&[&only_1_2]),
+        identity_tree_digest(rows),
+    )
 }
 
 /// Whether `text` has a semantic or tooling module written in the authoring

@@ -99,6 +99,34 @@ title = "Duplicate module or case-folded path collision"
 statement = "Duplicate module or case-folded path collision."
 
 [[error]]
+code = "LLC0105"
+class = "cli-configuration"
+exit = 2
+title = "Source package is not the package the lock pins"
+statement = "A source package's version, source, module prefix, manifest digest, tree digest, or declared packages differ from the lock's row, naming the package and both digests."
+
+[[error]]
+code = "LLC0106"
+class = "cli-configuration"
+exit = 2
+title = "Source package undeclared or declared with two sources"
+statement = "The lock pins a source package the project does not declare, or one identifier names two sources in the closure."
+
+[[error]]
+code = "LLC0107"
+class = "cli-configuration"
+exit = 2
+title = "Module prefix claimed by two sources"
+statement = "A module prefix is claimed by the project and a source package, or by two source packages, equal or one beneath the other, or an import names a module both the project and a package provide."
+
+[[error]]
+code = "LLC0108"
+class = "cli-configuration"
+exit = 2
+title = "Source package outside the workspace rule"
+statement = "A project that declares a source package is outside any workspace or is not a member of it, a package is not a member of the workspace, or the workspace file or a package is malformed."
+
+[[error]]
 code = "LLC0201"
 class = "cli-configuration"
 exit = 2
@@ -293,6 +321,13 @@ class = "language"
 exit = 1
 title = "Model artifact bytes violate the declared schema, type, or role"
 statement = "Model artifact bytes violate the declared schema, type, or role."
+
+[[error]]
+code = "LLR3009"
+class = "language"
+exit = 1
+title = "Import of a module of a source package the importing scope does not declare"
+statement = "A module imports a module of a source package that the project, or the package the module belongs to, does not declare."
 
 [[error]]
 code = "LLS8001"

@@ -88,6 +88,30 @@ Duplicate module or case-folded path collision.
 
 Class: `cli-configuration`. Exit code: 2.
 
+## `LLC0105` --- Source package is not the package the lock pins
+
+A source package's version, source, module prefix, manifest digest, tree digest, or declared packages differ from the lock's row, naming the package and both digests.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0106` --- Source package undeclared or declared with two sources
+
+The lock pins a source package the project does not declare, or one identifier names two sources in the closure.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0107` --- Module prefix claimed by two sources
+
+A module prefix is claimed by the project and a source package, or by two source packages, equal or one beneath the other, or an import names a module both the project and a package provide.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0108` --- Source package outside the workspace rule
+
+A project that declares a source package is outside any workspace or is not a member of it, a package is not a member of the workspace, or the workspace file or a package is malformed.
+
+Class: `cli-configuration`. Exit code: 2.
+
 ## `LLC0201` --- Production request malformed
 
 A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target.
@@ -253,6 +277,12 @@ Class: `language`. Exit code: 1.
 ## `LLR3008` --- Model artifact bytes violate the declared schema, type, or role
 
 Model artifact bytes violate the declared schema, type, or role.
+
+Class: `language`. Exit code: 1.
+
+## `LLR3009` --- Import of a module of a source package the importing scope does not declare
+
+A module imports a module of a source package that the project, or the package the module belongs to, does not declare.
 
 Class: `language`. Exit code: 1.
 

@@ -8,6 +8,7 @@
 
 #![deny(missing_docs)]
 
+pub mod bdd_parts;
 pub mod calculus;
 pub mod cases;
 pub mod certification;
@@ -36,6 +37,7 @@ pub mod rust_differential;
 pub mod rust_harness;
 pub mod rust_packages;
 pub mod schema;
+pub mod shards;
 pub mod stress;
 pub mod tl;
 pub mod tooling;

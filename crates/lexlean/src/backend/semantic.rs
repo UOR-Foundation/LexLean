@@ -21,12 +21,12 @@ mod reasoning;
 
 struct Render<'a> {
     prefix: &'a str,
+    /// The Lean module each imported module's key names; a module not in it
+    /// lies under `prefix` (§10.5).
+    lean_imports: &'a std::collections::BTreeMap<String, String>,
     /// §17.12: in a well-founded definition, each `if` (by node address)
     /// lowers to a dependent match binding its numbered hypothesis.
     hypotheses: std::collections::BTreeMap<usize, usize>,
-    /// Whether this module emits the portable runtime, whose Nat
-    /// subtraction and multiplication `linear_arithmetic` unfolds.
-    runtime: bool,
     /// Whether this renders the canonical document, which names a map and
     /// a set by their own type constructors rather than by the list
     /// encoding Lean receives (§17.12).
@@ -134,7 +134,7 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
             } => parameter == local || values == local,
             SemanticReflection::Record { record, .. } => record == local,
         },
-        SemanticProof::Apply { arguments, .. } => {
+        SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().any(|argument| term_uses(argument, local))
         }
     }
@@ -347,7 +347,19 @@ impl Render<'_> {
             .split_once('.')
             .is_some_and(|(owner, _)| BUILTIN_CONSTRUCTOR_OWNERS.contains(&owner));
         match (&member.module, self.qualify) {
-            (Some(module), _) => identifier(&format!("{}.{}.{}", self.prefix, module, member.name)),
+            // §17.12 (text): a member of the laws library is written by the
+            // library's own name; the module is the elaboration's import.
+            (Some(module), _) if module == crate::text_laws::PREFIX => {
+                identifier(&format!("{module}.{}", member.name))
+            }
+            (Some(module), _) => identifier(&format!(
+                "{}.{}",
+                self.lean_imports
+                    .get(module)
+                    .cloned()
+                    .unwrap_or_else(|| format!("{}.{module}", self.prefix)),
+                member.name
+            )),
             (None, Some(own)) if !builtin => identifier(&format!("{own}.{}", member.name)),
             (None, _) => identifier(&member.name),
         }
@@ -556,8 +568,8 @@ impl Render<'_> {
     fn cross_check(&self, check: &CrossCheck, module: &str) -> String {
         let qualified = Render {
             prefix: self.prefix,
+            lean_imports: self.lean_imports,
             hypotheses: std::collections::BTreeMap::new(),
-            runtime: self.runtime,
             document: false,
             qualify: Some(module),
         };
@@ -1072,25 +1084,11 @@ impl Render<'_> {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
             SemanticProof::Decide => format!("{pad}decide\n"),
             SemanticProof::LinearArithmetic { definitions } => {
-                let runtime = if self.runtime {
-                    ", LexLeanRuntime.subtract, LexLeanRuntime.multiply"
-                } else {
-                    ""
-                };
-                if definitions.is_empty() {
-                    format!(
-                        "{pad}intros\n{pad}try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n"
-                    )
-                } else {
-                    format!(
-                        "{pad}intros\n{pad}subst_vars\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}, ← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq{runtime}] at *\n{pad}all_goals omega\n",
-                        definitions
-                            .iter()
-                            .map(|member| self.member(member))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )
-                }
+                let unfolded = definitions
+                    .iter()
+                    .map(|member| self.member(member))
+                    .collect::<Vec<_>>();
+                linear_arithmetic(&pad, &unfolded)
             }
             SemanticProof::Simplify { definitions } => format!(
                 "{pad}simp only [{}]\n",
@@ -1197,6 +1195,32 @@ impl Render<'_> {
                     )
                 }
             },
+            SemanticProof::Law {
+                name,
+                type_arguments,
+                arguments,
+                premises,
+            } => {
+                // Linking resolved the law; a law it did not resolve never
+                // reaches the backend.
+                let lean = crate::ir::semantic::laws::law(name)
+                    .map_or_else(|_| identifier(name), |law| law.lean.clone());
+                let arguments = type_arguments
+                    .iter()
+                    .map(|argument| format!(" ({})", self.ty(argument)))
+                    .chain(
+                        arguments
+                            .iter()
+                            .map(|argument| format!(" ({})", self.term(argument))),
+                    )
+                    .chain(
+                        premises
+                            .iter()
+                            .map(|premise| format!(" {}", self.member(premise))),
+                    )
+                    .collect::<String>();
+                format!("{pad}exact @{lean}{arguments}\n")
+            }
             SemanticProof::Apply {
                 theorem,
                 type_arguments,
@@ -1215,6 +1239,89 @@ impl Render<'_> {
             }
         }
     }
+}
+
+/// The fixed Boolean comparisons `linear_arithmetic` reflects into
+/// propositions, and the runtime definitions it unfolds (§17.12).
+const LINEAR_BRIDGES: &[&str] = &[
+    "← Bool.not_eq_true",
+    "Bool.and_eq_true",
+    "Bool.or_eq_true",
+    "Bool.not_eq_true'",
+    "and_true",
+    "true_and",
+    "Option.some.injEq",
+    "Nat.beq_eq",
+    "Nat.blt_eq",
+    "Nat.ble_eq",
+    "LexLeanRuntime.subtract",
+    "LexLeanRuntime.multiply",
+    "LexLeanRuntime.negate",
+    "LexLeanRuntime.equal",
+    "beq_iff_eq",
+    "decide_eq_true_eq",
+    "decide_eq_false_iff_not",
+    "Nat.add_assoc",
+    "Int.add_assoc",
+    "Int.neg_neg",
+    "Int.emod_neg",
+    "Int.neg_zero",
+    "↓reduceIte",
+];
+
+/// The fixed-width integer types in the order `linear_arithmetic` names
+/// their order lemmas, each with the projection to its mathematical value.
+const FIXED_WIDTH: &[(&str, &str)] = &[
+    ("UInt8", "toNat"),
+    ("UInt16", "toNat"),
+    ("UInt32", "toNat"),
+    ("UInt64", "toNat"),
+    ("Int8", "toInt"),
+    ("Int16", "toInt"),
+    ("Int32", "toInt"),
+    ("Int64", "toInt"),
+];
+
+/// The fixed `linear_arithmetic` script (§17.12): introduce the goal, and
+/// with named definitions substitute and unfold them; rewrite the runtime's
+/// comparisons, arithmetic, and folds into linear arithmetic through the
+/// bridges and the registered fold laws, with fixed-width order and
+/// equality read on the mathematical values (literals evaluated first);
+/// read every remaining fixed-width value as the bounded natural number of
+/// its bits, so `omega` knows its range; split every `if` and `match` left
+/// in the goal; and decide each case with `omega`. A goal the simplifier
+/// closed leaves nothing for `omega`.
+fn linear_arithmetic(pad: &str, definitions: &[String]) -> String {
+    let rewrites = crate::ir::semantic::laws::registry()
+        .map(|registry| registry.rewrites.as_slice())
+        .unwrap_or_default();
+    let mut lemmas: Vec<String> = definitions.to_vec();
+    lemmas.extend(LINEAR_BRIDGES.iter().map(|lemma| (*lemma).to_owned()));
+    lemmas.extend(rewrites.iter().cloned());
+    for (ty, value) in FIXED_WIDTH {
+        lemmas.push(format!("{ty}.le_iff_{value}_le"));
+        lemmas.push(format!("{ty}.lt_iff_{value}_lt"));
+    }
+    for (ty, value) in FIXED_WIDTH {
+        let reduce = if *value == "toNat" { "ToNat" } else { "ToInt" };
+        lemmas.push(format!("{ty}.reduce{reduce}"));
+        lemmas.push(format!("← {ty}.{value}_inj"));
+    }
+    let mut bits: Vec<String> = FIXED_WIDTH
+        .iter()
+        .map(|(ty, value)| format!("{ty}.{value}"))
+        .collect();
+    bits.push("BitVec.toInt_eq_toNat_cond".to_owned());
+    let subst = if definitions.is_empty() {
+        String::new()
+    } else {
+        format!("{pad}subst_vars\n")
+    };
+    format!(
+        "{pad}intros\n{subst}{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}all_goals (repeat' split)\n{pad}all_goals omega\n",
+        lemmas.join(", "),
+        bits.join(", ")
+    )
 }
 
 /// §17.12 well-founded lowering: a semireducible definition whose `if`
@@ -1250,7 +1357,7 @@ fn well_founded_definition(
             })?;
     let render = Render {
         prefix: base.prefix,
-        runtime: base.runtime,
+        lean_imports: base.lean_imports,
         hypotheses: plan
             .addresses
             .iter()
@@ -1655,8 +1762,8 @@ pub fn render_lean(
     let document = &checked.document;
     let base_render = Render {
         prefix: module_prefix,
+        lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime,
         document: false,
         qualify: None,
     };
@@ -1665,8 +1772,8 @@ pub fn render_lean(
     // reference it makes is written qualified (§17.12, models).
     let model_render = Render {
         prefix: module_prefix,
+        lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime,
         document: false,
         qualify: Some(&document.lean_module),
     };
@@ -1683,14 +1790,19 @@ pub fn render_lean(
     let models = module.declarations.iter().any(|declaration| {
         crate::ir::semantic::model::declaration_construct(declaration).is_some()
     });
+    // §17.12 (fold laws): `linear_arithmetic` rewrites with the laws
+    // module and `law` applies it, so a module with either proof uses it.
+    let laws = elaborated.contains("\"kind\":\"linear_arithmetic\"")
+        || elaborated.contains("\"kind\":\"law\"");
     let mut text = String::from("module\npublic import Init\n");
     if language_1_2 {
-        use crate::backend::runtime::{COLLECTIONS, MODELS, PORTABLE, REASONING};
+        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING};
         for (used, runtime_module) in [
             (runtime, PORTABLE),
             (collections, COLLECTIONS),
             (models, MODELS),
             (reasoning, REASONING),
+            (laws, LAWS),
         ] {
             if used {
                 text.push_str(&format!("public import {runtime_module}\n"));
@@ -1700,8 +1812,15 @@ pub fn render_lean(
     for import in &document.imports {
         text.push_str(&format!(
             "public import {}\n",
-            identifier(&format!("{module_prefix}.{import}"))
+            identifier(&document.lean_import(import))
         ));
+    }
+    // §17.12 (text): the elaboration's own imports — the sealed laws
+    // library a text declaration means. They are written here, once, and
+    // the laws themselves are never spliced into the module: the import is
+    // what a text declaration elaborates to.
+    for import in module.elaboration.imports() {
+        text.push_str(&format!("public import {}\n", identifier(import)));
     }
     // Large closed byte constants incur Lean compiler work beyond its small
     // interactive defaults. Match the fixed finite closed-core budgets; the
@@ -1974,11 +2093,15 @@ pub fn render_lean(
                 | SemanticDeclaration::Logic { .. }
                 | SemanticDeclaration::InferenceRule { .. }
                 | SemanticDeclaration::Verifier { .. }
-                | SemanticDeclaration::Reasoner { .. } => {
+                | SemanticDeclaration::Reasoner { .. }
+                | SemanticDeclaration::Tokenizer { .. }
+                | SemanticDeclaration::ContextWindow { .. }
+                | SemanticDeclaration::TextGenerator { .. }
+                | SemanticDeclaration::TextClassifier { .. } => {
                     return Err(Diagnostic::new(
                         code!("LLI9001"),
                         format!(
-                            "phase lean-backend: model or reasoning declaration `{}` was not elaborated",
+                            "phase lean-backend: model, reasoning, or text declaration `{}` was not elaborated",
                             declaration.name()
                         ),
                     ));
@@ -2565,6 +2688,10 @@ fn latex_model(
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. }
         | SemanticDeclaration::Theorem { .. } => {}
     }
     for obligation in module.elaboration.obligations(index) {
@@ -2630,6 +2757,86 @@ fn latex_model(
     }
 }
 
+/// The document lines of a text declaration (§17.12, *Text components*):
+/// its closed members, the laws library its elaboration imports, exactly what
+/// linking elaborated it to, and the theorems it generates. The pieces of the
+/// vocabulary are never document text (rule 13 under *Models*): the artifact
+/// is named, and the generated Lean carries its value.
+fn latex_text(
+    render: &Render<'_>,
+    module: &SemanticModule,
+    index: usize,
+    declaration: &SemanticDeclaration,
+    text: &mut String,
+) {
+    if let SemanticDeclaration::Tokenizer {
+        scheme,
+        vocabulary,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(
+            text,
+            "Scheme",
+            match scheme {
+                crate::ir::semantic::TokenizerScheme::ByteLevel => "byte_level",
+                crate::ir::semantic::TokenizerScheme::LongestMatch => "longest_match",
+            },
+        );
+        latex_line(text, "Vocabulary", &latex_use(render, vocabulary));
+        latex_line(
+            text,
+            "Laws",
+            &format!(
+                "imported from the native module {}",
+                crate::text_laws::laws_module()
+            ),
+        );
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
+    for derived in module.elaboration.lowered(index) {
+        if let SemanticDeclaration::Definition {
+            name,
+            parameters,
+            result,
+            body,
+            ..
+        } = derived
+        {
+            latex_line(
+                text,
+                "Elaborates to",
+                &format!(
+                    "{name}{} : {} := {}",
+                    render.parameters(parameters),
+                    render.ty(result),
+                    render.term(body)
+                ),
+            );
+        }
+    }
+    for theorem in module.elaboration.theorems(index) {
+        let binders = if theorem.parameters.is_empty() {
+            String::new()
+        } else {
+            format!("forall{}, ", render.parameters(&theorem.parameters))
+        };
+        latex_line(
+            text,
+            &format!(
+                "Generates theorem ({} template)",
+                theorem.template().replace('_', " ")
+            ),
+            &format!(
+                "{} : {binders}{}",
+                theorem.name,
+                render.formula(&theorem.statement)
+            ),
+        );
+    }
+}
+
 /// Render the same semantic module as canonical explanatory LaTeX.
 pub fn render_latex(
     checked: &CheckedModule,
@@ -2638,8 +2845,8 @@ pub fn render_latex(
 ) -> Result<Emitter, Diagnostic> {
     let render = Render {
         prefix: module_prefix,
+        lean_imports: &checked.document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
-        runtime: false,
         document: true,
         qualify: None,
     };
@@ -2850,6 +3057,20 @@ pub fn render_latex(
             | SemanticDeclaration::Verifier { .. }
             | SemanticDeclaration::Reasoner { .. } => {
                 reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::Tokenizer { .. } => {
+                latex_text(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::ContextWindow { .. }
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {
+                return Err(Diagnostic::new(
+                    code!("LLI9001"),
+                    format!(
+                        "phase latex-backend: text declaration `{}` was not elaborated",
+                        declaration.name()
+                    ),
+                ));
             }
         }
     }

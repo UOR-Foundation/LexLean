@@ -1,4 +1,4 @@
-//! The `verification` suite: VR-01..VR-22.
+//! The `verification` suite: VR-01..VR-23.
 
 use lexlean::{Selection, VerifyRequest};
 
@@ -37,7 +37,7 @@ const LEAN_BACKED: [&str; 14] = [
 
 pub(crate) fn run(id: &str) {
     // The operational cases (§22.11, §22.12) gate their own Lean-backed halves.
-    if matches!(id, "VR-20" | "VR-21" | "VR-22") {
+    if matches!(id, "VR-20" | "VR-21" | "VR-22" | "VR-23") {
         super::operational::run(id);
         return;
     }
@@ -789,6 +789,15 @@ pub(crate) fn run(id: &str) {
                     }),
                 ),
                 (
+                    // Certificate E, held as kernel data (§17.17).
+                    "preserve/LexLeanPreserve/*/*/Compose/*.lex.tex",
+                    Box::new(|f: &str| {
+                        f.starts_with("preserve/LexLeanPreserve/")
+                            && f.contains("/Compose/")
+                            && f.ends_with(".lex.tex")
+                    }),
+                ),
+                (
                     "preserve/program/R<i>.json",
                     Box::new(|f: &str| f.starts_with("preserve/program/R") && f.ends_with(".json")),
                 ),
@@ -1239,6 +1248,7 @@ pub(crate) fn run(id: &str) {
                 .filter_entry(|entry| {
                     ![".git", ".lake", ".lexlean", "expected", "target"]
                         .contains(&entry.file_name().to_string_lossy().as_ref())
+                        && !support::holds_cache_tag(entry)
                 })
                 .flatten()
                 .filter(|entry| {

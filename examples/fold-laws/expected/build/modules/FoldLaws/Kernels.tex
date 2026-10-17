@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{requantize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(let q : Int := (LexLeanRuntime.quotient ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((LexLeanRuntime.subtract (x) ((-20 : Int)) : Int)) ((9365133 : Int)) : Int)) ((-2147483648 : Int)) : Int)) ((4294967296 : Int)) ((0 : Int)) : Int); (if (LexLeanCollections.lessThan (q) ((0 : Int)) : Bool) then (0 : Int) else (if (LexLeanCollections.lessThan ((255 : Int)) (q) : Bool) then (255 : Int) else q)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{requantize\_monotone}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int) (y : Int)}.\par
+\noindent Statement: \texttt{((x <= y) -> (requantize (x) <= requantize (y)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{requantize\_runtime\_monotone}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int) (y : Int)}.\par
+\noindent Statement: \texttt{(((LexLeanCollections.lessThan (y) (x) : Bool) = false) -> ((LexLeanCollections.lessThan (requantize (y)) (requantize (x)) : Bool) = false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{requantize\_low}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int)}.\par
+\noindent Statement: \texttt{((0 : Int) <= requantize (x))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{requantize\_high}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int)}.\par
+\noindent Statement: \texttt{(requantize (x) <= (255 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{truncating\_division}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((LexLeanRuntime.quotient (a) ((7 : Int)) ((0 : Int)) : Int)) ((7 : Int)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (a) ((7 : Int)) ((0 : Int)) : Int)) : Int)) : Int) = a)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{truncating\_division\_negative}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((LexLeanRuntime.quotient (a) ((-7 : Int)) ((0 : Int)) : Int)) ((-7 : Int)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (a) ((-7 : Int)) ((0 : Int)) : Int)) : Int)) : Int) = a)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{truncation\_toward\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int)}.\par
+\noindent Statement: \texttt{(((LexLeanCollections.lessThan (a) ((0 : Int)) : Bool) = true) -> ((LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder (a) ((7 : Int)) ((0 : Int)) : Int)) : Bool) = false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{division\_by\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int) (z : Int)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.quotient (a) ((0 : Int)) (z) : Int) = z)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{halving\_shrinks}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.quotient (n) (2) (0) : Nat) <= n)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{byte\_order}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : UInt8) (y : UInt8) (z : UInt8)}.\par
+\noindent Statement: \texttt{((x <= y) -> ((y < z) -> (x < z)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{byte\_ceiling}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : UInt8)}.\par
+\noindent Statement: \texttt{(x <= (255 : UInt8))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{byte\_literal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : UInt8)}.\par
+\noindent Statement: \texttt{((x <= (5 : UInt8)) -> (x < (6 : UInt8)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{signed\_byte\_order}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8) (y : Int8)}.\par
+\noindent Statement: \texttt{(((LexLeanCollections.lessThan (x) (y) : Bool) = true) -> (x < y))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{signed\_byte\_floor}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8)}.\par
+\noindent Statement: \texttt{(((LexLeanCollections.lessThan (x) ((-128 : Int8)) : Bool) = false) /\textbackslash{} (x <= (127 : Int8)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{byte\_equality}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : UInt8) (y : UInt8)}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.equal (x) (y) : Bool) = true) -> (x <= y))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{requantize\_closed}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(requantize ((100 : Int)) = (0 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\end{document}

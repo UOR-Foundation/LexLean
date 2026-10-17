@@ -1132,24 +1132,72 @@ fn append_core_command(
 /// Returns an internal diagnostic when the module's rows cannot be ordered
 /// or a chunk omits a node it needs.
 pub fn lean_text(core: &CoreModule) -> Result<String, Diagnostic> {
-    let mut text = String::from("module\n");
+    lean_text_with(core, None)
+}
+
+/// Render a native core module as Lean outside the module system: `import`
+/// lines and no `module` header, the decoder and the data as [`lean_text`]
+/// writes them, the decoder under the namespace `scope` (the module's own
+/// name): outside the module system a file exports its declarations, and two
+/// such modules imported together would declare the decoder twice. A
+/// certificate held as data is rendered this way while the certificates it
+/// imports are Lean text outside the module system, which a `module` cannot
+/// import (SPEC.md §17.17).
+///
+/// # Errors
+///
+/// As [`lean_text`].
+pub fn lean_text_legacy(core: &CoreModule, scope: &str) -> Result<String, Diagnostic> {
+    lean_text_with(core, Some(scope))
+}
+
+fn lean_text_with(core: &CoreModule, legacy_scope: Option<&str>) -> Result<String, Diagnostic> {
+    let mut text = String::new();
+    if legacy_scope.is_none() {
+        text.push_str("module\n");
+    }
     for import in &core.imports {
-        text.push_str(&format!("public import {import}\n"));
+        if legacy_scope.is_none() {
+            text.push_str(&format!("public import {import}\n"));
+        } else {
+            text.push_str(&format!("import {import}\n"));
+        }
+    }
+    text.push_str("import Lean\n");
+    if core.version() == 2 && legacy_scope.is_none() {
+        text.push_str(crate::backend::core_v2::LEAN_CORE_V2_IMPORTS);
     }
     text.push_str(
-        "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
+        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
     );
-    text.push_str(if core.version() == 2 {
-        crate::backend::core_v2::LEAN_CORE_DECODER_V2
+    if let Some(scope) = legacy_scope {
+        // A certificate lifts the heartbeat budgets as its text form did
+        // (SPEC.md §17.17): what bounds the kernel's work is the wall clock.
+        text.push_str(
+            "set_option maxHeartbeats 0
+set_option synthInstance.maxHeartbeats 0
+",
+        );
+        text.push_str(&format!("namespace {scope}\n"));
+    }
+    if core.version() == 2 {
+        if legacy_scope.is_some() {
+            text.push_str(&crate::backend::core_v2::legacy_decoder());
+        } else {
+            text.push_str(crate::backend::core_v2::LEAN_CORE_DECODER_V2);
+        }
     } else {
-        crate::backend::runtime::frozen_core_decoder()
-    });
+        text.push_str(crate::backend::runtime::frozen_core_decoder());
+    }
     let order = emission_order(core)?;
     let owners = generated_owners(core);
     let ranges = core_command_ranges(core, &order, &owners)?;
     for range in &ranges {
         let chunk = core_chunk(core, &order[range.clone()], &owners)?;
         append_core_command(&mut text, core, &chunk)?;
+    }
+    if let Some(scope) = legacy_scope {
+        text.push_str(&format!("\nend {scope}\n"));
     }
     Ok(text)
 }

@@ -26,4 +26,5 @@ file = "known-non-overlap.toml"
 history = [
   { version = 1, rows_sha256 = "489579755bea40f4d9d79c441cfddf25818926de9ecb435b742d32d292da32d9" },
   { version = 2, rows_sha256 = "9e89707c1feef429273944202895c6351353e77df926b48bf2525dbe44697660" },
+  { version = 3, rows_sha256 = "af5c29d1187b1efd96b25aa55722f7d476e8913ad3bd08f3caba09cc68381803" },
 ]

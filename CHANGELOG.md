@@ -29,8 +29,86 @@ versions, and the entries below say what each tag does and does not claim.
   and, under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones. The compiler's identities are
   still computed by `sha2`; replacing it is stage 2 of #126. The register has
-  383 IDs.
+  405 IDs.
 
+- CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
+  job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
+  A draft pull request runs the `rest` leg and no other job (about 23 runner
+  minutes instead of about 300); a ready pull request, a request, and a push to
+  `main` run the whole gate; a push to `main` that merges a head whose tree it
+  equals runs nothing when a pull request run of that head passed every job,
+  the join of Atlas, every host, and every leg, and says which run. The legs of
+  the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
+  to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
+  The register is unchanged: the statement of `RP-14` is extended.
+- The decoder of a version 2 core module no longer takes a derived row from
+  the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
+  the pinned Lean reserves (matcher equations and splitters, definition
+  equations and unfolding theorems, sparse `else_eq`) is made by Lean's own
+  reserved-name action and refused unless it equals the row. Every one of the
+  preservation library's 7,071 derived rows is remade exactly; no source,
+  lock, or compiler-semantics ID changes.
+- Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
+  A project declares `[[source_package]]` tables (`package`, `version`, `kind`
+  `path`, `path`), each naming a member project of the workspace an optional
+  `lexlean-workspace.toml` at the repository root lists, and imports its
+  modules by their own Lean names (`\importmodule{LexLeanStd.Text}`). The lock
+  gains `[[source_package]]` rows (tree digest over the package's manifest and
+  source files, manifest digest, version, prefix, its own packages) that every
+  command recomputes; a changed byte or version is `LLC0105` naming both
+  digests, a pin for an undeclared package `LLC0106`, a module prefix claimed
+  twice `LLC0107`, a project or path outside the workspace rule `LLC0108`
+  (a symlink or an escaping path is `LLS8001`), and an import of a package the
+  scope does not declare `LLR3009`. A package definition is an ordinary
+  definition of the importing project: its own `production:` roots are not
+  roots of the importer and nothing is re-exported. `verify` replays the
+  package modules under the package's prefix, with the package as their
+  `origin` in the build manifest, the snapshot, and the attestation; `fmt`
+  never writes a package file. The schema change moves the language-1.2
+  compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
+  without source packages, keep their bytes apart from that identity. The
+  register gains `PK-01`..`PK-05` (403 rows with `SL-01`, `BS-01`, and `LM-01`..`LM-03`, `LM-13`); `PK-05`: the `bootstrap/`
+  pilot imports `stdlib/` through a source package, its vendored copy of `Text`
+  and the equivalence assertion of `BS-01` are deleted, the repository gains a
+  root `lexlean-workspace.toml`, and `xtask` stages a project with its packages.
+- The first component of the compiler's own pipeline as language-1.2 source:
+  the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/` is a language-1.2 project beside `compiler/` and `stdlib/`
+  under the module prefix `LexLeanBoot`; its `AxiomOutput` module declares
+  `parseAuditOutput` and `isClosedLeanName` as production roots for
+  `rust-std`. A project cannot import another's modules, so `Text` is a copy
+  of the standard library's without its `production` declarations, compared
+  with `stdlib/src/Text.lex.tex` on every run. `BS-01` runs the committed
+  golden vectors of `tests/golden/axiom-parser/` and a seeded corpus of
+  generated, wrapped, and mutated audit outputs against the Rust parser
+  `verify::axiom` (the stage-0 oracle, unchanged) under the calculus
+  evaluator and under the pinned rustc, detects seven planted defects, and,
+  under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones under
+  `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
+  example-gate records. `BS-01` brings the register to 398 IDs.
+- A language-1.2 `tokenizer` elaborates, in linking, to ordinary definitions
+  over the embedded text-laws library and to generated theorems the library
+  proves (SPEC.md §17.12, `LM-01`..`LM-03`, `LM-13`, #30). The library is
+  LexLean source: one native `lexlean/core-module/2` module of the embedded
+  project `language/text-1.2/library`, whose Lean the compiler generates and
+  compiles into the verification's olean root before any module that
+  imports it; the one-time migration of the hand-written proof is recorded
+  in `tests/text-laws/MIGRATION.md` and no authored Lean implementation of
+  the laws exists in the release tree. A tokenizer over a `utf8_lines`
+  vocabulary artifact of role `vocabulary` elaborates to `pieces`, `size`,
+  `encode`, `decode`, `encodeText`, and `decodeText`, and generates
+  `roundtrip`, `in_range`, and `text_roundtrip`, each proved by one library
+  lemma after unfolding exactly the named definitions; a vocabulary of
+  another role or schema, or a tokenizer with type parameters, is refused
+  with `LLT4006`, and a scheme outside `byte_level` and `longest_match` is a
+  schema violation (`LLT4001`). The language-1.2 `semantic_ir`,
+  `lean_backend`, and `latex_backend` versions move to 12, 19, and 12, so
+  every language-1.2 lock, golden, fixture, and verification record is
+  regenerated. The register holds 397 IDs: this slice registers `LM-01`..`LM-03`
+  and `LM-13` only; the remaining text components of the design on #30 add
+  their rows when their slices land, so no registered ID is unwired.
 - The standard library's first member: bytes and text over `Bytes`
   (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
   language-1.2 project beside `compiler/` under the module prefix
@@ -46,7 +124,103 @@ versions, and the entries below say what each tag does and does not claim.
   ones under `tests/production-export/stdlib/`. The project passes the
   example gates (`verify-examples`, `check-golden`) and
   `check-production-export` compares its packages. `SL-01` brings the
-  register to 382 IDs.
+  register to 393 IDs.
+- The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
+  `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
+  took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of
+  them `bdd`, one test process whose cases sum to 22,708 s over four threads.
+  `.github/bdd-parts.json` names four parts of the `repo-conformance` suite by
+  conformance ID, grouped so the cases that share a fixture built once per test
+  process run in one part, and a remainder, `rest`, that runs every test no
+  part names. The recipe is `cargo xtask bdd`: unset, `LEXLEAN_BDD_PART` leaves
+  it `cargo test -p repo-conformance --all-features`, which `just vv` and
+  `release.yml` run; named, it adds the part's harness filters (`--exact` and
+  its tests, or `--exact` and a `--skip` of every named test). `cargo xtask
+  check-test-inventory` lists every part with its filters and requires the
+  parts to be disjoint and their union to be `bdd`'s list (`RP-13`); `ci.yml`
+  runs each named part on a `bdd-<part>` row of the gate's matrix and the
+  remainder on the `rest` leg, every part on exactly one row (`RP-14`).
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
+- Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
+  stage 5 of #27). The composition certificate of every production root is no
+  longer written as Lean text by `production/certificate.rs`: the compiler
+  builds it as a native core module of schema `lexlean/core-module/2`, the
+  lemma types read from the native preservation library and instantiated
+  binder by binder (`production/kernel.rs`), the recursive groups' theorems as
+  recursor terms, and the one core backend renders it to the Lean verification
+  compiles. The verify record holds the module in the authoring notation
+  (`…/Compose/RustStd.lex.tex` in place of `.lean`), which reads back to the
+  data byte for byte, and `preservation.json` binds those bytes. A certificate
+  held as data is audited row by row (imports, kinds, safety, exact axiom
+  policies, forbidden constants) and the audit module prints and checks the
+  axioms of every one of its rows. The statements of the 76 certificates E of
+  the four corpora are those the text stated, kernel term for kernel term
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
+  still Lean text, so the data certificate is rendered outside the module
+  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
+- Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
+  no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
+  integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
+  `Nat` only. `linear_arithmetic` now reads the runtime: `less_than`,
+  `equal`, `negate`, `quotient`, `remainder` (truncating division by a
+  literal included), and fixed-width order and equality become linear
+  arithmetic, every `if` and `match` left in the goal is split, and `omega`
+  decides each case. The fold laws are LexLean source, the native runtime
+  module `LexLeanRuntime.Laws` (`tests/runtime-library/LAWS.md`). It holds
+  the normal form of additive list, set, and map folds as sums, their
+  linearity, and their invariance under permutation, append, and reverse,
+  which `linear_arithmetic` rewrites with, plus fusion, the fold of a pair,
+  and the fold of an append. The closed `law` proof form applies one of
+  these registered laws (`language/runtime-1.2/laws.toml`) with linking
+  checks. `examples/fold-laws` verifies integer kernels and fold equalities
+  for all inputs, with `decide` only on closed instances. The
+  language-1.2 compiler-semantics ID changes (`semantic_ir` 11,
+  `lean_backend` 18, `proof_lowering` 3), and every language-1.2 lock,
+  golden, fixture expectation, calculus package, production export, and
+  verified record is regenerated. The register holds 391 IDs.
+
+- The runtime gates read what they claimed to (#154, follow-up to #144; no new
+  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
+  literal of the compiler's source outside unit-test items, in production code
+  after a test module, with or without a `namespace` line (a declaration
+  under a runtime name is one), written whole or in literals joined by
+  `concat!`, an array, `+` or `format!`; its statement now also asserts
+  what it said of generated modules: every committed language-1.2 module
+  imports the runtime modules whose constants it names and declares nothing
+  under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
+  with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
+  plants the second direction of the axiom check. Every directory that holds a
+  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
+  beside the sources no longer reads as source. No compiled behavior changes.
+- UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
+  `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
+  minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of
+  Atlas, whose import chain through `Census` and `CensusCert4` no schedule on
+  one runner finishes in under about 65 minutes. `.github/verify-shards.json`
+  partitions Atlas's verification into fourteen shards and a join, checked by
+  `cargo xtask ci-shards` against the import graph of the committed build:
+  every module elaborated by one shard and replayed by one, every import
+  elaborated by the shard or by one it needs. The verifier runs as one part
+  through `lexlean::verify_part` (`verify::partition`): a shard runs the
+  prelude whole, then elaborates, replays, and audits the modules of its plan
+  with the `.olean` files of the shards it needs, and writes its records; the
+  join reads every shard's records, judges each as its stage does, and
+  publishes through the same policy, attestation, and publication as the whole
+  verification, byte-identical to it and with the same attestation identity
+  (`VR-23`, on `peano-arithmetic`). `cargo xtask verify-examples` runs the
+  part `LEXLEAN_EXAMPLES_PART` names: `without:uor-atlas` on the examples leg,
+  `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs; unset, the
+  recipe is unchanged. `ci.yml` runs the shards as jobs after the jobs of the
+  shards they need, from the one executable the `prefix` job builds, with the
+  shards' output as artifacts of the run and nothing across runs, and not while
+  a pull request is a draft. The register has 382 IDs.
 - Child deadlines remain active while reading inherited output pipes after
   the direct child exits (#132). The process group stays registered until
   both readers finish, so a timeout or an embedding host can end the remaining

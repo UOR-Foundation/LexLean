@@ -556,7 +556,7 @@ The Rust crate MUST build and its non-Lean tests MUST pass on:
 - macOS AArch64;
 - Windows x86-64.
 
-`ci.yml` checks this on each of them with one `cargo test --locked --workspace --all-features --no-fail-fast`, which reports every failing test of the host in one run and not the first failing test binary's (a host with two independent failures would otherwise cost one run for each), and which builds the library and the binary of the crate in the same profile, with the same locking and features, before it runs any test; there is no separate build step, because it would build nothing that run does not. The normative full verification and reproducibility gate runs on Linux x86-64. Other hosts produce platform-bound attestations and MUST obey the same source, manifest, and policy formats.
+`ci.yml` checks this on each of them, in every run that is the whole gate (§9.4), with one `cargo test --locked --workspace --all-features --no-fail-fast`, which reports every failing test of the host in one run and not the first failing test binary's (a host with two independent failures would otherwise cost one run for each), and which builds the library and the binary of the crate in the same profile, with the same locking and features, before it runs any test; there is no separate build step, because it would build nothing that run does not. The normative full verification and reproducibility gate runs on Linux x86-64. Other hosts produce platform-bound attestations and MUST obey the same source, manifest, and policy formats.
 
 Non-UTF-8 project paths are outside language 1.0 and produce a registered environment diagnostic.
 
@@ -652,7 +652,7 @@ spec-links  cargo xtask validate-spec-links
 lint        cargo clippy --workspace --all-targets --all-features -- -D warnings
 test        cargo test --workspace --exclude repo-conformance --all-features
 features    cargo check --workspace --all-features --all-targets
-bdd         cargo test -p repo-conformance --all-features
+bdd         cargo xtask bdd
 inventory   cargo xtask check-test-inventory
 examples    cargo xtask verify-examples
 golden      cargo xtask check-golden
@@ -661,7 +661,7 @@ deny        cargo deny --all-features check
 vv          all recipes above, in order
 ```
 
-`test` runs every test target of every workspace crate except `repo-conformance`, and `bdd` is the sole owner of the complete `repo-conformance` suite: its library tests and doctests, its `conformance` target (one test per registered ID, §27.8), and its `bdd` meta-gate target. The two phases partition the workspace test set: `inventory` lists the tests of `cargo test --workspace --all-features`, of `test`, and of `bdd` (RP-13), and requires the last two to be disjoint, their union to equal the first, and every test target of `repo-conformance` to be in `bdd`'s list, so that no test is lost and none runs twice in `vv`. The honesty workflow (§9.4) runs the meta-gate target alone, as a separate signal that is not part of `vv`. `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
+`test` runs every test target of every workspace crate except `repo-conformance`, and `bdd` is the sole owner of the complete `repo-conformance` suite: its library tests and doctests, its `conformance` target (one test per registered ID, §27.8), and its `bdd` meta-gate target. `cargo xtask bdd` runs `cargo test -p repo-conformance --all-features`, the whole suite; when `LEXLEAN_BDD_PART` names a part of `.github/bdd-parts.json`, it runs the same command with that part's harness filters, which is how CI runs it (§9.4). The two phases partition the workspace test set: `inventory` lists the tests of `cargo test --workspace --all-features`, of `test`, and of `bdd` (RP-13), and requires the last two to be disjoint, their union to equal the first, and every test target of `repo-conformance` to be in `bdd`'s list, so that no test is lost and none runs twice in `vv`. It also lists the tests of every part of the `bdd` plan with that part's harness filters, and requires the parts' lists to be disjoint, their union to equal `bdd`'s list, and every test a part names to be in that part's list, so that every test of `bdd` runs in exactly one part. The honesty workflow (§9.4) runs the meta-gate target alone, as a separate signal that is not part of `vv`. `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output.
 
 ### 9.3 Development container
 
@@ -680,9 +680,15 @@ Its post-create command MUST install the pinned Lean toolchain explicitly and MU
 
 `ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
 
-The job runs the recipes as two legs of one matrix, at once, each from its own clean checkout: `examples` alone, and the other eleven recipes in the order of `vv`. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. Together the legs run every recipe of `vv` exactly once, and the gate passes only when both legs pass, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longer leg rather than the sum (on the runner, `examples` is about 77% of the recipes' time). `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
+**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` are the whole gate, every job below. One push to `main` is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main`, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case.
 
-Both legs run on the standard GitHub-hosted runner, `ubuntu-24.04`; no larger runner is part of the gate. The verification resource profile (§22.11) of each leg is named by its matrix row and by nothing else, no repository or workflow variable and no input: the `examples` leg verifies at width 2, with the scheduling hints committed in `.github/verify-hints.json` (derived from a run's telemetry by `cargo xtask ci-hints`) and a memory budget of 12 GiB (12582912 KiB) for the summed expected peaks of the proof processes running at once; the other leg names no profile and runs at the default. A profile is a schedule and never a verdict: every elaboration, replay, and audit member still runs on the pinned toolchain, the directory each project publishes is byte for byte the one of width 1 without hints or a budget (§22.11), and the leg still requires every example's normalized verification records to equal `expected/verify` (§29.5), so a profile that changed a byte would fail the gate rather than pass a different one. A stale hint reorders processes and never skips one. Width 1 is still verified whole on UOR Atlas by `release.yml`, which runs `just vv` with no profile. The budget is below the runner's 16 GB, with the 4 GiB swap file of the job as overflow, so two processes run together only when their expected peaks fit, and a process whose expected peak alone passes the budget runs alone. The gate has no path filter, no cache of a build directory, object, verification tree, attestation, or proof result, and no condition that skips a recipe of `just vv`; it starts from a clean checkout with the exact pinned toolchains. Each leg writes its performance telemetry (§22.12) to `ci-evidence/` and uploads that directory as the artifact named after it: the gate log (`just --timestamp` stamps each recipe's first command, which is how a recipe is timed without changing it), the host's memory and swap sampled every five seconds, the verifier's telemetry, and a summary of the wall time of each recipe and verification stage, the slowest modules and audit members, and the peak resident set and swap of the proof processes. The summary step also prints that summary to the job log and appends it to the step summary, and runs when `just vv` failed, because an uploaded artifact cannot be read from the log; each table lists only its slowest rows and the part appended to the step summary is cut at 512 KiB, half of what GitHub accepts. None of it is an input of any recipe, and a timing is never a claim about a semantic property.
+In a run that is the whole gate, the job runs the recipes as the legs of one matrix, the rows of `.github/vv-rows.json`, at once, each from its own clean checkout: `examples`, which verifies every example but UOR Atlas; `rest`, the other eleven recipes in the order of `vv`; and one `bdd-<part>` row for each named part of the `bdd` plan below, which runs `bdd` alone. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. The part of `examples` a job runs is named by its matrix row through `LEXLEAN_EXAMPLES_PART` and by nothing else: `without:uor-atlas` on the leg, `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs below; unset or empty, which is what `just vv` and `release.yml` run, the recipe verifies every example whole. Together the legs and the Atlas jobs run every recipe of `vv`, every example, and every test of `bdd` exactly once, and the run passes only when every job passes, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longest path through the jobs rather than the sum. `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
+
+UOR Atlas is verified as the parts of one run. `.github/verify-shards.json` partitions its verification into shards, each naming the shards it needs, the modules it elaborates, and the modules it replays and audits, one of them named `join`; `cargo xtask ci-shards` checks, as the verifier would when a part ran, that every module is elaborated by exactly one shard and replayed by exactly one, that every import of a module a shard elaborates or replays is elaborated by that shard or by one it needs, directly or through another, and that `join` needs every other shard. Each shard is a job of its own clean checkout that runs the verifier's prelude whole (certificate generation, the preflights, staging, the generated-source audit, the probe), then elaborates, replays, and audits only the modules of its plan, reading the `.olean` files of the modules it imports from the output the jobs of the shards it needs uploaded in the same run, and uploads its own `.olean` files and process records as its output. The join runs the modules of its plan, reads every shard's records, requires each to name the executable the join itself hashed for the tool that produced it (`lean` for an elaboration or an audit member, `leanchecker` for a replay), judges each as the stage that produced it judges its own, and continues through policy, the attestation over every record in the canonical order of §22.11, publication, and the comparison of every normalized record with `expected/verify` (§29.5): what it publishes is what the whole verification publishes, record for record and attestation identity included (`VR-23`). A module without a record from any part, a record of a process no module owns, a record whose `executable_sha256` is not the join's digest of its tool (`LLI9001`, naming the record and both digests), or a shard whose plan leaves a module without the `.olean` it imports fails the run. Every process of the verification runs exactly once per run. The executable the Atlas jobs run is the one the `prefix` job built from its clean checkout, carried to the other jobs of the run as an artifact beside the shards' output; it, the output, and the records cross no run, and a job reads the artifacts of its own run only. The Atlas jobs run after the jobs of the shards they need, at the profile of the `examples` leg, and only in a run that is the whole gate.
+
+The `bdd` recipe runs as the parts of one run as well. `.github/bdd-parts.json` names parts of the `repo-conformance` suite by conformance ID, and a remainder, `rest`, that names none; the cases that share a fixture built once per test process, such as a verified project, an exported package set, or a compiled environment, are named by one part, so that a fixture is built in one part and not once per part. `cargo xtask bdd` runs `cargo test -p repo-conformance --all-features` with the harness filters of the part `LEXLEAN_BDD_PART` names: `--exact` and the test of every ID the part names, or for the remainder `--exact` and a `--skip` of every test another part names, so that the remainder runs the library tests, the doctests, the meta-gate target, and every conformance test no other part names, an ID added to the register included. The part a job runs is named by its matrix row and by nothing else: a `bdd-<part>` row names its part, the `rest` leg names the remainder, and the `examples` leg runs no `bdd` and names none; unset or empty, which is what `just vv` and `release.yml` run, the recipe runs the whole suite. The harness selects the tests, and no case decides whether it runs. `inventory` proves from the harness's own lists that the parts are disjoint and together are `bdd` (§9.2), and every part, the remainder included, is run by exactly one row. Each row builds from its own clean checkout; nothing passes between rows, and nothing crosses runs.
+
+Every gate job runs on the standard GitHub-hosted runner, `ubuntu-24.04`; no larger runner is part of the gate. The verification resource profile (§22.11) of a job is named by its matrix row, or on an Atlas job by the job itself, and by nothing else, no repository or workflow variable and no input: the `examples` leg and every Atlas job verify at width 2, with the scheduling hints committed in `.github/verify-hints.json` (derived from a run's telemetry by `cargo xtask ci-hints`) and a memory budget of 12 GiB (12582912 KiB) for the summed expected peaks of the proof processes running at once; the other legs name no profile and run at the default. A profile is a schedule and never a verdict: every elaboration, replay, and audit member still runs on the pinned toolchain, the directory each project publishes is byte for byte the one of width 1 without hints or a budget (§22.11), and the leg and the join still require every example's normalized verification records to equal `expected/verify` (§29.5), so a profile that changed a byte would fail the gate rather than pass a different one. A stale hint reorders processes and never skips one. Width 1 is still verified whole on UOR Atlas by `release.yml`, which runs `just vv` with no profile. The budget is below the runner's 16 GB, with the 4 GiB swap file of the job as overflow, so two processes run together only when their expected peaks fit, and a process whose expected peak alone passes the budget runs alone. The gate has no path filter, no cache of a build directory, object, verification tree, attestation, or proof result, and no condition that skips a recipe of `just vv` but the plan's, which decides only what a run is, as above; the artifacts the jobs of one run exchange are read by that run alone, and every job starts from a clean checkout with the exact pinned toolchains. Each job writes its performance telemetry (§22.12) to `ci-evidence/` and uploads that directory as the artifact named after it, `acceptance-gate-evidence-<leg>` or `acceptance-gate-evidence-atlas-<shard>`: the gate log (`just --timestamp` stamps each recipe's first command on a leg, which is how a recipe is timed without changing it; an Atlas job's log is the recipe's own output), the host's memory and swap sampled every five seconds, the verifier's telemetry, and a summary of the wall time of each recipe and verification stage, the slowest modules and audit members, and the peak resident set and swap of the proof processes. The summary step also prints that summary to the job log and appends it to the step summary, and runs when the job failed, because an uploaded artifact cannot be read from the log; each table lists only its slowest rows and the part appended to the step summary is cut at 512 KiB, half of what GitHub accepts. None of it is an input of any recipe, and a timing is never a claim about a semantic property.
 
 `honesty.yml` MUST run the model/honesty gate separately so claim drift is distinguishable from code failure.
 
@@ -700,6 +706,7 @@ A LexLean project contains:
 - a valid Lake workspace;
 - one or more `.lex.tex` modules under configured source roots;
 - zero or more local lexicon packages;
+- in language 1.2, zero or more source packages, member projects of the project's workspace that it imports modules from (§10.5);
 - `.lexlean/`, reserved for generated and verified artifacts.
 
 No project file may override the language grammar, backend, verifier sequence, axiom-audit parser, source-map format, or verified artifact set.
@@ -745,10 +752,11 @@ The parsed project has one canonical TOML serialization used by `project_config_
 1. scalar top-level keys in the order shown by the schema example;
 2. `lexicon_source` tables sorted by `package`, with keys in the order `package`, `kind`, then kind-specific fields;
 3. language 1.2 only: `artifact_source` tables sorted by `sha256`, with keys in the order `sha256`, `path`, omitted entirely when there are none, so a project without artifacts keeps its bytes;
-4. `[limits]` with keys in the order shown;
-5. optional `[pdf]` last, with keys in the order shown;
-6. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
-7. no comments, blank leading lines, or trailing spaces.
+4. language 1.2 only: `source_package` tables sorted by `package`, with keys in the order `package`, `version`, `kind`, `path`, omitted entirely when there are none, so a project without source packages keeps its bytes;
+5. `[limits]` with keys in the order shown;
+6. optional `[pdf]` last, with keys in the order shown;
+7. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
+8. no comments, blank leading lines, or trailing spaces.
 
 Input whitespace does not affect this canonical serialization. A project may be semantically valid before formatting, but `lexlean lock --check` and repository examples require canonical bytes.
 
@@ -759,7 +767,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `spec` | Exactly `lexlean/project/1`. |
 | `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |
 | `language` | Language version: `1.0`, `1.1`, or `1.2`. |
-| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
+| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanLaws`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |
 | `source_roots` | Nonempty, unique, sorted project-relative directories. |
 | `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |
 | `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |
@@ -768,6 +776,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `lean_toolchain` | Exactly the language-1.0 toolchain string. |
 | `lexicon_source` | Unique by package and sorted by package identifier. |
 | `artifact_source` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[artifact_source]]` tables `sha256 = "<64 lowercase hex>"`, `path = "<project-relative file>"`, sorted by `sha256`, unique by digest and by path, never beneath the build root. Each names the content-addressed bytes of one model artifact (§17.12); `check`, `build`, `fmt`, and `verify` read the file, confined (§25.1), and require its SHA-256 to equal the configured digest (`LLR3007`). Artifacts are never fetched. |
+| `source_package` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[source_package]]` tables `package = "<identifier>"`, `version = "<reader's string>"`, `kind = "path"`, `path = "<workspace-relative member directory>"`, sorted and unique by `package`, with `package` an identifier of the form of `name` and `version` a string of at most 64 ASCII letters, digits, `.`, `+`, and `-` that begins with a letter or digit. `path` is resolved from the workspace root, not the project's (§10.5); a kind other than `path` is `LLC0101`, and a path that is absolute or has a `..` segment escapes the workspace and is `LLS8001`. |
 | `limits` | Every listed positive integer is required. There are no hidden compiler defaults. |
 
 #### Lexicon-source forms
@@ -845,6 +854,33 @@ The project `lean-toolchain` MUST contain the exact toolchain string. `lexlean l
 
 If both Lake configuration forms exist, locking fails. Verification requires the recorded files to match and requires all manifest dependencies to be locally available.
 
+### 10.5 Source packages
+
+A language-1.2 project imports the modules of another project, a *source package*, without copying them. A source package is a project: its own `lexlean.toml` names its `module_prefix`, its `source_roots`, its language (1.2), and its own source packages, and `entrypoints` may name any of its modules, since a library has no distinguished one. Its modules keep its prefix: a module `Text` of a package whose prefix is `LexLeanStd` is the Lean module `LexLeanStd.Text` in every project that imports it. Nothing is fetched: a package is read from a directory of the workspace, `kind` is `path` and nothing else, and a package of any other kind is refused rather than treated as a later extension.
+
+**The workspace.** Until now every read of a project lay inside the project (§25.1). A package lives beside the projects that use it, so one widening is made, stated narrowly. An optional `lexlean-workspace.toml` at the root of a repository lists the member project directories:
+
+```toml
+spec = "lexlean/workspace/1"
+members = ["app", "base", "lib"]
+```
+
+`members` are unique, sorted, workspace-relative directories (no `..`, no leading separator), and the file carries no comment. The workspace of a project is the nearest proper ancestor of its canonical root that holds the file. A project that declares a source package must be a member of its workspace, and a `source_package` path must name a member, resolved from the workspace root. A project outside any workspace, a project its workspace does not list, a path that names no member, and a malformed workspace file are `LLC0108`: a stray file higher in the tree grants nothing to a project it does not list. No path component from the workspace root to a package may be a symlink, and a path with a `..` segment is an escape; both are `LLS8001`. Of a package, only its `lexlean.toml` and the files beneath its `source_roots` are read, and a symlink or a special file among them is `LLS8001`. A project that declares no source package reads nothing outside its own root, and has no workspace.
+
+**The manifest of a package** declares language 1.2, no `artifact_source`, no `[pdf]`, and only builtin `lexicon_source`s: those would read files outside what the pin covers, or glossaries the importing project does not have. A violation is `LLC0101`. The glossaries a package module uses (`\useglossary`) are resolved in the closure of the importing project, so a package that uses one the project does not load fails `LLR3001`.
+
+**The pin.** `lexlean.lock` (§11) carries one `[[source_package]]` row for every package in the transitive closure of the project's declarations, sorted by `id`: the identifier, the declared `version`, `kind`, the workspace-relative `source`, the package's `module_prefix`, `tree_sha256` over the package's `lexlean.toml` and every regular file beneath its `source_roots` (the tree digest of §11.5, over package-relative paths in bytewise order), `manifest_sha256` over its `lexlean.toml`, and `imports`, the `id@version` of the packages its own manifest declares, sorted. The digests are recomputed by every command: `lock --check`, `check`, `fmt`, `build`, and `verify` read the package and require the lock's row to be the package as it now is. A changed byte, a changed version, source, prefix, or declared package is `LLC0105`, naming the package and the locked and the found values, before anything is linked. A row for a package the closure of the project's declarations does not reach is `LLC0106`, and so is one identifier with two sources. `lexlean lock` writes the rows, and a package that depends on itself or on the importing project is `LLR3003`.
+
+Two limits of this release are deliberate. `version` is required in a `[[source_package]]` table because a changed version must be refused and the pin is the digest, so there is nowhere else to write it; and a package manifest declares only builtin `lexicon_source`s and no `artifact_source` or `[pdf]`, because those would name files outside the manifest and source roots that the pin covers. A later release lifts the first by a lock that records a version the package itself declares, and the second by pinning the files such a declaration names in the package's tree digest and resolving them from the package's own root; each is a separate register row, not a hidden default.
+
+**One source per module prefix.** The importing project's prefix and each package's must not be equal, and none may lie beneath another (`a.b` is beneath `a`); two sources that claim a prefix are `LLC0107`.
+
+**Closed imports.** A module of the importing project may import modules of the project, written as before, and modules of the packages the project declares itself, written with the package's prefix: `\importmodule{LexLeanStd.Text}`. A module of a package may import the modules of that package, written as inside the package, and the modules of the packages its own manifest declares, written with their prefixes. A module of a package the importing scope does not declare, though the closure holds it, is `LLR3009`; one no source provides is `LLR3005`; a name both the scope's own modules and a declared package provide is `LLC0107`; a cycle of packages or of modules is `LLR3003`. The package's modules that no import reaches are not linked. Inside the linked project a package module is named by its Lean name, `LexLeanStd.Text`, which is its key in every record; its references to a sibling are read under that key.
+
+**Production.** A package's `production:` clauses make roots of the package project, built when the package is built. Imported by another project, a package definition is an ordinary definition: no module of a package is analysed for production roots, the certificates are those of the closure of the importing project's roots, and the package's own certified roots are not republished by the importer. There is no re-export.
+
+**Verification and identity.** The modules of every package the project reaches are generated, elaborated, replayed with `leanchecker`, and audited as part of the importing project's `verify`, under the package's prefix. The build manifest's module rows, the semantic snapshot's modules, and the attestation (`origins`, by Lean module) name the package as their `origin`; the document of a package module is linked and rendered like any other, and `fmt` never rewrites a package file, which is the package's own. Nothing crosses runs (§9.4): there is no cache of a built package. The source ID (§21.3) hashes the canonical lock, and so the pins, and the bytes of every linked package module. `source_package` and the lock rows are part of the language-1.2 schemas, so they move the language-1.2 compiler-semantics ID (§21.2) once; languages 1.0 and 1.1 are unchanged, and so is a language-1.2 project that declares no source package, apart from that identity.
+
 ---
 
 ## 11. Lock file
@@ -889,6 +925,20 @@ imports = ["lexlean.core@1.0.0"]
 
 An optional `[pdf]` lock record mirrors the configured provider and records the hashes of every declared resource.
 
+Language 1.2 only, a project that declares source packages (§10.5) has, after the `[[package]]` rows, one `[[source_package]]` row for every package in the transitive closure of its declarations, and a project that declares none has none:
+
+```toml
+[[source_package]]
+id = "lib"
+version = "1.0.0"
+kind = "path"
+source = "lib"
+module_prefix = "PkgLib"
+tree_sha256 = "..."
+manifest_sha256 = "..."
+imports = ["base@1.0.0"]
+```
+
 Language-1.2 model artifacts (§10.1, §17.12) have no lock rows: each is pinned
 by its `sha256` in `lexlean.toml`, whose canonical bytes the lock's project
 digest and the source ID cover, and every `check`, `build`, `fmt`, and
@@ -898,6 +948,7 @@ digest and the source ID cover, and every `check`, `build`, `fmt`, and
 
 - `workspace_file` rows sort by `path`.
 - `package` rows sort by `(id, version)`.
+- `source_package` rows sort by `id`, and their `imports` by `id`.
 - package `imports` sort lexicographically and contain no duplicates.
 - all keys use the order shown by the schema formatter.
 - lowercase hexadecimal is mandatory.
@@ -2330,7 +2381,9 @@ axiom audit. Any other generated row without a native owner is rejected. This
 classification is generic and structural: it is not selected by an Atlas
 name, module, or feature. Generated Lean may import only the foundational
 modules listed in the core data and other modules in the generated graph. The
-generic environment-reconstruction runtime may privately import `Lean`; no
+generic environment-reconstruction runtime may privately import `Lean`, and
+the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`
+in full (below); no
 generated module may import an independently authored implementation of the
 declarations being generated.
 
@@ -2389,7 +2442,31 @@ are data of the module, not conventions of a backend.
   (two constants of one module may be the same construction, which a shared
   cache would otherwise return once), numbered and visible as the row's name
   shows, and refuses the module unless the constant, its name, and its record
-  are those the row states.
+  are those the row states. It then enters the constant in the elaborator's
+  cache of sparse `casesOn`, under the exported and the private key unless
+  the key is taken, so that a later construction that needs the same one
+  finds it, as it did when the elaborator made the module; each chunk first
+  drops from the cache the runtime's own constants, which are not the
+  module's. The cache is private to its Lean module, which the runtime
+  therefore imports in full. A certificate rendered outside the module
+  system (§17.17) cannot import a module in full; it states theorems only,
+  no sparse `casesOn` and no derived row, and its runtime leaves the cache
+  alone.
+- A row whose name the pinned Lean reserves (`Lean.isReservedName`: the
+  equations and splitter of a matcher, the equations and unfolding theorem
+  of a definition, the `else_eq` of a sparse `casesOn`, and the other names
+  a registered reserved-name action makes) is not submitted: the decoder runs
+  the action the pinned Lean registers for the name and refuses the module
+  unless the action makes the constant and the constant has the row's kind,
+  levels, type, and value. A row whose constant an earlier action of the
+  module already made is checked the same way. So that each action makes what
+  the elaborator made, the state it reads is installed as each row is added,
+  not after the module: the `recursive` tag, the transparency, the matcher
+  record, the equational-lemma record, and the row's realization context,
+  which for a definition with an equational-lemma record is opened once its
+  smart-unfolding row (`_sunfold`) is in. A derived row is therefore what the
+  pinned Lean derives from the module, checked against the data rather than
+  taken from it.
 
 A version 2 row that states a field of another kind of declaration is
 rejected; the group of a definition names only declarations of the module; an
@@ -2612,7 +2689,9 @@ backend runs.
 | `executable` definitions | `lexlean/semantic-module/2` | `"executable":true` asserts production eligibility under the higher-order rules below. |
 | `mutual` definition label | `lexlean/semantic-module/2` | `"mutual":"Label"` on a structurally recursive definition places it in a mutual definition group under the recursion rules below. |
 | `termination` evidence | `lexlean/semantic-module/2` | `{"measure":m,"evidence":[theorem...]}` on a definition declares well-founded recursion under the recursion rules below. |
-| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. Without definitions it lowers to the fixed script `intros`, `try set_option linter.unusedSimpArgs false in simp only [← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq] at *` (adding `LexLeanRuntime.subtract, LexLeanRuntime.multiply` when the module emits the portable runtime), and `all_goals omega`, so a goal the simplifier already closed leaves nothing for `omega`; with definitions, `subst_vars` follows `intros` and the definitions lead the `simp only` list, so hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. |
+| `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. It lowers to one fixed script (*Fold laws* below): `intros`; with definitions, `subst_vars`; one `simp only [...] at *` over, in order, the named definitions, the Boolean-comparison bridges `← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq`, the runtime definitions `LexLeanRuntime.subtract, LexLeanRuntime.multiply, LexLeanRuntime.negate, LexLeanRuntime.equal`, the Lean lemmas `beq_iff_eq, decide_eq_true_eq, decide_eq_false_iff_not, Nat.add_assoc, Int.add_assoc, Int.neg_neg, Int.emod_neg, Int.neg_zero, ↓reduceIte`, the registered rewrite set of the fold laws, and for each fixed-width type `T` (`UInt8`, `UInt16`, `UInt32`, `UInt64` read by `toNat`; `Int8`, `Int16`, `Int32`, `Int64` read by `toInt`) first `T.le_iff_v_le, T.lt_iff_v_lt` and then `T.reduceToNat` or `T.reduceToInt` and `← T.v_inj`; a second `simp only [...] at *` over `UInt8.toNat` … `Int64.toInt` and `BitVec.toInt_eq_toNat_cond`, which reads every remaining fixed-width value as the bounded natural number of its bits; `all_goals (repeat' split)`, which splits every `if` and `match` left in the goal; and `all_goals omega`. Each `simp only` is under `try` with the unused-argument linter off, so a goal the simplifier already closed leaves nothing for `omega`. With definitions, hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. A module with this proof imports `LexLeanRuntime.Laws`. |
+| `law` proof | `lexlean/semantic-module/2` | `{"kind":"law","name":N,"type_arguments":[T...],"arguments":[...],"premises":[theorem...]}` (`type_arguments` and `premises` omitted when empty): exact application of the registered fold law `N` (*Fold laws* below) to explicit type arguments, arguments, and prior theorems discharging its premises in order. Linking checks the counts, the type arguments, each argument against the registered parameter type, and that each premise names a prior theorem; Lean checks the statement. It lowers to `exact @L (T1) … (a1) … p1 …`, `L` the law's Lean name, and a module with it imports `LexLeanRuntime.Laws`. |
+| integer order | `lexlean/semantic-module/2` | The order propositions `le` and `lt`, which language 1.1 types over `Nat` only, take two operands of one integer type: `Nat`, `Int`, or one fixed-width type. They lower to Lean's `<=` and `<` on that type, which on a fixed-width type is the order of its mathematical value. |
 | `map`, `set` types | `lexlean/semantic-module/2` | `{"kind":"map","key":K,"value":V}` and `{"kind":"set","element":K}` over an ordered key type, under the collection rules below. |
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
@@ -2688,12 +2767,13 @@ either backend runs; they do not defer to what Lean would accept.
    so no part of a data declaration is free; language-1.1 modules keep their
    historical count.
 10. **Binder hygiene.** The backend refers to the module's own declarations,
-    to the built-in names it emits (`And`, `Bool`, `ByteArray`, `Except`,
-    `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`, `LexLeanModels`,
-    `LexLeanReasoning`, `LexLeanRuntime`, `List`, `Nat`, `Option`,
-    `Ordering`, `Prod`, `Prop`, `Result`, `String`, `Type`,
-    `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `congr`, `decide`,
-    `false`, `id`, `rfl`, `true`, `true_and`), and to every imported declaration through
+    to the built-in names it emits (`And`, `BitVec`, `Bool`, `ByteArray`,
+    `Except`, `Iff`, `Int`, `Int8`..`Int64`, `LexLeanCollections`,
+    `LexLeanLaws`, `LexLeanModels`, `LexLeanReasoning`, `LexLeanRuntime`,
+    `List`, `Nat`, `Option`, `Ordering`, `Prod`, `Prop`, `Result`, `String`,
+    `Type`, `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `beq_iff_eq`,
+    `congr`, `decide`, `decide_eq_false_iff_not`, `decide_eq_true_eq`,
+    `false`, `id`, `reduceIte`, `rfl`, `true`, `true_and`), and to every imported declaration through
     the project's module prefix, all without qualification. In a
     `lexlean/semantic-module/2` module no binder (a type parameter, a value
     parameter, or a pattern, `let`, quantifier, lambda, or proof binder) is
@@ -3011,7 +3091,7 @@ Termination evidence is semantic data, never tactic or backend text; no
    namespace `LexLeanCollections` (*Runtime modules* below).
 
 **Runtime modules.** The runtime of language 1.2 is LexLean source, not text
-of the backend: four native core modules (§17.10) of the embedded project
+of the backend: five native core modules (§17.10) of the embedded project
 `language/runtime-1.2/library/` (module prefix `LexLeanRuntime`, registry
 `language/runtime-1.2/library.toml`, tag `lexlean/runtime-library/1`), whose
 Lean the compiler generates like any other core module's:
@@ -3020,18 +3100,22 @@ fixed-width arithmetic, byte strings, and decimal text the primitives apply),
 `LexLeanRuntime.Collections` (namespace `LexLeanCollections`, rule 6),
 `LexLeanRuntime.Models` (namespace `LexLeanModels`, rule 12 of the model
 rules), and `LexLeanRuntime.Reasoning` (namespace `LexLeanReasoning`, rule 11
-of the reasoning rules; it imports the first two). A generated language-1.2
+of the reasoning rules; it imports the first two), and `LexLeanRuntime.Laws`
+(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two). A
+generated language-1.2
 module publicly imports, after `Init` and before its own imports, exactly the
 runtime modules it uses: `Portable` when it applies a primitive or has a
 reasoning declaration, `Collections` under rule 6, `Models` when it has a
-model declaration, and `Reasoning` when it has a reasoning declaration; it
-carries no runtime text. Every declaration of a runtime module pins its exact
+model declaration, `Reasoning` when it has a reasoning declaration, and
+`Laws` when it has a `linear_arithmetic` or `law` proof; it carries no runtime
+text. Every declaration of a runtime module pins its exact
 axioms; a verification that needs a runtime module compiles it before the
 project's modules, replays it with `leanchecker`, audits each of its
 declarations, and refuses any observed axiom set but the pinned one
-(§22.3–§22.6, `RT-03`). The runtime modules were migrated once, losslessly,
-from the texts the backend spliced, with the equivalence evidence in
-`tests/runtime-library/MIGRATION.md`; a declaration is the same up to the
+(§22.3–§22.6, `RT-03`). The first four runtime modules were migrated once,
+losslessly, from the texts the backend spliced, with the equivalence evidence
+in `tests/runtime-library/MIGRATION.md`; `Laws` was exported once from Lean,
+with its evidence in `tests/runtime-library/LAWS.md`. A declaration is the same up to the
 module that holds it, so a runtime name is `LexLeanRuntime.x`, never
 `<module>.LexLeanRuntime.x` (`RT-01`). The decoder of core module 2 (§17.10)
 is the one Lean text of the language-1.2 compiler that is not generated from a
@@ -3045,6 +3129,59 @@ native modules: they are data, `language/runtime-1.2/frozen/portable-runtime-1.1
 and `language/runtime-1.2/frozen/core-decoder-1.txt`, which the language-1.0
 and 1.1 backends alone read, and `RT-02` holds them equal to the released
 output.
+
+#### Fold laws (language 1.2)
+
+A program equality over all inputs (two folds that compute one value, an
+integer kernel that is monotone or bounded) is proved by `linear_arithmetic`
+or by `law`, and the facts both use are LexLean source, never assumed. These
+rules are LexLean's own; the diagnostic each linking failure raises is
+`LLT4001`, and a statement Lean does not accept is `LLV7002`.
+
+1. **The laws module.** `LexLeanRuntime.Laws` is a native runtime module
+   (*Runtime modules* above) importing `Portable` and `Collections`. It
+   declares, in the namespace `LexLeanLaws`, the sum of a function over a
+   list (`sumNat`, `sumInt`), the bridges from the runtime to propositions,
+   and the laws below, each row pinning its exact axioms. It was exported
+   once from Lean and its regenerated environment checked against the
+   committed source declaration by declaration
+   (`tests/runtime-library/LAWS.md`).
+2. **The registry.** `language/runtime-1.2/laws.toml` (tag
+   `lexlean/runtime-laws/1`) names what the compiler uses of the module:
+   the ordered rewrite set of `linear_arithmetic`, and the laws a `law`
+   proof applies, each with its explicit type parameters, its parameter
+   types in the semantic schema, and its number of premises. It states no
+   law. The runtime build refuses a registry that names a declaration the
+   module does not have or registers a law twice.
+3. **Bridges.** `less_than` on `Nat`, `Int`, and every fixed-width type is
+   `decide` of the order of mathematical values; `quotient` and `remainder`
+   on `Nat` and `Int` are an `if` on a zero divisor around `/` and `%`, or
+   `Int.tdiv` and `Int.tmod`, which are rewritten to Euclidean division and
+   remainder with a sign case; `length` and `append` of a list are
+   `List.length` and `++`; `set_fold`, `map_fold`, `set_size`, `map_size`,
+   `set_elements`, and `map_entries` are the list operations on the
+   canonical list they are, a map's fold being the fold of its entries.
+4. **Additive folds.** A fold whose step adds (or, over `Int`, subtracts)
+   what each element contributes is its initial value plus (minus) the sum
+   of the contributions; the sum is linear in the contribution (sums,
+   differences, negation, and a constant factor on either side), a constant
+   contribution sums to the constant times the length, and the sum of an
+   appended list is the sum of the parts. The fold that conses every element
+   onto its state is the reverse of the list onto it, and the fold that
+   appends every element is the list after the state. A sum is invariant
+   under every permutation of the list (`sumNat_perm`, `sumInt_perm`), and
+   in particular under reverse. With these rewrites the equality of two
+   additive folds over all lists, sets, or maps is linear over the sums of
+   the contributions, which `omega` decides.
+5. **Applied laws.** `list_fold_fusion`: a function `h` that commutes with
+   the steps, as a prior theorem states for all states and elements, carries
+   the fold of one step to the fold of the other, `h (list_fold f z xs) =
+   list_fold g (h z) xs`. `list_fold_pair`: two folds over one list are one
+   fold over the pair of their states. `list_fold_append`: a fold over an
+   appended list continues the fold of the first part.
+6. **Closed instances.** `decide` evaluates a closed statement and does not
+   decide one with a free variable, so a statement over all inputs is proved
+   by the laws and `omega`, never by enumerating inputs.
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 
@@ -3789,6 +3926,14 @@ reasoner's search is bounded by its explicit fuel, frontier, or budget, whose
 terms are ordinary closure members, and a natural-number counter of its
 ledger is subject to the same width rule as any natural number, so a root
 that runs a reasoner admits `overflow` where the target requires it.
+
+Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
+(`declaration.tokenizer`, `declaration.context_window`,
+`declaration.text_generator`, `declaration.text_classifier`): a
+tokenizer's elaborated definitions are reported with that construct and
+apply the embedded text-laws library, which no production target realizes,
+so a root whose closure reaches one fails, and its generated theorems are in
+no closure; the other three are not elaborated by linking in this release.
 
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
@@ -5302,6 +5447,35 @@ encoders are, with the library's lemmas for every primitive and container
 value. A certificate E that does not compile silently, fails its replay,
 or whose theorem's axioms are not exactly the three above is `LLV7016`.
 
+**Certificate E as data.** Certificate E is not Lean text. The compiler
+builds it as a native core module of schema `lexlean/core-module/2`
+(§17.10): the terms above as kernel terms, every argument and universe level
+written. A lemma's type is read from the native preservation library and
+instantiated one binder at a time, so the implicit program, crate, and flags
+of every lemma, the element types and encoders of the container lemmas, the
+field values and types of a document, and the environment the entry binds
+are all stated, and an `rfl` is `Eq.refl` at the equation the binder states.
+The well-typedness theorems of a recursive group are the group's recursor
+(`T.rec` for each of its document types and `T.rec_j` of the block's first
+type for the `j`-th container the kernel nests, in the order it nests them),
+an induction hypothesis standing where the text recursed. The one core
+backend renders the module to the Lean verification compiles, with `import`
+lines and no `module` header while certificates A and B are Lean text (a
+`module` cannot import them), and the verify record holds the module in the
+authoring notation (§17.21.8), at the module's path with the extension
+`.lex.tex`, which reads back to the data byte for byte; `preservation.json`
+binds those bytes. A certificate held as data is audited row by row and
+never as text: it imports only modules of the environment, declares only
+safe theorems, definitions, and abbreviations, each pinning its axioms
+exactly (the registry's for the library lemmas a row applies, the three
+above for the composition), and names no forbidden constant in any
+spelling; the audit module prints the axioms of every row of such a
+certificate, and a row whose policy does not state what Lean prints is
+`LLV7016`. `conformance_sp_14` builds every certificate E of the four
+corpora this way, reads each record back to its data, verifies the
+production example under the pinned Lean, and plants a wrong lemma, a changed
+statement, a forged crate reference, and an added axiom, each refused.
+
 **Evidence.** The conformance suite certifies every production root of
 `examples/production`, `examples/production-coverage`, `examples/models`, and
 `examples/reasoning`, and verification checks every example's certificates as part of its
@@ -6554,6 +6728,75 @@ of #126: the compiler's own identities (§8, §21) are still computed by the
 `sha2` crate, and switching them to the module is the second stage, which
 waits on the measured cost of the rendered package against `sha2`.
 
+### 17.23 The bootstrap project
+
+The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
+components of LexLean's own pipeline that are authored as language-1.2 source
+and compiled by LexLean's production pipeline to certified Rust packages, so
+that the compiler's logic is eventually only `.lex.tex` (the self-hosting plan
+of issue 92). It is written in the authoring notation (§17.21) under the
+module prefix `LexLeanBoot`, and passes the gates of §28.6 as the standard
+library does. The Rust it replaces stays in the tree as the *stage-0 oracle*
+until the fixed point of that plan; a component is added only with a
+differential against that Rust, and is never a source of the Rust.
+
+The project imports the module `Text` of the standard library (§17.22) as a
+source package (§10.5): `bootstrap/lexlean.toml` declares `stdlib` beside it in
+the workspace, `AxiomOutput` imports `LexLeanStd.Text`, and the module is
+linked, verified, and replayed with the project under the standard library's
+own prefix. Its definitions are ordinary definitions of the project, so the
+project republishes none of the standard library's production roots, and no
+copy of the module is kept (`PK-05`).
+
+The first component is the axiom-output parser (§22.5), the module
+`AxiomOutput`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `parseAuditOutput (stdout : Bytes) (expected : List Bytes) : Result (List (Bytes * List Bytes)) Rejection` | `verify::axiom::parse_audit_output` |
+| `isClosedLeanName (raw : Bytes) : Bool` | `ir::core::is_closed_lean_name` |
+
+The parser is the function of §22.5 on the bytes of valid UTF-8 text: the
+lines of `stdout` (`str::lines`), white space as Unicode `White_Space`
+(`str::trim`, `char::is_whitespace`) and not the ASCII white space of
+`Text.trim`, the optional information envelope, the reassembly of a record
+wrapped at the format width, the payload grammar with a duplicate-free axiom
+list sorted bytewise, and the rejection of a missing, duplicate, extra,
+reordered, or malformed record. The result is first-order data (§17.13 rule 1):
+`Result.ok` of the observed axioms per declaration, as an association list
+ascending by the declaration's bytes (the order of a `BTreeMap`), or
+`Result.error` of a `Rejection`, a structure of the diagnostic's `message` and
+the `declaration` it is about when the parser attributes it to exactly one
+expected declaration, as the oracle's `AuditFailure` does. The one diagnostic
+of the parser is `LLV7004`, the code of every `Rejection`; it is registered
+in the oracle and not carried in the data, so a host raises it from the
+rejection. The root takes no capability: it is the pure function whose host
+entry is the boundary of issue 92, and its input is the audit output the
+driver has read.
+
+A message is the oracle's message to the byte; a count in a message is written
+in base ten by the module, which has no formatting of a `Nat`. The
+association list is in the order of the sorted declaration names, so that a
+duplicated expected name is the rejection `duplicate record for` as it is for
+the oracle's map.
+
+`BS-01` holds both roots to the oracle. The lowered program of
+`parseAuditOutput` is run under the calculus evaluator (§17.14) on every
+committed golden vector of `tests/golden/axiom-parser/` (each line of
+`accepted.txt` and `rejected.txt`, each blank-line separated record of
+`accepted-wrapped.txt`, and each file whole against its declarations), and the
+rendered `rust-std` packages of both roots (§17.16), compiled by the pinned
+rustc, are run on a seeded corpus: records built from the payload grammar and
+its boundaries (names at the edges of the closed grammar, axiom lists of every
+length, every envelope shape and every malformed one, every Unicode white
+space), wrapped at every width, and mutated (a record dropped, duplicated,
+reordered, added, truncated, oversized, or given a stray byte). The outcome
+of a run is the result, the rejection's message, and its declaration, and one
+difference fails the case. Planted defects in the source are each detected by
+the same differential. Under the pinned Lean, the production export (§24.7)
+certifies both roots, and its packages are the committed ones under
+`tests/production-export/bootstrap/`.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -7037,7 +7280,7 @@ nested partition of the embedded tree. The language-1.2 ID covers the whole
 tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `language/bootstrap-1.2.toml`, `language/semantics-1.2.toml`,
 `language/production-1.2.toml`, `language/lcnf-1.2/`,
-`language/preservation-1.2/`, `language/runtime-1.2/`, `language/core-1.2/`,
+`language/preservation-1.2/`, `language/runtime-1.2/`, `language/text-1.2/`, `language/core-1.2/`,
 `language/std/{bool,int,nat}-1.2/`, `schemas/attestation-v2.schema.json`,
 `schemas/build-manifest-v2.schema.json`,
 `schemas/compiler-input.schema.json`, `schemas/core-module-v2.schema.json`,
@@ -7381,6 +7624,7 @@ extract/<extraction-module>.lean           # when a production root exists
 extract/process.json                       # when a production root exists
 production/compiler-input.json             # when a production root exists
 preserve/LexLeanPreserve/*/*.lean          # when a production root exists
+preserve/LexLeanPreserve/*/*/Compose/*.lex.tex  # certificate E, as data (§17.17)
 preserve/program/R<i>.json                 # when a production root exists
 preserve/crate/R<i>.<target>.rs            # when a production root exists
 preserve/audit.txt                         # when a production root exists
@@ -7631,6 +7875,8 @@ The profile changes how processes are scheduled and nothing else:
 5. Hints and the memory budget are schedule inputs, never verdicts. A hint only reorders the start of items inside a stage, and the memory budget only gates a worker from starting an item whose expected peak (plus the expected peaks of the running items) would pass it. An item whose expected peak alone passes the budget runs alone rather than waiting forever: a wrong hint is a wrong schedule, never a fence and never a kill. A process that outgrows its hinted peak runs to completion; the stage measures it for the next hints. Hints change which ready item a worker starts first; results are consumed in the canonical order exactly as at width 1, so a failure reported is still the first failure in that order.
 
 For every project, the directory published at any profile equals, byte for byte, the directory published at width 1 without hints and without a budget, on the same host and toolchain; in particular the attestation ID, the observed axiom sets, the policy rows, the canonical compiler input, and every normalized verification record (§29.5) are identical.
+
+A verification may also run as the parts of one run (§9.4): each part runs the processes of its plan at the profile of its own host, a part reads from another only the `.olean` files and process records that part's processes produced, and the join judges every record it reads as the stage that produced it judges its own, after requiring it to name the join's own digest of the executable that stage runs. The directory the join publishes equals, byte for byte, the one the whole verification publishes, attestation ID included (`VR-23`); a part is defined for a project without production roots and without PDF rendering.
 
 ### 22.12 Performance telemetry
 
@@ -8031,7 +8277,7 @@ pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError>;
 
 **Run.** `build` refuses, before any Lean process runs and before anything is published: a malformed request (`LLC0201`); a root that is not a production root (`LLC0202`); an unregistered or undeclared target or another digest (`LLC0203`); a pin the project no longer matches (`LLC0204`); an evidence path that escapes the project or a symlinked bundle area (`LLS8001`); malformed evidence (`LLB6006`, `LLB6007`); evidence whose certificate is not the pinned one, earns a `refused` verdict, or is for a request whose reference program is not the root's lowered program (`LLV7101`); and a package the renderer refuses (`LLB6005`). Every check and eligibility failure of the project fails as it does for `check`. The project is then verified by the unchanged §22 pipeline over the entrypoint selection, so every production root of the project is certified; a project edited during the run is `LLC0204`. For each requested root and target, `build` renders the exporting package `verify` does not assemble (§17.17): the renderer of §17.16 over the verified lowered program, exporting the recorded entry alone as `run` with every parameter owned, with `sources` the semantic ID; its `src/lib.rs` begins with the certified crate's bytes. The bundle is published atomically, content-addressed, at `<build_root>/production/<result-id>/`; there is no output-directory option.
 
-**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lean` for certificates A, B, and E, and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered.
+**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lean` for certificates A and B and `certificates/<module path>.lex.tex` for certificate E (its kernel data in the authoring notation, §17.17), and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered.
 
 **Result.** `lexlean/production-result/2` binds the compiler (its version, the language-1.2 compiler-semantics ID of §21.2, read as an opaque digest, and the Lean toolchain); the source, semantic, and lock identities; the build and attestation IDs and the attestation, compiler input (whose SHA-256 is the compiler-input ID, §22.10), and preservation record; and per root its index `R<i>`, program, and optimality, and per target the target ID and digest, the package's name, version, directory, export, and files, the crate, the entry, the certification, and the effects the output's realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there (§17.13); an output with `recursion` recurses to a depth bounded only by its input, so the host must give the call a stack that depth fits, and exhausting it aborts the process. `lexlean production build` reports how many outputs need such a stack. Every file is stated by bundle-relative path, byte length, and SHA-256. The certification status is the closed `kernel-checked`: certificates A, B, and E compiled silently under the pinned Lean, replayed through `leanchecker`, and their root theorems depend on exactly the stated axioms (§17.17). It is preservation, at level `build`, and never optimality. Optimality is `not-claimed`, or `gnaf` with the certificate identity, the universe identity, the two documents, and the verdict the host checker of §17.18 recomputes, `certified` or `incomplete`; a `refused` verdict is never recorded. `result_id` is SHA-256 over `"lexlean-production-result-v1"` and `frame("result-body", canonical_json(result without result_id))`. The result holds no absolute path, environment value, or time; because it binds the attestation, which records the host and executable hashes (§22.9), it is identical across project locations and working directories on one host and toolchain, not across hosts.
 
@@ -8102,7 +8348,7 @@ LexLean:
 
 - canonicalizes the project root once;
 - rejects non-UTF-8 logical paths;
-- rejects symlinks in source roots, lexicon packages, lock inputs, build roots, and declared PDF resources;
+- rejects symlinks in source roots, lexicon packages, source packages (§10.5), lock inputs, build roots, and declared PDF resources;
 - rejects any normalized `..` escape;
 - rejects duplicate files by filesystem identity;
 - detects case-fold collisions before output;
@@ -8203,6 +8449,10 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLC0102` | Missing, stale, or noncanonical lock file. |
 | `LLC0103` | Unsupported schema or language version. |
 | `LLC0104` | Duplicate module or case-folded path collision. |
+| `LLC0105` | Source package is not the package the lock pins (§10.5). |
+| `LLC0106` | Source package undeclared, or declared with two sources (§10.5). |
+| `LLC0107` | Module prefix claimed by two sources (§10.5). |
+| `LLC0108` | Source package outside the workspace rule (§10.5). |
 | `LLC0201` | Production request malformed (§24.7). |
 | `LLC0202` | Requested root is not a production root (§24.7). |
 | `LLC0203` | Unknown or mismatched production target (§24.7). |
@@ -8225,6 +8475,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLR3006` | Unsafe canonical form or raw renderer output. |
 | `LLR3007` | Model artifact unavailable or its digest or length mismatched (§10.1, §17.12). |
 | `LLR3008` | Model artifact bytes violate the declared schema, type, or role (§17.12). |
+| `LLR3009` | Import of a module of a source package the importing scope does not declare (§10.5). |
 | `LLT4001` | Arity, binder, category, or conservative type mismatch. |
 | `LLT4002` | Unresolved overloaded entry. |
 | `LLT4003` | External-interface probe mismatch. |
@@ -8966,8 +9217,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-10` | `repository` | The embedded compiler-semantics ID equals a clean recomputation from normative language and schema inputs. | §21.2 |
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
-| `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, the examples leg at the verification resource profile its matrix row names and the other at the default, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence. | §9.4 |
+| `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part. | §9.2 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -9065,6 +9316,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-29` | `semantic-ir` | Reordered equivalent map, set, and graph literals link to byte-identical semantic data and generated Lean, LaTeX, and lexicon-closure artifacts, while duplicate keys, non-literal literal keys, and key types without a canonical order are rejected. | §17.12, §21 |
 | `SM-30` | `semantic-ir` | Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none. | §17.12 |
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
+| `SM-33` | `semantic-ir` | A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -9102,6 +9354,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PF-17` | `proofs` | native_decide is never accepted or generated. | §16.12, §18.2 |
 | `PF-18` | `proofs` | Lean proof failures remap to the smallest originating LexLean proof or statement span. | §20.4 |
 | `PF-19` | `proofs` | The language-1.2 linear_arithmetic proof form names only the prior document definitions it unfolds, lowers to one fixed omega script, proves true linear obligations, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-20` | `proofs` | Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only. | §17.12 |
+| `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
+| `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
+| `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -9162,6 +9418,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-20` | `verification` | The verifier process width is an operational resource profile selected only by the environment, defaulting to 1 and refusing any malformed value with LLV7017, and it enters no lock, identity, or verified artifact. | §22.11, §23.1 |
 | `VR-21` | `verification` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. | §22.3, §22.4, §22.11 |
 | `VR-22` | `verification` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. | §22.12 |
+| `VR-23` | `verification` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. | §9.4, §22.11 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -9266,6 +9523,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-11` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning is rendered in each of its targets as a package that builds under the pinned Rust toolchain, and on the seeded inputs of the differential, through the root and through its boundary entry on valid and invalid inputs, the printed outcome of each package equals the interpreter's outcome, which the declared Rust machine reproduces; that the compiler agrees with the machine the certificates are about is build evidence, never a premise of a proof. | §17.16, §17.17 |
 | `SP-12` | `preservation` | The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules. | §17.17 |
 | `SP-13` | `preservation` | Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements. | §17.17 |
+| `SP-14` | `preservation` | Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused. | §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -9340,11 +9598,21 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-01` | `runtime` | The runtime of language 1.2 is LexLean source: every module of its registry is one native core module of the runtime's own project, which holds no file of Lean source, the registry lists only the modules in dependency order, every declaration pins its exact axioms, and a source that is missing, weakened to an inexact policy, or imports anything but `Init` and an earlier runtime module is refused; the one-time migration input is absent, no native source names a runtime copy inside a module, and no Lean file declares a runtime namespace but the released output of a language-1.0 or 1.1 project. | §17.12 |
 | `RT-02` | `runtime` | The runtime text of languages 1.0 and 1.1 is the one declared exception: the portable runtime and the decoder of core module 1 are the released bytes, held as data under `language/runtime-1.2/frozen/`, read by the language-1.0 and 1.1 backends alone, excluded from the language-1.0 and 1.1 identities, and reproduced byte for byte by the released language-1.1 and 1.0 output; a one-byte change of either is not the released output. | §17.12, §21.2 |
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
-| `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules it uses and splices none, and the only string literal of the compiler's source that holds Lean declarations under a namespace is the decoder of core module 2, which loads native modules and so cannot be one; a planted runtime text constant, raw or escaped, is found. | §17.12, §18.1 |
+| `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
+| `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
+| `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
+| `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
+| `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
+| `PK-04` | `packages` | A production root of the importing project whose closure reaches a definition of a package certifies and exports over that closure as it does for a definition of its own module, the `production:` roots of a package are not roots of the importing project, and the importer publishes no certificate of the package's own. | §10.5, §17.13 |
+| `PK-05` | `packages` | The `bootstrap/` pilot imports the standard library's `Text` module through a source package of the workspace instead of holding a copy: its configuration declares `stdlib` as a source package, `bootstrap/src/` holds no `Text` module, `check` links `LexLeanStd.Text` as a module of the project whose definitions are ordinary ones, so that the project's production roots remain `parseAuditOutput` and `isClosedLeanName`, and neither the case of `BS-01`, SPEC.md §17.23, nor `bootstrap/README.md` keeps the copy or its equivalence assertion. | §10.5, §17.23 |
+| `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
+| `LM-02` | `language-models` | A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification. | §17.12 |
+| `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
+| `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 388.
+**Total required capability IDs:** 405.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
