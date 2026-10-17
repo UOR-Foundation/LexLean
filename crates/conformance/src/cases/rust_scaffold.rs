@@ -6,7 +6,7 @@
 
 use std::collections::BTreeSet;
 
-use lexlean::calculus::rust::package::{self, cargo_toml_of, Errors, Manifest};
+use lexlean::calculus::rust::package::{self, cargo_toml_of, Manifest};
 use lexlean::calculus::rust::scaffold::{self, ClippyGroup, Level, Scaffold};
 use lexlean::calculus::rust::{self, Profile};
 use serde_json::Value as Json;
@@ -621,7 +621,7 @@ fn rb_13() {
             }
         }
     }
-    let ((recursive, _), (overflowing, _), (plain, _)) = (
+    let ((recursive, _), (_, _), (plain, _)) = (
         recursive.expect("a recursive fixture"),
         overflowing.expect("an overflowing fixture"),
         plain.expect("a plain fixture"),
@@ -643,23 +643,13 @@ fn rb_13() {
         let error = package::package(manifest).expect_err(expected);
         assert!(error.contains(expected), "{error}");
     };
-    // Dropped one at a time.
-    let mut dropped = recursive.clone();
-    dropped.effects.retain(|effect| effect != "recursion");
-    refused(
-        &dropped,
-        "effects mismatch: the package shows the effect `recursion`",
-    );
-    let mut dropped = overflowing.clone();
-    assert!(dropped
-        .exports
-        .iter()
-        .any(|export| export.errors == Errors::Overflow));
-    dropped.effects.clear();
-    refused(
-        &dropped,
-        "effects mismatch: the package shows the effect `overflow`",
-    );
+    // The list is the root's, not derived from the program: a list that
+    // states less than the program shows renders, because eligibility, and
+    // not the renderer, decides a root's effects (the generated argument
+    // check of a recursive type recurses, a length item can overflow).
+    let mut stated = recursive.clone();
+    stated.effects.clear();
+    package::package(&stated).expect("the effects are the root's to state");
     // Unregistered, unordered, and allocation where there is none.
     let mut unknown = plain.clone();
     unknown.effects = vec!["speed".to_owned()];

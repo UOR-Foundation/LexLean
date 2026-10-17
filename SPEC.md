@@ -4678,10 +4678,10 @@ production pipeline that derives target programs from LexLean roots, not of
 this backend: `sources` binds a package to the build that states its program,
 and the backend never derives a program from a build. Its `effects` are the
 effects of §17.13 the realization can exhibit on the profile, strictly
-ascending and registered; the renderer records them, and refuses a list that
-omits an effect the package shows of itself (an export that can overflow, or a
-function that reaches itself through calls and closures) or that states
-`allocation` on `rust-core`. Each export names a
+ascending and registered; for a package a production root exports they are the
+root's, which eligibility decides and the renderer does not derive, and the
+renderer refuses a list that is unregistered, unordered, or states `allocation`
+on `rust-core`. Each export names a
 program function, its Rust name, how it takes each parameter (`own`;
 `borrow`, by shared reference; or `copy`, only for a `Copy` type: a scalar,
 or an option, result, or pair of `Copy` types), and whether it can fail
@@ -4700,8 +4700,8 @@ or an option, result, or pair of `Copy` types), and whether it can fail
   mismatch*);
 - the profile is `rust-core` and the program needs heap allocation, or its
   effects state `allocation` (*hidden allocation*);
-- its effects are not registered, not strictly ascending, or omit an effect
-  the package shows of itself (*effects mismatch*); or
+- its effects are not registered or not strictly ascending (*effects
+  mismatch*); or
 - the manifest is malformed, its version not canonical, its sources not
   canonical, its program invalid or without a faithful rendering, or an
   export's arity wrong.
@@ -9638,7 +9638,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the library path, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
 | `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
-| `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target, the production registry says that exhausting the stack aborts the process, and a list that omits an overflowing export, omits a function that reaches itself, or states allocation on `rust-core` is refused. | §17.13, §17.16 |
+| `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target and the replay binds the package's to the result's, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |

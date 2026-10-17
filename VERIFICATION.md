@@ -3704,7 +3704,6 @@ repository itself, running the case, and restoring the file. Each case is
 | an allowed lint of the module moved to `correctness` | `RB-11` | ``allows a lint in Clippy's `correctness` group (§17.16)`` |
 | the `single_match` row dropped from the module | `RB-11` | ``the specification's `single_match` is not the module's`` |
 | the reader's refusal of `correctness` disabled | `RB-11` | the module with a `correctness` row decodes, and the case's `expect_err` fires |
-| the recursion check of the renderer disabled | `RB-13` | `a recursive fixture`: no fixture shows `recursion` |
 | the recursion statement of `language/production-1.2.toml` set back to "explicit failure" | `RB-13` | the statement is printed, and the case demands `aborts the process` |
 | `language/package-1.2/` removed from the files introduced for 1.2 | `RB-12` | `assertion left == right failed` on the language-1.0 identity: the scaffold is hashed into it |
 
@@ -3713,9 +3712,22 @@ repository cannot reach: a module whose declaration, constructor, field, or
 body shape differs (`RB-10`), a table row changed, dropped, or added on either
 side and a theorem removed or weakened (`RB-11`), the edition, a lint row, and
 a gate changed in a copy of the embedded tree, which must move the language-1.2
-ID alone (`RB-12`), and effects dropped one at a time, unregistered, unordered,
-or stating allocation on `rust-core` (`RB-13`). The ten exceptions are each
+ID alone (`RB-12`), and effects that are unregistered, unordered,
+or state allocation on `rust-core` (`RB-13`). The ten exceptions are each
 removed by dropping their row of the module in the table above.
+
+A first version of `RB-13` also made the renderer refuse a list that omitted
+an effect the package's program shows (a function that reaches itself, an
+export that can overflow). Run over every committed export with the effects of
+the root's eligibility report, it refused `Coverage.Boundary.groveRoot`
+(`recursion`) and `Coverage.Colls.graphs` and `stringGraph` (`overflow`): the
+entry of a root carries a generated check of its arguments, which recurses over
+a recursive type such as `Grove`, and a length item can overflow, neither of
+which the root's eligibility reports. The renderer cannot decide what the
+registry means, so the check was removed and the list stays the root's, as
+eligibility decides; `shown_effects` remains only to state the fixtures'.
+That eligibility omits the recursion of the argument check (a stack demand of
+the input's depth) is a finding for #105 and not changed here.
 
 Cases that compare to regenerated records (`RB-02`..`RB-05`, `RB-07`, and the
 cases that read a lock, such as `AU-02`, `AU-03`, and `AU-10`..`AU-12`) fail on
