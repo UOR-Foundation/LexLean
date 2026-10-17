@@ -15,6 +15,16 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
+  job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
+  A draft pull request runs the `rest` leg and no other job (about 23 runner
+  minutes instead of about 300); a ready pull request, a request, and a push to
+  `main` run the whole gate; a push to `main` that merges a head whose tree it
+  equals runs nothing when a pull request run of that head passed every job,
+  the join of Atlas, every host, and every leg, and says which run. The legs of
+  the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
+  to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
+  The register is unchanged: the statement of `RP-14` is extended.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
