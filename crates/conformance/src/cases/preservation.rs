@@ -389,6 +389,8 @@ fn stress_estimates() -> u64 {
                     .max()
                     .unwrap_or(0)
             };
+            // A shape that fits at its full scale is not searched; it sits
+            // at the edge only when a scaling of it passes the limit.
             let (mut low, mut high) = (1_usize, 256_usize);
             if largest(high) <= limit {
                 low = high;
@@ -404,7 +406,7 @@ fn stress_estimates() -> u64 {
             }
             let size = largest(low);
             assert!(
-                size <= limit && size * 10 >= limit * 6,
+                size <= limit && (low == 256 || size * 10 >= limit * 6),
                 "mixed shape {index} ({shape:?}): the largest scaling that fits has certificates of {size} bytes, which is not near the limit {limit}"
             );
             let certified =

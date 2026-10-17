@@ -221,7 +221,12 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                         &module_b,
                         &module_e,
                         fallible,
-                        composed.text.len() as u64 / 2,
+                        composed
+                            .source
+                            .as_ref()
+                            .map_or(composed.text.len(), String::len)
+                            as u64
+                            / 2,
                     ))
                 })
                 .collect();
