@@ -703,6 +703,7 @@ A LexLean project contains:
 - a valid Lake workspace;
 - one or more `.lex.tex` modules under configured source roots;
 - zero or more local lexicon packages;
+- in language 1.2, zero or more source packages, member projects of the project's workspace that it imports modules from (§10.5);
 - `.lexlean/`, reserved for generated and verified artifacts.
 
 No project file may override the language grammar, backend, verifier sequence, axiom-audit parser, source-map format, or verified artifact set.
@@ -748,10 +749,11 @@ The parsed project has one canonical TOML serialization used by `project_config_
 1. scalar top-level keys in the order shown by the schema example;
 2. `lexicon_source` tables sorted by `package`, with keys in the order `package`, `kind`, then kind-specific fields;
 3. language 1.2 only: `artifact_source` tables sorted by `sha256`, with keys in the order `sha256`, `path`, omitted entirely when there are none, so a project without artifacts keeps its bytes;
-4. `[limits]` with keys in the order shown;
-5. optional `[pdf]` last, with keys in the order shown;
-6. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
-7. no comments, blank leading lines, or trailing spaces.
+4. language 1.2 only: `source_package` tables sorted by `package`, with keys in the order `package`, `version`, `kind`, `path`, omitted entirely when there are none, so a project without source packages keeps its bytes;
+5. `[limits]` with keys in the order shown;
+6. optional `[pdf]` last, with keys in the order shown;
+7. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
+8. no comments, blank leading lines, or trailing spaces.
 
 Input whitespace does not affect this canonical serialization. A project may be semantically valid before formatting, but `lexlean lock --check` and repository examples require canonical bytes.
 
@@ -771,6 +773,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `lean_toolchain` | Exactly the language-1.0 toolchain string. |
 | `lexicon_source` | Unique by package and sorted by package identifier. |
 | `artifact_source` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[artifact_source]]` tables `sha256 = "<64 lowercase hex>"`, `path = "<project-relative file>"`, sorted by `sha256`, unique by digest and by path, never beneath the build root. Each names the content-addressed bytes of one model artifact (§17.12); `check`, `build`, `fmt`, and `verify` read the file, confined (§25.1), and require its SHA-256 to equal the configured digest (`LLR3007`). Artifacts are never fetched. |
+| `source_package` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[source_package]]` tables `package = "<identifier>"`, `version = "<reader's string>"`, `kind = "path"`, `path = "<workspace-relative member directory>"`, sorted and unique by `package`, with `package` an identifier of the form of `name` and `version` a string of at most 64 ASCII letters, digits, `.`, `+`, and `-` that begins with a letter or digit. `path` is resolved from the workspace root, not the project's (§10.5); a kind other than `path` is `LLC0101`, and a path that is absolute or has a `..` segment escapes the workspace and is `LLS8001`. |
 | `limits` | Every listed positive integer is required. There are no hidden compiler defaults. |
 
 #### Lexicon-source forms
@@ -848,6 +851,31 @@ The project `lean-toolchain` MUST contain the exact toolchain string. `lexlean l
 
 If both Lake configuration forms exist, locking fails. Verification requires the recorded files to match and requires all manifest dependencies to be locally available.
 
+### 10.5 Source packages
+
+A language-1.2 project imports the modules of another project, a *source package*, without copying them. A source package is a project: its own `lexlean.toml` names its `module_prefix`, its `source_roots`, its language (1.2), and its own source packages, and `entrypoints` may name any of its modules, since a library has no distinguished one. Its modules keep its prefix: a module `Text` of a package whose prefix is `LexLeanStd` is the Lean module `LexLeanStd.Text` in every project that imports it. Nothing is fetched: a package is read from a directory of the workspace, `kind` is `path` and nothing else, and a package of any other kind is refused rather than treated as a later extension.
+
+**The workspace.** Until now every read of a project lay inside the project (§25.1). A package lives beside the projects that use it, so one widening is made, stated narrowly. An optional `lexlean-workspace.toml` at the root of a repository lists the member project directories:
+
+```toml
+spec = "lexlean/workspace/1"
+members = ["app", "base", "lib"]
+```
+
+`members` are unique, sorted, workspace-relative directories (no `..`, no leading separator), and the file carries no comment. The workspace of a project is the nearest proper ancestor of its canonical root that holds the file. A project that declares a source package must be a member of its workspace, and a `source_package` path must name a member, resolved from the workspace root. A project outside any workspace, a project its workspace does not list, a path that names no member, and a malformed workspace file are `LLC0108`: a stray file higher in the tree grants nothing to a project it does not list. No path component from the workspace root to a package may be a symlink, and a path with a `..` segment is an escape; both are `LLS8001`. Of a package, only its `lexlean.toml` and the files beneath its `source_roots` are read, and a symlink or a special file among them is `LLS8001`. A project that declares no source package reads nothing outside its own root, and has no workspace.
+
+**The manifest of a package** declares language 1.2, no `artifact_source`, no `[pdf]`, and only builtin `lexicon_source`s: those would read files outside what the pin covers, or glossaries the importing project does not have. A violation is `LLC0101`. The glossaries a package module uses (`\useglossary`) are resolved in the closure of the importing project, so a package that uses one the project does not load fails `LLR3001`.
+
+**The pin.** `lexlean.lock` (§11) carries one `[[source_package]]` row for every package in the transitive closure of the project's declarations, sorted by `id`: the identifier, the declared `version`, `kind`, the workspace-relative `source`, the package's `module_prefix`, `tree_sha256` over the package's `lexlean.toml` and every regular file beneath its `source_roots` (the tree digest of §11.5, over package-relative paths in bytewise order), `manifest_sha256` over its `lexlean.toml`, and `imports`, the `id@version` of the packages its own manifest declares, sorted. The digests are recomputed by every command: `lock --check`, `check`, `fmt`, `build`, and `verify` read the package and require the lock's row to be the package as it now is. A changed byte, a changed version, source, prefix, or declared package is `LLC0105`, naming the package and the locked and the found values, before anything is linked. A row for a package the closure of the project's declarations does not reach is `LLC0106`, and so is one identifier with two sources. `lexlean lock` writes the rows, and a package that depends on itself or on the importing project is `LLR3003`.
+
+**One source per module prefix.** The importing project's prefix and each package's must not be equal, and none may lie beneath another (`a.b` is beneath `a`); two sources that claim a prefix are `LLC0107`.
+
+**Closed imports.** A module of the importing project may import modules of the project, written as before, and modules of the packages the project declares itself, written with the package's prefix: `\importmodule{LexLeanStd.Text}`. A module of a package may import the modules of that package, written as inside the package, and the modules of the packages its own manifest declares, written with their prefixes. A module of a package the importing scope does not declare, though the closure holds it, is `LLR3009`; one no source provides is `LLR3005`; a name both the scope's own modules and a declared package provide is `LLC0107`; a cycle of packages or of modules is `LLR3003`. The package's modules that no import reaches are not linked. Inside the linked project a package module is named by its Lean name, `LexLeanStd.Text`, which is its key in every record; its references to a sibling are read under that key.
+
+**Production.** A package's `production:` clauses make roots of the package project, built when the package is built. Imported by another project, a package definition is an ordinary definition: no module of a package is analysed for production roots, the certificates are those of the closure of the importing project's roots, and the package's own certified roots are not republished by the importer. There is no re-export.
+
+**Verification and identity.** The modules of every package the project reaches are generated, elaborated, replayed with `leanchecker`, and audited as part of the importing project's `verify`, under the package's prefix. The build manifest's module rows, the semantic snapshot's modules, and the attestation (`origins`, by Lean module) name the package as their `origin`; the document of a package module is linked and rendered like any other, and `fmt` never rewrites a package file, which is the package's own. Nothing crosses runs (§9.4): there is no cache of a built package. The source ID (§21.3) hashes the canonical lock, and so the pins, and the bytes of every linked package module. `source_package` and the lock rows are part of the language-1.2 schemas, so they move the language-1.2 compiler-semantics ID (§21.2) once; languages 1.0 and 1.1 are unchanged, and so is a language-1.2 project that declares no source package, apart from that identity.
+
 ---
 
 ## 11. Lock file
@@ -892,6 +920,20 @@ imports = ["lexlean.core@1.0.0"]
 
 An optional `[pdf]` lock record mirrors the configured provider and records the hashes of every declared resource.
 
+Language 1.2 only, a project that declares source packages (§10.5) has, after the `[[package]]` rows, one `[[source_package]]` row for every package in the transitive closure of its declarations, and a project that declares none has none:
+
+```toml
+[[source_package]]
+id = "lib"
+version = "1.0.0"
+kind = "path"
+source = "lib"
+module_prefix = "PkgLib"
+tree_sha256 = "..."
+manifest_sha256 = "..."
+imports = ["base@1.0.0"]
+```
+
 Language-1.2 model artifacts (§10.1, §17.12) have no lock rows: each is pinned
 by its `sha256` in `lexlean.toml`, whose canonical bytes the lock's project
 digest and the source ID cover, and every `check`, `build`, `fmt`, and
@@ -901,6 +943,7 @@ digest and the source ID cover, and every `check`, `build`, `fmt`, and
 
 - `workspace_file` rows sort by `path`.
 - `package` rows sort by `(id, version)`.
+- `source_package` rows sort by `id`, and their `imports` by `id`.
 - package `imports` sort lexicographically and contain no duplicates.
 - all keys use the order shown by the schema formatter.
 - lowercase hexadecimal is mandatory.
@@ -8249,7 +8292,7 @@ LexLean:
 
 - canonicalizes the project root once;
 - rejects non-UTF-8 logical paths;
-- rejects symlinks in source roots, lexicon packages, lock inputs, build roots, and declared PDF resources;
+- rejects symlinks in source roots, lexicon packages, source packages (§10.5), lock inputs, build roots, and declared PDF resources;
 - rejects any normalized `..` escape;
 - rejects duplicate files by filesystem identity;
 - detects case-fold collisions before output;
@@ -8350,6 +8393,10 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLC0102` | Missing, stale, or noncanonical lock file. |
 | `LLC0103` | Unsupported schema or language version. |
 | `LLC0104` | Duplicate module or case-folded path collision. |
+| `LLC0105` | Source package is not the package the lock pins (§10.5). |
+| `LLC0106` | Source package undeclared, or declared with two sources (§10.5). |
+| `LLC0107` | Module prefix claimed by two sources (§10.5). |
+| `LLC0108` | Source package outside the workspace rule (§10.5). |
 | `LLC0201` | Production request malformed (§24.7). |
 | `LLC0202` | Requested root is not a production root (§24.7). |
 | `LLC0203` | Unknown or mismatched production target (§24.7). |
@@ -8372,6 +8419,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLR3006` | Unsafe canonical form or raw renderer output. |
 | `LLR3007` | Model artifact unavailable or its digest or length mismatched (§10.1, §17.12). |
 | `LLR3008` | Model artifact bytes violate the declared schema, type, or role (§17.12). |
+| `LLR3009` | Import of a module of a source package the importing scope does not declare (§10.5). |
 | `LLT4001` | Arity, binder, category, or conservative type mismatch. |
 | `LLT4002` | Unresolved overloaded entry. |
 | `LLT4003` | External-interface probe mismatch. |
@@ -9496,14 +9544,16 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
-
-
+| `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
+| `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
+| `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
+| `PK-04` | `packages` | A production root of the importing project whose closure reaches a definition of a package certifies and exports over that closure as it does for a definition of its own module, the `production:` roots of a package are not roots of the importing project, and the importer publishes no certificate of the package's own. | §10.5, §17.13 |
 | `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
 | `LM-02` | `language-models` | A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification. | §17.12 |
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 398.
+**Total required capability IDs:** 402.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

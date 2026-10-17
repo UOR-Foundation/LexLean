@@ -104,6 +104,10 @@ nested byte-data declarations are not restricted by interactive defaults.
 Project child timeout/output limits and full kernel/axiom verification remain
 mandatory. These are generated backend settings, not caller-provided options.
 
+## Source packages
+
+A language-1.2 project imports the modules of another project of its workspace without copying them: `[[source_package]]` in `lexlean.toml` names a member directory listed by `lexlean-workspace.toml`, `lexlean.lock` pins the package by the digest of its manifest and source files, every command recomputes the pin, imports are closed to the project's own modules and the declared packages, and `verify` replays the package's modules under its module prefix with the package as their origin (SPEC.md §10.5, `PK-01`..`PK-04`; the workspace the cases use is [tests/packages/workspace](tests/packages/workspace/)).
+
 ## Examples that verify under the pinned toolchain
 
 The [compiler/](compiler/) project defines the production realization calculus (SPEC.md §17.14) in LexLean and passes the same gates as an example; its hand-constructed target programs live under [compiler/fixtures/](compiler/fixtures/). Its `Gnaf` module states GNAF requests over that calculus (SPEC.md §17.15): the complete-system universe, machine contract, and objective order, all fixed before any optimizer, with a kernel-checked theorem that the universe is complete. The requests themselves live under [compiler/gnaf/](compiler/gnaf/), and [compiler/gnaf.manifest.json](compiler/gnaf.manifest.json) is the dependency manifest UOR-GNAF §20 requires. Its `Certification` module checks GNAF certificates (SPEC.md §17.18) under [compiler/certificates/](compiler/certificates/): a global optimum, an argmin, or a complete Pareto frontier is certified from evidence for every system of the universe rather than by enumerating it, with the soundness of the checker proved in [compiler/proofs/](compiler/proofs/); local normality, correctness, and representation-minimality are separate, weaker statuses, and an incomplete certificate names its first open obligation. The target fixtures' Rust packages (§17.16) live under [compiler/rust/](compiler/rust/).
@@ -138,7 +142,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 398 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 402 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 The differential against the independent generator `lean4-prod` (SPEC.md §17.19, `OR-01`..`OR-08`) acquires it at its pinned commit: from the checkout `LEXLEAN_ORACLE_DIR` names, or by fetching the commit with `git` into the Cargo target directory (`LEXLEAN_ORACLE_CACHE` overrides), and builds it with the pinned Lean and Rust toolchains. It is validation evidence only and no input to any identity. An oracle that cannot be acquired, is not the pinned files, or fails is unavailable: that fails the gate on Linux x86-64 and is printed as `NOT VALIDATED` elsewhere, and is never reported as agreement.
 
@@ -180,6 +184,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The runtime of generated Lean as native modules: the portable, collection, model, and reasoning runtimes of language 1.2 are LexLean source that every generated module imports, migrated losslessly and audited against their exact axioms, the released runtime text of languages 1.0 and 1.1 is frozen data equal to their released output, and no other Lean runtime text remains in the compiler but the decoder of core module 2 | `RT-01`..`RT-04` | `build` |
 | The standard library: language-1.2 source beside the compiler whose members are certified production roots, each validated against Rust's standard library by a seeded differential of its evaluator and rustc realizations; bytes and text over `Bytes` | `SL-01` | `build` |
 | The bootstrap project: the compiler's own components as language-1.2 source compiled by LexLean's production pipeline to certified Rust packages, the first being the exact axiom-output parser and its closed Lean-name check, each held to the Rust it replaces (the stage-0 oracle) by the committed golden vectors and a seeded differential of its evaluator and rustc realizations, with planted defects detected and the production export committed | `BS-01` | `build` |
+| Source packages: a language-1.2 project imports the modules of a locked, content-addressed package of its workspace: `[[source_package]]` and `lexlean-workspace.toml`, the pins in `lexlean.lock` recomputed by every command, imports closed at link, no re-export of a package's production roots, and the package's modules replayed by the importer's `verify` with their origin in the records | `PK-01`..`PK-04` | `build` |
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
 | Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text (context windows, text generators, text classifiers, adapters, and composition follow in their own slices and add their rows then) | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
 

@@ -15,6 +15,27 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
+  A project declares `[[source_package]]` tables (`package`, `version`, `kind`
+  `path`, `path`), each naming a member project of the workspace an optional
+  `lexlean-workspace.toml` at the repository root lists, and imports its
+  modules by their own Lean names (`\importmodule{LexLeanStd.Text}`). The lock
+  gains `[[source_package]]` rows (tree digest over the package's manifest and
+  source files, manifest digest, version, prefix, its own packages) that every
+  command recomputes; a changed byte or version is `LLC0105` naming both
+  digests, a pin for an undeclared package `LLC0106`, a module prefix claimed
+  twice `LLC0107`, a project or path outside the workspace rule `LLC0108`
+  (a symlink or an escaping path is `LLS8001`), and an import of a package the
+  scope does not declare `LLR3009`. A package definition is an ordinary
+  definition of the importing project: its own `production:` roots are not
+  roots of the importer and nothing is re-exported. `verify` replays the
+  package modules under the package's prefix, with the package as their
+  `origin` in the build manifest, the snapshot, and the attestation; `fmt`
+  never writes a package file. The schema change moves the language-1.2
+  compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
+  without source packages, keep their bytes apart from that identity. The
+  register gains `PK-01`..`PK-04` (401 rows with `SL-01` and `LM-01`..`LM-03`, `LM-13`); `PK-05` (the `bootstrap/` pilot
+  imports `stdlib/`) follows #153 and #160.
 - The first component of the compiler's own pipeline as language-1.2 source:
   the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
   no new diagnostic code, no change to the language-1.2 identity).

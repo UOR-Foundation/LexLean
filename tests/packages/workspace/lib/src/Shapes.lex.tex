@@ -1,0 +1,14 @@
+\begin{lexlean}{Shapes}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{PkgBase.Core}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: quad,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (PkgBase.Core::twice (PkgBase.Core::twice n)),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

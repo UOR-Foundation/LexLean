@@ -2373,6 +2373,30 @@ suite = "bootstrap"
 statement = "The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones."
 
 [[id]]
+id = "PK-01"
+level = "build"
+suite = "packages"
+statement = "A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code."
+
+[[id]]
+id = "PK-02"
+level = "build"
+suite = "packages"
+statement = "A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003."
+
+[[id]]
+id = "PK-03"
+level = "build"
+suite = "packages"
+statement = "An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`."
+
+[[id]]
+id = "PK-04"
+level = "build"
+suite = "packages"
+statement = "A production root of the importing project whose closure reaches a definition of a package certifies and exports over that closure as it does for a definition of its own module, the `production:` roots of a package are not roots of the importing project, and the importer publishes no certificate of the package's own."
+
+[[id]]
 id = "LM-01"
 level = "build"
 suite = "language-models"

@@ -786,6 +786,7 @@ fn init_project(
             package: "lexlean.std.nat".to_owned(),
         }],
         artifact_sources: Vec::new(),
+        source_packages: Vec::new(),
         limits: INIT_LIMITS,
         pdf: None,
     };

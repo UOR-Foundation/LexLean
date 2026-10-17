@@ -21,6 +21,9 @@ mod reasoning;
 
 struct Render<'a> {
     prefix: &'a str,
+    /// The Lean module each imported module's key names; a module not in it
+    /// lies under `prefix` (§10.5).
+    lean_imports: &'a std::collections::BTreeMap<String, String>,
     /// §17.12: in a well-founded definition, each `if` (by node address)
     /// lowers to a dependent match binding its numbered hypothesis.
     hypotheses: std::collections::BTreeMap<usize, usize>,
@@ -349,7 +352,14 @@ impl Render<'_> {
             (Some(module), _) if module == crate::text_laws::PREFIX => {
                 identifier(&format!("{module}.{}", member.name))
             }
-            (Some(module), _) => identifier(&format!("{}.{}.{}", self.prefix, module, member.name)),
+            (Some(module), _) => identifier(&format!(
+                "{}.{}",
+                self.lean_imports
+                    .get(module)
+                    .cloned()
+                    .unwrap_or_else(|| format!("{}.{module}", self.prefix)),
+                member.name
+            )),
             (None, Some(own)) if !builtin => identifier(&format!("{own}.{}", member.name)),
             (None, _) => identifier(&member.name),
         }
@@ -558,6 +568,7 @@ impl Render<'_> {
     fn cross_check(&self, check: &CrossCheck, module: &str) -> String {
         let qualified = Render {
             prefix: self.prefix,
+            lean_imports: self.lean_imports,
             hypotheses: std::collections::BTreeMap::new(),
             document: false,
             qualify: Some(module),
@@ -1346,6 +1357,7 @@ fn well_founded_definition(
             })?;
     let render = Render {
         prefix: base.prefix,
+        lean_imports: base.lean_imports,
         hypotheses: plan
             .addresses
             .iter()
@@ -1750,6 +1762,7 @@ pub fn render_lean(
     let document = &checked.document;
     let base_render = Render {
         prefix: module_prefix,
+        lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
         qualify: None,
@@ -1759,6 +1772,7 @@ pub fn render_lean(
     // reference it makes is written qualified (§17.12, models).
     let model_render = Render {
         prefix: module_prefix,
+        lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
         qualify: Some(&document.lean_module),
@@ -1798,7 +1812,7 @@ pub fn render_lean(
     for import in &document.imports {
         text.push_str(&format!(
             "public import {}\n",
-            identifier(&format!("{module_prefix}.{import}"))
+            identifier(&document.lean_import(import))
         ));
     }
     // §17.12 (text): the elaboration's own imports — the sealed laws
@@ -2831,6 +2845,7 @@ pub fn render_latex(
 ) -> Result<Emitter, Diagnostic> {
     let render = Render {
         prefix: module_prefix,
+        lean_imports: &checked.document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: true,
         qualify: None,

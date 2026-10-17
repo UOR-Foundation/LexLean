@@ -36,6 +36,28 @@ pub struct LockPackage {
     pub imports: Vec<String>,
 }
 
+/// One locked source package row (§10.5, §11.1): the pin of a package of the
+/// workspace by the digest of its manifest and source files.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LockSourcePackage {
+    /// The package identifier.
+    pub id: String,
+    /// The declared version, for readers.
+    pub version: String,
+    /// `path`.
+    pub kind: String,
+    /// The workspace-relative member directory.
+    pub source: String,
+    /// The package's module prefix.
+    pub module_prefix: String,
+    /// The tree digest over the manifest and the source files.
+    pub tree_sha256: Sha256Digest,
+    /// SHA-256 of the manifest.
+    pub manifest_sha256: Sha256Digest,
+    /// Sorted unique `package@version` of the packages it declares.
+    pub imports: Vec<String>,
+}
+
 /// A locked PDF provider record (§11.1): it mirrors the configured
 /// provider (program, argument vectors, output pattern, hashes) and records
 /// the hash of every declared resource.
@@ -70,6 +92,9 @@ pub struct Lock {
     pub workspace_files: Vec<(String, Sha256Digest)>,
     /// Package rows sorted by `(id, version)`.
     pub packages: Vec<LockPackage>,
+    /// Language 1.2: source package rows sorted by identifier, the
+    /// transitive closure of the project's source packages.
+    pub source_packages: Vec<LockSourcePackage>,
     /// The optional PDF record.
     pub pdf: Option<LockPdf>,
 }
@@ -130,6 +155,30 @@ impl Lock {
             let imports: Vec<String> = package.imports.iter().map(|i| toml_string(i)).collect();
             out.push_str(&format!("imports = [{}]\n", imports.join(", ")));
         }
+        // Written only when the project declares source packages, so every
+        // other lock keeps its bytes.
+        let mut source_packages = self.source_packages.clone();
+        source_packages.sort_by(|a, b| a.id.cmp(&b.id));
+        for package in &source_packages {
+            out.push_str("\n[[source_package]]\n");
+            out.push_str(&format!("id = {}\n", toml_string(&package.id)));
+            out.push_str(&format!("version = {}\n", toml_string(&package.version)));
+            out.push_str(&format!("kind = {}\n", toml_string(&package.kind)));
+            out.push_str(&format!("source = {}\n", toml_string(&package.source)));
+            out.push_str(&format!(
+                "module_prefix = {}\n",
+                toml_string(&package.module_prefix)
+            ));
+            out.push_str(&format!(
+                "tree_sha256 = {}\n",
+                toml_string(&package.tree_sha256.to_hex())
+            ));
+            out.push_str(&format!(
+                "manifest_sha256 = {}\n",
+                toml_string(&package.manifest_sha256.to_hex())
+            ));
+            out.push_str(&format!("imports = {}\n", toml_array(&package.imports)));
+        }
         if let Some(pdf) = &self.pdf {
             out.push_str("\n[pdf]\n");
             out.push_str(&format!("program = {}\n", toml_string(&pdf.program)));
@@ -174,6 +223,8 @@ struct RawLock {
     workspace_files: Vec<RawWorkspaceFile>,
     #[serde(rename = "package", default)]
     packages: Vec<RawLockPackage>,
+    #[serde(rename = "source_package", default)]
+    source_packages: Vec<RawLockSourcePackage>,
     pdf: Option<RawLockPdf>,
 }
 
@@ -192,6 +243,19 @@ struct RawLockPackage {
     kind: String,
     source: String,
     revision: String,
+    tree_sha256: String,
+    manifest_sha256: String,
+    imports: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawLockSourcePackage {
+    id: String,
+    version: String,
+    kind: String,
+    source: String,
+    module_prefix: String,
     tree_sha256: String,
     manifest_sha256: String,
     imports: Vec<String>,
@@ -325,6 +389,66 @@ pub fn parse_lock(path: &str, bytes: &[u8]) -> Result<Lock, Vec<Diagnostic>> {
             )));
         }
     }
+    // §10.5: the rows of the source packages, language 1.2 only, sorted and
+    // unique by identifier, each `package@version` import well formed.
+    if !raw.source_packages.is_empty() && raw.language != crate::LANGUAGE_1_2 {
+        diagnostics.push(lock_error(format!(
+            "{path}: source_package rows are a language-1.2 field"
+        )));
+    }
+    if !raw
+        .source_packages
+        .windows(2)
+        .all(|pair| pair[0].id < pair[1].id)
+    {
+        diagnostics.push(lock_error(format!(
+            "{path}: source_package rows must be unique and sorted by id"
+        )));
+    }
+    let mut source_packages = Vec::new();
+    for row in &raw.source_packages {
+        if row.kind != "path" {
+            diagnostics.push(lock_error(format!(
+                "{path}: source package `{}` has kind `{}`, not `path`",
+                row.id, row.kind
+            )));
+        }
+        for import in &row.imports {
+            let well_formed = import.split_once('@').is_some_and(|(id, version)| {
+                crate::config::is_project_name(id) && crate::config::is_package_version(version)
+            });
+            if !well_formed {
+                diagnostics.push(lock_error(format!(
+                    "{path}: source package `{}` has invalid import `{import}`",
+                    row.id
+                )));
+            }
+        }
+        if !row.imports.windows(2).all(|pair| pair[0] < pair[1]) {
+            diagnostics.push(lock_error(format!(
+                "{path}: source package `{}` imports are not sorted and unique",
+                row.id
+            )));
+        }
+        source_packages.push(LockSourcePackage {
+            id: row.id.clone(),
+            version: row.version.clone(),
+            kind: row.kind.clone(),
+            source: row.source.clone(),
+            module_prefix: row.module_prefix.clone(),
+            tree_sha256: hex(
+                "source_package.tree_sha256",
+                &row.tree_sha256,
+                &mut diagnostics,
+            ),
+            manifest_sha256: hex(
+                "source_package.manifest_sha256",
+                &row.manifest_sha256,
+                &mut diagnostics,
+            ),
+            imports: row.imports.clone(),
+        });
+    }
     let pdf = raw.pdf.as_ref().map(|raw_pdf| LockPdf {
         program: raw_pdf.program.clone(),
         version_argv: raw_pdf.version_argv.clone(),
@@ -357,6 +481,7 @@ pub fn parse_lock(path: &str, bytes: &[u8]) -> Result<Lock, Vec<Diagnostic>> {
         project_config_sha256,
         workspace_files,
         packages,
+        source_packages,
         pdf,
     };
     if diagnostics.is_empty() {
@@ -1122,6 +1247,7 @@ pub fn compute_lock(
     allow_network: bool,
 ) -> Result<(Lock, Vec<LexiconPackage>), Vec<Diagnostic>> {
     let resolved = resolve_packages(project, allow_network)?;
+    let source_packages = crate::source_package::resolve(project)?;
 
     // The closure must include every transitive import exactly once (§11.3);
     // imports of loaded packages must all be loaded.
@@ -1187,6 +1313,7 @@ pub fn compute_lock(
             project_config_sha256: project.config.config_sha256(),
             workspace_files,
             packages: resolved.rows,
+            source_packages: source_packages.rows(),
             pdf,
         },
         resolved.packages,
@@ -1219,6 +1346,9 @@ pub fn read_current_lock(
     let bytes = read_lock_bytes(project).map_err(|d| vec![d])?;
     let committed = parse_lock(&project.config.lockfile, &bytes)?;
     let (expected, packages) = compute_lock(project, false)?;
+    // §10.5: a package that is not the one the lock pins is named with both
+    // digests before the lock is called stale as a whole.
+    crate::source_package::check_pins(&committed.source_packages, &expected.source_packages)?;
     if expected.canonical_bytes() != bytes {
         let mut mismatch = lock_error(format!(
             "{} is stale or noncanonical; run `lexlean lock`",
