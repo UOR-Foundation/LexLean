@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The second component of the compiler's own pipeline as language-1.2 source:
+  the preservation lexer and token audit (SPEC.md §17.23, §17.17, `BS-02`, #92;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/src/TokenAudit.lex.tex` imports `LexLeanStd.Text` via source
+  package and declares `lex` and `auditTokens` as production roots for
+  `rust-std`. `BS-02` runs 1,731 deterministic Lean 4 source vectors and 300
+  seeded combinations per root against the stage-0 Rust oracle
+  `production::preserve::{lex, audit_tokens}` under the calculus evaluator and
+  5,731 inputs per root under the pinned `rustc`, detects seven planted defects,
+  and, under the pinned Lean, compares the certified `audit_tokens` and `lex`
+  packages with the committed ones under `tests/production-export/bootstrap/`.
+  `BS-02` brings the register to 405 IDs.
 - The decoder of a version 2 core module no longer takes a derived row from
   the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
   the pinned Lean reserves (matcher equations and splitters, definition

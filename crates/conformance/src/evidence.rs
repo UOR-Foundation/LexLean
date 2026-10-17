@@ -58,8 +58,13 @@ pub fn telemetry_in(verified: &Path) -> Result<Vec<String>, String> {
             continue;
         }
         let bytes = std::fs::read(entry.path()).map_err(|error| format!("{relative}: {error}"))?;
-        let value: serde_json::Value = serde_json::from_slice(&bytes)
-            .map_err(|error| format!("{relative}: not JSON: {error}"))?;
+        let value: serde_json::Value = {
+            let mut reader = serde_json::Deserializer::from_slice(&bytes);
+            reader.disable_recursion_limit();
+            serde::Deserialize::deserialize(&mut reader)
+                .and_then(|value| reader.end().map(|()| value))
+                .map_err(|error| format!("{relative}: not JSON: {error}"))?
+        };
         let mut keys = BTreeSet::new();
         collect_keys(&value, &mut keys);
         for key in VOCABULARY {
