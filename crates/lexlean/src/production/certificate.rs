@@ -407,7 +407,7 @@ pub fn certificate_e(
         .map_err(failure)?;
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| internal(diagnostic.message))?;
-    generator.within(text.len()).map_err(failure)?;
+    generator.within(text.len(), "certificate E").map_err(failure)?;
     let source = record_source(module, &data, "E").map_err(internal)?;
     Ok(Certificate {
         module: module.to_owned(),
@@ -547,7 +547,7 @@ pub fn certificate(
     // notation: the rendering to Lean text is the core backend's, and its size
     // is the backend's, not a property of the certificate.
     let source = record_source(module, &data, "A").map_err(internal)?;
-    generator.within(source.len()).map_err(failure)?;
+    generator.within(source.len(), "certificate A").map_err(failure)?;
     let mut imports: Vec<String> = modules
         .values()
         .map(|linked| linked.lean_module.to_owned())
@@ -1462,10 +1462,10 @@ impl Gen<'_> {
 impl Gen<'_> {
     /// Refuse a part of a certificate of `len` bytes when it is larger than
     /// the certificate may be.
-    fn within(&self, len: usize) -> Result<(), String> {
+    fn within(&self, len: usize, what: &str) -> Result<(), String> {
         if len as u64 > self.limit {
             return Err(format!(
-                "{}a part of the certificate is {len} bytes, beyond the {} bytes of max_file_bytes",
+                "{}a part of {what} is {len} bytes, beyond the {} bytes of max_file_bytes",
                 super::lower::LIMIT,
                 self.limit
             ));
