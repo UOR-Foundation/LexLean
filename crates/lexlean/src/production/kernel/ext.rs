@@ -860,6 +860,15 @@ impl Builder {
         ty: Term,
         hints: &[(&str, Term)],
     ) -> Result<Open, String> {
+        if let Some(template) = self.opened.get(name) {
+            let mut open = template.clone();
+            for binder in &open.binders {
+                if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder.name) {
+                    open.solved.insert(binder.id, *hint);
+                }
+            }
+            return Ok(open);
+        }
         let mut open = Open {
             name: name.to_owned(),
             head,
@@ -872,9 +881,6 @@ impl Builder {
         while let CoreNode::Forall { n, b, t, v } = &self.nodes[ty] {
             let (binder, info, domain, body) = (n.clone(), *b, *t, *v);
             let (id, placeholder) = self.meta();
-            if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder) {
-                open.solved.insert(id, *hint);
-            }
             open.binders.push(OpenBinder {
                 name: binder,
                 explicit: info == CoreBinderInfo::Explicit,
@@ -885,6 +891,12 @@ impl Builder {
             ty = self.instantiate_beta(body, placeholder);
         }
         open.conclusion = ty;
+        self.opened.insert(name.to_owned(), open.clone());
+        for binder in &open.binders {
+            if let Some((_, hint)) = hints.iter().find(|(wanted, _)| *wanted == binder.name) {
+                open.solved.insert(binder.id, *hint);
+            }
+        }
         Ok(open)
     }
 

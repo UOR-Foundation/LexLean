@@ -3407,7 +3407,7 @@ mod dev_wide {
     #[test]
     #[ignore = "a developer's lens on the aligner"]
     fn wide_match_scaling() {
-        for arms in [150usize] {
+        for arms in [150usize, 300, 600] {
             let started = std::time::Instant::now();
             let project = crate::stress::wide_match(arms);
             let sizes = aligned(&project, 64 << 20).expect("B within 64 MiB");

@@ -57,6 +57,10 @@ pub struct Builder {
     /// The nodes known to mention no lemma placeholder ([`ext`]): a term the
     /// generator substitutes for a placeholder is never walked again.
     clean: std::cell::RefCell<HashSet<Term>>,
+    /// The lemmas opened so far, by name: a lemma's placeholders are the same
+    /// for every application, each of which keeps its own solutions, so its
+    /// type is instantiated once.
+    opened: HashMap<String, ext::Open>,
 }
 
 /// The empty binder name, which the notation writes as `_`.
