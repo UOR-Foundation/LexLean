@@ -510,7 +510,18 @@ pub fn audit_core(
                 row.name, row.kind
             ));
         }
-        if row.safety.is_some() {
+        // The only definitions that are not safe are the compiler's
+        // implementation records of a recursive definition of the module, which
+        // the differential evaluator runs: `f._unsafe_rec`, partial, beside the
+        // safe `f` the theorems are about. No safe declaration can name one, so
+        // no theorem depends on it.
+        let record = row.safety == Some(crate::ir::core::CoreSafety::Partial)
+            && matches!(row.kind, CoreDeclKind::Definition)
+            && row
+                .name
+                .strip_suffix("._unsafe_rec")
+                .is_some_and(|safe| module.declarations.iter().any(|other| other.name == safe));
+        if row.safety.is_some() && !record {
             return Err(format!("the row `{}` is not a safe definition", row.name));
         }
         if !matches!(row.policy, CoreAxiomPolicy::Exact(_)) {
@@ -1703,7 +1714,10 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             ),
                             ("module", Json::Str(root.certificate.module.clone())),
                             ("theorem", Json::Str(root.certificate.theorem.clone())),
-                            ("byte_length", Json::from_usize(root.certificate.text.len())),
+                            (
+                                "byte_length",
+                                Json::from_usize(recorded_bytes(&root.certificate).len()),
+                            ),
                             (
                                 "program",
                                 Json::object(vec![
@@ -1717,7 +1731,7 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             (
                                 "sha256",
                                 Json::Str(
-                                    Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
+                                    Sha256Digest::of(recorded_bytes(&root.certificate)).to_hex(),
                                 ),
                             ),
                             (
