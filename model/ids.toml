@@ -1995,6 +1995,12 @@ suite = "models"
 statement = "The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification."
 
 [[id]]
+id = "MD-13"
+level = "build"
+suite = "models"
+statement = "IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation."
+
+[[id]]
 id = "RS-01"
 level = "build"
 suite = "reasoning"

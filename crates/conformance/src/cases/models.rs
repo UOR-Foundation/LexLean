@@ -1,4 +1,4 @@
-//! The `models` suite: MD-01..MD-12, language-1.2 models, contracts,
+//! The `models` suite: MD-01..MD-13, language-1.2 models, contracts,
 //! realizations, and evidence (SPEC.md §17.12).
 //!
 //! Every mutation starts from the committed `models` example, so a refusal
@@ -285,6 +285,7 @@ pub fn run(id: &str) {
         "MD-10" => md_10(),
         "MD-11" => md_11(),
         "MD-12" => md_12(),
+        "MD-13" => md_13(),
         _ => panic!("no models case {id}"),
     }
 }
@@ -3146,4 +3147,523 @@ fn md_12() {
     planted.check_ok();
     let _guard = support::env_shared();
     planted.verify_fails_with("LLV7002");
+}
+
+// ---------------------------------------------------------------------------
+// MD-13: IEEE-754 binary32 and binary64 bit patterns as exact dyadic
+// rationals and exact scale-ratio derivation round(a * b / c * 2^32).
+
+/// Exact dyadic rational triple `(sign, mantissa, exponent)`.
+type DyadicTriple = (u8, i128, i128);
+
+/// Independent exact IEEE-754 binary32 decoder: `(sign, mantissa, exponent)`
+/// representing `(-1)^sign * mantissa * 2^exponent`, or `None` for
+/// out-of-range integers and non-finite exponent `255`.
+fn oracle_decode_binary32(bits: i128) -> Option<DyadicTriple> {
+    let raw = u32::try_from(bits).ok()?;
+    let sign = ((raw >> 31) & 1) as u8;
+    let biased = i128::from((raw >> 23) & 0xff);
+    let fraction = i128::from(raw & 0x007f_ffff);
+    if biased == 255 {
+        None
+    } else if biased == 0 {
+        Some((sign, fraction, -149))
+    } else {
+        Some((sign, (1_i128 << 23) + fraction, biased - 150))
+    }
+}
+
+/// Independent exact IEEE-754 binary64 decoder: `(sign, mantissa, exponent)`
+/// representing `(-1)^sign * mantissa * 2^exponent`, accepting both unsigned
+/// 64-bit bit patterns (`0..=u64::MAX`) and signed two's-complement 64-bit
+/// bit patterns (`i64::MIN..=-1`), and returning `None` for out-of-range
+/// integers and non-finite exponent `2047`.
+fn oracle_decode_binary64(bits: i128) -> Option<DyadicTriple> {
+    let raw: u64 = if (-0x8000_0000_0000_0000_i128..0).contains(&bits) {
+        (bits + (1_i128 << 64)) as u64
+    } else {
+        u64::try_from(bits).ok()?
+    };
+    let sign = ((raw >> 63) & 1) as u8;
+    let biased = i128::from((raw >> 52) & 0x7ff);
+    let fraction = i128::from(raw & 0x000f_ffff_ffff_ffff);
+    if biased == 2047 {
+        None
+    } else if biased == 0 {
+        Some((sign, fraction, -1074))
+    } else {
+        Some((sign, (1_i128 << 52) + fraction, biased - 1075))
+    }
+}
+
+/// Independent exact rational computation of `round(a * b / c * 2^32)`
+/// (nearest integer, ties to even) from three binary32 bit patterns using
+/// wide `u128` numerator/denominator arithmetic (sharing no algorithm with
+/// LexLean's iterative Euclidean bit-stepper).
+fn oracle_scale_ratio_round32(a_bits: i128, b_bits: i128, c_bits: i128) -> Option<i64> {
+    let (sa, ma, ea) = oracle_decode_binary32(a_bits)?;
+    let (sb, mb, eb) = oracle_decode_binary32(b_bits)?;
+    let (sc, mc, ec) = oracle_decode_binary32(c_bits)?;
+    if mc == 0 {
+        return None;
+    }
+    if ma == 0 || mb == 0 {
+        return Some(0);
+    }
+    let sign = sa ^ sb ^ sc;
+    let product = (ma as u128) * (mb as u128);
+    let divisor = mc as u128;
+    let shift = ea + eb - ec + 32;
+    let rounded: u128 = if shift >= 0 {
+        let k = u32::try_from(shift).ok()?;
+        if k >= 80 {
+            return None;
+        }
+        let numerator = product.checked_shl(k)?;
+        let q = numerator / divisor;
+        let r = numerator % divisor;
+        match (2 * r).cmp(&divisor) {
+            std::cmp::Ordering::Less => q,
+            std::cmp::Ordering::Greater => q + 1,
+            std::cmp::Ordering::Equal => q + (q & 1),
+        }
+    } else {
+        let s = u32::try_from(-shift).ok()?;
+        if s >= 80 {
+            0
+        } else {
+            let denominator = divisor.checked_shl(s)?;
+            let q = product / denominator;
+            let r = product % denominator;
+            match (2 * r).cmp(&denominator) {
+                std::cmp::Ordering::Less => q,
+                std::cmp::Ordering::Greater => q + 1,
+                std::cmp::Ordering::Equal => q + (q & 1),
+            }
+        }
+    };
+    let magnitude = i64::try_from(rounded).ok()?;
+    Some(if sign == 0 { magnitude } else { -magnitude })
+}
+
+/// §17.12: IEEE-754 binary32 and binary64 bit patterns decode to exact dyadic
+/// rationals `(sign, mantissa, exponent)`, and the corpus derivation of
+/// `round(a * b / c * 2^32)` agrees with an independent exact rational
+/// computation under Lean and refuses planted exponent and rounding mutations.
+#[allow(clippy::too_many_lines)]
+fn md_13() {
+    let project = P::copy_example(EXAMPLE);
+    let recognizer = module_data(&project, "Recognizer");
+    let main = module_data(&project, "Main");
+    let recognizer_names: BTreeSet<String> = names(
+        recognizer["declarations"]
+            .as_array()
+            .expect("Recognizer declarations"),
+    )
+    .into_iter()
+    .collect();
+    for required in [
+        "Dyadic",
+        "dyadicTriple",
+        "DyadicMatches",
+        "byteToInt",
+        "decodeBinary32",
+        "decodeBinary64",
+        "decodeBinary32Bytes",
+        "decodeBinary64Bytes",
+        "dyadicMul",
+        "dyadicRoundShift",
+        "dyadicRatioRound",
+        "scaleRatioRound32",
+        "scaleMultipliersRound32",
+        "binary32_pos_zero",
+        "binary32_neg_zero",
+        "binary32_min_subnormal",
+        "binary32_max_subnormal",
+        "binary32_min_normal",
+        "binary32_one",
+        "binary32_neg_one_half",
+        "binary32_unit_scale",
+        "binary32_max_normal",
+        "binary32_rejects_pos_inf",
+        "binary32_rejects_neg_inf",
+        "binary32_rejects_nan",
+        "binary32_rejects_negative_input",
+        "binary32_rejects_overflow_input",
+        "binary32_banner_subnormal",
+        "binary32_banner_normal",
+        "binary64_pos_zero",
+        "binary64_neg_zero",
+        "binary64_min_subnormal",
+        "binary64_max_subnormal",
+        "binary64_min_normal",
+        "binary64_one",
+        "binary64_neg_one_half",
+        "binary64_max_normal",
+        "binary64_rejects_pos_inf",
+        "binary64_rejects_neg_inf",
+        "binary64_rejects_nan",
+        "binary64_banner_first",
+        "binary64_banner_last",
+        "scale_ratio_exact_cancel",
+        "scale_ratio_rounds_up",
+        "scale_ratio_rounds_down",
+        "scale_ratio_tie_odd_to_even",
+        "scale_ratio_tie_even_stays_even",
+        "scale_ratio_negative_scale",
+        "scale_ratio_subnormal_scales",
+        "scale_ratio_rejects_zero_divisor",
+        "scale_ratio_rejects_nonfinite",
+        "scale_multipliers_channel_batch",
+    ] {
+        assert!(
+            recognizer_names.contains(required),
+            "Models.Recognizer declares `{required}`"
+        );
+    }
+    let main_names: BTreeSet<String> =
+        names(main["declarations"].as_array().expect("Main declarations"))
+            .into_iter()
+            .collect();
+    for required in [
+        "deriveScaleMultiplier",
+        "deriveChannelMultipliers",
+        "corpus_scale_ratio_rounds_up",
+        "corpus_scale_ratio_rounds_down",
+        "corpus_scale_ratio_tie_even",
+        "corpus_scale_multipliers",
+    ] {
+        assert!(
+            main_names.contains(required),
+            "Models.Main declares `{required}`"
+        );
+    }
+
+    // Verify every concrete vector against the independent exact rational oracle.
+    let binary32_cases: &[(i128, Option<DyadicTriple>)] = &[
+        (0, Some((0, 0, -149))),
+        (0x8000_0000, Some((1, 0, -149))),
+        (1, Some((0, 1, -149))),
+        (0x007f_ffff, Some((0, 8_388_607, -149))),
+        (0x0080_0000, Some((0, 8_388_608, -149))),
+        (0x3f80_0000, Some((0, 8_388_608, -23))),
+        (0xbfc0_0000, Some((1, 12_582_912, -23))),
+        (0x3b80_8081, Some((0, 8_421_505, -31))),
+        (0x7f7f_ffff, Some((0, 16_777_215, 104))),
+        (0x004d_4c4c, Some((0, 5_065_804, -149))),
+        (0x0100_4d4c, Some((0, 8_408_396, -148))),
+        (0x7f80_0000, None),
+        (0xff80_0000, None),
+        (0x7fc0_0000, None),
+        (-1, None),
+        (0x1_0000_0000, None),
+    ];
+    for &(bits, expected) in binary32_cases {
+        assert_eq!(
+            oracle_decode_binary32(bits),
+            expected,
+            "binary32 oracle on {bits:#x}"
+        );
+    }
+
+    let binary64_cases: &[(i128, Option<DyadicTriple>)] = &[
+        (0, Some((0, 0, -1074))),
+        (-0x8000_0000_0000_0000, Some((1, 0, -1074))),
+        (1, Some((0, 1, -1074))),
+        (
+            0x000f_ffff_ffff_ffff,
+            Some((0, 4_503_599_627_370_495, -1074)),
+        ),
+        (
+            0x0010_0000_0000_0000,
+            Some((0, 4_503_599_627_370_496, -1074)),
+        ),
+        (0x3ff0_0000_0000_0000, Some((0, 4_503_599_627_370_496, -52))),
+        (
+            -4_613_937_818_241_073_152,
+            Some((1, 6_755_399_441_055_744, -52)),
+        ),
+        (0x7fef_ffff_ffff_ffff, Some((0, 9_007_199_254_740_991, 971))),
+        (0x4d4c_4c01_004d_4c4c, Some((0, 7_964_866_531_642_444, 161))),
+        (
+            0x0100_4d4c_4c01_004d,
+            Some((0, 4_588_589_715_357_773, -1059)),
+        ),
+        (0x7ff0_0000_0000_0000, None),
+        (-4_503_599_627_370_496, None),
+        (0x7ff8_0000_0000_0000, None),
+    ];
+    for &(bits, expected) in binary64_cases {
+        assert_eq!(
+            oracle_decode_binary64(bits),
+            expected,
+            "binary64 oracle on {bits}"
+        );
+    }
+
+    let ratio_cases: &[(i128, i128, i128, Option<i64>)] = &[
+        (0x3b80_8081, 0x3ba3_d70a, 0x3c23_d70a, Some(8_421_505)),
+        (0x3b80_8081, 0x3ba5_6042, 0x3ca3_d70a, Some(4_250_229)),
+        (0x3d00_0000, 0x3ca3_d70a, 0x3df5_c28f, Some(22_369_621)),
+        (0x3f80_0001, 0x3fc0_0000, 0x4400_0000, Some(12_582_914)),
+        (0x3f80_0003, 0x3fc0_0000, 0x4400_0000, Some(12_582_916)),
+        (0xbb80_8081, 0x3ba5_6042, 0x3ca3_d70a, Some(-4_250_229)),
+        (0x0000_0003, 0x40a0_0000, 0x0000_0002, Some(32_212_254_720)),
+        (0x3f80_0000, 0x3f80_0000, 0x0000_0000, None),
+        (0x3f80_0000, 0x7f80_0000, 0x3f80_0000, None),
+    ];
+    for &(a, b, c, expected) in ratio_cases {
+        assert_eq!(
+            oracle_scale_ratio_round32(a, b, c),
+            expected,
+            "scale ratio oracle on ({a:#x}, {b:#x}, {c:#x})"
+        );
+    }
+
+    // Seeded differential: generate deterministic binary32/binary64 bit
+    // patterns and binary32 scale triples, check the independent oracle's
+    // expectations under Lean, and verify that a skewed expectation is refused.
+    let mut rng = Seeded(0x5eed_0118_0013);
+    let mut seeded_b32 = Vec::new();
+    let mut seeded_b64 = Vec::new();
+    let mut seeded_ratios = Vec::new();
+    for index in 0..12 {
+        let sign = (rng.next() & 1) as u32;
+        let exp = if index % 4 == 0 {
+            0_u32
+        } else {
+            u32::try_from(rng.within(100, 140)).expect("exp")
+        };
+        let frac = (rng.next() as u32) & 0x007f_ffff;
+        let bits = i128::from((sign << 31) | (exp << 23) | frac);
+        let (s, m, e) = oracle_decode_binary32(bits).expect("finite binary32");
+        seeded_b32.push((index, bits, s, m, e));
+    }
+    for index in 0..12 {
+        let exp = if index % 4 == 0 {
+            0_u64
+        } else {
+            u64::try_from(rng.within(990, 1050)).expect("exp")
+        };
+        let frac = rng.next() & 0x000f_ffff_ffff_ffff;
+        let raw = (exp << 52) | frac;
+        let bits = if index % 3 == 0 && raw > 0 {
+            i128::from(raw) - (1_i128 << 63)
+        } else {
+            i128::from(raw)
+        };
+        let (s, m, e) = oracle_decode_binary64(bits).expect("finite binary64");
+        seeded_b64.push((index, bits, s, m, e));
+    }
+    for index in 0..16 {
+        let make_scale = |rng: &mut Seeded, exp_lo: i64, exp_hi: i64, allow_neg: bool| -> i128 {
+            let sign = if allow_neg && (rng.next() & 3) == 0 {
+                1_u32
+            } else {
+                0_u32
+            };
+            let exp = u32::try_from(rng.within(exp_lo, exp_hi)).expect("exp");
+            let frac = (rng.next() as u32) & 0x007f_ffff;
+            i128::from((sign << 31) | (exp << 23) | frac)
+        };
+        let a = make_scale(&mut rng, 115, 126, true);
+        let b = make_scale(&mut rng, 115, 126, true);
+        let c = make_scale(&mut rng, 118, 128, false);
+        let expected = oracle_scale_ratio_round32(a, b, c).expect("finite non-zero scale triple");
+        seeded_ratios.push((index, a, b, c, expected));
+    }
+
+    let focus_recognizer = |recognizer_text: String| -> P {
+        let focused = P::copy_example(EXAMPLE);
+        for entry in std::fs::read_dir(focused.root.join("src").as_std_path()).expect("src") {
+            let entry = entry.expect("entry");
+            let name = entry.file_name();
+            if name != "Glyphs.lex.tex" && name != "Recognizer.lex.tex" {
+                std::fs::remove_file(entry.path()).expect("remove unrelated module");
+            }
+        }
+        for unused in ["artifacts/triage-bias.bin", "artifacts/triage-weights.bin"] {
+            std::fs::remove_file(focused.root.join(unused).as_std_path())
+                .expect("remove unused artifact");
+        }
+        let sources = artifact_sources(&focused)
+            .into_iter()
+            .filter(|(_, path)| !path.contains("triage"))
+            .collect();
+        set_artifact_sources(&focused, sources);
+        let cfg = focused.read("lexlean.toml").replace(
+            "entrypoints = [\"src/Main.lex.tex\"]",
+            "entrypoints = [\"src/Recognizer.lex.tex\"]",
+        );
+        focused.write("lexlean.toml", &cfg);
+        focused.write(&module_path("Recognizer"), &recognizer_text);
+        focused.relock();
+        focused
+    };
+
+    let base_recognizer = std::fs::read_to_string(
+        support::repo_root()
+            .join("examples/models/src/Recognizer.lex.tex")
+            .as_std_path(),
+    )
+    .expect("committed Recognizer.lex.tex");
+    let build_seeded_project = |skew: i64| -> P {
+        let mut extra = String::new();
+        for &(index, bits, s, m, e) in &seeded_b32 {
+            extra.push_str(&format!(
+                "\ntheorem{{\n  name: seeded_b32_{index},\n  parameters: [],\n  statement: (DyadicMatches (decodeBinary32 ({bits} : Int)) {s} ({m} : Int) ({e} : Int)),\n  proof: decide{{}},\n  axioms: [propext]\n}}\n"
+            ));
+        }
+        for &(index, bits, s, m, e) in &seeded_b64 {
+            extra.push_str(&format!(
+                "\ntheorem{{\n  name: seeded_b64_{index},\n  parameters: [],\n  statement: (DyadicMatches (decodeBinary64 ({bits} : Int)) {s} ({m} : Int) ({e} : Int)),\n  proof: decide{{}},\n  axioms: [propext]\n}}\n"
+            ));
+        }
+        for &(index, a, b, c, expected) in &seeded_ratios {
+            let val = if index == seeded_ratios.len() - 1 {
+                expected + skew
+            } else {
+                expected
+            };
+            extra.push_str(&format!(
+                "\ntheorem{{\n  name: seeded_ratio_{index},\n  parameters: [],\n  statement: ((scaleRatioRound32 ({a} : Int) ({b} : Int) ({c} : Int)) = (ctor Option.some [Int] ({val} : Int))),\n  proof: decide{{}},\n  axioms: [propext]\n}}\n"
+            ));
+        }
+        let updated = base_recognizer.replacen(
+            "\n\\end{semanticmodule}",
+            &format!("{extra}\n\\end{{semanticmodule}}"),
+            1,
+        );
+        focus_recognizer(updated)
+    };
+    let seeded_ok = build_seeded_project(0);
+    seeded_ok.check_ok();
+
+    let Some(fixture) = models_backed("MD-13") else {
+        return;
+    };
+    for name in [
+        "Models.Recognizer.dyadicTriple",
+        "Models.Recognizer.dyadicMul",
+    ] {
+        assert_attested(fixture, name, "none");
+    }
+    for name in [
+        "Models.Recognizer.byteToInt",
+        "Models.Recognizer.decodeBinary32Bytes",
+        "Models.Recognizer.decodeBinary64Bytes",
+        "Models.Recognizer.binary32_banner_subnormal",
+        "Models.Recognizer.binary32_banner_normal",
+        "Models.Recognizer.binary64_banner_first",
+        "Models.Recognizer.binary64_banner_last",
+    ] {
+        assert_attested(fixture, name, "exact");
+        assert_eq!(
+            attested(fixture, name)["observed"],
+            json!(["Quot.sound", "propext"]),
+            "{name} observed axioms"
+        );
+    }
+    for name in [
+        "Models.Recognizer.decodeBinary32",
+        "Models.Recognizer.decodeBinary64",
+        "Models.Recognizer.dyadicRoundShift",
+        "Models.Recognizer.dyadicRatioRound",
+        "Models.Recognizer.scaleRatioRound32",
+        "Models.Recognizer.scaleMultipliersRound32",
+        "Models.Recognizer.binary32_pos_zero",
+        "Models.Recognizer.binary32_neg_zero",
+        "Models.Recognizer.binary32_min_subnormal",
+        "Models.Recognizer.binary32_max_subnormal",
+        "Models.Recognizer.binary32_min_normal",
+        "Models.Recognizer.binary32_one",
+        "Models.Recognizer.binary32_neg_one_half",
+        "Models.Recognizer.binary32_unit_scale",
+        "Models.Recognizer.binary32_max_normal",
+        "Models.Recognizer.binary32_rejects_pos_inf",
+        "Models.Recognizer.binary32_rejects_neg_inf",
+        "Models.Recognizer.binary32_rejects_nan",
+        "Models.Recognizer.binary32_rejects_negative_input",
+        "Models.Recognizer.binary32_rejects_overflow_input",
+        "Models.Recognizer.binary64_pos_zero",
+        "Models.Recognizer.binary64_neg_zero",
+        "Models.Recognizer.binary64_min_subnormal",
+        "Models.Recognizer.binary64_max_subnormal",
+        "Models.Recognizer.binary64_min_normal",
+        "Models.Recognizer.binary64_one",
+        "Models.Recognizer.binary64_neg_one_half",
+        "Models.Recognizer.binary64_max_normal",
+        "Models.Recognizer.binary64_rejects_pos_inf",
+        "Models.Recognizer.binary64_rejects_neg_inf",
+        "Models.Recognizer.binary64_rejects_nan",
+        "Models.Recognizer.dyadic_round_shift_exact",
+        "Models.Recognizer.dyadic_round_shift_tie_even_down",
+        "Models.Recognizer.dyadic_round_shift_tie_even_up",
+        "Models.Recognizer.dyadic_round_shift_negative_tie_even",
+        "Models.Recognizer.scale_ratio_exact_cancel",
+        "Models.Recognizer.scale_ratio_rounds_up",
+        "Models.Recognizer.scale_ratio_rounds_down",
+        "Models.Recognizer.scale_ratio_tie_odd_to_even",
+        "Models.Recognizer.scale_ratio_tie_even_stays_even",
+        "Models.Recognizer.scale_ratio_negative_scale",
+        "Models.Recognizer.scale_ratio_subnormal_scales",
+        "Models.Recognizer.scale_ratio_rejects_zero_divisor",
+        "Models.Recognizer.scale_ratio_rejects_nonfinite",
+        "Models.Recognizer.scale_multipliers_channel_batch",
+        "Models.Main.deriveScaleMultiplier",
+        "Models.Main.deriveChannelMultipliers",
+        "Models.Main.corpus_scale_ratio_rounds_up",
+        "Models.Main.corpus_scale_ratio_rounds_down",
+        "Models.Main.corpus_scale_ratio_tie_even",
+        "Models.Main.corpus_scale_multipliers",
+    ] {
+        assert_attested(fixture, name, "exact");
+        assert_eq!(
+            attested(fixture, name)["observed"],
+            json!(["propext"]),
+            "{name} observed axioms"
+        );
+    }
+
+    support::verify_ok(&seeded_ok);
+    let seeded_skewed = build_seeded_project(1);
+    seeded_skewed.check_ok();
+    {
+        let _guard = support::env_shared();
+        seeded_skewed.verify_fails_with("LLV7002");
+    }
+
+    // Plant 1: mutate the normal exponent offset `-150` to `-149` in
+    // `decodeBinary32` -> checking succeeds, Lean verification refuses it.
+    let mutated_exp = base_recognizer.replacen("(150 : Int)", "(149 : Int)", 1);
+    assert_ne!(
+        base_recognizer, mutated_exp,
+        "planted exponent offset mutation applied"
+    );
+    let planted_exp = focus_recognizer(mutated_exp);
+    planted_exp.check_ok();
+    {
+        let _guard = support::env_shared();
+        planted_exp.verify_fails_with("LLV7002");
+    }
+
+    // Plant 2: mutate the tie-to-even rounding rule
+    // `(prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int)`
+    // in `dyadicRatioRound` to unconditional round-up `(prim subtract q (-1 : Int) : Int)` ->
+    // checking succeeds, Lean verification refuses it on `scale_ratio_tie_even_stays_even`.
+    let mutated_round = base_recognizer.replacen(
+        "(prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int)",
+        "(prim subtract q (-1 : Int) : Int)",
+        1,
+    );
+    assert_ne!(
+        base_recognizer, mutated_round,
+        "planted tie-rounding mutation applied"
+    );
+    let planted_round = focus_recognizer(mutated_round);
+    planted_round.check_ok();
+    {
+        let _guard = support::env_shared();
+        planted_round.verify_fails_with("LLV7002");
+    }
 }

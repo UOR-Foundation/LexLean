@@ -4968,6 +4968,59 @@ is false
 
 Removed: the copy was discarded; the committed example verifies.
 
+### IEEE-754 dyadic decoding and scale-ratio derivation can fail (Issue #118)
+
+`MD-13` was registered before its named test failed on the missing corpus
+declarations:
+
+```text
+thread 'conformance_md_13' (1417488) panicked at crates/conformance/src/cases/models.rs:3284:9:
+Models.Recognizer declares `Dyadic`
+test conformance_md_13 ... FAILED
+```
+
+Planted, one at a time in a focused copy of `examples/models/src/Recognizer.lex.tex`:
+
+- the normal `binary32` exponent offset `150` (`biased - 127 - 23`) replaced by
+  `149` in `decodeBinary32`, which still links cleanly (`lexlean check` exits
+  `0`) because the result remains an `Option Dyadic`:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    DyadicMatches (decodeBinary32 8388608) 0 8388608 (-149)
+  is false
+  ```
+
+- the tie-to-even rounding branch
+  `(prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int)`
+  in `dyadicRatioRound` replaced by unconditional round-up
+  `(prim subtract q (-1 : Int) : Int)`, which still links cleanly and agrees on
+  every non-tie and odd-tie case, but rounds an exact tie with even quotient up
+  instead of keeping it even:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    scaleRatioRound32 1065353219 1069547520 1140850688 = Option.some 12582916
+  is false
+  ```
+
+- a seeded scale-ratio expectation skewed by `+1` against the independent
+  `u128` rational oracle in `conformance_md_13`:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    ...
+  is false
+  ```
+
+`conformance_md_13` plants all three mutations in `Recognizer.lex.tex`,
+asserting that `check` succeeds and `verify` fails with `LLV7002` on each, and
+verifies 40 seeded `binary32`, `binary64`, and `round(a * b / c * 2^32)`
+theorems against the independent exact rational oracle in addition to the
+committed `examples/models` corpus.
+
+Removed: the committed `examples/models` corpus is unchanged; `conformance_md_01`..`conformance_md_13` pass.
+
 ### reasoning rule priority order can fail
 
 Planted: the leaves of `E.select` were combined in reverse of the declared order (`leaves.into_iter().rev()` before `balanced` in `elaborate_forward`), so the last rule is tried first. Command: `cargo test -p repo-conformance --test conformance -- conformance_rs_05`. Expected: a forward reasoner that fires rules out of their declared priority order. The case reads the order the select term evaluates its guards in (a `match` scrutinee before its branches, a `let` value before its body), not document order, because canonical JSON orders object keys alphabetically.

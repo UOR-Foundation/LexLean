@@ -22,6 +22,15 @@ versions, and the entries below say what each tag does and does not claim.
   reserved-name action and refused unless it equals the row. Every one of the
   preservation library's 7,071 derived rows is remade exactly; no source,
   lock, or compiler-semantics ID changes.
+- IEEE-754 bit patterns as exact dyadic rationals (#118, SPEC.md §17.12 rule
+  15, `MD-13`, language 1.2 only; the register is 404 rows). `Models.Recognizer`
+  decodes `binary32` and `binary64` bit patterns (and their little-endian
+  `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
+  rejecting out-of-width patterns and the non-finite biased exponents, and
+  derives `round(a * b / c * 2^32)` scale ratios (ties to even) by exact
+  integer division; 43 theorems (39 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
+  `models` example and the register only: no compiler source moves.
+
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
