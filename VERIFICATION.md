@@ -8215,6 +8215,7 @@ prereleases, unrelated occurrences of the pin, and malformed banners.
 Validated after the fix: the unit case and `conformance_vr_02` pass (the
 latter in 4.76 s), as do formatting, workspace/all-target Clippy with warnings
 denied, model/spec-link audits, and all five BDD meta-gate tests.
+
 ### a standard-library member can fail its oracle (SPEC.md §17.22)
 
 `SL-01` holds every member of `LexLeanStd.Text` to the function of Rust's
@@ -8244,6 +8245,33 @@ admit exactly what they realize.
 
 Removed: the source was restored; `conformance_sl_01` passes, in 156 s with
 the production export of the seven members under the pinned Lean.
+
+`SL-02` holds `LexLeanStd.Sha256` to FIPS 180-4 (#126, stage 1): both roots'
+lowered programs under the calculus evaluator and their rendered `rust-std`
+packages under the pinned rustc compute the three FIPS 180-4 example digests,
+every vector of the NIST CAVP `SHA256ShortMsg.rsp` and `SHA256LongMsg.rsp`
+files (`tests/stdlib/sha256/`), and the digest of the `sha2` crate on a seeded
+corpus (every length 0..200, then random lengths to 4 KiB, and the million-`a`
+example under rustc). The oracles are checked against each other first, and one
+disagreement with them fails the case.
+
+- **one bit of the round function.** `a := (add t1 t2)` becomes
+  `a := (prim bit_xor (add t1 t2) (1 : UInt32) : UInt32)`, so the new `a` of
+  every round is off in its low bit. `-- conformance_sl_02`, without its Lean
+  half:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_sha256.rs:305:9:
+  sha256: the evaluator and the oracles disagree on 372 of 372 runs: ["run 0 on [Bytes { hex: \"616263\" }]: {"constructor":0,"fields":[{"kind":"u32","value":"3804428771"}, …],"kind":"adt"} != {"constructor":0,"fields":[{"kind":"u32","value":"3128432319"}, …],"kind":"adt"}", …]
+  ```
+
+  `3128432319` is `0xba7816bf`, the first word of the FIPS 180-4 digest of
+  `abc`. The same plant is made by the case itself on a copy of the project on
+  every run, so the gate stays armed.
+
+Removed: the source was restored; `conformance_sl_02` passes, in 305 s with
+the production export of both roots under the pinned Lean (`conformance_sl_01`
+in 206 s on the same tree).
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

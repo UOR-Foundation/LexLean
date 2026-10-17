@@ -39,6 +39,7 @@ mod rust_backend;
 mod security;
 mod semantic_ir;
 mod stdlib;
+mod stdlib_sha256;
 mod tooling;
 mod typed_diagnostics;
 mod verification;

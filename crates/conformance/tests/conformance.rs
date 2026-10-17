@@ -1976,6 +1976,11 @@ fn conformance_sl_01() {
 }
 
 #[test]
+fn conformance_sl_02() {
+    repo_conformance::cases::run("SL-02");
+}
+
+#[test]
 fn conformance_bs_01() {
     repo_conformance::cases::run("BS-01");
 }
