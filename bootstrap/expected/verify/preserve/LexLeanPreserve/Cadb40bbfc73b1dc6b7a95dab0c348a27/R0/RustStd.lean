@@ -3,7 +3,7 @@ set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option synthInstance.maxHeartbeats 0
-namespace LexLeanPreserve.C237d0a4522cc9b2b2ce6286f348509a6.R0.RustStd
+namespace LexLeanPreserve.Cadb40bbfc73b1dc6b7a95dab0c348a27.R0.RustStd
 open LexLeanTarget LexLeanPreservation.Rust
 
 noncomputable def program : TargetSyntax.Program :=
@@ -96,4 +96,4 @@ theorem crate_ok : CrateOK program krate flags := by
 /-- Every function of the program is simulated by its rendering. -/
 theorem root : ∀ n f, FunSem program krate flags n f := fun n f => simulate crate_ok n f
 
-end LexLeanPreserve.C237d0a4522cc9b2b2ce6286f348509a6.R0.RustStd
+end LexLeanPreserve.Cadb40bbfc73b1dc6b7a95dab0c348a27.R0.RustStd

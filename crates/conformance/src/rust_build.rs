@@ -62,6 +62,9 @@ pub fn workspace(dir: &Path, packages: &[Built]) {
     .expect("workspace manifest");
 }
 
+/// The stack, in bytes, of the threads rustc and cargo start (64 MiB).
+const RUSTC_STACK: &str = "67108864";
+
 /// Run `cargo` with `arguments` in `dir`, with `dir`'s own target directory
 /// and no inherited rustc flags.
 ///
@@ -73,6 +76,11 @@ pub fn cargo_in(dir: &Path, arguments: &[&str]) -> std::process::Output {
         .args(arguments)
         .current_dir(dir)
         .env("CARGO_TARGET_DIR", dir.join("target"))
+        // rustc runs its optimizer on threads of the standard library's
+        // default 2 MiB stack, which a harness with a large literal corpus
+        // overflows on Windows (BS-01) and not on Linux or macOS. The
+        // evidence is the same on every host only if the stack is.
+        .env("RUST_MIN_STACK", RUSTC_STACK)
         .env_remove("RUSTFLAGS")
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .output()
