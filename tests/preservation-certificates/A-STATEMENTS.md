@@ -33,7 +33,11 @@ For each corpus the oracle (`dev_oracle_a` in `crates/conformance/src/preservati
    recursive width predicate is a different, separately proved definition.
 
 Command: `LEXLEAN_EXAMPLE=<corpus> cargo test -p repo-conformance --lib dev_oracle_a -- --ignored --nocapture`
-on Linux x86-64 with the pinned toolchain.
+on Linux x86-64 with the pinned toolchain. The oracle ran once, while the
+committed records still held the text certificates, and was removed from the
+tree with the developer lenses beside it (its source is at commit `7653ed1e`),
+as the oracles of certificates E and B were: the repository carries no ignored
+test (R4, `RP-12`), and this record is the evidence.
 
 ## Result
 

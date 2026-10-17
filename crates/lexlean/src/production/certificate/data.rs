@@ -2288,29 +2288,3 @@ impl Gen<'_> {
         Composer::new(self, module_a, module_b, name).module(root_module, root_name, fallible)
     }
 }
-
-#[cfg(test)]
-mod dev {
-    use super::*;
-
-    /// Print the recorded types of the lemmas named in `LEXLEAN_LEMMAS`
-    /// (comma separated), for the author of a generator.
-    #[test]
-    #[ignore = "a developer's lens on the native library"]
-    fn print_lemma_types() {
-        let names = std::env::var("LEXLEAN_LEMMAS").unwrap_or_default();
-        let mut b = Builder::new();
-        for name in names.split(',').filter(|name| !name.is_empty()) {
-            let (module, declaration) = preserve::native_declaration(name).expect("a declaration");
-            let ty = b.import(module, declaration.r#type);
-            println!("{name} : {}\n", b.show(ty));
-            if std::env::var("LEXLEAN_ROWS").is_ok() {
-                println!("{declaration:?}\n");
-                if let Some(value) = declaration.value {
-                    let value = b.import(module, value);
-                    println!("{name} := {}\n", b.show(value));
-                }
-            }
-        }
-    }
-}
