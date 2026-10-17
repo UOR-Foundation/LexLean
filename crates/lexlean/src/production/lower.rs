@@ -526,7 +526,7 @@ pub struct Costs {
 pub const COSTS_A: Costs = Costs {
     base_bytes: 5400,
     type_node: 0,
-    expr_node: 328,
+    expr_node: 300,
     shape_node: 0,
     arm_pair: 1018,
     string_byte: 15,
