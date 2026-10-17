@@ -3398,3 +3398,20 @@ mod dev_oracle_b {
         }
     }
 }
+
+/// A developer's lens: how the aligner scales with the arms of a match.
+#[cfg(test)]
+mod dev_wide {
+    use super::*;
+
+    #[test]
+    #[ignore = "a developer's lens on the aligner"]
+    fn wide_match_scaling() {
+        for arms in [100usize, 200, 400, 800] {
+            let started = std::time::Instant::now();
+            let project = crate::stress::wide_match(arms);
+            let sizes = aligned(&project, 64 << 20).expect("B within 64 MiB");
+            eprintln!("arms {arms}: {:?} ({:?} bytes)", started.elapsed(), sizes);
+        }
+    }
+}
