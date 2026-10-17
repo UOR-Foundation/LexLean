@@ -1292,7 +1292,9 @@ fn build_inner(
             )));
         }
         let program = add(format!("evidence/program/R{index}.json"), program_bytes);
-        let a_path = certificate_path(&preserved.module);
+        // Certificates A and E are kernel-term data, recorded in the
+        // authoring notation (SPEC.md §17.17); B is Lean text.
+        let a_path = crate::production::preserve::notation_path(&preserved.module);
         let certificate_a = CertificateRef {
             role: CertificateRole::A,
             module: preserved.module.clone(),
@@ -1344,11 +1346,11 @@ fn build_inner(
                     &rendering.composed.theorem,
                 ),
             ] {
-                // Certificate E is kernel-term data, recorded in the authoring
-                // notation (SPEC.md §17.17); A and B are Lean text.
                 let path = match role {
-                    CertificateRole::E => crate::production::preserve::notation_path(module),
-                    CertificateRole::A | CertificateRole::B => certificate_path(module),
+                    CertificateRole::A | CertificateRole::E => {
+                        crate::production::preserve::notation_path(module)
+                    }
+                    CertificateRole::B => certificate_path(module),
                 };
                 certificates.push(CertificateRef {
                     role,
@@ -1839,10 +1841,9 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                             == format!(
                                 "evidence/certificates/{}",
                                 match role {
-                                    CertificateRole::E =>
+                                    CertificateRole::A | CertificateRole::E =>
                                         crate::production::preserve::notation_path(module),
-                                    CertificateRole::A | CertificateRole::B =>
-                                        certificate_path(module),
+                                    CertificateRole::B => certificate_path(module),
                                 }
                             )
                         && (

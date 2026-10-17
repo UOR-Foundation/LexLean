@@ -20,6 +20,10 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::ir::core::{CoreBinderInfo, CoreLevel, CoreModule, CoreNode};
 
+mod ext;
+
+pub use ext::{Given, Open};
+
 /// A node of the DAG under construction.
 pub type Term = usize;
 
@@ -48,6 +52,8 @@ pub struct Builder {
     shared: HashMap<CoreNode, Term>,
     /// The library lemmas the terms built so far apply, by name.
     lemmas: BTreeSet<String>,
+    /// The next placeholder number ([`ext`]).
+    fresh: usize,
 }
 
 /// The empty binder name, which the notation writes as `_`.

@@ -159,6 +159,23 @@ versions, and the entries below say what each tag does and does not claim.
   `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
   Every CI job installs the same pinned toolchain, so this held by practice
   and is now checked.
+- Certificate A as kernel-term data (SPEC.md §17.17, `SP-15`; stage 3 of #89).
+  The preservation certificate of every production root is no longer written as
+  Lean text by `production/certificate.rs`: the compiler builds it as a native
+  core module of schema `lexlean/core-module/2` on the vehicle of
+  certificate E (`production/kernel.rs`), the program literal, encoders, width
+  predicates, relation theorems, validators, and entry as rows, each lemma
+  applied with every argument written, structural and well-founded recursion as
+  recursor and `WellFounded.fix` terms with the source's own decrease theorems,
+  and the collection templates' clause proofs as kernel terms in place of
+  tactics. The verify record holds the module in the authoring notation
+  (`R<i>.lex.tex` in place of `R<i>.lean`), which reads back to the data byte
+  for byte, and `preservation.json` binds those bytes. The statements of the 57
+  certificates A of the four corpora are those the text stated, up to the
+  kernel's definitional equality
+  (`tests/preservation-certificates/A-STATEMENTS.md`). Roughly 5 000 lines of the
+  text generator are gone from `production/certificate.rs`. Certificate B is
+  still Lean text. No diagnostic code is new; the register gains `SP-15` (403 rows).
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler
@@ -173,9 +190,9 @@ versions, and the entries below say what each tag does and does not claim.
   policies, forbidden constants) and the audit module prints and checks the
   axioms of every one of its rows. The statements of the 76 certificates E of
   the four corpora are those the text stated, kernel term for kernel term
-  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
-  still Lean text, so the data certificate is rendered outside the module
-  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificate B (and, until
+  stage 3 of #89, certificate A) is still Lean text, so the data certificate is
+  rendered outside the module system until they follow. Languages 1.0 and 1.1 have no certificates and are
   untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
 - Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
   no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
