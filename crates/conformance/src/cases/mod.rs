@@ -18,6 +18,7 @@ mod extraction;
 pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
 mod gnaf;
 mod grammar;
+mod language_models;
 mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
@@ -94,6 +95,7 @@ pub fn run(id: &str) {
         "SM" => semantic_ir::run(id),
         "DF" => declarations::run(id),
         "PF" => proofs::run(id),
+        "LM" => language_models::run(id),
         "LN" => lean_backend::run(id),
         "TX" => latex_pdf::run(id),
         "AR" => artifacts::run(id),

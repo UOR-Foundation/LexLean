@@ -1058,3 +1058,35 @@ allocation = false
 overflow = []
 recursion = false
 note = "Realized through the bounded loops and step types it elaborates to; its generated theorems are erased."
+
+[[construct]]
+key = "declaration.tokenizer"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: its elaborated definitions apply the embedded text-laws library, which no production target realizes, so a root whose closure reaches one fails; its generated theorems are erased."
+
+[[construct]]
+key = "declaration.context_window"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: linking does not elaborate a context window in this release (it is refused before any closure is formed)."
+
+[[construct]]
+key = "declaration.text_generator"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: linking does not elaborate a text generator in this release (it is refused before any closure is formed)."
+
+[[construct]]
+key = "declaration.text_classifier"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: linking does not elaborate a text classifier in this release (it is refused before any closure is formed)."

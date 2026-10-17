@@ -344,6 +344,11 @@ impl Render<'_> {
             .split_once('.')
             .is_some_and(|(owner, _)| BUILTIN_CONSTRUCTOR_OWNERS.contains(&owner));
         match (&member.module, self.qualify) {
+            // §17.12 (text): a member of the laws library is written by the
+            // library's own name; the module is the elaboration's import.
+            (Some(module), _) if module == crate::text_laws::PREFIX => {
+                identifier(&format!("{module}.{}", member.name))
+            }
             (Some(module), _) => identifier(&format!("{}.{}.{}", self.prefix, module, member.name)),
             (None, Some(own)) if !builtin => identifier(&format!("{own}.{}", member.name)),
             (None, _) => identifier(&member.name),
@@ -1796,6 +1801,13 @@ pub fn render_lean(
             identifier(&format!("{module_prefix}.{import}"))
         ));
     }
+    // §17.12 (text): the elaboration's own imports — the sealed laws
+    // library a text declaration means. They are written here, once, and
+    // the laws themselves are never spliced into the module: the import is
+    // what a text declaration elaborates to.
+    for import in module.elaboration.imports() {
+        text.push_str(&format!("public import {}\n", identifier(import)));
+    }
     // Large closed byte constants incur Lean compiler work beyond its small
     // interactive defaults. Match the fixed finite closed-core budgets; the
     // project still bounds child elapsed time and captured output, and every
@@ -2067,11 +2079,15 @@ pub fn render_lean(
                 | SemanticDeclaration::Logic { .. }
                 | SemanticDeclaration::InferenceRule { .. }
                 | SemanticDeclaration::Verifier { .. }
-                | SemanticDeclaration::Reasoner { .. } => {
+                | SemanticDeclaration::Reasoner { .. }
+                | SemanticDeclaration::Tokenizer { .. }
+                | SemanticDeclaration::ContextWindow { .. }
+                | SemanticDeclaration::TextGenerator { .. }
+                | SemanticDeclaration::TextClassifier { .. } => {
                     return Err(Diagnostic::new(
                         code!("LLI9001"),
                         format!(
-                            "phase lean-backend: model or reasoning declaration `{}` was not elaborated",
+                            "phase lean-backend: model, reasoning, or text declaration `{}` was not elaborated",
                             declaration.name()
                         ),
                     ));
@@ -2658,6 +2674,10 @@ fn latex_model(
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. }
         | SemanticDeclaration::Theorem { .. } => {}
     }
     for obligation in module.elaboration.obligations(index) {
@@ -2719,6 +2739,86 @@ fn latex_model(
             text,
             "Restated in Lean against the fixed model semantics as",
             &check.name,
+        );
+    }
+}
+
+/// The document lines of a text declaration (§17.12, *Text components*):
+/// its closed members, the laws library its elaboration imports, exactly what
+/// linking elaborated it to, and the theorems it generates. The pieces of the
+/// vocabulary are never document text (rule 13 under *Models*): the artifact
+/// is named, and the generated Lean carries its value.
+fn latex_text(
+    render: &Render<'_>,
+    module: &SemanticModule,
+    index: usize,
+    declaration: &SemanticDeclaration,
+    text: &mut String,
+) {
+    if let SemanticDeclaration::Tokenizer {
+        scheme,
+        vocabulary,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(
+            text,
+            "Scheme",
+            match scheme {
+                crate::ir::semantic::TokenizerScheme::ByteLevel => "byte_level",
+                crate::ir::semantic::TokenizerScheme::LongestMatch => "longest_match",
+            },
+        );
+        latex_line(text, "Vocabulary", &latex_use(render, vocabulary));
+        latex_line(
+            text,
+            "Laws",
+            &format!(
+                "imported from the native module {}",
+                crate::text_laws::laws_module()
+            ),
+        );
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
+    for derived in module.elaboration.lowered(index) {
+        if let SemanticDeclaration::Definition {
+            name,
+            parameters,
+            result,
+            body,
+            ..
+        } = derived
+        {
+            latex_line(
+                text,
+                "Elaborates to",
+                &format!(
+                    "{name}{} : {} := {}",
+                    render.parameters(parameters),
+                    render.ty(result),
+                    render.term(body)
+                ),
+            );
+        }
+    }
+    for theorem in module.elaboration.theorems(index) {
+        let binders = if theorem.parameters.is_empty() {
+            String::new()
+        } else {
+            format!("forall{}, ", render.parameters(&theorem.parameters))
+        };
+        latex_line(
+            text,
+            &format!(
+                "Generates theorem ({} template)",
+                theorem.template().replace('_', " ")
+            ),
+            &format!(
+                "{} : {binders}{}",
+                theorem.name,
+                render.formula(&theorem.statement)
+            ),
         );
     }
 }
@@ -2942,6 +3042,20 @@ pub fn render_latex(
             | SemanticDeclaration::Verifier { .. }
             | SemanticDeclaration::Reasoner { .. } => {
                 reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::Tokenizer { .. } => {
+                latex_text(&render, module, index, declaration, &mut text);
+            }
+            SemanticDeclaration::ContextWindow { .. }
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {
+                return Err(Diagnostic::new(
+                    code!("LLI9001"),
+                    format!(
+                        "phase latex-backend: text declaration `{}` was not elaborated",
+                        declaration.name()
+                    ),
+                ));
             }
         }
     }

@@ -707,7 +707,11 @@ pub(super) fn latex_reasoning(
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => {}
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
     for obligation in module.elaboration.obligations(index) {
         let binders = if obligation.parameters.is_empty() {

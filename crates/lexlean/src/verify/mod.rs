@@ -1264,6 +1264,9 @@ pub fn run_part(
     // them before its own modules, the part that publishes also replays and
     // audits them, and its records are the ones the attestation lists, first
     // among the elaborations and first among the replays.
+    // The text-laws library (§17.12, *Text components*) is compiled before
+    // the runtime modules, so its records precede theirs in the attestation.
+    let mut text_laws_records: Vec<ChildRecord> = Vec::new();
     let mut runtime_lean_records: Vec<ChildRecord> = Vec::new();
     let mut runtime_replay_records: Vec<ChildRecord> = Vec::new();
     let is_runtime = |name: &str| runtime_modules.iter().any(|module| module.name == name);
@@ -1365,6 +1368,90 @@ pub fn run_part(
     )?;
 
     stages.enter("elaboration");
+    // §17.12 (text): a module that declares a text component imports the
+    // laws library, one native module the compiler embeds. Its Lean is
+    // generated from that data here, audited like every generated core
+    // module, and compiled into the same olean root before any module that
+    // imports it, so the import resolves to what the compiler wrote and to
+    // nothing read from a file it did not write.
+    if build
+        .modules
+        .iter()
+        .any(|module| crate::text_laws::imports_laws(&module.lean_text))
+    {
+        for file in crate::text_laws::stage().map_err(fail)? {
+            if let Err(reason) = generated_core_source_audit(&file.text) {
+                return Err(fail(internal(format!("`{}`: {reason}", file.module))));
+            }
+            write_staged(
+                staging.path(),
+                &format!("lean-src/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+            let source = src_root.join(&file.path);
+            let olean = olean_root.join(file.path.replace(".lean", ".olean"));
+            if let Some(parent) = olean.parent() {
+                std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                    fail(Diagnostic::new(
+                        code!("LLB6003"),
+                        format!("staging oleans: {io_error}"),
+                    ))
+                })?;
+            }
+            let record = run_child(
+                &ChildSpec {
+                    tool: "lean",
+                    module: Some(file.module.clone()),
+                    program: &toolchain.lake.path,
+                    executable_sha256: toolchain.lean.sha256,
+                    argv: vec![
+                        "env".to_owned(),
+                        "lean".to_owned(),
+                        "-R".to_owned(),
+                        src_root.to_string(),
+                        "-o".to_owned(),
+                        olean.to_string(),
+                        source.to_string(),
+                    ],
+                    cwd: &workspace_root,
+                    extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                    home: ChildHome::Toolchain {
+                        toolchain_bin: &toolchain_bin,
+                    },
+                },
+                &limits,
+                &normalizer,
+            )
+            .map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                let combined = format!("{}{}", record.stdout, record.stderr);
+                if let Some(exhausted) = resource_death(
+                    &file.module,
+                    record.exit_code,
+                    &combined,
+                    file.text.len() as u64,
+                    &limits,
+                ) {
+                    return Err(fail(exhausted));
+                }
+                return Err(fail(internal(format!(
+                    "text laws: `{}` does not compile silently under the pinned Lean: {}",
+                    file.module,
+                    lean_error(&combined)
+                ))));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/text-laws/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            text_laws_records.push(record);
+        }
+    }
+
     // Stage 7: module elaboration in topological import order (§22.3).
     // A topological frontier contains no dependency edges, so its members
     // may run concurrently without making an imported olean observable
@@ -2617,6 +2704,7 @@ pub fn run_part(
     )
     .map_err(fail)?;
     let mut process_records: Vec<ChildRecord> = vec![probe_record];
+    process_records.extend(text_laws_records);
     process_records.extend(runtime_lean_records);
     let missing = |what: &str, key: &str| {
         fail(internal(format!(
