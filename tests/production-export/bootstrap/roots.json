@@ -1,0 +1,20 @@
+{
+  "roots": [
+    {
+      "name": "is_closed_lean_name",
+      "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_audit_output",
+      "root": "LexLeanBoot.AxiomOutput.parseAuditOutput",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
