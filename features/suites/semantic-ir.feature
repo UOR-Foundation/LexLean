@@ -133,6 +133,7 @@ Feature: semantic-ir
     Then the generated runtime and module elaborate and replay
     And each computational definition reports exactly its source-declared axiom policy
     And nested records retain every large arbitrary-byte literal during elaboration and replay
+    And byte literals use closed explicit octets with deterministic literal-local sharing while canonical document numbers and every byte remain unchanged
 
   @SM-20 @build
   Scenario: Noncanonical, out-of-range, invalid-byte, ill-typed, and unbounded fixed-width values fail before either backend runs.
