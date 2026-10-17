@@ -11,7 +11,7 @@
 # run when the rows and the version disagree.
 
 spec = "lexlean/oracle-differences/1"
-version = 3
+version = 4
 
 [[difference]]
 id = "KD-01"
@@ -70,6 +70,8 @@ roots = [
   "Coverage.Main.intOps",
   "Coverage.Main.mapped",
   "Coverage.Main.parity",
+  "Coverage.Prims.pixels",
+  "Coverage.Prims.widenings",
   "OracleProbe.ProbeGraphReachable.reachableRoot",
   "OracleProbe.ProbeGraphSuccessors.successorsRoot",
   "OracleProbe.ProbeGraphTopological.topologicalRoot",

@@ -220,3 +220,10 @@ Feature: semantic-ir
     When it is linked in languages 1.0, 1.1, and 1.2 and rendered by both backends
     Then only language 1.2 accepts it, the LaTeX document and the Lean text carry every construct, and the pinned Lean elaborates the Lean with exactly the pinned axioms
     And each planted defect is refused before any build output
+
+  @SM-32 @build
+  Scenario: Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root.
+    Given the committed production-coverage example, whose roots widen a value of every fixed-width type and decode a byte string, and copies that widen a non-integer, a signed value to Nat, or state a mistyped result
+    When it is linked under languages 1.1 and 1.2, rendered, lowered, and verified
+    Then the generated Lean and the lowered programs contain only the elaborated terms, no decimal primitive, and the kernel decides the widening of every width at its bounds
+    And each misuse fails with LLT4001 before any build output

@@ -221,6 +221,30 @@ pub const TABLE: &[(&str, &[&str])] = &[
             "shape:false",
         ],
     ),
+    // A widening conversion is realized as what it elaborates to: a let of
+    // the operand, a bit test of each bit, conditionals, and an exact sum
+    // (§17.12, *Widening conversions*).
+    (
+        "primitive.to_int",
+        &[
+            "expr:let",
+            "expr:cond",
+            "prim:bit_and",
+            "prim:equal",
+            "prim:int_sub",
+            "prim:int_neg",
+        ],
+    ),
+    (
+        "primitive.to_nat",
+        &[
+            "expr:let",
+            "expr:cond",
+            "prim:bit_and",
+            "prim:equal",
+            "prim:nat_add",
+        ],
+    ),
     ("primitive.iterate", &["template:iterate"]),
     ("primitive.iterate_until", &["template:iterate_until"]),
     ("primitive.graph_successors", &["template:graph_successors"]),

@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Widening conversions (#114, SPEC.md §17.12 *Widening conversions*, `SM-32`,
+  language 1.2 only). The total primitives `to_int` (any fixed-width integer to
+  `Int`) and `to_nat` (any unsigned fixed-width integer to `Nat`) elaborate in
+  linking to a single-evaluation `let` over bit tests (`bit_and`, `equal`) and a
+  balanced exact sum, so a production root decodes a byte string to integers
+  with no decimal text in its lowered program. Under language 1.0 and 1.1 they
+  are rejected with `LLT4001` and those identities are unchanged. Certificates read
+  elaborated declarations, so the certificate data needs no `to_int`/`to_nat`
+  rule. The register is 404 rows with `SM-32`; the language-1.2
+  compiler-semantics, semantic-IR (`12` to `13`), source, semantic, and build
+  IDs move, and the oracle tables are at versions 4 (`known-differences`) and 4
+  (`known-non-overlap`).
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional

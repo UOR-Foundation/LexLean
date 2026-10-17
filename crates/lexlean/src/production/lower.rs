@@ -1646,7 +1646,9 @@ pub(crate) fn template_of(
         | SemanticPrimitive::Join
         | SemanticPrimitive::ParseDecimal
         | SemanticPrimitive::FormatDecimal
-        | SemanticPrimitive::LessThan => return Ok(None),
+        | SemanticPrimitive::LessThan
+        | SemanticPrimitive::ToInt
+        | SemanticPrimitive::ToNat => return Ok(None),
     }))
 }
 
@@ -3321,6 +3323,13 @@ impl Lowerer<'_> {
             }
         };
         let operation = match operation {
+            // Every backend reads elaborated declarations, in which a
+            // widening conversion is the ordinary term it means (§17.12).
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is lowered only through its elaboration"
+                ));
+            }
             SemanticPrimitive::Subtract => integer(Prim::NatSub, Prim::IntSub)?,
             SemanticPrimitive::Multiply => integer(Prim::NatMul, Prim::IntMul)?,
             SemanticPrimitive::Quotient => integer(Prim::NatQuot, Prim::IntQuot)?,
