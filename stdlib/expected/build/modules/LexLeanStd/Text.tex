@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{isSpace}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((((LexLeanRuntime.equal (byte) ((32 : UInt8)) : Bool) || (LexLeanRuntime.equal (byte) ((9 : UInt8)) : Bool)) || (LexLeanRuntime.equal (byte) ((10 : UInt8)) : Bool)) || ((LexLeanRuntime.equal (byte) ((12 : UInt8)) : Bool) || (LexLeanRuntime.equal (byte) ((13 : UInt8)) : Bool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (UInt8)}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.index (subject) (position) : Option (UInt8))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{spaceAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match byteAt (subject) (position) with | Option.some byte => isSpace (byte) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sliceOr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (start : Nat) (count : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.slice (subject) (start) (count) : Option (ByteArray)) with | Option.some piece => piece | Option.none => ByteArray.mk \#[])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{startsWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (<U+00AB>prefix<U+00BB> : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.slice (subject) (0) ((LexLeanRuntime.length (<U+00AB>prefix<U+00BB>) : Nat)) : Option (ByteArray)) with | Option.some head => (LexLeanRuntime.equal (head) (<U+00AB>prefix<U+00BB>) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{endsWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (suffix : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let size : Nat := (LexLeanRuntime.length (suffix) : Nat); (if (Nat.ble (size) (total)) then (match (LexLeanRuntime.slice (subject) ((LexLeanRuntime.subtract (total) (size) : Nat)) (size) : Option (ByteArray)) with | Option.some tail => (LexLeanRuntime.equal (tail) (suffix) : Bool) | Option.none => false) else false)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{trimEnd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(end)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (<U+00AB>end<U+00BB> : Nat) => (if (Nat.blt (0) (<U+00AB>end<U+00BB>)) then (if spaceAt (subject) ((LexLeanRuntime.subtract (<U+00AB>end<U+00BB>) (1) : Nat)) then Option.some ((LexLeanRuntime.subtract (<U+00AB>end<U+00BB>) (1) : Nat)) else Option.none) else Option.none))) ((LexLeanRuntime.length (subject) : Nat)) ((LexLeanRuntime.length (subject) : Nat)) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{trimStart}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (<U+00AB>end<U+00BB> : Nat)}.\par
+\noindent Closure 1: binds \texttt{(start)}, captures \texttt{(end, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (start : Nat) => (if (Nat.blt (start) (<U+00AB>end<U+00BB>)) then (if spaceAt (subject) (start) then Option.some ((start + 1)) else Option.none) else Option.none))) (<U+00AB>end<U+00BB>) (0) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{trim}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let <U+00AB>end<U+00BB> : Nat := trimEnd (subject); (let start : Nat := trimStart (subject) (<U+00AB>end<U+00BB>); sliceOr (subject) (start) ((LexLeanRuntime.subtract (<U+00AB>end<U+00BB>) (start) : Nat))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reverse}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(reversed, piece)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (reversed : List (ByteArray)) (piece : ByteArray) => (piece :: reversed))) (([] : List (ByteArray))) (pieces) : List (ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{splitStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (delimiter : UInt8) (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (let start : Nat := ((state).2).1; (let pieces : List (ByteArray) := ((state).2).2; (match byteAt (subject) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) (delimiter) : Bool) then Option.some (((position + 1), ((position + 1), (sliceOr (subject) (start) ((LexLeanRuntime.subtract (position) (start) : Nat)) :: pieces)))) else Option.some (((position + 1), (start, pieces)))) | Option.none => Option.none))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{splitOn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (delimiter : UInt8)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(delimiter, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => splitStep (subject) (delimiter) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: ((final).2).2)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chomp}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(line : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if endsWith (line) (ByteArray.mk \#[13]) then sliceOr (line) (0) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (line) : Nat)) (1) : Nat)) else line)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lineStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (let start : Nat := ((state).2).1; (let pieces : List (ByteArray) := ((state).2).2; (match byteAt (subject) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((10 : UInt8)) : Bool) then Option.some (((position + 1), ((position + 1), (chomp (sliceOr (subject) (start) ((LexLeanRuntime.subtract (position) (start) : Nat))) :: pieces)))) else Option.some (((position + 1), (start, pieces)))) | Option.none => Option.none))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lines}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => lineStep (subject) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; (let pieces : List (ByteArray) := ((final).2).2; (if (Nat.blt (start) (total)) then reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: pieces)) else reverse (pieces))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{joinWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray)) (separator : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(joined, piece)}, captures \texttt{(separator)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (joined : Option (ByteArray)) (piece : ByteArray) => (match joined with | Option.none => Option.some (piece) | Option.some sofar => Option.some ((LexLeanRuntime.append ((LexLeanRuntime.append (sofar) (separator) : ByteArray)) (piece) : ByteArray))))) (Option.none) (pieces) : Option (ByteArray)) with | Option.some joined => joined | Option.none => ByteArray.mk \#[])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{matchAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (needle : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.slice (subject) (position) ((LexLeanRuntime.length (needle) : Nat)) : Option (ByteArray)) with | Option.some window => (LexLeanRuntime.equal (window) (needle) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{find}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (needle : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(needle, size, subject, total)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let size : Nat := (LexLeanRuntime.length (needle) : Nat); (let position : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => (if matchAt (subject) (needle) (position) then Option.none else (if (Nat.blt ((position + size)) (total)) then Option.some ((position + 1)) else Option.none)))) ((total + 1)) (0) : (Prod (Nat) (Bool)))).1; (if matchAt (subject) (needle) (position) then Option.some (position) else Option.none))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

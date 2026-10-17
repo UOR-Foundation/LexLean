@@ -15,6 +15,103 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
+  A project declares `[[source_package]]` tables (`package`, `version`, `kind`
+  `path`, `path`), each naming a member project of the workspace an optional
+  `lexlean-workspace.toml` at the repository root lists, and imports its
+  modules by their own Lean names (`\importmodule{LexLeanStd.Text}`). The lock
+  gains `[[source_package]]` rows (tree digest over the package's manifest and
+  source files, manifest digest, version, prefix, its own packages) that every
+  command recomputes; a changed byte or version is `LLC0105` naming both
+  digests, a pin for an undeclared package `LLC0106`, a module prefix claimed
+  twice `LLC0107`, a project or path outside the workspace rule `LLC0108`
+  (a symlink or an escaping path is `LLS8001`), and an import of a package the
+  scope does not declare `LLR3009`. A package definition is an ordinary
+  definition of the importing project: its own `production:` roots are not
+  roots of the importer and nothing is re-exported. `verify` replays the
+  package modules under the package's prefix, with the package as their
+  `origin` in the build manifest, the snapshot, and the attestation; `fmt`
+  never writes a package file. The schema change moves the language-1.2
+  compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
+  without source packages, keep their bytes apart from that identity. The
+  register gains `PK-01`..`PK-04` (401 rows with `SL-01` and `LM-01`..`LM-03`, `LM-13`); `PK-05` (the `bootstrap/` pilot
+  imports `stdlib/`) follows #153 and #160.
+- The first component of the compiler's own pipeline as language-1.2 source:
+  the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/` is a language-1.2 project beside `compiler/` and `stdlib/`
+  under the module prefix `LexLeanBoot`; its `AxiomOutput` module declares
+  `parseAuditOutput` and `isClosedLeanName` as production roots for
+  `rust-std`. A project cannot import another's modules, so `Text` is a copy
+  of the standard library's without its `production` declarations, compared
+  with `stdlib/src/Text.lex.tex` on every run. `BS-01` runs the committed
+  golden vectors of `tests/golden/axiom-parser/` and a seeded corpus of
+  generated, wrapped, and mutated audit outputs against the Rust parser
+  `verify::axiom` (the stage-0 oracle, unchanged) under the calculus
+  evaluator and under the pinned rustc, detects seven planted defects, and,
+  under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones under
+  `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
+  example-gate records. `BS-01` brings the register to 398 IDs.
+- A language-1.2 `tokenizer` elaborates, in linking, to ordinary definitions
+  over the embedded text-laws library and to generated theorems the library
+  proves (SPEC.md §17.12, `LM-01`..`LM-03`, `LM-13`, #30). The library is
+  LexLean source: one native `lexlean/core-module/2` module of the embedded
+  project `language/text-1.2/library`, whose Lean the compiler generates and
+  compiles into the verification's olean root before any module that
+  imports it; the one-time migration of the hand-written proof is recorded
+  in `tests/text-laws/MIGRATION.md` and no authored Lean implementation of
+  the laws exists in the release tree. A tokenizer over a `utf8_lines`
+  vocabulary artifact of role `vocabulary` elaborates to `pieces`, `size`,
+  `encode`, `decode`, `encodeText`, and `decodeText`, and generates
+  `roundtrip`, `in_range`, and `text_roundtrip`, each proved by one library
+  lemma after unfolding exactly the named definitions; a vocabulary of
+  another role or schema, or a tokenizer with type parameters, is refused
+  with `LLT4006`, and a scheme outside `byte_level` and `longest_match` is a
+  schema violation (`LLT4001`). The language-1.2 `semantic_ir`,
+  `lean_backend`, and `latex_backend` versions move to 12, 19, and 12, so
+  every language-1.2 lock, golden, fixture, and verification record is
+  regenerated. The register holds 397 IDs: this slice registers `LM-01`..`LM-03`
+  and `LM-13` only; the remaining text components of the design on #30 add
+  their rows when their slices land, so no registered ID is unwired.
+- The standard library's first member: bytes and text over `Bytes`
+  (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
+  language-1.2 project beside `compiler/` under the module prefix
+  `LexLeanStd`, written in the authoring notation; its `Text` module declares
+  `startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, and
+  `find` as production roots for `rust-std`, each admitting exactly the
+  effects its closure realizes. `SL-01` runs every member's lowered program
+  under the calculus evaluator and its rendered package under the pinned
+  rustc on a seeded corpus against Rust's `starts_with`, `ends_with`,
+  `trim_ascii`, `lines`, `split`, `join`, and `find`, detects a planted
+  character class in `trim`, and, under the pinned Lean, compares the
+  certified packages the production export publishes with the committed
+  ones under `tests/production-export/stdlib/`. The project passes the
+  example gates (`verify-examples`, `check-golden`) and
+  `check-production-export` compares its packages. `SL-01` brings the
+  register to 393 IDs.
+- The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
+  `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
+  took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of
+  them `bdd`, one test process whose cases sum to 22,708 s over four threads.
+  `.github/bdd-parts.json` names four parts of the `repo-conformance` suite by
+  conformance ID, grouped so the cases that share a fixture built once per test
+  process run in one part, and a remainder, `rest`, that runs every test no
+  part names. The recipe is `cargo xtask bdd`: unset, `LEXLEAN_BDD_PART` leaves
+  it `cargo test -p repo-conformance --all-features`, which `just vv` and
+  `release.yml` run; named, it adds the part's harness filters (`--exact` and
+  its tests, or `--exact` and a `--skip` of every named test). `cargo xtask
+  check-test-inventory` lists every part with its filters and requires the
+  parts to be disjoint and their union to be `bdd`'s list (`RP-13`); `ci.yml`
+  runs each named part on a `bdd-<part>` row of the gate's matrix and the
+  remainder on the `rest` leg, every part on exactly one row (`RP-14`).
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
 - Certificate A as kernel-term data (SPEC.md §17.17, `SP-15`; stage 3 of #89).
   The preservation certificate of every production root is no longer written as
   Lean text by `production/certificate.rs`: the compiler builds it as a native
@@ -31,8 +128,7 @@ versions, and the entries below say what each tag does and does not claim.
   kernel's definitional equality
   (`tests/preservation-certificates/A-STATEMENTS.md`). Roughly 5 000 lines of the
   text generator are gone from `production/certificate.rs`. Certificate B is
-  still Lean text. No diagnostic code is new; the register gains `SP-15` (384
-  rows).
+  still Lean text. No diagnostic code is new; the register gains `SP-15` (403 rows).
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler

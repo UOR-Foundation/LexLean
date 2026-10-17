@@ -1,0 +1,281 @@
+'LexLeanCollections.Key' does not depend on any axioms
+'LexLeanCollections.Key.casesOn' does not depend on any axioms
+'LexLeanCollections.Key.compare' does not depend on any axioms
+'LexLeanCollections.Key.ctorIdx' does not depend on any axioms
+'LexLeanCollections.Key.mk._flat_ctor' does not depend on any axioms
+'LexLeanCollections.Key.mk.noConfusion' does not depend on any axioms
+'LexLeanCollections.Key.noConfusion' does not depend on any axioms
+'LexLeanCollections.Key.noConfusionType' does not depend on any axioms
+'LexLeanCollections.Key.recOn' does not depend on any axioms
+'LexLeanCollections.compareCodes' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._f' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._sunfold' depends on axioms: [propext]
+'LexLeanCollections.compareCodes._unsafe_rec' depends on axioms: [propext]
+'LexLeanCollections.compareCodes.match_1' depends on axioms: [propext]
+'LexLeanCollections.compareCodes.match_4' does not depend on any axioms
+'LexLeanCollections.containsElement' does not depend on any axioms
+'LexLeanCollections.containsElement._f' does not depend on any axioms
+'LexLeanCollections.containsElement._sunfold' does not depend on any axioms
+'LexLeanCollections.containsElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.graphNodes' does not depend on any axioms
+'LexLeanCollections.graphReachable' depends on axioms: [propext]
+'LexLeanCollections.graphSuccessors' does not depend on any axioms
+'LexLeanCollections.graphTopological' does not depend on any axioms
+'LexLeanCollections.insertElement' does not depend on any axioms
+'LexLeanCollections.insertElement._f' does not depend on any axioms
+'LexLeanCollections.insertElement._sunfold' does not depend on any axioms
+'LexLeanCollections.insertElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.insertElement.match_1' does not depend on any axioms
+'LexLeanCollections.insertEntry' does not depend on any axioms
+'LexLeanCollections.insertEntry._f' does not depend on any axioms
+'LexLeanCollections.insertEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.insertEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.insertEntry.match_1' does not depend on any axioms
+'LexLeanCollections.insertEntry.match_3' does not depend on any axioms
+'LexLeanCollections.instKeyBool' depends on axioms: [propext]
+'LexLeanCollections.instKeyInt' does not depend on any axioms
+'LexLeanCollections.instKeyInt16' does not depend on any axioms
+'LexLeanCollections.instKeyInt32' does not depend on any axioms
+'LexLeanCollections.instKeyInt64' does not depend on any axioms
+'LexLeanCollections.instKeyInt8' does not depend on any axioms
+'LexLeanCollections.instKeyNat' does not depend on any axioms
+'LexLeanCollections.instKeyProd' depends on axioms: [propext]
+'LexLeanCollections.instKeyString' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanCollections.instKeyUInt16' does not depend on any axioms
+'LexLeanCollections.instKeyUInt32' does not depend on any axioms
+'LexLeanCollections.instKeyUInt64' does not depend on any axioms
+'LexLeanCollections.instKeyUInt8' does not depend on any axioms
+'LexLeanCollections.iterate' does not depend on any axioms
+'LexLeanCollections.iterate._f' does not depend on any axioms
+'LexLeanCollections.iterate._sunfold' does not depend on any axioms
+'LexLeanCollections.iterate._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.iterate.match_1' does not depend on any axioms
+'LexLeanCollections.iterateUntil' does not depend on any axioms
+'LexLeanCollections.iterateUntil._f' does not depend on any axioms
+'LexLeanCollections.iterateUntil._sunfold' does not depend on any axioms
+'LexLeanCollections.iterateUntil._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.iterateUntil.match_1' does not depend on any axioms
+'LexLeanCollections.lessThan' depends on axioms: [propext]
+'LexLeanCollections.lessThan._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.lessThan.match_1' depends on axioms: [propext]
+'LexLeanCollections.listFold' does not depend on any axioms
+'LexLeanCollections.lookupEntry' does not depend on any axioms
+'LexLeanCollections.lookupEntry._f' does not depend on any axioms
+'LexLeanCollections.lookupEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.lookupEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.mapContains' does not depend on any axioms
+'LexLeanCollections.mapEntries' does not depend on any axioms
+'LexLeanCollections.mapFold' does not depend on any axioms
+'LexLeanCollections.mapInsert' does not depend on any axioms
+'LexLeanCollections.mapKeys' does not depend on any axioms
+'LexLeanCollections.mapLookup' does not depend on any axioms
+'LexLeanCollections.mapRemove' does not depend on any axioms
+'LexLeanCollections.mapSize' does not depend on any axioms
+'LexLeanCollections.mapValues' does not depend on any axioms
+'LexLeanCollections.reachableFrom' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._f' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._sparseCasesOn_1' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._sunfold' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom._unsafe_rec' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom.match_1' depends on axioms: [propext]
+'LexLeanCollections.reachableFrom.match_4' does not depend on any axioms
+'LexLeanCollections.removeElement' does not depend on any axioms
+'LexLeanCollections.removeElement._f' does not depend on any axioms
+'LexLeanCollections.removeElement._sunfold' does not depend on any axioms
+'LexLeanCollections.removeElement._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.removeEntry' does not depend on any axioms
+'LexLeanCollections.removeEntry._f' does not depend on any axioms
+'LexLeanCollections.removeEntry._sunfold' does not depend on any axioms
+'LexLeanCollections.removeEntry._unsafe_rec' does not depend on any axioms
+'LexLeanCollections.setContains' does not depend on any axioms
+'LexLeanCollections.setDifference' does not depend on any axioms
+'LexLeanCollections.setElements' does not depend on any axioms
+'LexLeanCollections.setFold' does not depend on any axioms
+'LexLeanCollections.setInsert' does not depend on any axioms
+'LexLeanCollections.setIntersection' does not depend on any axioms
+'LexLeanCollections.setRemove' does not depend on any axioms
+'LexLeanCollections.setSize' does not depend on any axioms
+'LexLeanCollections.setUnion' does not depend on any axioms
+'LexLeanCollections.topological' does not depend on any axioms
+'LexLeanCollections.topological._f' does not depend on any axioms
+'LexLeanCollections.topological._sunfold' does not depend on any axioms
+'LexLeanCollections.topological._unsafe_rec' does not depend on any axioms
+'LexLeanRuntime.Appendable' does not depend on any axioms
+'LexLeanRuntime.Appendable.append' does not depend on any axioms
+'LexLeanRuntime.Appendable.casesOn' does not depend on any axioms
+'LexLeanRuntime.Appendable.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Appendable.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Appendable.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Appendable.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Appendable.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Appendable.recOn' does not depend on any axioms
+'LexLeanRuntime.Decimal' does not depend on any axioms
+'LexLeanRuntime.Decimal.casesOn' does not depend on any axioms
+'LexLeanRuntime.Decimal.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Decimal.format' does not depend on any axioms
+'LexLeanRuntime.Decimal.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Decimal.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Decimal.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Decimal.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Decimal.parse' does not depend on any axioms
+'LexLeanRuntime.Decimal.recOn' does not depend on any axioms
+'LexLeanRuntime.Fixed' does not depend on any axioms
+'LexLeanRuntime.Fixed.bitAnd' does not depend on any axioms
+'LexLeanRuntime.Fixed.bitNot' does not depend on any axioms
+'LexLeanRuntime.Fixed.bitOr' does not depend on any axioms
+'LexLeanRuntime.Fixed.bitXor' does not depend on any axioms
+'LexLeanRuntime.Fixed.casesOn' does not depend on any axioms
+'LexLeanRuntime.Fixed.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Fixed.fromInt' does not depend on any axioms
+'LexLeanRuntime.Fixed.maximum' does not depend on any axioms
+'LexLeanRuntime.Fixed.minimum' does not depend on any axioms
+'LexLeanRuntime.Fixed.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Fixed.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Fixed.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Fixed.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Fixed.recOn' does not depend on any axioms
+'LexLeanRuntime.Fixed.shiftLeft' does not depend on any axioms
+'LexLeanRuntime.Fixed.shiftRight' does not depend on any axioms
+'LexLeanRuntime.Fixed.toToMathInt' does not depend on any axioms
+'LexLeanRuntime.Indexable' does not depend on any axioms
+'LexLeanRuntime.Indexable.casesOn' does not depend on any axioms
+'LexLeanRuntime.Indexable.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Indexable.index' does not depend on any axioms
+'LexLeanRuntime.Indexable.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Indexable.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Indexable.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Indexable.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Indexable.recOn' does not depend on any axioms
+'LexLeanRuntime.Lengthable' does not depend on any axioms
+'LexLeanRuntime.Lengthable.casesOn' does not depend on any axioms
+'LexLeanRuntime.Lengthable.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Lengthable.length' does not depend on any axioms
+'LexLeanRuntime.Lengthable.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Lengthable.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Lengthable.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Lengthable.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Lengthable.recOn' does not depend on any axioms
+'LexLeanRuntime.Quotient' does not depend on any axioms
+'LexLeanRuntime.Quotient.casesOn' does not depend on any axioms
+'LexLeanRuntime.Quotient.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Quotient.isZero' does not depend on any axioms
+'LexLeanRuntime.Quotient.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Quotient.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Quotient.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Quotient.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Quotient.quotient' does not depend on any axioms
+'LexLeanRuntime.Quotient.recOn' does not depend on any axioms
+'LexLeanRuntime.Quotient.remainder' does not depend on any axioms
+'LexLeanRuntime.Sliceable' does not depend on any axioms
+'LexLeanRuntime.Sliceable.casesOn' does not depend on any axioms
+'LexLeanRuntime.Sliceable.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.Sliceable.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.Sliceable.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Sliceable.noConfusion' does not depend on any axioms
+'LexLeanRuntime.Sliceable.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.Sliceable.recOn' does not depend on any axioms
+'LexLeanRuntime.Sliceable.slice' does not depend on any axioms
+'LexLeanRuntime.ToMathInt' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.casesOn' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.ctorIdx' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.mk._flat_ctor' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.mk.noConfusion' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.noConfusion' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.noConfusionType' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.recOn' does not depend on any axioms
+'LexLeanRuntime.ToMathInt.toInt' does not depend on any axioms
+'LexLeanRuntime.append' does not depend on any axioms
+'LexLeanRuntime.bitAnd' does not depend on any axioms
+'LexLeanRuntime.bitNot' does not depend on any axioms
+'LexLeanRuntime.bitOr' does not depend on any axioms
+'LexLeanRuntime.bitXor' does not depend on any axioms
+'LexLeanRuntime.checkedAdd' does not depend on any axioms
+'LexLeanRuntime.checkedAddInt64' does not depend on any axioms
+'LexLeanRuntime.checkedConvert' does not depend on any axioms
+'LexLeanRuntime.checkedFromInt' does not depend on any axioms
+'LexLeanRuntime.checkedMultiply' does not depend on any axioms
+'LexLeanRuntime.checkedMultiplyInt64' does not depend on any axioms
+'LexLeanRuntime.checkedMultiplyInt64.match_1' does not depend on any axioms
+'LexLeanRuntime.checkedNegate' does not depend on any axioms
+'LexLeanRuntime.checkedNegateInt64' does not depend on any axioms
+'LexLeanRuntime.checkedQuotient' does not depend on any axioms
+'LexLeanRuntime.checkedQuotientInt64' does not depend on any axioms
+'LexLeanRuntime.checkedSubtract' does not depend on any axioms
+'LexLeanRuntime.checkedSubtractInt64' does not depend on any axioms
+'LexLeanRuntime.compareBytes' depends on axioms: [propext]
+'LexLeanRuntime.divideMagnitudeInt64' does not depend on any axioms
+'LexLeanRuntime.divideMagnitudeInt64._f' does not depend on any axioms
+'LexLeanRuntime.divideMagnitudeInt64._sunfold' does not depend on any axioms
+'LexLeanRuntime.divideMagnitudeInt64._unsafe_rec' does not depend on any axioms
+'LexLeanRuntime.divideMagnitudeInt64.match_1' does not depend on any axioms
+'LexLeanRuntime.equal' does not depend on any axioms
+'LexLeanRuntime.formatDecimal' does not depend on any axioms
+'LexLeanRuntime.index' does not depend on any axioms
+'LexLeanRuntime.instAppendableByteArray' does not depend on any axioms
+'LexLeanRuntime.instAppendableList' does not depend on any axioms
+'LexLeanRuntime.instDecimalInt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanRuntime.instDecimalInt.match_1' does not depend on any axioms
+'LexLeanRuntime.instDecimalOfFixedOfToString' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanRuntime.instFixedInt16' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedInt32' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedInt64' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedInt8' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedUInt16' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedUInt32' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedUInt64' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instFixedUInt8' depends on axioms: [propext, Quot.sound]
+'LexLeanRuntime.instIndexableByteArrayUInt8' does not depend on any axioms
+'LexLeanRuntime.instIndexableList' does not depend on any axioms
+'LexLeanRuntime.instLengthableByteArray' does not depend on any axioms
+'LexLeanRuntime.instLengthableList' does not depend on any axioms
+'LexLeanRuntime.instLengthableString' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanRuntime.instQuotientInt' does not depend on any axioms
+'LexLeanRuntime.instQuotientNat' does not depend on any axioms
+'LexLeanRuntime.instSliceableByteArray' does not depend on any axioms
+'LexLeanRuntime.instSliceableList' does not depend on any axioms
+'LexLeanRuntime.instToMathIntInt' does not depend on any axioms
+'LexLeanRuntime.join' depends on axioms: [propext]
+'LexLeanRuntime.length' does not depend on any axioms
+'LexLeanRuntime.listIndex' does not depend on any axioms
+'LexLeanRuntime.listIndex._f' does not depend on any axioms
+'LexLeanRuntime.listIndex._sunfold' does not depend on any axioms
+'LexLeanRuntime.listIndex._unsafe_rec' does not depend on any axioms
+'LexLeanRuntime.listIndex.match_1' does not depend on any axioms
+'LexLeanRuntime.magnitudeInt64' does not depend on any axioms
+'LexLeanRuntime.multiply' does not depend on any axioms
+'LexLeanRuntime.multiplyMagnitudeInt64' does not depend on any axioms
+'LexLeanRuntime.multiplyMagnitudeInt64._f' does not depend on any axioms
+'LexLeanRuntime.multiplyMagnitudeInt64._sunfold' does not depend on any axioms
+'LexLeanRuntime.multiplyMagnitudeInt64._unsafe_rec' does not depend on any axioms
+'LexLeanRuntime.multiplyMagnitudeInt64.match_1' does not depend on any axioms
+'LexLeanRuntime.negate' does not depend on any axioms
+'LexLeanRuntime.parseDecimal' does not depend on any axioms
+'LexLeanRuntime.quotient' does not depend on any axioms
+'LexLeanRuntime.remainder' does not depend on any axioms
+'LexLeanRuntime.shiftLeft' does not depend on any axioms
+'LexLeanRuntime.shiftRight' does not depend on any axioms
+'LexLeanRuntime.signedMagnitudeInt64' does not depend on any axioms
+'LexLeanRuntime.slice' does not depend on any axioms
+'LexLeanRuntime.splitExact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanRuntime.subtract' does not depend on any axioms
+'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanRuntime.utf8Encode' does not depend on any axioms
+'LexLeanStd.Text.byteAt' does not depend on any axioms
+'LexLeanStd.Text.chomp' does not depend on any axioms
+'LexLeanStd.Text.endsWith' does not depend on any axioms
+'LexLeanStd.Text.find' does not depend on any axioms
+'LexLeanStd.Text.isSpace' does not depend on any axioms
+'LexLeanStd.Text.joinWith' does not depend on any axioms
+'LexLeanStd.Text.lineStep' does not depend on any axioms
+'LexLeanStd.Text.lines' does not depend on any axioms
+'LexLeanStd.Text.matchAt' does not depend on any axioms
+'LexLeanStd.Text.reverse' does not depend on any axioms
+'LexLeanStd.Text.sliceOr' does not depend on any axioms
+'LexLeanStd.Text.spaceAt' does not depend on any axioms
+'LexLeanStd.Text.splitOn' does not depend on any axioms
+'LexLeanStd.Text.splitStep' does not depend on any axioms
+'LexLeanStd.Text.startsWith' does not depend on any axioms
+'LexLeanStd.Text.trim' does not depend on any axioms
+'LexLeanStd.Text.trimEnd' does not depend on any axioms
+'LexLeanStd.Text.trimStart' does not depend on any axioms

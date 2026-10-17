@@ -1969,3 +1969,53 @@ fn conformance_rt_03() {
 fn conformance_rt_04() {
     repo_conformance::cases::run("RT-04");
 }
+
+#[test]
+fn conformance_sl_01() {
+    repo_conformance::cases::run("SL-01");
+}
+
+#[test]
+fn conformance_bs_01() {
+    repo_conformance::cases::run("BS-01");
+}
+
+#[test]
+fn conformance_pk_01() {
+    repo_conformance::cases::run("PK-01");
+}
+
+#[test]
+fn conformance_pk_02() {
+    repo_conformance::cases::run("PK-02");
+}
+
+#[test]
+fn conformance_pk_03() {
+    repo_conformance::cases::run("PK-03");
+}
+
+#[test]
+fn conformance_pk_04() {
+    repo_conformance::cases::run("PK-04");
+}
+
+#[test]
+fn conformance_lm_01() {
+    repo_conformance::cases::run("LM-01");
+}
+
+#[test]
+fn conformance_lm_02() {
+    repo_conformance::cases::run("LM-02");
+}
+
+#[test]
+fn conformance_lm_03() {
+    repo_conformance::cases::run("LM-03");
+}
+
+#[test]
+fn conformance_lm_13() {
+    repo_conformance::cases::run("LM-13");
+}

@@ -869,8 +869,18 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
     gather(
         root,
         &[
-            "crates", "xtask", "language", "schemas", "features", "examples", "model", "tests",
-            "lean", "compiler",
+            "crates",
+            "xtask",
+            "language",
+            "schemas",
+            "features",
+            "examples",
+            "model",
+            "tests",
+            "lean",
+            "compiler",
+            "stdlib",
+            "bootstrap",
         ],
         &[
             ".rs", ".toml", ".json", ".md", ".feature", ".lex.tex", ".lean", ".txt", ".sh",
@@ -1074,7 +1084,15 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
     let mut mention_files = Vec::new();
     gather(
         root,
-        &["tests", "features", "examples", "model", "compiler"],
+        &[
+            "tests",
+            "features",
+            "examples",
+            "model",
+            "compiler",
+            "stdlib",
+            "bootstrap",
+        ],
         &[".toml", ".json", ".feature", ".md", ".txt"],
         &mut mention_files,
     );

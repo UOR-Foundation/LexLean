@@ -96,10 +96,18 @@ pub struct DocumentModule {
     pub source_path: String,
     /// SHA-256 of the normalized source.
     pub source_sha256: Sha256Digest,
+    /// The source package the module belongs to (SPEC.md §10.5), absent for
+    /// a module of the project itself.
+    pub origin: Option<String>,
     /// Used glossary packages, `package@version`, sorted.
     pub glossary: Vec<String>,
-    /// Explicit module imports, sorted.
+    /// Explicit module imports, by the names the linked project gives the
+    /// modules, sorted.
     pub imports: Vec<String>,
+    /// The Lean module each import names. A module of the project imports
+    /// another under the project's prefix; a module of a source package, or a
+    /// module that imports one, names it by its own Lean name.
+    pub import_lean: BTreeMap<String, String>,
     /// The title phrase.
     pub title: Phrase,
     /// Top-level blocks in source order.
@@ -115,6 +123,27 @@ pub struct DocumentModule {
 }
 
 impl DocumentModule {
+    /// The Lean module an import of this module names (§18.3).
+    #[must_use]
+    pub fn lean_import(&self, import: &str) -> String {
+        self.import_lean
+            .get(import)
+            .cloned()
+            .unwrap_or_else(|| self.default_lean_import(import))
+    }
+
+    /// The Lean module an import names when it lies under the same module
+    /// prefix as this module: its key beneath the prefix this module's Lean
+    /// name carries. A module of a source package carries its prefix in its
+    /// key, so it has no such prefix.
+    fn default_lean_import(&self, import: &str) -> String {
+        let stem = self
+            .lean_module
+            .strip_suffix(self.name.as_str())
+            .unwrap_or_default();
+        format!("{stem}{import}")
+    }
+
     /// Every declaration in source order, with its inherited-parameter
     /// context flattened by the linker.
     #[must_use]
@@ -199,6 +228,20 @@ impl DocumentModule {
                 ),
             ),
         ];
+        // Written only for a module of a source package or one that imports
+        // one, so every other project keeps its linked bytes (§10.5).
+        if let Some(origin) = &self.origin {
+            fields.push(("origin", Json::Str(origin.clone())));
+        }
+        let foreign: Vec<(&str, Json)> = self
+            .import_lean
+            .iter()
+            .filter(|(import, lean)| **lean != self.default_lean_import(import))
+            .map(|(import, lean)| (import.as_str(), Json::Str(lean.clone())))
+            .collect();
+        if !foreign.is_empty() {
+            fields.push(("import_lean", Json::object(foreign)));
+        }
         if let Some(core) = &self.core {
             fields.push((
                 "core",

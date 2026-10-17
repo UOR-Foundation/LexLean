@@ -416,6 +416,7 @@ pub fn render_build(
             module: name.clone(),
             lean_module: lean_module.clone(),
             source_path: checked_module.document.source_path.clone(),
+            origin: checked_module.document.origin.clone(),
         });
         modules.push(RenderedModule {
             module: name.clone(),
@@ -809,6 +810,17 @@ impl Engine {
             let existing = crate::lock::read_lock_bytes(&self.project)
                 .map_err(LexLeanError::from_diagnostic)?;
             if existing != bytes {
+                // §10.5: a source package that is not the one the lock pins
+                // is named with both digests, not called a stale lock.
+                if let Ok(committed) =
+                    crate::lock::parse_lock(&self.project.config.lockfile, &existing)
+                {
+                    crate::source_package::check_pins(
+                        &committed.source_packages,
+                        &lock.source_packages,
+                    )
+                    .map_err(LexLeanError::from_diagnostics)?;
+                }
                 return Err(LexLeanError::from_diagnostic(Diagnostic::new(
                     code!("LLC0102"),
                     format!(
@@ -1090,6 +1102,10 @@ impl Engine {
             let (checked, _lock) = self.checked(&request.selection)?;
             let mut units = BTreeMap::new();
             for (name, module) in &checked.modules {
+                // A module of a source package is the package's file (§10.5).
+                if module.document.origin.is_some() {
+                    continue;
+                }
                 let canonical = crate::fmt::canonical_source(module, &checked.closure)
                     .map_err(LexLeanError::from_diagnostic)?;
                 let raw = raw_bytes(&module.document.source_path)?;
@@ -1133,7 +1149,16 @@ impl Engine {
             .map(|path| path.join("project"))
             .map_err(LexLeanError::from_diagnostic)?;
         self.scratch_project_copy(&scratch)?;
-        let scratch_engine = Self::load(&scratch.join(&self.project.config_name))?;
+        let scratch_engine = match (&self.project.workspace, &self.project.workspace_member) {
+            (Some(workspace), Some(member)) => Self {
+                project: Project::load_as_member(
+                    &scratch.join(&self.project.config_name),
+                    workspace,
+                    member,
+                )?,
+            },
+            _ => Self::load(&scratch.join(&self.project.config_name))?,
+        };
         for relative in scratch_engine
             .project
             .all_modules()
@@ -1152,6 +1177,9 @@ impl Engine {
         let mut units = BTreeMap::new();
         let mut rewrites: Vec<(String, String)> = Vec::new();
         for (name, module) in &before.modules {
+            if module.document.origin.is_some() {
+                continue;
+            }
             let canonical = crate::fmt::canonical_source(module, &before.closure)
                 .map_err(LexLeanError::from_diagnostic)?;
             let raw = raw_bytes(&module.document.source_path)?;
@@ -1178,6 +1206,9 @@ impl Engine {
                 }
                 // The canonical text must itself be a fixed point.
                 for (name, module) in &after.modules {
+                    if module.document.origin.is_some() {
+                        continue;
+                    }
                     let again = crate::fmt::canonical_source(module, &after.closure)
                         .map_err(LexLeanError::from_diagnostic)?;
                     if again != module.normalized {
