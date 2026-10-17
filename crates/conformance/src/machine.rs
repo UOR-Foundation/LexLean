@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use lexlean::calculus::rust::{ast, fallible_functions, lower, Profile};
 use lexlean::calculus::Outcome;
 use lexlean::production::certificate::render_value;
-use lexlean::production::rust_term::crate_term;
+use lexlean::production::certificate::data_b::crates_module;
 
 use crate::differential::{observed, Case};
 use crate::preservation::Certified;
@@ -99,24 +99,37 @@ def __robs (fallible : Bool) : ROutcome → String
   | .exhausted => "exhausted"
 "#;
 
-/// The module that elaborates every crate and evaluates each case.
+/// The module that holds every crate as the kernel term certificate B states
+/// its theorem about.
+pub const CRATES_MODULE: &str = "LexLeanPreserve.MachineCrates";
+
+/// The crates' module, rendered as Lean for the pinned toolchain.
+///
+/// # Panics
+///
+/// Panics when a crate has no kernel term.
+#[must_use]
+pub fn crate_module(rendered: &[Rendered]) -> String {
+    let crates: Vec<&ast::Crate> = rendered.iter().map(|crate_| &crate_.krate).collect();
+    crates_module(CRATES_MODULE, &crates)
+        .expect("the crates have kernel terms")
+        .1
+}
+
+/// The module that evaluates each case over the crates of [`crate_module`].
 ///
 /// # Panics
 ///
 /// Panics when a case's value has no Lean term.
 #[must_use]
 pub fn module(rendered: &[Rendered], cases: &BTreeMap<String, Vec<Case>>) -> String {
-    let mut text =
-        String::from("import LexLeanTarget.RustSemantics\nset_option maxRecDepth 100000\n");
+    let mut text = format!(
+        "import LexLeanTarget.RustSemantics\nimport {CRATES_MODULE}\nset_option maxRecDepth 100000\n"
+    );
     text.push_str(PRINTER);
     let mut index = 0;
     for (position, crate_) in rendered.iter().enumerate() {
-        text.push_str(&format!(
-            "\n-- {} on {}\ndef __crate{position} : LexLeanTarget.RustSyntax.Crate := {}\n",
-            crate_.root,
-            crate_.target,
-            crate_term(&crate_.krate)
-        ));
+        text.push_str(&format!("\n-- {} on {}\n", crate_.root, crate_.target));
         for case in cases.get(&crate_.root).map_or(&[][..], Vec::as_slice) {
             let arguments: Vec<String> = case
                 .values
@@ -124,7 +137,7 @@ pub fn module(rendered: &[Rendered], cases: &BTreeMap<String, Vec<Case>>) -> Str
                 .map(|value| render_value(value).expect("a value term"))
                 .collect();
             text.push_str(&format!(
-                "#eval IO.println (\"case {index}: \" ++ __robs {} (LexLeanTarget.RustSemantics.invoke {FUEL} __crate{position} (.generated .function {}) [{}]))\n",
+                "#eval IO.println (\"case {index}: \" ++ __robs {} (LexLeanTarget.RustSemantics.invoke {FUEL} {CRATES_MODULE}.__crate{position} (.generated .function {}) [{}]))\n",
                 crate_.fallible[case.function as usize],
                 case.function,
                 arguments.join(", ")

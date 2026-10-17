@@ -1133,6 +1133,16 @@ pub fn certify(project: &P, name: &str) -> Report {
     let differential = crate::differential::compare(&text, &denotes)
         .unwrap_or_else(|failures| panic!("{name}: differential:\n{failures}"));
     let crates = crate::machine::crates(&certified);
+    let compiled = compile_text(
+        scratch.path(),
+        crate::machine::CRATES_MODULE,
+        &crate::machine::crate_module(&crates),
+    );
+    assert!(
+        compiled.status.success(),
+        "{name}: the crates' module was rejected:\n{}",
+        joined(&compiled)
+    );
     let path = scratch.path().join("src/LexLeanPreserve/Machine.lean");
     std::fs::write(&path, crate::machine::module(&crates, &cases)).expect("write");
     let output = lean(scratch.path(), &[path.display().to_string()]);
@@ -2506,15 +2516,25 @@ pub fn entry_renderings(certified: &[Certified]) -> Vec<Rendering> {
     out
 }
 
-/// The rules of the correspondence a certificate's derivations use.
+/// The rules of the correspondence a certificate's derivations use: the
+/// constructors of `Corr` its data names.
+///
+/// # Panics
+///
+/// Panics when the certificate is not held as data.
 #[must_use]
-pub fn rules_used(text: &str) -> std::collections::BTreeSet<String> {
-    text.split("(Corr.")
-        .skip(1)
-        .map(|rest| {
-            rest.chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect()
+pub fn rules_used(certificate: &Certificate) -> std::collections::BTreeSet<String> {
+    certificate
+        .data
+        .as_ref()
+        .expect("certificate B is data")
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            lexlean::ir::core::CoreNode::Const { n, .. } => n
+                .strip_prefix("LexLeanPreservation.Rust.Corr.")
+                .map(str::to_owned),
+            _ => None,
         })
         .collect()
 }
@@ -2578,14 +2598,22 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
                 .expect("the site was counted");
             let base = format!("LexLeanPreserve.Planted.{mutation:?}F{index}N{function}O{ordinal}");
             let stale_module = format!("{base}.Stale");
-            let stale_text = rendering
-                .certificate
-                .text
-                .replace(
-                    &lexlean::production::rust_term::crate_term(&rendering.krate),
-                    &lexlean::production::rust_term::crate_term(&mutated),
+            let stale_data = lexlean::production::certificate::data_b::renamed(
+                &lexlean::production::certificate::data_b::restated_over(
+                    rendering
+                        .certificate
+                        .data
+                        .as_ref()
+                        .expect("certificate B is data"),
+                    &rendering.certificate.module,
+                    &mutated,
                 )
-                .replace(&rendering.certificate.module, &stale_module);
+                .expect("the derivation is restated over the mutated crate"),
+                &rendering.certificate.module,
+                &stale_module,
+            );
+            let stale_text = lexlean::backend::core::lean_text_legacy(&stale_data, &stale_module)
+                .expect("the restatement renders");
             let mut modules = vec![(stale_module, stale_text)];
             let realigned_module = format!("{base}.Realigned");
             let unaligned =
@@ -3150,5 +3178,208 @@ mod dev {
             bodies.0,
             bodies.1
         );
+    }
+}
+
+/// A developer's lens: certificate B alone for every root of the example named
+/// by `LEXLEAN_DEV_EXAMPLE`, compiled, replayed, and audited by the pinned
+/// Lean, and the first failure printed.
+#[cfg(test)]
+mod dev_b {
+    use super::*;
+
+    #[test]
+    #[ignore = "a developer's lens on certificate B"]
+    fn certificate_b_alone() {
+        let name = std::env::var("LEXLEAN_DEV_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let only: Option<usize> = std::env::var("LEXLEAN_DEV_ROOT").ok().and_then(|v| v.parse().ok());
+        let project = P::copy_example(&name);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let limits = support::limits(&project);
+        let mut certificates: Vec<Certificate> = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            if only.is_some_and(|wanted| wanted != index) {
+                continue;
+            }
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            for row in &root.report.targets {
+                let profile = Profile::named(&row.target).expect("a Rust profile");
+                let krate = lower(&lowered.program, profile).expect("a rendering");
+                let module = module_for(&format!("LexLeanPreserve.Dev.R{index}"), &row.target)
+                    .expect("a Rust target");
+                let started = std::time::Instant::now();
+                match certificate_b(&lowered.program, &krate, &module, UNBOUNDED) {
+                    Ok(found) => {
+                        eprintln!(
+                            "R{index} {}: B built in {:?}: {} text bytes, {} record bytes, {} nodes",
+                            row.target,
+                            started.elapsed(),
+                            found.text.len(),
+                            found.source.len(),
+                            found.data.nodes.len()
+                        );
+                        certificates.push(found.into_certificate());
+                    }
+                    Err(reason) => eprintln!("R{index} {}: REFUSED {reason}", row.target),
+                }
+            }
+        }
+        let staged = workspace(&[], &certificates).expect("the workspace stages");
+        let root = std::env::temp_dir().join(format!("lexlean-dev-b-{name}"));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).expect("mkdir");
+        let verdict = check(&staged, &root);
+        match verdict.failure {
+            Some((module, output)) => {
+                eprintln!("FAILED {module}:\n{}", &output[..output.len().min(6000)]);
+                panic!("certificate B was rejected");
+            }
+            None => {
+                audit(&verdict.audit_output, &certificates).expect("the audit");
+                eprintln!("ACCEPTED: {} certificates", certificates.len());
+            }
+        }
+    }
+}
+
+/// The statement oracle of certificate B (a developer's lens, run once before
+/// the text generator was deleted): every row of the data certificate has the
+/// type, and every definition the body, of the row of the committed text
+/// certificate, by the kernel's definitional equality.
+#[cfg(test)]
+mod dev_oracle_b {
+    use super::*;
+
+    #[test]
+    #[ignore = "a developer's lens on certificate B"]
+    fn dev_oracle_b() {
+        let example = std::env::var("LEXLEAN_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let project = P::copy_example(&example);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+        let limits = support::limits(&project);
+        let mut built = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            for row in &root.report.targets {
+                let profile = Profile::named(&row.target).expect("a Rust profile");
+                let krate = lower(&lowered.program, profile).expect("a rendering");
+                let module_b = module_for(&module, &row.target).expect("a Rust target");
+                let certificate =
+                    certificate_b(&lowered.program, &krate, &module_b, limits.max_file_bytes)
+                        .unwrap_or_else(|reason| panic!("R{index} {}: {reason}", row.target));
+                built.push((index, row.target.clone(), certificate.into_certificate()));
+            }
+        }
+        let certificates: Vec<Certificate> = built.iter().map(|(_, _, c)| c.clone()).collect();
+        let staged = workspace(&[], &certificates).expect("the workspace stages");
+        let scratch = tempfile::Builder::new()
+            .prefix("lexlean-oracle-b-")
+            .tempdir()
+            .expect("tempdir");
+        let result = check(&staged, scratch.path());
+        if let Some((module, output)) = &result.failure {
+            let head: String = output.lines().take(40).collect::<Vec<_>>().join("\n");
+            panic!("`{module}` was rejected:\n{head}");
+        }
+        audit(&result.audit_output, &certificates).expect("the audit");
+        let base = support::repo_root()
+            .join("examples")
+            .join(&example)
+            .join("expected/verify/preserve/LexLeanPreserve")
+            .join(format!("C{hex32}"));
+        let mut rows_total = 0usize;
+        let mut bodies = (0usize, 0usize);
+        let mut report = Vec::new();
+        for (index, target, certificate) in &built {
+            let module = &certificate.module;
+            let suffix = if target == "rust-core" { "RustCore" } else { "RustStd" };
+            let committed = std::fs::read_to_string(
+                base.join(format!("R{index}/{suffix}.lean")).as_std_path(),
+            )
+            .unwrap_or_else(|error| panic!("the committed certificate B of R{index}: {error}"));
+            let old = format!("{module}.Old");
+            let renamed = committed
+                .replace(
+                    &format!("namespace {module}\n"),
+                    &format!("namespace {old}\n"),
+                )
+                .replace(&format!("end {module}"), &format!("end {old}"));
+            assert_ne!(renamed, committed, "R{index}: the namespace is renamed");
+            let output = compile_text(scratch.path(), &old, &renamed);
+            assert!(
+                output.status.success(),
+                "R{index} {target}: the committed text certificate B compiles: {}",
+                joined(&output)
+            );
+            let data = certificate.data.as_ref().expect("certificate B is data");
+            let rows: Vec<String> = data
+                .declarations
+                .iter()
+                .map(|row| {
+                    row.name
+                        .strip_prefix(&format!("{module}."))
+                        .unwrap_or(&row.name)
+                        .to_owned()
+                })
+                .collect();
+            let pairs: Vec<String> = rows
+                .iter()
+                .map(|row| format!("(`{module}.{row}, `{old}.{row})"))
+                .collect();
+            let oracle = format!(
+                "import {module}\nimport {old}\nimport Lean\nopen Lean Meta\n\
+                 def swapRoot (new old : Name) (e : Expr) : Expr :=\n  e.replace fun\n    | .const n us =>\n      if new.isPrefixOf n && !old.isPrefixOf n then some (.const (n.replacePrefix new old) us) else none\n    | _ => none\n\
+                 def kdef (a b : Expr) : MetaM Bool := do\n  ofExceptKernelException (Kernel.isDefEq (← getEnv) {{}} a b)\n\
+                 run_cmd Lean.Elab.Command.liftTermElabM do\n  let pairs : List (Name × Name) := [{}]\n  let mut types : Nat := 0\n  let mut same : Nat := 0\n  let mut total : Nat := 0\n  let mut bad : Nat := 0\n  for (new, old) in pairs do\n    let env ← getEnv\n    let some n := env.find? new | throwError \"{{new}}: not in the environment\"\n    let some o := env.find? old | throwError \"{{old}}: the committed certificate lacks the row\"\n    if (← kdef (swapRoot `{module} `{old} n.type) o.type) then\n      types := types + 1\n    else\n      logWarning m!\"{{new}}: the statement differs from {{old}}\"\n      bad := bad + 1\n    if let (some a, some b) := (n.value?, o.value?) then\n      total := total + 1\n      if (← kdef (swapRoot `{module} `{old} a) b) then same := same + 1\n  if bad > 0 then throwError \"{{bad}} statements differ\"\n  logInfo m!\"SP-16 oracle: {{types}} statements equal; bodies {{same}} of {{total}}\"\n",
+                pairs.join(", ")
+            );
+            let name = format!("{module}.Oracle");
+            let output = compile_text(scratch.path(), &name, &oracle);
+            let text = joined(&output);
+            assert!(
+                output.status.success() && !text.contains("error") && !text.contains("warning"),
+                "R{index} {target}: every statement is the text's: {text}"
+            );
+            let tail = text.split("SP-16 oracle:").nth(1).unwrap_or("");
+            let counts: Vec<usize> = std::iter::once(0)
+                .chain(
+                    tail.split(|c: char| !c.is_ascii_digit())
+                        .filter_map(|n| n.parse().ok()),
+                )
+                .collect();
+            eprintln!("R{index} {target}: {} rows; oracle{}", rows.len(), tail.trim_end());
+            rows_total += rows.len();
+            if let [_, _, same, total] = counts.as_slice() {
+                bodies.0 += same;
+                bodies.1 += total;
+                report.push(format!(
+                    "| `{example}` | `C{hex32}.R{index}` | {target} | {} | {same} of {total} |",
+                    rows.len()
+                ));
+            }
+        }
+        eprintln!(
+            "ORACLE B {example}: {} certificates, {rows_total} rows, bodies {} of {}",
+            built.len(),
+            bodies.0,
+            bodies.1
+        );
+        for line in report {
+            eprintln!("{line}");
+        }
     }
 }

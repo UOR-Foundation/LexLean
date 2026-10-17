@@ -37,6 +37,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 mod data;
 mod data_a;
+pub mod data_b;
 
 use super::eligibility::BUILTIN_OWNERS;
 use super::lean_list::{array, list, list_by};

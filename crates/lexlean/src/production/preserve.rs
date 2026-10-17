@@ -1787,14 +1787,16 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                                 ("theorem", Json::Str(certificate.theorem.clone())),
                                                 (
                                                     "byte_length",
-                                                    Json::from_usize(certificate.text.len()),
+                                                    Json::from_usize(
+                                                        recorded_bytes(certificate).len(),
+                                                    ),
                                                 ),
                                                 (
                                                     "sha256",
                                                     Json::Str(
-                                                        Sha256Digest::of(
-                                                            certificate.text.as_bytes(),
-                                                        )
+                                                        Sha256Digest::of(recorded_bytes(
+                                                            certificate,
+                                                        ))
                                                         .to_hex(),
                                                     ),
                                                 ),
