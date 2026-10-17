@@ -13,6 +13,8 @@ pub mod laws;
 pub mod model;
 pub mod reasoning;
 
+mod language_model;
+
 /// A qualified document member.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1080,6 +1082,56 @@ pub enum ReasoningClaim {
     AnswerCorrect { theorem: MemberRef },
 }
 
+/// Language 1.2 (text): the closed tokenizer schemes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TokenizerScheme {
+    /// The 256 single-byte ids, then the vocabulary pieces in artifact order.
+    ByteLevel,
+    /// The longest vocabulary piece at each position, byte fallback last.
+    LongestMatch,
+}
+
+/// Language 1.2 (text): the closed overflow dispositions of a context window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OverflowDisposition {
+    /// A context that would exceed the capacity is refused before any state
+    /// is built.
+    Refuse,
+    /// The oldest tokens are dropped so the most recent capacity tokens fit.
+    KeepLast,
+}
+
+/// Language 1.2 (text): the closed generation policies.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum GenerationPolicy {
+    /// The first maximum, with no seed parameter: deterministic by type.
+    Greedy,
+    /// The next token drawn through the closed sampling members.
+    Sample {
+        generator: SamplingGenerator,
+        distribution: SamplingDistribution,
+    },
+}
+
+/// Language 1.2 (text): the closed sampling generators. Only a fixed, fully
+/// explicit contract is admitted; no claim is made about its quality.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SamplingGenerator {
+    Xorshift32,
+}
+
+/// Language 1.2 (text): the closed sampling distributions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SamplingDistribution {
+    Proportional,
+}
+
 /// A closed declaration.
 // Declarations are parsed once and held in a module's ordered list, never
 // moved in bulk, so the size of the definition variant costs nothing.
@@ -1313,6 +1365,42 @@ pub enum SemanticDeclaration {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         axioms: Vec<String>,
     },
+    /// Language 1.2 (text): a tokenizer over a vocabulary artifact,
+    /// elaborating to encode/decode over `bytes` and encodeText/decodeText
+    /// over `string`.
+    Tokenizer {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        type_parameters: Vec<String>,
+        scheme: TokenizerScheme,
+        vocabulary: ModelUse,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
+    },
+    /// Language 1.2 (text): a bounded context over `list uint32` with a closed
+    /// overflow disposition.
+    ContextWindow {
+        name: String,
+        capacity: u64,
+        overflow: OverflowDisposition,
+    },
+    /// Language 1.2 (text): a generator over a tokenizer, a window and a
+    /// scorer, with `max_tokens`, `stop` and a closed policy.
+    TextGenerator {
+        name: String,
+        tokenizer: MemberRef,
+        window: MemberRef,
+        scorer: ModelUse,
+        max_tokens: u64,
+        stop: MemberRef,
+        policy: GenerationPolicy,
+    },
+    /// Language 1.2 (text): a classifier over token-count features.
+    TextClassifier {
+        name: String,
+        tokenizer: MemberRef,
+        model: ModelUse,
+    },
 }
 
 impl SemanticDeclaration {
@@ -1333,7 +1421,11 @@ impl SemanticDeclaration {
             | Self::Logic { name, .. }
             | Self::InferenceRule { name, .. }
             | Self::Verifier { name, .. }
-            | Self::Reasoner { name, .. } => name,
+            | Self::Reasoner { name, .. }
+            | Self::Tokenizer { name, .. }
+            | Self::ContextWindow { name, .. }
+            | Self::TextGenerator { name, .. }
+            | Self::TextClassifier { name, .. } => name,
         }
     }
 
@@ -1355,6 +1447,10 @@ impl SemanticDeclaration {
             Self::InferenceRule { .. } => "inference_rule",
             Self::Verifier { .. } => "verifier",
             Self::Reasoner { .. } => "reasoner",
+            Self::Tokenizer { .. } => "tokenizer",
+            Self::ContextWindow { .. } => "context_window",
+            Self::TextGenerator { .. } => "text_generator",
+            Self::TextClassifier { .. } => "text_classifier",
         }
     }
 
@@ -1371,7 +1467,8 @@ impl SemanticDeclaration {
             | Self::Logic { axioms, .. }
             | Self::InferenceRule { axioms, .. }
             | Self::Verifier { axioms, .. }
-            | Self::Reasoner { axioms, .. } => axioms,
+            | Self::Reasoner { axioms, .. }
+            | Self::Tokenizer { axioms, .. } => axioms,
             _ => &[],
         }
     }
@@ -2103,7 +2200,11 @@ fn data_shape_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Logic { .. }
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
-        | SemanticDeclaration::Reasoner { .. } => 0,
+        | SemanticDeclaration::Reasoner { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => 0,
     }
 }
 
@@ -2181,6 +2282,12 @@ fn declaration_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. } => reasoning::source_node_count(declaration),
+        SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {
+            language_model::source_node_count(declaration)
+        }
     }
 }
 
@@ -2792,6 +2899,12 @@ fn declaration_types(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. } => reasoning::declaration_types(declaration, visit),
+        SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {
+            language_model::declaration_types(declaration, visit);
+        }
     }
 }
 
@@ -2917,7 +3030,7 @@ pub fn reserved_module_segment(name: &str) -> Option<&str> {
 
 /// The names the backend writes without qualification (see
 /// [`is_backend_bare_name`]).
-pub const BACKEND_BARE_NAMES: [&str; 43] = [
+pub const BACKEND_BARE_NAMES: [&str; 44] = [
     "And",
     "BitVec",
     "Bool",
@@ -2934,6 +3047,7 @@ pub const BACKEND_BARE_NAMES: [&str; 43] = [
     "LexLeanModels",
     "LexLeanReasoning",
     "LexLeanRuntime",
+    "LexLeanText",
     "List",
     "Nat",
     "Option",
@@ -3041,9 +3155,16 @@ fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut impl FnMut
         | SemanticDeclaration::Reasoner {
             type_parameters, ..
         } => (type_parameters, &[]),
+        SemanticDeclaration::Tokenizer {
+            type_parameters, ..
+        } => (type_parameters, &[]),
+        SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => (&[], &[]),
     };
     model::declaration_binders(declaration, visit);
     reasoning::declaration_binders(declaration, visit);
+    language_model::declaration_binders(declaration, visit);
     type_parameters.iter().for_each(|name| visit(name));
     parameters
         .iter()
@@ -3141,6 +3262,12 @@ fn declaration_terms(declaration: &SemanticDeclaration, visit: &mut impl FnMut(&
         | SemanticDeclaration::InferenceRule { .. }
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. } => reasoning::declaration_terms(declaration, visit),
+        SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {
+            language_model::declaration_terms(declaration, visit);
+        }
     }
 }
 
@@ -3183,6 +3310,12 @@ fn declaration_terms_mut(
         | SemanticDeclaration::Verifier { .. }
         | SemanticDeclaration::Reasoner { .. } => {
             reasoning::declaration_terms_mut(declaration, visit);
+        }
+        SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {
+            language_model::declaration_terms_mut(declaration, visit);
         }
     }
 }
@@ -3293,7 +3426,7 @@ impl SemanticModule {
         let mut names = Vec::new();
         for (index, declaration) in self.declarations.iter().enumerate() {
             match self.elaborated(index) {
-                Some(lowered) if model::elaborated_construct(declaration).is_some() => {
+                Some(lowered) if language_model::elaborated_construct(declaration).is_some() => {
                     names.extend(lowered.iter().map(|derived| derived.name().to_owned()));
                     names.extend(
                         self.elaboration
@@ -3332,7 +3465,7 @@ impl SemanticModule {
             .enumerate()
             .any(|(index, declaration)| {
                 declaration.name() == name
-                    && model::elaborated_construct(declaration).is_none()
+                    && language_model::elaborated_construct(declaration).is_none()
                     && self
                         .elaborated(index)
                         .is_some_and(|lowered| lowered != std::slice::from_ref(declaration))
@@ -3679,6 +3812,11 @@ fn check_member(member: &MemberRef, env: &Environment<'_>) -> Result<(), String>
     check_name(&member.name, "member")?;
     if let Some(module) = &member.module {
         check_name(module, "module")?;
+        // §17.12 (text): the laws library is a module only an elaboration
+        // names; a source declaration that names it has no such import.
+        if env.derived && module == crate::text_laws::PREFIX {
+            return Ok(());
+        }
         if !env.imports.contains(module) {
             return Err(format!(
                 "forward or unavailable module reference `{module}`"
@@ -8602,7 +8740,11 @@ impl SemanticModule {
                     | SemanticDeclaration::Logic { .. }
                     | SemanticDeclaration::InferenceRule { .. }
                     | SemanticDeclaration::Verifier { .. }
-                    | SemanticDeclaration::Reasoner { .. } => {
+                    | SemanticDeclaration::Reasoner { .. }
+                    | SemanticDeclaration::Tokenizer { .. }
+                    | SemanticDeclaration::ContextWindow { .. }
+                    | SemanticDeclaration::TextGenerator { .. }
+                    | SemanticDeclaration::TextClassifier { .. } => {
                         return Err(format!("internal: imported `{key}` was not elaborated").into());
                     }
                 }
@@ -8676,6 +8818,11 @@ impl SemanticModule {
         let mut generated_names = BTreeSet::new();
         let mut registered_groups = BTreeSet::new();
         let mut elaboration = model::Builder::new(self.declarations.len());
+        // The Lean modules the elaboration makes a generated module import.
+        // A text declaration states no law of its own: its meaning is the
+        // compiler's embedded laws library, so it contributes an import and
+        // no spliced Lean text (§17.12).
+        let mut text_imports: Vec<String> = Vec::new();
         for (index, declaration) in self.declarations.iter().enumerate() {
             let name = declaration.name();
             if let SemanticDeclaration::Inductive {
@@ -8947,12 +9094,46 @@ impl SemanticModule {
                     )?;
                     elaboration.record(index, lowering);
                 }
+                SemanticDeclaration::Tokenizer { .. } => {
+                    // §17.12 (text): a tokenizer states no law of its own.
+                    // Its meaning is the sealed laws library the compiler
+                    // embeds — `encode`, `decode`, `encodeText`, `decodeText`
+                    // and the round-trip laws, read from the native
+                    // `lexlean/core-module/2` data and generated by the
+                    // ordinary rules. Linking elaborates the declaration into
+                    // ordinary definitions that apply the library's functions,
+                    // generated theorems the library's lemmas prove, and that
+                    // library's import, so the generated module imports the
+                    // laws rather than carrying a copy of them, and no Lean
+                    // text is spliced.
+                    let lowering = language_model::check_declaration(
+                        declaration,
+                        &mut env,
+                        &mut generated_names,
+                    )?;
+                    elaboration.record(index, lowering);
+                    let laws = crate::text_laws::laws_module();
+                    if !text_imports.iter().any(|import| import == laws) {
+                        text_imports.push(laws.to_owned());
+                    }
+                }
+                SemanticDeclaration::ContextWindow { .. }
+                | SemanticDeclaration::TextGenerator { .. }
+                | SemanticDeclaration::TextClassifier { .. } => {
+                    // §17.12 (text): the remaining text constructs carry
+                    // their own elaborations, in their own slices of #30.
+                    // One admitted under 1.2 without one is reported by
+                    // `Builder::finish` exactly as it reports any family
+                    // declaration linking did not elaborate.
+                    require_language_1_2(&env, "text declaration")?;
+                }
             }
         }
         elaboration.finish(
             &self.declarations,
             env.models.locals(),
             env.reasoning.locals(),
+            text_imports,
         )
     }
 }

@@ -15,7 +15,7 @@ use serde_json::{json, Value as Json};
 
 use crate::support::{self, VerifiedFixture, P};
 
-const EXAMPLE: &str = "models";
+pub(super) const EXAMPLE: &str = "models";
 
 /// The four refusal constructors, as elaborated code spells them.
 const VIOLATIONS: [&str; 4] = [
@@ -56,11 +56,11 @@ fn module_path(module: &str) -> String {
 }
 
 /// The semantic data of one module of a project copy.
-fn module_data(project: &P, module: &str) -> Json {
+pub(super) fn module_data(project: &P, module: &str) -> Json {
     crate::support::module_json(&project.read(&module_path(module)))
 }
 
-fn write_module_data(project: &P, module: &str, data: &Json) {
+pub(super) fn write_module_data(project: &P, module: &str, data: &Json) {
     let path = module_path(module);
     let text = project.read(&path);
     project.write(&path, &crate::support::with_module_json(&text, data));
@@ -76,14 +76,19 @@ fn declaration_mut<'a>(data: &'a mut Json, name: &str) -> &'a mut Json {
 }
 
 /// Edit one declaration of one module in place.
-fn edit_declaration(project: &P, module: &str, name: &str, edit: impl FnOnce(&mut Json)) {
+pub(super) fn edit_declaration(
+    project: &P,
+    module: &str,
+    name: &str,
+    edit: impl FnOnce(&mut Json),
+) {
     let mut data = module_data(project, module);
     edit(declaration_mut(&mut data, name));
     write_module_data(project, module, &data);
 }
 
 /// A copy of the committed example with one declaration edited.
-fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
+pub(super) fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
     let project = P::copy_example(EXAMPLE);
     edit_declaration(&project, module, name, edit);
     project
@@ -91,7 +96,7 @@ fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
 
 /// The mutation is refused with `code`, naming `message`, before either
 /// backend runs.
-fn refused(project: &P, code: &str, message: &str) {
+pub(super) fn refused(project: &P, code: &str, message: &str) {
     let error = project.check_fails_with(code);
     assert!(
         error.to_string().contains(message),
@@ -156,7 +161,7 @@ fn digest(bytes: &[u8]) -> String {
 /// Replace an artifact's bytes and restate its digest and length wherever
 /// they are pinned (the configuration and the declaration), then relock, so
 /// that only the bytes differ.
-fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[u8]) {
+pub(super) fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[u8]) {
     let path = project.root.join(file);
     let old = digest(&std::fs::read(path.as_std_path()).expect("artifact bytes"));
     let new = digest(bytes);
@@ -176,7 +181,7 @@ fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[
 // ---------------------------------------------------------------------------
 // Snapshots and the shared verified run.
 
-fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
+pub(super) fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
     project
         .engine()
         .snapshot(CheckRequest {
@@ -186,7 +191,7 @@ fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
 }
 
 /// The elaboration of `module.name` in a snapshot.
-fn elaboration<'a>(
+pub(super) fn elaboration<'a>(
     snapshot: &'a lexlean::SemanticSnapshot,
     module: &str,
     name: &str,
@@ -204,7 +209,7 @@ fn elaboration<'a>(
         .unwrap_or_else(|| panic!("`{module}.{name}` carries its elaboration"))
 }
 
-fn names(values: &[Json]) -> Vec<String> {
+pub(super) fn names(values: &[Json]) -> Vec<String> {
     values
         .iter()
         .map(|value| value["name"].as_str().expect("name").to_owned())
