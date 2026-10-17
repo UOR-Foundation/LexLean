@@ -1361,6 +1361,74 @@ carries the header of the lifted budgets), and the derivation bound of
 after: the chain is shorter than the literal Lean splits under binders, and the
 root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
 
+### certificate B is kernel-term data and a defect in it is refused
+
+Certificate B of a root is a native core module the compiler builds
+(`production/certificate/data_b` over `production/kernel.rs`), so a defect is
+planted in the data and must be seen where the kernel checks it, or before,
+where the data is audited. `conformance_sp_16` builds every certificate B of the
+four corpora as data (76 certificates, 984 rows, 6,378,738 bytes of notation),
+reads each record back from its notation, checks that its rows are the ones the
+text certificate declared, verifies the production example under the pinned
+Lean, and then plants five defects in the data of one certificate B of that
+example (the second root's, which has several functions and adds), each refused.
+The outputs were recorded on Linux x86-64 with Lean 4.32.1. Command: `cargo test
+-p repo-conformance --test conformance -- conformance_sp_16 --exact --nocapture`.
+
+Planted (a), a wrong lemma: the first two rules of the correspondence the
+certificate uses, in the order of the data, with the first renamed to the second
+in every constant node that names it. Expected: the kernel refuses the
+derivation, since the rule's premises are not the judgment's.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantWrongLemma.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun1':
+  (kernel) application type mismatch
+    @LexLeanPreservation.Rust.Corr.applyF RustCore.program RustCore.krate RustCore.flags
+```
+
+Planted (b), a changed statement: the statement of `fun0` replaced by the statement
+of `fun1`. Expected: the theorem proves `FunOK … 0` and claims `FunOK … 1`.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantChangedStatement.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun0':
+  (kernel) declaration type mismatch, 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun0' has type
+```
+
+Planted (c), a forged program literal: the runtime item `Item.natAdd`, shared by
+the crate literal and every derivation that names it, renamed to `Item.natSub`,
+so the crate's addition is a subtraction the program does not state. Expected:
+no derivation relates them, and the kernel refuses the first rule whose side
+condition names the item.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantForgedProgram.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun2':
+  (kernel) application type mismatch
+    LexLeanPreservation.Rust.Corr.primF
+```
+
+Planted (d), an added axiom: a `sorryAx` constant node as the proof of the root
+theorem. Expected: the data audit refuses it before any Lean runs.
+
+```text
+the forbidden constant `sorryAx`
+```
+
+Planted (e), a lying policy: the root's policy set to pin no axiom. It compiles
+(Lean does not read the policy), and the audit module, which prints the axioms
+of every row, refuses it.
+
+```text
+the certificate row `LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.root` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins []
+```
+
+Removed: the plants were not committed to any generator; they are mutations the
+case applies to a copy of the data. The negative fixture `certificate-b-rejected`
+(its overlay turns the constant node of `Item.natAdd` into `Item.natSub` in the
+rendered data of every certificate B) fails `lexlean verify` with `LLV7015` and
+nothing published, as it did when the overlay edited the text. Before
+`conformance_sp_16` had an arm, the same command failed with `no preservation
+case is wired for SP-16`, the red step of R3.
+
 ### certificate E is kernel-term data and a defect in it is refused
 
 Certificate E of a root is a native core module the compiler builds
