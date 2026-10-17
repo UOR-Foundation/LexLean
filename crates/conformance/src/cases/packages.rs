@@ -513,9 +513,15 @@ fn pk_02() {
 /// PK-03: an importing project builds, verifies, and records the origin.
 fn pk_03() {
     let app = P::package_workspace("app");
+    // A package file that is not canonical stays as its package wrote it:
+    // formatting the importing project never rewrites it.
+    edit_raw(
+        &app,
+        "../lib/src/Util.lex.tex",
+        "  name: quadPlusOne,",
+        "      name: quadPlusOne,",
+    );
     app.relock();
-    // Formatting never writes a package file, and the formatted project is
-    // already canonical.
     let before = package_bytes(&app);
     let formatted = app
         .engine()

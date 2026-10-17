@@ -12,11 +12,6 @@ definition{
   production: {effects: [overflow], targets: [rust-core, rust-std]}
 }
 
-theorem{
-  name: app_value_two,
-  parameters: [],
-  statement: ((appValue 2) = 9),
-  proof: reflexivity{}
-}
+theorem{name: app_value_two, parameters: [], statement: ((appValue 2) = 9), proof: reflexivity{}}
 \end{semanticmodule}
 \end{lexlean}
