@@ -220,3 +220,10 @@ Feature: semantic-ir
     When it is linked in languages 1.0, 1.1, and 1.2 and rendered by both backends
     Then only language 1.2 accepts it, the LaTeX document and the Lean text carry every construct, and the pinned Lean elaborates the Lean with exactly the pinned axioms
     And each planted defect is refused before any build output
+
+  @SM-33 @build
+  Scenario: A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's.
+    Given a language-1.2 native core module with a definition and the equation theorem the pinned Lean reserves for it
+    When it is verified, and copies give the theorem another proof of the same statement or a reserved name the construction does not make
+    Then the pinned Lean verifies the module whose theorem is the one its own action makes
+    And each copy fails with LLV7002, naming the row the construction does not make as stated
