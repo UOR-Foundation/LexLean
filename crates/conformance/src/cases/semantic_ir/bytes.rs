@@ -319,6 +319,40 @@ fn evaluate(project: &P, lean: &str, values: &[Vec<u8>]) {
     let limits = support::limits(project);
     let toolchain = lexlean::verify::toolchain::preflight(&limits).expect("pinned Lean admission");
     let bin = toolchain.root.join("bin");
+    // The generated module imports the shipped runtime (SPEC.md §17.12); its
+    // objects are compiled here by the same pinned Lean so the probes run the
+    // actual generated text, not a copy with the import removed.
+    let compiled = scratch.join("objects");
+    let sources = scratch.join("runtime");
+    let search = std::env::join_paths([
+        compiled.as_std_path(),
+        toolchain.root.join("lib/lean").as_std_path(),
+    ])
+    .expect("LEAN_PATH");
+    for runtime in lexlean::backend::runtime::imported_by([lean]).expect("the shipped runtime") {
+        let relative = runtime.name.replace('.', "/");
+        let source = sources.join(format!("{relative}.lean"));
+        let object = compiled.join(format!("{relative}.olean"));
+        for directory in [source.parent(), object.parent()] {
+            std::fs::create_dir_all(directory.expect("parent")).expect("runtime directory");
+        }
+        std::fs::write(&source, &runtime.text).expect("runtime source");
+        let built = std::process::Command::new(&toolchain.lean.path)
+            .arg("-o")
+            .arg(&object)
+            .arg(format!("{relative}.lean"))
+            .current_dir(&sources)
+            .env("LEAN_PATH", &search)
+            .output()
+            .expect("pinned Lean compiles the runtime");
+        assert!(
+            built.status.success(),
+            "{} does not compile:\n{}\n{}",
+            runtime.name,
+            String::from_utf8_lossy(&built.stdout),
+            String::from_utf8_lossy(&built.stderr)
+        );
+    }
     let normalizer = Normalizer::new(scratch, &project.root, scratch, &toolchain.root);
     let output = lexlean::verify::child::run(
         &ChildSpec {
@@ -328,7 +362,10 @@ fn evaluate(project: &P, lean: &str, values: &[Vec<u8>]) {
             executable_sha256: toolchain.lean.sha256,
             argv: vec![path.to_string()],
             cwd: scratch,
-            extra_env: vec![("LEAN_PATH".to_owned(), String::new())],
+            extra_env: vec![(
+                "LEAN_PATH".to_owned(),
+                search.to_string_lossy().into_owned(),
+            )],
             home: ChildHome::Toolchain {
                 toolchain_bin: &bin,
             },

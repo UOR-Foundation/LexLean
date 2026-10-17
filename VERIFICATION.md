@@ -254,6 +254,47 @@ retains the original accepted identifier language and all source-audit
 prohibitions. Raw logs are retained under ignored
 `target/semantic-reserved-identifiers-{lean-red,complete-variants,mutant}.log`.
 
+### explicit byte-literal lowering can fail
+
+A modeled byte literal used to be written `ByteArray.mk #[n, ...]`. It is now
+written `_root_.ByteArray.mk #[...]` with every octet an explicit
+`_root_.UInt8.ofNat (nat_lit n)`; an octet occurring four or more times in one
+literal is bound once by a `let __byteN` local to that literal, so no generated
+local outside the literal takes part in its meaning. The canonical document
+keeps the original decimal numbers and order. SM-19, for languages 1.1 and 1.2,
+reads every generated literal back with an independent closed-grammar reader
+(it neither evaluates Lean nor calls the renderer), checks the document
+display, verifies, and evaluates the generated definitions against the
+original bytes. MD-02 applies the same reader to every embedded artifact byte.
+The reader's own controls refuse foreign, noncanonical and unused syntax, and
+a binding name that disagrees with its value.
+
+Observed before the change: with the lowerer of `main` `243f0c734` unchanged,
+`conformance_sm_19` fails at its first fixture, the empty array, with
+`closed explicit-octet lowering: "expected closed byte syntax \"_root_.ByteArray.mk #[\""`.
+That is the reader rejecting the old spelling. It is not a Lean failure: the
+largest SM-19 corpus (1024 bytes, all 256 values) elaborates under `main`'s
+rendering at the default `maxRecDepth` (1.1 s; 0.8 s explicit).
+
+Measured, not claimed as an improvement beyond these numbers: Lean 4.32.1
+(x86-64 Linux, 4 cores, one run each) on a file holding one `public def` of a
+seeded-random byte literal in which all 256 values occur.
+
+| bytes | `maxRecDepth` | `main` rendering | explicit rendering |
+| --- | --- | --- | --- |
+| 4096 | 100000 | 3.0 s, ok | 2.1 s, ok |
+| 4096 | default | 2.6 s, ok | 2.3 s, ok |
+| 16384 | 100000 | 12.7 s, ok | 11.3 s, ok |
+| 16384 | default | 10.8 s, recursion depth | 8.9 s, recursion depth |
+| 65536 | 100000 | 37.1 s, heartbeats (`isDefEq`) | 49.2 s, heartbeats (`LCNF compiler`) |
+| 65536 | default | 33.3 s, heartbeats (`isDefEq`) | 42.7 s, recursion depth |
+
+No size succeeds under one rendering and fails under the other. Both fail at
+16384 bytes at the default depth and at 65536 bytes at either depth; the
+explicit form is faster at 4096 and 16384 bytes and slower at 65536. The
+timing script is not committed; it writes the two spellings above for the
+same seeded bytes and runs `lean` on the file.
+
 ### native diagnostic detail can fail
 
 `CL-21` was registered before its named test failed on the unwired case.

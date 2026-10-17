@@ -3124,10 +3124,11 @@ mod byte_literal_tests {
     use super::{Render, SemanticParameter, SemanticTerm, SemanticType};
 
     fn render(document: bool, term: &SemanticTerm) -> String {
+        let imports = std::collections::BTreeMap::new();
         Render {
             prefix: "ByteFixture",
+            lean_imports: &imports,
             hypotheses: std::collections::BTreeMap::new(),
-            runtime: false,
             document,
             qualify: None,
         }
