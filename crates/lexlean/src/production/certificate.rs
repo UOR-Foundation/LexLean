@@ -1156,7 +1156,12 @@ fn primitive_name(operation: SemanticPrimitive) -> Result<(&'static str, &'stati
         SemanticPrimitive::LessThan => ("LexLeanCollections", "lessThan"),
         // Certificates read elaborated declarations, in which a widening
         // conversion is the ordinary term it means (§17.12).
-        SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+        SemanticPrimitive::ToInt => {
+            return Err(format!(
+                "{operation:?} is certified only through its elaboration"
+            ));
+        }
+        SemanticPrimitive::ToNat => {
             return Err(format!(
                 "{operation:?} is certified only through its elaboration"
             ));
