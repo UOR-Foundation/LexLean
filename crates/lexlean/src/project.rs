@@ -9,6 +9,7 @@ use crate::code;
 use crate::config::{is_module_segment, parse_project, ProjectConfig};
 use crate::diagnostic::Diagnostic;
 use crate::error::LexLeanError;
+use crate::source_package::Workspace;
 
 /// Rewrite a path the host rendered with its own separator into the
 /// canonical `/`-separated project-relative spelling.
@@ -56,6 +57,13 @@ pub struct Project {
     /// through [`Project::with_tooling`]; no configuration member, command
     /// line option, request field, or environment variable can.
     pub tooling: bool,
+    /// Language 1.2: the workspace of a project that declares source
+    /// packages (§10.5). Read when the project loads, and absent for a
+    /// project that declares none, which reads nothing beside its own root.
+    pub workspace: Option<Workspace>,
+    /// The workspace-relative directory of this project among the workspace's
+    /// members, present exactly when [`Self::workspace`] is.
+    pub workspace_member: Option<String>,
 }
 
 /// The selection modes (SPEC.md §24.2).
@@ -144,6 +152,25 @@ impl Project {
 
     /// Load a project from its configuration file path.
     pub fn load(config_path: &Utf8Path) -> Result<Self, LexLeanError> {
+        Self::load_in(config_path, None)
+    }
+
+    /// Load a project that stands in for a member of `workspace`: a scratch
+    /// copy of a project made to re-check its formatting, which resolves the
+    /// packages the original does and has no workspace file of its own. The
+    /// member is the directory of the project it stands in for.
+    pub fn load_as_member(
+        config_path: &Utf8Path,
+        workspace: &Workspace,
+        member: &str,
+    ) -> Result<Self, LexLeanError> {
+        Self::load_in(config_path, Some((workspace.clone(), member.to_owned())))
+    }
+
+    fn load_in(
+        config_path: &Utf8Path,
+        stand_in: Option<(Workspace, String)>,
+    ) -> Result<Self, LexLeanError> {
         // Messages name the configuration as the user gave it when that is
         // relative, and by file name otherwise (§20.6: no absolute paths).
         let shown: String = if config_path.is_absolute() {
@@ -200,6 +227,8 @@ impl Project {
             config,
             config_bytes,
             tooling: false,
+            workspace: None,
+            workspace_member: None,
         };
         // The build root must resolve within the project and no component
         // of it may be a symlink (§10.1, §25.1); the same holds for the
@@ -217,6 +246,21 @@ impl Project {
             project
                 .confined(&workspace, Expect::Creatable)
                 .map_err(LexLeanError::from_diagnostic)?;
+        }
+        // §10.5: a project that declares source packages belongs to a
+        // workspace that lists it; a project that declares none reads no
+        // directory beside its own.
+        let mut project = project;
+        if !project.config.source_packages.is_empty() {
+            if let Some((workspace, member)) = stand_in {
+                project.workspace = Some(workspace);
+                project.workspace_member = Some(member);
+            } else {
+                let workspace =
+                    Workspace::of_project(&project.root).map_err(LexLeanError::from_diagnostic)?;
+                project.workspace_member = workspace.member_of(&project.root);
+                project.workspace = Some(workspace);
+            }
         }
         Ok(project)
     }

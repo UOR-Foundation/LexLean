@@ -1,0 +1,16 @@
+\begin{lexlean}{Core}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: twice,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (n + n),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+theorem{name: twice_two, parameters: [], statement: ((twice 2) = 4), proof: reflexivity{}}
+\end{semanticmodule}
+\end{lexlean}

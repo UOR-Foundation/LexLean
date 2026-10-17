@@ -1964,3 +1964,23 @@ fn conformance_rt_03() {
 fn conformance_rt_04() {
     repo_conformance::cases::run("RT-04");
 }
+
+#[test]
+fn conformance_pk_01() {
+    repo_conformance::cases::run("PK-01");
+}
+
+#[test]
+fn conformance_pk_02() {
+    repo_conformance::cases::run("PK-02");
+}
+
+#[test]
+fn conformance_pk_03() {
+    repo_conformance::cases::run("PK-03");
+}
+
+#[test]
+fn conformance_pk_04() {
+    repo_conformance::cases::run("PK-04");
+}

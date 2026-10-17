@@ -2028,17 +2028,13 @@ pub fn document_externals(
 /// of every reached external constant plus the full generated names of
 /// document imports.
 #[must_use]
-pub fn module_imports(
-    document: &DocumentModule,
-    closure: &Closure,
-    module_prefix: &str,
-) -> Vec<String> {
+pub fn module_imports(document: &DocumentModule, closure: &Closure) -> Vec<String> {
     let mut imports: BTreeSet<String> = BTreeSet::new();
     for external in document_externals(document, closure).values() {
         imports.insert(external.lean_module.clone());
     }
     for import in &document.imports {
-        imports.insert(format!("{module_prefix}.{import}"));
+        imports.insert(document.lean_import(import));
     }
     imports.into_iter().collect()
 }
@@ -2108,7 +2104,7 @@ pub fn render_module(
         };
         sink.kw("module");
         sink.ws("\n");
-        for import in module_imports(document, closure, module_prefix) {
+        for import in module_imports(document, closure) {
             // Under the Lean 4.32.1 module system a plain `import` is
             // private: constants of the imported module may not appear in
             // the signatures of this module's `public` declarations. Every

@@ -25,6 +25,7 @@ mod lexicon;
 mod models;
 mod operational;
 mod oracle;
+mod packages;
 mod preservation;
 mod production;
 mod production_export;
@@ -114,6 +115,7 @@ pub fn run(id: &str) {
         "RT" => runtime::run(id),
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
+        "PK" => packages::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

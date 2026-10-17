@@ -2861,6 +2861,22 @@ pub fn run_part(
         ),
         ("declarations", Json::Arr(declaration_rows)),
     ];
+    // §10.5: the modules of a source package carry the package as their
+    // origin, keyed by their Lean module.
+    let origins: Vec<(&str, Json)> = build
+        .modules
+        .iter()
+        .filter_map(|module| {
+            checked.modules[&module.module]
+                .document
+                .origin
+                .as_ref()
+                .map(|origin| (module.lean_module.as_str(), Json::Str(origin.clone())))
+        })
+        .collect();
+    if !origins.is_empty() {
+        body_fields.push(("origins", Json::object(origins)));
+    }
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
     }

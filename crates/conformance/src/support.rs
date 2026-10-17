@@ -379,6 +379,30 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the committed source-package workspace
+    /// (`tests/packages/workspace`, SPEC.md §10.5): `root` is the member
+    /// project `member` (`app`, `lib`, or `base`), and the workspace itself is
+    /// [`Self::workspace_dir`]. The members carry no lock and no build output.
+    #[must_use]
+    pub fn package_workspace(member: &str) -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-packages-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("tests/packages/workspace");
+        assert!(source.is_dir(), "the package workspace fixture is required");
+        copy_tree(source.as_std_path(), temp.path(), &[]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().join(member)).expect("utf8 tempdir");
+        assert!(root.is_dir(), "`{member}` is a member of the fixture");
+        Self { temp, root }
+    }
+
+    /// The directory holding the project copies of [`Self::package_workspace`].
+    #[must_use]
+    pub fn workspace_dir(&self) -> Utf8PathBuf {
+        Utf8PathBuf::from_path_buf(self.temp.path().to_path_buf()).expect("utf8 tempdir")
+    }
+
     /// A fresh copy of the preservation library's own project (SPEC.md
     /// §17.17), without build output or a lock.
     #[must_use]
