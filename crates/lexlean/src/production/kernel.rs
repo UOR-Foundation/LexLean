@@ -22,7 +22,7 @@ use crate::ir::core::{CoreBinderInfo, CoreLevel, CoreModule, CoreNode};
 
 mod ext;
 
-pub use ext::{Given, Open};
+pub use ext::{Given, Open, WALKED};
 
 /// A node of the DAG under construction.
 pub type Term = usize;

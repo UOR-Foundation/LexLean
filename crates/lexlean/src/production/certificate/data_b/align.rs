@@ -523,10 +523,12 @@ impl<'g, 'a> Aligner<'g, 'a> {
             gives.push(g0.elapsed().as_micros());
         }
         let t3 = std::time::Instant::now();
+        let w0 = crate::production::kernel::WALKED.load(std::sync::atomic::Ordering::Relaxed);
         let applied = open.finish(&mut self.w.b)?;
+        let walked = crate::production::kernel::WALKED.load(std::sync::atomic::Ordering::Relaxed) - w0;
         if std::env::var("LEXLEAN_RULE_TIMES").is_ok() && t0.elapsed().as_millis() > 20 {
             eprintln!(
-                "RULE {name}: open {:?} expect {:?} gives {:?} finish {:?}",
+                "RULE {name}: walked {walked} open {:?} expect {:?} gives {:?} finish {:?}",
                 t1 - t0,
                 t2 - t1,
                 gives,
