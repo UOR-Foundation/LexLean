@@ -92,9 +92,11 @@ pub struct Manifest {
     /// strictly ascending: for a package a production root exports, exactly
     /// those eligibility requires of the root there. A host that runs a
     /// package whose effects include `recursion` gives it a stack its
-    /// input-dependent depth fits. The renderer checks the form, and that
-    /// the effects omit none the package shows of itself: an overflowing
-    /// export, a program that calls itself, or allocation on `rust-core`.
+    /// input-dependent depth fits. The renderer checks the form (registered,
+    /// ascending) and that `rust-core` states no `allocation`. It does not
+    /// derive them: they are the root's, which the eligibility analysis
+    /// decides, and the renderer's own view of a package (see
+    /// [`shown_effects`]) is a different, finer notion.
     pub effects: Vec<String>,
 }
 
@@ -339,9 +341,12 @@ fn recurs(program: &Program) -> bool {
     false
 }
 
-/// The effects a package shows of itself, ascending: the least a manifest's
-/// `effects` may state. Production states the root's, which can be more. The
-/// program is a canonical one.
+/// The effects a package's own program shows of itself, ascending: what a
+/// package that no production root exports states of itself. It is not a
+/// check on a root's effects, and finer than them: it sees the argument check
+/// a root's entry carries recurse over a recursive type, and a length item
+/// overflow, neither of which the root's eligibility reports. The program is
+/// a canonical one.
 #[must_use]
 pub fn shown_effects(program: &Program, exports: &[Export]) -> Vec<String> {
     let mut out = BTreeSet::new();
@@ -358,9 +363,8 @@ pub fn shown_effects(program: &Program, exports: &[Export]) -> Vec<String> {
 }
 
 impl Manifest {
-    /// The manifest with `effects` the least it may state: those the
-    /// package shows of itself ([`shown_effects`]). For a package no
-    /// production root exports, which has no root whose effects to state.
+    /// The manifest with `effects` those its program shows of itself
+    /// ([`shown_effects`]), for a package no production root exports.
     #[must_use]
     pub fn showing_effects(mut self) -> Self {
         self.effects = shown_effects(&self.program, &self.exports);
@@ -630,13 +634,6 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
         return fail("hidden allocation: a rust-core package states the effect `allocation`");
     }
     let program = manifest.program.canonical()?;
-    for shown in shown_effects(&program, &manifest.exports) {
-        if !manifest.effects.contains(&shown) {
-            return fail(format!(
-                "effects mismatch: the package shows the effect `{shown}`, which its effects omit"
-            ));
-        }
-    }
     let mut lowering = Lowering::new(&program, profile).map_err(|reason| {
         if reason.contains("requires heap allocation") {
             format!("hidden allocation: {reason}")

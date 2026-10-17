@@ -1740,7 +1740,7 @@ statement = "The language-1.2 compiler-semantics ID covers the package scaffold:
 id = "RB-13"
 level = "build"
 suite = "rust-backend"
-statement = "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target, the production registry says that exhausting the stack aborts the process, and a list that omits an overflowing export, omits a function that reaches itself, or states allocation on `rust-core` is refused."
+statement = "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target and the replay binds the package's to the result's, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused."
 
 [[id]]
 id = "GN-01"

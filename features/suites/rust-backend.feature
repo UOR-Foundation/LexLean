@@ -82,7 +82,7 @@ Feature: rust-backend
     Then the recomputation of the unchanged tree equals each embedded identity, the language-1.2 identity differs for each changed copy and is equal for the rewritten ones, and the identities of languages 1.0 and 1.1 are equal for every copy
 
   @RB-13 @build
-  Scenario: A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target, the production registry says that exhausting the stack aborts the process, and a list that omits an overflowing export, omits a function that reaches itself, or states allocation on `rust-core` is refused.
+  Scenario: A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target and the replay binds the package's to the result's, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused.
     Given a recursive program, an overflowing program, and a plain program, each in both profiles
-    When each is rendered with the effects it shows, its provenance is read against the schema, and the render is repeated with the effects dropped one at a time, an unregistered effect, an unordered list, and allocation on `rust-core`
-    Then each rendering's provenance states exactly its effects, the registry's recursion statement says the process aborts, and each planted manifest is refused as LLB6005 naming the effect
+    When each is rendered with the effects its program shows, its provenance is read against the schema, and the render is repeated with an unregistered effect, an unordered list, and allocation on `rust-core`
+    Then each rendering's provenance states exactly the manifest's effects, the registry's recursion statement says the process aborts, and each planted manifest is refused as LLB6005 naming the effect
