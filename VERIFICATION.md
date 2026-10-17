@@ -1683,6 +1683,12 @@ chain 15 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exce
 chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 8913991 bytes (524336 program nodes)
 ```
 
+Superseded: the figures above are the text certificates'. With certificates A
+and B as kernel data (#157, #163) a repeated type is one node, the chain
+verifies 16 deep, and the fixture is a 400-constructor match; see "The
+size-limit fixture can fail when the certificates stop costing what it
+assumes" below.
+
 (The chain verified 14 deep before certificates wrote every reference to a
 global from the root: `_root_.` adds about 10% to certificate A, which at 14
 deep was 4.2 MB, and the generation, which sees the whole, now stops it.)

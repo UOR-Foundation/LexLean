@@ -25,6 +25,19 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
+  a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
+  octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
+  more times in one literal bound once by a deterministic `let __byteN` scoped
+  to that literal; the canonical document keeps the decimal numbers. Every
+  generated literal and every embedded artifact byte is read back by an
+  independent closed-grammar reader. It is a form change and not a capacity
+  one: the largest literal that elaborates at the default `maxRecDepth` is
+  6394 bytes under both spellings (VERIFICATION.md). `lean_backend` moves to
+  `10` (language 1.1) and `20` (language 1.2): the language-1.1 and
+  language-1.2 compiler-semantics IDs move, and with them the lock, source,
+  semantic, and build IDs of every project that holds a byte literal;
+  language 1.0 has no semantic modules and does not move.
 - The negative fixture `lowering-size-limit` is a match on 400 constructors
   and no longer the generic chain `g_k<T> = g_{k+1}<(T, T)>` 16 deep, and the
   cost table of SPEC.md §17.17 *Limits* is the one `COSTS_A` and `COSTS_B`
@@ -47,7 +60,7 @@ versions, and the entries below say what each tag does and does not claim.
   preservation library's 7,071 derived rows is remade exactly; no source,
   lock, or compiler-semantics ID changes.
 - IEEE-754 bit patterns as exact dyadic rationals (#118, SPEC.md §17.12 rule
-  15, `MD-13`, language 1.2 only; the register is 404 rows). `Models.Recognizer`
+  15, `MD-13`, language 1.2 only). `Models.Recognizer`
   decodes `binary32` and `binary64` bit patterns (and their little-endian
   `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
   rejecting out-of-width patterns and the non-finite biased exponents, and
@@ -61,9 +74,10 @@ versions, and the entries below say what each tag does and does not claim.
   linking to a single-evaluation `let` over bit tests (`bit_and`, `equal`) and a
   balanced exact sum, so a production root decodes a byte string to integers
   with no decimal text in its lowered program. Under language 1.0 and 1.1 they
-  are rejected with `LLT4001` and those identities are unchanged. Certificates read
+  are rejected with `LLT4001`; this change moves no language-1.0 or 1.1 identity
+  (language 1.1 moves with the byte-literal lowering below). Certificates read
   elaborated declarations, so the certificate data needs no `to_int`/`to_nat`
-  rule. The register is 404 rows with `SM-32`; the language-1.2
+  rule. The register gains `SM-32`; the language-1.2
   compiler-semantics, semantic-IR (`12` to `13`), source, semantic, and build
   IDs move, and the oracle tables are at versions 4 (`known-differences`) and 4
   (`known-non-overlap`).
@@ -79,11 +93,12 @@ versions, and the entries below say what each tag does and does not claim.
   theorem; the SPEC §17.16 table equals the module's rows. `lexlean/rust-provenance/1` and the
   package manifest `lexlean/rust-package/1` gain `effects` (#105 step 3b): the effects of the
   realization on its profile, which production takes from the root's eligibility and the
-  renderer checks against what the package shows of itself; the `recursion` effect of
+  renderer records as the root states them, deriving and checking nothing (what the list
+  understates is #105's); the `recursion` effect of
   `language/production-1.2.toml` now says that exhausting the stack aborts the process.
   Rendered `Cargo.toml` and `src/lib.rs` are byte-identical to the previous renderer's. The
-  language-1.2 compiler-semantics ID moves once; languages 1.0 and 1.1 are unchanged. The
-  register gains `RB-10`..`RB-13`.
+  language-1.2 compiler-semantics ID moves once; this change moves no language-1.0 or 1.1
+  identity. The register gains `RB-10`..`RB-13`.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
@@ -204,7 +219,7 @@ versions, and the entries below say what each tag does and does not claim.
   The aligner moved to `production/certificate/data_b/align.rs`, the Rust-term
   renderer is gone, and the Rust machine's conformance harness evaluates the
   crates by the same kernel terms. No diagnostic code is new; the register
-  gains `SP-16` (394 rows).
+  gains `SP-16`.
 - Certificate A as kernel-term data (SPEC.md §17.17, `SP-15`; stage 3 of #89).
   The preservation certificate of every production root is no longer written as
   Lean text by `production/certificate.rs`: the compiler builds it as a native
@@ -221,7 +236,7 @@ versions, and the entries below say what each tag does and does not claim.
   kernel's definitional equality
   (`tests/preservation-certificates/A-STATEMENTS.md`). Roughly 5 000 lines of the
   text generator are gone from `production/certificate.rs`. Certificate B is
-  still Lean text. No diagnostic code is new; the register gains `SP-15` (403 rows).
+  still Lean text. No diagnostic code is new; the register gains `SP-15`.
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler
