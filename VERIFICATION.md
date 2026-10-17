@@ -8215,6 +8215,35 @@ prereleases, unrelated occurrences of the pin, and malformed banners.
 Validated after the fix: the unit case and `conformance_vr_02` pass (the
 latter in 4.76 s), as do formatting, workspace/all-target Clippy with warnings
 denied, model/spec-link audits, and all five BDD meta-gate tests.
+### a standard-library member can fail its oracle (SPEC.md §17.22)
+
+`SL-01` holds every member of `LexLeanStd.Text` to the function of Rust's
+standard library it corresponds to: the member's lowered program under the
+calculus evaluator and its rendered `rust-std` package under the pinned rustc
+are run on a seeded corpus (edge cases first, then random inputs over the
+bytes the members distinguish), and one disagreement fails the case. The first
+run of the case found a defect in the source and not in the differential: three
+declarations admitted `overflow` their closures never realize, and the case
+refused them before any run (`startsWith: the declared effects`, declared
+`["allocation", "overflow"]`, realized `["allocation"]`); the declarations now
+admit exactly what they realize.
+
+- **a character class off by one.** `isSpace` takes the vertical tab (`11`)
+  for white space in place of the form feed (`12`), so `trim` keeps a form
+  feed and strips a vertical tab, which `<[u8]>::trim_ascii` never does.
+  `-- conformance_sl_01`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib.rs:483:17:
+  trim: the evaluator and Rust's standard library disagree on 431 of 600 runs: ["run 4 on [Bytes { hex: \"0b2061200b\" }]: {\"hex\":\"61\",\"kind\":\"bytes\"} != {\"hex\":\"0b2061200b\",\"kind\":\"bytes\"}", …]
+  ```
+
+  The same plant is made by the case itself on a copy of the project on every
+  run, so the gate stays armed: a corpus that no longer reaches the vertical
+  tab or the form feed fails the case.
+
+Removed: the source was restored; `conformance_sl_01` passes, in 156 s with
+the production export of the seven members under the pinned Lean.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

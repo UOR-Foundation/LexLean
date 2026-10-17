@@ -22,6 +22,22 @@ versions, and the entries below say what each tag does and does not claim.
   reserved-name action and refused unless it equals the row. Every one of the
   preservation library's 7,071 derived rows is remade exactly; no source,
   lock, or compiler-semantics ID changes.
+- The standard library's first member: bytes and text over `Bytes`
+  (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
+  language-1.2 project beside `compiler/` under the module prefix
+  `LexLeanStd`, written in the authoring notation; its `Text` module declares
+  `startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, and
+  `find` as production roots for `rust-std`, each admitting exactly the
+  effects its closure realizes. `SL-01` runs every member's lowered program
+  under the calculus evaluator and its rendered package under the pinned
+  rustc on a seeded corpus against Rust's `starts_with`, `ends_with`,
+  `trim_ascii`, `lines`, `split`, `join`, and `find`, detects a planted
+  character class in `trim`, and, under the pinned Lean, compares the
+  certified packages the production export publishes with the committed
+  ones under `tests/production-export/stdlib/`. The project passes the
+  example gates (`verify-examples`, `check-golden`) and
+  `check-production-export` compares its packages. `SL-01` brings the
+  register to 393 IDs.
 - The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
   `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
   took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of

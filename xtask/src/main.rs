@@ -147,6 +147,13 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.14: the compiler project is missing".into());
     }
     dirs.push(compiler);
+    // The standard library (§17.22) is source of the product under the same
+    // gates.
+    let stdlib = root.join("stdlib");
+    if !stdlib.join("lexlean.toml").exists() {
+        return Err("§17.22: the standard library project is missing".into());
+    }
+    dirs.push(stdlib);
     Ok(dirs)
 }
 
