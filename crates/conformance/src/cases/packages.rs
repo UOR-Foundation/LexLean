@@ -179,6 +179,24 @@ fn pk_01() {
     assert_ne!(observed, locked_digest);
     assert!(message.contains(&observed), "{message}");
 
+    // Every command that links reads the package again: a lock read before the
+    // package changed is not the lock of what would be linked.
+    let direct = P::package_workspace("app");
+    direct.relock();
+    let loaded = lexlean::project::Project::load(&direct.root.join("lexlean.toml")).expect("loads");
+    let (read, resolved) = lexlean::lock::read_current_lock(&loaded).expect("the lock is current");
+    edit_raw(
+        &direct,
+        "../base/src/Core.lex.tex",
+        "name: twice_two,",
+        "name: twice_twoo,",
+    );
+    let stale =
+        lexlean::link::check_project(&loaded, &lexlean::Selection::Entrypoints, &read, resolved)
+            .err()
+            .expect("linking reads the package again");
+    support::expect_code(&stale, "LLC0105");
+
     // The same bytes for a changed manifest of the package.
     let manifest = P::package_workspace("app");
     manifest.relock();
@@ -529,8 +547,14 @@ fn pk_03() {
     }
     let manifest =
         std::fs::read_to_string(build_dir.join("manifest.json").as_std_path()).expect("manifest");
-    assert!(manifest.contains("\"origin\":\"lib\""), "{manifest}");
-    assert!(manifest.contains("\"origin\":\"base\""), "{manifest}");
+    assert!(
+        manifest.contains("\"origin\":\"lib\""),
+        "the manifest names the origin of a package module"
+    );
+    assert!(
+        manifest.contains("\"origin\":\"base\""),
+        "the manifest names the origin of a package module"
+    );
     assert_eq!(manifest.matches("\"origin\"").count(), 3);
 
     // The source ID follows the pins: a byte of the package moves it once

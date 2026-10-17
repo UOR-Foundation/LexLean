@@ -741,3 +741,32 @@ pub fn load_locked(project: &Project, lock: &Lock) -> Result<SourcePackages, Vec
     }
     Ok(packages)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::prefixes_overlap;
+    use crate::config::is_package_version;
+
+    /// §10.5: a module prefix is claimed by one source, and a prefix beneath
+    /// another is a claim on it, but a longer segment is not.
+    #[test]
+    fn a_prefix_beneath_another_overlaps_it_and_a_longer_segment_does_not() {
+        assert!(prefixes_overlap("PkgLib", "PkgLib"));
+        assert!(prefixes_overlap("PkgLib.Sub", "PkgLib"));
+        assert!(prefixes_overlap("PkgLib", "PkgLib.Sub"));
+        assert!(!prefixes_overlap("PkgLib", "PkgLibrary"));
+        assert!(!prefixes_overlap("PkgLib.A", "PkgLib.B"));
+    }
+
+    /// §10.1: a version is a reader's string of at most 64 ASCII letters,
+    /// digits, `.`, `+`, and `-` that begins with a letter or digit.
+    #[test]
+    fn a_version_is_a_short_ascii_string() {
+        for good in ["1.0.0", "2026.10", "1.0.0-rc.1+build5", "v1"] {
+            assert!(is_package_version(good), "{good}");
+        }
+        for bad in ["", "-1", ".1", "1 0", "1/0", "é", &"1".repeat(65)] {
+            assert!(!is_package_version(bad), "{bad:?}");
+        }
+    }
+}

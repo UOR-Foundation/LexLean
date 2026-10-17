@@ -15,6 +15,27 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
+  A project declares `[[source_package]]` tables (`package`, `version`, `kind`
+  `path`, `path`), each naming a member project of the workspace an optional
+  `lexlean-workspace.toml` at the repository root lists, and imports its
+  modules by their own Lean names (`\importmodule{LexLeanStd.Text}`). The lock
+  gains `[[source_package]]` rows (tree digest over the package's manifest and
+  source files, manifest digest, version, prefix, its own packages) that every
+  command recomputes; a changed byte or version is `LLC0105` naming both
+  digests, a pin for an undeclared package `LLC0106`, a module prefix claimed
+  twice `LLC0107`, a project or path outside the workspace rule `LLC0108`
+  (a symlink or an escaping path is `LLS8001`), and an import of a package the
+  scope does not declare `LLR3009`. A package definition is an ordinary
+  definition of the importing project: its own `production:` roots are not
+  roots of the importer and nothing is re-exported. `verify` replays the
+  package modules under the package's prefix, with the package as their
+  `origin` in the build manifest, the snapshot, and the attestation; `fmt`
+  never writes a package file. The schema change moves the language-1.2
+  compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
+  without source packages, keep their bytes apart from that identity. The
+  register gains `PK-01`..`PK-04` (396 rows); `PK-05` (the `bootstrap/` pilot
+  imports `stdlib/`) follows #153 and #160.
 - Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
   stage 5 of #27). The composition certificate of every production root is no
   longer written as Lean text by `production/certificate.rs`: the compiler
