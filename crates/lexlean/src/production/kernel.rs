@@ -16,7 +16,7 @@
 //! axioms from the library registry, and hands the finished nodes to a
 //! [`CoreModule`].
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::ir::core::{CoreBinderInfo, CoreLevel, CoreModule, CoreNode};
 
@@ -54,6 +54,9 @@ pub struct Builder {
     lemmas: BTreeSet<String>,
     /// The next placeholder number ([`ext`]).
     fresh: usize,
+    /// The nodes known to mention no lemma placeholder ([`ext`]): a term the
+    /// generator substitutes for a placeholder is never walked again.
+    clean: std::cell::RefCell<HashSet<Term>>,
 }
 
 /// The empty binder name, which the notation writes as `_`.
