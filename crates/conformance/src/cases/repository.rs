@@ -1818,6 +1818,21 @@ pub(crate) fn run(id: &str) {
                     && plan_job.contains("          EVENT: ${{ github.event_name }}\n"),
                 "§9.4: the plan runs the script on the event and may read the runs of the repository"
             );
+            // The workflow runs the file as a command: a mode that is not
+            // executable fails the plan, and with it every job that needs it.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = std::fs::metadata(
+                    support::repo_root()
+                        .join(".github/ci-plan.sh")
+                        .as_std_path(),
+                )
+                .expect("the plan script")
+                .permissions()
+                .mode();
+                assert!(mode & 0o111 != 0, "§9.4: .github/ci-plan.sh is executable");
+            }
             plan_decisions();
             let gate_step = &ci[ci
                 .find("      - name: Run the normative acceptance gate")

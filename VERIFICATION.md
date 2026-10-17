@@ -8427,6 +8427,7 @@ run, and the defect removed. The observed lines are the case's own.
 | the `rest` row of `.github/vv-rows.json` is renamed | `§9.4: the leg a draft pull request runs is the one named `rest`` |
 | the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
 | an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
+| `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
 
 Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
 (the case was changed before the workflow). The two defects that a stand-in `gh`
