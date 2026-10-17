@@ -134,6 +134,14 @@ fn spec_table() -> Vec<(String, String, String)> {
 /// so that each decision is shown, and each way of being wrong is refused.
 fn plan_decisions() {
     use std::process::Command;
+    // The script is bash with `git`, `jq`, and a stand-in for `gh` on `PATH`,
+    // run where the gate runs (§8.3, §9.4: the normative host is Linux). The
+    // other hosts of the matrix run the case's reading of the files and skip
+    // this part: a Windows `PATH` is not a `:`-separated list, and no
+    // decision of the plan depends on the host.
+    if !cfg!(target_os = "linux") {
+        return;
+    }
     let root = support::repo_root();
     let script = root.join(".github/ci-plan.sh");
     let rows_file = root.join(".github/vv-rows.json");

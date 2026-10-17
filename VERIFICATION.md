@@ -8429,6 +8429,8 @@ run, and the defect removed. The observed lines are the case's own.
 | an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
 | `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
 
+The script's decisions are run on Linux, where the gate runs; on another host of the matrix the case reads the files and skips them. (The first full run of this change failed on Windows for that reason: the stand-in for `gh` was put on a `PATH` written with `:`, so the script found no run and, failing closed, chose the whole gate, which the case refused.)
+
 Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
 (the case was changed before the workflow). The two defects that a stand-in `gh`
 cannot show, a run of another repository's pull request and a run that did not
