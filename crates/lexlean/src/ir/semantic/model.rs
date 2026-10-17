@@ -652,6 +652,9 @@ pub struct Elaboration {
     pub(crate) models: Models,
     /// The reasoning interfaces this module declares, keyed by local name.
     pub(crate) reasoning: super::reasoning::Reasoning,
+    /// The tokenizers and context windows this module declares, keyed by
+    /// local name.
+    pub(crate) text: super::language_model::Texts,
 }
 
 /// The elaboration under construction, declaration by declaration.
@@ -690,11 +693,13 @@ impl Builder {
         declarations: &[SemanticDeclaration],
         models: Models,
         reasoning: super::reasoning::Reasoning,
+        text: super::language_model::Texts,
         imports: Vec<String>,
     ) -> Result<Elaboration, SemanticFailure> {
         let mut elaboration = Elaboration {
             models,
             reasoning,
+            text,
             imports,
             ..Elaboration::default()
         };
@@ -1871,6 +1876,32 @@ impl ModelAt {
     fn apply(&self, arguments: Vec<SemanticTerm>) -> SemanticTerm {
         call(&self.member, &self.type_arguments, arguments)
     }
+}
+
+/// What a text generator reads of the model it scores with (§17.12, *Text
+/// components*): its contract's input and output types at the use, whether
+/// the contract is stateful, and the runtime checks every application
+/// needs.
+pub(super) struct ScorerInterface {
+    pub(super) input: SemanticType,
+    pub(super) output: SemanticType,
+    pub(super) stateful: bool,
+    pub(super) required: Vec<ModelCheck>,
+}
+
+/// Resolve a model use for a text generator's scorer.
+pub(super) fn scorer_interface(
+    model_use: &ModelUse,
+    env: &Environment<'_>,
+    failure: fn(String) -> SemanticFailure,
+) -> Result<ScorerInterface, SemanticFailure> {
+    let at = resolve_model(model_use, &BTreeSet::new(), env, failure)?;
+    Ok(ScorerInterface {
+        input: at.contract.input.r#type.clone(),
+        output: at.contract.output.r#type.clone(),
+        stateful: at.contract.state.is_some(),
+        required: at.required(),
+    })
 }
 
 fn resolve_model(

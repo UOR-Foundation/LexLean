@@ -4012,6 +4012,7 @@ impl<'a> Gen<'a> {
                     name: _,
                     capacity: _,
                     overflow: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextGenerator {
                     name: _,
@@ -4021,6 +4022,7 @@ impl<'a> Gen<'a> {
                     max_tokens: _,
                     stop: _,
                     policy: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextClassifier {
                     name: _,
@@ -4222,6 +4224,7 @@ impl<'a> Gen<'a> {
                                 name: _,
                                 capacity: _,
                                 overflow: _,
+                                axioms: _,
                             }
                             | SemanticDeclaration::TextGenerator {
                                 name: _,
@@ -4231,6 +4234,7 @@ impl<'a> Gen<'a> {
                                 max_tokens: _,
                                 stop: _,
                                 policy: _,
+                                axioms: _,
                             }
                             | SemanticDeclaration::TextClassifier {
                                 name: _,
@@ -4475,6 +4479,7 @@ impl<'a> Gen<'a> {
                                 name: _,
                                 capacity: _,
                                 overflow: _,
+                                axioms: _,
                             }
                             | SemanticDeclaration::TextGenerator {
                                 name: _,
@@ -4484,6 +4489,7 @@ impl<'a> Gen<'a> {
                                 max_tokens: _,
                                 stop: _,
                                 policy: _,
+                                axioms: _,
                             }
                             | SemanticDeclaration::TextClassifier {
                                 name: _,
@@ -5605,6 +5611,7 @@ impl<'a> Gen<'a> {
                         name: _,
                         capacity: _,
                         overflow: _,
+                        axioms: _,
                     }
                     | SemanticDeclaration::TextGenerator {
                         name: _,
@@ -5614,6 +5621,7 @@ impl<'a> Gen<'a> {
                         max_tokens: _,
                         stop: _,
                         policy: _,
+                        axioms: _,
                     }
                     | SemanticDeclaration::TextClassifier {
                         name: _,
@@ -6364,6 +6372,7 @@ impl<'a> Gen<'a> {
                                         name: _,
                                         capacity: _,
                                         overflow: _,
+                                        axioms: _,
                                     }
                                     | SemanticDeclaration::TextGenerator {
                                         name: _,
@@ -6373,6 +6382,7 @@ impl<'a> Gen<'a> {
                                         max_tokens: _,
                                         stop: _,
                                         policy: _,
+                                        axioms: _,
                                     }
                                     | SemanticDeclaration::TextClassifier {
                                         name: _,

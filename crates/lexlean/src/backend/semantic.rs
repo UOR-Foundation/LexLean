@@ -2795,7 +2795,78 @@ fn latex_text(
         );
         latex_line(text, "Axiom policy", &latex_policy(axioms));
     }
+    let laws = || {
+        format!(
+            "imported from the native module {}",
+            crate::text_laws::laws_module()
+        )
+    };
+    if let SemanticDeclaration::ContextWindow {
+        capacity,
+        overflow,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(text, "Capacity", &capacity.to_string());
+        latex_line(
+            text,
+            "Overflow",
+            match overflow {
+                crate::ir::semantic::OverflowDisposition::Refuse => "refuse",
+                crate::ir::semantic::OverflowDisposition::KeepLast => "keep_last",
+            },
+        );
+        latex_line(text, "Laws", &laws());
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
+    if let SemanticDeclaration::TextGenerator {
+        tokenizer,
+        window,
+        scorer,
+        max_tokens,
+        stop,
+        policy,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(text, "Tokenizer", &render.member(tokenizer));
+        latex_line(text, "Window", &render.member(window));
+        latex_line(text, "Scorer", &latex_use(render, scorer));
+        latex_line(text, "Maximum tokens", &max_tokens.to_string());
+        latex_line(text, "Stop", &render.member(stop));
+        latex_line(
+            text,
+            "Policy",
+            match policy {
+                crate::ir::semantic::GenerationPolicy::Greedy => "greedy, with no seed",
+                crate::ir::semantic::GenerationPolicy::Sample { .. } => {
+                    "sample with xorshift32 and proportional, the seed an explicit input and the next seed an explicit output"
+                }
+            },
+        );
+        latex_line(text, "Laws", &laws());
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
     for derived in module.elaboration.lowered(index) {
+        if let SemanticDeclaration::Inductive {
+            name, constructors, ..
+        } = derived
+        {
+            latex_line(
+                text,
+                "Elaborates to",
+                &format!(
+                    "{name} with {}",
+                    constructors
+                        .iter()
+                        .map(|constructor| constructor.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            );
+        }
         if let SemanticDeclaration::Definition {
             name,
             parameters,
@@ -3058,12 +3129,12 @@ pub fn render_latex(
             | SemanticDeclaration::Reasoner { .. } => {
                 reasoning::latex_reasoning(&render, module, index, declaration, &mut text);
             }
-            SemanticDeclaration::Tokenizer { .. } => {
+            SemanticDeclaration::Tokenizer { .. }
+            | SemanticDeclaration::ContextWindow { .. }
+            | SemanticDeclaration::TextGenerator { .. } => {
                 latex_text(&render, module, index, declaration, &mut text);
             }
-            SemanticDeclaration::ContextWindow { .. }
-            | SemanticDeclaration::TextGenerator { .. }
-            | SemanticDeclaration::TextClassifier { .. } => {
+            SemanticDeclaration::TextClassifier { .. } => {
                 return Err(Diagnostic::new(
                     code!("LLI9001"),
                     format!(

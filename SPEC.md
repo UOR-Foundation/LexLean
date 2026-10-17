@@ -3744,6 +3744,95 @@ proved correct on every state its run reaches, with its check erased, all
 verified by pinned Lean, with the six-counter ledger of each run decided
 counter by counter by Lean's kernel.
 
+#### Text components (language 1.2)
+
+A text component models a step of a language-processing system: a
+*tokenizer* turns text into tokens and back, a *context window* bounds the
+tokens a model sees, and a *text generator* extends a prompt one token at a
+time with a model's scores. As with models and reasoning machines, a text
+declaration carries no meaning of its own: linking elaborates it into ordinary
+language-1.2 definitions, inductives, and generated theorems, which the
+ordinary rules check again, and the Lean backend, production eligibility, and
+the axiom audit read only the elaboration. The universal laws are not stated
+by the declaration and not spliced as Lean text: they are the declarations of
+the embedded text-laws library, one native `lexlean/core-module/2` module
+`LexLeanText.LexLeanText` of the project `language/text-1.2/library/` (§17.10),
+which the compiler embeds, hashes into the language-1.2 semantics, and
+generates Lean from, and which a module that declares a text component
+imports. No prompt string is semantic code: `string` is data, and a prompt
+reaches a model only as the tokens `encodeText` makes of it.
+
+1. **Closed declarations** (`LLT4001`). `tokenizer`, `context_window`,
+   `text_generator`, and `text_classifier` are declarations of
+   `lexlean/semantic-module/2`; a member, scheme, disposition, policy,
+   generator, or distribution outside the closed schema is a schema
+   violation. A declaration's `axioms` row is the exact axiom policy of every
+   Lean declaration it elaborates to, sorted, unique, and qualified
+   (`LLT4006`).
+2. **Tokenizers** (`LLT4006`). `{"kind":"tokenizer","name":T,"scheme":S,
+   "vocabulary":{"member":A}}` names a prior artifact of role `vocabulary` and
+   schema `utf8_lines`; the scheme is `byte_level` or `longest_match`.
+   Tokens are `uint32`: the ids 0..255 are the single bytes, always present
+   as the byte fallback, and the vocabulary's pieces take the ids from 256 in
+   artifact order. `T` elaborates to `T.pieces`, `T.size`, `T.encode` and
+   `T.decode` over `bytes`, and `T.encodeText` and `T.decodeText` over
+   `string` through UTF-8, and generates `T.roundtrip` (`decode (encode b) =
+   some b` for every byte string), `T.text_roundtrip`, and `T.in_range`
+   (every token `encode` makes is below `T.size`).
+3. **The laws library.** Every library function an elaboration applies is
+   registered with its signature, so its applications type-check like any
+   call, and every generated theorem is proved by one library lemma applied
+   after unfolding exactly the elaborated definitions it names; the loader
+   refuses a native module that does not declare every name an elaboration
+   applies.
+4. **Context windows.** `{"kind":"context_window","name":W,"capacity":n,
+   "overflow":D}` elaborates to `W.capacity : nat`, `W.fit : list uint32 ->
+   option (list uint32)`, and `W.push : list uint32 -> uint32 -> option (list
+   uint32)`. Under `refuse` a context that does not fit is `none`; under
+   `keep_last` the most recent `n` tokens are kept. It generates
+   `W.bounded` and `W.push_bounded` (every admitted or pushed context fits),
+   `W.exact` (a context that fits is admitted unchanged), and `W.suffix`
+   under `keep_last` (what is kept is the end of the context) or
+   `W.refuses` under `refuse` (a context that does not fit is not admitted).
+5. **Bounds** (`LLT4016`). A window's capacity and a generator's
+   `max_tokens` are at least 1: a text component never runs unbounded or
+   with an unstated bound.
+6. **Text generators** (`LLT4006`). `{"kind":"text_generator","name":G,
+   "tokenizer":T,"window":W,"scorer":{"member":M},"max_tokens":k,"stop":s,
+   "policy":P}` names a prior tokenizer, a prior context window, a prior
+   stateless model whose contract maps `list uint32` to `list int` and whose
+   evidence discharges every runtime check (it is applied on every step),
+   and a prior definition of one `uint32` token. It elaborates to `G.score`,
+   the scorer; the closed inductives `G.End` (`stop`, `exhausted`) and
+   `G.Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`), the
+   members of `text_failure`; `G.run`, the library's loop: the window admits
+   the prompt, then each step scores the context, chooses a token by the
+   policy, ends at the stop token, refuses a choice that is not a token of
+   the vocabulary (`unknown_token`), and pushes the token through the window
+   (`context_overflow` when `refuse` refuses it), for at most `k` steps, the
+   last of which ends `exhausted` and keeps its output; `G.generateTokens`,
+   the run read into `result (product (list uint32) G.End) G.Failure`; and
+   `G.generate`, the same over `string`, whose output that is not UTF-8 is
+   `invalid_utf8`. It generates `G.bounded` (at most `k` tokens are
+   generated) and `G.context_bounded` (the run equals the run whose scorer
+   is never consulted on a context that does not fit the window).
+7. **Explicit nondeterminism.** Under `greedy` the choice is the first
+   maximum and no elaborated definition takes a seed, so a greedy generator
+   is deterministic by type. Under `sample` the generator is `xorshift32`
+   (Marsaglia's 13, 17, 5 triple over `uint32`) and the distribution
+   `proportional` (a negative score weighs nothing; the draw is the next
+   seed modulo the total weight against the prefix sums, and with no weight
+   the first maximum): `G.run`, `G.generateTokens`, and `G.generate` take the
+   seed as their last input and return the next seed with their result, so
+   the same prompt and seed give the same output. No claim is made about the
+   quality of the generator, and `0` is its fixed point.
+8. **Classifiers.** A `text_classifier` is not elaborated by linking in this
+   release; one admitted under 1.2 is reported as a declaration linking did
+   not elaborate.
+
+`examples/models` carries the vocabulary the conformance cases tokenize; the
+end-to-end text-model example is a later release's.
+
 Routing is fixed by the project language and is never inferred from module
 content, so no byte sequence has two meanings:
 
@@ -3900,11 +3989,12 @@ that runs a reasoner admits `overflow` where the target requires it.
 
 Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
 (`declaration.tokenizer`, `declaration.context_window`,
-`declaration.text_generator`, `declaration.text_classifier`): a
-tokenizer's elaborated definitions are reported with that construct and
-apply the embedded text-laws library, which no production target realizes,
-so a root whose closure reaches one fails, and its generated theorems are in
-no closure; the other three are not elaborated by linking in this release.
+`declaration.text_generator`, `declaration.text_classifier`): the
+elaborated definitions of a tokenizer, a context window, and a text
+generator are reported with their construct and apply the embedded
+text-laws library, which no production target realizes, so a root whose
+closure reaches one fails, and their generated theorems are in no closure; a
+text classifier is not elaborated by linking in this release.
 
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
@@ -8435,6 +8525,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4013` | Tooling module malformed or out of context (§17.20). |
 | `LLT4014` | Tooling authority registry invalid (§17.20). |
 | `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
+| `LLT4016` | Unbounded or unspecified text generation (§17.12). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -9552,9 +9643,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
 | `LM-02` | `language-models` | A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification. | §17.12 |
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
+| `LM-04` | `language-models` | A `context_window` is a closed language-1.2 declaration of a capacity of at least one token and an overflow disposition `refuse` or `keep_last` that elaborates to `capacity`, `fit` over `list uint32`, and `push` of one `uint32` token through the text-laws library, with its laws generated and kernel-checked: `bounded` and `push_bounded` state that every admitted or pushed context fits the capacity, `exact` that a context that fits is admitted unchanged, `suffix` under `keep_last` that what is kept is the end of the context, and `refuses` under `refuse` that a context that does not fit is not admitted; a capacity of 0 is refused (`LLT4016`), a disposition or capacity outside the closed schema is a schema violation (`LLT4001`), and a window whose laws observe an axiom its policy omits fails the audit. | §17.12 |
+| `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
+| `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 403.
+**Total required capability IDs:** 406.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

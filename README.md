@@ -142,7 +142,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 403 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 406 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 The differential against the independent generator `lean4-prod` (SPEC.md §17.19, `OR-01`..`OR-08`) acquires it at its pinned commit: from the checkout `LEXLEAN_ORACLE_DIR` names, or by fetching the commit with `git` into the Cargo target directory (`LEXLEAN_ORACLE_CACHE` overrides), and builds it with the pinned Lean and Rust toolchains. It is validation evidence only and no input to any identity. An oracle that cannot be acquired, is not the pinned files, or fails is unavailable: that fails the gate on Linux x86-64 and is printed as `NOT VALIDATED` elsewhere, and is never reported as agreement.
 
@@ -186,7 +186,8 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The bootstrap project: the compiler's own components as language-1.2 source compiled by LexLean's production pipeline to certified Rust packages, the first being the exact axiom-output parser and its closed Lean-name check, each held to the Rust it replaces (the stage-0 oracle) by the committed golden vectors and a seeded differential of its evaluator and rustc realizations, with planted defects detected and the production export committed | `BS-01` | `build` |
 | Source packages: a language-1.2 project imports the modules of a locked, content-addressed package of its workspace: `[[source_package]]` and `lexlean-workspace.toml`, the pins in `lexlean.lock` recomputed by every command, imports closed at link, no re-export of a package's production roots, and the package's modules replayed by the importer's `verify` with their origin in the records | `PK-01`..`PK-05` | `build` |
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
-| Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text (context windows, text generators, text classifiers, adapters, and composition follow in their own slices and add their rows then) | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
+| Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
+| Language-1.2 text components, second slice: context windows with their bound, exactness, and suffix laws, and greedy and seeded text generators bounded by `max_tokens` whose scorer sees only contexts that fit, over the same native laws module (text classifiers, adapters, and composition follow in their own slices and add their rows then) | `LM-04`, `LM-05`, `LM-06` | `build` |
 
 Range rows abbreviate consecutive registered IDs; every individual ID in each range is registered in [`model/ids.toml`](model/ids.toml) at the stated level with its own scenario and test.
 

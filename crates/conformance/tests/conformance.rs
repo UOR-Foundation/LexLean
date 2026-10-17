@@ -2016,6 +2016,21 @@ fn conformance_lm_03() {
 }
 
 #[test]
+fn conformance_lm_04() {
+    repo_conformance::cases::run("LM-04");
+}
+
+#[test]
+fn conformance_lm_05() {
+    repo_conformance::cases::run("LM-05");
+}
+
+#[test]
+fn conformance_lm_06() {
+    repo_conformance::cases::run("LM-06");
+}
+
+#[test]
 fn conformance_lm_13() {
     repo_conformance::cases::run("LM-13");
 }

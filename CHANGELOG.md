@@ -15,6 +15,30 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Context windows and text generators (SPEC.md §17.12, *Text components*,
+  `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
+  of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
+  `capacity`, `fit`, and `push` over the text-laws library and generates
+  `bounded`, `push_bounded`, `exact`, and `suffix` (`keep_last`) or
+  `refuses` (`refuse`). A `text_generator` over a prior tokenizer, window,
+  stateless `list uint32 -> list int` model, and `uint32` stop token, with
+  `max_tokens` at least 1, elaborates to `score`, the closed inductives
+  `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`,
+  `context_overflow`, `invalid_utf8`), `run` (the library's bounded loop),
+  `generateTokens`, and `generate`, and generates `bounded` (at most
+  `max_tokens` tokens) and `context_bounded` (the scorer is never consulted
+  on a context that does not fit). `greedy` takes the first maximum and no
+  seed; `sample` draws through the closed `xorshift32` and `proportional`
+  members with the seed an explicit input and the next seed an explicit
+  output. Both declarations gain an `axioms` policy. A capacity or
+  `max_tokens` of 0 is `LLT4016`; a member of another kind is `LLT4006`. The
+  laws are new declarations of the native `LexLeanText` module, authored once
+  outside the release tree and exported by the same round trip as slice 1
+  (`tests/text-laws/MIGRATION.md`, second record). The language-1.2
+  `semantic_ir` and `latex_backend` versions move to 13 and 13, so every
+  language-1.2 lock, golden, fixture, and verification record is
+  regenerated. Text classifiers, adapters, composition, production, and the
+  end-to-end example remain for later slices. The register holds 406 IDs.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional
