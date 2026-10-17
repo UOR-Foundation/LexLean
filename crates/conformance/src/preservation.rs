@@ -3342,24 +3342,41 @@ mod dev {
         std::thread::Builder::new()
             .stack_size(1 << 30)
             .spawn(|| {
-                let mut projects: Vec<(String, P)> = crate::stress::families();
-                for arms in [2, 50, 100, 140, 180] {
-                    projects.push((format!("wide match {arms}"), crate::stress::wide_match_default(arms)));
-                }
-                projects.extend(crate::stress::fitting());
-                for scale in [4, 8, 16, 32, 64] {
-                    for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
-                        projects.push((
-                            format!("mixed {index} at {scale}"),
-                            crate::stress::mixed_lifted(shape.scaled(scale)),
-                        ));
+                let mut projects: Vec<(String, P)> = Vec::new();
+                if let Ok(scales) = std::env::var("LEXLEAN_MIXED") {
+                    let wanted: Vec<usize> = std::env::var("LEXLEAN_SHAPES")
+                        .map(|list| list.split(',').filter_map(|v| v.trim().parse().ok()).collect())
+                        .unwrap_or_default();
+                    for scale in scales.split(',').filter_map(|v| v.trim().parse::<usize>().ok()) {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                            if wanted.is_empty() || wanted.contains(&index) {
+                                projects.push((
+                                    format!("mixed {index} at {scale}"),
+                                    crate::stress::mixed_lifted(shape.scaled(scale)),
+                                ));
+                            }
+                        }
                     }
-                }
-                for (index, shape) in crate::stress::random_shapes(24, 0x5eed).into_iter().enumerate() {
-                    projects.push((format!("random {index}"), crate::stress::mixed_lifted(shape)));
-                }
-                for name in ["production", "production-coverage", "models", "reasoning"] {
-                    projects.push((format!("example {name}"), P::copy_example(name)));
+                } else {
+                    projects = crate::stress::families();
+                    for arms in [2, 50, 100, 140, 180] {
+                        projects.push((format!("wide match {arms}"), crate::stress::wide_match_default(arms)));
+                    }
+                    projects.extend(crate::stress::fitting());
+                    for scale in [4, 8, 16, 32, 64] {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                            projects.push((
+                                format!("mixed {index} at {scale}"),
+                                crate::stress::mixed_lifted(shape.scaled(scale)),
+                            ));
+                        }
+                    }
+                    for (index, shape) in crate::stress::random_shapes(24, 0x5eed).into_iter().enumerate() {
+                        projects.push((format!("random {index}"), crate::stress::mixed_lifted(shape)));
+                    }
+                    for name in ["production", "production-coverage", "models", "reasoning"] {
+                        projects.push((format!("example {name}"), P::copy_example(name)));
+                    }
                 }
                 for (label, project) in projects {
                     let checked = support::checked_project(&project);
