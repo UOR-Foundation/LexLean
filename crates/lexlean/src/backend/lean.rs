@@ -2430,19 +2430,45 @@ pub enum AuxiliaryCommand {
     /// `#print axioms` and a fully qualified declaration name, quoted as
     /// the module that declares it quotes it.
     PrintAxioms(String),
+    /// `#print "text"`: a line of the output that marks where one part of it
+    /// ends and the next begins.
+    PrintMarker(String),
+    /// `#print` and a fully qualified declaration name: its definition or
+    /// statement.
+    PrintName(String),
+    /// `#check @` and a fully qualified declaration name: its type with every
+    /// argument explicit.
+    CheckName(String),
 }
 
 impl AuxiliaryModule {
     /// The module's Lean, and the one-based line each command is on.
     #[must_use]
     pub fn render(&self) -> (String, Vec<usize>) {
-        let mut text = String::from("module\n");
+        self.render_with(true)
+    }
+
+    /// The module's Lean without the `module` header, and the one-based line
+    /// each command is on. Lean refuses a `module` that imports a file that is
+    /// not one, and the preservation certificates are rendered as files that
+    /// are not (the decoder prelude of [`crate::backend::core`]), so the audit
+    /// module that imports them is rendered the same way.
+    #[must_use]
+    pub fn render_over_unheaded(&self) -> (String, Vec<usize>) {
+        self.render_with(false)
+    }
+
+    fn render_with(&self, module_header: bool) -> (String, Vec<usize>) {
+        let mut text = String::new();
+        if module_header {
+            text.push_str("module\n");
+        }
         for import in &self.imports {
             text.push_str("import ");
             text.push_str(import);
             text.push('\n');
         }
-        let mut line = 1 + self.imports.len();
+        let mut line = usize::from(module_header) + self.imports.len();
         let mut lines = Vec::with_capacity(self.commands.len());
         for command in &self.commands {
             line += 1;
@@ -2461,6 +2487,18 @@ impl AuxiliaryModule {
                 }
                 AuxiliaryCommand::PrintAxioms(declaration) => {
                     text.push_str("#print axioms ");
+                    text.push_str(&super::semantic::identifier(declaration));
+                }
+                AuxiliaryCommand::PrintMarker(marker) => {
+                    text.push_str("#print ");
+                    text.push_str(&super::semantic::string_literal(marker));
+                }
+                AuxiliaryCommand::PrintName(declaration) => {
+                    text.push_str("#print ");
+                    text.push_str(&super::semantic::identifier(declaration));
+                }
+                AuxiliaryCommand::CheckName(declaration) => {
+                    text.push_str("#check @");
                     text.push_str(&super::semantic::identifier(declaration));
                 }
             }

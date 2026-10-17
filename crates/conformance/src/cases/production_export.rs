@@ -743,6 +743,12 @@ pub fn run(id: &str) {
                             serde_json::json!([result.source.semantic_id.to_hex()])
                         );
                         assert_eq!(provenance["profile"], output.target.id);
+                        assert_eq!(
+                            provenance["effects"],
+                            serde_json::json!(output.effects),
+                            "{}: the package states the effects the result states",
+                            root.root
+                        );
                     }
                 }
             }

@@ -2693,6 +2693,7 @@ backend runs.
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
 | `less_than` primitive | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"less_than","arguments":[a,b],"result":{"kind":"bool"}}` over two values of one ordered key type (rule 1 under *Collections and state threading*): `true` exactly when `a` precedes `b` in that type's fixed order. It lowers to `LexLeanCollections.lessThan`. |
+| `to_int`, `to_nat` primitives | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"to_int","arguments":[v],"result":{"kind":"int"}}` over any fixed-width integer `v` (`int8`..`int64`, `uint8`..`uint64`), and `{"kind":"primitive","operation":"to_nat","arguments":[v],"result":{"kind":"nat"}}` over any unsigned fixed-width integer `v` (`uint8`..`uint64`), under the widening-conversion rules below. |
 | `artifact` declaration | `lexlean/semantic-module/2` | A typed constant decoded from content-addressed project bytes, under the model rules below. |
 | `contract` declaration | `lexlean/semantic-module/2` | Typed input, output, and optional state interfaces, proposition-valued predicates, and their runtime validators, under the model rules below. |
 | `realization` declaration | `lexlean/semantic-module/2` | A deterministic, rule, statistical, neural, or composite denotation of an interface, under the model rules below. |
@@ -3518,11 +3519,36 @@ member or value is an ordinary schema failure (`LLT4001`).
     checked applications are realized through their elaborations; contracts
     and evidence are erased (§17.13). Lean extraction of a root sees only
     elaborated definitions.
+15. **IEEE-754 bit patterns as exact dyadic rationals.** Because no floating-point
+    type exists in LexLean, IEEE-754 `binary32` (1 sign bit, 8-bit biased
+    exponent with bias 127, 23-bit trailing significand) and `binary64` (1 sign
+    bit, 11-bit biased exponent with bias 1023, 52-bit trailing significand)
+    parameter bit patterns enter exact integer derivations by decoding to exact
+    dyadic rationals `(sign, mantissa, exponent)` representing
+    $(-1)^{\text{sign}} \cdot \text{mantissa} \cdot 2^{\text{exponent}}$ over
+    `nat` and `int`:
+    - Out-of-width bit patterns and non-finite biased exponents (`255` for
+      `binary32`, `2047` for `binary64`, covering infinities and NaNs) decode
+      to `none`.
+    - Zero and subnormal patterns (`biased = 0`) decode to `mantissa = fraction`
+      and `exponent = -149` (`binary32`) or `exponent = -1074` (`binary64`).
+    - Normal patterns (`1 <= biased <= 254` for `binary32`, `1 <= biased <= 2046`
+      for `binary64`) decode to `mantissa = 2^23 + fraction` and
+      `exponent = biased - 150` (`binary32`) or `mantissa = 2^52 + fraction`
+      and `exponent = biased - 1075` (`binary64`).
+    - Fixed-point scale ratios $\operatorname{round}(a \cdot b / c \cdot 2^{32})$
+      from three `binary32` bit patterns decode $a$, $b$, and $c$ to exact
+      dyadic rationals, reject any `none` operand or a zero divisor
+      ($\text{mantissa}_c = 0$) as `none`, and compute the nearest integer
+      (ties to even) by exact integer Euclidean division and bit-stepping over
+      `iterate_until`, kernel-checked by `decide`.
 
 `examples/models` is the committed instance: a stateful deterministic
 session, a rule policy, a statistical triage and an artifact-backed neural
-recognizer, every composite form, checked boundaries at production roots,
-and every claim kind, all verified by pinned Lean.
+recognizer, IEEE-754 `binary32` and `binary64` dyadic rational decoding and
+exact `round(a * b / c * 2^32)` scale-ratio derivations, every composite
+form, checked boundaries at production roots, and every claim kind, all
+verified by pinned Lean.
 
 #### Reasoning machines (language 1.2)
 
@@ -3770,6 +3796,32 @@ proved correct on every state its run reaches, with its check erased, all
 verified by pinned Lean, with the six-counter ledger of each run decided
 counter by counter by Lean's kernel.
 
+#### Widening conversions (language 1.2)
+
+1. **Typing.** `to_int` takes one operand of a fixed-width integer type
+   (`Int8`, `Int16`, `Int32`, `Int64`, `UInt8`, `UInt16`, `UInt32`, or
+   `UInt64`) and has result `Int`. `to_nat` takes one operand of an unsigned
+   fixed-width integer type (`UInt8`, `UInt16`, `UInt32`, or `UInt64`) and has
+   result `Nat`. Any other operand type, result type, or argument count is
+   rejected in linking (`LLT4001`) before either backend runs.
+2. **Elaboration.** A widening conversion is a total, exact conversion of its
+   operand's value. Linking elaborates each application into an ordinary
+   language-1.2 term before Lean rendering, production eligibility, or
+   production lowering runs: the operand is bound once to a generated local
+   `__widen<n>` (`n` counted in evaluation order within each declaration),
+   each bit $k$ of the width is tested with `bit_and` and `equal` against the
+   fixed-width mask $2^k$, and the bit weights are summed in a balanced tree
+   over `Int` (`subtract` and `negate`, with the sign bit of a signed width
+   weighted by $-2^{w-1}$ and bit 63 of `UInt64` expressed as $2^{62} + 2^{62}$
+   so every literal lies within 64-bit signed range) or over `Nat` (`add`).
+   Generated Lean, production eligibility, production lowering, and the
+   preservation certificates read the elaborated declaration, so a root that
+   indexes a `Bytes` value and widens the resulting `UInt8` lowers to bit
+   tests and exact sums with no decimal text (`parse_decimal` or
+   `format_decimal`). The canonical LaTeX document renders the source
+   conversion (`toInt`, `toNat`), and the snapshot records the declaration's
+   `elaboration` alongside the source declaration (`SM-32`).
+
 Routing is fixed by the project language and is never inferred from module
 content, so no byte sequence has two meanings:
 
@@ -3870,7 +3922,8 @@ and coexist with executable roots in the same module.
   realization with an explicit failure), `overflow` (a `Nat` or `Int` value
   outside the target width stops the realization with an explicit failure,
   never wrapping or truncating), and `recursion` (a stack depth bounded only
-  by the input);
+  by the input; exhausting the stack aborts the process, and no failure is
+  stated for it);
 - *constructs*: one row per semantic construct kind (`type.<kind>`,
   `term.<kind>`, `primitive.<operation>`, `declaration.<kind>`, the
   refinements `declaration.inductive.recursive` and
@@ -4623,7 +4676,12 @@ program is established by the conformance suite against the verified build
 build (realization-to-source preservation) is the obligation of the
 production pipeline that derives target programs from LexLean roots, not of
 this backend: `sources` binds a package to the build that states its program,
-and the backend never derives a program from a build. Each export names a
+and the backend never derives a program from a build. Its `effects` are the
+effects of §17.13 the realization can exhibit on the profile, strictly
+ascending and registered; the renderer records them, and refuses a list that
+omits an effect the package shows of itself (an export that can overflow, or a
+function that reaches itself through calls and closures) or that states
+`allocation` on `rust-core`. Each export names a
 program function, its Rust name, how it takes each parameter (`own`;
 `borrow`, by shared reference; or `copy`, only for a `Copy` type: a scalar,
 or an option, result, or pair of `Copy` types), and whether it can fail
@@ -4640,32 +4698,57 @@ or an option, result, or pair of `Copy` types), and whether it can fail
   (*unsupported type*);
 - an export's declared errors differ from its function's (*arithmetic
   mismatch*);
-- the profile is `rust-core` and the program needs heap allocation (*hidden
-  allocation*); or
+- the profile is `rust-core` and the program needs heap allocation, or its
+  effects state `allocation` (*hidden allocation*);
+- its effects are not registered, not strictly ascending, or omit an effect
+  the package shows of itself (*effects mismatch*); or
 - the manifest is malformed, its version not canonical, its sources not
   canonical, its program invalid or without a faithful rendering, or an
   export's arity wrong.
 
 A package is three files. `src/lib.rs` is the rendering with one public
-wrapper per export. `Cargo.toml` declares the crate, edition 2021, no
+wrapper per export. `Cargo.toml` declares the crate, its edition, no
 dependencies, and its lint gate: `unsafe_code` forbidden, rustc warnings
-denied, and every Clippy lint of the default set denied except the ten of
-`package::ALLOWED_LINTS`, each because its advice would make the rendering
-depart from the calculus:
+denied, and every Clippy lint of the default set denied except the ten of the
+table below, each because its advice would make the rendering depart from the
+calculus.
 
-| Lint | Clippy group | Its advice, and why the rendering does not follow it |
+**Scaffolding.** What a package says of itself beside its program is data, not
+renderer text. The edition (2021), that the crate is not published, the library
+path, the gate on rustc's lints, the Clippy group the gate starts from, and the
+allowed lints, each with its Clippy group and its reason, are the declarations
+of one language-1.2 semantic module, `RustPackage`, written in the authoring
+notation at `language/package-1.2/RustPackage.lex.tex`. It is under `language/`,
+so the language-1.2 compiler-semantics ID (§21.2) covers it, and a changed
+lint, edition, or gate changes LexLean's identity. The renderer reads it, and
+neither evaluates it nor splices it into a rendering: `rust::scaffold` decodes
+the module's semantic data, accepting exactly the shapes the module uses and
+the declarations it names, and `package.rs` prints `Cargo.toml` over the
+record. The crate attributes are derived, not stored: `#![no_std]` is the
+target row of `language/production-1.2.toml` with `allocation = false`, and
+`#![forbid(lint)]` restates each gate of the module at level `forbid` (so
+`#![forbid(unsafe_code)]` and `unsafe_code = "forbid"` come from one row, and
+a `lib.rs` built outside Cargo still forbids unsafe code). No source of the
+renderer holds a string the module states (`scaffold::audit`). The module
+states that no allowed lint is in Clippy's `correctness` group as a theorem
+over the same list, and the reader refuses a lint in that group.
+
+| Lint | Clippy group | Reason |
 | --- | --- | --- |
-| `type_complexity` | complexity | a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart |
-| `too_many_arguments` | complexity | a struct of parameters: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart |
-| `large_enum_variant` | perf | a boxed variant: boxing changes the representation and allocates, which `rust-core` cannot and the calculus does not |
-| `result_large_err` | perf | a boxed error: likewise |
-| `result_unit_err` | style | an error type in place of unit: a function returns exactly its calculus result type |
-| `single_match` | style | `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape |
-| `manual_map` | style | `Option::map` and a Rust closure: a calculus closure is defunctionalized, never a Rust closure |
-| `manual_unwrap_or`, `manual_ok_err` | complexity | a library combinator in place of the program's own match: the combinator is outside the closed runtime |
-| `manual_unwrap_or_default` | suspicious | likewise; its advice is a rewrite that preserves the match's meaning, so allowing it masks no defect |
+| `type_complexity` | complexity | asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart |
+| `too_many_arguments` | complexity | asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart |
+| `large_enum_variant` | perf | asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not |
+| `result_large_err` | perf | asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not |
+| `result_unit_err` | style | asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart |
+| `single_match` | style | asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit |
+| `manual_unwrap_or` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
+| `manual_unwrap_or_default` | suspicious | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
+| `manual_map` | style | asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure |
+| `manual_ok_err` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
 
-No allowed lint is in Clippy's `correctness` group.
+No allowed lint is in Clippy's `correctness` group. The table is the module's
+list: the rows of the module and of this table are equal, in order, as lint,
+group, and reason.
 
 Every committed package passes this gate, and the fixtures exercise every
 shape of **Lowering** and every exception above: removing any one rule or
@@ -4673,11 +4756,15 @@ exception makes a committed package fail the gate. `provenance.json` (`lexlean/r
 `schemas/rust-provenance.schema.json`) binds the crate's name and version, the
 profile, the program's identity, the language-1.2 compiler-semantics ID
 (§21.2), the SHA-256 of the runtime the profile carries, the sources, the
-exports, and the SHA-256 of `Cargo.toml` and `src/lib.rs`.
+effects, the exports, and the SHA-256 of `Cargo.toml` and `src/lib.rs`. The
+`effects` are those of §17.13 the realization can exhibit on the profile,
+ascending: for a package a production root exports, exactly those eligibility
+requires of the root there; with `recursion`, the host gives the call a stack
+its input-dependent depth fits, and exhausting it aborts the process.
 `language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
 (`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
 sources (`rust_renderer`: one §21.1 frame per file of
-`rust::RENDERER_FILES`, the seven files of `calculus/rust/`, labeled by its
+`rust::RENDERER_FILES`, the eight files of `calculus/rust/`, labeled by its
 name, under the domain `lexlean-rust-renderer-v1`). Unit tests of the runtime
 and the renderer and the conformance suite check both records, so neither
 the runtime nor any rendering can change without changing LexLean's
@@ -4825,7 +4912,7 @@ were fitted to, and requires that the largest scaling of each of nine mixed
 shapes whose certificates are all under the default limit, a program at the
 edge of what fits, is not refused. The early refusal refuses, and only
 refuses early: a root whose certificates fit under `max_file_bytes` is not
-refused by it (a match on 420 constructors, whose certificate A is 4.0 MB; a
+refused by it (a match on 240 constructors, whose certificate A is 3.9 MB in the notation it is recorded in; a
 string literal of 450 000 characters, whose certificate B is 1.4 MB; a match
 on 350 constructors returned with a string of 940 000 characters), and what the
 bound does not see, the guarantee below stops. Certificate B is not bounded
@@ -4952,11 +5039,10 @@ listed by `tasklist` (then it had already exited), and the console delivers Ctrl
 the children. A match on 180 constructors verifies
 (`conformance_sp_02`), and so does one on 300, whose certificate B alone takes
 3 minutes and a half; the reference machine reaches the 300 seconds between 300
-and 400 constructors, where `lexlean verify` of a match on 400 ends with
+and 400 constructors, where, with `max_file_bytes` raised, `lexlean verify` of a match on 400 ends with
 `error[LLS8002]: child_timeout_ms exceeded by lean in phase
-LexLeanPreserve.C….R0` (certificate A, of 3.7 MB). The limit `max_file_bytes`
-itself allows about 420 constructors, so the timeout is the limit of a match
-that wide, and a registered one. The extraction record
+LexLeanPreserve.C….R0` (certificate A, of 3.7 MB as Lean text). The default limit `max_file_bytes`
+itself allows about 250 constructors, since certificate A, recorded in the authoring notation, is about 3.9 MB at 240 and grows with the square of the arms, so for a match of more than about 250 constructors the limit, not the timeout, refuses the root, with `LLS8002` in the phase certificates (the Lean text was 4.1 MB at 420, and the data certificate is not smaller than the text for a wide match); the timeout is the limit of a match that wide, and a registered one. The extraction record
 of a named root nests with the arms of a match (two levels each), and is read
 without the 128-level recursion limit of the JSON reader on a thread with a
 large stack, so no number of arms makes a verified root fail on it.
@@ -5348,8 +5434,8 @@ takes only a first operand of its own sequence, so `length_bytes` on text
 does not count its characters. The correspondence's value typing carries
 what these guards read: a fixed-width value's width, and a list's, bytes',
 or text's constructor. Every certified root's crate
-prints to a `RustSyntax` term (`production::rust_term`, audited for default
-arms) that Lean elaborates and the machine evaluates; on the seeded inputs of
+is built as a `RustSyntax` kernel term (`production::certificate::data_b`,
+audited for default arms) that Lean elaborates and the machine evaluates; on the seeded inputs of
 the differential, its outcome equals the calculus interpreter's on the
 lowered program. That rustc agrees with this declaration is `build`
 evidence, measured by the conformance suite, never assumed by a proof.
@@ -5386,9 +5472,9 @@ match arms, uninhabited parameter types), and proves once, by induction on
 fuel and on derivations, that every derivation is sound for every fuel
 (`sound`) and therefore that a crate each of whose functions has a
 derivation is simulated (`simulate`). A certificate is the aligner's
-derivation (`production::rust_cert`) of each function, whose side
-conditions the kernel decides by `rfl`, and its theorem is `simulate`
-applied to them. A function with a parameter of a type no value inhabits
+derivation (`production::certificate::data_b`) of each function, whose side
+conditions the kernel decides by evaluating the `Eq.refl` the rule states,
+and its theorem is `simulate` applied to them. A function with a parameter of a type no value inhabits
 needs no derivation: no call reaches its body. The rule set is closed:
 the aligner declares its rules as a list that `cargo xtask validate-model`
 (audit-production) requires to equal the constructors of `Corr`, each a case
@@ -5457,8 +5543,8 @@ The well-typedness theorems of a recursive group are the group's recursor
 type for the `j`-th container the kernel nests, in the order it nests them),
 an induction hypothesis standing where the text recursed. The one core
 backend renders the module to the Lean verification compiles, with `import`
-lines and no `module` header while certificates A and B are Lean text (a
-`module` cannot import them), and the verify record holds the module in the
+lines and no `module` header while the staged certificates import one
+another as such (a `module` cannot import them), and the verify record holds the module in the
 authoring notation (§17.21.8), at the module's path with the extension
 `.lex.tex`, which reads back to the data byte for byte; `preservation.json`
 binds those bytes. A certificate held as data is audited row by row and
@@ -5472,6 +5558,91 @@ certificate, and a row whose policy does not state what Lean prints is
 corpora this way, reads each record back to its data, verifies the
 production example under the pinned Lean, and plants a wrong lemma, a changed
 statement, a forged crate reference, and an added axiom, each refused.
+
+**Certificate A as data.** Certificate A is kernel-term data as well. The
+compiler builds it as a native core module of schema `lexlean/core-module/2`
+from the lowered program, the layout, the semantic source of the root's
+closure, and the recorded types of the library's lemmas; no Lean text template
+for it remains in the compiler. Its rows are the program literal `__prog`, the
+encoders, a width predicate `__fits_k` and a relation theorem `__rel_k` for each
+function of the closure, the boundary validators and the entry when the root has
+them, then `denote` and `root`. A relation theorem is derived node by node
+alongside the lowering of the function: a library lemma is applied at the
+operator, operand expressions, and evaluation environment its node has in the
+program, and what the lemma's type leaves implicit is stated, either from the
+program or from the types of the arguments. A definition's denotation appears in
+the statements as the definition itself, so its body is never unfolded to
+compare it. A recursive definition's predicate and theorem are written with the
+eliminator its recursion has: the recursor of the argument's type for structural
+recursion (a mutual group on one type packing its members as a product, a group
+with nested containers by the recursor of the first type and `rec_j` for the
+`j`-th container), and `WellFounded.fix` over the source's measure for
+well-founded recursion, a recursive call being the induction hypothesis applied
+to the packed arguments and the source's own decrease theorem, which quantifies
+the arms enclosing the call, so every numbered `if` and `match` of such a body
+is written by cases on its scrutinee with the equation the arm was taken by.
+The compiler's implementation record `f._unsafe_rec` of a recursive predicate,
+a partial definition beside the safe one, gives the code generator the direct
+recursion it has no code for in a recursor; no theorem depends on it. A
+definition that a model construct elaborates to pins no axiom: the construct's
+declared set bounds it, and the audit finds none for a definition that proves
+nothing. Each row pins its axioms exactly, the audit module prints and checks
+them, and the record is the authoring notation at the module's path with the
+extension `.lex.tex`, which reads back to the data byte for byte.
+`tests/preservation-certificates/A-STATEMENTS.md` records that the statement of
+every theorem of every certificate A of the four corpora is, up to the kernel's
+definitional equality, the statement the text certificate stated.
+`conformance_sp_15` builds every certificate A of the four corpora this way,
+reads each record back, verifies the production example under the pinned Lean,
+and plants a wrong lemma application, a changed statement, a forged program
+literal, and an added axiom, each refused.
+
+**Certificate B as data.** Certificate B is kernel-term data too. The compiler
+builds each as a native core module of schema `lexlean/core-module/2`
+(`production::certificate::data_b`): the rows `program` (the target program,
+built by the same builder as certificate A's `__prog`), `krate` (the crate as a
+`RustSyntax` term, constructor for constructor), `flags`, one theorem `fun<n>`
+per function, `crate_ok`, and `root`. The derivation of a function is the
+`Corr` rule applications the aligner finds, each a library constructor applied
+to every argument it has: the program, crate, and flags; the scope and the
+judgment the rule concludes, which the aligner states; the arguments the rule
+leaves to its premises, which it hands the premise's type; and the few values
+the text left to the elaborator's unification, which it holds from the
+constructs it relates (the function literal a call or closure names, the part
+a field read binds, the slot a `let` binds). A side condition is `Eq.refl` at
+the equation the rule states, which the kernel decides by evaluation. `fun<n>`
+is `FunOK` written out: the witnesses of its existentials (the function, the
+parameters, result, body, and scope of the Rust item) and the derivation; for a
+function with a parameter no value inhabits, the membership of that parameter's
+type in the function's types. `crate_ok` is the case analysis on the function
+index, one `Nat.casesOn` per function handing it its theorem, and an index past
+the last refuted by the lookup the kernel evaluates; `root` is the library's
+`simulate` applied to it. The library did not grow: every implicit argument of
+the 49 rules is stated by the judgment or held by the aligner. Each row pins
+its axioms exactly, the audit module prints and checks them, and the record is
+the authoring notation at the module's path with the extension `.lex.tex`,
+which reads back to the data byte for byte.
+`tests/preservation-certificates/B-STATEMENTS.md` records that the statement of
+every row of every certificate B of the four corpora is, up to the kernel's
+definitional equality, the statement the text certificate stated.
+`conformance_sp_16` builds every certificate B of the four corpora this way,
+reads each record back, verifies the production example under the pinned Lean,
+and plants a wrong lemma application, a changed statement, a forged program
+literal, an added axiom, and a row whose policy lies, each refused.
+
+**No Lean text template in the production compiler.** The staged audit module
+is an auxiliary module of typed commands (`#print axioms`, `#print "marker"`,
+`#print name`, `#check @name`) that the Lean backend renders. It is rendered
+without the `module` header, because Lean refuses a `module` that imports a
+file that is not one and the certificates are rendered outside the module
+system (the user modules they import are not exposed to a `module`
+certificate). No other string literal under `crates/lexlean/src/production/`,
+and none in the probe and audit module part of `backend/lean.rs` beyond the
+renderer of those commands and the quote of a name, is Lean syntax: a
+lexer-level scan of the sources, which drops test code and reads every string
+literal, finds none outside a short allow-list of the printouts of kernel terms
+that developers read (`conformance_sp_17`; the definition of Lean syntax and
+the planted templates it reports are in VERIFICATION.md).
 
 **Evidence.** The conformance suite certifies every production root of
 `examples/production`, `examples/production-coverage`, `examples/models`, and
@@ -5531,8 +5702,8 @@ root's crate. Every root whose closure declares an overflow is run on an input
 on which it overflows, so the overflow arm of each statement is exercised on
 the interpreter, Lean, the machine, and rustc, except the roots below, whose
 declared overflow no input reaches (the registry's effect rows
-over-approximate). Of the 57 certified roots of the four examples, 42
-declare an overflow, 19 of them reach it, and the other 23 rest on the
+over-approximate). Of the 59 certified roots of the four examples, 44
+declare an overflow, 19 of them reach it, and the other 25 rest on the
 kernel proof alone for the overflow arm of E, B, and the machine, because
 either the operands that can overflow do not depend on the root's parameters,
 or the overflow is a sequence, text, or collection of 2^64 elements, which no
@@ -5552,6 +5723,8 @@ Coverage.Main.natOps
 Coverage.Prims.sequences
 Coverage.Prims.decimals
 Coverage.Prims.text
+Coverage.Prims.widenings
+Coverage.Prims.pixels
 Coverage.RecRoots.roseTotal
 Coverage.RecRoots.syntaxTotal
 Coverage.RecRoots.wellFounded
@@ -5964,12 +6137,12 @@ LexLean refuses as production roots (`production-polymorphic-root`,
 `production-named-type-boundary`, and `production-universe-boundary`), with the
 production marking removed so that LexLean still compiles them to Lean. LexLean's
 verdict on a rejection project is the diagnostic its fixture records.
-The corpus has 102 roots; the oracle generates Rust for 32 of them and
-refuses 70; 25 of the crates it generates for eligible roots compile and are
+The corpus has 104 roots; the oracle generates Rust for 32 of them and
+refuses 72; 25 of the crates it generates for eligible roots compile and are
 run on 1446 inputs, and each of the other seven is a recorded difference (six
 crates that rustc rejects, and the crate of the rejected root with the
-literal beyond 64 bits). Of the 70 refusals, 64 are of roots LexLean takes
-(31 `unresolved-external-call`, 22 `escaping-local-function`, 4
+literal beyond 64 bits). Of the 72 refusals, 66 are of roots LexLean takes
+(33 `unresolved-external-call`, 22 `escaping-local-function`, 4
 `opaque-lowering`, 3 `codegen-PolymorphicType`, 2 `codegen-UnboundedInt`, 2
 `codegen-UnresolvedCall`) and 6 of roots LexLean rejects (4 `opaque-lowering`,
 1 `export-refused`, 1 `codegen-OpaqueType`; the seventh rejected root is the
@@ -7250,7 +7423,7 @@ nested partition of the embedded tree. The language-1.2 ID covers the whole
 tree. The language-1.1 ID excludes the files introduced solely for 1.2:
 `language/bootstrap-1.2.toml`, `language/semantics-1.2.toml`,
 `language/production-1.2.toml`, `language/lcnf-1.2/`,
-`language/preservation-1.2/`, `language/runtime-1.2/`, `language/text-1.2/`, `language/core-1.2/`,
+`language/package-1.2/`, `language/preservation-1.2/`, `language/runtime-1.2/`, `language/text-1.2/`, `language/core-1.2/`,
 `language/std/{bool,int,nat}-1.2/`, `schemas/attestation-v2.schema.json`,
 `schemas/build-manifest-v2.schema.json`,
 `schemas/compiler-input.schema.json`, `schemas/core-module-v2.schema.json`,
@@ -8247,7 +8420,7 @@ pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError>;
 
 **Run.** `build` refuses, before any Lean process runs and before anything is published: a malformed request (`LLC0201`); a root that is not a production root (`LLC0202`); an unregistered or undeclared target or another digest (`LLC0203`); a pin the project no longer matches (`LLC0204`); an evidence path that escapes the project or a symlinked bundle area (`LLS8001`); malformed evidence (`LLB6006`, `LLB6007`); evidence whose certificate is not the pinned one, earns a `refused` verdict, or is for a request whose reference program is not the root's lowered program (`LLV7101`); and a package the renderer refuses (`LLB6005`). Every check and eligibility failure of the project fails as it does for `check`. The project is then verified by the unchanged §22 pipeline over the entrypoint selection, so every production root of the project is certified; a project edited during the run is `LLC0204`. For each requested root and target, `build` renders the exporting package `verify` does not assemble (§17.17): the renderer of §17.16 over the verified lowered program, exporting the recorded entry alone as `run` with every parameter owned, with `sources` the semantic ID; its `src/lib.rs` begins with the certified crate's bytes. The bundle is published atomically, content-addressed, at `<build_root>/production/<result-id>/`; there is no output-directory option.
 
-**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lean` for certificates A and B and `certificates/<module path>.lex.tex` for certificate E (its kernel data in the authoring notation, §17.17), and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered.
+**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lex.tex` for certificates A, B, and E (their kernel data in the authoring notation, §17.17), and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered.
 
 **Result.** `lexlean/production-result/2` binds the compiler (its version, the language-1.2 compiler-semantics ID of §21.2, read as an opaque digest, and the Lean toolchain); the source, semantic, and lock identities; the build and attestation IDs and the attestation, compiler input (whose SHA-256 is the compiler-input ID, §22.10), and preservation record; and per root its index `R<i>`, program, and optimality, and per target the target ID and digest, the package's name, version, directory, export, and files, the crate, the entry, the certification, and the effects the output's realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there (§17.13); an output with `recursion` recurses to a depth bounded only by its input, so the host must give the call a stack that depth fits, and exhausting it aborts the process. `lexlean production build` reports how many outputs need such a stack. Every file is stated by bundle-relative path, byte length, and SHA-256. The certification status is the closed `kernel-checked`: certificates A, B, and E compiled silently under the pinned Lean, replayed through `leanchecker`, and their root theorems depend on exactly the stated axioms (§17.17). It is preservation, at level `build`, and never optimality. Optimality is `not-claimed`, or `gnaf` with the certificate identity, the universe identity, the two documents, and the verdict the host checker of §17.18 recomputes, `certified` or `incomplete`; a `refused` verdict is never recorded. `result_id` is SHA-256 over `"lexlean-production-result-v1"` and `frame("result-body", canonical_json(result without result_id))`. The result holds no absolute path, environment value, or time; because it binds the attestation, which records the host and executable hashes (§22.9), it is identical across project locations and working directories on one host and toolchain, not across hosts.
 
@@ -9287,6 +9460,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-30` | `semantic-ir` | Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none. | §17.12 |
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
 | `SM-33` | `semantic-ir` | A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
+| `SM-32` | `semantic-ir` | Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root. | §17.12 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -9461,6 +9635,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
 | `RB-08` | `rust-backend` | A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused. | §17.16 |
 | `RB-09` | `rust-backend` | Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused. | §17.16 |
+| `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the library path, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
+| `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
+| `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
+| `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target, the production registry says that exhausting the stack aborts the process, and a list that omits an overflowing export, omits a function that reaches itself, or states allocation on `rust-core` is refused. | §17.13, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -9494,6 +9672,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-12` | `preservation` | The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules. | §17.17 |
 | `SP-13` | `preservation` | Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements. | §17.17 |
 | `SP-14` | `preservation` | Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused. | §17.17 |
+| `SP-15` | `preservation` | Certificate A of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, the semantic source of the root's closure, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, so that no Lean text template for certificate A remains in the production compiler; its program literal, encoders, width predicates, relation theorems, validators, and entry are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly, and a wrong lemma application, a changed statement, a forged program literal, or an added axiom is refused. | §17.17 |
+| `SP-16` | `preservation` | Certificate B of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the rendered crate, and the recorded types of the preservation library's correspondence rules, every argument and universe level explicit, so that no Lean text template for certificate B remains in the production compiler; its program and crate literals, flags, per-function derivations, and assembly are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly and the audit module prints and checks them, and a wrong lemma application, a changed statement, a forged program literal, an added axiom, or a row whose policy lies is refused. | §17.17 |
+| `SP-17` | `preservation` | No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not. | §17.17, §22.2 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -9506,6 +9687,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `MD-10` | `models` | Model declarations are part of the semantic identity, so changing an artifact byte with its declared digest, a descriptor, a claim, or a check changes the semantic ID, and language-1.2 snapshots carry, schema-valid, every elaborated declaration, generated obligation, cross-check, and required check. | §17.12, §21.4 |
 | `MD-11` | `models` | Model constructs have production dispositions under which artifacts, realizations, models, validators, and checked applications are realized through their elaborations while contracts and evidence are erased, the realization table covers every new runtime construct, and production roots applying an artifact-backed model, directly and through its checks, are eligible and extract the same closure through Lean. | §17.13, §17.14, §22.10 |
 | `MD-12` | `models` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. | §17.12, §28.6 |
+| `MD-13` | `models` | IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation. | §17.12, §28.6 |
 | `RS-01` | `reasoning` | Language 1.2 logic, inference_rule, verifier, and reasoner declarations, the forward, search, and generate_and_verify strategies, the initial_invariant, terminates, observation_invariant, and answer_correct claims, and the reasoning_failure type belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member, strategy, or claim outside the closed schema, such as an opaque oracle, a prompt, an unregistered strategy, or an unregistered claim, which fail with LLT4001. | §17.12 |
 | `RS-02` | `reasoning` | A logic names a prior state relation and an optional invariant with a statement-exact preservation theorem and an optional ranking, each of exactly its state type, and an inference rule over a logic is a typed guard, conclusion, and optional binding with a candidate list whose soundness theorem states exactly that the guard implies the relation and whose progress theorem states exactly that the ranking decreases; logics, rules, verifiers, and reasoners may be generic, and a predicate of the wrong signature, an inexact theorem, a rule over another logic than its reasoner's, or a use with the wrong number of type arguments fails with LLT4010. | §17.12 |
 | `RS-03` | `reasoning` | A verifier links an executable Boolean check over a subject and a candidate to a prior proposition-valued specification by statement-exact soundness and optional completeness theorems that Lean restates against the fixed reasoning semantics; an inexact statement or a verifier whose subject or candidate type differs from its reasoner's fails with LLT4010, and a false soundness theorem is refused by verification with LLV7002. | §17.12, §22.6 |
@@ -9581,7 +9763,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 404.
+**Total required capability IDs:** 413.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

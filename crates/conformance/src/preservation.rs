@@ -197,7 +197,11 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                 root.report,
                 &lowered,
                 &module,
-                held.certificate.text.len() as u64 / 2,
+                held.certificate
+                    .source
+                    .as_ref()
+                    .map_or(held.certificate.text.len(), String::len) as u64
+                    / 2,
             ));
             let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
                 .expect("a valid program")[lowered.entry() as usize];
@@ -217,7 +221,12 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                         &module_b,
                         &module_e,
                         fallible,
-                        composed.text.len() as u64 / 2,
+                        composed
+                            .source
+                            .as_ref()
+                            .map_or(composed.text.len(), String::len)
+                            as u64
+                            / 2,
                     ))
                 })
                 .collect();
@@ -482,7 +491,20 @@ fn parallel<T: Sync, R: Send>(items: &[T], job: impl Fn(&T) -> R + Sync) -> Vec<
                 let Some(item) = items.get(index) else {
                     break;
                 };
-                let result = job(item);
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(item)))
+                    .unwrap_or_else(|payload| {
+                        let message = payload
+                            .downcast_ref::<String>()
+                            .cloned()
+                            .or_else(|| {
+                                payload
+                                    .downcast_ref::<&str>()
+                                    .map(|text| (*text).to_owned())
+                            })
+                            .unwrap_or_default();
+                        eprintln!("PARALLEL JOB PANIC: {message}");
+                        std::panic::resume_unwind(payload)
+                    });
                 results.lock().expect("the results")[index] = Some(result);
             });
         }
@@ -988,18 +1010,21 @@ fn witnesses(
     // The names the encoders of the arguments unfold through: the ones
     // certificate A defines and the library's.
     let mut names: Vec<String> = Vec::new();
-    for line in certificate_a.text.lines() {
-        if let Some(rest) = line.strip_prefix("def ") {
-            let name: String = rest
-                .chars()
-                .take_while(|character| character.is_alphanumeric() || *character == '_')
-                .collect();
-            if ["__enc_", "__aux_", "__items_", "__L_", "__O_"]
-                .iter()
-                .any(|prefix| name.starts_with(prefix))
-            {
-                names.push(format!("{}.{name}", certificate_a.module));
-            }
+    let data = certificate_a
+        .data
+        .as_ref()
+        .expect("certificate A is held as data");
+    for row in &data.declarations {
+        let name = row
+            .name
+            .strip_prefix(&format!("{}.", certificate_a.module))
+            .unwrap_or(&row.name);
+        if ["__enc_", "__aux_", "__items_", "__L_", "__O_"]
+            .iter()
+            .any(|prefix| name.starts_with(prefix))
+            && !name.ends_with("._unsafe_rec")
+        {
+            names.push(row.name.clone());
         }
     }
     for (at, found) in composed.text.match_indices("LexLeanPreservation.enc") {
@@ -1134,6 +1159,16 @@ pub fn certify(project: &P, name: &str) -> Report {
     let differential = crate::differential::compare(&text, &denotes)
         .unwrap_or_else(|failures| panic!("{name}: differential:\n{failures}"));
     let crates = crate::machine::crates(&certified);
+    let compiled = compile_text(
+        scratch.path(),
+        crate::machine::CRATES_MODULE,
+        &crate::machine::crate_module(&crates),
+    );
+    assert!(
+        compiled.status.success(),
+        "{name}: the crates' module was rejected:\n{}",
+        joined(&compiled)
+    );
     let path = scratch.path().join("src/LexLeanPreserve/Machine.lean");
     std::fs::write(&path, crate::machine::module(&crates, &cases)).expect("write");
     let output = lean(scratch.path(), &[path.display().to_string()]);
@@ -1693,6 +1728,9 @@ pub struct Planted {
     /// what makes the failure targeted: the relation of the mutated
     /// function, not an unrelated one.
     pub declaration: Option<String>,
+    /// The generator's refusal when the mutated lowering no longer follows the
+    /// source, so that no certificate was written for Lean to reject.
+    pub refused: Option<String>,
 }
 
 /// The top-level declaration of `text` that the first error of Lean's
@@ -1777,7 +1815,60 @@ fn expected_declarations(
         Origin::Definition { .. } | Origin::Instance { .. } | Origin::Lambda { .. } => {
             vec![format!("__rel_{function}")]
         }
-        Origin::Validator { .. } => vec![format!("__vrel_{function}")],
+        // The relations of validators that call one another are one
+        // recursion of the group's recursors, whose every row contains every
+        // minor premise: the kernel refuses the first of them it adds.
+        Origin::Validator { .. } => {
+            let calls = |from: usize| -> Vec<usize> {
+                // From the layout's kinds, which the source decides, not
+                // from the bodies, which a planted defect changes.
+                use lexlean::production::lower::Validation;
+                match &lowered.layout.functions[from] {
+                    Origin::Validator { kind, .. } => match kind {
+                        Validation::Trivial | Validation::Set => Vec::new(),
+                        Validation::Map { value: callee }
+                        | Validation::List { element: callee }
+                        | Validation::Option { value: callee } => vec![*callee as usize],
+                        Validation::Pair { left, right } => {
+                            vec![*left as usize, *right as usize]
+                        }
+                        Validation::Result { ok, error } => vec![*ok as usize, *error as usize],
+                        Validation::Document { fields } => fields
+                            .iter()
+                            .flatten()
+                            .flatten()
+                            .map(|callee| *callee as usize)
+                            .collect(),
+                    },
+                    _ => Vec::new(),
+                }
+            };
+            let reach = |from: usize| -> Vec<usize> {
+                let mut seen = vec![from];
+                let mut next = 0;
+                while next < seen.len() {
+                    for callee in calls(seen[next]) {
+                        if !seen.contains(&callee)
+                            && matches!(lowered.layout.functions[callee], Origin::Validator { .. })
+                        {
+                            seen.push(callee);
+                        }
+                    }
+                    next += 1;
+                }
+                seen
+            };
+            let forward = reach(function);
+            let mut group: Vec<usize> = forward
+                .into_iter()
+                .filter(|other| reach(*other).contains(&function))
+                .collect();
+            group.sort_unstable();
+            group
+                .into_iter()
+                .map(|member| format!("__vrel_{member}"))
+                .collect()
+        }
         Origin::Entry { .. } => vec!["entry".to_owned()],
         Origin::Template {
             template,
@@ -1879,7 +1970,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             .position(|job| *job == (mutation, root, function, ordinal))
             .expect("the job");
         let module = format!("LexLeanPreserve.Planted.P{index}");
-        let certificate = certificate(
+        let certificate = match certificate(
             &modules,
             &roots[root].module,
             &roots[root].name,
@@ -1887,8 +1978,32 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             &lowered,
             &module,
             UNBOUNDED,
-        )
-        .expect("the certificate is generated from the source");
+        ) {
+            Ok(certificate) => certificate,
+            // Certificate A is derived from the source and the lowering in
+            // lockstep, so a lowering that no longer follows the source is
+            // refused while the certificate is written, before Lean sees it:
+            // the defect is caught earlier than by the kernel, and no
+            // declaration of a certificate exists to name.
+            Err(refusal) if refusal.message.starts_with("phase preservation:") => {
+                return Planted {
+                    root: roots[root].report.root.clone(),
+                    mutation,
+                    function,
+                    ordinal,
+                    origin,
+                    expected,
+                    declaration: None,
+                    text_len: 0,
+                    rejection: refusal.message.clone(),
+                    refused: Some(refusal.message),
+                };
+            }
+            Err(error) => panic!(
+                "the certificate is generated from the source ({mutation:?} in function {function} at site {ordinal} of {}): {error:?}",
+                roots[root].report.root
+            ),
+        };
         let path = directory.join(format!("P{index}.lean"));
         std::fs::write(&path, &certificate.text).expect("write");
         let output = lean(scratch.path(), &[path.display().to_string()]);
@@ -1907,6 +2022,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             declaration: failing_declaration(&certificate.text, &rejection),
             text_len: certificate.text.len(),
             rejection,
+            refused: None,
         }
     })
 }
@@ -2454,15 +2570,25 @@ pub fn entry_renderings(certified: &[Certified]) -> Vec<Rendering> {
     out
 }
 
-/// The rules of the correspondence a certificate's derivations use.
+/// The rules of the correspondence a certificate's derivations use: the
+/// constructors of `Corr` its data names.
+///
+/// # Panics
+///
+/// Panics when the certificate is not held as data.
 #[must_use]
-pub fn rules_used(text: &str) -> std::collections::BTreeSet<String> {
-    text.split("(Corr.")
-        .skip(1)
-        .map(|rest| {
-            rest.chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect()
+pub fn rules_used(certificate: &Certificate) -> std::collections::BTreeSet<String> {
+    certificate
+        .data
+        .as_ref()
+        .expect("certificate B is data")
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            lexlean::ir::core::CoreNode::Const { n, .. } => n
+                .strip_prefix("LexLeanPreservation.Rust.Corr.")
+                .map(str::to_owned),
+            _ => None,
         })
         .collect()
 }
@@ -2526,14 +2652,22 @@ pub fn plant_renderings(renderings: &[Rendering]) -> Vec<(RustPlanted, Vec<(Stri
                 .expect("the site was counted");
             let base = format!("LexLeanPreserve.Planted.{mutation:?}F{index}N{function}O{ordinal}");
             let stale_module = format!("{base}.Stale");
-            let stale_text = rendering
-                .certificate
-                .text
-                .replace(
-                    &lexlean::production::rust_term::crate_term(&rendering.krate),
-                    &lexlean::production::rust_term::crate_term(&mutated),
+            let stale_data = lexlean::production::certificate::data_b::renamed(
+                &lexlean::production::certificate::data_b::restated_over(
+                    rendering
+                        .certificate
+                        .data
+                        .as_ref()
+                        .expect("certificate B is data"),
+                    &rendering.certificate.module,
+                    &mutated,
                 )
-                .replace(&rendering.certificate.module, &stale_module);
+                .expect("the derivation is restated over the mutated crate"),
+                &rendering.certificate.module,
+                &stale_module,
+            );
+            let stale_text = lexlean::backend::core::lean_text_legacy(&stale_data, &stale_module)
+                .expect("the restatement renders");
             let mut modules = vec![(stale_module, stale_text)];
             let realigned_module = format!("{base}.Realigned");
             let unaligned =
@@ -2737,7 +2871,9 @@ pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -
                     })
                     .collect(),
                 sources: Vec::new(),
-            };
+                effects: Vec::new(),
+            }
+            .showing_effects();
             let rendered = package(&manifest)
                 .unwrap_or_else(|reason| panic!("{} on {target}: {reason}", entry.root));
             let owned: Vec<Vec<Passing>> = functions
@@ -2843,5 +2979,581 @@ pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -
         crates: built.len(),
         runs,
         entered,
+    }
+}
+
+#[cfg(test)]
+mod dev {
+    use super::*;
+
+    /// Build certificate A of the roots of an example (`LEXLEAN_EXAMPLE`,
+    /// default `production`; `LEXLEAN_ROOTS`, comma-separated indices, default
+    /// all), print what the generator says of each, then compile and replay
+    /// the ones it built. A developer's lens, not a gate.
+    #[test]
+    #[ignore = "a developer's lens on certificate A"]
+    fn dev_certificate_a() {
+        let example = std::env::var("LEXLEAN_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let only: Option<Vec<usize>> = std::env::var("LEXLEAN_ROOTS").ok().map(|list| {
+            list.split(',')
+                .filter_map(|item| item.trim().parse().ok())
+                .collect()
+        });
+        let project = P::copy_example(&example);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+        let limits = support::limits(&project);
+        let mut built = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            if only.as_ref().is_some_and(|list| !list.contains(&index)) {
+                continue;
+            }
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            match certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                limits.max_file_bytes,
+            ) {
+                Ok(certificate) => {
+                    eprintln!(
+                        "R{index} {}: built, {} bytes of Lean, {} of notation",
+                        root.report.root,
+                        certificate.text.len(),
+                        certificate.source.as_ref().map_or(0, String::len)
+                    );
+                    built.push(certificate);
+                }
+                Err(diagnostic) => {
+                    eprintln!("R{index} {}: {}", root.report.root, diagnostic.message);
+                }
+            }
+        }
+        if built.is_empty() {
+            return;
+        }
+        if let Ok(dump) = std::env::var("LEXLEAN_DUMP") {
+            for certificate in &built {
+                let path = std::path::Path::new(&dump).join(format!("{}.lean", certificate.module));
+                std::fs::write(&path, &certificate.text).expect("dump");
+            }
+        }
+        let rendered = support::rendered(&project);
+        let user: Vec<(String, String)> = rendered
+            .modules
+            .iter()
+            .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
+            .collect();
+        let staged = workspace(&user, &built).expect("the workspace stages");
+        let scratch = tempfile::Builder::new()
+            .prefix("lexlean-dev-a-")
+            .tempdir()
+            .expect("tempdir");
+        let result = check(&staged, scratch.path());
+        match result.failure {
+            Some((module, output)) => {
+                let head: String = output.lines().take(60).collect::<Vec<_>>().join("\n");
+                eprintln!("`{module}` was rejected:\n{head}");
+                panic!("rejected");
+            }
+            None => {
+                audit(&result.audit_output, &built).expect("the axiom audit");
+                eprintln!(
+                    "{} certificates A: compiled, replayed, audited",
+                    built.len()
+                );
+            }
+        }
+    }
+
+    /// The statement oracle of certificate A (`SP-15`): for each selected root
+    /// (`LEXLEAN_EXAMPLE`, `LEXLEAN_ROOTS` as in [`dev_certificate_a`]),
+    /// certificate A as data is compiled beside the committed text
+    /// certificate A of the same root with its namespace renamed to
+    /// `<module>.Old`, and an oracle module compares, for every row both
+    /// hold, the type of the data's row, its own names read as the old
+    /// module's, with the type of the old row by the kernel's definitional equality (`Lean.Kernel.isDefEq`, which unfolds a `match` to its eliminator as the checker does). The
+    /// bodies of the definitions are compared and counted, not required: a
+    /// recursive width predicate is a different, equally proved, definition.
+    #[test]
+    #[ignore = "the oracle behind tests/preservation-certificates/A-STATEMENTS.md"]
+    fn dev_oracle_a() {
+        let example = std::env::var("LEXLEAN_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
+        let only: Option<Vec<usize>> = std::env::var("LEXLEAN_ROOTS").ok().map(|list| {
+            list.split(',')
+                .filter_map(|item| item.trim().parse().ok())
+                .collect()
+        });
+        let project = P::copy_example(&example);
+        let checked = support::checked_project(&project);
+        let modules = linked_modules(&checked);
+        let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+        let limits = support::limits(&project);
+        let mut built = Vec::new();
+        for (index, root) in roots(&checked)
+            .expect("the eligibility reports")
+            .iter()
+            .enumerate()
+        {
+            if only.as_ref().is_some_and(|list| !list.contains(&index)) {
+                continue;
+            }
+            let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                .expect("lowering");
+            let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+            match certificate(
+                &modules,
+                &root.module,
+                &root.name,
+                root.report,
+                &lowered,
+                &module,
+                limits.max_file_bytes,
+            ) {
+                Ok(certificate) => built.push((index, certificate)),
+                Err(diagnostic) => {
+                    eprintln!("R{index} {}: {}", root.report.root, diagnostic.message);
+                }
+            }
+        }
+        let rendered = support::rendered(&project);
+        let user: Vec<(String, String)> = rendered
+            .modules
+            .iter()
+            .map(|module| (module.lean_module.clone(), module.lean_text.clone()))
+            .collect();
+        let certificates: Vec<Certificate> = built
+            .iter()
+            .map(|(_, certificate)| certificate.clone())
+            .collect();
+        let staged = workspace(&user, &certificates).expect("the workspace stages");
+        let scratch = tempfile::Builder::new()
+            .prefix("lexlean-oracle-a-")
+            .tempdir()
+            .expect("tempdir");
+        let result = check(&staged, scratch.path());
+        if let Some((module, output)) = &result.failure {
+            let head: String = output.lines().take(40).collect::<Vec<_>>().join("\n");
+            panic!("`{module}` was rejected:\n{head}");
+        }
+        let base = support::repo_root()
+            .join("examples")
+            .join(&example)
+            .join("expected/verify/preserve/LexLeanPreserve")
+            .join(format!("C{hex32}"));
+        let mut compared = 0usize;
+        let mut bodies = (0usize, 0usize);
+        for (index, certificate) in &built {
+            let module = &certificate.module;
+            let committed =
+                std::fs::read_to_string(base.join(format!("R{index}.lean")).as_std_path())
+                    .unwrap_or_else(|error| {
+                        panic!("the committed certificate of R{index}: {error}")
+                    });
+            let old = format!("{module}.Old");
+            let renamed = committed
+                .replace(
+                    &format!("namespace {module}\n"),
+                    &format!("namespace {old}\n"),
+                )
+                .replace(&format!("end {module}"), &format!("end {old}"))
+                .replace(&format!("_root_.{module}."), &format!("_root_.{old}."));
+            assert_ne!(renamed, committed, "R{index}: the namespace is renamed");
+            let output = compile_text(scratch.path(), &old, &renamed);
+            assert!(
+                output.status.success(),
+                "R{index}: the committed text certificate compiles: {}",
+                joined(&output)
+            );
+            let data = certificate.data.as_ref().expect("certificate A is data");
+            let rows: Vec<String> = data
+                .declarations
+                .iter()
+                .map(|row| {
+                    row.name
+                        .strip_prefix(&format!("{module}."))
+                        .unwrap_or(&row.name)
+                        .to_owned()
+                })
+                .collect();
+            let pairs: Vec<String> = rows
+                .iter()
+                .map(|row| format!("(`{module}.{row}, `{old}.{row})"))
+                .collect();
+            let show = if std::env::var("LEXLEAN_ORACLE_SHOW").is_ok() {
+                format!(
+                    "      logInfo m!\"NEW {{swapRoot `{module} `{old} n.type}}\\nOLD {{o.type}}\"\n"
+                )
+            } else {
+                String::new()
+            };
+            let oracle = format!(
+                "import {module}\nimport {old}\nimport Lean\nopen Lean Meta\n\
+                 def swapRoot (new old : Name) (e : Expr) : Expr :=\n  e.replace fun\n    | .const n us =>\n      if new.isPrefixOf n && !old.isPrefixOf n then some (.const (n.replacePrefix new old) us) else none\n    | _ => none\n\
+                 def kdef (a b : Expr) : MetaM Bool := do\n  ofExceptKernelException (Kernel.isDefEq (← getEnv) {{}} a b)\n\
+                 run_cmd Lean.Elab.Command.liftTermElabM do\n  let pairs : List (Name × Name) := [{}]\n  let mut types : Nat := 0\n  let mut same : Nat := 0\n  let mut total : Nat := 0\n  let mut bad : Nat := 0\n  for (new, old) in pairs do\n    let env ← getEnv\n    let some n := env.find? new | throwError \"{{new}}: not in the environment\"\n    let some o := env.find? old | throwError \"{{old}}: the committed certificate lacks the row\"\n    if (← kdef (swapRoot `{module} `{old} n.type) o.type) then\n      types := types + 1\n    else\n      logWarning m!\"{{new}}: the statement differs from {{old}}\"\n      bad := bad + 1\n{show}    if let (some a, some b) := (n.value?, o.value?) then\n      total := total + 1\n      if (← kdef (swapRoot `{module} `{old} a) b) then same := same + 1\n  if bad > 0 then throwError \"{{bad}} statements differ\"\n  logInfo m!\"SP-15 oracle: {{types}} statements equal; bodies {{same}} of {{total}}\"\n",
+                pairs.join(", ")
+            );
+            let name = format!("{module}.Oracle");
+            let output = compile_text(scratch.path(), &name, &oracle);
+            let text = joined(&output);
+            assert!(
+                output.status.success(),
+                "R{index}: the statements of {module} are the committed certificate's:\n{}",
+                text.lines().take(4000).collect::<Vec<_>>().join("\n")
+            );
+            eprintln!("R{index} {module}: {}", text.trim());
+            compared += rows.len();
+            if let Some(found) = text.split("bodies ").nth(1) {
+                let mut numbers = found.split(" of ");
+                if let (Some(same), Some(total)) = (
+                    numbers.next().and_then(|n| n.trim().parse::<usize>().ok()),
+                    numbers
+                        .next()
+                        .and_then(|n| n.split_whitespace().next())
+                        .and_then(|n| n.parse::<usize>().ok()),
+                ) {
+                    bodies.0 += same;
+                    bodies.1 += total;
+                }
+            }
+        }
+        eprintln!(
+            "SP-15 oracle: {} certificates A, {compared} rows, definition bodies equal {} of {}",
+            built.len(),
+            bodies.0,
+            bodies.1
+        );
+    }
+
+    /// The sizes of certificate A, as Lean text and as recorded, for each
+    /// stress family, with the limit lifted: the figures the size gates are
+    /// calibrated against.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_family_sizes() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(family_sizes)
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
+
+    fn family_sizes() {
+        let mut projects = crate::stress::families();
+        if let Ok(list) = std::env::var("LEXLEAN_ENUM") {
+            projects = list
+                .split(',')
+                .filter_map(|item| item.trim().parse::<usize>().ok())
+                .map(|count| {
+                    (
+                        format!("enumeration of {count} constructors"),
+                        crate::stress::fitting_enumeration(count),
+                    )
+                })
+                .collect();
+        }
+        if std::env::var("LEXLEAN_WIDE").is_ok() {
+            projects = [2, 100, 101, 180]
+                .iter()
+                .map(|arms| {
+                    (
+                        format!("wide match {arms}"),
+                        crate::stress::wide_match_default(*arms),
+                    )
+                })
+                .collect();
+        }
+        for (family, project) in projects {
+            let checked = support::checked_project(&project);
+            let modules = linked_modules(&checked);
+            let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+            let limits = support::limits(&project);
+            for (index, root) in roots(&checked)
+                .expect("the eligibility reports")
+                .iter()
+                .enumerate()
+            {
+                let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                    .expect("lowering");
+                let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+                match certificate(
+                    &modules,
+                    &root.module,
+                    &root.name,
+                    root.report,
+                    &lowered,
+                    &module,
+                    UNBOUNDED,
+                ) {
+                    Ok(certificate) => eprintln!(
+                        "FAMILY {family}: {}: {} text, {} notation (limit {})",
+                        root.report.root,
+                        certificate.text.len(),
+                        certificate.source.as_ref().map_or(0, String::len),
+                        limits.max_file_bytes
+                    ),
+                    Err(diagnostic) => {
+                        eprintln!(
+                            "FAMILY {family}: {}: {}",
+                            root.report.root, diagnostic.message
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// The weights of the parts of the certificates of each mixed shape at a
+    /// scaling (`LEXLEAN_SCALE`, default 64/256), with the limits lifted.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_mixed_sizes() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let scale: usize = std::env::var("LEXLEAN_SCALE")
+                    .ok()
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(64);
+                for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                    let project = crate::stress::mixed_lifted(shape.scaled(scale));
+                    let checked = support::checked_project(&project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(&project);
+                    for (root_index, root) in roots(&checked).expect("reports").iter().enumerate() {
+                        let lowered =
+                            lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                                .expect("lowering");
+                        let module = format!("LexLeanPreserve.C{}.R{root_index}", "x".repeat(32));
+                        match certificate(
+                            &modules,
+                            &root.module,
+                            &root.name,
+                            root.report,
+                            &lowered,
+                            &module,
+                            UNBOUNDED,
+                        ) {
+                            Ok(a) => eprintln!(
+                                "MIXED {index} at {scale}: A {} text, {} notation",
+                                a.text.len(),
+                                a.source.as_ref().map_or(0, String::len)
+                            ),
+                            Err(diagnostic) => eprintln!("MIXED {index}: {}", diagnostic.message),
+                        }
+                    }
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
+
+    /// Per mixed shape, the largest scaling whose certificate A fits the
+    /// default limit, searched on certificate A alone, and the weight of
+    /// certificate A there under the lifted and the default project.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_mixed_edge() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let weight = |project: &P| -> Result<u64, String> {
+                    let checked = support::checked_project(project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(project);
+                    let root = roots(&checked).expect("reports").remove(0);
+                    let lowered =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .expect("lowering");
+                    let module = format!("LexLeanPreserve.C{}.R0", "x".repeat(32));
+                    certificate(
+                        &modules,
+                        &root.module,
+                        &root.name,
+                        root.report,
+                        &lowered,
+                        &module,
+                        limits.max_file_bytes,
+                    )
+                    .map(|a| a.source.as_ref().map_or(0, String::len) as u64)
+                    .map_err(|diagnostic| diagnostic.message)
+                };
+                let limit = support::limits(&crate::stress::wide_match_default(2)).max_file_bytes;
+                let only: Option<usize> = std::env::var("LEXLEAN_SHAPE")
+                    .ok()
+                    .and_then(|v| v.parse().ok());
+                for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                    if only.is_some_and(|only| only != index) {
+                        continue;
+                    }
+                    let (mut low, mut high) = (1_usize, 256_usize);
+                    let lifted = |n: usize| {
+                        weight(&crate::stress::mixed_lifted(shape.scaled(n))).unwrap_or(u64::MAX)
+                    };
+                    if lifted(high) <= limit {
+                        low = high;
+                    } else {
+                        while high - low > 1 {
+                            let middle = (low + high) / 2;
+                            if lifted(middle) <= limit {
+                                low = middle;
+                            } else {
+                                high = middle;
+                            }
+                        }
+                    }
+                    eprintln!(
+                        "EDGE {index}: low {low}, lifted {}, default {:?}",
+                        lifted(low),
+                        weight(&crate::stress::mixed_default(shape.scaled(low)))
+                    );
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
+
+    /// Plant the lowering mutations in `production-coverage` and report the
+    /// outcome of each.
+    #[test]
+    #[ignore = "the planted defects of certificate A, run by hand"]
+    fn dev_plant() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let planted = plant(&P::copy_example("production-coverage"), &Mutation::LOWERING);
+                for p in &planted {
+                    println!(
+                        "PLANT {:?} fn {} site {} rejected {} refused {}",
+                        p.mutation,
+                        p.function,
+                        p.ordinal,
+                        !p.rejection.is_empty(),
+                        p.refused.is_some()
+                    );
+                }
+            })
+            .expect("spawn")
+            .join()
+            .expect("plant");
+    }
+
+    /// For many programs, the measure the early refusal reads and the weight
+    /// of certificate A as recorded, as `BOUNDDATA` lines of comma-separated
+    /// values: label, printed types, expressions, shapes, arm pairs, string
+    /// bytes, hex digits, notation bytes.
+    #[test]
+    #[ignore = "the data behind the costs of certificate A"]
+    fn dev_bound_data() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let mut projects: Vec<(String, P)> = Vec::new();
+                if let Ok(scales) = std::env::var("LEXLEAN_MIXED") {
+                    let wanted: Vec<usize> = std::env::var("LEXLEAN_SHAPES")
+                        .map(|list| {
+                            list.split(',')
+                                .filter_map(|v| v.trim().parse().ok())
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    for scale in scales
+                        .split(',')
+                        .filter_map(|v| v.trim().parse::<usize>().ok())
+                    {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate()
+                        {
+                            if wanted.is_empty() || wanted.contains(&index) {
+                                projects.push((
+                                    format!("mixed {index} at {scale}"),
+                                    crate::stress::mixed_lifted(shape.scaled(scale)),
+                                ));
+                            }
+                        }
+                    }
+                } else {
+                    projects = crate::stress::families();
+                    for arms in [2, 50, 100, 140, 180] {
+                        projects.push((
+                            format!("wide match {arms}"),
+                            crate::stress::wide_match_default(arms),
+                        ));
+                    }
+                    projects.extend(crate::stress::fitting());
+                    for scale in [4, 8, 16, 32, 64] {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate()
+                        {
+                            projects.push((
+                                format!("mixed {index} at {scale}"),
+                                crate::stress::mixed_lifted(shape.scaled(scale)),
+                            ));
+                        }
+                    }
+                    for (index, shape) in crate::stress::random_shapes(24, 0x5eed)
+                        .into_iter()
+                        .enumerate()
+                    {
+                        projects.push((
+                            format!("random {index}"),
+                            crate::stress::mixed_lifted(shape),
+                        ));
+                    }
+                    for name in ["production", "production-coverage", "models", "reasoning"] {
+                        projects.push((format!("example {name}"), P::copy_example(name)));
+                    }
+                }
+                for (label, project) in projects {
+                    let checked = support::checked_project(&project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(&project);
+                    for (index, root) in roots(&checked).expect("reports").iter().enumerate() {
+                        let Ok(lowered) =
+                            lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                        else {
+                            continue;
+                        };
+                        let module = format!("LexLeanPreserve.C{}.R{index}", "x".repeat(32));
+                        let Ok(a) = certificate(
+                            &modules,
+                            &root.module,
+                            &root.name,
+                            root.report,
+                            &lowered,
+                            &module,
+                            UNBOUNDED,
+                        ) else {
+                            continue;
+                        };
+                        let m = lexlean::production::lower::measure_program(&lowered.program);
+                        eprintln!(
+                            "BOUNDDATA {label} R{index},{},{},{},{},{},{},{}",
+                            m.printed_types,
+                            m.exprs,
+                            m.shapes,
+                            m.arm_pairs,
+                            m.string_bytes,
+                            m.hex_digits,
+                            a.source.as_ref().map_or(0, String::len)
+                        );
+                    }
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the data");
     }
 }
