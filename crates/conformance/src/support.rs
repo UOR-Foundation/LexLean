@@ -527,21 +527,33 @@ impl P {
         Self { temp, root }
     }
 
-    /// A fresh copy of the bootstrap project (SPEC.md §17.23), without
-    /// build output or expected records.
+    /// A fresh copy of the bootstrap project (SPEC.md §17.23), without build
+    /// output or expected records, beside the standard library it imports as a
+    /// source package (§10.5) and the repository's workspace file.
     #[must_use]
     pub fn bootstrap() -> Self {
         let temp = tempfile::Builder::new()
             .prefix("lexlean-bootstrap-case-")
             .tempdir()
             .expect("tempdir");
-        let source = repo_root().join("bootstrap");
-        assert!(
-            source.is_dir(),
-            "the committed bootstrap project is required"
-        );
-        copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
-        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        for member in ["bootstrap", "stdlib"] {
+            let source = repo_root().join(member);
+            assert!(
+                source.is_dir(),
+                "the committed `{member}` project is required"
+            );
+            copy_tree(
+                source.as_std_path(),
+                &temp.path().join(member),
+                &[".lexlean", "expected"],
+            );
+        }
+        std::fs::copy(
+            repo_root().join("lexlean-workspace.toml").as_std_path(),
+            temp.path().join("lexlean-workspace.toml"),
+        )
+        .expect("the workspace file");
+        let root = Utf8PathBuf::from_path_buf(temp.path().join("bootstrap")).expect("utf8");
         Self { temp, root }
     }
 

@@ -29,3 +29,10 @@ Feature: packages
     When the project is checked, built, and its root is certified and exported with the pinned Lean
     Then the root's closure includes the package definition and the export is the package of that closure
     And no root of the package is a root of the importing project and the export holds no certificate of the package's own roots
+
+  @PK-05 @build
+  Scenario: The `bootstrap/` pilot imports the standard library's `Text` module through a source package of the workspace instead of holding a copy: its configuration declares `stdlib` as a source package, `bootstrap/src/` holds no `Text` module, `check` links `LexLeanStd.Text` as a module of the project whose definitions are ordinary ones, so that the project's production roots remain `parseAuditOutput` and `isClosedLeanName`, and neither the case of `BS-01`, SPEC.md §17.23, nor `bootstrap/README.md` keeps the copy or its equivalence assertion.
+    Given the bootstrap project, the standard library, and the workspace file of the repository
+    When the bootstrap project is checked and the case of BS-01, SPEC.md §17.23, and the project's README are read
+    Then the configuration declares the standard library as a source package and the project holds no Text module of its own
+    And the standard library's Text module is linked as a module of the project, the project's production roots are its own two, and no copy or equivalence assertion remains

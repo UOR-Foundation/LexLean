@@ -1,6 +1,6 @@
 \begin{lexlean}{AxiomOutput}
 \useglossary{lexlean.std.nat@1.2.0}
-\importmodule{Text}
+\importmodule{LexLeanStd.Text}
 \title{Natural number addition}
 \begin{semanticmodule}
 structure{
@@ -134,7 +134,7 @@ definition{
   name: nameStep,
   parameters: [subject : Bytes, state : (Nat * Nat)],
   result: (Option (Nat * Nat)),
-  body: (if ((second state) =? 2) then (ctor Option.none [(Nat * Nat)]) else (match (Text::byteAt subject (first state))
+  body: (if ((second state) =? 2) then (ctor Option.none [(Nat * Nat)]) else (match (LexLeanStd.Text::byteAt subject (first state))
     | Option.some byte => (ctor Option.some [(Nat * Nat)] (((first state) + 1), (nameMode (second state) byte)))
     | Option.none => (ctor Option.none [(Nat * Nat)]))),
   axioms: [Quot.sound, propext],
@@ -155,7 +155,7 @@ definition{
   name: byteIs,
   parameters: [subject : Bytes, position : Nat, value : UInt8],
   result: Bool,
-  body: (match (Text::byteAt subject position)
+  body: (match (LexLeanStd.Text::byteAt subject position)
     | Option.some byte => (prim equal byte value : Bool)
     | Option.none => false),
   executable: true
@@ -165,7 +165,7 @@ definition{
   name: byteIn,
   parameters: [subject : Bytes, position : Nat, low : UInt8, high : UInt8],
   result: Bool,
-  body: (match (Text::byteAt subject position)
+  body: (match (LexLeanStd.Text::byteAt subject position)
     | Option.some byte => (inRange byte low high)
     | Option.none => false),
   axioms: [Quot.sound, propext],
@@ -221,7 +221,7 @@ definition{
   name: trimmed,
   parameters: [subject : Bytes],
   result: Bytes,
-  body: (let start : Nat := (skipWhite subject); (let end : Nat := (dropWhiteEnd subject start); (Text::sliceOr subject start (prim subtract end start : Nat)))),
+  body: (let start : Nat := (skipWhite subject); (let end : Nat := (dropWhiteEnd subject start); (LexLeanStd.Text::sliceOr subject start (prim subtract end start : Nat)))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -230,7 +230,7 @@ definition{
   name: stripPrefix,
   parameters: [subject : Bytes, prefix : Bytes],
   result: (Option Bytes),
-  body: (if (Text::startsWith subject prefix) then (ctor Option.some [Bytes] (Text::sliceOr subject (prim length prefix : Nat) (prim subtract (prim length subject : Nat) (prim length prefix : Nat) : Nat))) else (ctor Option.none [Bytes])),
+  body: (if (LexLeanStd.Text::startsWith subject prefix) then (ctor Option.some [Bytes] (LexLeanStd.Text::sliceOr subject (prim length prefix : Nat) (prim subtract (prim length subject : Nat) (prim length prefix : Nat) : Nat))) else (ctor Option.none [Bytes])),
   executable: true
 }
 
@@ -238,7 +238,7 @@ definition{
   name: stripSuffix,
   parameters: [subject : Bytes, suffix : Bytes],
   result: (Option Bytes),
-  body: (if (Text::endsWith subject suffix) then (ctor Option.some [Bytes] (Text::sliceOr subject 0 (prim subtract (prim length subject : Nat) (prim length suffix : Nat) : Nat))) else (ctor Option.none [Bytes])),
+  body: (if (LexLeanStd.Text::endsWith subject suffix) then (ctor Option.some [Bytes] (LexLeanStd.Text::sliceOr subject 0 (prim subtract (prim length subject : Nat) (prim length suffix : Nat) : Nat))) else (ctor Option.none [Bytes])),
   executable: true
 }
 
@@ -246,8 +246,8 @@ definition{
   name: splitOnce,
   parameters: [subject : Bytes, delimiter : Bytes],
   result: (Option (Bytes * Bytes)),
-  body: (match (Text::find subject delimiter)
-    | Option.some position => (ctor Option.some [(Bytes * Bytes)] ((Text::sliceOr subject 0 position), (Text::sliceOr subject (position + (prim length delimiter : Nat)) (prim subtract (prim length subject : Nat) (position + (prim length delimiter : Nat)) : Nat))))
+  body: (match (LexLeanStd.Text::find subject delimiter)
+    | Option.some position => (ctor Option.some [(Bytes * Bytes)] ((LexLeanStd.Text::sliceOr subject 0 position), (LexLeanStd.Text::sliceOr subject (position + (prim length delimiter : Nat)) (prim subtract (prim length subject : Nat) (position + (prim length delimiter : Nat)) : Nat))))
     | Option.none => (ctor Option.none [(Bytes * Bytes)])),
   executable: true
 }
@@ -256,7 +256,7 @@ definition{
   name: lastStep,
   parameters: [subject : Bytes, needle : Bytes, position : Nat],
   result: (Option Nat),
-  body: (if (Text::matchAt subject needle position) then (ctor Option.none [Nat]) else (if (0 <? position) then (ctor Option.some [Nat] (prim subtract position 1 : Nat)) else (ctor Option.none [Nat]))),
+  body: (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.none [Nat]) else (if (0 <? position) then (ctor Option.some [Nat] (prim subtract position 1 : Nat)) else (ctor Option.none [Nat]))),
   executable: true
 }
 
@@ -264,7 +264,7 @@ definition{
   name: splitLast,
   parameters: [subject : Bytes, needle : Bytes],
   result: (Option (Bytes * Bytes)),
-  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (if (total <? size) then (ctor Option.none [(Bytes * Bytes)]) else (let position : Nat := (first (prim iterate_until (fun [needle, subject] (position : Nat) => (lastStep subject needle position)) (total + 1) (prim subtract total size : Nat) : (Nat * Bool))); (if (Text::matchAt subject needle position) then (ctor Option.some [(Bytes * Bytes)] ((Text::sliceOr subject 0 position), (Text::sliceOr subject (position + size) (prim subtract total (position + size) : Nat)))) else (ctor Option.none [(Bytes * Bytes)])))))),
+  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (if (total <? size) then (ctor Option.none [(Bytes * Bytes)]) else (let position : Nat := (first (prim iterate_until (fun [needle, subject] (position : Nat) => (lastStep subject needle position)) (total + 1) (prim subtract total size : Nat) : (Nat * Bool))); (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.some [(Bytes * Bytes)] ((LexLeanStd.Text::sliceOr subject 0 position), (LexLeanStd.Text::sliceOr subject (position + size) (prim subtract total (position + size) : Nat)))) else (ctor Option.none [(Bytes * Bytes)])))))),
   executable: true
 }
 
@@ -298,7 +298,7 @@ definition{
   name: significant,
   parameters: [digits : Bytes],
   result: Bytes,
-  body: (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))),
+  body: (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (LexLeanStd.Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))),
   executable: true
 }
 
@@ -306,7 +306,7 @@ definition{
   name: digit,
   parameters: [number : Nat, place : Nat],
   result: Bytes,
-  body: (Text::sliceOr (text "0123456789") (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
+  body: (LexLeanStd.Text::sliceOr (text "0123456789") (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
   executable: true
 }
 
@@ -389,7 +389,7 @@ definition{
   name: envelope,
   parameters: [line : Bytes],
   result: (Option Bytes),
-  body: (if (Text::startsWith line (text "'")) then (ctor Option.some [Bytes] line) else (match (stripPrefix line (text "info: "))
+  body: (if (LexLeanStd.Text::startsWith line (text "'")) then (ctor Option.some [Bytes] line) else (match (stripPrefix line (text "info: "))
     | Option.some payload => (ctor Option.some [Bytes] payload)
     | Option.none => (located line))),
   axioms: [Quot.sound, propext],
@@ -494,7 +494,7 @@ definition{
   name: axiomList,
   parameters: [name : Bytes, list : Bytes],
   result: (Result (Bytes * (List Bytes)) Bytes),
-  body: (match (prim list_fold (fun (state : (Result (List Bytes) Bytes)) (piece : Bytes) => (collectStep state piece)) (ctor Result.ok [(List Bytes), Bytes] (nil Bytes)) (Text::splitOn list (44 : UInt8)) : (Result (List Bytes) Bytes))
+  body: (match (prim list_fold (fun (state : (Result (List Bytes) Bytes)) (piece : Bytes) => (collectStep state piece)) (ctor Result.ok [(List Bytes), Bytes] (nil Bytes)) (LexLeanStd.Text::splitOn list (44 : UInt8)) : (Result (List Bytes) Bytes))
     | Result.error message => (malformed message)
     | Result.ok sorted => (match sorted
       | List.nil => (malformed (text "an axiom list cannot be empty"))
@@ -627,7 +627,7 @@ definition{
   name: parseAuditOutput,
   parameters: [stdout : Bytes, expected : (List Bytes)],
   result: (Result (List (Bytes * (List Bytes))) Rejection),
-  body: (finish (prim list_fold (fun (state : Scan) (line : Bytes) => (scanStep state line)) (ctor Scan.between (nil Record) expected) (Text::lines stdout) : Scan) expected),
+  body: (finish (prim list_fold (fun (state : Scan) (line : Bytes) => (scanStep state line)) (ctor Scan.between (nil Record) expected) (LexLeanStd.Text::lines stdout) : Scan) expected),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}

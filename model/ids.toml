@@ -2397,6 +2397,12 @@ suite = "packages"
 statement = "A production root of the importing project whose closure reaches a definition of a package certifies and exports over that closure as it does for a definition of its own module, the `production:` roots of a package are not roots of the importing project, and the importer publishes no certificate of the package's own."
 
 [[id]]
+id = "PK-05"
+level = "build"
+suite = "packages"
+statement = "The `bootstrap/` pilot imports the standard library's `Text` module through a source package of the workspace instead of holding a copy: its configuration declares `stdlib` as a source package, `bootstrap/src/` holds no `Text` module, `check` links `LexLeanStd.Text` as a module of the project whose definitions are ordinary ones, so that the project's production roots remain `parseAuditOutput` and `isClosedLeanName`, and neither the case of `BS-01`, SPEC.md §17.23, nor `bootstrap/README.md` keeps the copy or its equivalence assertion."
+
+[[id]]
 id = "LM-01"
 level = "build"
 suite = "language-models"
