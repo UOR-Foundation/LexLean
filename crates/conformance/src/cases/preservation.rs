@@ -86,6 +86,21 @@ fn assert_not_a_limit(what: &str, output: &str, text_len: usize) {
 /// template is instantiated, in the relation of a caller; not in the library,
 /// the environment, or an unrelated function.
 fn assert_targeted(plant: &preservation::Planted) {
+    if plant.refused.is_some() {
+        // The generator refused the mutated lowering while writing the
+        // certificate (it derives the lowering and the source in lockstep),
+        // which is earlier than the kernel; the function must still own a
+        // relation the mutation could have falsified.
+        assert!(
+            !plant.expected.is_empty(),
+            "{} {:?}: function {} ({:?}) has no relation to fail in",
+            plant.root,
+            plant.mutation,
+            plant.function,
+            plant.origin
+        );
+        return;
+    }
     assert_not_a_limit(
         &format!("{} {:?}", plant.root, plant.mutation),
         &plant.rejection,

@@ -482,7 +482,20 @@ fn parallel<T: Sync, R: Send>(items: &[T], job: impl Fn(&T) -> R + Sync) -> Vec<
                 let Some(item) = items.get(index) else {
                     break;
                 };
-                let result = job(item);
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(item)))
+                    .unwrap_or_else(|payload| {
+                        let message = payload
+                            .downcast_ref::<String>()
+                            .cloned()
+                            .or_else(|| {
+                                payload
+                                    .downcast_ref::<&str>()
+                                    .map(|text| (*text).to_owned())
+                            })
+                            .unwrap_or_default();
+                        eprintln!("PARALLEL JOB PANIC: {message}");
+                        std::panic::resume_unwind(payload)
+                    });
                 results.lock().expect("the results")[index] = Some(result);
             });
         }
@@ -1696,6 +1709,9 @@ pub struct Planted {
     /// what makes the failure targeted: the relation of the mutated
     /// function, not an unrelated one.
     pub declaration: Option<String>,
+    /// The generator's refusal when the mutated lowering no longer follows the
+    /// source, so that no certificate was written for Lean to reject.
+    pub refused: Option<String>,
 }
 
 /// The top-level declaration of `text` that the first error of Lean's
@@ -1935,7 +1951,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             .position(|job| *job == (mutation, root, function, ordinal))
             .expect("the job");
         let module = format!("LexLeanPreserve.Planted.P{index}");
-        let certificate = certificate(
+        let certificate = match certificate(
             &modules,
             &roots[root].module,
             &roots[root].name,
@@ -1943,8 +1959,32 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             &lowered,
             &module,
             UNBOUNDED,
-        )
-        .expect("the certificate is generated from the source");
+        ) {
+            Ok(certificate) => certificate,
+            // Certificate A is derived from the source and the lowering in
+            // lockstep, so a lowering that no longer follows the source is
+            // refused while the certificate is written, before Lean sees it:
+            // the defect is caught earlier than by the kernel, and no
+            // declaration of a certificate exists to name.
+            Err(refusal) if refusal.message.starts_with("phase preservation:") => {
+                return Planted {
+                    root: roots[root].report.root.clone(),
+                    mutation,
+                    function,
+                    ordinal,
+                    origin,
+                    expected,
+                    declaration: None,
+                    text_len: 0,
+                    rejection: refusal.message.clone(),
+                    refused: Some(refusal.message),
+                };
+            }
+            Err(error) => panic!(
+                "the certificate is generated from the source ({mutation:?} in function {function} at site {ordinal} of {}): {error:?}",
+                roots[root].report.root
+            ),
+        };
         let path = directory.join(format!("P{index}.lean"));
         std::fs::write(&path, &certificate.text).expect("write");
         let output = lean(scratch.path(), &[path.display().to_string()]);
@@ -1963,6 +2003,7 @@ pub fn plant(project: &P, mutations: &[Mutation]) -> Vec<Planted> {
             declaration: failing_declaration(&certificate.text, &rejection),
             text_len: certificate.text.len(),
             rejection,
+            refused: None,
         }
     })
 }
@@ -3345,6 +3386,31 @@ mod dev {
             .expect("a thread")
             .join()
             .expect("the sizes");
+    }
+
+    /// Plant the lowering mutations in `production-coverage` and report the
+    /// outcome of each.
+    #[test]
+    #[ignore = "the planted defects of certificate A, run by hand"]
+    fn dev_plant() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let planted = plant(&P::copy_example("production-coverage"), &Mutation::LOWERING);
+                for p in &planted {
+                    println!(
+                        "PLANT {:?} fn {} site {} rejected {} refused {}",
+                        p.mutation,
+                        p.function,
+                        p.ordinal,
+                        !p.rejection.is_empty(),
+                        p.refused.is_some()
+                    );
+                }
+            })
+            .expect("spawn")
+            .join()
+            .expect("plant");
     }
 
     /// For many programs, the measure the early refusal reads and the weight
