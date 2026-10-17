@@ -2380,7 +2380,9 @@ axiom audit. Any other generated row without a native owner is rejected. This
 classification is generic and structural: it is not selected by an Atlas
 name, module, or feature. Generated Lean may import only the foundational
 modules listed in the core data and other modules in the generated graph. The
-generic environment-reconstruction runtime may privately import `Lean`; no
+generic environment-reconstruction runtime may privately import `Lean`, and
+the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`
+in full (below); no
 generated module may import an independently authored implementation of the
 declarations being generated.
 
@@ -2439,7 +2441,31 @@ are data of the module, not conventions of a backend.
   (two constants of one module may be the same construction, which a shared
   cache would otherwise return once), numbered and visible as the row's name
   shows, and refuses the module unless the constant, its name, and its record
-  are those the row states.
+  are those the row states. It then enters the constant in the elaborator's
+  cache of sparse `casesOn`, under the exported and the private key unless
+  the key is taken, so that a later construction that needs the same one
+  finds it, as it did when the elaborator made the module; each chunk first
+  drops from the cache the runtime's own constants, which are not the
+  module's. The cache is private to its Lean module, which the runtime
+  therefore imports in full. A certificate rendered outside the module
+  system (§17.17) cannot import a module in full; it states theorems only,
+  no sparse `casesOn` and no derived row, and its runtime leaves the cache
+  alone.
+- A row whose name the pinned Lean reserves (`Lean.isReservedName`: the
+  equations and splitter of a matcher, the equations and unfolding theorem
+  of a definition, the `else_eq` of a sparse `casesOn`, and the other names
+  a registered reserved-name action makes) is not submitted: the decoder runs
+  the action the pinned Lean registers for the name and refuses the module
+  unless the action makes the constant and the constant has the row's kind,
+  levels, type, and value. A row whose constant an earlier action of the
+  module already made is checked the same way. So that each action makes what
+  the elaborator made, the state it reads is installed as each row is added,
+  not after the module: the `recursive` tag, the transparency, the matcher
+  record, the equational-lemma record, and the row's realization context,
+  which for a definition with an equational-lemma record is opened once its
+  smart-unfolding row (`_sunfold`) is in. A derived row is therefore what the
+  pinned Lean derives from the module, checked against the data rather than
+  taken from it.
 
 A version 2 row that states a field of another kind of declaration is
 rejected; the group of a definition names only declarations of the module; an
@@ -9262,6 +9288,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-29` | `semantic-ir` | Reordered equivalent map, set, and graph literals link to byte-identical semantic data and generated Lean, LaTeX, and lexicon-closure artifacts, while duplicate keys, non-literal literal keys, and key types without a canonical order are rejected. | §17.12, §21 |
 | `SM-30` | `semantic-ir` | Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none. | §17.12 |
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
+| `SM-33` | `semantic-ir` | A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -9556,7 +9583,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 403.
+**Total required capability IDs:** 404.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

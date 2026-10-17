@@ -25,6 +25,13 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The decoder of a version 2 core module no longer takes a derived row from
+  the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
+  the pinned Lean reserves (matcher equations and splitters, definition
+  equations and unfolding theorems, sparse `else_eq`) is made by Lean's own
+  reserved-name action and refused unless it equals the row. Every one of the
+  preservation library's 7,071 derived rows is remade exactly; no source,
+  lock, or compiler-semantics ID changes.
 - Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
   A project declares `[[source_package]]` tables (`package`, `version`, `kind`
   `path`, `path`), each naming a member project of the workspace an optional

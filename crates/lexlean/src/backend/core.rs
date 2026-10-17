@@ -1163,8 +1163,12 @@ fn lean_text_with(core: &CoreModule, legacy_scope: Option<&str>) -> Result<Strin
             text.push_str(&format!("import {import}\n"));
         }
     }
+    text.push_str("import Lean\n");
+    if core.version() == 2 && legacy_scope.is_none() {
+        text.push_str(crate::backend::core_v2::LEAN_CORE_V2_IMPORTS);
+    }
     text.push_str(
-        "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
+        "set_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
     );
     if let Some(scope) = legacy_scope {
         // A certificate lifts the heartbeat budgets as its text form did
@@ -1176,11 +1180,15 @@ set_option synthInstance.maxHeartbeats 0
         );
         text.push_str(&format!("namespace {scope}\n"));
     }
-    text.push_str(if core.version() == 2 {
-        crate::backend::core_v2::LEAN_CORE_DECODER_V2
+    if core.version() == 2 {
+        if legacy_scope.is_some() {
+            text.push_str(&crate::backend::core_v2::legacy_decoder());
+        } else {
+            text.push_str(crate::backend::core_v2::LEAN_CORE_DECODER_V2);
+        }
     } else {
-        crate::backend::runtime::frozen_core_decoder()
-    });
+        text.push_str(crate::backend::runtime::frozen_core_decoder());
+    }
     let order = emission_order(core)?;
     let owners = generated_owners(core);
     let ranges = core_command_ranges(core, &order, &owners)?;
