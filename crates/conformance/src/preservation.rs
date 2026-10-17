@@ -3203,4 +3203,50 @@ mod dev {
             }
         }
     }
+
+    /// The weights of the parts of the certificates of each mixed shape at a
+    /// scaling (`LEXLEAN_SCALE`, default 64/256), with the limits lifted.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_mixed_sizes() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let scale: usize = std::env::var("LEXLEAN_SCALE")
+                    .ok()
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(64);
+                for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                    let project = crate::stress::mixed_lifted(shape.scaled(scale));
+                    let checked = support::checked_project(&project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(&project);
+                    for (root_index, root) in roots(&checked).expect("reports").iter().enumerate() {
+                        let lowered =
+                            lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                                .expect("lowering");
+                        let module = format!("LexLeanPreserve.C{}.R{root_index}", "x".repeat(32));
+                        match certificate(
+                            &modules,
+                            &root.module,
+                            &root.name,
+                            root.report,
+                            &lowered,
+                            &module,
+                            UNBOUNDED,
+                        ) {
+                            Ok(a) => eprintln!(
+                                "MIXED {index} at {scale}: A {} text, {} notation",
+                                a.text.len(),
+                                a.source.as_ref().map_or(0, String::len)
+                            ),
+                            Err(diagnostic) => eprintln!("MIXED {index}: {}", diagnostic.message),
+                        }
+                    }
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
 }
