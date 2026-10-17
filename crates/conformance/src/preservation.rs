@@ -1155,16 +1155,6 @@ pub fn certify(project: &P, name: &str) -> Report {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    if !output.status.success() {
-        let keep = std::path::PathBuf::from(format!("/tmp/claude-0/machine_fail/{name}"));
-        std::fs::create_dir_all(&keep).expect("mkdir");
-        std::fs::copy(&path, keep.join("Machine.lean")).expect("copy");
-        std::fs::write(
-            keep.join("MachineCrates.lean"),
-            crate::machine::crate_module(&crates),
-        )
-        .expect("write");
-    }
     assert!(
         output.status.success(),
         "{name}: the machine module was rejected:\n{machine_text}"
