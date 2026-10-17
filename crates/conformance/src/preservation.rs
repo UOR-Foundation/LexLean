@@ -3331,4 +3331,74 @@ mod dev {
             .join()
             .expect("the sizes");
     }
+
+    /// For many programs, the measure the early refusal reads and the weight
+    /// of certificate A as recorded, as `BOUNDDATA` lines of comma-separated
+    /// values: label, printed types, expressions, shapes, arm pairs, string
+    /// bytes, hex digits, notation bytes.
+    #[test]
+    #[ignore = "the data behind the costs of certificate A"]
+    fn dev_bound_data() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let mut projects: Vec<(String, P)> = crate::stress::families();
+                for arms in [2, 50, 100, 140, 180] {
+                    projects.push((format!("wide match {arms}"), crate::stress::wide_match_default(arms)));
+                }
+                projects.extend(crate::stress::fitting());
+                for scale in [4, 8, 16, 32, 64] {
+                    for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                        projects.push((
+                            format!("mixed {index} at {scale}"),
+                            crate::stress::mixed_lifted(shape.scaled(scale)),
+                        ));
+                    }
+                }
+                for (index, shape) in crate::stress::random_shapes(24, 0x5eed).into_iter().enumerate() {
+                    projects.push((format!("random {index}"), crate::stress::mixed_lifted(shape)));
+                }
+                for name in ["production", "production-coverage", "models", "reasoning"] {
+                    projects.push((format!("example {name}"), P::copy_example(name)));
+                }
+                for (label, project) in projects {
+                    let checked = support::checked_project(&project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(&project);
+                    for (index, root) in roots(&checked).expect("reports").iter().enumerate() {
+                        let Ok(lowered) =
+                            lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                        else {
+                            continue;
+                        };
+                        let module = format!("LexLeanPreserve.C{}.R{index}", "x".repeat(32));
+                        let Ok(a) = certificate(
+                            &modules,
+                            &root.module,
+                            &root.name,
+                            root.report,
+                            &lowered,
+                            &module,
+                            UNBOUNDED,
+                        ) else {
+                            continue;
+                        };
+                        let m = lexlean::production::lower::measure_program(&lowered.program);
+                        eprintln!(
+                            "BOUNDDATA {label} R{index},{},{},{},{},{},{},{}",
+                            m.printed_types,
+                            m.exprs,
+                            m.shapes,
+                            m.arm_pairs,
+                            m.string_bytes,
+                            m.hex_digits,
+                            a.source.as_ref().map_or(0, String::len)
+                        );
+                    }
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the data");
+    }
 }
