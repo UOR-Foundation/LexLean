@@ -18,6 +18,7 @@ pub fn run(id: &str) {
         "PK-02" => pk_02(),
         "PK-03" => pk_03(),
         "PK-04" => pk_04(),
+        "PK-05" => pk_05(),
         _ => panic!("no packages case is wired for {id}"),
     }
 }
@@ -730,5 +731,88 @@ fn pk_04() {
             .all(|path| !path.contains("PkgBase") && !path.contains("PkgLib")),
         "no certificate of the package's own roots is published: {:?}",
         files.keys().collect::<Vec<_>>()
+    );
+}
+
+/// PK-05: the bootstrap pilot imports the standard library's `Text`.
+fn pk_05() {
+    let root = support::repo_root();
+    let read = |path: &str| {
+        std::fs::read_to_string(root.join(path).as_std_path())
+            .unwrap_or_else(|error| panic!("{path}: {error}"))
+    };
+    let config =
+        lexlean::config::parse_project("lexlean.toml", read("bootstrap/lexlean.toml").as_bytes())
+            .expect("the bootstrap configuration parses");
+    assert_eq!(
+        config
+            .source_packages
+            .iter()
+            .map(|package| (package.package.as_str(), package.path.as_str()))
+            .collect::<Vec<_>>(),
+        [("std", "stdlib")],
+        "the pilot declares the standard library as its one source package"
+    );
+    let workspace = lexlean::source_package::Workspace::read(&root)
+        .expect("the workspace file reads")
+        .expect("the repository has a workspace file");
+    assert_eq!(workspace.members, ["bootstrap", "stdlib"]);
+
+    let project = P::bootstrap();
+    assert!(
+        !project.root.join("src/Text.lex.tex").as_std_path().exists(),
+        "the pilot holds no module Text of its own"
+    );
+    let checked = support::checked_project(&project);
+    assert_eq!(
+        checked.modules.keys().cloned().collect::<Vec<_>>(),
+        ["AxiomOutput", "LexLeanStd.Text"]
+    );
+    assert_eq!(
+        checked.modules["LexLeanStd.Text"]
+            .document
+            .origin
+            .as_deref(),
+        Some("std"),
+        "the standard library's Text is a module of the project, from the package"
+    );
+    let roots = lexlean::production::lower::roots(&checked).expect("roots");
+    let mut names: Vec<String> = roots
+        .iter()
+        .map(|found| found.report.root.clone())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        [
+            "LexLeanBoot.AxiomOutput.isClosedLeanName",
+            "LexLeanBoot.AxiomOutput.parseAuditOutput"
+        ],
+        "the standard library's production roots are not roots of the pilot"
+    );
+
+    // The copy and the assertion that held it equal to the original are gone,
+    // and no text still calls the copy temporary.
+    let case = read("crates/conformance/src/cases/bootstrap.rs");
+    assert!(
+        !case.contains(&["vendored", "_text"].concat()),
+        "BS-01 keeps no equivalence assertion"
+    );
+    assert!(
+        !read("bootstrap/README.md").contains("temporary"),
+        "bootstrap/README.md calls nothing temporary"
+    );
+    let spec = read("SPEC.md");
+    let section = spec
+        .split("## 17.23")
+        .nth(1)
+        .or_else(|| spec.split("### 17.23").nth(1))
+        .expect("SPEC.md has the section 17.23")
+        .split("\n### ")
+        .next()
+        .expect("a section");
+    assert!(
+        !section.contains("is therefore present in `bootstrap/src/` as a"),
+        "SPEC.md §17.23 states no copy"
     );
 }

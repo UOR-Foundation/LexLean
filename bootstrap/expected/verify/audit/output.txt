@@ -61,24 +61,6 @@
 'LexLeanBoot.AxiomOutput.whiteEnding' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.whiteLength' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.zeroStep' does not depend on any axioms
-'LexLeanBoot.Text.byteAt' does not depend on any axioms
-'LexLeanBoot.Text.chomp' does not depend on any axioms
-'LexLeanBoot.Text.endsWith' does not depend on any axioms
-'LexLeanBoot.Text.find' does not depend on any axioms
-'LexLeanBoot.Text.isSpace' does not depend on any axioms
-'LexLeanBoot.Text.joinWith' does not depend on any axioms
-'LexLeanBoot.Text.lineStep' does not depend on any axioms
-'LexLeanBoot.Text.lines' does not depend on any axioms
-'LexLeanBoot.Text.matchAt' does not depend on any axioms
-'LexLeanBoot.Text.reverse' does not depend on any axioms
-'LexLeanBoot.Text.sliceOr' does not depend on any axioms
-'LexLeanBoot.Text.spaceAt' does not depend on any axioms
-'LexLeanBoot.Text.splitOn' does not depend on any axioms
-'LexLeanBoot.Text.splitStep' does not depend on any axioms
-'LexLeanBoot.Text.startsWith' does not depend on any axioms
-'LexLeanBoot.Text.trim' does not depend on any axioms
-'LexLeanBoot.Text.trimEnd' does not depend on any axioms
-'LexLeanBoot.Text.trimStart' does not depend on any axioms
 'LexLeanCollections.Key' does not depend on any axioms
 'LexLeanCollections.Key.casesOn' does not depend on any axioms
 'LexLeanCollections.Key.compare' does not depend on any axioms
@@ -342,3 +324,21 @@
 'LexLeanRuntime.subtract' does not depend on any axioms
 'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.utf8Encode' does not depend on any axioms
+'LexLeanStd.Text.byteAt' does not depend on any axioms
+'LexLeanStd.Text.chomp' does not depend on any axioms
+'LexLeanStd.Text.endsWith' does not depend on any axioms
+'LexLeanStd.Text.find' does not depend on any axioms
+'LexLeanStd.Text.isSpace' does not depend on any axioms
+'LexLeanStd.Text.joinWith' does not depend on any axioms
+'LexLeanStd.Text.lineStep' does not depend on any axioms
+'LexLeanStd.Text.lines' does not depend on any axioms
+'LexLeanStd.Text.matchAt' does not depend on any axioms
+'LexLeanStd.Text.reverse' does not depend on any axioms
+'LexLeanStd.Text.sliceOr' does not depend on any axioms
+'LexLeanStd.Text.spaceAt' does not depend on any axioms
+'LexLeanStd.Text.splitOn' does not depend on any axioms
+'LexLeanStd.Text.splitStep' does not depend on any axioms
+'LexLeanStd.Text.startsWith' does not depend on any axioms
+'LexLeanStd.Text.trim' does not depend on any axioms
+'LexLeanStd.Text.trimEnd' does not depend on any axioms
+'LexLeanStd.Text.trimStart' does not depend on any axioms

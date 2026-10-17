@@ -1,0 +1,2 @@
+spec = "lexlean/workspace/1"
+members = ["bootstrap", "stdlib"]

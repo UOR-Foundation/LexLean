@@ -41,8 +41,10 @@ versions, and the entries below say what each tag does and does not claim.
   never writes a package file. The schema change moves the language-1.2
   compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
   without source packages, keep their bytes apart from that identity. The
-  register gains `PK-01`..`PK-04` (401 rows with `SL-01` and `LM-01`..`LM-03`, `LM-13`); `PK-05` (the `bootstrap/` pilot
-  imports `stdlib/`) follows #153 and #160.
+  register gains `PK-01`..`PK-05` (403 rows with `SL-01`, `BS-01`, and `LM-01`..`LM-03`, `LM-13`); `PK-05`: the `bootstrap/`
+  pilot imports `stdlib/` through a source package, its vendored copy of `Text`
+  and the equivalence assertion of `BS-01` are deleted, the repository gains a
+  root `lexlean-workspace.toml`, and `xtask` stages a project with its packages.
 - The first component of the compiler's own pipeline as language-1.2 source:
   the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
   no new diagnostic code, no change to the language-1.2 identity).

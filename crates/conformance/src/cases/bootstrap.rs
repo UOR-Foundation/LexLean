@@ -960,27 +960,6 @@ fn snake(root: &str) -> String {
     out
 }
 
-/// `Text` as the standard library commits it, without its production
-/// declarations: the copy the bootstrap project holds (§17.23).
-fn vendored_text() -> String {
-    let source = std::fs::read_to_string(
-        support::repo_root()
-            .join("stdlib/src/Text.lex.tex")
-            .as_std_path(),
-    )
-    .expect("the standard library's Text module");
-    let mut kept: Vec<String> = Vec::new();
-    for line in source.lines() {
-        if line.starts_with("  production: {") {
-            let last = kept.pop().expect("a declaration precedes its production");
-            kept.push(last.strip_suffix(',').expect("a comma").to_owned());
-        } else {
-            kept.push(line.to_owned());
-        }
-    }
-    kept.join("\n") + "\n"
-}
-
 /// A defect planted in the source, the root whose differential must catch it,
 /// and the corpus it must be caught on.
 struct Plant {
@@ -1059,14 +1038,18 @@ fn case(id: &str) {
         // §17.23: the first component, the axiom-output parser.
         "BS-01" => {
             let started = Instant::now();
-            // The project's copy of `Text` is the standard library's.
+            // `Text` is the standard library's own module, imported as a
+            // source package (§10.5), not a copy.
             let project = P::bootstrap();
-            assert_eq!(
-                project.read_raw("src/Text.lex.tex"),
-                vendored_text(),
-                "bootstrap/src/Text.lex.tex is stdlib/src/Text.lex.tex without its production declarations"
+            assert!(
+                !project.root.join("src/Text.lex.tex").as_std_path().exists(),
+                "the project holds no copy of the standard library's Text module"
             );
-            project.check_ok();
+            let checked = project.check_ok();
+            assert!(
+                checked.units.contains_key("LexLeanStd.Text"),
+                "the standard library's Text module is linked as a module of the project"
+            );
             let built = project.build_ok();
             let build_id = built.build_id.expect("built");
             let report: Json = serde_json::from_slice(
