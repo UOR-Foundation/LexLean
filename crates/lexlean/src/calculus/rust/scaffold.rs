@@ -19,7 +19,7 @@
 //!
 //! The crate attributes are not stored. `#![no_std]` is the target row of
 //! `language/production-1.2.toml` with `allocation = false`, and
-//! `#![forbid(lint)]` restates each gate of the module at level `forbid`, so
+//! `#![forbid(lint)]` restates each gate on rustc's lints at level `forbid`, so
 //! the fact lives in one place and the manifest and the crate cannot differ.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,7 +30,7 @@ use crate::artifact::canonical_json::Json;
 use crate::surface::module::{self, SEMANTIC};
 
 /// Where the module is in the embedded tree.
-pub const MODULE_PATH: &str = "language/package-1.2/RustPackage.lex.tex";
+pub const MODULE_PATH: &str = "language/package-1.2/library/src/RustPackage.lex.tex";
 
 /// A lint level, in Cargo's spelling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -684,17 +684,17 @@ impl Scaffold {
     /// Every string the module states as content: what no renderer source
     /// may hold as text of its own.
     #[must_use]
-    pub fn content(&self) -> Vec<&str> {
-        let mut out: Vec<&str> = vec![&self.edition];
-        out.extend(
-            self.rustc
-                .iter()
-                .chain(&self.clippy)
-                .map(|g| g.lint.as_str()),
-        );
+    pub fn content(&self) -> Vec<String> {
+        let mut out = vec![self.edition.clone(), format!("publish = {}", self.publish)];
+        for gate in self.rustc.iter().chain(&self.clippy) {
+            out.push(gate.lint.clone());
+            if gate.priority != 0 {
+                out.push(format!("priority = {}", gate.priority));
+            }
+        }
         for row in &self.allowed {
-            out.push(&row.lint);
-            out.push(&row.reason);
+            out.push(row.lint.clone());
+            out.push(row.reason.clone());
         }
         out
     }
@@ -779,16 +779,18 @@ fn literals(source: &str) -> Vec<String> {
 
 /// Whether `literal` states `value`: as a word of its own, or, for a value
 /// too short to be a word of its own in prose (a group named `all`), as the
-/// whole literal.
+/// whole literal or as a key, a word followed by `=`.
 fn states(literal: &str, value: &str) -> bool {
-    if value.len() < 4 {
-        return literal == value;
-    }
     let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    let short = value.len() < 4;
     literal.match_indices(value).any(|(start, _)| {
         let before = literal[..start].chars().next_back();
-        let after = literal[start + value.len()..].chars().next();
-        !before.is_some_and(word) && !after.is_some_and(word)
+        let rest = &literal[start + value.len()..];
+        let delimited = !before.is_some_and(word) && !rest.chars().next().is_some_and(word);
+        delimited
+            && (!short
+                || (before.is_none() && rest.is_empty())
+                || rest.trim_start().starts_with('='))
     })
 }
 

@@ -14,7 +14,7 @@ use serde_json::Value as Json;
 use crate::rust_packages;
 use crate::support::{self, repo_root};
 
-const MODULE: &str = "language/package-1.2/RustPackage.lex.tex";
+const MODULE: &str = "language/package-1.2/library/src/RustPackage.lex.tex";
 
 fn module_text() -> String {
     std::fs::read_to_string(repo_root().join(MODULE).as_std_path()).expect("the scaffold module")
@@ -192,6 +192,21 @@ fn rb_10() {
             "mod.rs",
             format!("\nconst GATE: &str = \"{}\";\n", record.clippy[0].lint),
             record.clippy[0].lint.clone(),
+        ),
+        (
+            "lower.rs",
+            "\nconst KEY: &str = \"publish = false\";\n".to_owned(),
+            "publish = false".to_owned(),
+        ),
+        (
+            "moves.rs",
+            "\nconst KEY: &str = \"all = { level = 1 }\";\n".to_owned(),
+            record.clippy[0].lint.clone(),
+        ),
+        (
+            "validate.rs",
+            "\nconst KEY: &str = \"[lints] priority = -1\";\n".to_owned(),
+            "priority = -1".to_owned(),
         ),
     ] {
         let mut planted_sources = sources.clone();
@@ -415,6 +430,28 @@ fn rb_11() {
         .all(|row| row.group != ClippyGroup::Correctness));
     let spec = support::spec_text();
     table_matches(spec, &record).expect("the table is the module's list");
+
+    // The module is a project of its own, and its linked IR checks (the
+    // kernel's replay of the theorem is `verify`'s, which this case does not
+    // run); a term the checker refuses is refused there.
+    let project = support::P::package_project();
+    project.relock();
+    project.check_ok();
+    let ill_typed = support::P::package_project();
+    let notation = ill_typed.read_raw("src/RustPackage.lex.tex");
+    ill_typed.write(
+        "src/RustPackage.lex.tex",
+        &plant(
+            &notation,
+            "(outsideCorrectness (allowedLints)) = true",
+            "(outsideCorrectness (allowedLints)) = 3",
+        ),
+    );
+    ill_typed.relock();
+    assert!(
+        !ill_typed.check_err_or_ok(),
+        "an ill-typed theorem is refused by the project check"
+    );
 
     // Each row of the table, moved, is refused naming the lint.
     let rows = specified_rows(spec);
@@ -646,7 +683,8 @@ fn rb_13() {
     // The list is the root's, not derived from the program: a list that
     // states less than the program shows renders, because eligibility, and
     // not the renderer, decides a root's effects (the generated argument
-    // check of a recursive type recurses, a length item can overflow).
+    // check of a recursive type recurses, the graph templates' `nat_add` fuel
+    // bound can overflow).
     let mut stated = recursive.clone();
     stated.effects.clear();
     package::package(&stated).expect("the effects are the root's to state");

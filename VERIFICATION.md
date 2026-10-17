@@ -3647,7 +3647,7 @@ Removed: the generator was restored and the packages regenerated;
 ### rust lint exceptions and lowering rules are load-bearing
 
 Each of the ten exceptions of the package scaffold (the rows of `allowedLints` in
-`language/package-1.2/RustPackage.lex.tex`, which replaced `package::ALLOWED_LINTS`)
+`language/package-1.2/library/src/RustPackage.lex.tex`, which replaced `package::ALLOWED_LINTS`)
 was removed in turn by dropping its row from the module, and each rendering rule
 of §17.16 **Lowering** was disabled in turn; after each plant the packages
 were regenerated and `conformance_rb_06` (with `conformance_rb_01`) ran.
@@ -3657,16 +3657,16 @@ first lint or build error of each:
 
 | Exception removed, or rule disabled | First refusal |
 | --- | --- |
-| `type_complexity` | `very complex type used. Consider factoring parts into 'type' definitions` |
+| `type_complexity` | `very complex type used` |
 | `too_many_arguments` | `this function has too many arguments (8/7)` |
 | `large_enum_variant` | `large size difference between variants` |
-| `result_large_err` | `the 'Err'-variant returned from this function is very large` |
-| `result_unit_err` | `this returns a 'Result<_, ()>'` |
-| `single_match` | `you seem to be trying to use 'match' for an equality check. Consider using 'if'` |
-| `manual_unwrap_or` | `this pattern reimplements 'Option::unwrap_or'` |
-| `manual_unwrap_or_default` | `match can be simplified with '.unwrap_or_default()'` |
-| `manual_map` | `manual implementation of 'Option::map'` |
-| `manual_ok_err` | `manual implementation of 'ok'` |
+| `result_large_err` | `the Err-variant returned from this function is very large` |
+| `result_unit_err` | ``this returns a `Result<_, ()>` `` |
+| `single_match` | ``you seem to be trying to use `match` for an equality check`` |
+| `manual_unwrap_or` | ``this pattern reimplements `Option::unwrap_or` `` |
+| `manual_unwrap_or_default` | ``match can be simplified with `.unwrap_or_default()` `` |
+| `manual_map` | ``manual implementation of `Option::map` `` |
+| `manual_ok_err` | ``manual implementation of `ok` `` |
 | unit result written `-> ()` | `unneeded unit return type` |
 | unit block value written `()` | `unneeded unit expression` |
 | unit binder bound by name | ``unused variable: `v0` `` |
@@ -3713,6 +3713,15 @@ repository itself, running the case, and restoring the file. Each case is
 | the recursion statement of `language/production-1.2.toml` set back to "explicit failure" | `RB-13` | the statement is printed, and the case demands `aborts the process` |
 | `language/package-1.2/` removed from the files introduced for 1.2 | `RB-12` | `assertion left == right failed` on the language-1.0 identity: the scaffold is hashed into it |
 
+`RB-10` also plants `publish = false`, a key `all = ...`, and `priority = -1`
+as string literals of three renderer files (the audit reads the Boolean and
+the priority as the text a printer would write), and `RB-11` checks the
+module's project (`language/package-1.2/library`) by locking and checking it,
+and refuses a copy whose theorem equates the predicate with `3`. `RB-13` no
+longer claims that production states the root's effects or that replay binds
+them: `PX-01` compares each bundle's `provenance.json` effects with the
+result's, a check that needs a verified export and has no recorded plant.
+
 The same defects are planted inside the cases for what a plant in the
 repository cannot reach: a module whose declaration, constructor, field, or
 body shape differs (`RB-10`), a table row changed, dropped, or added on either
@@ -3728,7 +3737,8 @@ export that can overflow). Run over every committed export with the effects of
 the root's eligibility report, it refused `Coverage.Boundary.groveRoot`
 (`recursion`) and `Coverage.Colls.graphs` and `stringGraph` (`overflow`): the
 entry of a root carries a generated check of its arguments, which recurses over
-a recursive type such as `Grove`, and a length item can overflow, neither of
+a recursive type such as `Grove`, and the graph templates' `nat_add` fuel
+bound can overflow, neither of
 which the root's eligibility reports. The renderer cannot decide what the
 registry means, so the check was removed and the list stays the root's, as
 eligibility decides; `shown_effects` remains only to state the fixtures'.
