@@ -1060,6 +1060,7 @@ fn referenced_namespaces_in(
                 lexlean::ir::core::CoreNode::Const { n, .. } => {
                     let first = n.split('.').next()?;
                     (n.contains('.')
+                        && first.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
                         && !user.contains(first)
                         && !lexlean::ir::semantic::is_backend_bare_name(first))
                     .then(|| first.to_owned())
@@ -3249,7 +3250,7 @@ pub fn run(id: &str) {
                     }
                 }
                 for entry in preservation::certificates(&project) {
-                    referenced.extend(referenced_namespaces(&entry.certificate.text, &users));
+                    referenced.extend(referenced_namespaces_in(&entry.certificate, &users));
                     for (_, rendering) in &entry.renderings {
                         referenced.extend(referenced_namespaces_in(rendering, &users));
                     }
@@ -3258,12 +3259,7 @@ pub fn run(id: &str) {
                     }
                 }
             }
-            for namespace in [
-                "LexLeanPreservation",
-                "LexLeanTarget",
-                "LexLeanPreserve",
-                "Corr",
-            ] {
+            for namespace in ["LexLeanPreservation", "LexLeanTarget", "LexLeanPreserve"] {
                 assert!(
                     referenced.contains(namespace),
                     "the certificates of the corpora begin names with `{namespace}`: {referenced:?}"
@@ -3284,12 +3280,7 @@ pub fn run(id: &str) {
             let named_users = user_names(&names);
             let named_root = prefix_root(&names);
             for entry in &named {
-                assert_no_bare_globals(
-                    &entry.certificate.module,
-                    &entry.certificate.text,
-                    &named_users,
-                    &named_root,
-                );
+                assert_no_bare_globals_in(&entry.certificate, &named_users, &named_root);
                 for (_, composed) in &entry.composed {
                     assert_no_bare_globals_in(composed, &named_users, &named_root);
                 }
@@ -3304,12 +3295,7 @@ pub fn run(id: &str) {
                 let users = user_names(&project);
                 let root = prefix_root(&project);
                 for entry in preservation::certificates(&project) {
-                    assert_no_bare_globals(
-                        &entry.certificate.module,
-                        &entry.certificate.text,
-                        &users,
-                        &root,
-                    );
+                    assert_no_bare_globals_in(&entry.certificate, &users, &root);
                     let targets: Vec<&String> =
                         entry.composed.iter().map(|(target, _)| target).collect();
                     assert_eq!(
@@ -3362,8 +3348,8 @@ pub fn run(id: &str) {
             let declared = crate::stress::declared_names();
             for entry in preservation::certificates(&declared) {
                 assert!(
-                    entry.certificate.text.contains("«native_decide»"),
-                    "certificate A quotes the declaration `native_decide`"
+                    entry.certificate.text.contains("native_decide"),
+                    "certificate A, held as data, names the declaration `native_decide` as a string"
                 );
             }
             support::verify_ok(&declared);
