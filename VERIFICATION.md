@@ -8826,3 +8826,31 @@ Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
 cannot show, a run of another repository's pull request and a run that did not
 pass, are pinned by the script's own query (`event=pull_request&status=success`,
 `head_repository.full_name`), which the case reads.
+
+## The size-limit fixture can fail when the certificates stop costing what it assumes (SP-02, integration of #157 and #163)
+
+`tests/negative/lowering-size-limit` asserts that a root whose certificates
+would exceed `max_file_bytes` is refused with `LLS8002` in lowering, before the
+toolchain starts. It was the generic chain `g_k<T> = g_{k+1}<(T, T)>` 16 deep,
+whose type has 2^16 nodes. With certificates A and B as kernel data a repeated
+type is one node (`COSTS_A.type_node` is 0), and the fixtures writer on the
+integrated tree failed on it:
+
+```text
+gate failed: tests/negative/lowering-size-limit: step 1 `verify ` exited 0, case.toml expects 4
+stdout: {"artifacts":[".lexlean/verified/d01384bec176b7fde4ad0e805d8f49b8056ffbd7c82ad66d9e6e7c792047f74b"],"attestation_id":"d01384bec176b7fde4ad0e805d8f49b8056ffbd7c82ad66d9e6e7c792047f74b","build_id":"c4921fdd0c20f1915f1097c2c3834edf8e454917df05f1ffad701d5006267205","command":"verify","diagnostics":[],"exit_code":0,…,"success":true}
+```
+
+The chain verifies, which is correct: its certificates are small. What a
+small source still makes large is the pairs of arms of a match, so the fixture
+is a match on 400 constructors (20 KB of source). Its observed output, in two
+seconds and without starting Lean:
+
+```text
+error[LLS8002]: root `Production.Main.wide`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 10200437 bytes (1205 program nodes)
+```
+
+This is a finding about the fixture's premise, not a planted defect: the
+planted-defect evidence of the early refusal's bound is `conformance_sp_02`'s,
+which was not completed on any host before the train's CI run (the certificate
+A session's runs were killed twice by host restarts).
