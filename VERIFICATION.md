@@ -14,8 +14,8 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
 | `test` | `cargo test --workspace --exclude repo-conformance --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI) of every crate but `repo-conformance`, and the model crate's own tests. `repo-conformance` is excluded, not skipped: `bdd` owns it (RP-13) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
-| `bdd` | `cargo test -p repo-conformance --all-features` | R3, §27.7, §27.8: the sole owner of the complete `repo-conformance` suite — its library tests, the `bdd` meta-gate target (register ↔ scenario ↔ test bijection and its own falsifiability test), and the `conformance` target with all 351 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
-| `inventory` | `cargo xtask check-test-inventory` | RP-13: the tests listed by `test` and by `bdd` (`cargo test … -- --list`) are disjoint and their union is the list of `cargo test --workspace --all-features`: no test lost, none run twice |
+| `bdd` | `cargo xtask bdd` | `cargo test -p repo-conformance --all-features`, or in CI the part of `.github/bdd-parts.json` that `LEXLEAN_BDD_PART` names (§9.4). R3, §27.7, §27.8: the sole owner of the complete `repo-conformance` suite — its library tests, the `bdd` meta-gate target (register ↔ scenario ↔ test bijection and its own falsifiability test), and the `conformance` target with all 351 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `inventory` | `cargo xtask check-test-inventory` | RP-13: the tests listed by `test` and by `bdd` (`cargo test … -- --list`) are disjoint and their union is the list of `cargo test --workspace --all-features`: no test lost, none run twice; the lists of the parts of `.github/bdd-parts.json`, each with its harness filters, are disjoint and their union is `bdd`'s list |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
@@ -7904,14 +7904,23 @@ order, then replays in sorted name, then the family) from whichever part
 produced each record. A module without a record from any part, a record of a
 process no module owns, two parts that wrote the same `.olean` or record, and
 a shard whose plan elaborates a module before its imports (`module order did
-not converge: … imports …`) are refused. A part is defined for a project
-without production roots and without PDF rendering; Atlas is such a project.
+not converge: … imports …`) are refused. Before it judges any imported
+record, the join requires its `executable_sha256` to be the join's own digest
+of the tool that produced it (`partition::check_toolchain`): `lean` for an
+elaboration or an audit member, `leanchecker` for a replay, else `LLI9001`
+naming the record and both digests. In a whole verification that holds by
+construction; across the jobs of a run it held because every job installs the
+same pinned toolchain, which was a practice and not a check (the maintainer's
+review of #152). A part is defined for a project without production roots and
+without PDF rendering; Atlas is such a project.
 
 `VR-23` verifies `peano-arithmetic` whole and as two shards and a join over
 its committed import graph (the first frontier; the second, replaying both;
 the rest), and requires the join's verified directory to equal the whole's
 byte for byte with the same attestation ID, then refuses the three plans
-above. `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
+above and a join handed the second shard's replay record of a module with its
+`executable_sha256` rewritten to zeros (`` the imported replay record of
+`PeanoArithmetic.…` ``, with both digests). `RP-14` reads `ci.yml` against the plan: every shard run by exactly one
 job, each job waiting (through the job graph) for the jobs of the shards its
 shard needs and never for a row of its own matrix, the examples profile on
 every Atlas job, the one `cargo build` in the `prefix` job and every other job
@@ -7952,6 +7961,14 @@ the same line), and the failure, after which the file was restored.
 - **a cache action in a shard job**: `` ci.yml has no `actions/cache` ``.
 - **the join reading another run's artifacts** (`run-id` on its download):
   `` §9.4: `atlas-join` reads the artifacts of this run only ``.
+- **the join no longer checking the toolchain of what it imports** (the
+  `partition::check_toolchain` call removed from `verify::run_part`), then
+  `cargo test -p repo-conformance --all-features --test conformance -- --exact
+  conformance_vr_23`: the join accepted the replay record of another
+  `leanchecker` and published, and the case failed at its refusal, `a record
+  of another leanchecker: ()`. The unit test
+  `verify::partition::tests::a_part_output_round_trips_its_oleans_and_records`
+  holds the same refusal on the function itself.
 
 Two defects were found by the cases and not by review: a shard exported the
 `.olean` files it had imported along with its own, so the join refused the
@@ -8198,3 +8215,117 @@ prereleases, unrelated occurrences of the pin, and malformed banners.
 Validated after the fix: the unit case and `conformance_vr_02` pass (the
 latter in 4.76 s), as do formatting, workspace/all-target Clippy with warnings
 denied, model/spec-link audits, and all five BDD meta-gate tests.
+
+## The `bdd` recipe as the parts of one run (Issue #131)
+
+With UOR Atlas verified as the parts of one run, the `rest` leg became the
+gate's longest. On the run that merged #152 (CI run 38905653756, head
+`55583ba7`) it took 111.5 minutes, of which `bdd` took 5,741 s and the other
+ten recipes 903 s. `bdd` is one `cargo test` process, and its harness runs four
+test threads on the four-CPU runner. The cases' own wall times
+(`cases-telemetry.jsonl`) sum to 22,708 s over those threads, so the threads
+were busy for the whole recipe and its time is its work divided by four.
+
+The cases are not independent. A case that needs a verified project, an
+exported package set, or a compiled environment reads it from a `OnceLock`
+that the first case to ask builds, once per test process. Splitting such a
+group across processes builds the fixture once per process. Which fixtures each
+case reaches was read from the crate's code, following calls from each case's
+arm of its suite's `run` to the functions holding a `OnceLock`, and checked by
+hand for the heavy ones. The groups, with the case time of their members on
+that run:
+
+| Group | Cases | Case seconds |
+| --- | --- | ---: |
+| preservation: `reports` (four projects certified side by side), `shipped`, the certification library | `SP-*` but `SP-05`, `GC-09` | 6,890 |
+| `verified_compiler`, `verified_reasoning`, the planted calculus verification | `GC-02`, `GN-02/03/07`, `TC-03..05`, `RS-*` | 5,558 |
+| the production export, `verified_models`, and `EX-07` | the `CL-*` cases of the export, `PX-*`, `MD-*`, `SP-05`, `EX-07` | 4,595 |
+| `verified`, `broken_proof`, the oracle | `VR-*`, `AR-*`, `AU-*`, `LN-*`, `NE-*`, `OR-*`, `SE-*`, `EX-01/02`, `GL-12`, `PF-18` | 4,089 |
+| everything else | 223 cases | 1,563 |
+
+These are the parts of `.github/bdd-parts.json`: `preservation`, `compiler`,
+`production`, `verification`, and the remainder `rest`. Some fixtures are
+still built in more than one part. The shipped preservation environment and the
+certification environment are built in `preservation` and `compiler`, because
+`GC-02` needs them beside `verified_compiler`, and moving it would verify the
+`compiler` project twice instead. The GNAF requests and pairs, the committed
+certificate fixtures, and the native certification registry are built in two
+or three parts; the host computes them without Lean.
+The SPEC text and `axioms_insufficient` are read or verified in two. The
+estimate of each part, its case
+seconds over four threads plus about seven minutes of checkout, toolchains, and
+build, is 36 minutes for `preservation`, 30 for `compiler`, 36 for
+`production` (bound by `EX-07`, 29 minutes alone), 24 for `verification`, and
+22 for the `rest` leg (15 minutes of its other recipes and 7 of the
+remainder). These are estimates; the measurement is the first green run of the
+change.
+
+`cargo xtask bdd` is the recipe (`repo_conformance::bdd_parts`, SPEC.md §9.2,
+§9.4). With `LEXLEAN_BDD_PART` unset or empty it runs `cargo test -p
+repo-conformance --all-features`, the command the recipe always was. With a
+part named, it adds that part's harness filters: `--exact` and the part's test
+names, or for the remainder `--exact` and a `--skip` of every named test. On
+this toolchain `--exact` makes `--skip` exact too: `--exact --skip
+conformance_rp_1` still lists `conformance_rp_10` to `conformance_rp_14`, and
+without `--exact` lists none of them. The remainder therefore runs the
+library tests, the doctests, the meta-gate target, and every conformance test
+no part names, an ID added later included. The harness selects the tests; no
+case decides whether it runs.
+
+`cargo xtask check-test-inventory` proves the partition from the tests
+themselves. It lists `bdd` whole and each part with its filters (`cargo test …
+-- --list <filters>`) and requires the parts to be disjoint, their union to be
+`bdd`'s list, and every test a part names to be in that part's list
+(`inventory::compare_parts`). On this branch, with main through #146 merged
+(register 392), it reports the 430 tests of `bdd` as the parts' 21, 14, 39, 91,
+and 265 (the remainder's 265 are 227 conformance tests and the 38 tests of the
+library and meta-gate targets). The IDs main added after the plan was written
+went to the remainder by default (`PF-20` to `PF-23`), except `SP-14`, which
+shares the shipped preservation environment and is named in `preservation`.
+`RP-14` reads
+`ci.yml`: a row names a part exactly when it runs `bdd`, every part of the
+plan, the remainder included, is run by exactly one row, a row that runs `bdd`
+alone is named `bdd-<part>`, `LEXLEAN_BDD_PART` is set once on the gate job and
+from the row, and every other recipe of `vv` still runs exactly once. `RP-13`
+holds the recipe line, the arguments the task and the inventory share
+(`bdd_parts::CARGO_ARGUMENTS`), that every ID the plan names has its test, and
+the comparison's refusals.
+
+What does not change: `just vv`, which runs `bdd` whole; `release.yml`; the
+suite and every case in it; the host matrix, which runs the whole workspace on
+every host.
+
+### the bdd partition can fail
+
+Each record is a defect planted on this branch, the command that ran, and its
+failure, after which the file was restored.
+
+- **an ID named by two parts** (`SP-02` added to `compiler`), `cargo xtask
+  check-test-inventory`: `` .github/bdd-parts.json: `SP-02` is named by the
+  parts `compiler` and `preservation` ``.
+- **an ID with no test** (`SP-99` added to `preservation`), the same command:
+  `` RP-13: the part `preservation` of .github/bdd-parts.json names `SP-99`,
+  and runs no test `conformance_sp_99` ``.
+- **the remainder skipping nothing** (the `--skip` loop removed from
+  `Plan::harness_filters`), the same command: `` RP-13: `conformance_ar_01` of
+  tests/conformance.rs [conformance] is run by the parts `verification` and
+  `rest` of .github/bdd-parts.json ``.
+- **a part run by no row** (the `bdd-verification` row removed from `ci.yml`),
+  `cargo test -p repo-conformance --all-features --test conformance -- --exact
+  conformance_rp_14`: `` §9.4: the part `verification` of bdd is run by no row
+  ``.
+- **a part run by two rows** (the `bdd-compiler` row naming `production`), the
+  same command: `` §9.4: a row that runs bdd alone is named `bdd-production` ``.
+- **the `rest` leg running `bdd` with no part** (its `bdd_part` emptied), the
+  same command: `§9.4: a row names a part of bdd exactly when it runs bdd`.
+- **the part chosen outside the matrix row** (`LEXLEAN_BDD_PART: compiler` on
+  the gate job), the same command: `` §9.4: `LEXLEAN_BDD_PART` is read from the
+  matrix row ``.
+- **the recipe back to the bare `cargo test`** (`bdd:` running `cargo test -p
+  repo-conformance --all-features` again), `cargo test -p repo-conformance
+  --all-features --test conformance -- --exact conformance_rp_13`: the
+  recipe-line assertion (`left: "cargo test -p repo-conformance
+  --all-features"`, `right: "cargo xtask bdd"`). `cargo xtask
+  check-test-inventory` refuses it as well: `` RP-13: the `bdd` recipe is
+  `cargo test -p repo-conformance --all-features`, not `cargo xtask bdd`, the
+  command whose arguments the inventory lists ``.

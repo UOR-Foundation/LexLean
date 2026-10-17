@@ -8,6 +8,7 @@
 
 #![deny(missing_docs)]
 
+pub mod bdd_parts;
 pub mod calculus;
 pub mod cases;
 pub mod certification;

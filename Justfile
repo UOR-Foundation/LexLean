@@ -44,11 +44,15 @@ features:
 # recipe, and `inventory` proves that between them nothing was lost or run
 # twice. The meta-gate target alone, which needs no Lean, is what the
 # honesty workflow runs (`cargo test -p repo-conformance --test bdd`).
+# `cargo xtask bdd` runs `cargo test -p repo-conformance --all-features`; in
+# CI, `LEXLEAN_BDD_PART` names the part of `.github/bdd-parts.json` a job runs
+# (§9.4), and unset, as here, the recipe runs the whole suite.
 bdd:
-    cargo test -p repo-conformance --all-features
+    cargo xtask bdd
 
 # RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`,
-# test by test (listed with `-- --list`, not inferred from flags).
+# and the parts of `.github/bdd-parts.json` partition `bdd`, test by test
+# (listed with `-- --list`, not inferred from flags).
 inventory:
     cargo xtask check-test-inventory
 
