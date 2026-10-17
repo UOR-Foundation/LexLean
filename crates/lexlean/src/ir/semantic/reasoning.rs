@@ -80,7 +80,11 @@ fn terms_of(declaration: &SemanticDeclaration) -> Vec<&SemanticTerm> {
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. }
         | SemanticDeclaration::Logic { .. }
-        | SemanticDeclaration::Verifier { .. } => {}
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
     out
 }
@@ -159,7 +163,11 @@ pub(super) fn declaration_terms_mut(
         | SemanticDeclaration::Evidence { .. }
         | SemanticDeclaration::Model { .. }
         | SemanticDeclaration::Logic { .. }
-        | SemanticDeclaration::Verifier { .. } => {}
+        | SemanticDeclaration::Verifier { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
 }
 
@@ -215,7 +223,11 @@ fn types_of(declaration: &SemanticDeclaration) -> Vec<&SemanticType> {
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => {}
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
     out
 }
@@ -269,7 +281,11 @@ pub(super) fn declaration_binders(declaration: &SemanticDeclaration, visit: &mut
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => {}
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => {}
     }
 }
 
@@ -353,7 +369,11 @@ pub(super) fn source_node_count(declaration: &SemanticDeclaration) -> u64 {
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => 0,
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => 0,
     };
     types.saturating_add(terms).saturating_add(shape)
 }
@@ -377,7 +397,11 @@ pub fn declaration_construct(declaration: &SemanticDeclaration) -> Option<&'stat
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => None,
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => None,
     }
 }
 
@@ -6140,7 +6164,11 @@ pub(super) fn check_declaration(
         | SemanticDeclaration::Contract { .. }
         | SemanticDeclaration::Realization { .. }
         | SemanticDeclaration::Evidence { .. }
-        | SemanticDeclaration::Model { .. } => Lowering::default(),
+        | SemanticDeclaration::Model { .. }
+        | SemanticDeclaration::Tokenizer { .. }
+        | SemanticDeclaration::ContextWindow { .. }
+        | SemanticDeclaration::TextGenerator { .. }
+        | SemanticDeclaration::TextClassifier { .. } => Lowering::default(),
     };
     let name = declaration.name();
     for derived in &lowering.declarations {
@@ -6204,7 +6232,10 @@ pub(super) fn check_declaration(
 /// Check a generated theorem's signature and every term of its statement,
 /// then register one that states an ordinary proposition as a prior
 /// theorem. Its proof is one fixed template, checked by Lean.
-fn check_generated(generated: &GeneratedTheorem, env: &mut Environment<'_>) -> Result<(), String> {
+pub(super) fn check_generated(
+    generated: &GeneratedTheorem,
+    env: &mut Environment<'_>,
+) -> Result<(), String> {
     let scope = type_parameter_set(&generated.type_parameters)?;
     let locals = super::check_parameters(&generated.parameters, env, &scope)?;
     let typed = super::typed_locals(&generated.parameters);

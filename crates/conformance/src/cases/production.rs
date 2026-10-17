@@ -183,7 +183,7 @@ const TERM_SAMPLES: [&str; 42] = [
 /// allocation, overflowing representations, and recursion. A changed column
 /// is a change to LexLean's production contract, so it must change here too.
 #[rustfmt::skip]
-const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 142] = [
+const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 146] = [
     ("type.type", "formal-only", false, &[], false),
     ("type.parameter", "runtime", false, &[], false),
     ("type.nat", "runtime", false, &[], false),
@@ -326,6 +326,10 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 142] = [
     ("declaration.inference_rule", "runtime", false, &[], false),
     ("declaration.verifier", "erased", false, &[], false),
     ("declaration.reasoner", "runtime", false, &[], false),
+    ("declaration.tokenizer", "formal-only", false, &[], false),
+    ("declaration.context_window", "formal-only", false, &[], false),
+    ("declaration.text_generator", "formal-only", false, &[], false),
+    ("declaration.text_classifier", "formal-only", false, &[], false),
 ];
 
 /// Run the case for one PD conformance ID.

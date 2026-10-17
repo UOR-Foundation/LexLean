@@ -135,6 +135,14 @@ fn declaration(value: &SnapshotSemanticDeclaration) -> usize {
         SnapshotSemanticDeclaration::Verifier { subject, candidate, .. } => {
             ty(&subject.r#type) + ty(&candidate.r#type)
         }
+        SnapshotSemanticDeclaration::Tokenizer { type_parameters, vocabulary, axioms, .. } => {
+            type_parameters.len() + vocabulary.type_arguments.len() + axioms.len()
+        }
+        SnapshotSemanticDeclaration::ContextWindow { capacity, .. } => *capacity as usize,
+        SnapshotSemanticDeclaration::TextGenerator { max_tokens, scorer, .. } => {
+            *max_tokens as usize + scorer.type_arguments.len()
+        }
+        SnapshotSemanticDeclaration::TextClassifier { model, .. } => model.type_arguments.len(),
         SnapshotSemanticDeclaration::Reasoner { observe, rules, strategy, answer, claims, .. } => {
             observe.as_ref().map_or(0, term)
                 + rules.len()
