@@ -2693,6 +2693,7 @@ backend runs.
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
 | `less_than` primitive | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"less_than","arguments":[a,b],"result":{"kind":"bool"}}` over two values of one ordered key type (rule 1 under *Collections and state threading*): `true` exactly when `a` precedes `b` in that type's fixed order. It lowers to `LexLeanCollections.lessThan`. |
+| `to_int`, `to_nat` primitives | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"to_int","arguments":[v],"result":{"kind":"int"}}` over any fixed-width integer `v` (`int8`..`int64`, `uint8`..`uint64`), and `{"kind":"primitive","operation":"to_nat","arguments":[v],"result":{"kind":"nat"}}` over any unsigned fixed-width integer `v` (`uint8`..`uint64`), under the widening-conversion rules below. |
 | `artifact` declaration | `lexlean/semantic-module/2` | A typed constant decoded from content-addressed project bytes, under the model rules below. |
 | `contract` declaration | `lexlean/semantic-module/2` | Typed input, output, and optional state interfaces, proposition-valued predicates, and their runtime validators, under the model rules below. |
 | `realization` declaration | `lexlean/semantic-module/2` | A deterministic, rule, statistical, neural, or composite denotation of an interface, under the model rules below. |
@@ -3794,6 +3795,32 @@ generate-and-verify reasoner over model-generated candidates, and an answer
 proved correct on every state its run reaches, with its check erased, all
 verified by pinned Lean, with the six-counter ledger of each run decided
 counter by counter by Lean's kernel.
+
+#### Widening conversions (language 1.2)
+
+1. **Typing.** `to_int` takes one operand of a fixed-width integer type
+   (`Int8`, `Int16`, `Int32`, `Int64`, `UInt8`, `UInt16`, `UInt32`, or
+   `UInt64`) and has result `Int`. `to_nat` takes one operand of an unsigned
+   fixed-width integer type (`UInt8`, `UInt16`, `UInt32`, or `UInt64`) and has
+   result `Nat`. Any other operand type, result type, or argument count is
+   rejected in linking (`LLT4001`) before either backend runs.
+2. **Elaboration.** A widening conversion is a total, exact conversion of its
+   operand's value. Linking elaborates each application into an ordinary
+   language-1.2 term before Lean rendering, production eligibility, or
+   production lowering runs: the operand is bound once to a generated local
+   `__widen<n>` (`n` counted in evaluation order within each declaration),
+   each bit $k$ of the width is tested with `bit_and` and `equal` against the
+   fixed-width mask $2^k$, and the bit weights are summed in a balanced tree
+   over `Int` (`subtract` and `negate`, with the sign bit of a signed width
+   weighted by $-2^{w-1}$ and bit 63 of `UInt64` expressed as $2^{62} + 2^{62}$
+   so every literal lies within 64-bit signed range) or over `Nat` (`add`).
+   Generated Lean, production eligibility, production lowering, and the
+   preservation certificates read the elaborated declaration, so a root that
+   indexes a `Bytes` value and widens the resulting `UInt8` lowers to bit
+   tests and exact sums with no decimal text (`parse_decimal` or
+   `format_decimal`). The canonical LaTeX document renders the source
+   conversion (`toInt`, `toNat`), and the snapshot records the declaration's
+   `elaboration` alongside the source declaration (`SM-32`).
 
 Routing is fixed by the project language and is never inferred from module
 content, so no byte sequence has two meanings:
@@ -5556,8 +5583,8 @@ root's crate. Every root whose closure declares an overflow is run on an input
 on which it overflows, so the overflow arm of each statement is exercised on
 the interpreter, Lean, the machine, and rustc, except the roots below, whose
 declared overflow no input reaches (the registry's effect rows
-over-approximate). Of the 57 certified roots of the four examples, 42
-declare an overflow, 19 of them reach it, and the other 23 rest on the
+over-approximate). Of the 59 certified roots of the four examples, 44
+declare an overflow, 19 of them reach it, and the other 25 rest on the
 kernel proof alone for the overflow arm of E, B, and the machine, because
 either the operands that can overflow do not depend on the root's parameters,
 or the overflow is a sequence, text, or collection of 2^64 elements, which no
@@ -5577,6 +5604,8 @@ Coverage.Main.natOps
 Coverage.Prims.sequences
 Coverage.Prims.decimals
 Coverage.Prims.text
+Coverage.Prims.widenings
+Coverage.Prims.pixels
 Coverage.RecRoots.roseTotal
 Coverage.RecRoots.syntaxTotal
 Coverage.RecRoots.wellFounded
@@ -5989,12 +6018,12 @@ LexLean refuses as production roots (`production-polymorphic-root`,
 `production-named-type-boundary`, and `production-universe-boundary`), with the
 production marking removed so that LexLean still compiles them to Lean. LexLean's
 verdict on a rejection project is the diagnostic its fixture records.
-The corpus has 102 roots; the oracle generates Rust for 32 of them and
-refuses 70; 25 of the crates it generates for eligible roots compile and are
+The corpus has 104 roots; the oracle generates Rust for 32 of them and
+refuses 72; 25 of the crates it generates for eligible roots compile and are
 run on 1446 inputs, and each of the other seven is a recorded difference (six
 crates that rustc rejects, and the crate of the rejected root with the
-literal beyond 64 bits). Of the 70 refusals, 64 are of roots LexLean takes
-(31 `unresolved-external-call`, 22 `escaping-local-function`, 4
+literal beyond 64 bits). Of the 72 refusals, 66 are of roots LexLean takes
+(33 `unresolved-external-call`, 22 `escaping-local-function`, 4
 `opaque-lowering`, 3 `codegen-PolymorphicType`, 2 `codegen-UnboundedInt`, 2
 `codegen-UnresolvedCall`) and 6 of roots LexLean rejects (4 `opaque-lowering`,
 1 `export-refused`, 1 `codegen-OpaqueType`; the seventh rejected root is the
@@ -9312,6 +9341,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-30` | `semantic-ir` | Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none. | §17.12 |
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
 | `SM-33` | `semantic-ir` | A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
+| `SM-32` | `semantic-ir` | Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root. | §17.12 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |

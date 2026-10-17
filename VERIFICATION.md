@@ -8510,3 +8510,34 @@ derived from them alone (the compiler-semantics, source, semantic, and build
 IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
+
+### byte-to-fixed-width widening conversions in language 1.2 (`SM-32`, #114)
+
+Language 1.2 adds the total widening primitives `to_int` (any fixed-width
+integer to `Int`) and `to_nat` (any unsigned fixed-width integer to `Nat`),
+elaborated in linking to bit tests (`bit_and`, `equal`) and balanced sums over
+`Int` or `Nat` under a generated `__widen<n>` binding so that Lean
+verification, production eligibility, production lowering, and certificates A,
+B, and E operate on the ordinary elaborated terms without decimal formatting or
+parsing (`Coverage.Prims.widenings` and `Coverage.Prims.pixels`).
+
+- **sign bit of a signed width added instead of subtracted.** `bit_contribution`
+  in `ir::semantic::widen` weights the top bit of a signed integer by $+2^{w-1}$
+  instead of $-2^{w-1}$. `-- conformance_sm_32`:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:2151:10:
+  the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "lean failed in phase `LanguageTwelve.Main` (exitSome(1)): ..." }] }
+  ```
+
+- **signed operand accepted by `to_nat`.** `infer_primitive` admits `ToNat` on
+  any `is_fixed_integer()` operand instead of `is_unsigned_fixed_integer()`.
+  `-- conformance_sm_32`:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:607:14:
+  check fails with LLT4001: ()
+  ```
+
+Removed: both edits were restored; `conformance_sm_32` and the unit tests of
+`ir::semantic::widen` pass.

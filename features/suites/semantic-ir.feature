@@ -227,3 +227,9 @@ Feature: semantic-ir
     When it is verified, and copies give the theorem another proof of the same statement or a reserved name the construction does not make
     Then the pinned Lean verifies the module whose theorem is the one its own action makes
     And each copy fails with LLV7002, naming the row the construction does not make as stated
+  @SM-32 @build
+  Scenario: Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root.
+    Given the committed production-coverage example, whose roots widen a value of every fixed-width type and decode a byte string, and copies that widen a non-integer, a signed value to Nat, or state a mistyped result
+    When it is linked under languages 1.1 and 1.2, rendered, lowered, and verified
+    Then the generated Lean and the lowered programs contain only the elaborated terms, no decimal primitive, and the kernel decides the widening of every width at its bounds
+    And each misuse fails with LLT4001 before any build output

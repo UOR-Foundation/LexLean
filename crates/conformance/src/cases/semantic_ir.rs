@@ -1,4 +1,4 @@
-//! The `semantic-ir` suite: SM-01..SM-30.
+//! The `semantic-ir` suite: SM-01..SM-32.
 
 use std::collections::BTreeSet;
 use std::process::Command;
@@ -9,6 +9,7 @@ use crate::support::{self, P};
 
 mod names;
 mod strings;
+mod widen;
 
 /// Every `"k"` and `"kind"` tag value in a canonical JSON document.
 fn collect_tags(value: &serde_json::Value, key: &str, out: &mut BTreeSet<String>) {
@@ -2564,6 +2565,8 @@ pub(crate) fn run(id: &str) {
                 assert!(error.to_string().contains(message), "{what}: {error}");
             }
         }
+        // §17.12: the widening conversions.
+        "SM-32" => widen::run(),
         other => panic!("no semantic-ir case is wired for {other}"),
     }
 }
