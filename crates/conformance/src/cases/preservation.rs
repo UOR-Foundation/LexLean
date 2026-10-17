@@ -3055,7 +3055,10 @@ pub fn run(id: &str) {
                 .expect("certificate A is data");
             let module = &grove.certificate.module;
             let rows: Vec<&lexlean::ir::core::CoreDeclaration> = data.declarations.iter().collect();
-            let has = |short: &str| rows.iter().any(|row| row.name.starts_with(&format!("{module}.{short}")));
+            let has = |short: &str| {
+                rows.iter()
+                    .any(|row| row.name.starts_with(&format!("{module}.{short}")))
+            };
             // The recursive group's validators are one mutual group of rows.
             assert!(
                 rows.iter().any(|row| {
@@ -3072,7 +3075,10 @@ pub fn run(id: &str) {
                 "entry_refuses",
                 "accepts",
             ] {
-                assert!(has(needed), "the recursive tree's certificate states `{needed}`");
+                assert!(
+                    has(needed),
+                    "the recursive tree's certificate states `{needed}`"
+                );
             }
             assert!(
                 data.nodes.iter().any(|node| matches!(node,
@@ -3896,9 +3902,15 @@ pub fn run(id: &str) {
                 .into_iter()
                 .flatten()
             {
-                if entry.path().extension().is_some_and(|extension| extension == "rs") {
-                    sources.push(camino::Utf8PathBuf::from_path_buf(entry.path().to_path_buf())
-                        .expect("a UTF-8 path"));
+                if entry
+                    .path()
+                    .extension()
+                    .is_some_and(|extension| extension == "rs")
+                {
+                    sources.push(
+                        camino::Utf8PathBuf::from_path_buf(entry.path().to_path_buf())
+                            .expect("a UTF-8 path"),
+                    );
                 }
             }
             sources.push(production.join("certificate/data_a.rs"));
@@ -3911,7 +3923,10 @@ pub fn run(id: &str) {
                 );
                 scanned += 1;
             }
-            assert!(scanned > 10, "the scan reads the sources that build certificate A");
+            assert!(
+                scanned > 10,
+                "the scan reads the sources that build certificate A"
+            );
             // The scan is armed: a planted template is found.
             assert!(
                 !templates(&format!("format!(\"theorem {}0 : …\")", "__rel_")).is_empty(),

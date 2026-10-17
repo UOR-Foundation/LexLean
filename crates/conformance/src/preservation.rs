@@ -197,7 +197,11 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                 root.report,
                 &lowered,
                 &module,
-                held.certificate.source.as_ref().map_or(held.certificate.text.len(), String::len) as u64 / 2,
+                held.certificate
+                    .source
+                    .as_ref()
+                    .map_or(held.certificate.text.len(), String::len) as u64
+                    / 2,
             ));
             let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
                 .expect("a valid program")[lowered.entry() as usize];
@@ -3183,7 +3187,12 @@ mod dev {
         if std::env::var("LEXLEAN_WIDE").is_ok() {
             projects = [2, 100, 101, 180]
                 .iter()
-                .map(|arms| (format!("wide match {arms}"), crate::stress::wide_match_default(*arms)))
+                .map(|arms| {
+                    (
+                        format!("wide match {arms}"),
+                        crate::stress::wide_match_default(*arms),
+                    )
+                })
                 .collect();
         }
         for (family, project) in projects {
@@ -3216,7 +3225,10 @@ mod dev {
                         limits.max_file_bytes
                     ),
                     Err(diagnostic) => {
-                        eprintln!("FAMILY {family}: {}: {}", root.report.root, diagnostic.message);
+                        eprintln!(
+                            "FAMILY {family}: {}: {}",
+                            root.report.root, diagnostic.message
+                        );
                     }
                 }
             }
@@ -3283,8 +3295,9 @@ mod dev {
                     let modules = linked_modules(&checked);
                     let limits = support::limits(project);
                     let root = roots(&checked).expect("reports").remove(0);
-                    let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
-                        .expect("lowering");
+                    let lowered =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .expect("lowering");
                     let module = format!("LexLeanPreserve.C{}.R0", "x".repeat(32));
                     certificate(
                         &modules,
@@ -3299,7 +3312,9 @@ mod dev {
                     .map_err(|diagnostic| diagnostic.message)
                 };
                 let limit = support::limits(&crate::stress::wide_match_default(2)).max_file_bytes;
-                let only: Option<usize> = std::env::var("LEXLEAN_SHAPE").ok().and_then(|v| v.parse().ok());
+                let only: Option<usize> = std::env::var("LEXLEAN_SHAPE")
+                    .ok()
+                    .and_then(|v| v.parse().ok());
                 for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
                     if only.is_some_and(|only| only != index) {
                         continue;
@@ -3345,10 +3360,18 @@ mod dev {
                 let mut projects: Vec<(String, P)> = Vec::new();
                 if let Ok(scales) = std::env::var("LEXLEAN_MIXED") {
                     let wanted: Vec<usize> = std::env::var("LEXLEAN_SHAPES")
-                        .map(|list| list.split(',').filter_map(|v| v.trim().parse().ok()).collect())
+                        .map(|list| {
+                            list.split(',')
+                                .filter_map(|v| v.trim().parse().ok())
+                                .collect()
+                        })
                         .unwrap_or_default();
-                    for scale in scales.split(',').filter_map(|v| v.trim().parse::<usize>().ok()) {
-                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                    for scale in scales
+                        .split(',')
+                        .filter_map(|v| v.trim().parse::<usize>().ok())
+                    {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate()
+                        {
                             if wanted.is_empty() || wanted.contains(&index) {
                                 projects.push((
                                     format!("mixed {index} at {scale}"),
@@ -3360,19 +3383,29 @@ mod dev {
                 } else {
                     projects = crate::stress::families();
                     for arms in [2, 50, 100, 140, 180] {
-                        projects.push((format!("wide match {arms}"), crate::stress::wide_match_default(arms)));
+                        projects.push((
+                            format!("wide match {arms}"),
+                            crate::stress::wide_match_default(arms),
+                        ));
                     }
                     projects.extend(crate::stress::fitting());
                     for scale in [4, 8, 16, 32, 64] {
-                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                        for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate()
+                        {
                             projects.push((
                                 format!("mixed {index} at {scale}"),
                                 crate::stress::mixed_lifted(shape.scaled(scale)),
                             ));
                         }
                     }
-                    for (index, shape) in crate::stress::random_shapes(24, 0x5eed).into_iter().enumerate() {
-                        projects.push((format!("random {index}"), crate::stress::mixed_lifted(shape)));
+                    for (index, shape) in crate::stress::random_shapes(24, 0x5eed)
+                        .into_iter()
+                        .enumerate()
+                    {
+                        projects.push((
+                            format!("random {index}"),
+                            crate::stress::mixed_lifted(shape),
+                        ));
                     }
                     for name in ["production", "production-coverage", "models", "reasoning"] {
                         projects.push((format!("example {name}"), P::copy_example(name)));
