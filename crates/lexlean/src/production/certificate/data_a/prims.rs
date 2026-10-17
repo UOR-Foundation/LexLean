@@ -79,6 +79,11 @@ impl<'a> Writer<'_, 'a> {
             })
         };
         Ok(match operation {
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is certified only through its elaboration"
+                ));
+            }
             SemanticPrimitive::Subtract => numeric_rule("prim_natSub", "prim_intSub")?,
             SemanticPrimitive::Multiply => numeric_rule("prim_natMul", "prim_intMul")?,
             SemanticPrimitive::Quotient => numeric_rule("prim_natQuot", "prim_intQuot")?,
@@ -278,6 +283,11 @@ impl<'a> Writer<'_, 'a> {
             return self.template_call(template, &instance, arguments, &types, expr, scope);
         }
         match operation {
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is certified only through its elaboration"
+                ));
+            }
             SemanticPrimitive::MapEntries | SemanticPrimitive::SetElements => {
                 if arguments.len() != 1 {
                     return Err(format!("{operation:?} takes one operand"));

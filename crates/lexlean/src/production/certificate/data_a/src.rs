@@ -236,11 +236,16 @@ impl Writer<'_, '_> {
         args: &[Term],
     ) -> Result<Term, String> {
         let first = types.first();
-        let (namespace, name) = primitive_name(operation);
+        let (namespace, name) = primitive_name(operation)?;
         let int64 = SemanticType::Option {
             value: Box::new(SemanticType::Int64),
         };
         let special = match operation {
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is certified only through its elaboration"
+                ));
+            }
             SemanticPrimitive::CheckedAdd => Some("checkedAddInt64"),
             SemanticPrimitive::CheckedSubtract => Some("checkedSubtractInt64"),
             SemanticPrimitive::CheckedMultiply => Some("checkedMultiplyInt64"),
@@ -305,6 +310,11 @@ impl Writer<'_, '_> {
         let head = self.runtime(site, namespace, name)?;
         let mut leading: Vec<Term> = Vec::new();
         match operation {
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is certified only through its elaboration"
+                ));
+            }
             SemanticPrimitive::CheckedAdd
             | SemanticPrimitive::CheckedSubtract
             | SemanticPrimitive::CheckedMultiply
@@ -387,6 +397,11 @@ impl Writer<'_, '_> {
                 let ty = first.ok_or("a sequence operation without an operand")?;
                 leading.push(self.lean_ty(ty)?);
                 let class = match operation {
+                    SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                        return Err(format!(
+                            "{operation:?} is certified only through its elaboration"
+                        ));
+                    }
                     SemanticPrimitive::Append => "Appendable",
                     SemanticPrimitive::Length => "Lengthable",
                     SemanticPrimitive::Subtract

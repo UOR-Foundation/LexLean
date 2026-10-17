@@ -1097,8 +1097,8 @@ impl Gen<'_> {
 impl Gen<'_> {}
 
 /// The runtime namespace and name a primitive is rendered with.
-const fn primitive_name(operation: SemanticPrimitive) -> (&'static str, &'static str) {
-    match operation {
+fn primitive_name(operation: SemanticPrimitive) -> Result<(&'static str, &'static str), String> {
+    Ok(match operation {
         SemanticPrimitive::Subtract => ("LexLeanRuntime", "subtract"),
         SemanticPrimitive::Multiply => ("LexLeanRuntime", "multiply"),
         SemanticPrimitive::Quotient => ("LexLeanRuntime", "quotient"),
@@ -1153,7 +1153,14 @@ const fn primitive_name(operation: SemanticPrimitive) -> (&'static str, &'static
         SemanticPrimitive::GraphReachable => ("LexLeanCollections", "graphReachable"),
         SemanticPrimitive::GraphTopological => ("LexLeanCollections", "graphTopological"),
         SemanticPrimitive::LessThan => ("LexLeanCollections", "lessThan"),
-    }
+        // Certificates read elaborated declarations, in which a widening
+        // conversion is the ordinary term it means (§17.12).
+        SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+            return Err(format!(
+                "{operation:?} is certified only through its elaboration"
+            ));
+        }
+    })
 }
 
 /// The fixed-width suffix of a library lemma.

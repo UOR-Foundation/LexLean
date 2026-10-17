@@ -792,6 +792,11 @@ impl<'a> Writer<'_, 'a> {
             }
         };
         let (name, leading) = match operation {
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is certified only through its elaboration"
+                ));
+            }
             SemanticPrimitive::MapInsert
             | SemanticPrimitive::MapRemove
             | SemanticPrimitive::MapLookup
@@ -910,7 +915,7 @@ impl<'a> Writer<'_, 'a> {
 
 /// The name of a collection primitive's runtime function.
 fn collection_name(operation: SemanticPrimitive) -> Result<&'static str, String> {
-    let (namespace, name) = super::super::primitive_name(operation);
+    let (namespace, name) = super::super::primitive_name(operation)?;
     if namespace == "LexLeanCollections" {
         Ok(name)
     } else {
