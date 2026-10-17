@@ -526,16 +526,16 @@ pub const COSTS_A: Costs = Costs {
 };
 
 /// What certificate B costs at the least, in the authoring notation it is
-/// recorded in and weighed by, which takes about half the bytes of its Lean
-/// text.
+/// recorded in and weighed by, which takes about a quarter of the bytes of its
+/// Lean text.
 pub const COSTS_B: Costs = Costs {
-    base_bytes: 400,
+    base_bytes: 200,
     type_node: 0,
-    expr_node: 536,
-    shape_node: 44,
+    expr_node: 268,
+    shape_node: 22,
     arm_pair: 0,
-    string_byte: 12,
-    hex_digit: 30,
+    string_byte: 6,
+    hex_digit: 15,
 };
 
 /// What certificate E costs at the least.

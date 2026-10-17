@@ -461,7 +461,10 @@ fn stress_estimates() -> u64 {
                     let size = weight_a(certificate);
                     quadratic = quadratic.max(size.saturating_sub(a.max(e)));
                     // Certificate B stops at the limit it is given, at
-                    // the size it would have had or below it.
+                    // the size it would have had or below it: a third of
+                    // its size is a limit its nodes pass while it is derived
+                    // (a record's reads take 35 bytes a node in the
+                    // notation, the corpora's 14 to 18).
                     if family.starts_with("record copy 100") {
                         let krate = lexlean::calculus::rust::lower(
                             &entry.program,
@@ -473,7 +476,7 @@ fn stress_estimates() -> u64 {
                             &entry.program,
                             &krate,
                             &certificate.module,
-                            size / 2,
+                            size / 3,
                         )
                         .expect_err("a certificate beyond its limit is refused");
                         assert!(
