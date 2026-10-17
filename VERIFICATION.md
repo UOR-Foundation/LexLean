@@ -1254,6 +1254,62 @@ What was not run on the development host: the verification of
 its records do not depend on this change and CI reverifies them) and
 `conformance_vr_19`. The CI legs run both.
 
+### a derived row is what the pinned Lean derives
+
+A version 2 row whose name the pinned Lean reserves is made by Lean's own
+reserved-name action and refused unless it equals the row (`SM-33`, §17.10,
+#91). Run with the pinned Lean 4.32.1 on WSL, on `main` `c183f250` with the
+change. The plants that change the library or the decoder were run with
+`lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift`, the compiler rebuilt for each, and the
+file restored with `git checkout`. Unplanted, the same command verifies
+(`verified 2 modules`): all 7,071 derived rows of the library are remade
+exactly.
+
+Planted (a): the value of the derived row
+`entriesOf.match_3.eq_1` in `src/RustMatches.lex.tex` replaced by its own
+type node (`@234896` to `@234887`). Expected: the theorem Lean's matcher
+equations make differs from the row, and the module is refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustMatches` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustMatches.#0.LexLeanPreservation.Rust.entriesOf.match_3.eq_1':
+  core declaration '_private.LexLeanPreservation.RustMatches.0.LexLeanPreservation.Rust.entriesOf.match_3.eq_1' is not what the elaborator's construction makes
+```
+
+Planted (b): a remade sparse `casesOn` no longer entered in Lean's sparse
+`casesOn` cache (`crates/lexlean/src/backend/core_v2.rs`, the loop over the
+two keys made empty). Expected: the splitter proof of a matcher finds no
+cached constant under the private key, makes its own, and differs from the
+row.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustLemmas` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustLemmas.#0.LexLeanPreservation.Rust.sem_part.match_1_1.eq_2':
+  core declaration '_private.LexLeanPreservation.RustLemmas.0.LexLeanPreservation.Rust.sem_part.match_1_1.eq_2' is not what the elaborator's construction makes
+```
+
+Planted (c): the decoder's own constants kept in the cache (the filter at the
+start of `decodeAndAdd` removed). Expected: the splitter of
+`entriesOf.match_3` takes the decoder's `addOneUnchecked._sparseCasesOn_1`,
+cached under the same key, instead of the module's constant.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustMatches` does not compile silently under the pinned Lean: error: native core declaration '_private.LexLeanPreservation.RustMatches.#0.LexLeanPreservation.Rust.entriesOf.match_3.eq_2':
+  core declaration '_private.LexLeanPreservation.RustMatches.0.LexLeanPreservation.Rust.entriesOf.match_3.eq_2' is not what the elaborator's construction makes
+```
+
+Planted (d): the comparison in `sameAsRow` disabled (its condition prefixed
+with `true ||`). Command: `cargo test -p repo-conformance --test conformance
+-- conformance_sm_33`. Expected: the fixture whose `eq_1` has another proof of
+the same statement is no longer refused.
+
+```text
+thread 'conformance_sm_33' panicked at crates/conformance/src/support.rs:641:14:
+verify fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 386 filtered out
+```
+
+Removed: every plant was reverted; `conformance_sm_33`, `conformance_sm_31`,
+`conformance_sp_12`, and `conformance_rp_07` pass, and `cargo xtask check-fixtures` holds 269 fixtures equal (on `main` `32afe5da`).
 ### the fold laws can fail
 
 Integer order, `linear_arithmetic` over the runtime, the fold laws, and the
@@ -8401,3 +8457,38 @@ derived from them alone (the compiler-semantics, source, semantic, and build
 IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
+
+## The plan of a CI run can fail (RP-14, #131)
+
+`.github/ci-plan.sh` decides what a run of `ci.yml` is: the `rest` leg for a
+draft pull request, the whole gate for a ready pull request, a request, and a
+push, and nothing for a push that merges a head whose tree it equals when the
+whole gate passed on that head. A decision that skips jobs is a gate that can
+pass without evidence, so `RP-14` runs the script in a scratch repository with a
+stand-in for `gh` against planted events (a draft, a ready pull request, a
+request, a push, a merge that lands its head's tree with a run that passed
+every job, and each way that evidence can fall short) and requires the whole
+gate everywhere the evidence is not complete. Each defect below was planted,
+`cargo test -p repo-conformance --test conformance conformance_rp_14 -- --exact`
+run, and the defect removed. The observed lines are the case's own.
+
+| Planted defect | Observed |
+| --- | --- |
+| the tree of the merge is not compared with the tree of its second parent | `ci-plan.sh` returns no job for a merge that changed the tree (`repository.rs:381`, left: nothing, right: the whole gate) |
+| a job that did not conclude `success` is accepted | `§9.4: a skipped job is not the whole gate passing` |
+| the join of Atlas is not required of the run | `§9.4: no Atlas join is not the whole gate passing` |
+| the number of hosts is not compared with the host matrix | `§9.4: no host is not the whole gate passing` |
+| a draft pull request runs the whole gate | `repository.rs:322`, the draft is not the `rest` leg alone |
+| a failed query of the runs is read as a pass | `repository.rs:336`, a failed call is not the whole gate |
+| the `rest` row of `.github/vv-rows.json` is renamed | `§9.4: the leg a draft pull request runs is the one named `rest`` |
+| the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
+| an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
+| `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
+
+The script's decisions are run on Linux, where the gate runs; on another host of the matrix the case reads the files and skips them. (The first full run of this change failed on Windows for that reason: the stand-in for `gh` was put on a `PATH` written with `:`, so the script found no run and, failing closed, chose the whole gate, which the case refused.)
+
+Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
+(the case was changed before the workflow). The two defects that a stand-in `gh`
+cannot show, a run of another repository's pull request and a run that did not
+pass, are pinned by the script's own query (`event=pull_request&status=success`,
+`head_repository.full_name`), which the case reads.

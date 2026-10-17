@@ -1,0 +1,56 @@
+[
+  {
+    "part": "examples",
+    "recipes": "examples",
+    "examples_part": "without:uor-atlas",
+    "bdd_part": "",
+    "width": "2",
+    "memory_kib": "12582912",
+    "hints": ".github/verify-hints.json"
+  },
+  {
+    "part": "rest",
+    "recipes": "fmt-check model spec-links lint test features bdd inventory golden repro deny",
+    "examples_part": "",
+    "bdd_part": "rest",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-compiler",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "compiler",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-production",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "production",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-verification",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "verification",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  }
+]

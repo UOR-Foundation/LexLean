@@ -28,6 +28,55 @@
 //! told which number the row bears, and whether the name is a private one,
 //! which the construction makes of a name made outside an exporting context
 //! in a module.
+//!
+//! A row whose name the elaborator reserves (the equations and splitter of a
+//! matcher, the equations and unfolding of a definition, the `else_eq` of a
+//! sparse `casesOn`) is not submitted either: the decoder runs the
+//! elaborator's own action for the name and refuses the module unless the
+//! constant it makes has the row's kind, levels, type and value. For each
+//! action to make what the elaborator made, the state it reads is installed as
+//! each row is added rather than after the module: the `recursive` tag, the
+//! transparency, the matcher record, the equational-lemma record, and the
+//! realization context of the row, which for a definition with an
+//! equational-lemma record is opened once its smart-unfolding row is in. The
+//! elaborator's cache of sparse `casesOn` is part of that state: each chunk
+//! first drops the entries for the decoder's own constants (any name with a
+//! `LexLeanCore` component, so also a decoder a certificate scopes), which the cache
+//! holds because the decoder is itself elaborated in the module, and each
+//! sparse `casesOn` the decoder remakes is entered under both the exported and
+//! the private key, so that a later construction finds the module's constant
+//! as it did when the elaborator made the module. The cache is private to its
+//! Lean module, which the decoder therefore imports in full.
+
+/// The imports the decoder of core module 2 adds after `import Lean`.
+pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
+
+/// The decoder's entry of a remade sparse `casesOn` in the elaborator's
+/// cache, which [`legacy_decoder`] leaves out.
+pub const LEAN_CORE_V2_CACHE_SEED: &str = "    for isPrivate in [false, true] do
+      modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+        let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
+        if s.contains key then s else s.insert key name
+";
+
+/// The decoder's removal of its own constants from that cache, which
+/// [`legacy_decoder`] leaves out.
+pub const LEAN_CORE_V2_CACHE_PURGE: &str = "  modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+    s.toList.foldl (init := {}) fun kept (key, made) =>
+      if (Lean.privateToUserName made).components.contains `LexLeanCore then kept else kept.insert key made
+";
+
+/// The decoder of core module 2 for a rendering outside the module system
+/// (a certificate E, SPEC.md §17.17): such a file cannot import a module in
+/// full, so the cache, private to its Lean module, is out of its reach. A
+/// certificate states theorems only, no sparse `casesOn` and no derived
+/// row, so it needs neither use of the cache.
+#[must_use]
+pub fn legacy_decoder() -> String {
+    LEAN_CORE_DECODER_V2
+        .replacen(LEAN_CORE_V2_CACHE_SEED, "", 1)
+        .replacen(LEAN_CORE_V2_CACHE_PURGE, "", 1)
+}
 
 /// The decoder module of core module 2, spliced after the generated module's
 /// header.
@@ -173,6 +222,111 @@ private def sparseIndices (last : String) : Option (List Nat) :=
       let numbers := numbers.filterMap id
       if numbers.isEmpty then none else some numbers.reverse
 
+private def natsOf (json : Json) : Except String (Array Nat) := do
+  (← json.getArr?).mapM fun v => v.getNat?
+
+private def optNatOf (json : Json) : Except String (Option Nat) := do
+  let values ← json.getArr?
+  match values.size with
+  | 0 => pure none
+  | 1 => pure (some (← values[0]!.getNat?))
+  | _ => fail "an optional natural has more than one value"
+
+private def hasTag (json : Json) (wanted : String) : CoreM Bool := do
+  let some tags := optionalField json "tags" | return false
+  for tag in ← liftString tags.getArr? do
+    if (← liftString tag.getStr?) == wanted then return true
+  return false
+
+private def installMatcher (name : Name) (info : Json) : CoreM Unit := do
+  let altRows ← liftString (arrayField info "alts")
+  let mut alts : Array Lean.Meta.Match.AltParamInfo := #[]
+  for row in altRows do
+    let numFields ← liftString (natField row "fields")
+    let numOverlaps ← liftString (natField row "overlaps")
+    let hasUnitThunk ← liftString (boolField row "unit_thunk")
+    alts := alts.push { numFields, numOverlaps, hasUnitThunk }
+  let discrRows ← liftString (arrayField info "discrs")
+  let mut discrs : Array Lean.Meta.Match.DiscrInfo := #[]
+  for row in discrRows do
+    let cells ← liftString row.getArr?
+    match cells.size with
+    | 0 => discrs := discrs.push {}
+    | 1 => discrs := discrs.push { hName? := some (nameOf (← liftString cells[0]!.getStr?)) }
+    | _ => throwError "a matcher discriminant has more than one name"
+  let uElimPos? ← match optionalField info "u_elim_pos" with
+    | some v => pure (some (← liftString v.getNat?))
+    | none => pure none
+  let numParams ← liftString (natField info "num_params")
+  let numDiscrs ← liftString (natField info "num_discrs")
+  let mut overlaps : Lean.Meta.Match.Overlaps := {}
+  for row in ← liftString (arrayField info "overlaps") do
+    let pair ← liftString row.getArr?
+    let some overlappedJson := pair[0]? | throwError "overlap entry lacks its key"
+    let some overlappingJson := pair[1]? | throwError "overlap entry lacks its values"
+    let overlapped ← liftString overlappedJson.getNat?
+    for overlapping in ← liftString (natsOf overlappingJson) do
+      overlaps := overlaps.insert overlapping overlapped
+  modifyEnv (Lean.Meta.Match.Extension.addMatcherInfo · name
+    { numParams, numDiscrs, altInfos := alts, uElimPos?, discrInfos := discrs, overlaps })
+
+private def installEqnInfo (nodes : Array Expr) (name : Name) (info : Json) : CoreM Unit := do
+  let permRows ← liftString (arrayField info "perms")
+  let mut perms : Array (Array (Option Nat)) := #[]
+  for row in permRows do
+    let cells ← liftString row.getArr?
+    perms := perms.push (← liftString (cells.mapM optNatOf))
+  let revRows ← liftString (arrayField info "rev_deps")
+  let mut rev : Array (Array (Array Nat)) := #[]
+  for a in revRows do
+    let mut inner : Array (Array Nat) := #[]
+    for b in ← liftString a.getArr? do inner := inner.push (← liftString (natsOf b))
+    rev := rev.push inner
+  let levelParams ← liftString (namesOf (← liftString (field info "levels")))
+  let type ← liftString (nodeAt nodes (← liftString (natField info "type")))
+  let value ← liftString (nodeAt nodes (← liftString (natField info "value")))
+  let recArgPos ← liftString (natField info "rec_arg_pos")
+  let declNames := (← liftString (namesOf (← liftString (field info "declarations")))).toArray
+  let numFixed ← liftString (natField info "num_fixed")
+  let value : Lean.Elab.Structural.EqnInfo := {
+    declName := name, levelParams, type, value, recArgPos, declNames,
+    fixedParamPerms := { numFixed, perms, revDeps := rev } }
+  modifyEnv (Lean.Elab.Structural.eqnInfoExt.insert · name value)
+
+private def sameAsRow (nodes : Array Expr) (json : Json) (name : Name) (levelParams : List Name)
+    (type : Expr) (kindString : String) : CoreM Unit := do
+  let some made := (← getEnv).find? name | throwError s!"core declaration '{name}' is absent"
+  let stored ← match optionalField json "value" with
+    | some v => pure (some (← liftString (nodeAt nodes (← liftString v.getNat?))))
+    | none => pure none
+  let sameKind := match made, kindString with
+    | .thmInfo _, "theorem" => true
+    | .defnInfo _, "definition" => true
+    | .defnInfo _, "abbrev" => true
+    | _, _ => false
+  unless sameKind && made.levelParams == levelParams && made.type == type
+      && made.value? (allowOpaque := true) == stored do
+    throwError s!"core declaration '{name}' is not what the elaborator's construction makes"
+
+private def installAtRow (nodes : Array Expr) (json : Json) : CoreM Unit := do
+  let name := nameOf (← liftString (stringField json "name"))
+  unless (← getEnv).contains name do return
+  if ← hasTag json "recursive" then modifyEnv (Lean.Meta.recExt.tag · name)
+  match ← liftString (stringField json "transparency") with
+  | "reducible" => Lean.setReducibilityStatus name .reducible
+  | "irreducible" => Lean.setReducibilityStatus name .irreducible
+  | "implicit-reducible" => Lean.setReducibilityStatus name .implicitReducible
+  | _ => pure ()
+  if let some info := optionalField json "matcher" then
+    unless Lean.Meta.isMatcherCore (← getEnv) name do installMatcher name info
+  match optionalField json "eqn_info" with
+  | some info =>
+      unless (Lean.Elab.Structural.eqnInfoExt.find? (← getEnv) name).isSome do
+        installEqnInfo nodes name info
+  | none => Lean.enableRealizationsForConst name
+  if let .str owner "_sunfold" := name then
+    if (← getEnv).contains owner then Lean.enableRealizationsForConst owner
+
 private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
     (json : Json) : CoreM Unit := do
   if ← liftString (boolField json "generated") then return
@@ -184,6 +338,15 @@ private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
   let all ← match optionalField json "all" with
     | some value => liftString (namesOf value)
     | none => pure [name]
+  if (← getEnv).contains name then
+    sameAsRow nodes json name levelParams type kindString
+    return
+  if Lean.isReservedName (← getEnv) name then
+    Lean.withExporting (isExporting := true) (Lean.executeReservedNameAction name)
+    unless (← getEnv).contains name do
+      throwError s!"core declaration '{name}' bears a name the elaborator reserves, and its construction does not make it"
+    sameAsRow nodes json name levelParams type kindString
+    return
   if let some sparse := optionalField json "sparse" then
     let indName := nameOf (← liftString (stringField sparse "ind_name"))
     let constructors ← liftString (namesOf (← liftString (field sparse "interesting_ctors")))
@@ -211,6 +374,10 @@ private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
     unless info.indName == indName && info.majorPos == majorPos && info.arity == arity
         && info.insterestingCtors.toList == constructors do
       throwError s!"core declaration '{name}' states another sparse casesOn record than the elaborator keeps"
+    for isPrivate in [false, true] do
+      modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+        let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
+        if s.contains key then s else s.insert key name
     return
   match kindString with
   | "inductive" =>
@@ -280,6 +447,7 @@ private def addOne (nodes : Array Expr) (declarations : Array Json) (json : Json
   let name ← liftString (stringField json "name")
   try
     addOneUnchecked nodes declarations json
+    installAtRow nodes json
   catch error =>
     throwError m!"native core declaration '{name}':{indentD error.toMessageData}"
 
@@ -290,16 +458,6 @@ private def decodeNodeBatch (nodes : Array Expr) (data : String) : CoreM (Array 
   for row in rows do
     nodes := nodes.push (← liftString (nodeOf nodes row))
   pure nodes
-
-private def natsOf (json : Json) : Except String (Array Nat) := do
-  (← json.getArr?).mapM fun v => v.getNat?
-
-private def optNatOf (json : Json) : Except String (Option Nat) := do
-  let values ← json.getArr?
-  match values.size with
-  | 0 => pure none
-  | 1 => pure (some (← values[0]!.getNat?))
-  | _ => fail "an optional natural has more than one value"
 
 private def installMetadata (nodes : Array Expr) (declaration : Json) : CoreM Unit := do
   let name := nameOf (← liftString (stringField declaration "name"))
@@ -318,9 +476,10 @@ private def installMetadata (nodes : Array Expr) (declaration : Json) : CoreM Un
       | "inline_if_reduce" => pure Lean.Compiler.InlineAttributeKind.inlineIfReduce
       | "always_inline" => pure Lean.Compiler.InlineAttributeKind.alwaysInline
       | other => throwError s!"unknown core inlining attribute '{other}'"
-    match Lean.Compiler.setInlineAttribute (← getEnv) name kind with
-    | .ok env => setEnv env
-    | .error message => throwError message
+    unless Lean.Compiler.getInlineAttribute? (← getEnv) name == some kind do
+      match Lean.Compiler.setInlineAttribute (← getEnv) name kind with
+      | .ok env => setEnv env
+      | .error message => throwError message
   if let some tags := optionalField declaration "tags" then
     for tag in ← liftString tags.getArr? do
       match ← liftString tag.getStr? with
@@ -340,36 +499,7 @@ private def installMetadata (nodes : Array Expr) (declaration : Json) : CoreM Un
       | other => throwError s!"unknown no-confusion kind '{other}'"
     modifyEnv (Lean.markNoConfusion · name value)
   if let some info := optionalField declaration "matcher" then
-    let altRows ← liftString (arrayField info "alts")
-    let mut alts : Array Lean.Meta.Match.AltParamInfo := #[]
-    for row in altRows do
-      let numFields ← liftString (natField row "fields")
-      let numOverlaps ← liftString (natField row "overlaps")
-      let hasUnitThunk ← liftString (boolField row "unit_thunk")
-      alts := alts.push { numFields, numOverlaps, hasUnitThunk }
-    let discrRows ← liftString (arrayField info "discrs")
-    let mut discrs : Array Lean.Meta.Match.DiscrInfo := #[]
-    for row in discrRows do
-      let cells ← liftString row.getArr?
-      match cells.size with
-      | 0 => discrs := discrs.push {}
-      | 1 => discrs := discrs.push { hName? := some (nameOf (← liftString cells[0]!.getStr?)) }
-      | _ => throwError "a matcher discriminant has more than one name"
-    let uElimPos? ← match optionalField info "u_elim_pos" with
-      | some v => pure (some (← liftString v.getNat?))
-      | none => pure none
-    let numParams ← liftString (natField info "num_params")
-    let numDiscrs ← liftString (natField info "num_discrs")
-    let mut overlaps : Lean.Meta.Match.Overlaps := {}
-    for row in ← liftString (arrayField info "overlaps") do
-      let pair ← liftString row.getArr?
-      let some overlappedJson := pair[0]? | throwError "overlap entry lacks its key"
-      let some overlappingJson := pair[1]? | throwError "overlap entry lacks its values"
-      let overlapped ← liftString overlappedJson.getNat?
-      for overlapping in ← liftString (natsOf overlappingJson) do
-        overlaps := overlaps.insert overlapping overlapped
-    modifyEnv (Lean.Meta.Match.Extension.addMatcherInfo · name
-      { numParams, numDiscrs, altInfos := alts, uElimPos?, discrInfos := discrs, overlaps })
+    unless Lean.Meta.isMatcherCore (← getEnv) name do installMatcher name info
   if let some info := optionalField declaration "projection" then
     modifyEnv (Lean.addProjectionFnInfo · name (nameOf (← liftString (stringField info "constructor")))
       (← liftString (natField info "num_params")) (← liftString (natField info "index")) (← liftString (boolField info "from_class")))
@@ -382,27 +512,8 @@ private def installMetadata (nodes : Array Expr) (declaration : Json) : CoreM Un
     Lean.Meta.MetaM.run' <| Lean.Meta.addSimpTheorem Lean.Meta.simpExtension name
       (← liftString (boolField info "post")) false kind (← liftString (natField info "priority"))
   if let some info := optionalField declaration "eqn_info" then
-    let permRows ← liftString (arrayField info "perms")
-    let mut perms : Array (Array (Option Nat)) := #[]
-    for row in permRows do
-      let cells ← liftString row.getArr?
-      perms := perms.push (← liftString (cells.mapM optNatOf))
-    let revRows ← liftString (arrayField info "rev_deps")
-    let mut rev : Array (Array (Array Nat)) := #[]
-    for a in revRows do
-      let mut inner : Array (Array Nat) := #[]
-      for b in ← liftString a.getArr? do inner := inner.push (← liftString (natsOf b))
-      rev := rev.push inner
-    let levelParams ← liftString (namesOf (← liftString (field info "levels")))
-    let type ← liftString (nodeAt nodes (← liftString (natField info "type")))
-    let value ← liftString (nodeAt nodes (← liftString (natField info "value")))
-    let recArgPos ← liftString (natField info "rec_arg_pos")
-    let declNames := (← liftString (namesOf (← liftString (field info "declarations")))).toArray
-    let numFixed ← liftString (natField info "num_fixed")
-    let value : Lean.Elab.Structural.EqnInfo := {
-      declName := name, levelParams, type, value, recArgPos, declNames,
-      fixedParamPerms := { numFixed, perms, revDeps := rev } }
-    modifyEnv (Lean.Elab.Structural.eqnInfoExt.insert · name value)
+    unless (Lean.Elab.Structural.eqnInfoExt.find? (← getEnv) name).isSome do
+      installEqnInfo nodes name info
 
 private def compileRows (declarations : Array Json) : CoreM Unit := do
   let mut compiledRows : Array (Json × Name) := #[]
@@ -433,6 +544,9 @@ private def compileRows (declarations : Array Json) : CoreM Unit := do
           modifyEnv (Lean.markSparseCasesOn · name)
 
 def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
+  modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+    s.toList.foldl (init := {}) fun kept (key, made) =>
+      if (Lean.privateToUserName made).components.contains `LexLeanCore then kept else kept.insert key made
   let mut nodes : Array Expr := #[]
   for batch in nodeBatches do
     nodes ← decodeNodeBatch nodes batch
@@ -536,3 +650,17 @@ def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
 
 end LexLeanCore.Runtime
 "##;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cache_uses_are_in_the_decoder_once() {
+        for part in [LEAN_CORE_V2_CACHE_SEED, LEAN_CORE_V2_CACHE_PURGE] {
+            assert_eq!(LEAN_CORE_DECODER_V2.matches(part).count(), 1);
+            assert!(!legacy_decoder().contains(part));
+        }
+        assert!(!legacy_decoder().contains("sparseCasesOnCacheExt"));
+    }
+}
