@@ -408,8 +408,8 @@ pub fn certificate_e(
         .map_err(failure)?;
     let text = crate::backend::core::lean_text_legacy(&data, module)
         .map_err(|diagnostic| internal(diagnostic.message))?;
-    generator.within(text.len()).map_err(failure)?;
     let source = record_source(module, &data, "E").map_err(internal)?;
+    generator.within(source.len()).map_err(failure)?;
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),

@@ -964,8 +964,9 @@ pub fn run_part(
                     entry: lowered.entry(),
                 });
             }
-            // Certificates A and B weigh what they are recorded as, the
-            // notation; E weighs its text.
+            // Every certificate held as data weighs what it is recorded as,
+            // the notation: the Lean text is the core backend's rendering,
+            // and its size is the backend's, not the certificate's.
             let weight_a = generated
                 .source
                 .as_ref()
@@ -978,7 +979,10 @@ pub fn run_part(
                             crate::production::preserve::recorded_bytes(&rendering.certificate)
                                 .len(),
                         ),
-                        (&rendering.composed, rendering.composed.text.len()),
+                        (
+                            &rendering.composed,
+                            crate::production::preserve::recorded_bytes(&rendering.composed).len(),
+                        ),
                     ]
                 }),
             ) {
@@ -998,7 +1002,8 @@ pub fn run_part(
                 budget
                     .charge(
                         crate::production::preserve::recorded_bytes(&rendering.certificate).len()
-                            + rendering.composed.text.len()
+                            + crate::production::preserve::recorded_bytes(&rendering.composed)
+                                .len()
                             + rendering.crate_text.len(),
                         &root.report.root,
                         "its certificates B and E and its crates",

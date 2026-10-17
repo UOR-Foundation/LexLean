@@ -452,11 +452,11 @@ fn stress_estimates() -> u64 {
                 let e = entry
                     .composed
                     .iter()
-                    .map(|(_, certificate)| certificate.text.len() as u64)
+                    .map(|(_, certificate)| weight_a(certificate))
                     .max()
                     .unwrap_or(0);
                 for (target, certificate) in &entry.renderings {
-                    let size = certificate.text.len() as u64;
+                    let size = weight_a(certificate);
                     quadratic = quadratic.max(size.saturating_sub(a.max(e)));
                     // Certificate B stops at the limit it is given, at
                     // the size it would have had or below it.
@@ -535,7 +535,7 @@ fn weight_a(certificate: &lexlean::production::certificate::Certificate) -> u64 
 fn largest_certificate(entry: &preservation::Certified) -> u64 {
     std::iter::once(weight_a(&entry.certificate))
         .chain(entry.renderings.iter().map(|(_, b)| weight_a(b)))
-        .chain(entry.composed.iter().map(|(_, e)| e.text.len() as u64))
+        .chain(entry.composed.iter().map(|(_, e)| weight_a(e)))
         .max()
         .unwrap_or(0)
 }
@@ -576,7 +576,7 @@ fn assert_bounds(label: &str, entry: &preservation::Certified) {
         entry
             .composed
             .iter()
-            .map(|(_, certificate)| certificate.text.len() as u64)
+            .map(|(_, certificate)| weight_a(certificate))
             .collect(),
     );
     assert!(
