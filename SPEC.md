@@ -6581,6 +6581,44 @@ relates the module's pieces to its text, and `fmt` writes a language-1.2 core
 module of schema 2 in the notation, so a module written as `\coredata` leaves
 the data form by being formatted.
 
+### 17.22 The standard library
+
+The standard library is the project `stdlib/` beside `compiler/`: language-1.2
+source of the product, written in the authoring notation (§17.21) under the
+module prefix `LexLeanStd`, whose members are production roots (§17.13). It is
+not an example: it passes the gates of §28.6 as the compiler project does, its
+production export (§24.7) is committed under `tests/production-export/stdlib/`
+and compared by `cargo xtask check-production-export`, and a member is
+validated by a differential before it is a member. The differential runs the
+member's lowered program under the calculus evaluator (§17.14) and its
+rendered `rust-std` package under the pinned rustc (§17.16) on a seeded corpus
+against the function of Rust's standard library the member corresponds to, and
+a member whose outcome differs from its oracle on any input is not committed.
+A member's declaration admits exactly the effects its runtime closure realizes
+on its target, so the eligibility report of every member is its own text.
+
+The first module, `Text`, is bytes and text over `Bytes`. A `String` has no
+scalar iteration in language 1.2, so text is handled as its UTF-8 bytes, a
+character class is a comparison of `UInt8` by `equal`, and a member that is
+defined on text is defined on the bytes of valid UTF-8. Its members and their
+oracles:
+
+| Member | Oracle |
+| --- | --- |
+| `startsWith (subject prefix : Bytes) : Bool` | `<[u8]>::starts_with` |
+| `endsWith (subject suffix : Bytes) : Bool` | `<[u8]>::ends_with` |
+| `trim (subject : Bytes) : Bytes` | `<[u8]>::trim_ascii` |
+| `lines (subject : Bytes) : List Bytes` | `str::lines` on UTF-8 input: a line ends at `\n` or `\r\n`, and the last line needs no ending |
+| `splitOn (subject : Bytes) (delimiter : UInt8) : List Bytes` | `<[u8]>::split` |
+| `joinWith (pieces : List Bytes) (separator : Bytes) : Bytes` | `<[Vec<u8>]>::join` |
+| `find (subject needle : Bytes) : Option Nat` | `str::find` on UTF-8 input, as a byte offset |
+
+Every scan is `iterate_until` under the subject's length as its fuel and every
+accumulation is `list_fold`, so a member carries `recursion` exactly where it
+realizes a library template, and no member recurses itself. Theorems over the
+members wait for equality of `Bytes` by evaluation; until then the module's
+behavior is held by the differential (`SL-01`).
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -8727,7 +8765,7 @@ Tests MUST establish that LexLean rejects, at minimum:
 
 ### 28.6 Example verification
 
-Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) passes the same gates as an example.
+Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) and the `stdlib/` project (§17.22) pass the same gates as an example.
 
 ---
 
@@ -9377,8 +9415,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-02` | `runtime` | The runtime text of languages 1.0 and 1.1 is the one declared exception: the portable runtime and the decoder of core module 1 are the released bytes, held as data under `language/runtime-1.2/frozen/`, read by the language-1.0 and 1.1 backends alone, excluded from the language-1.0 and 1.1 identities, and reproduced byte for byte by the released language-1.1 and 1.0 output; a one-byte change of either is not the released output. | §17.12, §21.2 |
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
+| `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 
-**Total required capability IDs:** 392.
+**Total required capability IDs:** 393.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

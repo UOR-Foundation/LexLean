@@ -1,0 +1,174 @@
+\begin{lexlean}{Text}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: isSpace,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: ((((prim equal byte (32 : UInt8) : Bool) || (prim equal byte (9 : UInt8) : Bool)) || (prim equal byte (10 : UInt8) : Bool)) || ((prim equal byte (12 : UInt8) : Bool) || (prim equal byte (13 : UInt8) : Bool))),
+  executable: true
+}
+
+definition{
+  name: byteAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option UInt8),
+  body: (prim index subject position : (Option UInt8)),
+  executable: true
+}
+
+definition{
+  name: spaceAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (match (byteAt subject position)
+    | Option.some byte => (isSpace byte)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: sliceOr,
+  parameters: [subject : Bytes, start : Nat, count : Nat],
+  result: Bytes,
+  body: (match (prim slice subject start count : (Option Bytes))
+    | Option.some piece => piece
+    | Option.none => 0x),
+  executable: true
+}
+
+definition{
+  name: startsWith,
+  parameters: [subject : Bytes, prefix : Bytes],
+  result: Bool,
+  body: (match (prim slice subject 0 (prim length prefix : Nat) : (Option Bytes))
+    | Option.some head => (prim equal head prefix : Bool)
+    | Option.none => false),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: endsWith,
+  parameters: [subject : Bytes, suffix : Bytes],
+  result: Bool,
+  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length suffix : Nat); (if (size <=? total) then (match (prim slice subject (prim subtract total size : Nat) size : (Option Bytes))
+    | Option.some tail => (prim equal tail suffix : Bool)
+    | Option.none => false) else false))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: trimEnd,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (end : Nat) => (if (0 <? end) then (if (spaceAt subject (prim subtract end 1 : Nat)) then (ctor Option.some [Nat] (prim subtract end 1 : Nat)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat]))) (prim length subject : Nat) (prim length subject : Nat) : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: trimStart,
+  parameters: [subject : Bytes, end : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [end, subject] (start : Nat) => (if (start <? end) then (if (spaceAt subject start) then (ctor Option.some [Nat] (start + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat]))) end 0 : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: trim,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (let end : Nat := (trimEnd subject); (let start : Nat := (trimStart subject end); (sliceOr subject start (prim subtract end start : Nat)))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: reverse,
+  parameters: [pieces : (List Bytes)],
+  result: (List Bytes),
+  body: (prim list_fold (fun (reversed : (List Bytes)) (piece : Bytes) => (cons piece reversed)) (nil Bytes) pieces : (List Bytes)),
+  executable: true
+}
+
+definition{
+  name: splitStep,
+  parameters: [subject : Bytes, delimiter : UInt8, state : (Nat * (Nat * (List Bytes)))],
+  result: (Option (Nat * (Nat * (List Bytes)))),
+  body: (let position : Nat := (first state); (let start : Nat := (first (second state)); (let pieces : (List Bytes) := (second (second state)); (match (byteAt subject position)
+    | Option.some byte => (if (prim equal byte delimiter : Bool) then (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), ((position + 1), (cons (sliceOr subject start (prim subtract position start : Nat)) pieces)))) else (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), (start, pieces))))
+    | Option.none => (ctor Option.none [(Nat * (Nat * (List Bytes)))]))))),
+  executable: true
+}
+
+definition{
+  name: splitOn,
+  parameters: [subject : Bytes, delimiter : UInt8],
+  result: (List Bytes),
+  body: (let total : Nat := (prim length subject : Nat); (let final : (Nat * (Nat * (List Bytes))) := (first (prim iterate_until (fun [delimiter, subject] (state : (Nat * (Nat * (List Bytes)))) => (splitStep subject delimiter state)) total (0, (0, (nil Bytes))) : ((Nat * (Nat * (List Bytes))) * Bool))); (let start : Nat := (first (second final)); (reverse (cons (sliceOr subject start (prim subtract total start : Nat)) (second (second final))))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: chomp,
+  parameters: [line : Bytes],
+  result: Bytes,
+  body: (if (endsWith line 0x0d) then (sliceOr line 0 (prim subtract (prim length line : Nat) 1 : Nat)) else line),
+  executable: true
+}
+
+definition{
+  name: lineStep,
+  parameters: [subject : Bytes, state : (Nat * (Nat * (List Bytes)))],
+  result: (Option (Nat * (Nat * (List Bytes)))),
+  body: (let position : Nat := (first state); (let start : Nat := (first (second state)); (let pieces : (List Bytes) := (second (second state)); (match (byteAt subject position)
+    | Option.some byte => (if (prim equal byte (10 : UInt8) : Bool) then (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), ((position + 1), (cons (chomp (sliceOr subject start (prim subtract position start : Nat))) pieces)))) else (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), (start, pieces))))
+    | Option.none => (ctor Option.none [(Nat * (Nat * (List Bytes)))]))))),
+  executable: true
+}
+
+definition{
+  name: lines,
+  parameters: [subject : Bytes],
+  result: (List Bytes),
+  body: (let total : Nat := (prim length subject : Nat); (let final : (Nat * (Nat * (List Bytes))) := (first (prim iterate_until (fun [subject] (state : (Nat * (Nat * (List Bytes)))) => (lineStep subject state)) total (0, (0, (nil Bytes))) : ((Nat * (Nat * (List Bytes))) * Bool))); (let start : Nat := (first (second final)); (let pieces : (List Bytes) := (second (second final)); (if (start <? total) then (reverse (cons (sliceOr subject start (prim subtract total start : Nat)) pieces)) else (reverse pieces)))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: joinWith,
+  parameters: [pieces : (List Bytes), separator : Bytes],
+  result: Bytes,
+  body: (match (prim list_fold (fun [separator] (joined : (Option Bytes)) (piece : Bytes) => (match joined
+      | Option.none => (ctor Option.some [Bytes] piece)
+      | Option.some sofar => (ctor Option.some [Bytes] (prim append (prim append sofar separator : Bytes) piece : Bytes)))) (ctor Option.none [Bytes]) pieces : (Option Bytes))
+    | Option.some joined => joined
+    | Option.none => 0x),
+  executable: true,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: matchAt,
+  parameters: [subject : Bytes, needle : Bytes, position : Nat],
+  result: Bool,
+  body: (match (prim slice subject position (prim length needle : Nat) : (Option Bytes))
+    | Option.some window => (prim equal window needle : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: find,
+  parameters: [subject : Bytes, needle : Bytes],
+  result: (Option Nat),
+  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (let position : Nat := (first (prim iterate_until (fun [needle, size, subject, total] (position : Nat) => (if (matchAt subject needle position) then (ctor Option.none [Nat]) else (if ((position + size) <? total) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))) (total + 1) 0 : (Nat * Bool))); (if (matchAt subject needle position) then (ctor Option.some [Nat] position) else (ctor Option.none [Nat]))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

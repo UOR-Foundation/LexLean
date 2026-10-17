@@ -1964,3 +1964,8 @@ fn conformance_rt_03() {
 fn conformance_rt_04() {
     repo_conformance::cases::run("RT-04");
 }
+
+#[test]
+fn conformance_sl_01() {
+    repo_conformance::cases::run("SL-01");
+}
