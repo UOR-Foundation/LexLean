@@ -1757,8 +1757,8 @@ fn plants() -> Vec<Plant> {
         Plant {
             name: "a split limit one too small",
             root: "Coverage.Prims.text",
-            edit: |s| replace_once(s, "let _x_74 = 4;", "let _x_74 = 3;"),
-            null: |s| replace_once(s, "let _x_74 = 4;", "let _x_74 = 2 + 2;"),
+            edit: |s| replace_once(s, "let _x_67 = 4;", "let _x_67 = 3;"),
+            null: |s| replace_once(s, "let _x_67 = 4;", "let _x_67 = 2 + 2;"),
             kind: Behavior,
             keys: &["outcome:value/value"],
         },
@@ -1861,7 +1861,7 @@ fn equivalents() -> Vec<Equivalent> {
             // equality says.
             name: "an equality made an inequality under a conjunction with false",
             root: "Coverage.Prims.text",
-            edit: |s| replace_once(s, "let _x_46 = (s == d);", "let _x_46 = (s != d);"),
+            edit: |s| replace_once(s, "let _x_43 = (s == d);", "let _x_43 = (s != d);"),
         },
     ]
 }
