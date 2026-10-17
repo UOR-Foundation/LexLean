@@ -407,7 +407,11 @@ impl Writer<'_, '_> {
     }
 
     /// A numeral of a fixed-width or mathematical integer type.
-    pub(in crate::production::certificate) fn int_literal(&mut self, type_name: &str, text: &str) -> Term {
+    pub(in crate::production::certificate) fn int_literal(
+        &mut self,
+        type_name: &str,
+        text: &str,
+    ) -> Term {
         let (negative, digits) = match text.strip_prefix('-') {
             Some(rest) => (true, rest),
             None => (false, text),
@@ -648,7 +652,10 @@ impl Writer<'_, '_> {
     }
 
     /// A match arm as a `TargetSyntax.Arm` term.
-    pub(in crate::production::certificate) fn arm_term(&mut self, arm: &Arm) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn arm_term(
+        &mut self,
+        arm: &Arm,
+    ) -> Result<Term, String> {
         let Arm {
             shape,
             binders,
@@ -662,7 +669,10 @@ impl Writer<'_, '_> {
     }
 
     /// A list of match arms.
-    pub(in crate::production::certificate) fn arms_list(&mut self, arms: &[Arm]) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn arms_list(
+        &mut self,
+        arms: &[Arm],
+    ) -> Result<Term, String> {
         let ty = self.ts("Arm");
         let items = arms
             .iter()
@@ -687,7 +697,10 @@ impl Writer<'_, '_> {
     }
 
     /// A program expression as a `TargetSyntax.Expr` term.
-    pub(in crate::production::certificate) fn expr_term(&mut self, expr: &Expr) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn expr_term(
+        &mut self,
+        expr: &Expr,
+    ) -> Result<Term, String> {
         let key = std::ptr::from_ref(expr);
         if let Some(&done) = self.exprs.get(&key) {
             return Ok(done);
@@ -799,7 +812,10 @@ impl Writer<'_, '_> {
     }
 
     /// The function `function` of the program as a `TargetSyntax.Function`.
-    pub(in crate::production::certificate) fn function_term(&mut self, function: &Function) -> Result<Term, String> {
+    pub(in crate::production::certificate) fn function_term(
+        &mut self,
+        function: &Function,
+    ) -> Result<Term, String> {
         let Function {
             parameters,
             types,

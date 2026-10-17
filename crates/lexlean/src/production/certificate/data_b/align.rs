@@ -479,7 +479,9 @@ impl<'g, 'a> Aligner<'g, 'a> {
     fn corr_ty(&mut self, g: &Ctx, fl: bool, jd: K) -> K {
         let corr = self.rust("Corr");
         let fl = self.boolean(fl);
-        self.w.b.apps(corr, &[self.p, self.c, self.a, g.term, fl, jd])
+        self.w
+            .b
+            .apps(corr, &[self.p, self.c, self.a, g.term, fl, jd])
     }
 
     /// One rule applied: the conclusion `Corr p c A Γ fl jd`, the hints for
@@ -1499,7 +1501,15 @@ impl<'g, 'a> Aligner<'g, 'a> {
         // condition.
         let attempt = (|| -> Found {
             let condition_d = self.bg(g, fl, fm, condition, &Ty::Bool, lets, tail)?;
-            let yes = self.bg(g, fl, false, then_branch, &Ty::Bool, &[], &Self::lit_bool(true))?;
+            let yes = self.bg(
+                g,
+                fl,
+                false,
+                then_branch,
+                &Ty::Bool,
+                &[],
+                &Self::lit_bool(true),
+            )?;
             let no = self.bg(
                 g,
                 fl,
@@ -1625,8 +1635,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                         }
                     }
                 }
-                let (else_ctx, else_rest, else_tail) =
-                    self.else_side(g, kind, else_branch, b)?;
+                let (else_ctx, else_rest, else_tail) = self.else_side(g, kind, else_branch, b)?;
                 let then_d = self.bg(g, fl, fm, a, ty, &then_branch.lets, &then_branch.tail)?;
                 let else_d = self.bg(&else_ctx, fl, fm, b, ty, &else_rest, &else_tail)?;
                 let jd = self.jd_k(kind, fm, ce, a, b, ty, lets, tail)?;
@@ -1645,7 +1654,8 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 ];
                 if form == Form::Held {
                     let Some(Let {
-                        pat: Pat::Bind(held), ..
+                        pat: Pat::Bind(held),
+                        ..
                     }) = held_ident
                     else {
                         return Err("a held condition is bound to a temporary".to_owned());
@@ -1675,9 +1685,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 if !matches!(first.pat, Pat::Wild) || !self.same(&first.value, ce) {
                     return Err("the condition is not evaluated first".to_owned());
                 }
-                let else_ctx = self
-                    .else_side(g, kind, &Block::of(Self::lit_unit()), b)?
-                    .0;
+                let else_ctx = self.else_side(g, kind, &Block::of(Self::lit_unit()), b)?.0;
                 let then_d = self.bg(g, fl, fm, a, ty, rest, tail)?;
                 let else_d = self.bg(&else_ctx, fl, fm, b, ty, rest, tail)?;
                 let jd = self.jd_k(kind, fm, ce, a, b, ty, lets, tail)?;
@@ -1702,9 +1710,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 if !self.same(&wanted, tail) {
                     return Err("the conditional is not its condition".to_owned());
                 }
-                let else_ctx = self
-                    .else_side(g, kind, &Block::of(Self::lit_unit()), b)?
-                    .0;
+                let else_ctx = self.else_side(g, kind, &Block::of(Self::lit_unit()), b)?.0;
                 let then_d = self.bg(
                     g,
                     fl,
@@ -1929,12 +1935,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                     g,
                     fl,
                     jd,
-                    &[
-                        ("fm", fm_term),
-                        ("Γ''", inner.term),
-                        ("ta", ta),
-                        ("tb", tb),
-                    ],
+                    &[("fm", fm_term), ("Γ''", inner.term), ("ta", ta), ("tb", tb)],
                     &[sub(scrutinee_d), Decided, sub(body_d), Decided],
                 )
             }
@@ -2160,7 +2161,9 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let mut rarms_term = self.w.b.list(arm_ty, &[]);
         let nil_jd = self.jd(
             "m",
-            &[st_term, view_term, arms_term, idx_term, fm_term, tau_term, rarms_term],
+            &[
+                st_term, view_term, arms_term, idx_term, fm_term, tau_term, rarms_term,
+            ],
         );
         let mut derivation = self.rule("mNil", g, fl, nil_jd, &[], &[])?;
         let mut indices = Vec::with_capacity(rarms.len());
@@ -2285,7 +2288,9 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let rarms_all = self.w.b.apps(cons, &[arm_ty, written, rarms_rest]);
         let jd = self.jd(
             "m",
-            &[st_term, view_term, arms_term, idx_all, fm_term, tau_term, rarms_all],
+            &[
+                st_term, view_term, arms_term, idx_all, fm_term, tau_term, rarms_all,
+            ],
         );
         let gamma_inner = inner_ctx.term;
         let j_term = self.nat(j as u64);

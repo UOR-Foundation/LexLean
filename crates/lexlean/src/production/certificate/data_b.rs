@@ -22,6 +22,17 @@
 //! generator's, so the kernel term each theorem states is the one the text
 //! elaborated to.
 
+// The shape tests of the aligner and of the proof builders end in a refusal
+// (`Err`), never in a default realization: a construct they do not match is
+// reported, not certified. The lint that denies a catch-all in this module's
+// parent guards the lowering of constructs, which these matches are not, and
+// the exhaustive match on every construct that matters is the block
+// judgment, which `audit-production` holds to name each one.
+#![allow(
+    clippy::wildcard_enum_match_arm,
+    clippy::match_wildcard_for_single_variants
+)]
+
 mod align;
 mod syntax;
 
@@ -82,8 +93,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
     /// The type `FunOK` states of function `index`, over the unfolded
     /// definition.
     fn fun_ok_body(&mut self, index: u64) -> Result<K, String> {
-        let (module, declaration) =
-            preserve::native_declaration(&format!("{RUST}.FunOK"))?;
+        let (module, declaration) = preserve::native_declaration(&format!("{RUST}.FunOK"))?;
         let value = declaration
             .value
             .ok_or("FunOK is declared without a value")?;
@@ -129,13 +139,18 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let (head, parts) = self.w.b.spine(statement);
         match self.w.b.node(head) {
             CoreNode::Const { n, .. } if n == "And" && parts.len() == 2 => Ok((parts[0], parts[1])),
-            _ => Err(format!("`{}` is not a conjunction", self.w.b.show(statement))),
+            _ => Err(format!(
+                "`{}` is not a conjunction",
+                self.w.b.show(statement)
+            )),
         }
     }
 
     fn and_intro(&mut self, left: K, right: K, proof_left: K, proof_right: K) -> K {
         let intro = self.w.b.konst("And.intro");
-        self.w.b.apps(intro, &[left, right, proof_left, proof_right])
+        self.w
+            .b
+            .apps(intro, &[left, right, proof_left, proof_right])
     }
 
     /// The proof of `FunOK program krate flags index` by a derivation, or by
@@ -184,7 +199,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let (head, parts) = self.w.b.spine(statement);
         match self.w.b.node(head) {
             CoreNode::Const { n, .. } if n == "Or" && parts.len() == 2 => Ok((parts[0], parts[1])),
-            _ => Err(format!("`{}` is not a disjunction", self.w.b.show(statement))),
+            _ => Err(format!(
+                "`{}` is not a disjunction",
+                self.w.b.show(statement)
+            )),
         }
     }
 
@@ -204,12 +222,17 @@ impl<'g, 'a> Aligner<'g, 'a> {
         &mut self,
         index: u64,
         function: &Function,
-        parameters: &[(crate::calculus::rust::ast::Pat, crate::calculus::rust::ast::Type)],
+        parameters: &[(
+            crate::calculus::rust::ast::Pat,
+            crate::calculus::rust::ast::Type,
+        )],
         body: &crate::calculus::rust::ast::Block,
         statement: K,
     ) -> Result<K, String> {
-        let patterns: Vec<crate::calculus::rust::ast::Pat> =
-            parameters.iter().map(|(pattern, _)| pattern.clone()).collect();
+        let patterns: Vec<crate::calculus::rust::ast::Pat> = parameters
+            .iter()
+            .map(|(pattern, _)| pattern.clone())
+            .collect();
         let empty = self.ctx_empty();
         let scope = self.param_ctx(&empty, &function.parameters, &function.types, &patterns)?;
         let fallible = self.fallible_fn(index);
@@ -273,7 +296,12 @@ impl<'g, 'a> Aligner<'g, 'a> {
 
     /// The disjunct of a function with a parameter whose type no value
     /// inhabits: never called, so the correspondence says nothing of it.
-    fn empty_case(&mut self, function: &Function, position: usize, statement: K) -> Result<K, String> {
+    fn empty_case(
+        &mut self,
+        function: &Function,
+        position: usize,
+        statement: K,
+    ) -> Result<K, String> {
         let empty = self.empty.clone();
         let u = {
             let nat = self.w.b.konst("Nat");
@@ -341,10 +369,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let statement = |this: &mut Self, x: K, d: u64, fun: K, h: K| -> (K, K, K) {
             // The type of `h` and the conclusion, over `x`, `fun`.
             let position = at(this, x, d);
-            let looked = this
-                .w
-                .b
-                .apps(index_head, &[list_function, function_ty, indexable, functions, position]);
+            let looked = this.w.b.apps(
+                index_head,
+                &[list_function, function_ty, indexable, functions, position],
+            );
             let some = this.w.b.konst0("Option.some");
             let found = this.w.b.apps(some, &[function_ty, fun]);
             let eq = this.w.b.konst1("Eq");
@@ -370,10 +398,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
             // heterogeneous equality of the options: the hypothesis, which
             // the kernel reads as `none = some fn` by evaluating the lookup
             // past the last function, is the second.
-            let head = self.w.b.konst_at(
-                "Option.noConfusion",
-                vec![CoreLevel::Zero, CoreLevel::Zero],
-            );
+            let head = self
+                .w
+                .b
+                .konst_at("Option.noConfusion", vec![CoreLevel::Zero, CoreLevel::Zero]);
             let type_level = CoreLevel::Succ(Box::new(CoreLevel::Succ(Box::new(CoreLevel::Zero))));
             let refl = self.w.b.konst_at("Eq.refl", vec![type_level]);
             let type0 = self.w.b.type0();
@@ -417,10 +445,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
             let h = self.w.b.free();
             // The motive: the statement at `y`.
             let (hypothesis_y, conclusion_y, _) = statement(self, y, d, fun, h);
-            let pi_h = self
-                .w
-                .b
-                .pi_over("h", CoreBinderInfo::Explicit, hypothesis_y, h, conclusion_y);
+            let pi_h =
+                self.w
+                    .b
+                    .pi_over("h", CoreBinderInfo::Explicit, hypothesis_y, h, conclusion_y);
             let pi_fun = self
                 .w
                 .b
@@ -435,20 +463,20 @@ impl<'g, 'a> Aligner<'g, 'a> {
             let zero = self.w.b.konst("Nat.zero");
             let (hypothesis_0, _, _) = statement(self, zero, d, fun0, h0);
             let theorem = self.row(&format!("fun{d}"));
-            let zero_h = self
-                .w
-                .b
-                .lam_over("h", CoreBinderInfo::Explicit, hypothesis_0, h0, theorem);
-            let zero_case = self
-                .w
-                .b
-                .lam_over("fn", CoreBinderInfo::Explicit, function_ty, fun0, zero_h);
+            let zero_h =
+                self.w
+                    .b
+                    .lam_over("h", CoreBinderInfo::Explicit, hypothesis_0, h0, theorem);
+            let zero_case =
+                self.w
+                    .b
+                    .lam_over("fn", CoreBinderInfo::Explicit, function_ty, fun0, zero_h);
             let cases = self.w.b.konst_at("Nat.casesOn", vec![Self::level_zero()]);
-            let applied = self
+            let applied = self.w.b.apps(cases, &[motive, x, zero_case, level]);
+            level = self
                 .w
                 .b
-                .apps(cases, &[motive, x, zero_case, level]);
-            level = self.w.b.lam_over("x", CoreBinderInfo::Explicit, nat, x, applied);
+                .lam_over("x", CoreBinderInfo::Explicit, nat, x, applied);
         }
         Ok(level)
     }
@@ -471,10 +499,22 @@ impl<'g, 'a> Aligner<'g, 'a> {
             .w
             .b
             .apps(simulate, &[self.p, self.c, self.a, crate_ok, n, f]);
-        let inner_ty = self.w.b.pi_over("f", CoreBinderInfo::Explicit, nat, f, statement);
-        let ty = self.w.b.pi_over("n", CoreBinderInfo::Explicit, nat, n, inner_ty);
-        let inner_value = self.w.b.lam_over("f", CoreBinderInfo::Explicit, nat, f, proof);
-        let value = self.w.b.lam_over("n", CoreBinderInfo::Explicit, nat, n, inner_value);
+        let inner_ty = self
+            .w
+            .b
+            .pi_over("f", CoreBinderInfo::Explicit, nat, f, statement);
+        let ty = self
+            .w
+            .b
+            .pi_over("n", CoreBinderInfo::Explicit, nat, n, inner_ty);
+        let inner_value = self
+            .w
+            .b
+            .lam_over("f", CoreBinderInfo::Explicit, nat, f, proof);
+        let value = self
+            .w
+            .b
+            .lam_over("n", CoreBinderInfo::Explicit, nat, n, inner_value);
         Ok((ty, value))
     }
 }
@@ -547,12 +587,12 @@ fn build(
         functions: Vec::new(),
     };
     for index in 0..program.functions.len() as u64 {
-        let proof = aligner.function_proof(index).map_err(|reason| {
-            match aligner.over.clone() {
+        let proof = aligner
+            .function_proof(index)
+            .map_err(|reason| match aligner.over.clone() {
                 Some(refusal) => refusal,
                 None => format!("function {index}: {reason}"),
-            }
-        })?;
+            })?;
         let fun_ok = aligner.rust_const("FunOK");
         let at = aligner.w.nat_u(index);
         let statement = aligner
@@ -575,8 +615,12 @@ fn build(
     aligner
         .w
         .push_row("program", definition, program_ty, program_value)?;
-    aligner.w.push_row("krate", definition, crate_ty, crate_value)?;
-    aligner.w.push_row("flags", definition, flags_ty, flags_value)?;
+    aligner
+        .w
+        .push_row("krate", definition, crate_ty, crate_value)?;
+    aligner
+        .w
+        .push_row("flags", definition, flags_ty, flags_value)?;
     for (name, statement, proof) in rows.functions {
         aligner.w.push_row(&name, theorem, statement, proof)?;
     }
@@ -669,11 +713,7 @@ pub fn crates_module(module: &str, crates: &[&Crate]) -> Result<(CoreModule, Str
 /// # Errors
 ///
 /// A module that does not validate.
-pub fn restated_over(
-    data: &CoreModule,
-    module: &str,
-    krate: &Crate,
-) -> Result<CoreModule, String> {
+pub fn restated_over(data: &CoreModule, module: &str, krate: &Crate) -> Result<CoreModule, String> {
     let program = Program {
         spec: String::new(),
         adts: Vec::new(),

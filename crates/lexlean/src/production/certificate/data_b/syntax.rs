@@ -293,7 +293,10 @@ impl Writer<'_, '_> {
 
     /// `List Pat`.
     pub(super) fn rs_pats(&mut self, patterns: &[Pat]) -> Term {
-        let items: Vec<Term> = patterns.iter().map(|pattern| self.rs_pat(pattern)).collect();
+        let items: Vec<Term> = patterns
+            .iter()
+            .map(|pattern| self.rs_pat(pattern))
+            .collect();
         self.rs_list("Pat", &items)
     }
 
@@ -537,7 +540,10 @@ impl Writer<'_, '_> {
 
     /// `List RustType`.
     pub(super) fn rs_types(&mut self, types: &[Type]) -> Term {
-        let items: Vec<Term> = types.iter().map(|declared| self.rs_type(declared)).collect();
+        let items: Vec<Term> = types
+            .iter()
+            .map(|declared| self.rs_type(declared))
+            .collect();
         self.rs_list("RustType", &items)
     }
 

@@ -197,7 +197,11 @@ pub fn halved(project: &P, certified: &[Certified]) -> Vec<(String, String, Vec<
                 root.report,
                 &lowered,
                 &module,
-                held.certificate.source.as_ref().map_or(held.certificate.text.len(), String::len) as u64 / 2,
+                held.certificate
+                    .source
+                    .as_ref()
+                    .map_or(held.certificate.text.len(), String::len) as u64
+                    / 2,
             ));
             let fallible = lexlean::calculus::rust::fallible_functions(&lowered.program)
                 .expect("a valid program")[lowered.entry() as usize];
@@ -3192,7 +3196,9 @@ mod dev_b {
     #[ignore = "a developer's lens on certificate B"]
     fn certificate_b_alone() {
         let name = std::env::var("LEXLEAN_DEV_EXAMPLE").unwrap_or_else(|_| "production".to_owned());
-        let only: Option<usize> = std::env::var("LEXLEAN_DEV_ROOT").ok().and_then(|v| v.parse().ok());
+        let only: Option<usize> = std::env::var("LEXLEAN_DEV_ROOT")
+            .ok()
+            .and_then(|v| v.parse().ok());
         let project = P::copy_example(&name);
         let checked = support::checked_project(&project);
         let modules = linked_modules(&checked);
@@ -3306,11 +3312,16 @@ mod dev_oracle_b {
         let mut report = Vec::new();
         for (index, target, certificate) in &built {
             let module = &certificate.module;
-            let suffix = if target == "rust-core" { "RustCore" } else { "RustStd" };
-            let committed = std::fs::read_to_string(
-                base.join(format!("R{index}/{suffix}.lean")).as_std_path(),
-            )
-            .unwrap_or_else(|error| panic!("the committed certificate B of R{index}: {error}"));
+            let suffix = if target == "rust-core" {
+                "RustCore"
+            } else {
+                "RustStd"
+            };
+            let committed =
+                std::fs::read_to_string(base.join(format!("R{index}/{suffix}.lean")).as_std_path())
+                    .unwrap_or_else(|error| {
+                        panic!("the committed certificate B of R{index}: {error}")
+                    });
             let old = format!("{module}.Old");
             let renamed = committed
                 .replace(
@@ -3361,7 +3372,11 @@ mod dev_oracle_b {
                         .filter_map(|n| n.parse().ok()),
                 )
                 .collect();
-            eprintln!("R{index} {target}: {} rows; oracle{}", rows.len(), tail.trim_end());
+            eprintln!(
+                "R{index} {target}: {} rows; oracle{}",
+                rows.len(),
+                tail.trim_end()
+            );
             rows_total += rows.len();
             if let [_, _, same, total] = counts.as_slice() {
                 bodies.0 += same;

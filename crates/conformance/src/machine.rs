@@ -9,8 +9,8 @@ use std::collections::BTreeMap;
 
 use lexlean::calculus::rust::{ast, fallible_functions, lower, Profile};
 use lexlean::calculus::Outcome;
-use lexlean::production::certificate::render_value;
 use lexlean::production::certificate::data_b::crates_module;
+use lexlean::production::certificate::render_value;
 
 use crate::differential::{observed, Case};
 use crate::preservation::Certified;
