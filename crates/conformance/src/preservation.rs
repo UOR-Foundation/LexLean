@@ -2737,7 +2737,9 @@ pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -
                     })
                     .collect(),
                 sources: Vec::new(),
-            };
+                effects: Vec::new(),
+            }
+            .showing_effects();
             let rendered = package(&manifest)
                 .unwrap_or_else(|reason| panic!("{} on {target}: {reason}", entry.root));
             let owned: Vec<Vec<Passing>> = functions

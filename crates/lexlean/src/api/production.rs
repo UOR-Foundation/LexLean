@@ -998,6 +998,7 @@ fn manifest_for(
     program: &Program,
     entry: u64,
     semantic_id: Sha256Digest,
+    effects: Vec<String>,
 ) -> Result<Manifest, String> {
     let fallible = crate::calculus::rust::fallible_functions(program)?;
     let function = program
@@ -1021,6 +1022,7 @@ fn manifest_for(
             },
         }],
         sources: vec![semantic_id.to_hex()],
+        effects,
     })
 }
 
@@ -1145,24 +1147,7 @@ fn build_inner(
         let program = lowered.program;
         let mut packages = Vec::new();
         for target in &wanted.targets {
-            let manifest = manifest_for(
-                &wanted.package,
-                &target.id,
-                &program,
-                entry,
-                checked.semantic_id,
-            )
-            .map_err(|reason| internal(format!("root `{}`: {reason}", wanted.root)))?;
-            let rendered = package::package(&manifest).map_err(|reason| {
-                LexLeanError::from_diagnostic(Diagnostic::new(
-                    code!("LLB6005"),
-                    format!(
-                        "root `{}`: package `{}` for {}: {reason}",
-                        wanted.root, wanted.package.name, target.id
-                    ),
-                ))
-            })?;
-            let effects = root
+            let effects: Vec<String> = root
                 .report
                 .targets
                 .iter()
@@ -1176,6 +1161,24 @@ fn build_inner(
                     ids.into_iter().collect()
                 })
                 .unwrap_or_default();
+            let manifest = manifest_for(
+                &wanted.package,
+                &target.id,
+                &program,
+                entry,
+                checked.semantic_id,
+                effects.clone(),
+            )
+            .map_err(|reason| internal(format!("root `{}`: {reason}", wanted.root)))?;
+            let rendered = package::package(&manifest).map_err(|reason| {
+                LexLeanError::from_diagnostic(Diagnostic::new(
+                    code!("LLB6005"),
+                    format!(
+                        "root `{}`: package `{}` for {}: {reason}",
+                        wanted.root, wanted.package.name, target.id
+                    ),
+                ))
+            })?;
             packages.push((target.clone(), manifest, rendered, effects));
         }
         let evidence = match request
@@ -1880,6 +1883,7 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                 &program,
                 output.entry.function,
                 result.source.semantic_id,
+                output.effects.clone(),
             )
             .map_err(|reason| replay_error(format!("{directory}: {reason}")))?;
             bind(

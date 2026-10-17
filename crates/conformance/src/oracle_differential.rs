@@ -1757,7 +1757,9 @@ pub fn execute(
                     },
                 }],
                 sources: Vec::new(),
-            };
+                effects: Vec::new(),
+            }
+            .showing_effects();
             let rendered = package_of(&manifest, &run.root);
             let arguments: Vec<Vec<Value>> = accepted
                 .cases
@@ -3150,7 +3152,9 @@ pub fn lexlean_package(accepted: &Accepted, profile: &str) -> BTreeMap<String, V
             },
         }],
         sources: Vec::new(),
-    };
+        effects: Vec::new(),
+    }
+    .showing_effects();
     package(&manifest)
         .unwrap_or_else(|reason| panic!("LexLean renders the root: {reason}"))
         .files
