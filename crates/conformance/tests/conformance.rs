@@ -1996,6 +1996,11 @@ fn conformance_pk_04() {
 }
 
 #[test]
+fn conformance_pk_05() {
+    repo_conformance::cases::run("PK-05");
+}
+
+#[test]
 fn conformance_lm_01() {
     repo_conformance::cases::run("LM-01");
 }
