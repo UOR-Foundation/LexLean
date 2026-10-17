@@ -3151,4 +3151,56 @@ mod dev {
             bodies.1
         );
     }
+
+    /// The sizes of certificate A, as Lean text and as recorded, for each
+    /// stress family, with the limit lifted: the figures the size gates are
+    /// calibrated against.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_family_sizes() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(family_sizes)
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
+
+    fn family_sizes() {
+        for (family, project) in crate::stress::families() {
+            let checked = support::checked_project(&project);
+            let modules = linked_modules(&checked);
+            let hex32: String = checked.semantic_id.to_hex()[..32].to_owned();
+            let limits = support::limits(&project);
+            for (index, root) in roots(&checked)
+                .expect("the eligibility reports")
+                .iter()
+                .enumerate()
+            {
+                let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                    .expect("lowering");
+                let module = format!("LexLeanPreserve.C{hex32}.R{index}");
+                match certificate(
+                    &modules,
+                    &root.module,
+                    &root.name,
+                    root.report,
+                    &lowered,
+                    &module,
+                    UNBOUNDED,
+                ) {
+                    Ok(certificate) => eprintln!(
+                        "FAMILY {family}: {}: {} text, {} notation (limit {})",
+                        root.report.root,
+                        certificate.text.len(),
+                        certificate.source.as_ref().map_or(0, String::len),
+                        limits.max_file_bytes
+                    ),
+                    Err(diagnostic) => {
+                        eprintln!("FAMILY {family}: {}: {}", root.report.root, diagnostic.message);
+                    }
+                }
+            }
+        }
+    }
 }
