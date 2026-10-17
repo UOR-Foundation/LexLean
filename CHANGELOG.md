@@ -25,6 +25,20 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The negative fixture `lowering-size-limit` is a match on 400 constructors
+  and no longer the generic chain `g_k<T> = g_{k+1}<(T, T)>` 16 deep, and the
+  cost table of SPEC.md §17.17 *Limits* is the one `COSTS_A` and `COSTS_B`
+  state. Certificates A and B are kernel data in which a repeated type is one
+  node, so the chain verifies (it did not fit under `max_file_bytes` as text)
+  and the lower bound counts no type node; what a small source still makes
+  large is the pairs of arms of a match, which the fixture now uses. The
+  fixture is refused with `LLS8002` in lowering, as before.
+- The preservation library's statement of
+  `LexLeanTarget.TargetSemantics.fromOrdering.eq_1` is the one the elaborator
+  makes for the generated module under the explicit byte-literal spelling
+  (#68): the two byte arrays it compares are written
+  `UInt8.ofNat (nat_lit n)` where they were `OfNat.ofNat`. The embedded library
+  checks a stored equation against the elaborator's and refused the old one.
 - The decoder of a version 2 core module no longer takes a derived row from
   the data (`SM-33`, SPEC.md §17.10, part 1 of #91 stage 2): a row whose name
   the pinned Lean reserves (matcher equations and splitters, definition

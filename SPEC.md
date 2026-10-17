@@ -4866,10 +4866,16 @@ representable arguments are certificate E's domain. The module also defines
 
 **Limits.** A lowered program grows with the size of the types a generic
 definition is instantiated at: a definition `g_k<T> = g_{k+1}<(T, T)>` chained
-16 deep has a type of 2^16 nodes, and the certificates repeat every type
-node in the program literal, the encoders, the crate term, and the
-statements. Four things bound them: an early refusal, a guarantee, a total for
-all the roots of a project, and the budgets the pinned Lean is given.
+16 deep has a type of 2^16 nodes. The lowering charges every one of them to
+`max_ir_nodes`, but certificates A and B are kernel data in which every
+repeated subterm is one node, so a type costs them nothing and the chain
+verifies (the negative fixture `lowering-size-limit` was this chain until the
+certificates became data). What a certificate repeats is what a program writes
+out: its expressions, the pairs of arms of a match, and its literals. A match
+on 400 constructors, 20 KB of source, has a certificate A of at least
+10 MB. Four things bound the certificates: an early refusal, a guarantee, a
+total for all the roots of a project, and the budgets the pinned Lean is
+given.
 
 The early refusal is a lower bound on each certificate. The lowering charges
 every type node and every expression node to `max_ir_nodes` as it builds
@@ -4880,19 +4886,18 @@ byte for each unit the lowering counts, besides a base:
 
 | unit | A | B | E |
 | --- | --- | --- | --- |
-| base (bytes) | 1080 | 800 | 690 |
-| type node (as printed) | 284 | 0 | 0 |
-| expression node, an arm counting as one | 176 | 1072 | 0 |
-| shape node (a field read, a constructor built, an arm binder) | 0 | 89 | 0 |
-| pair of arms of one match | 180 | 0 | 2 |
-| byte of a string literal | 7 | 23 | 0 |
-| digit of a bytes literal | 19 | 59 | 0 |
+| base (bytes) | 5400 | 200 | 690 |
+| type node (as printed) | 0 | 0 | 0 |
+| expression node, an arm counting as one | 300 | 268 | 0 |
+| shape node (a field read, a constructor built, an arm binder) | 0 | 22 | 0 |
+| pair of arms of one match | 1018 | 0 | 2 |
+| byte of a string literal | 15 | 6 | 0 |
+| digit of a bytes literal | 433 | 15 | 0 |
 
-A type node is counted as a certificate prints it: every node of a
-parameter's, result's, and constructor field's type, and the nodes of the
-largest type written at an expression of a function once for the function (a
-pair nested `d` deep is `d` nodes in a certificate, and the `d^2 / 2` of its
-subterms' types are charged to `max_ir_nodes` and not counted here). A match
+A type node is counted as a certificate prints it, and no certificate
+prints one more than once: A and B are kernel data, so a node of a type is one
+node however often it is repeated, and the type column is zero (the nodes are
+still charged to `max_ir_nodes`). A match
 on `C` constructors states each arm after the others, so its proof
 grows with `C` squared: the pairs of a program are the sum of the squares of
 the arms of its matches. The root is refused when the greatest of the three

@@ -1705,10 +1705,13 @@ pub fn run(id: &str) {
             }
             // A root whose lowered program, or the certificates it implies,
             // would exceed the project's limits is refused before anything is
-            // generated from it: a generic chain `g_k<T> = g_{k+1}<(T, T)>`
-            // 16 deep has a type of 2^16 nodes (its certificates are
-            // at least twice the limit), and `lexlean verify`
-            // refuses it with `LLS8002` without starting Lean.
+            // generated from it: a match on 400 constructors, 20 KB of
+            // source, has pairs of arms that make its certificate A more than
+            // twice the limit, and `lexlean verify` refuses it with
+            // `LLS8002` without starting Lean. (This was a generic chain
+            // `g_k<T> = g_{k+1}<(T, T)>` 16 deep, a type of 2^16 nodes,
+            // until certificates were kernel data: a repeated type is one
+            // node there, so the chain no longer costs a certificate.)
             let observed = crate::fixtures::observe_shared(
                 &repo_root().join("tests/negative/lowering-size-limit"),
             )
