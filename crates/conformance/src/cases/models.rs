@@ -535,6 +535,97 @@ fn check_wide_artifact(root: &camino::Utf8Path) {
     );
 }
 
+// Decode the closed generated expression independently of the renderer. An
+// exact octet comparison must survive literal-local sharing, not accept an
+// opaque expression or merely find the bytes somewhere in the module.
+fn embedded_artifact_octets(lean: &str, name: &str) -> Vec<u8> {
+    let prefix = format!("@[expose] public def {name}.bytes : ByteArray := ");
+    let expressions = lean
+        .lines()
+        .filter_map(|line| line.strip_prefix(&prefix))
+        .collect::<Vec<_>>();
+    assert_eq!(expressions.len(), 1, "one exact artifact definition");
+    let mut expression = expressions[0];
+    if expression.starts_with('(') {
+        expression = expression
+            .strip_prefix('(')
+            .and_then(|value| value.strip_suffix(')'))
+            .expect("closed literal-local expression");
+    }
+    let octet = |text: &str| {
+        let value = text.parse::<u8>().expect("bounded octet");
+        assert_eq!(text, value.to_string(), "canonical octet");
+        value
+    };
+    let mut bindings = std::collections::BTreeMap::new();
+    while expression.starts_with("let ") {
+        let (binding, rest) = expression.split_once("; ").expect("local separator");
+        let (name, value) = binding
+            .strip_prefix("let __byte")
+            .and_then(|value| value.split_once(" : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit "))
+            .expect("closed octet binding");
+        let name = octet(name);
+        let value = octet(value.strip_suffix(')').expect("closed octet value"));
+        assert_eq!(name, value, "local name binds its own octet");
+        assert!(bindings.insert(name, value).is_none(), "unique local");
+        expression = rest;
+    }
+    let contents = expression
+        .strip_prefix("_root_.ByteArray.mk #[")
+        .and_then(|value| value.strip_suffix(']'))
+        .expect("closed byte array constructor");
+    if contents.is_empty() {
+        return Vec::new();
+    }
+    contents
+        .split(", ")
+        .map(|item| {
+            if let Some(name) = item.strip_prefix("__byte") {
+                *bindings.get(&octet(name)).expect("literal-local binding")
+            } else {
+                let value = item
+                    .strip_prefix("(_root_.UInt8.ofNat (nat_lit ")
+                    .and_then(|value| value.strip_suffix("))"))
+                    .expect("closed explicit octet");
+                octet(value)
+            }
+        })
+        .collect()
+}
+
+#[test]
+fn artifact_octet_oracle_rejects_opaque_unbound_and_forged_literals() {
+    let definition = |expression: &str| {
+        format!("@[expose] public def artifact.bytes : ByteArray := {expression}\n")
+    };
+    let direct = "_root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 255))]";
+    assert_eq!(
+        embedded_artifact_octets(&definition(direct), "artifact"),
+        [0, 255]
+    );
+    let shared = "(let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[__byte0, __byte0])";
+    assert_eq!(
+        embedded_artifact_octets(&definition(shared), "artifact"),
+        [0, 0]
+    );
+    assert_eq!(
+        embedded_artifact_octets(&definition("_root_.ByteArray.mk #[]"), "artifact"),
+        Vec::<u8>::new()
+    );
+    for expression in [
+        "opaqueArtifact",
+        "_root_.ByteArray.mk #[__byte0]",
+        "_root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 256))]",
+        "_root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 00))]",
+        "(let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 1); _root_.ByteArray.mk #[__byte0])",
+        "(let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[__byte0])",
+    ] {
+        assert!(std::panic::catch_unwind(|| embedded_artifact_octets(&definition(expression), "artifact")).is_err());
+    }
+    let duplicate = definition(direct) + &definition(direct);
+    assert!(std::panic::catch_unwind(|| embedded_artifact_octets(&duplicate, "artifact")).is_err());
+}
+
 fn md_02() {
     if let Ok(root) = std::env::var(WIDE_ARTIFACT_PROJECT) {
         check_wide_artifact(camino::Utf8Path::new(&root));
@@ -570,14 +661,7 @@ fn md_02() {
     let lean = support::lean_text(&build, "Recognizer");
     let banner = std::fs::read(project.root.join("artifacts/banner.bin").as_std_path())
         .expect("banner bytes");
-    let embedded = banner
-        .iter()
-        .map(u8::to_string)
-        .collect::<Vec<_>>()
-        .join(", ");
-    assert!(lean.contains(&format!(
-        "public def banner.bytes : ByteArray := ByteArray.mk #[{embedded}]"
-    )));
+    assert_eq!(embedded_artifact_octets(&lean, "banner"), banner);
     assert!(lean.contains("public theorem banner.decoded : banner = banner.bytes := rfl"));
     let weights = std::fs::read(
         project
@@ -591,9 +675,7 @@ fn md_02() {
         .map(u8::to_string)
         .collect::<Vec<_>>()
         .join(", ");
-    assert!(lean.contains(&format!(
-        "public def hiddenWeights.bytes : ByteArray := ByteArray.mk #[{embedded}]"
-    )));
+    assert_eq!(embedded_artifact_octets(&lean, "hiddenWeights"), weights);
     assert!(lean.contains(
         "public theorem hiddenWeights.decoded : (LexLeanModels.tensorMatches 1 true hiddenWeights.flatten hiddenWeights.bytes && (hiddenWeights.length == 12) && (hiddenWeights.map List.length == List.replicate 12 7)) = true := by decide"
     ));
