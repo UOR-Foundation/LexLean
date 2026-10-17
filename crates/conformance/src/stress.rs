@@ -1256,7 +1256,7 @@ pub fn random_shapes(count: usize, seed: u64) -> Vec<Shape> {
 
 /// The constructors of the widest enumeration whose certificate A, recorded in
 /// the authoring notation, fits under the default limit.
-pub const FITTING_CONSTRUCTORS: usize = 420;
+pub const FITTING_CONSTRUCTORS: usize = 240;
 
 /// A program that matches on an enumeration of `constructors` constructors,
 /// under the default limits.
@@ -1266,8 +1266,8 @@ pub fn fitting_enumeration(constructors: usize) -> P {
 }
 
 /// Programs that are valid and whose certificates fit under the default
-/// limits, with the default limits: none may be refused. A match on 420
-/// constructors (certificate A of 4.1 MB of the 4 MiB), a string literal of
+/// limits, with the default limits: none may be refused. A match on 240
+/// constructors (certificate A of 3.9 MB of the 4 MiB, in the notation it is recorded in), a string literal of
 /// 450 000 characters (certificate B of 1.4 MB), and the largest scaling of
 /// each of [`mixed_shapes`] whose certificates all fit, which the caller
 /// finds by searching with [`mixed_lifted`].

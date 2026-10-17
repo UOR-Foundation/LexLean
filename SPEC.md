@@ -4744,7 +4744,7 @@ were fitted to, and requires that the largest scaling of each of nine mixed
 shapes whose certificates are all under the default limit, a program at the
 edge of what fits, is not refused. The early refusal refuses, and only
 refuses early: a root whose certificates fit under `max_file_bytes` is not
-refused by it (a match on 420 constructors, whose certificate A is 4.0 MB; a
+refused by it (a match on 240 constructors, whose certificate A is 3.9 MB in the notation it is recorded in; a
 string literal of 450 000 characters, whose certificate B is 1.4 MB; a match
 on 350 constructors returned with a string of 940 000 characters), and what the
 bound does not see, the guarantee below stops. Certificate B is not bounded
@@ -4871,11 +4871,10 @@ listed by `tasklist` (then it had already exited), and the console delivers Ctrl
 the children. A match on 180 constructors verifies
 (`conformance_sp_02`), and so does one on 300, whose certificate B alone takes
 3 minutes and a half; the reference machine reaches the 300 seconds between 300
-and 400 constructors, where `lexlean verify` of a match on 400 ends with
+and 400 constructors, where, with `max_file_bytes` raised, `lexlean verify` of a match on 400 ends with
 `error[LLS8002]: child_timeout_ms exceeded by lean in phase
-LexLeanPreserve.C….R0` (certificate A, of 3.7 MB). The limit `max_file_bytes`
-itself allows about 420 constructors, so the timeout is the limit of a match
-that wide, and a registered one. The extraction record
+LexLeanPreserve.C….R0` (certificate A, of 3.7 MB as Lean text). The default limit `max_file_bytes`
+itself allows about 250 constructors, since certificate A, recorded in the authoring notation, is about 3.9 MB at 240 and grows with the square of the arms, so for a match of more than about 250 constructors the limit, not the timeout, refuses the root, with `LLS8002` in the phase certificates (the Lean text was 4.1 MB at 420, and the data certificate is not smaller than the text for a wide match); the timeout is the limit of a match that wide, and a registered one. The extraction record
 of a named root nests with the arms of a match (two levels each), and is read
 without the 128-level recursion limit of the JSON reader on a thread with a
 large stack, so no number of arms makes a verified root fail on it.

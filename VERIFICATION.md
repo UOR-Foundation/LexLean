@@ -1565,8 +1565,8 @@ production-coverage: Coverage.Colls.mapOps: the lower bounds Bounds { a: 51284, 
 
 Planted: the cost of a pair of arms of certificate A raised from 180 to 500.
 Expected: the check that valid programs whose certificates fit are not refused
-(a match on 420 constructors, a string of 450 000 characters, at the default
-limits) refuses the match.
+(a match on 240 constructors, a string of 450 000 characters, at the default
+limits; certificate A is recorded in the notation, which is three times the Lean text of a wide match, so the match is 240 where it was 420) refuses the match.
 
 ```text
 Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 5524790 bytes (1265 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
