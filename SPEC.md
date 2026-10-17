@@ -4598,10 +4598,16 @@ program is established by the conformance suite against the verified build
 build (realization-to-source preservation) is the obligation of the
 production pipeline that derives target programs from LexLean roots, not of
 this backend: `sources` binds a package to the build that states its program,
-and the backend never derives a program from a build. Its `effects` are the
-effects of §17.13 the realization can exhibit on the profile, strictly
-ascending and registered; for a package a production root exports they are the
-root's, which eligibility decides and the renderer does not derive, and the
+and the backend never derives a program from a build. Its `effects` are effects
+of §17.13, strictly ascending and registered, that the package states of
+itself. For a package a production root exports they are the set eligibility
+requires of the root on the profile, which eligibility decides and the renderer
+does not derive; for a package no root exports (a fixture) they are the effects
+its program shows, `overflow` for an export that can fail and `recursion` for a
+function that reaches itself, never `allocation`. They are not the effects the
+realization can exhibit: the argument check an entry carries recurses over a
+recursive argument type, and the graph templates' `nat_add` fuel bound can
+overflow, and neither is among a root's required effects (issue 105). The
 renderer refuses a list that is unregistered, unordered, or states `allocation`
 on `rust-core`. Each export names a
 program function, its Rust name, how it takes each parameter (`own`;
@@ -4636,24 +4642,31 @@ table below, each because its advice would make the rendering depart from the
 calculus.
 
 **Scaffolding.** What a package says of itself beside its program is data, not
-renderer text. The edition (2021), that the crate is not published, the library
-path, the gate on rustc's lints, the Clippy group the gate starts from, and the
+renderer text. The edition (2021), that the crate is not published, the gate
+on rustc's lints, the Clippy group the gate starts from, and the
 allowed lints, each with its Clippy group and its reason, are the declarations
 of one language-1.2 semantic module, `RustPackage`, written in the authoring
-notation at `language/package-1.2/RustPackage.lex.tex`. It is under `language/`,
+notation at `language/package-1.2/library/src/RustPackage.lex.tex`. It is under `language/`,
 so the language-1.2 compiler-semantics ID (§21.2) covers it, and a changed
 lint, edition, or gate changes LexLean's identity. The renderer reads it, and
-neither evaluates it nor splices it into a rendering: `rust::scaffold` decodes
+neither evaluates it nor splices it into a rendering (the library's path is
+not in it: `src/lib.rs` is the package's layout, `package::LIBRARY_PATH`, which
+the provenance schema also fixes): `rust::scaffold` decodes
 the module's semantic data, accepting exactly the shapes the module uses and
 the declarations it names, and `package.rs` prints `Cargo.toml` over the
 record. The crate attributes are derived, not stored: `#![no_std]` is the
 target row of `language/production-1.2.toml` with `allocation = false`, and
-`#![forbid(lint)]` restates each gate of the module at level `forbid` (so
+`#![forbid(lint)]` restates each gate on rustc's lints at level `forbid` (so
 `#![forbid(unsafe_code)]` and `unsafe_code = "forbid"` come from one row, and
 a `lib.rs` built outside Cargo still forbids unsafe code). No source of the
 renderer holds a string the module states (`scaffold::audit`). The module
 states that no allowed lint is in Clippy's `correctness` group as a theorem
-over the same list, and the reader refuses a lint in that group.
+over the same list. The reader refuses a lint in that group and checks the
+theorem by its shape (the predicate is false exactly on `correctness`, and the
+theorem equates it over the list with `true`); the module is the project
+`language/package-1.2/library`, whose check types it, and the kernel's replay
+of the theorem's proof is that of `verify`, which no gate of this repository
+runs on it.
 
 | Lint | Clippy group | Reason |
 | --- | --- | --- |
@@ -4664,7 +4677,7 @@ over the same list, and the reader refuses a lint in that group.
 | `result_unit_err` | style | asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart |
 | `single_match` | style | asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit |
 | `manual_unwrap_or` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
-| `manual_unwrap_or_default` | suspicious | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
+| `manual_unwrap_or_default` | suspicious | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime, and its advice is a rewrite that preserves the match's meaning, so allowing it masks no defect |
 | `manual_map` | style | asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure |
 | `manual_ok_err` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |
 
@@ -4679,10 +4692,11 @@ exception makes a committed package fail the gate. `provenance.json` (`lexlean/r
 profile, the program's identity, the language-1.2 compiler-semantics ID
 (§21.2), the SHA-256 of the runtime the profile carries, the sources, the
 effects, the exports, and the SHA-256 of `Cargo.toml` and `src/lib.rs`. The
-`effects` are those of §17.13 the realization can exhibit on the profile,
-ascending: for a package a production root exports, exactly those eligibility
-requires of the root there; with `recursion`, the host gives the call a stack
-its input-dependent depth fits, and exhausting it aborts the process.
+`effects` are those the manifest states (above): for a package a production
+root exports, the set eligibility requires of the root on the profile, which
+understates what the realization can exhibit (issue 105); a host that runs a
+package whose effects include `recursion` gives the call a stack its
+input-dependent depth fits, and exhausting a stack aborts the process.
 `language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
 (`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
 sources (`rust_renderer`: one §21.1 frame per file of
@@ -9469,10 +9483,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
 | `RB-08` | `rust-backend` | A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused. | §17.16 |
 | `RB-09` | `rust-backend` | Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused. | §17.16 |
-| `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the library path, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
-| `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
+| `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
+| `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
-| `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, production states those eligibility requires of the root on the target and the replay binds the package's to the result's, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
+| `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |

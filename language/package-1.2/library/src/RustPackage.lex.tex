@@ -1,6 +1,7 @@
 \begin{lexlean}{RustPackage}
 \useglossary{lexlean.std.nat@1.2.0}
-\title{Natural number addition}
+\useglossary{package.titles@1.0.0}
+\title{Rust package scaffolding}
 \begin{semanticmodule}
 inductive{
   name: Level,
@@ -42,7 +43,11 @@ structure{
   name: LintRow,
   type_parameters: [],
   parameters: [],
-  fields: [{name: lint, type: String}, {name: group, type: ClippyGroup}, {name: reason, type: String}]
+  fields: [
+    {name: lint, type: String},
+    {name: group, type: ClippyGroup},
+    {name: reason, type: String}
+  ]
 }
 
 structure{
@@ -77,7 +82,7 @@ definition{
   name: allowedLints,
   parameters: [],
   result: (List LintRow),
-  body: (cons (record LintRow {lint := "type_complexity", group := (ctor ClippyGroup.complexity), reason := "asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart"}) (cons (record LintRow {lint := "too_many_arguments", group := (ctor ClippyGroup.complexity), reason := "asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart"}) (cons (record LintRow {lint := "large_enum_variant", group := (ctor ClippyGroup.perf), reason := "asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not"}) (cons (record LintRow {lint := "result_large_err", group := (ctor ClippyGroup.perf), reason := "asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not"}) (cons (record LintRow {lint := "result_unit_err", group := (ctor ClippyGroup.style), reason := "asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart"}) (cons (record LintRow {lint := "single_match", group := (ctor ClippyGroup.style), reason := "asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit"}) (cons (record LintRow {lint := "manual_unwrap_or", group := (ctor ClippyGroup.complexity), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime"}) (cons (record LintRow {lint := "manual_unwrap_or_default", group := (ctor ClippyGroup.suspicious), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime"}) (cons (record LintRow {lint := "manual_map", group := (ctor ClippyGroup.style), reason := "asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure"}) (cons (record LintRow {lint := "manual_ok_err", group := (ctor ClippyGroup.complexity), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime"}) (nil LintRow)))))))))))
+  body: (cons (record LintRow {lint := "type_complexity", group := (ctor ClippyGroup.complexity), reason := "asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart"}) (cons (record LintRow {lint := "too_many_arguments", group := (ctor ClippyGroup.complexity), reason := "asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart"}) (cons (record LintRow {lint := "large_enum_variant", group := (ctor ClippyGroup.perf), reason := "asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not"}) (cons (record LintRow {lint := "result_large_err", group := (ctor ClippyGroup.perf), reason := "asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not"}) (cons (record LintRow {lint := "result_unit_err", group := (ctor ClippyGroup.style), reason := "asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart"}) (cons (record LintRow {lint := "single_match", group := (ctor ClippyGroup.style), reason := "asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit"}) (cons (record LintRow {lint := "manual_unwrap_or", group := (ctor ClippyGroup.complexity), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime"}) (cons (record LintRow {lint := "manual_unwrap_or_default", group := (ctor ClippyGroup.suspicious), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime, and its advice is a rewrite that preserves the match's meaning, so allowing it masks no defect"}) (cons (record LintRow {lint := "manual_map", group := (ctor ClippyGroup.style), reason := "asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure"}) (cons (record LintRow {lint := "manual_ok_err", group := (ctor ClippyGroup.complexity), reason := "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime"}) (nil LintRow)))))))))))
 }
 
 definition{

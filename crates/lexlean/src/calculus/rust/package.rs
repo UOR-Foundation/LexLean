@@ -88,15 +88,17 @@ pub struct Manifest {
     /// and records them; that they name the build stating the program is
     /// checked against the verified build (§17.16).
     pub sources: Vec<String>,
-    /// The effects (§17.13) the realization can exhibit on the profile,
-    /// strictly ascending: for a package a production root exports, exactly
-    /// those eligibility requires of the root there. A host that runs a
-    /// package whose effects include `recursion` gives it a stack its
+    /// The effects (§17.13) the package states of itself, strictly ascending:
+    /// for a package a production root exports, the set eligibility requires
+    /// of the root on the profile; for a fixture, those its program shows
+    /// ([`shown_effects`]), never `allocation`. They are not the effects the
+    /// realization can exhibit (issue 105): an entry's argument check recurses
+    /// over a recursive argument type and the graph templates' `nat_add` fuel
+    /// bound can overflow, and neither is required of a root. A host that runs
+    /// a package whose effects include `recursion` gives it a stack its
     /// input-dependent depth fits. The renderer checks the form (registered,
-    /// ascending) and that `rust-core` states no `allocation`. It does not
-    /// derive them: they are the root's, which the eligibility analysis
-    /// decides, and the renderer's own view of a package (see
-    /// [`shown_effects`]) is a different, finer notion.
+    /// ascending) and that `rust-core` states no `allocation`; it does not
+    /// derive the list.
     pub effects: Vec<String>,
 }
 
@@ -344,9 +346,9 @@ fn recurs(program: &Program) -> bool {
 /// The effects a package's own program shows of itself, ascending: what a
 /// package that no production root exports states of itself. It is not a
 /// check on a root's effects, and finer than them: it sees the argument check
-/// a root's entry carries recurse over a recursive type, and a length item
-/// overflow, neither of which the root's eligibility reports. The program is
-/// a canonical one.
+/// a root's entry carries recurse over a recursive type, and the graph
+/// templates' `nat_add` fuel bound overflow, neither of which the root's
+/// eligibility reports. The program is a canonical one.
 #[must_use]
 pub fn shown_effects(program: &Program, exports: &[Export]) -> Vec<String> {
     let mut out = BTreeSet::new();
