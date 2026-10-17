@@ -4010,42 +4010,30 @@ pub fn run(id: &str) {
                     .and_then(|row| row.value)
                     .expect("the program row");
                 let mut planted = data.clone();
-                let mut path = Vec::new();
-                let mut at = program;
-                loop {
-                    match &planted.nodes[at] {
-                        lexlean::ir::core::CoreNode::Nat { .. } => break,
-                        lexlean::ir::core::CoreNode::App { f, x } => {
-                            path.push(at);
-                            // The arguments hold the literals; the head holds the constructor.
-                            at = *x;
-                            let _ = f;
+                // The first literal along the application spine, whichever
+                // side of an application holds it; the nodes above it are
+                // rebuilt on fresh indices.
+                fn forge(nodes: &mut Vec<lexlean::ir::core::CoreNode>, at: usize) -> Option<usize> {
+                    use lexlean::ir::core::CoreNode;
+                    match nodes[at].clone() {
+                        CoreNode::Nat { v } => {
+                            let v = v.parse::<u64>().expect("a small literal") + 1;
+                            nodes.push(CoreNode::Nat { v: v.to_string() });
+                            Some(nodes.len() - 1)
                         }
-                        other => panic!(
-                            "the program's row has no literal along its arguments: {other:?}"
-                        ),
+                        CoreNode::App { f, x } => {
+                            let (f, x) = match forge(nodes, f) {
+                                Some(f) => (f, x),
+                                None => (f, forge(nodes, x)?),
+                            };
+                            nodes.push(CoreNode::App { f, x });
+                            Some(nodes.len() - 1)
+                        }
+                        _ => None,
                     }
                 }
-                let literal = match &planted.nodes[at] {
-                    lexlean::ir::core::CoreNode::Nat { v } => {
-                        v.parse::<u64>().expect("a small literal") + 1
-                    }
-                    _ => unreachable!("the loop stops at a literal"),
-                };
-                planted.nodes.push(lexlean::ir::core::CoreNode::Nat {
-                    v: literal.to_string(),
-                });
-                let mut replacement = planted.nodes.len() - 1;
-                for parent in path.iter().rev() {
-                    let node = match planted.nodes[*parent].clone() {
-                        lexlean::ir::core::CoreNode::App { f, .. } => {
-                            lexlean::ir::core::CoreNode::App { f, x: replacement }
-                        }
-                        other => other,
-                    };
-                    planted.nodes.push(node);
-                    replacement = planted.nodes.len() - 1;
-                }
+                let replacement =
+                    forge(&mut planted.nodes, program).expect("the program's row holds a literal");
                 for row in &mut planted.declarations {
                     if row.name == format!("{}.__prog", certificate.module) {
                         row.value = Some(replacement);
