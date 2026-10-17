@@ -2411,7 +2411,9 @@ are data of the module, not conventions of a backend.
   the action the pinned Lean registers for the name and refuses the module
   unless the action makes the constant and the constant has the row's kind,
   levels, type, and value. A row whose constant an earlier action of the
-  module already made is checked the same way. So that each action makes what
+  module already made is checked the same way. A row private to another
+  module than the one compiled is submitted as data: an action makes only
+  the private names of the module it runs in. So that each action makes what
   the elaborator made, the state it reads is installed as each row is added,
   not after the module: the `recursive` tag, the transparency, the matcher
   record, the equational-lemma record, and the row's realization context,

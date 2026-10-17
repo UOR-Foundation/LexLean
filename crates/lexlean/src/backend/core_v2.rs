@@ -33,7 +33,9 @@
 //! matcher, the equations and unfolding of a definition, the `else_eq` of a
 //! sparse `casesOn`) is not submitted either: the decoder runs the
 //! elaborator's own action for the name and refuses the module unless the
-//! constant it makes has the row's kind, levels, type and value. For each
+//! constant it makes has the row's kind, levels, type and value; a row
+//! private to another module than the one compiled is data, since an action
+//! makes only the private names of the module it runs in. For each
 //! action to make what the elaborator made, the state it reads is installed as
 //! each row is added rather than after the module: the `recursive` tag, the
 //! transparency, the matcher record, the equational-lemma record, and the
@@ -341,7 +343,9 @@ private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
   if (← getEnv).contains name then
     sameAsRow nodes json name levelParams type kindString
     return
-  if Lean.isReservedName (← getEnv) name then
+  let foreign := Lean.isPrivateName name
+    && Lean.mkPrivateName (← getEnv) (Lean.privateToUserName name) != name
+  if Lean.isReservedName (← getEnv) name && !foreign then
     Lean.withExporting (isExporting := true) (Lean.executeReservedNameAction name)
     unless (← getEnv).contains name do
       throwError s!"core declaration '{name}' bears a name the elaborator reserves, and its construction does not make it"
