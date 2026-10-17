@@ -293,60 +293,178 @@ decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
 #[derive(Clone)]
 pub enum Fn0 {
-    F2(Bytes),
+    F2(u8, Bytes),
 }
 
 impl Fn0 {
-    pub fn apply(&self, p0: Option<Bytes>, p1: Bytes) -> Option<Bytes> {
+    pub fn apply(&self, p0: (u64, (u64, List<Bytes>))) -> R<Option<(u64, (u64, List<Bytes>))>> {
         match self {
-            Fn0::F2(k0) => f2(k0.clone(), p0, p1),
+            Fn0::F2(k0, k1) => f2(*k0, k1.clone(), p0),
         }
     }
 }
 
-pub fn f0(v0: List<Bytes>, v1: Bytes) -> Bytes {
-    let m1 = f1(Fn0::F2(v1), None::<Bytes>, v0);
-    match m1 {
+#[derive(Clone)]
+pub enum Fn1 {
+    F7,
+}
+
+impl Fn1 {
+    pub fn apply(&self, p0: List<Bytes>, p1: Bytes) -> List<Bytes> {
+        match self {
+            Fn1::F7 => f7(p0, p1),
+        }
+    }
+}
+
+pub fn f0(v0: Bytes, v1: u8) -> R<List<Bytes>> {
+    let v2: u64 = {
+        let a1 = v0.clone();
+        length_bytes(a1)
+    };
+    let v3: (u64, (u64, List<Bytes>)) = {
+        let (h2, _) = f1(Fn0::F2(v1, v0.clone()), v2, (0u64, (0u64, List::<Bytes>::nil())))?;
+        h2
+    };
+    let v4: u64 = {
+        let (h3, _) = {
+            let (_, h4) = v3.clone();
+            h4
+        };
+        h3
+    };
+    Ok(f3(List::cons(f4(v0, v4, {
+        let a5 = v2;
+        let a6 = v4;
+        nat_sub(a5, a6)
+    }), {
+        let (_, h7) = {
+            let (_, h8) = v3;
+            h8
+        };
+        h7
+    })))
+}
+
+pub fn f1(v0: Fn0, v1: u64, v2: (u64, (u64, List<Bytes>))) -> R<((u64, (u64, List<Bytes>)), bool)> {
+    let m9 = v1;
+    if m9 == 0 {
+        Ok((v2, false))
+    } else {
+        let v3 = m9 - 1;
+        let m11 = {
+            let c10: Fn0 = v0.clone();
+            c10.apply(v2.clone())?
+        };
+        match m11 {
+            None => {
+                Ok((v2, true))
+            }
+            Some(v4) => {
+                f1(v0, v3, v4)
+            }
+        }
+    }
+}
+
+pub fn f2(v0: u8, v1: Bytes, v2: (u64, (u64, List<Bytes>))) -> R<Option<(u64, (u64, List<Bytes>))>> {
+    f5(v1, v0, v2)
+}
+
+pub fn f3(v0: List<Bytes>) -> List<Bytes> {
+    f6(Fn1::F7, List::<Bytes>::nil(), v0)
+}
+
+pub fn f4(v0: Bytes, v1: u64, v2: u64) -> Bytes {
+    let m15 = {
+        let a12 = v0;
+        let a13 = v1;
+        let a14 = v2;
+        slice_bytes(a12, a13, a14)
+    };
+    match m15 {
         None => {
             Bytes::lit(&[])
         }
-        Some(v2) => {
-            v2
+        Some(v3) => {
+            v3
         }
     }
 }
 
-pub fn f1(v0: Fn0, v1: Option<Bytes>, v2: List<Bytes>) -> Option<Bytes> {
-    let m2 = v2;
-    match m2.uncons() {
+pub fn f5(v0: Bytes, v1: u8, v2: (u64, (u64, List<Bytes>))) -> R<Option<(u64, (u64, List<Bytes>))>> {
+    let v3: u64 = {
+        let (h16, _) = v2.clone();
+        h16
+    };
+    let v4: u64 = {
+        let (h17, _) = {
+            let (_, h18) = v2.clone();
+            h18
+        };
+        h17
+    };
+    let v5: List<Bytes> = {
+        let (_, h19) = {
+            let (_, h20) = v2;
+            h20
+        };
+        h19
+    };
+    let m21 = f8(v0.clone(), v3);
+    match m21 {
+        None => {
+            Ok(None::<(u64, (u64, List<Bytes>))>)
+        }
+        Some(v6) => {
+            let a22 = v6;
+            let a23 = v1;
+            if equal(a22, a23) {
+                Ok(Some(({
+                    let a24 = v3;
+                    let a25 = 1u64;
+                    nat_add(a24, a25)?
+                }, ({
+                    let a26 = v3;
+                    let a27 = 1u64;
+                    nat_add(a26, a27)?
+                }, List::cons(f4(v0, v4, {
+                    let a28 = v3;
+                    let a29 = v4;
+                    nat_sub(a28, a29)
+                }), v5)))))
+            } else {
+                Ok(Some(({
+                    let a30 = v3;
+                    let a31 = 1u64;
+                    nat_add(a30, a31)?
+                }, (v4, v5))))
+            }
+        }
+    }
+}
+
+pub fn f6(v0: Fn1, v1: List<Bytes>, v2: List<Bytes>) -> List<Bytes> {
+    let m32 = v2;
+    match m32.uncons() {
         None => {
             v1
         }
         Some((v3, v4)) => {
-            f1(v0.clone(), {
-                let c3: Fn0 = v0;
-                c3.apply(v1, v3)
+            f6(v0.clone(), {
+                let c33: Fn1 = v0;
+                c33.apply(v1, v3)
             }, v4)
         }
     }
 }
 
-pub fn f2(v0: Bytes, v1: Option<Bytes>, v2: Bytes) -> Option<Bytes> {
-    let m4 = v1;
-    match m4 {
-        None => {
-            Some(v2)
-        }
-        Some(v3) => {
-            Some({
-                let a7 = {
-                    let a5 = v3;
-                    let a6 = v0;
-                    append_bytes(a5, a6)
-                };
-                let a8 = v2;
-                append_bytes(a7, a8)
-            })
-        }
-    }
+pub fn f7(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
+    List::cons(v1, v0)
+}
+
+pub fn f8(v0: Bytes, v1: u64) -> Option<u8> {
+    let a34 = v0;
+    let a35 = v1;
+    index_bytes(a34, a35)
 }
