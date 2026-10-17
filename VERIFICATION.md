@@ -289,6 +289,14 @@ seeded-random byte literal in which all 256 values occur.
 | 65536 | 100000 | 37.1 s, heartbeats (`isDefEq`) | 49.2 s, heartbeats (`LCNF compiler`) |
 | 65536 | default | 33.3 s, heartbeats (`isDefEq`) | 42.7 s, recursion depth |
 
+Bisection at the default `maxRecDepth` (no `set_option`), by 16-byte steps
+between 1024 and 16384 bytes, one run per size, seeded-random bytes with all 256
+values present: the largest literal that elaborates is 6394 bytes under both
+renderings, and 6409 bytes fails under both (`maximum recursion depth has been
+reached`). Elaboration time at 4096 bytes is 2.0 s under both; at 6394 bytes it
+is 4.4 s for the `main` rendering and 3.3 s for the explicit one. The lowering
+does not move the largest elaborable literal.
+
 No size succeeds under one rendering and fails under the other. Both fail at
 16384 bytes at the default depth and at 65536 bytes at either depth; the
 explicit form is faster at 4096 and 16384 bytes and slower at 65536. The
