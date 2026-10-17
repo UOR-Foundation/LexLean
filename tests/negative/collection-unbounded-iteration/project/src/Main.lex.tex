@@ -2,6 +2,11 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"arguments":[{"body":{"arguments":[{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"1"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"var","name":"start"}],"kind":"primitive","operation":"iterate_until","result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}},"kind":"definition","name":"forever","parameters":[{"name":"start","type":{"kind":"nat"}}],"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: forever,
+  parameters: [start : Nat],
+  result: (Nat * Bool),
+  body: (prim iterate_until (fun (value : Nat) => (ctor Option.some [Nat] (value + 1))) start : (Nat * Bool))
+}
 \end{semanticmodule}
 \end{lexlean}

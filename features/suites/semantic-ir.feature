@@ -214,3 +214,10 @@ Feature: semantic-ir
     When it is rendered and verified, and copies reference an undeclared node, duplicate an edge or a node, or mistype a query result
     Then the generated graph lists every node in canonical order with sorted successors and the kernel computes the reachable set, the least-first topological order, and none for the cycle
     And each invalid graph fails with LLT4001 before any build output
+
+  @SM-31 @build
+  Scenario: Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms.
+    Given a language-1.2 native core module using every second-schema construct, and copies that plant each refusable defect
+    When it is linked in languages 1.0, 1.1, and 1.2 and rendered by both backends
+    Then only language 1.2 accepts it, the LaTeX document and the Lean text carry every construct, and the pinned Lean elaborates the Lean with exactly the pinned axioms
+    And each planted defect is refused before any build output

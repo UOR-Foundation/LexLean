@@ -248,6 +248,50 @@ fn span_of_range(path: &str, atoms: &[Atom], range: AtomRange) -> crate::diagnos
     }
 }
 
+/// The span of the byte `offset` into a verbatim body (the atoms of `range`),
+/// one scalar wide; the `\begin` atom when the body is empty.
+fn notation_span(
+    path: &str,
+    atoms: &[Atom],
+    range: AtomRange,
+    begin: usize,
+    offset: usize,
+) -> crate::diagnostic::Span {
+    let Some(first) = atoms.get(range.0).filter(|_| range.0 < range.1) else {
+        return span_of_range(path, atoms, (begin, begin + 1));
+    };
+    let target = first.byte_start + offset;
+    for atom in &atoms[range.0..range.1.min(atoms.len())] {
+        if target >= atom.byte_end {
+            continue;
+        }
+        let (mut line, mut column) = (atom.line_start, atom.column_start);
+        let mut width = 1;
+        for (at, scalar) in atom.text.char_indices() {
+            if atom.byte_start + at >= target {
+                width = scalar.len_utf8();
+                break;
+            }
+            if scalar == '\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+        return crate::diagnostic::Span {
+            path: path.to_owned(),
+            byte_start: target,
+            byte_end: target + width,
+            line_start: line,
+            column_start: column,
+            line_end: line,
+            column_end: column + 1,
+        };
+    }
+    span_of_range(path, atoms, range)
+}
+
 fn bytes_of(atoms: &[Atom], range: AtomRange) -> (usize, usize) {
     if range.0 >= atoms.len() {
         return (0, 0);
@@ -262,6 +306,29 @@ struct ModuleLoad {
     normalized: String,
     atoms: Vec<Atom>,
     ast: ModuleAst,
+    /// The source package the module belongs to, absent for the project's own
+    /// (§10.5).
+    package: Option<String>,
+    /// The module's name inside its own project: its header names it, and a
+    /// package's source writes its references to its siblings by it.
+    relative_name: String,
+    /// Each import as written, with the key of the module it names in the
+    /// importing project, in source order.
+    import_keys: Vec<(String, String)>,
+    /// The module prefix the module's Lean name lies under: its project's, or
+    /// its package's (§10.5).
+    prefix: String,
+}
+
+/// Where a module of the linked project is read from (§10.5).
+#[derive(Clone)]
+struct ModuleSource {
+    /// The source package, absent for the project's own modules.
+    package: Option<String>,
+    /// The module's name inside its own project.
+    relative_name: String,
+    /// The project-relative path, or the member-relative path of a package.
+    path: String,
 }
 
 /// Run the complete check pipeline for a selection on a dedicated thread
@@ -408,29 +475,68 @@ fn check_project_inline(
         return Err(error);
     }
 
-    // Load the selection, then the transitive import closure (§15.1).
-    let all_modules = project.all_modules().map_err(err)?;
+    // Load the selection, then the transitive import closure (§15.1). A
+    // module of a source package is read from the bytes the pin covers, so
+    // nothing but the verified tree is ever linked (§10.5).
+    let source_packages = crate::source_package::load_locked(project, lock).map_err(err)?;
+    let own_modules = project.all_modules().map_err(err)?;
     let selected = project.resolve_selection(selection).map_err(err)?;
     let mut loaded: BTreeMap<String, ModuleLoad> = BTreeMap::new();
-    let mut worklist: Vec<(String, String)> = selected
+    let mut worklist: Vec<(String, ModuleSource)> = selected
         .iter()
-        .map(|(module, path)| (module.clone(), path.clone()))
+        .map(|(module, path)| {
+            (
+                module.clone(),
+                ModuleSource {
+                    package: None,
+                    relative_name: module.clone(),
+                    path: path.clone(),
+                },
+            )
+        })
         .collect();
-    while let Some((module_name, relative)) = worklist.pop() {
-        if loaded.contains_key(&module_name) {
+    while let Some((module_name, source)) = worklist.pop() {
+        if let Some(existing) = loaded.get(&module_name) {
+            if existing.package != source.package {
+                return Err(err(vec![Diagnostic::new(
+                    code!("LLC0107"),
+                    format!(
+                        "module `{module_name}` is provided by both the project and a source package"
+                    ),
+                )]));
+            }
             continue;
         }
-        let absolute = project
-            .confined_file_or_missing(&relative, || {
-                Diagnostic::new(code!("LLC0002"), format!("`{relative}` does not exist"))
-            })
-            .map_err(|diagnostic| err(vec![diagnostic]))?;
-        let bytes = std::fs::read(absolute.as_std_path()).map_err(|io_error| {
-            err(vec![Diagnostic::new(
-                code!("LLS8001"),
-                format!("{relative}: {io_error}"),
-            )])
-        })?;
+        let scope_package = source
+            .package
+            .as_ref()
+            .and_then(|id| source_packages.packages.get(id));
+        let (relative, bytes) = match scope_package {
+            None => {
+                let relative = source.path.clone();
+                let absolute = project
+                    .confined_file_or_missing(&relative, || {
+                        Diagnostic::new(code!("LLC0002"), format!("`{relative}` does not exist"))
+                    })
+                    .map_err(|diagnostic| err(vec![diagnostic]))?;
+                let bytes = std::fs::read(absolute.as_std_path()).map_err(|io_error| {
+                    err(vec![Diagnostic::new(
+                        code!("LLS8001"),
+                        format!("{relative}: {io_error}"),
+                    )])
+                })?;
+                (relative, bytes)
+            }
+            Some(package) => {
+                let bytes = package.files.get(&source.path).cloned().ok_or_else(|| {
+                    err(vec![Diagnostic::new(
+                        code!("LLC0002"),
+                        format!("`{}` does not exist", package.display_path(&source.path)),
+                    )])
+                })?;
+                (package.display_path(&source.path), bytes)
+            }
+        };
         if bytes.len() as u64 > limits.max_file_bytes {
             return Err(err(vec![Diagnostic::new(
                 code!("LLS8002"),
@@ -456,31 +562,33 @@ fn check_project_inline(
             &closure.bootstrap.structural.forbidden_controls,
         )
         .map_err(|diagnostic| err(vec![diagnostic]))?;
-        let ast = structural::parse_module(&relative, &atoms, &module_name, limits.max_scope_depth)
-            .map_err(|diagnostic| err(vec![diagnostic]))?;
+        let ast = structural::parse_module(
+            &relative,
+            &atoms,
+            &source.relative_name,
+            limits.max_scope_depth,
+        )
+        .map_err(|diagnostic| err(vec![diagnostic]))?;
+        let mut import_keys: Vec<(String, String)> = Vec::new();
         for import in &ast.imports {
-            let import_name = import.text.clone();
-            if import_name == module_name {
+            let (import_key, import_source) = resolve_import(
+                &source_packages,
+                &own_modules,
+                scope_package,
+                &module_name,
+                &import.text,
+            )
+            .map_err(|diagnostic| err(vec![diagnostic]))?;
+            if import_key == module_name {
                 return Err(err(vec![Diagnostic::new(
                     code!("LLR3003"),
                     format!("module `{module_name}` imports itself"),
                 )]));
             }
-            if !loaded.contains_key(&import_name) {
-                match all_modules.get(&import_name) {
-                    Some(import_path) => {
-                        worklist.push((import_name, import_path.clone()));
-                    }
-                    None => {
-                        return Err(err(vec![Diagnostic::new(
-                            code!("LLR3005"),
-                            format!(
-                                "`{module_name}` imports `{import_name}`, which is not a project module"
-                            ),
-                        )]));
-                    }
-                }
+            if !loaded.contains_key(&import_key) {
+                worklist.push((import_key.clone(), import_source));
             }
+            import_keys.push((import.text.clone(), import_key));
         }
         loaded.insert(
             module_name,
@@ -489,6 +597,13 @@ fn check_project_inline(
                 normalized,
                 atoms,
                 ast,
+                prefix: scope_package.map_or_else(
+                    || project.config.module_prefix.clone(),
+                    |package| package.prefix.clone(),
+                ),
+                package: source.package,
+                relative_name: source.relative_name,
+                import_keys,
             },
         );
     }
@@ -515,9 +630,13 @@ fn check_project_inline(
         // Language 1.2: a module is a namespace of the project, which Lean
         // searches before the root from every module of it, so one named
         // like a namespace the generated code writes qualified would capture
-        // those names (§17.12 rule 10).
-        if project.config.language == crate::LANGUAGE_1_2 {
-            if let Some(segment) = crate::ir::semantic::reserved_module_segment(module_name) {
+        // those names (§17.12 rule 10). A native core module writes no name
+        // relative to the project: its declarations carry their global names
+        // as data, so it captures none, and the proof library's modules are
+        // named for what they state (`Fixed`, `Keys`).
+        if project.config.language == crate::LANGUAGE_1_2 && load.ast.core.is_none() {
+            if let Some(segment) = crate::ir::semantic::reserved_module_segment(&load.relative_name)
+            {
                 return Err(err(vec![Diagnostic::new(
                     code!("LLT4001"),
                     format!(
@@ -575,28 +694,49 @@ fn check_project_inline(
 
         // Module imports: sorted, unique, direct-availability (§15.1, §17.7).
         let mut imports: Vec<String> = Vec::new();
-        for import in &load.ast.imports {
-            if imports.contains(&import.text) {
+        let mut written_imports: Vec<String> = Vec::new();
+        for (import, (_, key)) in load.ast.imports.iter().zip(&load.import_keys) {
+            if written_imports.contains(&import.text) {
                 return Err(err(vec![Diagnostic::new(
                     code!("LLP2003"),
                     format!("duplicate \\importmodule{{{}}}", import.text),
                 )
                 .with_span(span_of_range(&load.path, &load.atoms, import.range))]));
             }
-            imports.push(import.text.clone());
+            written_imports.push(import.text.clone());
+            imports.push(key.clone());
         }
         imports.sort();
+        // Inside a package a module writes its references to a sibling by the
+        // sibling's own name; the linked project names the sibling by its key.
+        // The declarations a module sees carry the name the module writes.
+        let renamed: BTreeMap<String, String> = load
+            .import_keys
+            .iter()
+            .filter(|(written, key)| written != key)
+            .map(|(written, key)| (key.clone(), written.clone()))
+            .collect();
 
         // The declarations visible to this module: its direct imports'
         // declarations, in availability order; its own grow as blocks link.
         let mut module_decls = DeclTable::default();
         for row in &decls.rows {
             if imports.contains(&row.module) {
-                module_decls.rows.push(row.clone());
+                let mut visible_row = row.clone();
+                if let Some(written) = renamed.get(&row.module) {
+                    visible_row.module = written.clone();
+                }
+                module_decls.rows.push(visible_row);
             }
         }
 
-        let lean_module = format!("{}.{}", project.config.module_prefix, module_name);
+        // A package module is named by its Lean name throughout the linked
+        // project; the project's own are named under the project's prefix.
+        let lean_module = if load.package.is_some() {
+            module_name.clone()
+        } else {
+            format!("{}.{}", project.config.module_prefix, module_name)
+        };
         let mut rows: Vec<SourceRow> = load.ast.structural_rows.clone();
         let mut scopes = ScopeStack::default();
         scopes.push_frame();
@@ -614,7 +754,7 @@ fn check_project_inline(
                 visible: &visible,
                 decls: &module_decls,
                 module: module_name,
-                module_prefix: &project.config.module_prefix,
+                module_prefix: &load.prefix,
             };
             elab_phrase(
                 &shared,
@@ -631,7 +771,6 @@ fn check_project_inline(
         let mut blocks: Vec<Block> = Vec::new();
         for block in &load.ast.blocks {
             let linked = link_block(
-                project,
                 &closure,
                 &visible,
                 &mut module_decls,
@@ -655,7 +794,36 @@ fn check_project_inline(
         scopes.pop_frame();
 
         let core = if let Some(ast) = &load.ast.core {
-            Some(CoreModule::parse(&ast.data.text).map_err(|reason| {
+            // The notation is read to the module the decoder checks, so that
+            // what a module means is decided in one place (§17.21.8).
+            let parsed = if ast.surface {
+                if project.config.language != crate::LANGUAGE_1_2 {
+                    return Err(err(vec![Diagnostic::new(
+                        code!("LLP2003"),
+                        "phase link: the authoring notation of a coremodule is language 1.2; write `\\coredata` under language 1.0 and 1.1",
+                    )
+                    .with_span(span_of_range(&load.path, &load.atoms, ast.data.range))]));
+                }
+                match crate::surface::core::parse_module(&ast.data.text) {
+                    Ok(module) => module.validate(&project.config.language).map(|()| module),
+                    Err(error) => {
+                        return Err(err(vec![Diagnostic::new(
+                            code!("LLP2001"),
+                            format!("phase link: core notation: {}", error.message),
+                        )
+                        .with_span(notation_span(
+                            &load.path,
+                            &load.atoms,
+                            ast.data.range,
+                            ast.begin,
+                            error.offset,
+                        ))]));
+                    }
+                }
+            } else {
+                CoreModule::parse(&ast.data.text, &project.config.language)
+            };
+            let core = parsed.map_err(|reason| {
                 err(vec![Diagnostic::new(
                     code!("LLI9001"),
                     format!("phase link: {reason}"),
@@ -665,7 +833,22 @@ fn check_project_inline(
                     &load.atoms,
                     ast.data.range,
                 ))])
-            })?)
+            })?;
+            // Rendering walks an expression by recursion, so the depth of a
+            // native module is bounded like any other nesting (§25.5).
+            crate::grammar::chart::depth_check(
+                core.expression_depth(),
+                limits.max_scope_depth,
+                "link (native core module)",
+            )
+            .map_err(|diagnostic| {
+                err(vec![diagnostic.with_span(span_of_range(
+                    &load.path,
+                    &load.atoms,
+                    ast.data.range,
+                ))])
+            })?;
+            Some(core)
         } else {
             None
         };
@@ -689,11 +872,67 @@ fn check_project_inline(
             // Artifact declarations are charged before they decode, against
             // the nodes every earlier module linked (§17.12 rule 2).
             artifacts.begin_module(ir_node_count, total_bytes);
+            // The notation is read to the canonical JSON the decoder reads, so
+            // that what a module means is decided in one place (§17.21).
+            let data: std::borrow::Cow<'_, str> = if ast.surface {
+                if project.config.language != crate::LANGUAGE_1_2 {
+                    return Err(err(vec![Diagnostic::new(
+                        code!("LLP2003"),
+                        "phase link: the authoring notation of a semanticmodule is language 1.2; write `\\semanticdata` under language 1.1",
+                    )
+                    .with_span(span_of_range(&load.path, &load.atoms, ast.data.range))]));
+                }
+                let spec = crate::ir::semantic::semantic_module_spec(&project.config.language)
+                    .expect("language 1.2 has a semantic-module schema");
+                match crate::surface::semantic::parse_module(&ast.data.text, spec) {
+                    Ok(json) => std::borrow::Cow::Owned(json.to_canonical_string()),
+                    Err(error) => {
+                        return Err(err(vec![Diagnostic::new(
+                            code!("LLP2001"),
+                            format!("phase link: semantic notation: {}", error.message),
+                        )
+                        .with_span(notation_span(
+                            &load.path,
+                            &load.atoms,
+                            ast.data.range,
+                            ast.begin,
+                            error.offset,
+                        ))]));
+                    }
+                }
+            } else {
+                std::borrow::Cow::Borrowed(ast.data.text.as_str())
+            };
+            // A package's source writes a sibling module by its own name; the
+            // linked project names it by its key, so the references are read
+            // under the key and every later phase finds the module (§10.5).
+            let data: std::borrow::Cow<'_, str> = if renamed.is_empty() {
+                data
+            } else {
+                let to_key: BTreeMap<String, String> = renamed
+                    .iter()
+                    .map(|(key, written)| (written.clone(), key.clone()))
+                    .collect();
+                let mut json = crate::artifact::canonical_json::Json::parse(data.as_bytes())
+                    .map_err(|reason| {
+                        err(vec![Diagnostic::new(
+                            code!("LLP2001"),
+                            format!("phase link: semantic data: {reason}"),
+                        )
+                        .with_span(span_of_range(
+                            &load.path,
+                            &load.atoms,
+                            ast.data.range,
+                        ))])
+                    })?;
+                rename_member_modules(&mut json, &to_key);
+                std::borrow::Cow::Owned(json.to_canonical_string())
+            };
             Some(
                 SemanticModule::parse(
-                    &ast.data.text,
+                    &data,
                     &project.config.language,
-                    &project.config.module_prefix,
+                    &load.prefix,
                     &imports,
                     &imported_semantic,
                     &artifacts,
@@ -722,9 +961,41 @@ fn check_project_inline(
                 )
                 .with_span(span())]));
             }
+            // The notation is read to the canonical JSON the decoder reads
+            // (§17.21), as for a semantic module.
+            let data: std::borrow::Cow<'_, str> = if ast.surface {
+                if project.config.language != crate::LANGUAGE_1_2 {
+                    return Err(err(vec![Diagnostic::new(
+                        code!("LLT4013"),
+                        "phase link: a tooling module requires language 1.2",
+                    )
+                    .with_span(span())]));
+                }
+                match crate::surface::tooling::parse_module(
+                    &ast.data.text,
+                    crate::ir::tooling::TOOLING_SPEC,
+                ) {
+                    Ok(json) => std::borrow::Cow::Owned(json.to_canonical_string()),
+                    Err(error) => {
+                        return Err(err(vec![Diagnostic::new(
+                            code!("LLP2001"),
+                            format!("phase link: tooling notation: {}", error.message),
+                        )
+                        .with_span(notation_span(
+                            &load.path,
+                            &load.atoms,
+                            ast.data.range,
+                            ast.begin,
+                            error.offset,
+                        ))]));
+                    }
+                }
+            } else {
+                std::borrow::Cow::Borrowed(ast.data.text.as_str())
+            };
             Some(
                 ToolingModule::parse(
-                    &ast.data.text,
+                    &data,
                     &project.config.language,
                     AuthorityPin {
                         lean_version: crate::LEAN_VERSION,
@@ -745,7 +1016,12 @@ fn check_project_inline(
         // §17.13: every production root is analysed over the linked
         // closure of this module and its imports before any backend runs.
         let production = match &semantic {
-            Some(semantic) if project.config.language == crate::LANGUAGE_1_2 => {
+            // A package's own production roots are roots of its project, built
+            // when it is built; imported, its definitions are ordinary ones
+            // (§10.5), so no module of a package is analysed here.
+            Some(semantic)
+                if project.config.language == crate::LANGUAGE_1_2 && load.package.is_none() =>
+            {
                 let mut linked: BTreeMap<String, crate::production::eligibility::LinkedModule<'_>> =
                     modules
                         .iter()
@@ -800,10 +1076,14 @@ fn check_project_inline(
             }
             Some(_) | None => None,
         };
-        if production.is_some()
-            && project.config.module_prefix.split('.').next()
-                == Some(crate::config::SHIPPED_TARGET_ROOT)
-        {
+        if let Some(root) = production.as_ref().and_then(|_| {
+            project
+                .config
+                .module_prefix
+                .split('.')
+                .next()
+                .filter(|root| crate::config::is_library_root(root))
+        }) {
             let range = load
                 .ast
                 .semantic
@@ -812,21 +1092,30 @@ fn check_project_inline(
             return Err(err(vec![Diagnostic::new(
                 code!("LLT4005"),
                 format!(
-                    "phase production: module `{module_name}` has a production root, and the module prefix `{}` begins with `{}`, the root of the calculus modules that the certificate library imports: its certificates would import the library's module for the project's",
+                    "phase production: module `{module_name}` has a production root, and the module prefix `{}` begins with `{root}`, the root of the calculus modules or of the proof library that the certificates import: its certificates would import the library's module for the project's",
                     project.config.module_prefix,
-                    crate::config::SHIPPED_TARGET_ROOT
                 ),
             )
             .with_span(span_of_range(&load.path, &load.atoms, range))]));
         }
         report_bytes =
             report_bytes.saturating_add(production.as_ref().map_or(0, |report| report.bytes));
+        let import_lean: BTreeMap<String, String> = imports
+            .iter()
+            .filter_map(|key| {
+                modules
+                    .get(key)
+                    .map(|module| (key.clone(), module.document.lean_module.clone()))
+            })
+            .collect();
         let document = DocumentModule {
             name: module_name.clone(),
             lean_module,
             source_path: load.path.clone(),
             source_sha256: Sha256Digest::of(load.normalized.as_bytes()),
+            origin: load.package.clone(),
             glossary,
+            import_lean,
             imports,
             title,
             blocks,
@@ -926,6 +1215,122 @@ fn check_project_inline(
     })
 }
 
+/// Rename the modules that the member references of `json` (an object of
+/// exactly a string `module` and a string `name`) write, by `map`.
+fn rename_member_modules(
+    json: &mut crate::artifact::canonical_json::Json,
+    map: &BTreeMap<String, String>,
+) {
+    use crate::artifact::canonical_json::Json;
+    match json {
+        Json::Arr(items) => {
+            for item in items {
+                rename_member_modules(item, map);
+            }
+        }
+        Json::Obj(fields) => {
+            let is_member = fields.len() == 2
+                && matches!(fields.get("module"), Some(Json::Str(_)))
+                && matches!(fields.get("name"), Some(Json::Str(_)));
+            if is_member {
+                if let Some(Json::Str(module)) = fields.get_mut("module") {
+                    if let Some(key) = map.get(module.as_str()) {
+                        module.clone_from(key);
+                    }
+                }
+            }
+            for value in fields.values_mut() {
+                rename_member_modules(value, map);
+            }
+        }
+        Json::Bool(_) | Json::Int(_) | Json::Str(_) => {}
+    }
+}
+
+/// Resolve one import of a module to the key of the module it names in the
+/// importing project (§10.5): a module of the module's own project, or a
+/// module of a package that project declares, which is written with the
+/// package's module prefix. Anything else is not a dependency of the module.
+fn resolve_import(
+    packages: &crate::source_package::SourcePackages,
+    own: &BTreeMap<String, String>,
+    scope: Option<&crate::source_package::ResolvedSourcePackage>,
+    importer: &str,
+    text: &str,
+) -> Result<(String, ModuleSource), Diagnostic> {
+    let local = match scope {
+        None => own.get(text).map(|path| {
+            (
+                text.to_owned(),
+                ModuleSource {
+                    package: None,
+                    relative_name: text.to_owned(),
+                    path: path.clone(),
+                },
+            )
+        }),
+        Some(package) => package.modules.get(text).map(|path| {
+            (
+                package.key(text),
+                ModuleSource {
+                    package: Some(package.id.clone()),
+                    relative_name: text.to_owned(),
+                    path: path.clone(),
+                },
+            )
+        }),
+    };
+    let declared: &[String] = match scope {
+        None => &packages.declared,
+        Some(package) => &package.dependencies,
+    };
+    let foreign = declared.iter().find_map(|id| {
+        let package = packages.packages.get(id)?;
+        let relative = text
+            .strip_prefix(package.prefix.as_str())?
+            .strip_prefix('.')?;
+        let path = package.modules.get(relative)?;
+        Some((
+            text.to_owned(),
+            ModuleSource {
+                package: Some(package.id.clone()),
+                relative_name: relative.to_owned(),
+                path: path.clone(),
+            },
+        ))
+    });
+    match (local, foreign) {
+        (Some(_), Some(_)) => Err(Diagnostic::new(
+            code!("LLC0107"),
+            format!(
+                "`{importer}` imports `{text}`, which both its own project and a source package provide"
+            ),
+        )),
+        (Some(hit), None) | (None, Some(hit)) => Ok(hit),
+        (None, None) => {
+            if let Some((owner, _)) = packages.owner_of_key(text) {
+                if scope.is_none_or(|package| package.id != owner.id) {
+                    return Err(Diagnostic::new(
+                        code!("LLR3009"),
+                        format!(
+                            "`{importer}` imports `{text}`, a module of source package `{}`, which {} does not declare",
+                            owner.id,
+                            scope.map_or_else(
+                                || "the project".to_owned(),
+                                |package| format!("source package `{}`", package.id)
+                            )
+                        ),
+                    ));
+                }
+            }
+            Err(Diagnostic::new(
+                code!("LLR3005"),
+                format!("`{importer}` imports `{text}`, which is not a project module"),
+            ))
+        }
+    }
+}
+
 fn topo_order(loaded: &BTreeMap<String, ModuleLoad>) -> Result<Vec<String>, String> {
     let mut order = Vec::new();
     let mut state: BTreeMap<&str, u8> = BTreeMap::new();
@@ -942,10 +1347,10 @@ fn topo_order(loaded: &BTreeMap<String, ModuleLoad>) -> Result<Vec<String>, Stri
         }
         state.insert(name, 1);
         if let Some(load) = loaded.get(name) {
-            for import in &load.ast.imports {
-                if loaded.contains_key(&import.text) {
+            for (_, import_key) in &load.import_keys {
+                if loaded.contains_key(import_key) {
                     let key = loaded
-                        .get_key_value(&import.text)
+                        .get_key_value(import_key)
                         .map(|(k, _)| k.as_str())
                         .unwrap_or(name);
                     visit(key, loaded, state, order)?;
@@ -1248,7 +1653,6 @@ fn elab_binder_list(
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 fn link_block(
-    project: &Project,
     closure: &Closure,
     visible: &BTreeSet<String>,
     module_decls: &mut DeclTable,
@@ -1288,7 +1692,7 @@ fn link_block(
                 visible,
                 decls: module_decls,
                 module: module_name,
-                module_prefix: &project.config.module_prefix,
+                module_prefix: &load.prefix,
             };
             let (heading_phrase, heading_rows) =
                 elab_phrase(&shared, scopes, alloc, budget, *heading)?;
@@ -1309,7 +1713,6 @@ fn link_block(
             let mut inner = Vec::new();
             for child in blocks {
                 match link_block(
-                    project,
                     closure,
                     visible,
                     module_decls,
@@ -1344,7 +1747,6 @@ fn link_block(
         }
         BlockAst::Declaration(decl) => {
             let declaration = link_declaration(
-                project,
                 closure,
                 visible,
                 module_decls,
@@ -1369,7 +1771,6 @@ fn link_block(
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 fn link_declaration(
-    project: &Project,
     closure: &Closure,
     visible: &BTreeSet<String>,
     module_decls: &mut DeclTable,
@@ -1428,7 +1829,7 @@ fn link_declaration(
         visible,
         decls: module_decls,
         module: module_name,
-        module_prefix: &project.config.module_prefix,
+        module_prefix: &load.prefix,
     };
     let origin = DeclOrigin {
         whole: bytes_of(&load.atoms, (decl.begin, decl.end)),

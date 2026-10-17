@@ -91,7 +91,7 @@ pub fn f1(v0: Fn0, _: u64) -> u64 {
 }
 
 pub fn f2(v0: Option<Fn0>, v1: u64) -> u64 {
-    let m1 = v0.clone();
+    let m1 = v0;
     match m1 {
         None => {
             v1

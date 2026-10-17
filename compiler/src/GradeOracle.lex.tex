@@ -3,6 +3,145 @@
 \importmodule{ReasoningOracle}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"kind":"prop_and","left":{"kind":"le","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"conclusion":{"arguments":[{"kind":"var","name":"v"}],"function":{"module":"ReasoningOracle","name":"Hypotensive"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}}}},"kind":"definition","name":"Graded","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"and","left":{"kind":"ble","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"not","value":{"kind":"beq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}}},"right":{"arguments":[{"kind":"var","name":"v"}],"function":{"module":"ReasoningOracle","name":"hypotensive"},"kind":"call"}}},"executable":true,"kind":"definition","name":"gradedCheck","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"graded_sound","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Graded"},{"module":"ReasoningOracle","name":"Hypotensive"},{"module":"ReasoningOracle","name":"hypotensive"},{"name":"gradedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Graded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"gradedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"gradedCheck"},"kind":"verifier","name":"Scale","sound":{"name":"graded_sound"},"specification":{"name":"Graded"},"subject":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"grade_admitted","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}}],"proof":{"arguments":[{"kind":"var","name":"v"}],"kind":"apply","theorem":{"module":"ReasoningOracle","name":"admitted_consistent"}},"statement":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"ReasoningOracle","name":"Chart"}}],"function":{"module":"ReasoningOracle","name":"Consistent"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"grade_pending","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}}],"proof":{"arguments":[{"kind":"var","name":"v"}],"kind":"apply","theorem":{"module":"ReasoningOracle","name":"admitted_pending"}},"statement":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"ReasoningOracle","name":"Chart"}}],"function":{"module":"ReasoningOracle","name":"Pending"},"kind":"call"},"right":{"kind":"nat","value":"11"}}},{"body":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"c"}],"function":{"module":"ReasoningOracle","name":"Consistent"},"kind":"call"},"right":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"c"}],"function":{"module":"ReasoningOracle","name":"Warranted"},"kind":"call"},"right":{"kind":"prop_and","left":{"conclusion":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"c"}}],"function":{"module":"ReasoningOracle","name":"Hypotensive"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"eq","left":{"field":"systolic","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"c"}}},"right":{"field":"systolic","kind":"project","value":{"kind":"var","name":"v"}}}}}},"kind":"definition","name":"Related","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"c","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Chart"}}}],"result":{"kind":"prop"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"related_admitted","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}}],"proof":{"definitions":[{"module":"ReasoningOracle","name":"Consistent"},{"module":"ReasoningOracle","name":"Hypotensive"},{"module":"ReasoningOracle","name":"Warranted"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"arguments":[{"kind":"var","name":"v"},{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"ReasoningOracle","name":"Chart"}}],"function":{"name":"Related"},"kind":"call"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"related_preserved","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"s","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Chart"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Chart"}}}],"proof":{"definitions":[{"module":"ReasoningOracle","name":"Consistent"},{"module":"ReasoningOracle","name":"Febrile"},{"module":"ReasoningOracle","name":"Hypotensive"},{"module":"ReasoningOracle","name":"Justified"},{"module":"ReasoningOracle","name":"Leukocytic"},{"module":"ReasoningOracle","name":"Tachycardic"},{"module":"ReasoningOracle","name":"Tachypneic"},{"module":"ReasoningOracle","name":"Warranted"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"t"}],"function":{"name":"Related"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"function":{"module":"ReasoningOracle","name":"Justified"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"s"}],"function":{"name":"Related"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"grade_correct","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},{"name":"chart","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Chart"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Graded"},{"module":"ReasoningOracle","name":"Consistent"},{"module":"ReasoningOracle","name":"Hypotensive"},{"module":"ReasoningOracle","name":"Warranted"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Graded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"right":{"arguments":[{"kind":"var","name":"r"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"chart"}],"function":{"name":"Related"},"kind":"call"}}},{"answer":{"name":"chart","type":{"kind":"nat"},"value":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Classical.choice","Quot.sound","propext"],"claims":[{"kind":"initial_invariant","theorem":{"name":"grade_admitted"}},{"kind":"terminates","theorem":{"name":"grade_pending"}},{"initial":{"name":"related_admitted"},"kind":"observation_invariant","predicate":{"name":"Related"},"preserved":{"name":"related_preserved"}},{"kind":"answer_correct","theorem":{"name":"grade_correct"}}],"executable":true,"kind":"reasoner","logic":{"member":{"module":"ReasoningOracle","name":"Findings"}},"name":"Grade","observation":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"ReasoningOracle","name":"Vitals"}}},"observe":{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"ReasoningOracle","name":"Chart"}},"rules":[{"member":{"module":"ReasoningOracle","name":"Fever"}},{"member":{"module":"ReasoningOracle","name":"Tachycardia"}},{"member":{"module":"ReasoningOracle","name":"Tachypnea"}},{"member":{"module":"ReasoningOracle","name":"Leukocytosis"}},{"member":{"module":"ReasoningOracle","name":"Sirs"}},{"member":{"module":"ReasoningOracle","name":"Sepsis"}},{"member":{"module":"ReasoningOracle","name":"Shock"}},{"member":{"module":"ReasoningOracle","name":"Escalate"}}],"strategy":{"fuel":{"kind":"nat","value":"11"},"kind":"forward"},"verifier":{"member":{"name":"Scale"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: Graded,
+  parameters: [v : ReasoningOracle::Vitals, r : Nat],
+  result: Prop,
+  body: ((r <= 3) /\ ((r = 3) -> (ReasoningOracle::Hypotensive v)))
+}
+
+definition{
+  name: gradedCheck,
+  parameters: [v : ReasoningOracle::Vitals, r : Nat],
+  result: Bool,
+  body: ((r <=? 3) && ((not (r =? 3)) || (ReasoningOracle::hypotensive v))),
+  executable: true
+}
+
+theorem{
+  name: graded_sound,
+  parameters: [v : ReasoningOracle::Vitals, r : Nat],
+  statement: (((gradedCheck v r) = true) -> (Graded v r)),
+  proof: linear_arithmetic{
+    definitions: [Graded, ReasoningOracle::Hypotensive, ReasoningOracle::hypotensive, gradedCheck]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+verifier{
+  name: Scale,
+  axioms: [Classical.choice, Quot.sound, propext],
+  candidate: {name: r, type: Nat},
+  check: gradedCheck,
+  sound: graded_sound,
+  specification: Graded,
+  subject: {name: v, type: ReasoningOracle::Vitals}
+}
+
+theorem{
+  name: grade_admitted,
+  parameters: [v : ReasoningOracle::Vitals],
+  statement: (ReasoningOracle::Consistent (record ReasoningOracle::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})),
+  proof: apply{arguments: [v], theorem: ReasoningOracle::admitted_consistent},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: grade_pending,
+  parameters: [v : ReasoningOracle::Vitals],
+  statement: ((ReasoningOracle::Pending (record ReasoningOracle::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})) < 11),
+  proof: apply{arguments: [v], theorem: ReasoningOracle::admitted_pending},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: Related,
+  parameters: [v : ReasoningOracle::Vitals, c : ReasoningOracle::Chart],
+  result: Prop,
+  body: ((ReasoningOracle::Consistent c) /\ ((ReasoningOracle::Warranted c) /\ ((((project c shock) = 1) -> (ReasoningOracle::Hypotensive (project c vitals))) /\ ((project (project c vitals) systolic) = (project v systolic)))))
+}
+
+theorem{
+  name: related_admitted,
+  parameters: [v : ReasoningOracle::Vitals],
+  statement: (Related v (record ReasoningOracle::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})),
+  proof: linear_arithmetic{
+    definitions: [
+      ReasoningOracle::Consistent,
+      ReasoningOracle::Hypotensive,
+      ReasoningOracle::Warranted,
+      Related
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: related_preserved,
+  parameters: [v : ReasoningOracle::Vitals, s : ReasoningOracle::Chart, t : ReasoningOracle::Chart],
+  statement: ((Related v s) -> ((ReasoningOracle::Justified s t) -> (Related v t))),
+  proof: linear_arithmetic{
+    definitions: [
+      ReasoningOracle::Consistent,
+      ReasoningOracle::Febrile,
+      ReasoningOracle::Hypotensive,
+      ReasoningOracle::Justified,
+      ReasoningOracle::Leukocytic,
+      ReasoningOracle::Tachycardic,
+      ReasoningOracle::Tachypneic,
+      ReasoningOracle::Warranted,
+      Related
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: grade_correct,
+  parameters: [v : ReasoningOracle::Vitals, chart : ReasoningOracle::Chart, r : Nat],
+  statement: ((Related v chart) -> (((ctor Option.some [Nat] (project chart level)) = (ctor Option.some [Nat] r)) -> (Graded v r))),
+  proof: linear_arithmetic{
+    definitions: [
+      Graded,
+      ReasoningOracle::Consistent,
+      ReasoningOracle::Hypotensive,
+      ReasoningOracle::Warranted,
+      Related
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+reasoner{
+  name: Grade,
+  axioms: [Classical.choice, Quot.sound, propext],
+  answer: {name: chart, type: Nat, value: (ctor Option.some [Nat] (project chart level))},
+  claims: [
+    initial_invariant{theorem: grade_admitted},
+    terminates{theorem: grade_pending},
+    observation_invariant{
+      initial: related_admitted,
+      predicate: Related,
+      preserved: related_preserved
+    },
+    answer_correct{theorem: grade_correct}
+  ],
+  executable: true,
+  logic: {member: ReasoningOracle::Findings},
+  observation: {name: v, type: ReasoningOracle::Vitals},
+  observe: (record ReasoningOracle::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0}),
+  rules: [
+    {member: ReasoningOracle::Fever},
+    {member: ReasoningOracle::Tachycardia},
+    {member: ReasoningOracle::Tachypnea},
+    {member: ReasoningOracle::Leukocytosis},
+    {member: ReasoningOracle::Sirs},
+    {member: ReasoningOracle::Sepsis},
+    {member: ReasoningOracle::Shock},
+    {member: ReasoningOracle::Escalate}
+  ],
+  strategy: forward{fuel: 11},
+  verifier: {member: Scale}
+}
 \end{semanticmodule}
 \end{lexlean}

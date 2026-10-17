@@ -50,3 +50,15 @@ Feature: rust-backend
     When two separate processes with different working directories and environments render every package, and each manifest is validated
     Then the renderings are identical to each other and to the committed bytes, and every manifest and provenance is schema-valid
     And the provenance binds each file's SHA-256, the program identity, the recorded runtime, the sources, and the compiler-semantics ID, and the sources are the verified build's semantic ID while a forged one is refused
+
+  @RB-08 @build
+  Scenario: A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused.
+    Given every fixture program in each profile that renders it, and the rust-std lists package
+    When each is lowered, every clone it keeps is made a move one at a time, a move is put back to a clone and the pass is run again, a component is moved out of a pair and the pair is then read, moved, or has the component moved again, and a harness builds and takes apart two hundred thousand cells and two lists on one tail
+    Then every rendering is accepted, every clone made a move is refused by the ownership check, the pass makes the read a move again, each planted crate is refused naming ownership, and the cells count no work, overflow no stack, and both lists see their own items
+
+  @RB-09 @build
+  Scenario: Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused.
+    Given the runtime text of both profiles, its library table, and its primitives
+    When the text is scanned for every name it imports, calls, or writes as a path, a macro, or a type, and the scan is repeated with a library function added to the text, a row removed, a row the text does not use added, a row citing a name that is not a primitive, and a primitive no row cites
+    Then every name the runtime uses is a row and every row is used, and each planted text or table is refused naming what it broke

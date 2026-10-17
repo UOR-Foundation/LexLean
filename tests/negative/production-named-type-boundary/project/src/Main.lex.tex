@@ -2,6 +2,20 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"fields":[{"name":"holds","type":{"kind":"prop"}},{"name":"size","type":{"kind":"nat"}}],"kind":"structure","name":"Witness","parameters":[],"type_parameters":[]},{"body":{"field":"size","kind":"project","value":{"kind":"var","name":"witness"}},"executable":true,"kind":"definition","name":"measure","parameters":[{"name":"witness","type":{"arguments":[],"kind":"named","member":{"name":"Witness"}}}],"production":{"effects":[],"targets":["rust-std"]},"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+structure{
+  name: Witness,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: holds, type: Prop}, {name: size, type: Nat}]
+}
+
+definition{
+  name: measure,
+  parameters: [witness : Witness],
+  result: Nat,
+  body: (project witness size),
+  executable: true,
+  production: {effects: [], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

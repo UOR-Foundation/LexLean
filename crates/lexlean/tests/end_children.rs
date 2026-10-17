@@ -249,6 +249,94 @@ fn scenario_embedding() {
     assert_eq!(pgid_before, own_pgid(), "the host's group is untouched");
 }
 
+/// A reaped leader can leave a live group holding its output pipes: the
+/// host must still be able to end that group while the reader waits.
+#[test]
+fn an_embedding_host_ends_a_group_after_its_leader_exits() {
+    let _serial = serial();
+    #[cfg(unix)]
+    scenario_exited_leader();
+}
+
+#[cfg(unix)]
+fn scenario_exited_leader() {
+    use std::time::{Duration, Instant};
+
+    let _reenable = Reenable;
+    let directory = tempfile::tempdir().expect("tempdir");
+    let script = directory.path().join("leader");
+    let marker = format!("sleep 3.{}", std::process::id());
+    support::script(
+        &script,
+        &format!("#!/bin/sh\nprintf '%s\\n' \"$$\" > leader.pid\n{marker} &\nexit 0\n"),
+    );
+    let working =
+        camino::Utf8PathBuf::from_path_buf(directory.path().to_path_buf()).expect("utf-8");
+    let run = std::thread::spawn(move || {
+        let program = camino::Utf8Path::from_path(&script).expect("utf-8");
+        lexlean::verify::child::run(
+            &lexlean::verify::child::ChildSpec {
+                tool: "pipe-holder",
+                module: None,
+                program,
+                executable_sha256: lexlean::Sha256Digest::of(b"script"),
+                argv: Vec::new(),
+                cwd: &working,
+                extra_env: Vec::new(),
+                home: lexlean::verify::child::ChildHome::Isolated { home: &working },
+            },
+            &limits(10_000),
+            &lexlean::verify::child::Normalizer::default(),
+        )
+    });
+    let give_up = Instant::now() + Duration::from_secs(2);
+    let group = loop {
+        let leader = std::fs::read_to_string(directory.path().join("leader.pid"))
+            .ok()
+            .and_then(|pid| pid.trim().parse::<u32>().ok());
+        if let Some(group) = leader.filter(|pid| leader_reaped(*pid)) {
+            break group;
+        }
+        assert!(Instant::now() < give_up, "the leader was not reaped");
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    assert!(
+        !support::running(&marker).is_empty(),
+        "the descendant still holds its inherited pipes"
+    );
+    let outcome = lexlean::verify::end_live_children();
+    let left = support::running(&marker);
+    support::end_all(&left);
+    run.join()
+        .expect("the reader finishes once the descendant ends")
+        .expect("the leader completed successfully");
+    assert_eq!(
+        outcome,
+        vec![lexlean::verify::ChildGroupEnd {
+            group,
+            outcome: lexlean::verify::GroupEnd::Ended,
+        }],
+        "the group stays registered while its output is being read"
+    );
+    assert!(left.is_empty(), "the host left a live descendant: {left:?}");
+}
+
+#[cfg(unix)]
+fn leader_reaped(pid: u32) -> bool {
+    if std::path::Path::new("/proc/self").exists() {
+        return !std::path::Path::new(&format!("/proc/{pid}")).exists();
+    }
+    let ps = ["/bin/ps", "/usr/bin/ps"]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file())
+        .expect("the host has neither /proc nor ps");
+    let output = std::process::Command::new(ps)
+        .args(["-o", "pid=", "-p", &pid.to_string()])
+        .output()
+        .expect("ps runs");
+    String::from_utf8_lossy(&output.stdout).trim().is_empty()
+}
+
 #[cfg(unix)]
 fn copy_tree(from: &std::path::Path, to: &std::path::Path) {
     std::fs::create_dir_all(to).expect("mkdir");
@@ -737,11 +825,13 @@ fn scenario_concurrent() {
         let registered_tx = registered_tx.clone();
         let stop = Arc::clone(&stop);
         joins.push(std::thread::spawn(move || {
-            let mut mine = Vec::new();
+            let mut mine: Vec<(std::process::Child, lexlean::verify::lifeline::Guard)> = Vec::new();
+            let mut started: Vec<u32> = Vec::new();
             while !stop.load(Ordering::SeqCst) {
                 match spawn_sleep_or_refusal_300() {
                     Ok((child, guard)) => {
                         let _ = registered_tx.send(child.id());
+                        started.push(child.id());
                         mine.push((child, guard));
                     }
                     // Refused: the host has ended the children and not yet
@@ -751,8 +841,16 @@ fn scenario_concurrent() {
                     }
                     Err(other) => panic!("the spawn works or is refused: {other:?}"),
                 }
+                // A child the host has ended stays in the process table as a
+                // zombie until its parent waits for it, and this loop starts
+                // children as fast as the machine lets it: unreaped, the
+                // zombies of sixty cycles exhaust a runner's process limit
+                // (`EAGAIN` on macOS) and fail the case for a reason that
+                // is not the function's. Reap the ones that have exited; the
+                // ids stay in `started`, which is what the case checks.
+                mine.retain_mut(|(child, _)| matches!(child.try_wait(), Ok(None)));
             }
-            mine
+            (mine, started)
         }));
     }
 
@@ -784,8 +882,11 @@ fn scenario_concurrent() {
 
     stop.store(true, Ordering::SeqCst);
     let mut spawned: Vec<(std::process::Child, lexlean::verify::lifeline::Guard)> = Vec::new();
+    let mut started: Vec<u32> = Vec::new();
     for join in joins {
-        spawned.extend(join.join().expect("the spawn thread"));
+        let (alive, ids) = join.join().expect("the spawn thread");
+        spawned.extend(alive);
+        started.extend(ids);
     }
     // What was registered after the last call is ended by one more.
     let sweep = lexlean::verify::end_live_children();
@@ -796,11 +897,10 @@ fn scenario_concurrent() {
         "every group of the sweep is ended: {sweep:?}"
     );
     ended.extend(sweep.iter().map(|row| row.group));
-    for (child, _) in &spawned {
+    for id in &started {
         assert!(
-            ended.contains(&child.id()),
-            "every started child is ended or was refused: {} is neither",
-            child.id()
+            ended.contains(id),
+            "every started child is ended or was refused: {id} is neither"
         );
     }
     for (mut child, guard) in spawned {

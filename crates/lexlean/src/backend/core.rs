@@ -8,7 +8,7 @@ use crate::backend::{EmitSource, Emitter};
 use crate::code;
 use crate::diagnostic::Diagnostic;
 use crate::ir::core::{
-    CoreBinderInfo, CoreDeclKind, CoreDeclaration, CoreLevel, CoreModule, CoreNode,
+    CoreBinderInfo, CoreDeclKind, CoreDeclaration, CoreLevel, CoreMetaValue, CoreModule, CoreNode,
 };
 use crate::link::CheckedModule;
 use crate::source::coverage::Origin;
@@ -20,29 +20,37 @@ fn internal(message: impl Into<String>) -> Diagnostic {
     )
 }
 
-fn source_range(checked: &CheckedModule) -> (usize, usize) {
+/// The payload of the module in its source: where it is, and what owns it
+/// (the data form or the authoring notation, SPEC.md §17.21.8).
+fn source_range(checked: &CheckedModule) -> (usize, usize, &'static str) {
     let mut start = usize::MAX;
     let mut end = 0;
+    let mut owner = "lexlean.core::coredata";
     for row in &checked.coverage_source {
-        if matches!(&row.binding, Origin::Metadata { owner } if owner == "lexlean.core::coredata") {
-            start = start.min(row.byte_start);
-            end = end.max(row.byte_end);
+        if let Origin::Metadata { owner: row_owner } = &row.binding {
+            if row_owner == "lexlean.core::coredata" || row_owner == "lexlean.core::coresource" {
+                if row_owner == "lexlean.core::coresource" {
+                    owner = "lexlean.core::coresource";
+                }
+                start = start.min(row.byte_start);
+                end = end.max(row.byte_end);
+            }
         }
     }
     if start == usize::MAX {
-        (0, checked.normalized.len())
+        (0, checked.normalized.len(), owner)
     } else {
-        (start, end)
+        (start, end, owner)
     }
 }
 
 fn emit_chunk(emitter: &mut Emitter, checked: &CheckedModule, node: usize, text: &str, kind: &str) {
-    let (start, end) = source_range(checked);
+    let (start, end, owner) = source_range(checked);
     emitter.piece(
         text,
         kind,
         Origin::Metadata {
-            owner: "lexlean.core::coredata".to_owned(),
+            owner: owner.to_owned(),
         },
         EmitSource::File(start, end),
         MapRole::Declaration,
@@ -191,6 +199,25 @@ impl Printer<'_> {
             CoreNode::Projection { n, x, .. } => {
                 format!("({n} {})", self.walk(*x, scope, expanding_helper, locals)?)
             }
+            CoreNode::Mdata { m, x } => {
+                let entries: Vec<String> = m
+                    .iter()
+                    .map(|entry| {
+                        let value = match &entry.v {
+                            CoreMetaValue::Bool { v } => v.to_string(),
+                            CoreMetaValue::Nat { v } | CoreMetaValue::Int { v } => v.clone(),
+                            CoreMetaValue::Str { v } => format!("{v:?}"),
+                            CoreMetaValue::Name { v } => v.clone(),
+                        };
+                        format!("{} := {value}", entry.n)
+                    })
+                    .collect();
+                format!(
+                    "(mdata[{}] {})",
+                    entries.join(", "),
+                    self.walk(*x, scope, expanding_helper, locals)?
+                )
+            }
         })
     }
 
@@ -311,7 +338,7 @@ fn sharing(core: &CoreModule, declarations: &[&CoreDeclaration]) -> Sharing {
                     .max(requirements[*v])
                     .max(requirements[*body].saturating_sub(1))
             }
-            CoreNode::Projection { x, .. } => {
+            CoreNode::Projection { x, .. } | CoreNode::Mdata { x, .. } => {
                 references[*x] = references[*x].saturating_add(1);
                 requirements[*x]
             }
@@ -340,6 +367,7 @@ fn sharing(core: &CoreModule, declarations: &[&CoreDeclaration]) -> Sharing {
                     | CoreNode::Forall { .. }
                     | CoreNode::Let { .. }
                     | CoreNode::Projection { .. }
+                    | CoreNode::Mdata { .. }
             );
             (composite
                 && requirements[index] == 0
@@ -365,6 +393,7 @@ fn sharing(core: &CoreModule, declarations: &[&CoreDeclaration]) -> Sharing {
                     | CoreNode::Forall { .. }
                     | CoreNode::Let { .. }
                     | CoreNode::Projection { .. }
+                    | CoreNode::Mdata { .. }
             );
             (composite
                 && requirements[index] > 0
@@ -397,7 +426,7 @@ fn same_scope_shared(
             same_scope_shared(core, *f, shared, requirements, scope_depth, seen, out);
             same_scope_shared(core, *x, shared, requirements, scope_depth, seen, out);
         }
-        CoreNode::Projection { x, .. } => {
+        CoreNode::Projection { x, .. } | CoreNode::Mdata { x, .. } => {
             same_scope_shared(core, *x, shared, requirements, scope_depth, seen, out);
         }
         // Binder domains and let values are in the present scope; binder
@@ -448,6 +477,7 @@ fn constants_in(core: &CoreModule, roots: impl IntoIterator<Item = usize>) -> BT
                 work.push(*v);
                 work.push(*body);
             }
+            CoreNode::Mdata { x, .. } => work.push(*x),
             CoreNode::BVar { .. }
             | CoreNode::Sort { .. }
             | CoreNode::Nat { .. }
@@ -499,7 +529,7 @@ fn level_parameters_in(core: &CoreModule, root: usize) -> Vec<String> {
                 work.push(*v);
                 work.push(*body);
             }
-            CoreNode::Projection { x, .. } => work.push(*x),
+            CoreNode::Projection { x, .. } | CoreNode::Mdata { x, .. } => work.push(*x),
             CoreNode::BVar { .. } | CoreNode::Nat { .. } | CoreNode::String { .. } => {}
         }
     }
@@ -641,6 +671,25 @@ pub fn environment_declarations(core: &CoreModule) -> Result<Vec<&CoreDeclaratio
     Ok(environment)
 }
 
+/// The representative of each member of a core-module-2 group of partial or
+/// otherwise non-safe definitions: the group is one mutual declaration, submitted when
+/// its first member is, so that its members may refer to one another.
+fn group_representatives(core: &CoreModule) -> BTreeMap<&str, &str> {
+    let mut representatives = BTreeMap::new();
+    for declaration in &core.declarations {
+        if declaration.safety.is_none() {
+            continue;
+        }
+        let Some(all) = &declaration.all else {
+            continue;
+        };
+        if let Some(first) = all.iter().min() {
+            representatives.insert(declaration.name.as_str(), first.as_str());
+        }
+    }
+    representatives
+}
+
 fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic> {
     let environment = environment_declarations(core)?;
     let emitted: BTreeMap<&str, &CoreDeclaration> = environment
@@ -650,12 +699,18 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         .map(|row| (row.name.as_str(), row))
         .collect();
     let owners = generated_owners(core);
+    let representatives = group_representatives(core);
+    let representative_of = |name: &str| -> String {
+        representatives
+            .get(name)
+            .map_or_else(|| name.to_owned(), |first| (*first).to_owned())
+    };
     let rows: BTreeMap<&str, &CoreDeclaration> = core
         .declarations
         .iter()
         .map(|row| (row.name.as_str(), row))
         .collect();
-    let mut dependencies: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
+    let mut dependencies: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for (name, declaration) in &emitted {
         let mut roots = vec![declaration.r#type];
         if let Some(value) = declaration.value {
@@ -668,7 +723,8 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
                 }
             }
         }
-        let mut deps = BTreeSet::new();
+        let own = representative_of(name);
+        let deps = dependencies.entry(own.clone()).or_default();
         for constant in constants_in(core, roots) {
             let dependency = if emitted.contains_key(constant.as_str()) {
                 Some(constant)
@@ -676,36 +732,52 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
                 owners.get(&constant).cloned()
             };
             if let Some(dependency) = dependency {
-                if dependency != *name {
+                let dependency = representative_of(&dependency);
+                if dependency != own {
                     deps.insert(dependency);
                 }
             }
         }
-        dependencies.insert(name, deps);
+        // The code generator compiles a recursive definition through its
+        // partial implementation record, which must therefore come first.
+        if core.version() == 2 {
+            let record = format!("{name}._unsafe_rec");
+            if emitted.contains_key(record.as_str()) {
+                let record = representative_of(&record);
+                if record != own {
+                    deps.insert(record);
+                }
+            }
+        }
     }
     let mut done = BTreeSet::new();
-    let mut order = Vec::with_capacity(emitted.len());
-    while order.len() < emitted.len() {
-        let Some((&name, declaration)) = emitted.iter().find(|(name, _)| {
-            !done.contains(**name)
-                && dependencies.get(**name).is_some_and(|deps| {
-                    deps.iter()
-                        .all(|dependency| done.contains(dependency.as_str()))
-                })
+    let mut order = Vec::with_capacity(dependencies.len());
+    while order.len() < dependencies.len() {
+        let Some((name, _)) = dependencies.iter().find(|(name, deps)| {
+            !done.contains(name.as_str())
+                && deps
+                    .iter()
+                    .all(|dependency| done.contains(dependency.as_str()))
         }) else {
-            let remaining = emitted
+            let remaining = dependencies
                 .keys()
-                .filter(|name| !done.contains(**name))
+                .filter(|name| !done.contains(name.as_str()))
                 .take(8)
-                .copied()
+                .cloned()
                 .collect::<Vec<_>>()
                 .join(", ");
             return Err(internal(format!(
                 "declaration dependency cycle or absent generated owner through: {remaining}"
             )));
         };
-        done.insert(name);
+        let name = name.clone();
+        let Some(declaration) = emitted.get(name.as_str()) else {
+            return Err(internal(format!(
+                "group representative `{name}` is not a row"
+            )));
+        };
         order.push(*declaration);
+        done.insert(name);
     }
     Ok(order)
 }
@@ -717,256 +789,6 @@ fn level_params(levels: &[String]) -> String {
         format!(".{{{}}}", levels.join(", "))
     }
 }
-
-const LEAN_CORE_DECODER: &str = r#"
-namespace LexLeanCore.Runtime
-
-private def fail {α : Type} (message : String) : Except String α := .error message
-
-private def field (json : Json) (name : String) : Except String Json :=
-  json.getObjVal? name
-
-private def stringField (json : Json) (name : String) : Except String String := do
-  (← field json name).getStr?
-
-private def natField (json : Json) (name : String) : Except String Nat := do
-  (← field json name).getNat?
-
-private def boolField (json : Json) (name : String) : Except String Bool := do
-  (← field json name).getBool?
-
-private def arrayField (json : Json) (name : String) : Except String (Array Json) := do
-  (← field json name).getArr?
-
-private def optionalField (json : Json) (name : String) : Option Json :=
-  match json.getObjVal? name with
-  | .ok value => some value
-  | .error _ => none
-
-private def nameOf (value : String) : Name :=
-  value.splitOn "." |>.foldl (fun name part => name.str part) .anonymous
-
-private partial def levelOf (json : Json) : Except String Level := do
-  match ← stringField json "k" with
-  | "z" => pure .zero
-  | "s" => pure (.succ (← levelOf (← field json "a")))
-  | "m" | "i" =>
-      let values ← (← field json "a").getArr?
-      let some left := values[0]? | fail "core level pair lacks its left value"
-      let some right := values[1]? | fail "core level pair lacks its right value"
-      if values.size != 2 then fail "core level pair has extra values"
-      let left ← levelOf left
-      let right ← levelOf right
-      if (← stringField json "k") == "m" then pure (.max left right) else pure (.imax left right)
-  | "p" => pure (.param (nameOf (← stringField json "a")))
-  | kind => fail s!"unknown core level kind '{kind}'"
-
-private def levelsOf (json : Json) : Except String (List Level) := do
-  let values ← json.getArr?
-  values.toList.mapM levelOf
-
-private def namesOf (json : Json) : Except String (List Name) := do
-  let values ← json.getArr?
-  values.toList.mapM fun value => do pure (nameOf (← value.getStr?))
-
-private def binderOf (value : String) : Except String BinderInfo :=
-  match value with
-  | "e" => pure .default
-  | "i" => pure .implicit
-  | "s" => pure .strictImplicit
-  | "c" => pure .instImplicit
-  | kind => fail s!"unknown core binder kind '{kind}'"
-
-private def nodeAt (nodes : Array Expr) (index : Nat) : Except String Expr :=
-  match nodes[index]? with
-  | some node => .ok node
-  | none => fail s!"core node reference {index} is out of range"
-
-private def nodeOf (nodes : Array Expr) (json : Json) : Except String Expr := do
-  match ← stringField json "k" with
-  | "b" => pure (.bvar (← natField json "i"))
-  | "s" => pure (.sort (← levelOf (← field json "l")))
-  | "c" => pure (.const (nameOf (← stringField json "n")) (← levelsOf (← field json "u")))
-  | "a" => pure (.app (← nodeAt nodes (← natField json "f")) (← nodeAt nodes (← natField json "x")))
-  | "l" => pure (.lam `_ (← nodeAt nodes (← natField json "t"))
-      (← nodeAt nodes (← natField json "v")) (← binderOf (← stringField json "b")))
-  | "p" => pure (.forallE `_ (← nodeAt nodes (← natField json "t"))
-      (← nodeAt nodes (← natField json "v")) (← binderOf (← stringField json "b")))
-  | "e" => pure (.letE `_ (← nodeAt nodes (← natField json "t"))
-      (← nodeAt nodes (← natField json "v")) (← nodeAt nodes (← natField json "body"))
-      (← boolField json "d"))
-  | "n" =>
-      let value ← stringField json "v"
-      let some value := value.toNat? | fail s!"invalid core natural literal '{value}'"
-      pure (.lit (.natVal value))
-  | "t" =>
-      let values ← (← field json "v").getArr?
-      let chars ← values.toList.mapM fun value => do pure (Char.ofNat (← value.getNat?))
-      pure (.lit (.strVal (String.ofList chars)))
-  | "j" => pure (.proj (nameOf (← stringField json "s")) (← natField json "i")
-      (← nodeAt nodes (← natField json "x")))
-  | kind => fail s!"unknown core node kind '{kind}'"
-
-private def liftString {α : Type} : Except String α → CoreM α
-  | .ok value => pure value
-  | .error message => throwError message
-
-private def findDeclaration (declarations : Array Json) (name : String) : CoreM Json := do
-  for declaration in declarations do
-    if (← liftString (stringField declaration "name")) == name then return declaration
-  throwError s!"core declaration '{name}' is absent"
-
-private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
-    (json : Json) : CoreM Unit := do
-  if ← liftString (boolField json "generated") then return
-  let nameString ← liftString (stringField json "name")
-  let name := nameOf nameString
-  let levelParams ← liftString (namesOf (← liftString (field json "levels")))
-  let type ← liftString (nodeAt nodes (← liftString (natField json "type")))
-  let kindString ← liftString (stringField json "kind")
-  match kindString with
-  | "inductive" =>
-      let metadata ← liftString (field json "inductive")
-      let numParams ← liftString (natField metadata "num_params")
-      let constructorNames ← liftString (arrayField metadata "constructors")
-      let mut constructors : List Constructor := []
-      for constructorName in constructorNames do
-        let constructorName ← liftString constructorName.getStr?
-        let row ← findDeclaration declarations constructorName
-        let constructorType ← liftString (nodeAt nodes (← liftString (natField row "type")))
-        constructors := constructors.concat { name := nameOf constructorName, type := constructorType }
-      Lean.addDecl (.inductDecl levelParams numParams [{ name, type, ctors := constructors }] false)
-        (forceExpose := true)
-  | "abbrev" | "definition" =>
-      let valueIndex ← liftString (natField json "value")
-      let value ← liftString (nodeAt nodes valueIndex)
-      let metadata ← liftString (field json "reducibility")
-      let reducibilityKind ← liftString (stringField metadata "kind")
-      let hints ← match reducibilityKind with
-        | "abbrev" => pure ReducibilityHints.abbrev
-        | "opaque" => pure (default : ReducibilityHints)
-        | "regular" => pure (ReducibilityHints.regular
-            (UInt32.ofNat (← liftString (natField metadata "height"))))
-        | other => throwError s!"unknown core reducibility kind '{other}'"
-      Lean.addDecl (.defnDecl { name, levelParams, type, value, hints, safety := .safe })
-        (forceExpose := true)
-  | "theorem" =>
-      let value ← liftString (nodeAt nodes (← liftString (natField json "value")))
-      Lean.addDecl (.thmDecl { name, levelParams, type, value }) (forceExpose := true)
-  | "constructor" | "recursor" =>
-      throwError s!"non-generated primitive core declaration '{nameString}'"
-  | kind => throwError s!"unknown core declaration kind '{kind}'"
-
-private def addOne (nodes : Array Expr) (declarations : Array Json) (json : Json) : CoreM Unit := do
-  let name ← liftString (stringField json "name")
-  try
-    addOneUnchecked nodes declarations json
-  catch error =>
-    throwError m!"native core declaration '{name}':{indentD error.toMessageData}"
-
-private def decodeNodeBatch (nodes : Array Expr) (data : String) : CoreM (Array Expr) := do
-  let json ← liftString (Json.parse data)
-  let rows ← liftString json.getArr?
-  let mut nodes := nodes
-  for row in rows do
-    nodes := nodes.push (← liftString (nodeOf nodes row))
-  pure nodes
-
-def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
-  let mut nodes : Array Expr := #[]
-  for batch in nodeBatches do
-    nodes ← decodeNodeBatch nodes batch
-  let document ← liftString (Json.parse data)
-  let declarations ← liftString (arrayField document "declarations")
-  let order ← liftString (arrayField document "order")
-  for index in order do
-    let index ← liftString index.getNat?
-    let some declaration := declarations[index]? |
-      throwError s!"core declaration order index {index} is out of range"
-    addOne nodes declarations declaration
-  for declaration in declarations do
-    if (← liftString (stringField declaration "kind")) == "inductive" then
-      let metadata ← liftString (field declaration "inductive")
-      if let some structureData := optionalField metadata "structure" then
-        let name := nameOf (← liftString (stringField declaration "name"))
-        let fieldRows ← liftString (arrayField structureData "fields")
-        let mut fields : Array StructureFieldInfo := #[]
-        for row in fieldRows do
-          let subobject? : Option Name ← match optionalField row "subobject" with
-            | some value => pure (some (nameOf (← liftString value.getStr?)))
-            | none => pure none
-          let autoParam? : Option Expr ← match optionalField row "auto_param" with
-            | some value => pure (some (← liftString (nodeAt nodes (← liftString value.getNat?))))
-            | none => pure none
-          let fieldName := nameOf (← liftString (stringField row "name"))
-          let projFn := nameOf (← liftString (stringField row "projection"))
-          let binderInfo ← liftString (binderOf (← liftString (stringField row "binder")))
-          fields := fields.push {
-            fieldName
-            projFn
-            subobject?
-            binderInfo
-            autoParam? }
-        setEnv <| Lean.registerStructure (← getEnv) { structName := name, fields }
-  for declaration in declarations do
-    if (← liftString (stringField declaration "kind")) == "inductive" then
-      let metadata ← liftString (field declaration "inductive")
-      if let some structureData := optionalField metadata "structure" then
-        let name := nameOf (← liftString (stringField declaration "name"))
-        let parentRows ← liftString (arrayField structureData "parents")
-        let mut parents : Array StructureParentInfo := #[]
-        for row in parentRows do
-          let structName := nameOf (← liftString (stringField row "name"))
-          let subobject ← liftString (boolField row "subobject")
-          let projFn := nameOf (← liftString (stringField row "projection"))
-          parents := parents.push {
-            structName
-            subobject
-            projFn }
-        Lean.setStructureParents name parents
-  for declaration in declarations do
-    if (← liftString (stringField declaration "kind")) == "inductive" then
-      let metadata ← liftString (field declaration "inductive")
-      if (optionalField metadata "structure").isSome then
-        discard <| Lean.computeStructureResolutionOrder
-          (nameOf (← liftString (stringField declaration "name"))) true
-  for declaration in declarations do
-    let name := nameOf (← liftString (stringField declaration "name"))
-    let status ← match ← liftString (stringField declaration "transparency") with
-      | "reducible" => pure ReducibilityStatus.reducible
-      | "semireducible" => pure ReducibilityStatus.semireducible
-      | "irreducible" => pure ReducibilityStatus.irreducible
-      | "implicit-reducible" => pure ReducibilityStatus.implicitReducible
-      | other => throwError s!"unknown core transparency '{other}'"
-    Lean.setReducibilityStatus name status
-  for declaration in declarations do
-    let generated ← liftString (boolField declaration "generated")
-    if !generated && (← liftString (boolField declaration "class")) then
-      let name := nameOf (← liftString (stringField declaration "name"))
-      match Lean.addClass (← getEnv) name with
-      | .ok env => setEnv env
-      | .error message => throwError message
-  for declaration in declarations do
-    if let some metadata := optionalField declaration "instance" then
-      let name := nameOf (← liftString (stringField declaration "name"))
-      let priority ← liftString (natField metadata "priority")
-      let attributeKind ← match ← liftString (stringField metadata "attribute") with
-        | "global" => pure AttributeKind.global
-        | "local" => pure AttributeKind.local
-        | "scoped" => pure AttributeKind.scoped
-        | other => throwError s!"unknown core instance attribute kind '{other}'"
-      Lean.Meta.MetaM.run' <| Lean.Meta.addInstance name attributeKind priority
-      let expectedRows ← liftString (arrayField metadata "synthesis_order")
-      let mut expected : Array Nat := #[]
-      for row in expectedRows do expected := expected.push (← liftString row.getNat?)
-      let some actual := (Lean.Meta.instanceExtension.getState (← getEnv)
-          |>.instanceNames.find? name) |
-        throwError s!"core instance '{name}' was not registered"
-      unless actual.synthOrder == expected do
-        throwError s!"core instance '{name}' reconstructed synthesis order {actual.synthOrder.toList} instead of {expected.toList}"
-
-end LexLeanCore.Runtime
-"#;
 
 // A command owns every reconstructed expression in its declaration closure
 // until all declarations in that command have reached the kernel.  Keep
@@ -1023,6 +845,10 @@ fn remap_node(node: &CoreNode, mapping: &[usize]) -> Result<CoreNode, Diagnostic
             i: *i,
             x: remapped_root(mapping, *x)?,
         },
+        CoreNode::Mdata { m, x } => CoreNode::Mdata {
+            m: m.clone(),
+            x: remapped_root(mapping, *x)?,
+        },
     })
 }
 
@@ -1047,6 +873,10 @@ fn remap_declaration(
                 .map(|root| remapped_root(mapping, root))
                 .transpose()?;
         }
+    }
+    if let Some(info) = declaration.eqn_info.as_mut() {
+        info.r#type = remapped_root(mapping, info.r#type)?;
+        info.value = remapped_root(mapping, info.value)?;
     }
     Ok(declaration)
 }
@@ -1082,6 +912,28 @@ fn core_chunk(
             selected.then_some(index)
         })
         .collect();
+    let representatives = group_representatives(core);
+    let group_members: BTreeSet<&str> = declaration_indices
+        .iter()
+        .filter_map(|index| {
+            let row = &core.declarations[*index];
+            representatives
+                .contains_key(row.name.as_str())
+                .then_some(row.all.as_deref())
+                .flatten()
+        })
+        .flatten()
+        .map(String::as_str)
+        .collect();
+    let declaration_indices: Vec<usize> = {
+        let mut selected: BTreeSet<usize> = declaration_indices.into_iter().collect();
+        for (index, row) in core.declarations.iter().enumerate() {
+            if group_members.contains(row.name.as_str()) {
+                selected.insert(index);
+            }
+        }
+        selected.into_iter().collect()
+    };
     let mut needed = vec![false; core.nodes.len()];
     let mut work = Vec::new();
     for index in &declaration_indices {
@@ -1097,6 +949,9 @@ fn core_chunk(
         {
             work.extend(structure.fields.iter().filter_map(|field| field.auto_param));
         }
+        if let Some(info) = &declaration.eqn_info {
+            work.extend([info.r#type, info.value]);
+        }
     }
     while let Some(root) = work.pop() {
         if needed[root] {
@@ -1109,7 +964,7 @@ fn core_chunk(
                 work.extend([*t, *v]);
             }
             CoreNode::Let { t, v, body, .. } => work.extend([*t, *v, *body]),
-            CoreNode::Projection { x, .. } => work.push(*x),
+            CoreNode::Projection { x, .. } | CoreNode::Mdata { x, .. } => work.push(*x),
             CoreNode::BVar { .. }
             | CoreNode::Sort { .. }
             | CoreNode::Const { .. }
@@ -1268,6 +1123,77 @@ fn append_core_command(
     Ok(())
 }
 
+/// The Lean text a native core module renders to: its imports, the decoder
+/// runtime of its schema version, and one command per chunk of declarations.
+/// The text depends on the module alone.
+///
+/// # Errors
+///
+/// Returns an internal diagnostic when the module's rows cannot be ordered
+/// or a chunk omits a node it needs.
+pub fn lean_text(core: &CoreModule) -> Result<String, Diagnostic> {
+    lean_text_with(core, None)
+}
+
+/// Render a native core module as Lean outside the module system: `import`
+/// lines and no `module` header, the decoder and the data as [`lean_text`]
+/// writes them, the decoder under the namespace `scope` (the module's own
+/// name): outside the module system a file exports its declarations, and two
+/// such modules imported together would declare the decoder twice. A
+/// certificate held as data is rendered this way while the certificates it
+/// imports are Lean text outside the module system, which a `module` cannot
+/// import (SPEC.md §17.17).
+///
+/// # Errors
+///
+/// As [`lean_text`].
+pub fn lean_text_legacy(core: &CoreModule, scope: &str) -> Result<String, Diagnostic> {
+    lean_text_with(core, Some(scope))
+}
+
+fn lean_text_with(core: &CoreModule, legacy_scope: Option<&str>) -> Result<String, Diagnostic> {
+    let mut text = String::new();
+    if legacy_scope.is_none() {
+        text.push_str("module\n");
+    }
+    for import in &core.imports {
+        if legacy_scope.is_none() {
+            text.push_str(&format!("public import {import}\n"));
+        } else {
+            text.push_str(&format!("import {import}\n"));
+        }
+    }
+    text.push_str(
+        "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
+    );
+    if let Some(scope) = legacy_scope {
+        // A certificate lifts the heartbeat budgets as its text form did
+        // (SPEC.md §17.17): what bounds the kernel's work is the wall clock.
+        text.push_str(
+            "set_option maxHeartbeats 0
+set_option synthInstance.maxHeartbeats 0
+",
+        );
+        text.push_str(&format!("namespace {scope}\n"));
+    }
+    text.push_str(if core.version() == 2 {
+        crate::backend::core_v2::LEAN_CORE_DECODER_V2
+    } else {
+        crate::backend::runtime::frozen_core_decoder()
+    });
+    let order = emission_order(core)?;
+    let owners = generated_owners(core);
+    let ranges = core_command_ranges(core, &order, &owners)?;
+    for range in &ranges {
+        let chunk = core_chunk(core, &order[range.clone()], &owners)?;
+        append_core_command(&mut text, core, &chunk)?;
+    }
+    if let Some(scope) = legacy_scope {
+        text.push_str(&format!("\nend {scope}\n"));
+    }
+    Ok(text)
+}
+
 /// Render a native core module as Lean.  The emitted command reconstructs
 /// semantic `Expr` and `Declaration` values, and `Lean.addDecl` submits every
 /// native environment declaration to the kernel checker. Owner-generated
@@ -1276,21 +1202,7 @@ fn append_core_command(
 pub fn render_lean(checked: &CheckedModule, core: &CoreModule) -> Result<Emitter, Diagnostic> {
     let mut emitter = Emitter::new();
     let node = emitter.node("core-lean-kernel-module");
-    let mut text = String::from("module\n");
-    for import in &core.imports {
-        text.push_str(&format!("public import {import}\n"));
-    }
-    text.push_str(
-        "import Lean\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option maxHeartbeats 1000000000\nset_option Elab.async false\n\nopen Lean\n",
-    );
-    text.push_str(LEAN_CORE_DECODER);
-    let order = emission_order(core)?;
-    let owners = generated_owners(core);
-    let ranges = core_command_ranges(core, &order, &owners)?;
-    for range in &ranges {
-        let chunk = core_chunk(core, &order[range.clone()], &owners)?;
-        append_core_command(&mut text, core, &chunk)?;
-    }
+    let text = lean_text(core)?;
     emit_chunk(
         &mut emitter,
         checked,
@@ -1322,6 +1234,135 @@ fn tex_escape(text: &str) -> String {
     out
 }
 
+/// What a row of core module 2 states beyond its kernel data, as one
+/// canonical line of the LaTeX document: the same fields the Lean backend's
+/// decoder installs, so that the document says everything the environment
+/// receives. A first-schema row states none of it.
+fn elaborator_state(row: &CoreDeclaration) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(safety) = row.safety {
+        parts.push(format!(
+            "safety {}",
+            serde_json::to_string(&safety)
+                .unwrap_or_default()
+                .trim_matches('"')
+        ));
+    }
+    if let Some(all) = row.all.as_ref().filter(|all| all.len() > 1) {
+        parts.push(format!("group {}", all.join(", ")));
+    }
+    if row.compiled {
+        parts.push("compiled".to_owned());
+    }
+    if !row.tags.is_empty() {
+        let tags: Vec<String> = row
+            .tags
+            .iter()
+            .map(|tag| {
+                serde_json::to_string(tag)
+                    .unwrap_or_default()
+                    .trim_matches('"')
+                    .to_owned()
+            })
+            .collect();
+        parts.push(format!("tags {}", tags.join(", ")));
+    }
+    if let Some(inline) = row.inline {
+        parts.push(format!(
+            "inline {}",
+            serde_json::to_string(&inline)
+                .unwrap_or_default()
+                .trim_matches('"')
+        ));
+    }
+    if let Some(sparse) = &row.sparse {
+        parts.push(format!(
+            "sparse casesOn of {} over {} (major premise {}, arity {})",
+            sparse.ind_name,
+            sparse.interesting_ctors.join(", "),
+            sparse.major_pos,
+            sparse.arity
+        ));
+    }
+    if let Some(grind) = row.grind {
+        parts.push(format!(
+            "grind {}",
+            serde_json::to_string(&grind)
+                .unwrap_or_default()
+                .trim_matches('"')
+        ));
+    }
+    if let Some(simp) = &row.simp {
+        parts.push(format!(
+            "simp {} priority {}{}",
+            serde_json::to_string(&simp.attribute)
+                .unwrap_or_default()
+                .trim_matches('"'),
+            simp.priority,
+            if simp.post { " post" } else { " pre" }
+        ));
+    }
+    if let Some(no_confusion) = &row.no_confusion {
+        parts.push(format!(
+            "no-confusion {}",
+            serde_json::to_string(no_confusion).unwrap_or_default()
+        ));
+    }
+    if let Some(matcher) = &row.matcher {
+        parts.push(format!(
+            "matcher of {} parameters, {} discriminants, {} alternatives",
+            matcher.num_params,
+            matcher.num_discrs,
+            matcher.alts.len()
+        ));
+    }
+    if let Some(projection) = &row.projection {
+        parts.push(format!(
+            "projection {} of {} (parameters {}{})",
+            projection.index,
+            projection.constructor,
+            projection.num_params,
+            if projection.from_class { ", class" } else { "" }
+        ));
+    }
+    if let Some(info) = &row.eqn_info {
+        parts.push(format!(
+            "structural equations over {} (recursive argument {}, fixed {})",
+            info.declarations.join(", "),
+            info.rec_arg_pos,
+            info.num_fixed
+        ));
+    }
+    (!parts.is_empty()).then(|| parts.join("; "))
+}
+
+/// Run `work` on a thread whose stack is sized for expressions `depth` deep.
+fn on_stack_for<T: Send>(depth: u64, work: impl FnOnce() -> T + Send) -> Result<T, Diagnostic> {
+    let bytes = usize::try_from(depth)
+        .unwrap_or(usize::MAX)
+        .saturating_mul(48 << 10)
+        .saturating_add(1 << 20);
+    std::thread::scope(|scope| {
+        let handle = std::thread::Builder::new()
+            .stack_size(bytes)
+            .spawn_scoped(scope, work)
+            .map_err(|error| {
+                Diagnostic::new(
+                    code!("LLS8002"),
+                    format!(
+                        "a stack of {bytes} bytes for rendering a native core module {depth} expressions deep could not be reserved: {error}"
+                    ),
+                )
+            })?;
+        handle.join().map_err(|_| {
+            Diagnostic::new(
+                code!("LLI9001"),
+                "phase render: the printer of a native core module panicked",
+            )
+        })
+    })
+}
+
 /// Render synchronized declaration statements and proof terms from the same
 /// core DAG as canonical LaTeX.
 pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitter, Diagnostic> {
@@ -1342,9 +1383,27 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
         shared_open: &sharing.open,
         requirements: &sharing.requirements,
     };
-    for declaration in declarations {
-        let mut scope = Vec::new();
-        let ty = printer.term(declaration.r#type, &mut scope)?;
+    // The printer recurses by the depth of an expression, which linking bounds
+    // by `max_scope_depth`; its frames are large in a debug build, so it runs
+    // on a stack sized for the depth of this module and not on the caller's.
+    let rendered = on_stack_for(core.expression_depth(), || {
+        declarations
+            .iter()
+            .map(|declaration| {
+                let mut scope = Vec::new();
+                let ty = printer.term(declaration.r#type, &mut scope)?;
+                let value = match declaration.value {
+                    Some(value) => {
+                        let mut scope = Vec::new();
+                        Some(printer.term(value, &mut scope)?)
+                    }
+                    None => None,
+                };
+                Ok((ty, value))
+            })
+            .collect::<Result<Vec<_>, Diagnostic>>()
+    })??;
+    for (declaration, (ty, value)) in declarations.iter().zip(rendered) {
         let mut text = format!(
             "\\subsection*{{\\texttt{{{}}}}}\n\\noindent\\texttt{{{}}}\\par\n\\noindent Axiom policy: \\texttt{{{} [{}]}}.\\par\n",
             tex_escape(&declaration.name),
@@ -1352,9 +1411,15 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
             declaration.policy.kind(),
             tex_escape(&declaration.policy.axioms().join(", ")),
         );
-        if let Some(value) = declaration.value {
-            let mut scope = Vec::new();
-            let value = printer.term(value, &mut scope)?;
+        if core.version() == 2 {
+            if let Some(state) = elaborator_state(declaration) {
+                text.push_str(&format!(
+                    "\\noindent Elaborator state: \\texttt{{{}}}.\\par\n",
+                    tex_escape(&state)
+                ));
+            }
+        }
+        if let Some(value) = value {
             let label = if matches!(declaration.kind, CoreDeclKind::Theorem) {
                 "Proof term"
             } else {
@@ -1406,6 +1471,18 @@ mod tests {
             class: false,
             instance: None,
             generated,
+            all: None,
+            safety: None,
+            compiled: false,
+            tags: Vec::new(),
+            no_confusion: None,
+            matcher: None,
+            projection: None,
+            simp: None,
+            eqn_info: None,
+            inline: None,
+            sparse: None,
+            grind: None,
         }
     }
 

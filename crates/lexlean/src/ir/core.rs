@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 /// A universe level in the kernel calculus.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(tag = "k", content = "a")]
 #[serde(deny_unknown_fields)]
 pub enum CoreLevel {
@@ -30,7 +30,7 @@ pub enum CoreLevel {
 }
 
 /// Binder visibility, preserved from the elaborated kernel expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, Deserialize, Serialize)]
 pub enum CoreBinderInfo {
     /// Ordinary explicit binder.
     #[serde(rename = "e")]
@@ -47,7 +47,7 @@ pub enum CoreBinderInfo {
 }
 
 /// One node of a closed Calculus-of-Inductive-Constructions expression.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(tag = "k")]
 #[serde(deny_unknown_fields)]
 pub enum CoreNode {
@@ -95,6 +95,10 @@ pub enum CoreNode {
     /// and TeX metacharacters never acquire a second interpretation.
     #[serde(rename = "t")]
     String { v: Vec<u32> },
+    /// Expression annotation (`Expr.mdata`): kernel-irrelevant, but part of the
+    /// elaborated term a downstream elaborator may read.  Core module 2 only.
+    #[serde(rename = "d")]
+    Mdata { m: Vec<CoreMetaEntry>, x: usize },
     /// Primitive structure projection.
     #[serde(rename = "j")]
     Projection {
@@ -108,13 +112,45 @@ pub enum CoreNode {
     },
 }
 
+/// The value of one annotation entry.
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
+#[serde(tag = "t")]
+#[serde(deny_unknown_fields)]
+pub enum CoreMetaValue {
+    /// A Boolean.
+    #[serde(rename = "b")]
+    Bool { v: bool },
+    /// A natural number, in decimal.
+    #[serde(rename = "n")]
+    Nat { v: String },
+    /// An integer, in decimal.
+    #[serde(rename = "i")]
+    Int { v: String },
+    /// A string.
+    #[serde(rename = "s")]
+    Str { v: String },
+    /// A name.
+    #[serde(rename = "m")]
+    Name { v: String },
+}
+
+/// One `key := value` entry of an annotation.
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreMetaEntry {
+    /// The key name.
+    pub n: String,
+    /// The value.
+    pub v: CoreMetaValue,
+}
+
 impl CoreNode {
     fn children(&self) -> Vec<usize> {
         match self {
             Self::App { f, x } => vec![*f, *x],
             Self::Lambda { t, v, .. } | Self::Forall { t, v, .. } => vec![*t, *v],
             Self::Let { t, v, body, .. } => vec![*t, *v, *body],
-            Self::Projection { x, .. } => vec![*x],
+            Self::Projection { x, .. } | Self::Mdata { x, .. } => vec![*x],
             Self::BVar { .. }
             | Self::Sort { .. }
             | Self::Const { .. }
@@ -314,6 +350,214 @@ impl CoreAxiomPolicy {
     }
 }
 
+/// The safety of a definition row; a row that omits it is safe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum CoreSafety {
+    /// A definition that is not safe.
+    #[serde(rename = "unsafe")]
+    Unsafe,
+    /// A partial definition, the compiler's implementation record of a
+    /// recursive function.
+    #[serde(rename = "partial")]
+    Partial,
+}
+
+/// A declaration tag of the elaborator that a downstream elaboration can
+/// observe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub enum CoreTag {
+    /// `protected`: the short name is not introduced by `open`.
+    #[serde(rename = "protected")]
+    Protected,
+    /// An auxiliary recursor (`recOn`, `casesOn`, `brecOn`, ...).
+    #[serde(rename = "aux_recursor")]
+    AuxRecursor,
+    /// `@[elab_as_elim]`.
+    #[serde(rename = "elab_as_elim")]
+    ElabAsElim,
+    /// `@[defeq]`: a theorem proved by definitional unfolding.
+    #[serde(rename = "defeq")]
+    Defeq,
+    /// The backward-compatible form of `@[defeq]`.
+    #[serde(rename = "backward_defeq")]
+    BackwardDefeq,
+    /// A definition produced by recursion compilation.
+    #[serde(rename = "recursive")]
+    Recursive,
+    /// A sparse `casesOn` or a constructor eliminator.
+    #[serde(rename = "sparse_cases_on")]
+    SparseCasesOn,
+}
+
+/// Shape information of a no-confusion declaration.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "kind")]
+#[serde(deny_unknown_fields)]
+pub enum CoreNoConfusion {
+    /// The regular no-confusion lemma of a type.
+    #[serde(rename = "regular")]
+    Regular {
+        arity: usize,
+        lhs: usize,
+        rhs: usize,
+    },
+    /// A per-constructor no-confusion lemma.
+    #[serde(rename = "per_ctor")]
+    PerCtor { arity: usize, fields: usize },
+}
+
+/// Parameter structure of one alternative of a matcher.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreMatcherAlt {
+    /// Actual fields, not counting discriminant equations.
+    pub fields: usize,
+    /// The overlap assumptions of a splitter.
+    pub overlaps: usize,
+    /// Whether the alternative has an artificial unit parameter.
+    pub unit_thunk: bool,
+}
+
+/// The matcher registration of an auxiliary `match` definition.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreMatcher {
+    /// Parameters before the motive.
+    pub num_params: usize,
+    /// Discriminants.
+    pub num_discrs: usize,
+    /// The alternatives, in order.
+    pub alts: Vec<CoreMatcherAlt>,
+    /// The universe parameter that selects the elimination universe, when
+    /// the matcher can eliminate into more than `Prop`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub u_elim_pos: Option<usize>,
+    /// For each discriminant, the name of its annotation, if any.
+    pub discrs: Vec<Vec<String>>,
+    /// Which alternatives may overlap which, by overlapped index.
+    pub overlaps: Vec<(usize, Vec<usize>)>,
+}
+
+/// The projection-function registration of a structure field.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreProjection {
+    /// The structure's constructor.
+    pub constructor: String,
+    /// The number of structure parameters.
+    pub num_params: usize,
+    /// The field index.
+    pub index: usize,
+    /// Whether the structure is a class.
+    pub from_class: bool,
+}
+
+/// A compiler inlining attribute of a definition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum CoreInline {
+    /// `@[inline]`.
+    #[serde(rename = "inline")]
+    Inline,
+    /// `@[noinline]`.
+    #[serde(rename = "noinline")]
+    NoInline,
+    /// `@[macro_inline]`.
+    #[serde(rename = "macro_inline")]
+    MacroInline,
+    /// `@[inline_if_reduce]`.
+    #[serde(rename = "inline_if_reduce")]
+    InlineIfReduce,
+    /// `@[always_inline]`.
+    #[serde(rename = "always_inline")]
+    AlwaysInline,
+}
+
+/// What the elaborator records of a sparse `casesOn`, a `casesOn` with arms
+/// for only some of the constructors of a type. The constant is made by the
+/// elaborator's own construction from the type and its constructors, so the
+/// Lean backend remakes it that way and refuses a row that is not what the
+/// construction makes.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreSparse {
+    /// The inductive type.
+    pub ind_name: String,
+    /// The position of the major premise.
+    pub major_pos: usize,
+    /// The number of arguments of the constant.
+    pub arity: usize,
+    /// The constructors that have an arm, in the order of the arms.
+    pub interesting_ctors: Vec<String>,
+}
+
+/// The kind of the `grind` attribute that registers a theorem for
+/// E-matching.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum CoreGrind {
+    /// `@[grind =]`.
+    #[serde(rename = "eq_lhs")]
+    EqLhs,
+    /// `@[grind =>]` read right to left.
+    #[serde(rename = "eq_rhs")]
+    EqRhs,
+    /// Both sides of an equation.
+    #[serde(rename = "eq_both")]
+    EqBoth,
+    /// The equation read backwards.
+    #[serde(rename = "eq_bwd")]
+    EqBwd,
+    /// `@[grind →]`.
+    #[serde(rename = "fwd")]
+    Fwd,
+    /// `@[grind ←]`.
+    #[serde(rename = "bwd")]
+    Bwd,
+    /// `@[grind ->]` of an equivalence, left to right.
+    #[serde(rename = "left_right")]
+    LeftRight,
+    /// An equivalence, right to left.
+    #[serde(rename = "right_left")]
+    RightLeft,
+    /// `@[grind]`.
+    #[serde(rename = "default")]
+    Default,
+}
+
+/// The registration of a theorem in the default simplification set.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreSimp {
+    /// Attribute scope behavior.
+    pub attribute: CoreAttributeKind,
+    /// Simplification priority.
+    pub priority: u64,
+    /// Whether the lemma is applied after the subterms are simplified.
+    pub post: bool,
+}
+
+/// The structural-recursion equation data the elaborator keeps for a
+/// recursive definition, from which it generates equation lemmas on demand.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoreEqnInfo {
+    /// The position of the recursive argument.
+    pub rec_arg_pos: usize,
+    /// The definitions of the recursive group.
+    pub declarations: Vec<String>,
+    /// The number of fixed parameters.
+    pub num_fixed: usize,
+    /// For each function, the position of each parameter among the fixed ones.
+    pub perms: Vec<Vec<Vec<usize>>>,
+    /// The dependencies among the fixed parameters.
+    pub rev_deps: Vec<Vec<Vec<usize>>>,
+    /// The type, as a node.
+    pub r#type: usize,
+    /// The value, as a node.
+    pub value: usize,
+    /// The universe parameters.
+    pub levels: Vec<String>,
+}
+
 /// One declaration linked to exact type and, where applicable, value nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -352,7 +596,72 @@ pub struct CoreDeclaration {
     /// declaration and therefore appears in neither generated backend.
     #[serde(default)]
     pub generated: bool,
+    /// The definitions of the mutual group the row belongs to, itself
+    /// included. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub all: Option<Vec<String>>,
+    /// The safety of a definition; omitted for a safe one. Core module 2
+    /// only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub safety: Option<CoreSafety>,
+    /// Whether the source environment ran the code generator over this row.
+    /// Core module 2 only.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub compiled: bool,
+    /// Elaborator tags, sorted and distinct. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<CoreTag>,
+    /// No-confusion shape. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub no_confusion: Option<CoreNoConfusion>,
+    /// Matcher registration. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub matcher: Option<CoreMatcher>,
+    /// Projection-function registration. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projection: Option<CoreProjection>,
+    /// Simplification-set registration. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub simp: Option<CoreSimp>,
+    /// Structural-recursion equation data. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eqn_info: Option<CoreEqnInfo>,
+    /// The compiler inlining attribute of a definition. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inline: Option<CoreInline>,
+    /// The record of a sparse `casesOn` definition. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sparse: Option<CoreSparse>,
+    /// The `grind` attribute of a theorem. Core module 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grind: Option<CoreGrind>,
 }
+
+impl CoreDeclaration {
+    /// Whether the row uses a field only core module 2 has.
+    #[must_use]
+    pub fn uses_version_2_fields(&self) -> bool {
+        self.all.is_some()
+            || self.safety.is_some()
+            || self.compiled
+            || !self.tags.is_empty()
+            || self.no_confusion.is_some()
+            || self.matcher.is_some()
+            || self.projection.is_some()
+            || self.simp.is_some()
+            || self.eqn_info.is_some()
+            || self.inline.is_some()
+            || self.sparse.is_some()
+            || self.grind.is_some()
+    }
+}
+
+/// The tag of the first core-module schema.
+pub const CORE_SPEC_1: &str = "lexlean/core-module/1";
+
+/// The tag of the second core-module schema: language 1.2 only, it adds the
+/// annotation node and the environment state a downstream elaboration reads.
+pub const CORE_SPEC_2: &str = "lexlean/core-module/2";
 
 /// A complete native core module.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -375,18 +684,216 @@ pub struct CoreModule {
 }
 
 impl CoreModule {
-    /// Decode and enforce the closed schema invariants.
-    pub fn parse(text: &str) -> Result<Self, String> {
+    /// Decode and enforce the closed schema invariants of either schema
+    /// version. Core module 2 is accepted only under language 1.2.
+    pub fn parse(text: &str, language: &str) -> Result<Self, String> {
         let module: Self = serde_json::from_str(text)
             .map_err(|error| format!("invalid core-module JSON: {error}"))?;
-        module.validate()?;
+        module.validate(language)?;
         CanonicalSyntax::check(text.as_bytes())?;
         Ok(module)
     }
 
-    fn validate(&self) -> Result<(), String> {
-        if self.spec != "lexlean/core-module/1" {
+    /// Read a module written in the authoring notation (SPEC.md §17.21.8),
+    /// which is language 1.2's, and enforce the closed schema invariants.
+    pub fn from_notation(text: &str, language: &str) -> Result<Self, String> {
+        if language != crate::LANGUAGE_1_2 {
+            return Err(format!(
+                "the authoring notation of a coremodule is language 1.2; write `\\coredata` under language {language}"
+            ));
+        }
+        let module = crate::surface::core::parse_module(text).map_err(|failure| {
+            format!(
+                "invalid core notation: {} (at byte {})",
+                failure.message, failure.offset
+            )
+        })?;
+        module.validate(language)?;
+        Ok(module)
+    }
+
+    /// Decode the module of a native `.lex.tex` source: the one `\coredata`
+    /// argument between the module's `coremodule` markers, or the module in
+    /// the authoring notation.
+    pub fn from_source(source: &str, language: &str) -> Result<Self, String> {
+        const MARKER: &str = "\\coredata{";
+        if let Some(located) = crate::surface::module::locate(source)
+            .filter(|found| found.kind.is(&crate::surface::module::CORE) && found.data.is_none())
+        {
+            return Self::from_notation(&source[located.body.0..located.body.1], language);
+        }
+        if source.matches(MARKER).count() != 1 {
+            return Err("a native core source holds exactly one core payload".to_owned());
+        }
+        let start = source
+            .find(MARKER)
+            .map(|at| at + MARKER.len())
+            .ok_or_else(|| "a native core source holds no core payload".to_owned())?;
+        let tail = &source[start..];
+        let end = tail
+            .find("}\n\\end{coremodule}")
+            .ok_or_else(|| "a native core source has no closed core module".to_owned())?;
+        Self::parse(&tail[..end], language)
+    }
+
+    /// The depth of the deepest expression of the DAG: one for a leaf, and
+    /// one more than its deepest child for any other node. The edges all
+    /// point backwards, so one forward pass computes it without recursion.
+    #[must_use]
+    pub fn expression_depth(&self) -> u64 {
+        let mut depth = vec![0_u64; self.nodes.len()];
+        let mut deepest = 0;
+        for (index, node) in self.nodes.iter().enumerate() {
+            let below = node
+                .children()
+                .into_iter()
+                .filter_map(|child| depth.get(child).copied())
+                .max()
+                .unwrap_or(0);
+            depth[index] = below + 1;
+            deepest = deepest.max(below + 1);
+        }
+        deepest
+    }
+
+    /// One declaration as a value in which every expression root is replaced
+    /// by a digest of the kernel term it roots, without the names of bound
+    /// variables, which no kernel judgment reads. Two rows, of one module or
+    /// of two, state the same declaration exactly when these values are
+    /// equal: a library uses it to tell an equation lemma Lean realized in
+    /// two of its modules from two declarations of one name (§17.17).
+    #[must_use]
+    pub fn declaration_up_to_binder_names(&self, row: &CoreDeclaration) -> serde_json::Value {
+        let mut memo = std::collections::BTreeMap::new();
+        let mut value = serde_json::to_value(row).expect("a core declaration serializes");
+        let mut replace = |slot: Option<&mut serde_json::Value>| {
+            if let Some(slot) = slot {
+                if let Some(root) = slot.as_u64().and_then(|root| usize::try_from(root).ok()) {
+                    *slot = serde_json::Value::String(self.term_digest(root, &mut memo));
+                }
+            }
+        };
+        replace(value.get_mut("type"));
+        replace(value.get_mut("value"));
+        if let Some(info) = value.get_mut("eqn_info") {
+            replace(info.get_mut("type"));
+            replace(info.get_mut("value"));
+        }
+        if let Some(fields) = value
+            .pointer_mut("/inductive/structure/fields")
+            .and_then(serde_json::Value::as_array_mut)
+        {
+            for field in fields {
+                replace(field.get_mut("auto_param"));
+            }
+        }
+        value
+    }
+
+    /// A digest of the kernel term at `root`, without binder names. The edges
+    /// point backwards, so a node's children are digested before it.
+    fn term_digest(
+        &self,
+        root: usize,
+        memo: &mut std::collections::BTreeMap<usize, String>,
+    ) -> String {
+        use serde_json::json;
+        let mut stack = vec![root];
+        while let Some(&index) = stack.last() {
+            if memo.contains_key(&index) {
+                stack.pop();
+                continue;
+            }
+            let node = &self.nodes[index];
+            let pending: Vec<usize> = node
+                .children()
+                .into_iter()
+                .filter(|child| !memo.contains_key(child))
+                .collect();
+            if !pending.is_empty() {
+                stack.extend(pending);
+                continue;
+            }
+            let child = |at: &usize| memo[at].clone();
+            let shape = match node {
+                CoreNode::Lambda { b, t, v, .. } => json!(["l", b, child(t), child(v)]),
+                CoreNode::Forall { b, t, v, .. } => json!(["p", b, child(t), child(v)]),
+                CoreNode::Let { t, v, body, d, .. } => {
+                    json!(["e", child(t), child(v), child(body), d])
+                }
+                CoreNode::App { f, x } => json!(["a", child(f), child(x)]),
+                CoreNode::Projection { n, s, i, x } => json!(["j", n, s, i, child(x)]),
+                CoreNode::Mdata { m, x } => json!(["d", m, child(x)]),
+                leaf @ (CoreNode::BVar { .. }
+                | CoreNode::Sort { .. }
+                | CoreNode::Const { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. }) => {
+                    serde_json::to_value(leaf).expect("a core node serializes")
+                }
+            };
+            let digest =
+                crate::artifact::content_id::Sha256Digest::of(shape.to_string().as_bytes())
+                    .to_hex();
+            memo.insert(index, digest);
+            stack.pop();
+        }
+        memo[&root].clone()
+    }
+
+    /// The schema version the module declares: 1 or 2.
+    #[must_use]
+    pub fn version(&self) -> u8 {
+        if self.spec == CORE_SPEC_2 {
+            2
+        } else {
+            1
+        }
+    }
+
+    /// Enforce the closed schema invariants of either schema version; core
+    /// module 2 is accepted only under language 1.2.
+    #[allow(clippy::too_many_lines)]
+    pub fn validate(&self, language: &str) -> Result<(), String> {
+        if self.spec != CORE_SPEC_1 && self.spec != CORE_SPEC_2 {
             return Err(format!("unsupported core-module schema `{}`", self.spec));
+        }
+        let version = self.version();
+        if version == 2 && language != "1.2" {
+            return Err(format!(
+                "`{CORE_SPEC_2}` requires language 1.2, not `{language}`"
+            ));
+        }
+        let name_ok: fn(&str) -> Result<(), String> = if version == 2 {
+            validate_name_v2
+        } else {
+            validate_name
+        };
+        let segment_ok: fn(&str) -> Result<(), String> = if version == 2 {
+            validate_segment_v2
+        } else {
+            validate_segment
+        };
+        if version == 1 {
+            if self
+                .nodes
+                .iter()
+                .any(|node| matches!(node, CoreNode::Mdata { .. }))
+            {
+                return Err(format!(
+                    "an annotation node requires `{CORE_SPEC_2}`, not `{CORE_SPEC_1}`"
+                ));
+            }
+            if let Some(row) = self
+                .declarations
+                .iter()
+                .find(|row| row.uses_version_2_fields())
+            {
+                return Err(format!(
+                    "core declaration `{}` carries a field that requires `{CORE_SPEC_2}`",
+                    row.name
+                ));
+            }
         }
         if self.declarations.is_empty() {
             return Err("a core module contains at least one declaration".to_owned());
@@ -407,10 +914,29 @@ impl CoreModule {
                 }
             }
             match node {
-                CoreNode::Const { n, .. } => validate_name(n)?,
+                CoreNode::Const { n, .. } => name_ok(n)?,
                 CoreNode::Projection { n, s, .. } => {
-                    validate_name(n)?;
-                    validate_name(s)?;
+                    name_ok(n)?;
+                    name_ok(s)?;
+                }
+                CoreNode::Mdata { m, .. } => {
+                    for entry in m {
+                        name_ok(&entry.n)?;
+                        match &entry.v {
+                            CoreMetaValue::Nat { v } => {
+                                if v.parse::<u128>().is_err() {
+                                    return Err(format!("`{v}` is not a natural number"));
+                                }
+                            }
+                            CoreMetaValue::Int { v } => {
+                                if v.parse::<i128>().is_err() {
+                                    return Err(format!("`{v}` is not an integer"));
+                                }
+                            }
+                            CoreMetaValue::Name { v } => name_ok(v)?,
+                            CoreMetaValue::Bool { .. } | CoreMetaValue::Str { .. } => {}
+                        }
+                    }
                 }
                 CoreNode::BVar { .. }
                 | CoreNode::Sort { .. }
@@ -432,9 +958,10 @@ impl CoreModule {
             }
             previous = Some(*proof);
         }
+        let every_name: BTreeSet<&String> = self.declarations.iter().map(|row| &row.name).collect();
         let mut names = BTreeSet::new();
         for declaration in &self.declarations {
-            validate_name(&declaration.name)?;
+            name_ok(&declaration.name)?;
             if !names.insert(&declaration.name) {
                 return Err(format!("duplicate core declaration `{}`", declaration.name));
             }
@@ -487,7 +1014,7 @@ impl CoreModule {
             }
             let mut policy_names = BTreeSet::new();
             for axiom in declaration.policy.axioms() {
-                validate_name(axiom)?;
+                name_ok(axiom)?;
                 if !policy_names.insert(axiom) {
                     return Err(format!(
                         "core declaration `{}` repeats axiom `{axiom}` in its policy",
@@ -496,8 +1023,9 @@ impl CoreModule {
                 }
             }
             for level in &declaration.levels {
-                validate_segment(level)?;
+                segment_ok(level)?;
             }
+            self.validate_version_2_row(declaration, &every_name, name_ok, segment_ok)?;
             if let Some(inductive) = &declaration.inductive {
                 if inductive.constructors.is_empty() {
                     return Err(format!(
@@ -506,7 +1034,7 @@ impl CoreModule {
                     ));
                 }
                 for name in &inductive.constructors {
-                    validate_name(name)?;
+                    name_ok(name)?;
                     if !names.contains(name)
                         && !self.declarations.iter().any(|row| row.name == *name)
                     {
@@ -518,10 +1046,10 @@ impl CoreModule {
                 }
                 if let Some(structure) = &inductive.structure {
                     for field in &structure.fields {
-                        validate_name(&field.name)?;
-                        validate_name(&field.projection)?;
+                        name_ok(&field.name)?;
+                        name_ok(&field.projection)?;
                         if let Some(subobject) = &field.subobject {
-                            validate_name(subobject)?;
+                            name_ok(subobject)?;
                         }
                         if field
                             .auto_param
@@ -534,11 +1062,152 @@ impl CoreModule {
                         }
                     }
                     for parent in &structure.parents {
-                        validate_name(&parent.name)?;
-                        validate_name(&parent.projection)?;
+                        name_ok(&parent.name)?;
+                        name_ok(&parent.projection)?;
                     }
                 }
             }
+        }
+        Ok(())
+    }
+}
+
+impl CoreModule {
+    /// The checks of the fields only core module 2 has.
+    fn validate_version_2_row(
+        &self,
+        declaration: &CoreDeclaration,
+        names: &BTreeSet<&String>,
+        name_ok: fn(&str) -> Result<(), String>,
+        segment_ok: fn(&str) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let node_ok = |node: usize| node < self.nodes.len();
+        let is_definition = matches!(
+            declaration.kind,
+            CoreDeclKind::Abbrev | CoreDeclKind::Definition
+        );
+        if declaration.safety.is_some() && !is_definition {
+            return Err(format!(
+                "core declaration `{}` has a safety but is not a definition",
+                declaration.name
+            ));
+        }
+        if declaration.compiled
+            && !is_definition
+            && !matches!(declaration.kind, CoreDeclKind::Inductive)
+        {
+            return Err(format!(
+                "core declaration `{}` is marked compiled but is neither a definition nor an inductive",
+                declaration.name
+            ));
+        }
+        if declaration.tags.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(format!(
+                "core declaration `{}` has tags that are not strictly ordered",
+                declaration.name
+            ));
+        }
+        if let Some(all) = &declaration.all {
+            if !all.contains(&declaration.name) {
+                return Err(format!(
+                    "core declaration `{}` is absent from its own group",
+                    declaration.name
+                ));
+            }
+            let mut seen = BTreeSet::new();
+            for member in all {
+                name_ok(member)?;
+                if !seen.insert(member) {
+                    return Err(format!(
+                        "core declaration `{}` repeats group member `{member}`",
+                        declaration.name
+                    ));
+                }
+                if declaration.safety.is_some() && !names.contains(member) {
+                    return Err(format!(
+                        "core declaration `{}` names the absent group member `{member}`",
+                        declaration.name
+                    ));
+                }
+            }
+        }
+        if declaration.matcher.is_some() && !is_definition {
+            return Err(format!(
+                "core declaration `{}` has a matcher but is not a definition",
+                declaration.name
+            ));
+        }
+        if let Some(matcher) = &declaration.matcher {
+            for discriminant in &matcher.discrs {
+                if discriminant.len() > 1 {
+                    return Err(format!(
+                        "core matcher `{}` names a discriminant more than once",
+                        declaration.name
+                    ));
+                }
+                for name in discriminant {
+                    name_ok(name)?;
+                }
+            }
+        }
+        if let Some(projection) = &declaration.projection {
+            name_ok(&projection.constructor)?;
+        }
+        if declaration.simp.is_some() && !matches!(declaration.kind, CoreDeclKind::Theorem) {
+            return Err(format!(
+                "core declaration `{}` is registered for simplification but is not a theorem",
+                declaration.name
+            ));
+        }
+        if let Some(info) = &declaration.eqn_info {
+            if !is_definition {
+                return Err(format!(
+                    "core declaration `{}` has equation data but is not a definition",
+                    declaration.name
+                ));
+            }
+            if !node_ok(info.r#type) || !node_ok(info.value) {
+                return Err(format!(
+                    "core declaration `{}` has an out-of-range equation-data root",
+                    declaration.name
+                ));
+            }
+            for name in &info.declarations {
+                name_ok(name)?;
+            }
+            for level in &info.levels {
+                segment_ok(level)?;
+            }
+        }
+        if declaration.inline.is_some() && !is_definition {
+            return Err(format!(
+                "core declaration `{}` has an inlining attribute but is not a definition",
+                declaration.name
+            ));
+        }
+        if let Some(sparse) = &declaration.sparse {
+            if !is_definition {
+                return Err(format!(
+                    "core declaration `{}` is a sparse `casesOn` but is not a definition",
+                    declaration.name
+                ));
+            }
+            if sparse.interesting_ctors.is_empty() {
+                return Err(format!(
+                    "core declaration `{}` is a sparse `casesOn` of no constructor",
+                    declaration.name
+                ));
+            }
+            name_ok(&sparse.ind_name)?;
+            for constructor in &sparse.interesting_ctors {
+                name_ok(constructor)?;
+            }
+        }
+        if declaration.grind.is_some() && !matches!(declaration.kind, CoreDeclKind::Theorem) {
+            return Err(format!(
+                "core declaration `{}` carries a `grind` attribute but is not a theorem",
+                declaration.name
+            ));
         }
         Ok(())
     }
@@ -774,9 +1443,56 @@ fn validate_name(name: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// A component of a core-module-2 name: `#` and decimal digits for a numeric
+/// component, otherwise a nonempty string without `.`, in which a backslash
+/// introduces exactly `\\`, `\d` (a dot), or `\h` (a leading `#`).
+fn validate_segment_v2(segment: &str) -> Result<(), String> {
+    if segment.is_empty() {
+        return Err("empty Lean name segment".to_owned());
+    }
+    if let Some(digits) = segment.strip_prefix('#') {
+        return if !digits.is_empty()
+            && digits.bytes().all(|byte| byte.is_ascii_digit())
+            && (digits == "0" || !digits.starts_with('0'))
+        {
+            Ok(())
+        } else {
+            Err(format!("`{segment}` is not a numeric name component"))
+        };
+    }
+    let mut characters = segment.chars();
+    while let Some(character) = characters.next() {
+        match character {
+            '\\' => {
+                if !matches!(characters.next(), Some('\\' | 'd' | 'h')) {
+                    return Err(format!("`{segment}` has an unknown name escape"));
+                }
+            }
+            '.' => return Err(format!("`{segment}` holds an unescaped dot")),
+            control if control.is_control() => {
+                return Err(format!("`{segment}` holds a control character"));
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// A core-module-2 name: components separated by dots.
+fn validate_name_v2(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("empty Lean name".to_owned());
+    }
+    for segment in name.split('.') {
+        validate_segment_v2(segment)?;
+    }
+    Ok(())
+}
+
 /// Whether `name` belongs to the closed ASCII Lean-name grammar used by
 /// native core declarations, references, and axiom policies.
-pub(crate) fn is_closed_lean_name(name: &str) -> bool {
+#[must_use]
+pub fn is_closed_lean_name(name: &str) -> bool {
     validate_name(name).is_ok()
 }
 
@@ -796,5 +1512,165 @@ mod canonical_syntax_tests {
         ] {
             assert!(CanonicalSyntax::check(rejected).is_err());
         }
+    }
+}
+
+#[cfg(test)]
+mod version_2_tests {
+    use super::*;
+    use crate::artifact::canonical_json::Json;
+
+    fn theorem(name: &str) -> CoreDeclaration {
+        CoreDeclaration {
+            name: name.to_owned(),
+            levels: Vec::new(),
+            kind: CoreDeclKind::Theorem,
+            reducibility: None,
+            transparency: CoreTransparency::Semireducible,
+            policy: CoreAxiomPolicy::Exact(Vec::new()),
+            r#type: 0,
+            value: Some(0),
+            inductive: None,
+            class: false,
+            instance: None,
+            generated: false,
+            all: None,
+            safety: None,
+            compiled: false,
+            tags: Vec::new(),
+            no_confusion: None,
+            matcher: None,
+            projection: None,
+            simp: None,
+            eqn_info: None,
+            inline: None,
+            sparse: None,
+            grind: None,
+        }
+    }
+
+    fn module(spec: &str, declaration: CoreDeclaration) -> String {
+        let core = CoreModule {
+            spec: spec.to_owned(),
+            imports: vec!["Init".to_owned()],
+            nodes: vec![CoreNode::Const {
+                n: "True".to_owned(),
+                u: Vec::new(),
+            }],
+            proof_nodes: Vec::new(),
+            declarations: vec![declaration],
+        };
+        let text = serde_json::to_string(&core).expect("serializes");
+        Json::parse(text.as_bytes())
+            .expect("is JSON")
+            .to_canonical_string()
+    }
+
+    #[test]
+    fn version_2_is_language_1_2_only() {
+        let text = module(CORE_SPEC_2, theorem("T.t"));
+        assert!(CoreModule::parse(&text, "1.2").is_ok());
+        for language in ["1.0", "1.1"] {
+            let error = CoreModule::parse(&text, language).expect_err("refused");
+            assert!(error.contains("requires language 1.2"), "{error}");
+        }
+    }
+
+    #[test]
+    fn version_1_refuses_every_version_2_construct() {
+        let mut tagged = theorem("T.t");
+        tagged.tags = vec![CoreTag::Protected];
+        let text = module(CORE_SPEC_1, tagged);
+        let error = CoreModule::parse(&text, "1.0").expect_err("refused");
+        assert!(
+            error.contains("requires `lexlean/core-module/2`"),
+            "{error}"
+        );
+
+        let core = CoreModule {
+            spec: CORE_SPEC_1.to_owned(),
+            imports: vec!["Init".to_owned()],
+            nodes: vec![
+                CoreNode::Const {
+                    n: "True".to_owned(),
+                    u: Vec::new(),
+                },
+                CoreNode::Mdata {
+                    m: Vec::new(),
+                    x: 0,
+                },
+            ],
+            proof_nodes: Vec::new(),
+            declarations: vec![theorem("T.t")],
+        };
+        let text = Json::parse(serde_json::to_string(&core).expect("serializes").as_bytes())
+            .expect("is JSON")
+            .to_canonical_string();
+        let error = CoreModule::parse(&text, "1.0").expect_err("refused");
+        assert!(error.contains("annotation node"), "{error}");
+    }
+
+    #[test]
+    fn version_2_names_carry_numeric_components_and_escapes() {
+        for accepted in [
+            "_private.Mod.#0.f.match_1.eq_1",
+            "Array.get!",
+            "Foo.\\d",
+            "Foo.\\h1",
+            "a\\\\b.c",
+        ] {
+            assert!(validate_name_v2(accepted).is_ok(), "{accepted}");
+        }
+        for rejected in [
+            "", "Foo.", ".Foo", "Foo..Bar", "#", "#01", "#x", "Foo.#", "a\\q", "a\\",
+        ] {
+            assert!(validate_name_v2(rejected).is_err(), "{rejected}");
+        }
+        // The first schema keeps its closed ASCII grammar.
+        assert!(validate_name("_private.Mod.#0.f").is_err());
+        assert!(validate_name("Array.get!").is_err());
+        let text = module(CORE_SPEC_2, theorem("_private.Mod.#0.f"));
+        assert!(CoreModule::parse(&text, "1.2").is_ok());
+        let text = module(CORE_SPEC_1, theorem("_private.Mod.#0.f"));
+        assert!(CoreModule::parse(&text, "1.0").is_err());
+    }
+
+    #[test]
+    fn version_2_rows_are_checked_against_their_kind() {
+        let mut row = theorem("T.t");
+        row.safety = Some(CoreSafety::Partial);
+        let text = module(CORE_SPEC_2, row);
+        let error = CoreModule::parse(&text, "1.2").expect_err("a theorem has no safety");
+        assert!(error.contains("safety"), "{error}");
+
+        let mut row = theorem("T.t");
+        row.tags = vec![CoreTag::Recursive, CoreTag::Protected];
+        let text = module(CORE_SPEC_2, row);
+        let error = CoreModule::parse(&text, "1.2").expect_err("tags are ordered");
+        assert!(error.contains("not strictly ordered"), "{error}");
+
+        let mut row = theorem("T.t");
+        row.all = Some(vec!["T.u".to_owned()]);
+        let text = module(CORE_SPEC_2, row);
+        let error = CoreModule::parse(&text, "1.2").expect_err("a row belongs to its group");
+        assert!(error.contains("absent from its own group"), "{error}");
+
+        let mut row = theorem("T.t");
+        row.simp = Some(CoreSimp {
+            attribute: CoreAttributeKind::Global,
+            priority: 1000,
+            post: true,
+        });
+        assert!(CoreModule::parse(&module(CORE_SPEC_2, row), "1.2").is_ok());
+    }
+
+    #[test]
+    fn a_core_source_yields_its_one_payload() {
+        let text = module(CORE_SPEC_2, theorem("T.t"));
+        let source = format!(
+            "\\begin{{lexlean}}{{M}}\n\\title{{t}}\n\\begin{{coremodule}}\n\\coredata{{{text}}}\n\\end{{coremodule}}\n\\end{{lexlean}}\n"
+        );
+        assert!(CoreModule::from_source(&source, "1.2").is_ok());
+        assert!(CoreModule::from_source("\\begin{lexlean}{M}\n\\end{lexlean}\n", "1.2").is_err());
     }
 }

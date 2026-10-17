@@ -118,7 +118,7 @@ pub fn f2(v0: Fn0, v1: u64, v2: u64) -> R<(u64, bool)> {
                 Ok((v2, true))
             }
             Some(v4) => {
-                f2(v0.clone(), v3, v4)
+                f2(v0, v3, v4)
             }
         }
     }

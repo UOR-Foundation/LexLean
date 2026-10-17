@@ -94,7 +94,7 @@ pub fn f0(v0: Adt0) -> (u64, (u64, u64)) {
         Adt0::C0(_, h5, _) => {
             h5
         }
-    }, match v0.clone() {
+    }, match v0 {
         Adt0::C0(_, _, h6) => {
             h6
         }

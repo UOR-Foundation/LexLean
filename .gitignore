@@ -26,3 +26,5 @@ compiler/.lexlean/
 
 # Claude Code worktrees and session state (never part of the release set).
 .claude/
+stdlib/.lexlean/
+bootstrap/.lexlean/

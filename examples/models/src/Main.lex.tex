@@ -10,6 +10,517 @@
 \importmodule{Flows}
 \title{Model roots}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["propext"],"body":{"arguments":[{"kind":"var","name":"glyph"}],"function":{"module":"Recognizer","name":"DigitModel"},"kind":"call"},"executable":true,"kind":"definition","name":"classify","parameters":[{"name":"glyph","type":{"arguments":[],"kind":"named","member":{"module":"Glyphs","name":"Glyph"}}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"axioms":["propext"],"body":{"arguments":[{"kind":"var","name":"glyph"}],"checks":["postcondition"],"kind":"checked_apply","model":{"module":"Recognizer","name":"RawDigitModel"}},"executable":true,"kind":"definition","name":"classifyChecked","parameters":[{"name":"glyph","type":{"arguments":[],"kind":"named","member":{"module":"Glyphs","name":"Glyph"}}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}},{"axioms":["propext"],"body":{"arguments":[{"kind":"var","name":"presentation"}],"checks":["precondition"],"kind":"checked_apply","model":{"module":"Pipeline","name":"PipelineModel"}},"executable":true,"kind":"definition","name":"respond","parameters":[{"name":"presentation","type":{"arguments":[],"kind":"named","member":{"module":"Triage","name":"Presentation"}}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}},{"body":{"arguments":[{"kind":"var","name":"costs"}],"checks":["precondition"],"kind":"checked_apply","model":{"module":"Pipeline","name":"StreamModel"}},"executable":true,"kind":"definition","name":"admitCosts","parameters":[{"name":"costs","type":{"element":{"kind":"nat"},"kind":"list"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"element":{"kind":"nat"},"kind":"list"}}}},{"body":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"checks":["input_invariant","precondition"],"kind":"checked_apply","model":{"module":"Session","name":"SessionModel"}},"executable":true,"kind":"definition","name":"step","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"module":"Session","name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"arguments":[],"kind":"named","member":{"module":"Session","name":"Window"}},"right":{"kind":"nat"}}}},{"axioms":["propext"],"kind":"theorem","name":"classify_eight","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[],"constructor":{"module":"Glyphs","name":"Glyph.g8"},"kind":"constructor"}],"function":{"name":"classify"},"kind":"call"},"right":{"kind":"nat","value":"8"}}},{"body":{"branches":[{"binders":["violation"],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Result.error"}},{"binders":["scanned"],"body":{"branches":[{"binders":["violation"],"body":{"kind":"nat","value":"1"},"constructor":{"name":"Result.error"}},{"binders":["overflows"],"body":{"kind":"nat","value":"2"},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"scanned"}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"admission","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"element":{"kind":"nat"},"kind":"list"}}}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"admit_rejects_costly","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"head":{"kind":"nat","value":"40"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}],"function":{"name":"admitCosts"},"kind":"call"}],"function":{"name":"admission"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"admit_accepts_cheap","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"head":{"kind":"nat","value":"16"},"kind":"cons","tail":{"head":{"kind":"nat","value":"9"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}],"function":{"name":"admitCosts"},"kind":"call"}],"function":{"name":"admission"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant","precondition"],"kind":"checked_apply","model":{"module":"Ledger","name":"SpillModel"}},"executable":true,"kind":"definition","name":"ledgerPost","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant","postcondition","precondition"],"kind":"checked_apply","model":{"module":"Ledger","name":"SpillRawModel"}},"executable":true,"kind":"definition","name":"ledgerFull","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}},{"body":{"arguments":[{"kind":"var","name":"x"}],"checks":["postcondition","precondition"],"kind":"checked_apply","model":{"module":"Ledger","name":"GuessModel"}},"executable":true,"kind":"definition","name":"guessChecked","parameters":[{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}},{"body":{"arguments":[{"kind":"var","name":"x"}],"checks":["postcondition","precondition"],"kind":"checked_apply","model":{"module":"Ledger","name":"OvershootModel"}},"executable":true,"kind":"definition","name":"overshootChecked","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant"],"kind":"checked_apply","model":{"module":"Flows","name":"FlowModel"}},"executable":true,"kind":"definition","name":"flowStep","parameters":[{"name":"s","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"],"targets":["rust-std"]},"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"x"}],"checks":["precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"PairGuessModel"}},"executable":true,"kind":"definition","name":"guessTwice","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"x"}],"checks":["precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"OvershootPairModel"}},"executable":true,"kind":"definition","name":"guessOvershoot","parameters":[{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant","precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"TwinModel"}},"executable":true,"kind":"definition","name":"twinStep","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant"],"kind":"checked_apply","model":{"module":"Flows","name":"PairClampModel"}},"executable":true,"kind":"definition","name":"pairClamp","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant","precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"BranchModel"}},"executable":true,"kind":"definition","name":"branchStep","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"kind":"nat"}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant","precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"ChainModel"}},"executable":true,"kind":"definition","name":"chainStep","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant"],"kind":"checked_apply","model":{"module":"Flows","name":"RawChainModel"}},"executable":true,"kind":"definition","name":"rawChainStep","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"checks":["input_invariant","output_invariant"],"kind":"checked_apply","model":{"module":"Flows","name":"DrainChainModel"}},"executable":true,"kind":"definition","name":"drainChainStep","parameters":[{"name":"s","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}},{"name":"x","type":{"kind":"nat"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}},{"body":{"arguments":[{"kind":"var","name":"xs"}],"checks":["precondition"],"kind":"checked_apply","model":{"module":"Flows","name":"SpillStreamModel"}},"executable":true,"kind":"definition","name":"spillStream","parameters":[{"name":"xs","type":{"element":{"kind":"nat"},"kind":"list"}}],"result":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"element":{"kind":"nat"},"kind":"list"}}}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["pair"],"body":{"kind":"add","left":{"kind":"nat","value":"100"},"right":{"kind":"first","value":{"kind":"var","name":"pair"}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"stepCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["value"],"body":{"kind":"add","left":{"kind":"nat","value":"100"},"right":{"kind":"var","name":"value"}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"valueCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["pair"],"body":{"kind":"add","left":{"kind":"nat","value":"1000"},"right":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"var","name":"pair"}},{"kind":"nat","value":"1000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"second","value":{"kind":"var","name":"pair"}}],"function":{"name":"valueCode"},"kind":"call"}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"flowCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["p"],"body":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000000000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"second","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"second","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"second","value":{"kind":"second","value":{"kind":"var","name":"p"}}}}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"quadCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["p"],"body":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"second","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"second","value":{"kind":"var","name":"p"}}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"branchCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"kind":"nat"}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["p"],"body":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"add","left":{"arguments":[{"kind":"second","value":{"kind":"first","value":{"kind":"var","name":"p"}}},{"kind":"nat","value":"1000"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"second","value":{"kind":"var","name":"p"}}],"function":{"name":"valueCode"},"kind":"call"}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"chainCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"nat"}}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["inner"],"body":{"branches":[{"binders":["violation"],"body":{"kind":"add","left":{"kind":"nat","value":"10"},"right":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"}},"constructor":{"name":"Result.error"}},{"binders":["values"],"body":{"kind":"add","left":{"kind":"nat","value":"100"},"right":{"kind":"add","left":{"arguments":[{"kind":"first","value":{"kind":"var","name":"values"}},{"kind":"nat","value":"10"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"right":{"kind":"second","value":{"kind":"var","name":"values"}}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"inner"}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"twiceCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["violation"],"body":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"},"constructor":{"name":"Result.error"}},{"binders":["inner"],"body":{"branches":[{"binders":["violation"],"body":{"kind":"add","left":{"kind":"nat","value":"10"},"right":{"arguments":[{"kind":"var","name":"violation"}],"function":{"module":"Ledger","name":"violationCode"},"kind":"call"}},"constructor":{"name":"Result.error"}},{"binders":["values"],"body":{"kind":"add","left":{"kind":"nat","value":"100"},"right":{"arguments":[{"kind":"var","name":"values"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"inner"}},"constructor":{"name":"Result.ok"}}],"kind":"match","scrutinee":{"kind":"var","name":"outcome"}},"executable":true,"kind":"definition","name":"streamCode","parameters":[{"name":"outcome","type":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"error":{"kind":"contract_violation"},"kind":"result","ok":{"element":{"kind":"nat"},"kind":"list"}}}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"ledger_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"},{"kind":"nat","value":"3"}],"function":{"name":"ledgerPost"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"108"}}},{"kind":"theorem","name":"ledger_refuses_input","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"200"},{"kind":"nat","value":"1"}],"function":{"name":"ledgerPost"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"kind":"theorem","name":"ledger_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"},{"kind":"nat","value":"20"}],"function":{"name":"ledgerPost"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"ledger_refuses_output","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"95"},{"kind":"nat","value":"9"}],"function":{"name":"ledgerPost"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"4"}}},{"kind":"theorem","name":"ledger_full_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"},{"kind":"nat","value":"3"}],"function":{"name":"ledgerFull"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"108"}}},{"kind":"theorem","name":"ledger_full_refuses_output","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"95"},{"kind":"nat","value":"9"}],"function":{"name":"ledgerFull"},"kind":"call"}],"function":{"name":"stepCode"},"kind":"call"},"right":{"kind":"nat","value":"4"}}},{"kind":"theorem","name":"guess_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"}],"function":{"name":"guessChecked"},"kind":"call"}],"function":{"name":"valueCode"},"kind":"call"},"right":{"kind":"nat","value":"104"}}},{"kind":"theorem","name":"guess_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"20"}],"function":{"name":"guessChecked"},"kind":"call"}],"function":{"name":"valueCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"overshoot_refuses_postcondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"3"}],"function":{"name":"overshootChecked"},"kind":"call"}],"function":{"name":"valueCode"},"kind":"call"},"right":{"kind":"nat","value":"3"}}},{"kind":"theorem","name":"flow_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"},{"kind":"nat","value":"3"}],"function":{"name":"flowStep"},"kind":"call"}],"function":{"name":"flowCode"},"kind":"call"},"right":{"kind":"nat","value":"9107"}}},{"kind":"theorem","name":"flow_refuses_junction","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"5"},{"kind":"nat","value":"30"}],"function":{"name":"flowStep"},"kind":"call"}],"function":{"name":"flowCode"},"kind":"call"},"right":{"kind":"nat","value":"6001"}}},{"kind":"theorem","name":"flow_refuses_input","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"200"},{"kind":"nat","value":"1"}],"function":{"name":"flowStep"},"kind":"call"}],"function":{"name":"flowCode"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"kind":"theorem","name":"twice_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"4"}],"function":{"name":"guessTwice"},"kind":"call"}],"function":{"name":"twiceCode"},"kind":"call"},"right":{"kind":"nat","value":"133"}}},{"kind":"theorem","name":"twice_refuses","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"40"}],"function":{"name":"guessTwice"},"kind":"call"}],"function":{"name":"twiceCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"overshoot_pair_refuses_postcondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"4"}],"function":{"name":"guessOvershoot"},"kind":"call"}],"function":{"name":"twiceCode"},"kind":"call"},"right":{"kind":"nat","value":"13"}}},{"kind":"theorem","name":"twin_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"3"}],"function":{"name":"twinStep"},"kind":"call"}],"function":{"name":"quadCode"},"kind":"call"},"right":{"kind":"nat","value":"8010008007"}}},{"kind":"theorem","name":"twin_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"30"}],"function":{"name":"twinStep"},"kind":"call"}],"function":{"name":"quadCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"twin_refuses_input","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"200"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"3"}],"function":{"name":"twinStep"},"kind":"call"}],"function":{"name":"quadCode"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"kind":"theorem","name":"pair_clamp_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"90"}},{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"20"}}],"function":{"name":"pairClamp"},"kind":"call"}],"function":{"name":"quadCode"},"kind":"call"},"right":{"kind":"nat","value":"8100008100"}}},{"kind":"theorem","name":"pair_clamp_refuses_input","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"200"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"pairClamp"},"kind":"call"}],"function":{"name":"quadCode"},"kind":"call"},"right":{"kind":"nat","value":"2"}}},{"kind":"theorem","name":"branch_takes_then","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"3"}],"function":{"name":"branchStep"},"kind":"call"}],"function":{"name":"branchCode"},"kind":"call"},"right":{"kind":"nat","value":"8007008"}}},{"kind":"theorem","name":"branch_takes_else","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"8"}],"function":{"name":"branchStep"},"kind":"call"}],"function":{"name":"branchCode"},"kind":"call"},"right":{"kind":"nat","value":"5015007"}}},{"kind":"theorem","name":"branch_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"20"}],"function":{"name":"branchStep"},"kind":"call"}],"function":{"name":"branchCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"chain_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"3"}],"function":{"name":"chainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"8010107"}}},{"kind":"theorem","name":"chain_refuses_stage_output","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"95"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"9"}],"function":{"name":"chainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"95007004"}}},{"kind":"theorem","name":"chain_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"5"},"right":{"kind":"nat","value":"7"}},{"kind":"nat","value":"30"}],"function":{"name":"chainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"raw_chain_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"20"}},{"kind":"nat","value":"3"}],"function":{"name":"rawChainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"7024104"}}},{"kind":"theorem","name":"raw_chain_refuses_input","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"150"}},{"kind":"nat","value":"3"}],"function":{"name":"rawChainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"4150002"}}},{"kind":"theorem","name":"raw_chain_refuses_precondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"12"},"right":{"kind":"nat","value":"20"}},{"kind":"nat","value":"3"}],"function":{"name":"rawChainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"12020001"}}},{"kind":"theorem","name":"drain_chain_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"20"}},{"kind":"nat","value":"3"}],"function":{"name":"drainChainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"3020100"}}},{"kind":"theorem","name":"drain_chain_refuses_postcondition","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"20"}},{"kind":"nat","value":"3"}],"function":{"name":"drainChainStep"},"kind":"call"}],"function":{"name":"chainCode"},"kind":"call"},"right":{"kind":"nat","value":"4020003"}}},{"kind":"theorem","name":"stream_accepts","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}}}}}}}],"function":{"name":"spillStream"},"kind":"call"}],"function":{"name":"streamCode"},"kind":"call"},"right":{"kind":"nat","value":"110"}}},{"kind":"theorem","name":"stream_refuses_output","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}}}}}}}}],"function":{"name":"spillStream"},"kind":"call"}],"function":{"name":"streamCode"},"kind":"call"},"right":{"kind":"nat","value":"14"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: classify,
+  parameters: [glyph : Glyphs::Glyph],
+  result: Nat,
+  body: (Recognizer::DigitModel glyph),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: classifyChecked,
+  parameters: [glyph : Glyphs::Glyph],
+  result: (Result Nat ContractViolation),
+  body: (checked Recognizer::RawDigitModel glyph with [postcondition]),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: respond,
+  parameters: [presentation : Triage::Presentation],
+  result: (Result Nat ContractViolation),
+  body: (checked Pipeline::PipelineModel presentation with [precondition]),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: admitCosts,
+  parameters: [costs : (List Nat)],
+  result: (Result (Result (List Nat) ContractViolation) ContractViolation),
+  body: (checked Pipeline::StreamModel costs with [precondition]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: step,
+  parameters: [window : Session::Window, cost : Nat],
+  result: (Result (Session::Window * Nat) ContractViolation),
+  body: (checked Session::SessionModel window cost with [input_invariant, precondition]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+theorem{
+  name: classify_eight,
+  parameters: [],
+  statement: ((classify (ctor Glyphs::Glyph.g8)) = 8),
+  proof: decide{},
+  axioms: [propext]
+}
+
+definition{
+  name: admission,
+  parameters: [outcome : (Result (Result (List Nat) ContractViolation) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => 0
+    | Result.ok scanned => (match scanned
+      | Result.error violation => 1
+      | Result.ok overflows => 2)),
+  executable: true
+}
+
+theorem{
+  name: admit_rejects_costly,
+  parameters: [],
+  statement: ((admission (admitCosts (cons 3 (cons 40 (nil Nat))))) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: admit_accepts_cheap,
+  parameters: [],
+  statement: ((admission (admitCosts (cons 3 (cons 16 (cons 9 (nil Nat)))))) = 2),
+  proof: decide{}
+}
+
+definition{
+  name: ledgerPost,
+  parameters: [s : Nat, x : Nat],
+  result: (Result (Nat * Nat) ContractViolation),
+  body: (checked Ledger::SpillModel s x with [input_invariant, output_invariant, precondition]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: ledgerFull,
+  parameters: [s : Nat, x : Nat],
+  result: (Result (Nat * Nat) ContractViolation),
+  body: (checked Ledger::SpillRawModel s x with [input_invariant, output_invariant, postcondition, precondition]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: guessChecked,
+  parameters: [x : Nat],
+  result: (Result Nat ContractViolation),
+  body: (checked Ledger::GuessModel x with [postcondition, precondition]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: overshootChecked,
+  parameters: [x : Nat],
+  result: (Result Nat ContractViolation),
+  body: (checked Ledger::OvershootModel x with [postcondition, precondition]),
+  executable: true
+}
+
+definition{
+  name: flowStep,
+  parameters: [s : Nat, x : Nat],
+  result: (Result (Nat * (Result Nat ContractViolation)) ContractViolation),
+  body: (checked Flows::FlowModel s x with [input_invariant, output_invariant]),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: guessTwice,
+  parameters: [x : Nat],
+  result: (Result (Result (Nat * Nat) ContractViolation) ContractViolation),
+  body: (checked Flows::PairGuessModel x with [precondition]),
+  executable: true
+}
+
+definition{
+  name: guessOvershoot,
+  parameters: [x : Nat],
+  result: (Result (Result (Nat * Nat) ContractViolation) ContractViolation),
+  body: (checked Flows::OvershootPairModel x with [precondition]),
+  executable: true
+}
+
+definition{
+  name: twinStep,
+  parameters: [s : (Nat * Nat), x : Nat],
+  result: (Result ((Nat * Nat) * (Nat * Nat)) ContractViolation),
+  body: (checked Flows::TwinModel s x with [input_invariant, output_invariant, precondition]),
+  executable: true
+}
+
+definition{
+  name: pairClamp,
+  parameters: [s : (Nat * Nat), x : (Nat * Nat)],
+  result: (Result ((Nat * Nat) * (Nat * Nat)) ContractViolation),
+  body: (checked Flows::PairClampModel s x with [input_invariant, output_invariant]),
+  executable: true
+}
+
+definition{
+  name: branchStep,
+  parameters: [s : (Nat * Nat), x : Nat],
+  result: (Result ((Nat * Nat) * Nat) ContractViolation),
+  body: (checked Flows::BranchModel s x with [input_invariant, output_invariant, precondition]),
+  executable: true
+}
+
+definition{
+  name: chainStep,
+  parameters: [s : (Nat * Nat), x : Nat],
+  result: (Result ((Nat * Nat) * (Result Nat ContractViolation)) ContractViolation),
+  body: (checked Flows::ChainModel s x with [input_invariant, output_invariant, precondition]),
+  executable: true
+}
+
+definition{
+  name: rawChainStep,
+  parameters: [s : (Nat * Nat), x : Nat],
+  result: (Result ((Nat * Nat) * (Result Nat ContractViolation)) ContractViolation),
+  body: (checked Flows::RawChainModel s x with [input_invariant, output_invariant]),
+  executable: true
+}
+
+definition{
+  name: drainChainStep,
+  parameters: [s : (Nat * Nat), x : Nat],
+  result: (Result ((Nat * Nat) * (Result Nat ContractViolation)) ContractViolation),
+  body: (checked Flows::DrainChainModel s x with [input_invariant, output_invariant]),
+  executable: true
+}
+
+definition{
+  name: spillStream,
+  parameters: [xs : (List Nat)],
+  result: (Result (Result (List Nat) ContractViolation) ContractViolation),
+  body: (checked Flows::SpillStreamModel xs with [precondition]),
+  executable: true
+}
+
+definition{
+  name: stepCode,
+  parameters: [outcome : (Result (Nat * Nat) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok pair => (100 + (first pair))),
+  executable: true
+}
+
+definition{
+  name: valueCode,
+  parameters: [outcome : (Result Nat ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok value => (100 + value)),
+  executable: true
+}
+
+definition{
+  name: flowCode,
+  parameters: [outcome : (Result (Nat * (Result Nat ContractViolation)) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok pair => (1000 + ((prim multiply (first pair) 1000 : Nat) + (valueCode (second pair))))),
+  executable: true
+}
+
+definition{
+  name: quadCode,
+  parameters: [outcome : (Result ((Nat * Nat) * (Nat * Nat)) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok p => ((prim multiply (first (first p)) 1000000000 : Nat) + ((prim multiply (second (first p)) 1000000 : Nat) + ((prim multiply (first (second p)) 1000 : Nat) + (second (second p)))))),
+  executable: true
+}
+
+definition{
+  name: branchCode,
+  parameters: [outcome : (Result ((Nat * Nat) * Nat) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok p => ((prim multiply (first (first p)) 1000000 : Nat) + ((prim multiply (second (first p)) 1000 : Nat) + (second p)))),
+  executable: true
+}
+
+definition{
+  name: chainCode,
+  parameters: [outcome : (Result ((Nat * Nat) * (Result Nat ContractViolation)) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok p => ((prim multiply (first (first p)) 1000000 : Nat) + ((prim multiply (second (first p)) 1000 : Nat) + (valueCode (second p))))),
+  executable: true
+}
+
+definition{
+  name: twiceCode,
+  parameters: [outcome : (Result (Result (Nat * Nat) ContractViolation) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok inner => (match inner
+      | Result.error violation => (10 + (Ledger::violationCode violation))
+      | Result.ok values => (100 + ((prim multiply (first values) 10 : Nat) + (second values))))),
+  executable: true
+}
+
+definition{
+  name: streamCode,
+  parameters: [outcome : (Result (Result (List Nat) ContractViolation) ContractViolation)],
+  result: Nat,
+  body: (match outcome
+    | Result.error violation => (Ledger::violationCode violation)
+    | Result.ok inner => (match inner
+      | Result.error violation => (10 + (Ledger::violationCode violation))
+      | Result.ok values => (100 + (prim length values : Nat)))),
+  executable: true
+}
+
+theorem{
+  name: ledger_accepts,
+  parameters: [],
+  statement: ((stepCode (ledgerPost 5 3)) = 108),
+  proof: decide{}
+}
+
+theorem{
+  name: ledger_refuses_input,
+  parameters: [],
+  statement: ((stepCode (ledgerPost 200 1)) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: ledger_refuses_precondition,
+  parameters: [],
+  statement: ((stepCode (ledgerPost 5 20)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: ledger_refuses_output,
+  parameters: [],
+  statement: ((stepCode (ledgerPost 95 9)) = 4),
+  proof: decide{}
+}
+
+theorem{
+  name: ledger_full_accepts,
+  parameters: [],
+  statement: ((stepCode (ledgerFull 5 3)) = 108),
+  proof: decide{}
+}
+
+theorem{
+  name: ledger_full_refuses_output,
+  parameters: [],
+  statement: ((stepCode (ledgerFull 95 9)) = 4),
+  proof: decide{}
+}
+
+theorem{
+  name: guess_accepts,
+  parameters: [],
+  statement: ((valueCode (guessChecked 5)) = 104),
+  proof: decide{}
+}
+
+theorem{
+  name: guess_refuses_precondition,
+  parameters: [],
+  statement: ((valueCode (guessChecked 20)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: overshoot_refuses_postcondition,
+  parameters: [],
+  statement: ((valueCode (overshootChecked 3)) = 3),
+  proof: decide{}
+}
+
+theorem{
+  name: flow_accepts,
+  parameters: [],
+  statement: ((flowCode (flowStep 5 3)) = 9107),
+  proof: decide{}
+}
+
+theorem{
+  name: flow_refuses_junction,
+  parameters: [],
+  statement: ((flowCode (flowStep 5 30)) = 6001),
+  proof: decide{}
+}
+
+theorem{
+  name: flow_refuses_input,
+  parameters: [],
+  statement: ((flowCode (flowStep 200 1)) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: twice_accepts,
+  parameters: [],
+  statement: ((twiceCode (guessTwice 4)) = 133),
+  proof: decide{}
+}
+
+theorem{
+  name: twice_refuses,
+  parameters: [],
+  statement: ((twiceCode (guessTwice 40)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: overshoot_pair_refuses_postcondition,
+  parameters: [],
+  statement: ((twiceCode (guessOvershoot 4)) = 13),
+  proof: decide{}
+}
+
+theorem{
+  name: twin_accepts,
+  parameters: [],
+  statement: ((quadCode (twinStep (5, 7) 3)) = 8010008007),
+  proof: decide{}
+}
+
+theorem{
+  name: twin_refuses_precondition,
+  parameters: [],
+  statement: ((quadCode (twinStep (5, 7) 30)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: twin_refuses_input,
+  parameters: [],
+  statement: ((quadCode (twinStep (200, 7) 3)) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: pair_clamp_accepts,
+  parameters: [],
+  statement: ((quadCode (pairClamp (5, 90) (3, 20))) = 8100008100),
+  proof: decide{}
+}
+
+theorem{
+  name: pair_clamp_refuses_input,
+  parameters: [],
+  statement: ((quadCode (pairClamp (5, 200) (1, 1))) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: branch_takes_then,
+  parameters: [],
+  statement: ((branchCode (branchStep (5, 7) 3)) = 8007008),
+  proof: decide{}
+}
+
+theorem{
+  name: branch_takes_else,
+  parameters: [],
+  statement: ((branchCode (branchStep (5, 7) 8)) = 5015007),
+  proof: decide{}
+}
+
+theorem{
+  name: branch_refuses_precondition,
+  parameters: [],
+  statement: ((branchCode (branchStep (5, 7) 20)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: chain_accepts,
+  parameters: [],
+  statement: ((chainCode (chainStep (5, 7) 3)) = 8010107),
+  proof: decide{}
+}
+
+theorem{
+  name: chain_refuses_stage_output,
+  parameters: [],
+  statement: ((chainCode (chainStep (95, 7) 9)) = 95007004),
+  proof: decide{}
+}
+
+theorem{
+  name: chain_refuses_precondition,
+  parameters: [],
+  statement: ((chainCode (chainStep (5, 7) 30)) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: raw_chain_accepts,
+  parameters: [],
+  statement: ((chainCode (rawChainStep (4, 20) 3)) = 7024104),
+  proof: decide{}
+}
+
+theorem{
+  name: raw_chain_refuses_input,
+  parameters: [],
+  statement: ((chainCode (rawChainStep (4, 150) 3)) = 4150002),
+  proof: decide{}
+}
+
+theorem{
+  name: raw_chain_refuses_precondition,
+  parameters: [],
+  statement: ((chainCode (rawChainStep (12, 20) 3)) = 12020001),
+  proof: decide{}
+}
+
+theorem{
+  name: drain_chain_accepts,
+  parameters: [],
+  statement: ((chainCode (drainChainStep (0, 20) 3)) = 3020100),
+  proof: decide{}
+}
+
+theorem{
+  name: drain_chain_refuses_postcondition,
+  parameters: [],
+  statement: ((chainCode (drainChainStep (4, 20) 3)) = 4020003),
+  proof: decide{}
+}
+
+theorem{
+  name: stream_accepts,
+  parameters: [],
+  statement: ((streamCode (spillStream (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (nil Nat))))))))))))) = 110),
+  proof: decide{}
+}
+
+theorem{
+  name: stream_refuses_output,
+  parameters: [],
+  statement: ((streamCode (spillStream (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (cons 10 (nil Nat)))))))))))))) = 14),
+  proof: decide{}
+}
 \end{semanticmodule}
 \end{lexlean}

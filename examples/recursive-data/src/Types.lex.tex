@@ -2,6 +2,71 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[],"name":"leaf"},{"fields":[{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Tree"}},{"kind":"parameter","name":"Item"},{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Tree"}}],"name":"node"}],"kind":"inductive","name":"Tree","parameters":[],"type_parameters":["Item"]},{"constructors":[{"fields":[{"kind":"parameter","name":"Item"},{"element":{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Rose"}},"kind":"list"}],"name":"node"}],"kind":"inductive","name":"Rose","parameters":[],"type_parameters":["Item"]},{"constructors":[{"fields":[{"kind":"nat"}],"name":"literal"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Expr"}},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"plus"},{"fields":[{"element":{"arguments":[],"kind":"named","member":{"name":"Stmt"}},"kind":"list"},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"block"}],"kind":"inductive","mutual":"Syntax","name":"Expr","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"string"},{"arguments":[],"kind":"named","member":{"name":"Expr"}}],"name":"assign"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Stmt"}},{"arguments":[],"kind":"named","member":{"name":"Stmt"}}],"name":"sequence"}],"kind":"inductive","mutual":"Syntax","name":"Stmt","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[{"kind":"parameter","name":"Item"},{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Branches"}}],"name":"node"}],"kind":"inductive","mutual":"Forest","name":"Node","parameters":[],"type_parameters":["Item"]},{"constructors":[{"fields":[],"name":"none"},{"fields":[{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Node"}},{"arguments":[{"kind":"parameter","name":"Item"}],"kind":"named","member":{"name":"Branches"}}],"name":"more"}],"kind":"inductive","mutual":"Forest","name":"Branches","parameters":[],"type_parameters":["Item"]},{"constructors":[{"fields":[{"kind":"parameter","name":"Problem"}],"name":"failure"},{"fields":[{"kind":"parameter","name":"Item"}],"name":"success"}],"kind":"inductive","name":"Outcome","parameters":[],"type_parameters":["Problem","Item"]},{"fields":[{"name":"value","type":{"kind":"parameter","name":"Item"}},{"name":"position","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}],"kind":"structure","name":"Located","parameters":[],"type_parameters":["Item"]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Tree,
+  type_parameters: [Item],
+  parameters: [],
+  constructors: [
+    {name: leaf, fields: []},
+    {name: node, fields: [(Tree 'Item), 'Item, (Tree 'Item)]}
+  ]
+}
+
+inductive{
+  name: Rose,
+  type_parameters: [Item],
+  parameters: [],
+  constructors: [{name: node, fields: ['Item, (List (Rose 'Item))]}]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: literal, fields: [Nat]},
+    {name: plus, fields: [Expr, Expr]},
+    {name: block, fields: [(List Stmt), Expr]}
+  ],
+  mutual: Syntax
+}
+
+inductive{
+  name: Stmt,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: assign, fields: [String, Expr]}, {name: sequence, fields: [Stmt, Stmt]}],
+  mutual: Syntax
+}
+
+inductive{
+  name: Node,
+  type_parameters: [Item],
+  parameters: [],
+  constructors: [{name: node, fields: ['Item, (Branches 'Item)]}],
+  mutual: Forest
+}
+
+inductive{
+  name: Branches,
+  type_parameters: [Item],
+  parameters: [],
+  constructors: [{name: none, fields: []}, {name: more, fields: [(Node 'Item), (Branches 'Item)]}],
+  mutual: Forest
+}
+
+inductive{
+  name: Outcome,
+  type_parameters: [Problem, Item],
+  parameters: [],
+  constructors: [{name: failure, fields: ['Problem]}, {name: success, fields: ['Item]}]
+}
+
+structure{
+  name: Located,
+  type_parameters: [Item],
+  parameters: [],
+  fields: [{name: value, type: 'Item}, {name: position, type: (Nat * Nat)}]
+}
 \end{semanticmodule}
 \end{lexlean}

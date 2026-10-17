@@ -649,7 +649,7 @@ pub(crate) fn run(id: &str) {
                 .find(|(path, _)| path == "maps/RecursiveData/Types.map.json")
                 .expect("the Types source map");
             let map: serde_json::Value = serde_json::from_slice(map_bytes).expect("map JSON");
-            let types_text = project.read("src/Types.lex.tex");
+            let types_text = project.read_raw("src/Types.lex.tex");
             let declaration_nodes: Vec<u64> = map["nodes"]
                 .as_array()
                 .expect("nodes")
@@ -668,9 +668,15 @@ pub(crate) fn run(id: &str) {
                 }
                 let range =
                     |key: &str| usize::try_from(mapping[key].as_u64().expect(key)).expect("fits");
-                let object: serde_json::Value =
-                    serde_json::from_str(&types_text[range("src_start")..range("src_end")])
-                        .expect("a declaration maps to exactly its own source object");
+                let object: serde_json::Value = serde_json::from_str(
+                    &lexlean::surface::semantic::parse_at(
+                        &types_text[range("src_start")..range("src_end")],
+                        lexlean::surface::semantic::Position::Declaration,
+                    )
+                    .expect("a declaration maps to exactly its own source text")
+                    .to_canonical_string(),
+                )
+                .expect("canonical JSON");
                 let name = object["name"].as_str().expect("a declaration name");
                 let generated = if mapping["artifact"] == 0 {
                     &types

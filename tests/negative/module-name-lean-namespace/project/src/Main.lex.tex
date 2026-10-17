@@ -3,6 +3,6 @@
 \importmodule{Nat}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"kind":"add","left":{"kind":"var","name":"n"},"right":{"kind":"nat","value":"1"}},"executable":true,"kind":"definition","name":"g","parameters":[{"name":"n","type":{"kind":"nat"}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{name: g, parameters: [n : Nat], result: Nat, body: (n + 1), executable: true}
 \end{semanticmodule}
 \end{lexlean}

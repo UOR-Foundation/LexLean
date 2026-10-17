@@ -2,6 +2,111 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"},{"kind":"var","name":"k"},{"kind":"var","name":"v"}],"kind":"primitive","operation":"map_insert","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"},{"kind":"var","name":"k"}],"kind":"primitive","operation":"map_remove","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"},{"kind":"var","name":"k"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"},{"kind":"var","name":"k"}],"kind":"primitive","operation":"map_contains","result":{"kind":"bool"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"}],"kind":"primitive","operation":"map_keys","result":{"element":{"kind":"string"},"kind":"list"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"}],"kind":"primitive","operation":"map_values","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"m"}],"kind":"primitive","operation":"map_size","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"m"}],"kind":"primitive","operation":"map_entries","result":{"element":{"kind":"product","left":{"kind":"string"},"right":{"kind":"nat"}},"kind":"list"}}}}}}}}},"executable":true,"kind":"definition","name":"mapOps","parameters":[{"name":"m","type":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},{"name":"k","type":{"kind":"string"}},{"name":"v","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}},"right":{"kind":"product","left":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"bool"},"right":{"kind":"product","left":{"element":{"kind":"string"},"kind":"list"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"list"},"right":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"product","left":{"kind":"string"},"right":{"kind":"nat"}},"kind":"list"}}}}}}}}},{"body":{"arguments":[{"body":{"kind":"add","left":{"kind":"add","left":{"kind":"var","name":"acc"},"right":{"kind":"var","name":"key"}},"right":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"var","name":"bonus"}}},"captures":["bonus"],"kind":"lambda","parameters":[{"name":"acc","type":{"kind":"nat"}},{"name":"key","type":{"kind":"nat"}},{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"0"},{"kind":"var","name":"m"}],"kind":"primitive","operation":"map_fold","result":{"kind":"nat"}},"executable":true,"kind":"definition","name":"mapFolding","parameters":[{"name":"m","type":{"key":{"kind":"nat"},"kind":"map","value":{"kind":"nat"}}},{"name":"bonus","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"kind":"primitive","operation":"set_remove","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"x"}],"kind":"primitive","operation":"set_contains","result":{"kind":"bool"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"kind":"primitive","operation":"set_union","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"kind":"primitive","operation":"set_intersection","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"kind":"primitive","operation":"set_difference","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"set_size","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"set_elements","result":{"element":{"kind":"nat"},"kind":"list"}}}}}}}}},"executable":true,"kind":"definition","name":"setOps","parameters":[{"name":"s","type":{"element":{"kind":"nat"},"kind":"set"}},{"name":"t","type":{"element":{"kind":"nat"},"kind":"set"}},{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"kind":"bool"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"kind":"nat"},"right":{"element":{"kind":"nat"},"kind":"list"}}}}}}}}},{"body":{"kind":"pair","left":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"a"},"right":{"kind":"var","name":"x"}},"captures":[],"kind":"lambda","parameters":[{"name":"a","type":{"kind":"nat"}},{"name":"x","type":{"kind":"nat"}}]},{"kind":"nat","value":"0"},{"kind":"var","name":"xs"}],"kind":"primitive","operation":"list_fold","result":{"kind":"nat"}},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"x"}],"kind":"primitive","operation":"subtract","result":{"kind":"int"}},"captures":[],"kind":"lambda","parameters":[{"name":"a","type":{"kind":"int"}},{"name":"x","type":{"kind":"int"}}]},{"kind":"integer","representation":"int","value":"5"},{"kind":"var","name":"s"}],"kind":"primitive","operation":"set_fold","result":{"kind":"int"}}},"executable":true,"kind":"definition","name":"folds","parameters":[{"name":"xs","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"s","type":{"element":{"kind":"int"},"kind":"set"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"int"}}},{"body":{"kind":"pair","left":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"1"}},"captures":[],"kind":"lambda","parameters":[{"name":"x","type":{"kind":"nat"}}]},{"kind":"var","name":"n"},{"kind":"var","name":"start"}],"kind":"primitive","operation":"iterate","result":{"kind":"nat"}},"right":{"arguments":[{"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"10"}},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"if","then_value":{"arguments":[{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"2"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"captures":[],"kind":"lambda","parameters":[{"name":"x","type":{"kind":"nat"}}]},{"kind":"var","name":"n"},{"kind":"var","name":"start"}],"kind":"primitive","operation":"iterate_until","result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}}},"executable":true,"kind":"definition","name":"iterations","parameters":[{"name":"n","type":{"kind":"nat"}},{"name":"start","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}}},{"axioms":["propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"g"},{"kind":"var","name":"start"}],"kind":"primitive","operation":"graph_successors","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"g"},{"kind":"var","name":"start"}],"kind":"primitive","operation":"graph_reachable","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"arguments":[{"kind":"var","name":"g"}],"kind":"primitive","operation":"graph_topological","result":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}}}}},"executable":true,"kind":"definition","name":"graphs","parameters":[{"name":"g","type":{"key":{"kind":"nat"},"kind":"map","value":{"element":{"kind":"nat"},"kind":"set"}}},{"name":"start","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"kind":"var","name":"g"}],"kind":"primitive","operation":"graph_topological","result":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}}},"executable":true,"kind":"definition","name":"stringGraph","parameters":[{"name":"g","type":{"key":{"kind":"string"},"kind":"map","value":{"element":{"kind":"string"},"kind":"set"}}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"k"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"bool"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"i"},{"kind":"var","name":"j"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"kind":"var","name":"c"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"d"},{"kind":"var","name":"e"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"arguments":[{"kind":"var","name":"u"},{"kind":"var","name":"w"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}}}}}},"executable":true,"kind":"definition","name":"keyTypes","parameters":[{"name":"a","type":{"key":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"map","value":{"kind":"bool"}}},{"name":"k","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}}},{"name":"i","type":{"key":{"kind":"int8"},"kind":"map","value":{"kind":"nat"}}},{"name":"j","type":{"kind":"int8"}},{"name":"b","type":{"key":{"kind":"bool"},"kind":"map","value":{"kind":"nat"}}},{"name":"c","type":{"kind":"bool"}},{"name":"d","type":{"key":{"kind":"int"},"kind":"map","value":{"kind":"nat"}}},{"name":"e","type":{"kind":"int"}},{"name":"u","type":{"key":{"kind":"uint64"},"kind":"map","value":{"kind":"nat"}}},{"name":"w","type":{"kind":"uint64"}}],"production":{"effects":["allocation"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"bool"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"nat"}},"right":{"kind":"option","value":{"kind":"nat"}}}}}}},{"body":{"kind":"pair","left":{"entries":[{"key":{"kind":"string","value":"a"},"value":{"kind":"var","name":"x"}},{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},"right":{"kind":"pair","left":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"1"},{"kind":"nat","value":"3"}],"kind":"set_literal"},"right":{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"1"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}]}}},"executable":true,"kind":"definition","name":"literals","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"s","type":{"kind":"string"}}],"production":{"effects":["allocation"],"targets":["rust-std"]},"result":{"kind":"product","left":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}},"right":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"set"},"right":{"key":{"kind":"nat"},"kind":"map","value":{"element":{"kind":"nat"},"kind":"set"}}}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: mapOps,
+  parameters: [m : (Map String Nat), k : String, v : Nat],
+  result: ((Map String Nat) * ((Map String Nat) * ((Option Nat) * (Bool * ((List String) * ((List Nat) * (Nat * (List (String * Nat))))))))),
+  body: ((prim map_insert m k v : (Map String Nat)), ((prim map_remove m k : (Map String Nat)), ((prim map_lookup m k : (Option Nat)), ((prim map_contains m k : Bool), ((prim map_keys m : (List String)), ((prim map_values m : (List Nat)), ((prim map_size m : Nat), (prim map_entries m : (List (String * Nat)))))))))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: mapFolding,
+  parameters: [m : (Map Nat Nat), bonus : Nat],
+  result: Nat,
+  body: (prim map_fold (fun [bonus] (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus))) 0 m : Nat),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: setOps,
+  parameters: [s : (Set Nat), t : (Set Nat), x : Nat],
+  result: ((Set Nat) * ((Set Nat) * (Bool * ((Set Nat) * ((Set Nat) * ((Set Nat) * (Nat * (List Nat)))))))),
+  body: ((prim set_insert s x : (Set Nat)), ((prim set_remove s x : (Set Nat)), ((prim set_contains s x : Bool), ((prim set_union s t : (Set Nat)), ((prim set_intersection s t : (Set Nat)), ((prim set_difference s t : (Set Nat)), ((prim set_size s : Nat), (prim set_elements s : (List Nat))))))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: folds,
+  parameters: [xs : (List Nat), s : (Set Int)],
+  result: (Nat * Int),
+  body: ((prim list_fold (fun (a : Nat) (x : Nat) => (a + x)) 0 xs : Nat), (prim set_fold (fun (a : Int) (x : Int) => (prim subtract a x : Int)) (5 : Int) s : Int)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: iterations,
+  parameters: [n : Nat, start : Nat],
+  result: (Nat * (Nat * Bool)),
+  body: ((prim iterate (fun (x : Nat) => (x + 1)) n start : Nat), (prim iterate_until (fun (x : Nat) => (if (x <? 10) then (ctor Option.some [Nat] (x + 2)) else (ctor Option.none [Nat]))) n start : (Nat * Bool))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: graphs,
+  parameters: [g : (Map Nat (Set Nat)), start : Nat],
+  result: ((Set Nat) * ((Set Nat) * (Option (List Nat)))),
+  body: ((prim graph_successors g start : (Set Nat)), ((prim graph_reachable g start : (Set Nat)), (prim graph_topological g : (Option (List Nat))))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: stringGraph,
+  parameters: [g : (Map String (Set String))],
+  result: (Option (List String)),
+  body: (prim graph_topological g : (Option (List String))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: keyTypes,
+  parameters: [
+    a : (Map (Nat * String) Bool),
+    k : (Nat * String),
+    i : (Map Int8 Nat),
+    j : Int8,
+    b : (Map Bool Nat),
+    c : Bool,
+    d : (Map Int Nat),
+    e : Int,
+    u : (Map UInt64 Nat),
+    w : UInt64
+  ],
+  result: ((Option Bool) * ((Option Nat) * ((Option Nat) * ((Option Nat) * (Option Nat))))),
+  body: ((prim map_lookup a k : (Option Bool)), ((prim map_lookup i j : (Option Nat)), ((prim map_lookup b c : (Option Nat)), ((prim map_lookup d e : (Option Nat)), (prim map_lookup u w : (Option Nat)))))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: literals,
+  parameters: [x : Nat, s : String],
+  result: ((Map String Nat) * ((Set Nat) * (Map Nat (Set Nat)))),
+  body: (map_literal{
+    entries: [{key: "a", value: x}, {key: "b", value: 2}],
+    key: String,
+    value: Nat
+  }, (set_literal{
+    element: Nat,
+    elements: [1, 3]
+  }, graph_literal{
+    edges: [{source: 1, target: 2}, {source: 2, target: 1}],
+    node: Nat,
+    nodes: [1, 2]
+  })),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

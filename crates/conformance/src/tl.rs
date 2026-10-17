@@ -251,10 +251,23 @@ pub fn module(authority: &str, imports: Vec<String>, declarations: Vec<Json>) ->
     })
 }
 
-/// The canonical LaTeX source of a project's one tooling module.
+/// The canonical LaTeX source of a project's one tooling module, with the
+/// module written in the authoring notation (SPEC.md §17.21), the form a
+/// source of the product is written in.
+///
+/// # Panics
+///
+/// When `data` is not a tooling module.
 pub fn module_tex(module: &str, title: &str, glossary: &str, data: &Json) -> String {
-    format!(
-        "\\begin{{lexlean}}{{{module}}}\n\\useglossary{{{glossary}}}\n\\title{{{title}}}\n\\begin{{toolingmodule}}\n\\toolingdata{{{}}}\n\\end{{toolingmodule}}\n\\end{{lexlean}}\n",
-        serde_json::to_string(data).expect("serializes")
+    lexlean::sdk::assemble(
+        &lexlean::sdk::SourceHeader {
+            name: module,
+            glossaries: &[glossary],
+            imports: &[],
+            title,
+        },
+        lexlean::sdk::ModuleKind::Tooling,
+        data,
     )
+    .unwrap_or_else(|error| panic!("{module}: {error}"))
 }

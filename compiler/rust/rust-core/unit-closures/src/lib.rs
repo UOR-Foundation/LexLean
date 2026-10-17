@@ -112,7 +112,7 @@ pub fn f2(v0: u64) {
 }
 
 pub fn f3(v0: Fn0, v1: u64) -> R<()> {
-    let c5: Fn0 = v0.clone();
+    let c5: Fn0 = v0;
     c5.apply(v1)
 }
 

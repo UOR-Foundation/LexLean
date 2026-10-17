@@ -79,24 +79,13 @@ fn verify_all_variants() {
             .expect("UTF-8 source");
         let relative = format!("src/{path}");
         let original = project.read(&relative);
-        let (header, body) = original
-            .split_once("\\semanticdata{")
-            .expect("semantic control");
-        let (data, ending) = body
-            .split_once("\\end{semanticmodule}")
-            .expect("semantic end");
-        let payload = data
-            .trim_end()
-            .strip_suffix('}')
-            .expect("payload delimiter");
-        let mut value: serde_json::Value = serde_json::from_str(payload).expect("semantic JSON");
+        let mut value = crate::support::module_json(&original);
         let before = value.clone();
         rename_identifiers(&mut value);
         if value != before {
             changed.insert(path);
         }
-        let rewritten =
-            format!("{header}\\semanticdata{{{value}}}\n\\end{{semanticmodule}}{ending}");
+        let rewritten = crate::support::with_module_json(&original, &value);
         project.write(&relative, &rewritten);
     }
     assert_eq!(

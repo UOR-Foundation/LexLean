@@ -2,6 +2,59 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"kind":"var","name":"table"},{"kind":"var","name":"name"},{"kind":"var","name":"slot"}],"kind":"primitive","operation":"map_insert","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"executable":true,"kind":"definition","name":"declare","parameters":[{"name":"table","type":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},{"name":"name","type":{"kind":"string"}},{"name":"slot","type":{"kind":"nat"}}],"result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"table"},{"kind":"var","name":"name"},{"arguments":[{"kind":"var","name":"table"}],"kind":"primitive","operation":"map_size","result":{"kind":"nat"}}],"function":{"name":"declare"},"kind":"call"},"captures":[],"kind":"lambda","parameters":[{"name":"table","type":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},{"name":"name","type":{"kind":"string"}}]},{"entries":[],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"var","name":"names"}],"kind":"primitive","operation":"list_fold","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"executable":true,"kind":"definition","name":"buildTable","parameters":[{"name":"names","type":{"element":{"kind":"string"},"kind":"list"}}],"result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},{"body":{"edges":[{"source":{"kind":"string","value":"main"},"target":{"kind":"string","value":"parse"}},{"source":{"kind":"string","value":"main"},"target":{"kind":"string","value":"emit"}},{"source":{"kind":"string","value":"parse"},"target":{"kind":"string","value":"lex"}},{"source":{"kind":"string","value":"emit"},"target":{"kind":"string","value":"report"}},{"source":{"kind":"string","value":"report"},"target":{"kind":"string","value":"lex"}}],"kind":"graph_literal","node":{"kind":"string"},"nodes":[{"kind":"string","value":"main"},{"kind":"string","value":"parse"},{"kind":"string","value":"lex"},{"kind":"string","value":"emit"},{"kind":"string","value":"report"}]},"kind":"definition","name":"callGraph","parameters":[],"result":{"key":{"kind":"string"},"kind":"map","value":{"element":{"kind":"string"},"kind":"set"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"arguments":[],"function":{"name":"callGraph"},"kind":"call"}],"kind":"primitive","operation":"graph_topological","result":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}}},"kind":"definition","name":"callOrder","parameters":[],"result":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"arguments":[],"function":{"name":"callGraph"},"kind":"call"},{"kind":"string","value":"parse"}],"kind":"primitive","operation":"graph_reachable","result":{"element":{"kind":"string"},"kind":"set"}},"kind":"definition","name":"reachableFromParse","parameters":[],"result":{"element":{"kind":"string"},"kind":"set"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: declare,
+  parameters: [table : (Map String Nat), name : String, slot : Nat],
+  result: (Map String Nat),
+  body: (prim map_insert table name slot : (Map String Nat)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: buildTable,
+  parameters: [names : (List String)],
+  result: (Map String Nat),
+  body: (prim list_fold (fun (table : (Map String Nat)) (name : String) => (declare table name (prim map_size table : Nat))) map_literal{
+    entries: [],
+    key: String,
+    value: Nat
+  } names : (Map String Nat)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: callGraph,
+  parameters: [],
+  result: (Map String (Set String)),
+  body: graph_literal{
+    edges: [
+      {source: "main", target: "parse"},
+      {source: "main", target: "emit"},
+      {source: "parse", target: "lex"},
+      {source: "emit", target: "report"},
+      {source: "report", target: "lex"}
+    ],
+    node: String,
+    nodes: ["main", "parse", "lex", "emit", "report"]
+  }
+}
+
+definition{
+  name: callOrder,
+  parameters: [],
+  result: (Option (List String)),
+  body: (prim graph_topological (callGraph) : (Option (List String))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: reachableFromParse,
+  parameters: [],
+  result: (Set String),
+  body: (prim graph_reachable (callGraph) "parse" : (Set String)),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
 \end{semanticmodule}
 \end{lexlean}

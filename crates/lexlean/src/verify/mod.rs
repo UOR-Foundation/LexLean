@@ -25,6 +25,7 @@ pub mod child;
 pub mod leanchecker;
 pub mod lifeline;
 pub mod operational;
+pub mod partition;
 pub mod pool;
 pub mod source_audit;
 pub mod telemetry;
@@ -55,6 +56,7 @@ use crate::project::Project;
 use crate::source::coverage::Origin;
 use crate::verify::child::{run as run_child, ChildHome, ChildRecord, ChildSpec, Normalizer};
 use crate::verify::operational::Operational;
+pub use crate::verify::partition::{Part, Plan};
 use crate::verify::toolchain::Toolchain;
 
 /// The outcome of a successful verification.
@@ -63,6 +65,19 @@ pub struct VerifyOutcome {
     pub attestation_id: Sha256Digest,
     /// The published verified directory.
     pub root: Utf8PathBuf,
+}
+
+/// What one part of a verification produced (§9.4).
+pub enum PartOutcome {
+    /// A published verified directory: the whole verification, or the join.
+    Verified(VerifyOutcome),
+    /// A shard's output directory, and the number of processes it ran.
+    Shard {
+        /// Where the shard wrote its `.olean` files and process records.
+        output: Utf8PathBuf,
+        /// The elaborations, replays, and audit members it ran.
+        processes: usize,
+    },
 }
 
 fn fail(diagnostic: Diagnostic) -> LexLeanError {
@@ -758,8 +773,66 @@ pub fn run(
     build: &mut RenderedBuild,
     operational: &Operational,
 ) -> Result<VerifyOutcome, LexLeanError> {
+    match run_part(project, lock, checked, build, operational, &Part::Whole)? {
+        PartOutcome::Verified(outcome) => Ok(outcome),
+        PartOutcome::Shard { .. } => Err(fail(internal(
+            "the whole verification published no verified directory",
+        ))),
+    }
+}
+
+/// [`run`], as the whole verification or as one part of it (§9.4): a shard
+/// runs the processes its plan names and writes them to its output
+/// directory; the join runs its own, reads every other part's, and
+/// publishes. A part is defined for a project without production roots and
+/// without PDF rendering, whose verification is the probe, the elaborations,
+/// the replays, and the audit members and nothing else.
+///
+/// # Errors
+///
+/// What [`run`] reports, a plan that names a module the project has not, a
+/// part whose imports leave a module of its plan without the `.olean` it
+/// imports, and a join for which some process has no record from any part.
+#[allow(clippy::too_many_lines)]
+pub fn run_part(
+    project: &Project,
+    lock: &Lock,
+    checked: &CheckedProject,
+    build: &mut RenderedBuild,
+    operational: &Operational,
+    part: &Part<'_>,
+) -> Result<PartOutcome, LexLeanError> {
+    if let Some(plan) = part.plan() {
+        let has_roots = checked
+            .modules
+            .values()
+            .filter_map(|module| module.production.as_ref())
+            .any(|report| !report.roots.is_empty());
+        if has_roots || project.config.pdf.is_some() {
+            return Err(fail(internal(
+                "a part of a verification is defined for a project without production roots and without PDF rendering",
+            )));
+        }
+        let names: BTreeSet<&str> = build
+            .modules
+            .iter()
+            .map(|module| module.lean_module.as_str())
+            .collect();
+        if let Some(unknown) = plan
+            .elaborate
+            .iter()
+            .chain(&plan.replay)
+            .find(|name| !names.contains(name.as_str()))
+        {
+            return Err(fail(internal(format!(
+                "the plan of a verification part names `{unknown}`, which is no module of the project"
+            ))));
+        }
+    }
     let limits = project.config.limits;
     let width = operational.width();
+    let hints = operational.hints();
+    let memory_kib = operational.memory_kib();
     let telemetry_run = telemetry::Run::begin(operational, &project.config.name);
     let mut stages = telemetry_run.stages();
     stages.enter("certificate-generation");
@@ -945,12 +1018,39 @@ pub fn run(
     // Stage 5: Lake workspace preflight (§10.4) and module-name conflicts
     // (§18.8, §18.9).
     workspace::preflight(project, lock).map_err(fail)?;
+    // §17.12: the runtime modules the generated modules import, and, when
+    // the project certifies a root, those the calculus modules its
+    // certificates compile beside import. They are generated from the
+    // shipped native sources, compiled before the project's modules,
+    // replayed, and audited against their exact axioms like any other.
+    let runtime_modules: Vec<&'static crate::backend::runtime::RuntimeModule> = {
+        let mut texts: Vec<&str> = build
+            .modules
+            .iter()
+            .map(|module| module.lean_text.as_str())
+            .collect();
+        if !certified.is_empty() {
+            for module in crate::production::preserve::TARGET_MODULES {
+                texts.push(crate::production::preserve::module_text(module).map_err(fail)?);
+            }
+        }
+        let mut imported = crate::backend::runtime::imported_by(texts).map_err(fail)?;
+        // The runtime's own project generates these modules itself.
+        imported.retain(|runtime| {
+            !build
+                .modules
+                .iter()
+                .any(|module| module.lean_module == runtime.name)
+        });
+        imported
+    };
     let probe_name = format!("LexLeanProbe.P{semantic_hex32}");
     let audit_name = format!("LexLeanAudit.A{semantic_hex32}");
     let mut all_names: Vec<String> = build
         .modules
         .iter()
         .map(|module| module.lean_module.clone())
+        .chain(runtime_modules.iter().map(|module| module.name.clone()))
         .collect();
     all_names.push(probe_name.clone());
     all_names.push(audit_name.clone());
@@ -979,6 +1079,16 @@ pub fn run(
     let mut module_declarations: Vec<(String, Vec<String>)> = Vec::new();
     for module in &build.modules {
         module_declarations.push((module.lean_module.clone(), module.declaration_names.clone()));
+    }
+    for module in &runtime_modules {
+        module_declarations.push((
+            module.name.clone(),
+            module
+                .declarations
+                .iter()
+                .map(|(name, _)| name.clone())
+                .collect(),
+        ));
     }
     let audit_modules = crate::backend::lean::audit_modules(&semantic_hex32, &module_declarations);
     let mut declaration_names: Vec<String> = audit_modules
@@ -1033,6 +1143,11 @@ pub fn run(
                 "`{}`: {reason}",
                 module.lean_module
             ))));
+        }
+    }
+    for module in &runtime_modules {
+        if let Err(reason) = generated_core_source_audit(&module.text) {
+            return Err(fail(internal(format!("`{}`: {reason}", module.name))));
         }
     }
     if let Err(reason) = generated_source_audit(&probe.text, false) {
@@ -1130,9 +1245,50 @@ pub fn run(
             module.lean_text.as_bytes(),
         )?;
     }
+    for module in &runtime_modules {
+        let module_path = module.name.replace('.', "/");
+        write_staged(
+            staging.path(),
+            &format!("lean-src/{module_path}.lean"),
+            module.text.as_bytes(),
+        )?;
+    }
     release_non_diagnostic_buffers(build);
     let lean_path_env = format!("{olean_root}");
-    let mut process_records: Vec<ChildRecord> = Vec::new();
+    // The records of this run's processes, by what they are and the module
+    // or audit member they are of, and the records of the remaining stages
+    // in the order they ran. The attestation lists them in the canonical
+    // order of §22.11 whichever part of the run produced them.
+    let mut lean_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
+    // The runtime modules (§17.12) are shipped data: every part elaborates
+    // them before its own modules, the part that publishes also replays and
+    // audits them, and its records are the ones the attestation lists, first
+    // among the elaborations and first among the replays.
+    // The text-laws library (§17.12, *Text components*) is compiled before
+    // the runtime modules, so its records precede theirs in the attestation.
+    let mut text_laws_records: Vec<ChildRecord> = Vec::new();
+    let mut runtime_lean_records: Vec<ChildRecord> = Vec::new();
+    let mut runtime_replay_records: Vec<ChildRecord> = Vec::new();
+    let is_runtime = |name: &str| runtime_modules.iter().any(|module| module.name == name);
+    // Does this part replay and audit a module: one of its plan, or a
+    // runtime module when the part publishes.
+    let checks = |name: &str| part.replays(name) || (part.publishes() && is_runtime(name));
+    let mut replay_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
+    let mut audit_records: BTreeMap<String, ChildRecord> = BTreeMap::new();
+    let mut tail_records: Vec<ChildRecord> = Vec::new();
+    // What the parts before this one wrote (§9.4): their `.olean` files into
+    // the staged tree, and, for the part that publishes, their records.
+    stages.enter("part-import");
+    let mut imported =
+        partition::import(part.inputs(), &olean_root, part.publishes()).map_err(fail)?;
+    // Every record another part wrote was run by the toolchain this run's
+    // preflight hashed: the attestation lists them under its digests.
+    partition::check_toolchain(
+        &imported,
+        toolchain.lean.sha256,
+        toolchain.leanchecker.sha256,
+    )
+    .map_err(fail)?;
 
     // The leanchecker identity (module documentation), before any replay:
     // the preflight's toolchain-relative path and digest line, then the
@@ -1210,15 +1366,185 @@ pub fn run(
         "probe/process.json",
         &probe_record.to_json().to_file_bytes(),
     )?;
-    process_records.push(probe_record);
 
     stages.enter("elaboration");
+    // §17.12 (text): a module that declares a text component imports the
+    // laws library, one native module the compiler embeds. Its Lean is
+    // generated from that data here, audited like every generated core
+    // module, and compiled into the same olean root before any module that
+    // imports it, so the import resolves to what the compiler wrote and to
+    // nothing read from a file it did not write.
+    if build
+        .modules
+        .iter()
+        .any(|module| crate::text_laws::imports_laws(&module.lean_text))
+    {
+        for file in crate::text_laws::stage().map_err(fail)? {
+            if let Err(reason) = generated_core_source_audit(&file.text) {
+                return Err(fail(internal(format!("`{}`: {reason}", file.module))));
+            }
+            write_staged(
+                staging.path(),
+                &format!("lean-src/{}", file.path),
+                file.text.as_bytes(),
+            )?;
+            let source = src_root.join(&file.path);
+            let olean = olean_root.join(file.path.replace(".lean", ".olean"));
+            if let Some(parent) = olean.parent() {
+                std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                    fail(Diagnostic::new(
+                        code!("LLB6003"),
+                        format!("staging oleans: {io_error}"),
+                    ))
+                })?;
+            }
+            let record = run_child(
+                &ChildSpec {
+                    tool: "lean",
+                    module: Some(file.module.clone()),
+                    program: &toolchain.lake.path,
+                    executable_sha256: toolchain.lean.sha256,
+                    argv: vec![
+                        "env".to_owned(),
+                        "lean".to_owned(),
+                        "-R".to_owned(),
+                        src_root.to_string(),
+                        "-o".to_owned(),
+                        olean.to_string(),
+                        source.to_string(),
+                    ],
+                    cwd: &workspace_root,
+                    extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                    home: ChildHome::Toolchain {
+                        toolchain_bin: &toolchain_bin,
+                    },
+                },
+                &limits,
+                &normalizer,
+            )
+            .map_err(fail)?;
+            if record.exit_code != 0
+                || !record.stdout.trim().is_empty()
+                || !record.stderr.trim().is_empty()
+            {
+                let combined = format!("{}{}", record.stdout, record.stderr);
+                if let Some(exhausted) = resource_death(
+                    &file.module,
+                    record.exit_code,
+                    &combined,
+                    file.text.len() as u64,
+                    &limits,
+                ) {
+                    return Err(fail(exhausted));
+                }
+                return Err(fail(internal(format!(
+                    "text laws: `{}` does not compile silently under the pinned Lean: {}",
+                    file.module,
+                    lean_error(&combined)
+                ))));
+            }
+            write_staged(
+                staging.path(),
+                &format!("process/text-laws/{}.json", file.module),
+                &record.to_json().to_file_bytes(),
+            )?;
+            text_laws_records.push(record);
+        }
+    }
+
     // Stage 7: module elaboration in topological import order (§22.3).
     // A topological frontier contains no dependency edges, so its members
     // may run concurrently without making an imported olean observable
-    // before the process that owns it has completed successfully.
+    // before the process that owns it has completed successfully. A part
+    // elaborates the modules its plan names; a module it does not elaborate
+    // is placed when its `.olean` arrived from an earlier part of the run
+    // (§9.4), and a module of the plan whose import is neither stops the
+    // order from converging, with the import named.
+    // The runtime modules come first, in their dependency order: every
+    // generated module that uses the runtime imports them (§17.12). They are
+    // shipped data, so a refusal is a defect of the compiler, not the
+    // project's.
+    for module in &runtime_modules {
+        let module_path = module.name.replace('.', "/");
+        let source = src_root.join(format!("{module_path}.lean"));
+        let olean = olean_root.join(format!("{module_path}.olean"));
+        if let Some(parent) = olean.parent() {
+            std::fs::create_dir_all(parent.as_std_path()).map_err(|io_error| {
+                fail(Diagnostic::new(
+                    code!("LLB6003"),
+                    format!("staging oleans: {io_error}"),
+                ))
+            })?;
+        }
+        let record = run_child(
+            &ChildSpec {
+                tool: "lean",
+                module: Some(module.name.clone()),
+                program: &toolchain.lake.path,
+                executable_sha256: toolchain.lean.sha256,
+                argv: vec![
+                    "env".to_owned(),
+                    "lean".to_owned(),
+                    "-R".to_owned(),
+                    src_root.to_string(),
+                    "-o".to_owned(),
+                    olean.to_string(),
+                    source.to_string(),
+                ],
+                cwd: &workspace_root,
+                extra_env: vec![("LEAN_PATH".to_owned(), lean_path_env.clone())],
+                home: ChildHome::Toolchain {
+                    toolchain_bin: &toolchain_bin,
+                },
+            },
+            &limits,
+            &normalizer,
+        )
+        .map_err(fail)?;
+        if record.exit_code != 0
+            || !record.stdout.trim().is_empty()
+            || !record.stderr.trim().is_empty()
+        {
+            let combined = format!("{}\n{}", record.stdout, record.stderr);
+            return Err(fail(
+                resource_death(
+                    &module.name,
+                    record.exit_code,
+                    &combined,
+                    module.text.len() as u64,
+                    &limits,
+                )
+                .unwrap_or_else(|| {
+                    internal(format!(
+                        "the runtime module `{}` was refused: {}",
+                        module.name,
+                        lean_error(&combined)
+                    ))
+                }),
+            ));
+        }
+        if !olean.as_std_path().is_file() {
+            return Err(fail(Diagnostic::new(
+                code!("LLV7002"),
+                format!("`{}` produced no olean", module.name),
+            )));
+        }
+        write_staged(
+            staging.path(),
+            &format!("process/lean/{}.json", module.name),
+            &record.to_json().to_file_bytes(),
+        )?;
+        runtime_lean_records.push(record);
+    }
     let mut placed: BTreeSet<String> = BTreeSet::new();
-    let mut remaining: Vec<usize> = (0..build.modules.len()).collect();
+    let mut remaining: Vec<usize> = Vec::new();
+    for (index, module) in build.modules.iter().enumerate() {
+        if part.elaborates(&module.lean_module) {
+            remaining.push(index);
+        } else if imported.oleans.contains(&module.lean_module) {
+            placed.insert(module.module.clone());
+        }
+    }
     // The names are copied out so that the workers of a frontier hold no
     // borrow of `build`, which the consumer of their results releases
     // buffers of while later members are still running.
@@ -1241,7 +1567,35 @@ pub fn run(
             })
             .collect();
         if ready.is_empty() {
-            return Err(fail(internal("module order did not converge")));
+            let waiting: Vec<String> = remaining
+                .iter()
+                .map(|index| {
+                    let module = &build.modules[*index];
+                    let document = &checked.modules[&module.module].document;
+                    // The imports by their Lean module names, the labels of
+                    // the verifier's processes and of a plan.
+                    let missing: Vec<String> = document
+                        .imports
+                        .iter()
+                        .filter(|import| !placed.contains(*import))
+                        .map(|import| {
+                            build
+                                .modules
+                                .iter()
+                                .find(|other| other.module == *import)
+                                .map_or_else(
+                                    || import.to_string(),
+                                    |other| other.lean_module.clone(),
+                                )
+                        })
+                        .collect();
+                    format!("`{}` imports {}", module.lean_module, missing.join(", "))
+                })
+                .collect();
+            return Err(fail(internal(format!(
+                "module order did not converge: {}",
+                waiting.join("; ")
+            ))));
         }
         let frontier_started = std::time::Instant::now();
         for &module_index in &ready {
@@ -1259,9 +1613,12 @@ pub fn run(
         // The members of a frontier import nothing from each other, so up
         // to `width` of them run together; their results are consumed in
         // module order whichever finishes first (§22.11).
-        pool::run_ordered(
+        pool::run_ordered_with(
             width,
             &ready,
+            hints,
+            memory_kib,
+            &|module_index: usize| lean_names[module_index].clone(),
             &|module_index: usize| {
                 let module_name = &lean_names[module_index];
                 let module_path = module_name.replace('.', "/");
@@ -1339,7 +1696,7 @@ pub fn run(
                     &format!("process/lean/{module_name}.json"),
                     &record.to_json().to_file_bytes(),
                 )?;
-                process_records.push(record);
+                lean_records.insert(module_name, record);
                 release_module_diagnostic_buffers(&mut build.modules[module_index]);
                 Ok(())
             },
@@ -1359,16 +1716,38 @@ pub fn run(
 
     stages.enter("replay");
     // Stage 8: separate-process leanchecker replay per module, sorted
-    // (§22.4).
-    let mut sorted_modules: Vec<usize> = (0..build.modules.len()).collect();
+    // (§22.4): the runtime modules, then the project's.
+    for module in runtime_modules.iter().filter(|_| part.publishes()) {
+        let record = leanchecker::replay_module(
+            &toolchain,
+            &module.name,
+            &lean_path_env,
+            &workspace_root,
+            &limits,
+            &normalizer,
+        )
+        .map_err(fail)?;
+        write_staged(
+            staging.path(),
+            &format!("process/leanchecker/{}.json", module.name),
+            &record.to_json().to_file_bytes(),
+        )?;
+        runtime_replay_records.push(record);
+    }
+    let mut sorted_modules: Vec<usize> = (0..build.modules.len())
+        .filter(|index| part.replays(&build.modules[*index].lean_module))
+        .collect();
     sorted_modules.sort_by(|a, b| {
         build.modules[*a]
             .lean_module
             .cmp(&build.modules[*b].lean_module)
     });
-    pool::run_ordered(
+    pool::run_ordered_with(
         width,
         &sorted_modules,
+        hints,
+        memory_kib,
+        &|module_index: usize| lean_names[module_index].clone(),
         &|module_index: usize| {
             let module_name = &lean_names[module_index];
             leanchecker::replay_module(
@@ -1398,7 +1777,7 @@ pub fn run(
                 &format!("process/leanchecker/{module_name}.json"),
                 &record.to_json().to_file_bytes(),
             )?;
-            process_records.push(record);
+            replay_records.insert(module_name.clone(), record);
             Ok(())
         },
     )?;
@@ -1413,10 +1792,19 @@ pub fn run(
         let source_relative = format!("audit/{}.lean", audit.name);
         write_staged(staging.path(), &source_relative, audit.text.as_bytes())?;
     }
-    let audit_indices: Vec<usize> = (0..audit_modules.len()).collect();
-    pool::run_ordered(
+    let audit_names: Vec<String> = audit_modules
+        .iter()
+        .map(|audit| audit.name.clone())
+        .collect();
+    let audit_indices: Vec<usize> = (0..audit_modules.len())
+        .filter(|index| checks(&audit_modules[*index].generated_module))
+        .collect();
+    pool::run_ordered_with(
         width,
         &audit_indices,
+        hints,
+        memory_kib,
+        &|audit_index: usize| audit_names[audit_index].clone(),
         &|audit_index: usize| {
             let audit = &audit_modules[audit_index];
             let source_relative = format!("audit/{}.lean", audit.name);
@@ -1473,22 +1861,94 @@ pub fn run(
                     ))));
                 }
             }
-            audit_output.push_str(&audit_record.stdout);
             write_staged(
                 staging.path(),
                 &format!("audit/{}.process.json", audit.name),
                 &audit_record.to_json().to_file_bytes(),
             )?;
-            process_records.push(audit_record);
+            audit_records.insert(audit.name.clone(), audit_record);
             Ok(())
         },
     )?;
+    // A shard has run what its plan names: what it ran leaves with it, and
+    // nothing is published (§9.4).
+    if let Part::Shard { output, .. } = part {
+        stages.enter("part-output");
+        let own: BTreeSet<String> = part
+            .plan()
+            .map(|plan| plan.elaborate.clone())
+            .unwrap_or_default();
+        partition::export(staging.path(), output, &own).map_err(fail)?;
+        telemetry_run.succeeded();
+        return Ok(PartOutcome::Shard {
+            output: (*output).to_owned(),
+            processes: lean_records.len() + replay_records.len() + audit_records.len(),
+        });
+    }
+    // The members other parts of the run audited, judged as the stage above
+    // judges its own: a member that failed, spoke, or printed a set the
+    // parser refuses is refused here with the same diagnostic, whichever
+    // part ran it (§9.4).
+    for audit in &audit_modules {
+        if checks(&audit.generated_module) {
+            continue;
+        }
+        let audit_record = imported.audit.get(&audit.name).ok_or_else(|| {
+            fail(internal(format!(
+                "no audit record of `{}` from any part of the run",
+                audit.name
+            )))
+        })?;
+        if audit_record.exit_code != 0 {
+            return Err(fail(Diagnostic::new(
+                code!("LLV7004"),
+                format!(
+                    "axiom audit member `{}` for `{}` failed: {}{}",
+                    audit.name,
+                    audit.generated_module,
+                    audit_record.stdout.trim_end(),
+                    audit_record.stderr.trim_end()
+                ),
+            )));
+        }
+        let stage = format!("axiom audit member `{}`", audit.name);
+        require_silent(audit_record, &stage, true).map_err(fail)?;
+        let member_observed = axiom::parse_audit_output(&audit_record.stdout, &audit.declarations)
+            .map_err(|failure| fail(audit_diagnostic(&declaration_spans, failure)))?;
+        for (name, axioms) in member_observed {
+            if observed.insert(name.clone(), axioms).is_some() {
+                return Err(fail(internal(format!(
+                    "axiom audit member `{}` repeated declaration `{name}`",
+                    audit.name
+                ))));
+            }
+        }
+        write_staged(
+            staging.path(),
+            &format!("audit/{}.process.json", audit.name),
+            &audit_record.to_json().to_file_bytes(),
+        )?;
+    }
     if observed.len() != declaration_names.len() {
         return Err(fail(internal(format!(
             "axiom audit family observed {} of {} declarations",
             observed.len(),
             declaration_names.len()
         ))));
+    }
+    // The audit output in the order of the family, as one process would
+    // have printed it member after member.
+    for audit in &audit_modules {
+        let record = audit_records
+            .get(&audit.name)
+            .or_else(|| imported.audit.get(&audit.name))
+            .ok_or_else(|| {
+                fail(internal(format!(
+                    "no audit record of `{}` from any part of the run",
+                    audit.name
+                )))
+            })?;
+        audit_output.push_str(&record.stdout);
     }
     write_staged(staging.path(), "audit/output.txt", audit_output.as_bytes())?;
 
@@ -1721,6 +2181,46 @@ pub fn run(
         }
     }
 
+    // §17.12: every declaration of a runtime module the project uses observes
+    // exactly the axioms its native source pins.
+    for module in &runtime_modules {
+        for (name, axioms) in &module.declarations {
+            let observed_set = observed.get(name).cloned().ok_or_else(|| {
+                fail(internal(format!(
+                    "runtime declaration `{name}` is absent from the axiom audit"
+                )))
+            })?;
+            if observed_set != *axioms {
+                return Err(fail(Diagnostic::new(
+                    code!("LLV7005"),
+                    format!(
+                        "`{name}` of the runtime module `{}` violates its exact axiom policy: observed [{}]",
+                        module.name,
+                        observed_set.join(", ")
+                    ),
+                )));
+            }
+            declaration_rows.push(Json::object(vec![
+                ("name", Json::Str(name.clone())),
+                (
+                    "policy",
+                    Json::object(vec![
+                        ("kind", Json::Str("exact".to_owned())),
+                        (
+                            "axioms",
+                            Json::Arr(axioms.iter().cloned().map(Json::Str).collect()),
+                        ),
+                    ]),
+                ),
+                (
+                    "observed",
+                    Json::Arr(observed_set.into_iter().map(Json::Str).collect()),
+                ),
+                ("result", Json::Str("ok".to_owned())),
+            ]));
+        }
+    }
+
     stages.enter("extraction");
     // Stage 12: named-root extraction (§22.10). Lean's compiler front end
     // reports the computational closure of every production root while the
@@ -1747,10 +2247,17 @@ pub fn run(
             .iter()
             .flat_map(|report| report.roots.iter().map(|root| root.root.clone()))
             .collect();
-        let modules: Vec<String> = build
-            .modules
+        // The runtime modules are reported with the project's, so that the
+        // runtime members a closure reaches are told apart (§22.10).
+        let modules: Vec<String> = runtime_modules
             .iter()
-            .map(|module| module.lean_module.clone())
+            .map(|module| module.name.clone())
+            .chain(
+                build
+                    .modules
+                    .iter()
+                    .map(|module| module.lean_module.clone()),
+            )
             .collect();
         let driver = lcnf::driver(&semantic_hex32, &roots, &modules)
             .map_err(|reason| fail(internal(reason)))?;
@@ -1803,7 +2310,7 @@ pub fn run(
             ("byte_length", Json::from_usize(bytes.len())),
             ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
         ]));
-        process_records.push(record);
+        tail_records.push(record);
     }
 
     stages.enter("certificates");
@@ -1962,6 +2469,15 @@ pub fn run(
             )
         };
         for file in &stage.environment {
+            // A runtime module the calculus modules import was compiled,
+            // replayed, and audited with the project's (stage 7), and its
+            // olean is on this search path.
+            if runtime_modules
+                .iter()
+                .any(|module| module.name == file.module)
+            {
+                continue;
+            }
             let record = compile(file, true).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
@@ -1991,7 +2507,7 @@ pub fn run(
                 &format!("process/preserve/{}.json", file.module),
                 &record.to_json().to_file_bytes(),
             )?;
-            process_records.push(record);
+            tail_records.push(record);
         }
         for file in &stage.certificates {
             let record = compile(file, true).map_err(fail)?;
@@ -2012,7 +2528,7 @@ pub fn run(
                 &format!("process/preserve/{}.json", file.module),
                 &record.to_json().to_file_bytes(),
             )?;
-            process_records.push(record);
+            tail_records.push(record);
             let replay = leanchecker::run_leanchecker(
                 &toolchain,
                 &file.module,
@@ -2036,7 +2552,7 @@ pub fn run(
                 &format!("process/leanchecker/{}.json", file.module),
                 &replay.to_json().to_file_bytes(),
             )?;
-            process_records.push(replay);
+            tail_records.push(replay);
         }
         let audit_record = compile(&stage.audit, false).map_err(fail)?;
         let audit_output = format!("{}{}", audit_record.stdout, audit_record.stderr);
@@ -2064,13 +2580,22 @@ pub fn run(
             &format!("process/preserve/{}.json", stage.audit.module),
             &audit_record.to_json().to_file_bytes(),
         )?;
-        process_records.push(audit_record);
+        tail_records.push(audit_record);
         for file in &stage.certificates {
-            write_staged(
-                staging.path(),
-                &format!("preserve/{}", file.path),
-                file.text.as_bytes(),
-            )?;
+            // A certificate held as data is recorded in the authoring
+            // notation; the Lean the decoder compiles is rendered from it.
+            match &file.source {
+                Some(source) => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", preserve::notation_path(&file.module)),
+                    source.as_bytes(),
+                )?,
+                None => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", file.path),
+                    file.text.as_bytes(),
+                )?,
+            }
         }
         // The program each root's certificates are about and the crate each
         // target's certificates B and E are about, published beside them and
@@ -2153,12 +2678,122 @@ pub fn run(
                 ("version", version_record.to_json()),
                 ("compile", compile_record.to_json()),
             ]));
-            process_records.push(version_record);
-            process_records.push(compile_record);
+            tail_records.push(version_record);
+            tail_records.push(compile_record);
         }
     }
 
     stages.enter("attestation");
+    // The records of the whole verification in its canonical order (§22.11):
+    // the probe, the elaborations frontier by frontier in module order, the
+    // replays in sorted module name, the audit members in the order of the
+    // family, then the remaining stages in the order they ran. A part that
+    // publishes ran some of them and read the rest from the parts of its
+    // run (§9.4); a record read is judged as the stage that produced it
+    // judges its own, and a process without a record from any part, or a
+    // record of a process no module owns, is a verification with a hole.
+    let frontiers = partition::elaboration_order(
+        build.modules.len(),
+        &|index| build.modules[index].module.clone(),
+        &|index| {
+            checked.modules[&build.modules[index].module]
+                .document
+                .imports
+                .to_vec()
+        },
+    )
+    .map_err(fail)?;
+    let mut process_records: Vec<ChildRecord> = vec![probe_record];
+    process_records.extend(text_laws_records);
+    process_records.extend(runtime_lean_records);
+    let missing = |what: &str, key: &str| {
+        fail(internal(format!(
+            "no {what} record of `{key}` from any part of the run"
+        )))
+    };
+    for index in frontiers.into_iter().flatten() {
+        let name = &build.modules[index].lean_module;
+        let record = match lean_records.remove(name) {
+            Some(record) => record,
+            None => {
+                let record = imported
+                    .lean
+                    .remove(name)
+                    .ok_or_else(|| missing("elaboration", name))?;
+                if record.exit_code != 0
+                    || !record.stdout.trim().is_empty()
+                    || !record.stderr.trim().is_empty()
+                {
+                    return Err(fail(internal(format!(
+                        "a part of the run recorded an elaboration of `{name}` that was not silent and successful"
+                    ))));
+                }
+                // An imported record is published with the join's own.
+                write_staged(
+                    staging.path(),
+                    &format!("process/lean/{name}.json"),
+                    &record.to_json().to_file_bytes(),
+                )?;
+                record
+            }
+        };
+        process_records.push(record);
+    }
+    let mut sorted_names: Vec<&String> = build
+        .modules
+        .iter()
+        .map(|module| &module.lean_module)
+        .collect();
+    sorted_names.sort();
+    process_records.extend(runtime_replay_records);
+    for name in sorted_names {
+        let record = match replay_records.remove(name) {
+            Some(record) => record,
+            None => {
+                let record = imported
+                    .leanchecker
+                    .remove(name)
+                    .ok_or_else(|| missing("replay", name))?;
+                if record.exit_code != 0 {
+                    return Err(fail(Diagnostic::new(
+                        code!("LLV7003"),
+                        format!(
+                            "leanchecker replay of `{name}` exited {}: {}{}",
+                            record.exit_code,
+                            record.stdout.trim_end(),
+                            record.stderr.trim_end()
+                        ),
+                    )));
+                }
+                write_staged(
+                    staging.path(),
+                    &format!("process/leanchecker/{name}.json"),
+                    &record.to_json().to_file_bytes(),
+                )?;
+                record
+            }
+        };
+        process_records.push(record);
+    }
+    for audit in &audit_modules {
+        let record = audit_records
+            .remove(&audit.name)
+            .or_else(|| imported.audit.remove(&audit.name))
+            .ok_or_else(|| missing("audit", &audit.name))?;
+        process_records.push(record);
+    }
+    process_records.extend(tail_records);
+    if let Some(stray) = imported
+        .lean
+        .keys()
+        .chain(imported.leanchecker.keys())
+        .chain(imported.audit.keys())
+        .next()
+    {
+        return Err(fail(internal(format!(
+            "a part of the run recorded `{stray}`, which no module of the project owns"
+        ))));
+    }
     // Stage 14: no unexpected absolute paths in successful output (§22.7),
     // over every process record.
     for record in &process_records {
@@ -2208,8 +2843,12 @@ pub fn run(
     stages.enter("olean-hash");
     // Copy oleans into the verified set and hash them.
     let mut olean_rows: Vec<Json> = Vec::new();
-    for module in &build.modules {
-        let module_path = module.lean_module.replace('.', "/");
+    for module in runtime_modules
+        .iter()
+        .map(|module| &module.name)
+        .chain(build.modules.iter().map(|module| &module.lean_module))
+    {
+        let module_path = module.replace('.', "/");
         let olean = olean_root.join(format!("{module_path}.olean"));
         let bytes = std::fs::read(olean.as_std_path()).map_err(|io_error| {
             fail(Diagnostic::new(
@@ -2218,7 +2857,7 @@ pub fn run(
             ))
         })?;
         olean_rows.push(Json::object(vec![
-            ("module", Json::Str(module.lean_module.clone())),
+            ("module", Json::Str(module.clone())),
             ("byte_length", Json::from_usize(bytes.len())),
             ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
         ]));
@@ -2318,6 +2957,22 @@ pub fn run(
         ),
         ("declarations", Json::Arr(declaration_rows)),
     ];
+    // §10.5: the modules of a source package carry the package as their
+    // origin, keyed by their Lean module.
+    let origins: Vec<(&str, Json)> = build
+        .modules
+        .iter()
+        .filter_map(|module| {
+            checked.modules[&module.module]
+                .document
+                .origin
+                .as_ref()
+                .map(|origin| (module.lean_module.as_str(), Json::Str(origin.clone())))
+        })
+        .collect();
+    if !origins.is_empty() {
+        body_fields.push(("origins", Json::object(origins)));
+    }
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
     }
@@ -2351,10 +3006,10 @@ pub fn run(
         return match validate_existing(staging.path(), &target) {
             Ok(()) => {
                 telemetry_run.succeeded();
-                Ok(VerifyOutcome {
+                Ok(PartOutcome::Verified(VerifyOutcome {
                     attestation_id: this_attestation_id,
                     root: target,
-                })
+                }))
             }
             Err(reason) => Err(fail(Diagnostic::new(
                 code!("LLB6003"),
@@ -2374,10 +3029,10 @@ pub fn run(
     })?;
     crate::artifact::fsync_dir(verified_root.as_std_path());
     telemetry_run.succeeded();
-    Ok(VerifyOutcome {
+    Ok(PartOutcome::Verified(VerifyOutcome {
         attestation_id: this_attestation_id,
         root: target,
-    })
+    }))
 }
 
 /// The SHA-256 of the running executable, read once per process that succeeds

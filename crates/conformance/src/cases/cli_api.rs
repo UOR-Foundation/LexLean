@@ -747,7 +747,9 @@ pub(crate) fn run(id: &str) {
                     "lib.rs re-exports {name}"
                 );
             }
-            // Every module other than the stable three is a hidden internal.
+            // Every module other than the stable ones (the engine's
+            // interface, its diagnostics and errors, the embedded tree, and
+            // the authoring API of §24.8) is a hidden internal.
             let mut hidden_expected = 0usize;
             let mut hidden_found = 0usize;
             let mut previous_hidden = false;
@@ -758,7 +760,8 @@ pub(crate) fn run(id: &str) {
                         .split(|c: char| c == ';' || c == '{' || c.is_whitespace())
                         .next()
                         .unwrap_or("");
-                    let stable = matches!(module, "api" | "diagnostic" | "error" | "embedded");
+                    let stable =
+                        matches!(module, "api" | "diagnostic" | "error" | "embedded" | "sdk");
                     if !stable {
                         hidden_expected += 1;
                         if previous_hidden {

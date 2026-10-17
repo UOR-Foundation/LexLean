@@ -1987,17 +1987,20 @@ pub(crate) fn run(id: &str) {
             let tables = support::lean_text(&rendered, "Tables");
             for expected in [
                 "public def declare (table : List (Prod (String) (Nat))) (name : String) (slot : Nat) : List (Prod (String) (Nat)) := (LexLeanCollections.mapInsert (table) (name) (slot) : List (Prod (String) (Nat)))",
-                "namespace LexLeanCollections",
-                "public class Key (α : Type) where",
+                "public import LexLeanRuntime.Collections\n",
             ] {
                 assert!(tables.contains(expected), "missing {expected:?} in:\n{tables}");
             }
+            assert!(
+                !tables.contains("namespace LexLeanCollections"),
+                "the collection runtime is imported, not spliced:\n{tables}"
+            );
             // A module that only measures an imported table writes no
-            // collection type or literal, yet calls the runtime: it emits its
-            // own copy, and pinned Lean verifies it.
+            // collection type or literal, yet calls the runtime: it imports
+            // the collection runtime module, and pinned Lean verifies it.
             let measure = support::lean_text(&rendered, "Measure");
             for expected in [
-                "namespace LexLeanCollections",
+                "public import LexLeanRuntime.Collections\n",
                 "(LexLeanCollections.mapSize (Collections.Tables.buildTable (",
             ] {
                 assert!(
@@ -2237,6 +2240,242 @@ pub(crate) fn run(id: &str) {
                 r#""operation":"graph_reachable","result":{"element":{"kind":"nat"},"kind":"set"}"#,
                 "primitive GraphReachable result",
             );
+        }
+        // §17.10: the second native core-module schema.
+        "SM-31" => {
+            let module = |edit: &dyn Fn(&mut serde_json::Value)| -> String {
+                let mut data = serde_json::json!({
+                    "spec": "lexlean/core-module/2",
+                    "imports": ["Init"],
+                    "nodes": [
+                        {"k": "c", "n": "True", "u": []},
+                        {"k": "c", "n": "True.intro", "u": []},
+                        {"k": "d", "x": 1, "m": [
+                            {"n": "V2Fixture.#7", "v": {"t": "s", "v": "annotated"}},
+                            {"n": "V2Fixture.flag", "v": {"t": "b", "v": true}},
+                            {"n": "V2Fixture.count", "v": {"t": "n", "v": "3"}},
+                            {"n": "V2Fixture.back\\dslash", "v": {"t": "i", "v": "-2"}},
+                            {"n": "V2Fixture.name", "v": {"t": "m", "v": "V2Fixture.one"}}
+                        ]},
+                        {"k": "c", "n": "Nat", "u": []},
+                        {"k": "n", "v": "1"},
+                        {"k": "c", "n": "V2Fixture.one", "u": []},
+                        {"k": "c", "n": "Eq", "u": [{"k": "s", "a": {"k": "z"}}]},
+                        {"k": "a", "f": 6, "x": 3},
+                        {"k": "a", "f": 7, "x": 5},
+                        {"k": "a", "f": 8, "x": 4},
+                        {"k": "c", "n": "Eq.refl", "u": [{"k": "s", "a": {"k": "z"}}]},
+                        {"k": "a", "f": 10, "x": 3},
+                        {"k": "a", "f": 11, "x": 4}
+                    ],
+                    "proof_nodes": [1, 2, 12],
+                    "declarations": [
+                        {"name": "V2Fixture.truth", "kind": "theorem", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "policy": {"kind": "exact", "axioms": []}, "type": 0, "value": 2},
+                        {"name": "V2Fixture.one", "kind": "definition", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible", "compiled": true,
+                         "tags": ["protected"], "inline": "inline",
+                         "reducibility": {"kind": "regular", "height": 1},
+                         "policy": {"kind": "exact", "axioms": []}, "type": 3, "value": 4},
+                        {"name": "V2Fixture.one_eq", "kind": "theorem", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "simp": {"attribute": "global", "post": true, "priority": 1000},
+                         "grind": "eq_lhs",
+                         "policy": {"kind": "exact", "axioms": []}, "type": 9, "value": 12}
+                    ]
+                });
+                edit(&mut data);
+                let text = serde_json::to_string(&data).expect("canonical JSON");
+                format!(
+                    "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@GLOSSARY}}\n\\title{{Natural number addition}}\n\\begin{{coremodule}}\n\\coredata{{{text}}}\n\\end{{coremodule}}\n\\end{{lexlean}}\n"
+                )
+            };
+            let project_in = |language: &str, source: &str| {
+                let project = P::example();
+                project.edit(
+                    "lexlean.toml",
+                    "language = \"1.0\"",
+                    &format!("language = \"{language}\""),
+                );
+                project.write(
+                    "src/Main.lex.tex",
+                    &source.replace("GLOSSARY", &format!("{language}.0")),
+                );
+                project.relock();
+                project
+            };
+            let good = module(&|_| {});
+            // Only language 1.2 accepts the schema; both earlier languages
+            // refuse it before any build output.
+            for language in ["1.0", "1.1"] {
+                let refused = project_in(language, &good);
+                let error = refused.check_fails_with("LLI9001");
+                assert!(
+                    error.to_string().contains("requires language 1.2"),
+                    "{language}: {error}"
+                );
+                refused.assert_no_backend_output_with("LLI9001");
+            }
+            let project = project_in("1.2", &good);
+            let checked = support::checked_project(&project);
+            let core = checked.modules["Main"]
+                .document
+                .core
+                .as_ref()
+                .expect("native core module");
+            assert_eq!(core.version(), 2);
+            assert_eq!(core.declarations.len(), 3);
+            support::assert_schema(
+                "core-module-v2",
+                "second-schema fixture",
+                &serde_json::to_value(core).expect("core JSON"),
+            );
+            // Both backends carry every construct.
+            let built = project.build_ok();
+            let build_root = project.build_dir(&built.build_id.expect("build id"));
+            let (mut lean, mut tex) = (None, None);
+            for relative in &built.units["Main"].artifacts.paths {
+                let text = std::fs::read_to_string(build_root.join(relative).as_std_path())
+                    .expect("generated artifact");
+                if relative.ends_with(".lean") {
+                    lean = Some(text);
+                } else if relative.ends_with(".tex") {
+                    tex = Some(text);
+                }
+            }
+            let (lean, tex) = (lean.expect("generated Lean"), tex.expect("generated LaTeX"));
+            assert!(
+                lean.contains("LexLeanCore.Runtime.decodeAndAdd")
+                    && lean.contains("V2Fixture.one_eq"),
+                "the Lean backend submits the rows through its decoder"
+            );
+            for construct in [
+                "Elaborator state",
+                "tags protected",
+                "compiled",
+                "inline inline",
+                "grind eq\\_lhs",
+                "simp global priority 1000 post",
+            ] {
+                assert!(
+                    tex.contains(construct),
+                    "the LaTeX document does not carry `{construct}`"
+                );
+            }
+            for construct in ["V2Fixture.flag", "annotated"] {
+                assert!(
+                    tex.contains(construct) || lean.contains(construct),
+                    "no backend carries `{construct}`"
+                );
+            }
+            assert!(
+                tex.contains("V2Fixture.one") && tex.contains("Eq.refl"),
+                "the LaTeX document renders the DAG"
+            );
+            let _ = support::verify_ok_backed("SM-31", &project);
+            // Each planted defect is refused before any build output.
+            for (what, edit, message) in [
+                (
+                    "a first-schema module carrying an annotation",
+                    (&|data: &mut serde_json::Value| data["spec"] = "lexlean/core-module/1".into())
+                        as &dyn Fn(&mut serde_json::Value),
+                    "requires",
+                ),
+                (
+                    "a safety on a theorem",
+                    &|data| data["declarations"][0]["safety"] = "partial".into(),
+                    "has a safety but is not a definition",
+                ),
+                (
+                    "a simplification registration on a definition",
+                    &|data| {
+                        data["declarations"][1]["simp"] = serde_json::json!({"attribute": "global", "post": true, "priority": 1000});
+                    },
+                    "is not a theorem",
+                ),
+                (
+                    "an inlining attribute on a theorem",
+                    &|data| data["declarations"][0]["inline"] = "inline".into(),
+                    "has an inlining attribute but is not a definition",
+                ),
+                (
+                    "a sparse record on a theorem",
+                    &|data| {
+                        data["declarations"][0]["sparse"] = serde_json::json!({
+                            "ind_name": "Nat", "major_pos": 0, "arity": 3, "interesting_ctors": ["Nat.zero"]
+                        });
+                    },
+                    "is a sparse `casesOn` but is not a definition",
+                ),
+                (
+                    "a sparse record of no constructor",
+                    &|data| {
+                        data["declarations"][1]["sparse"] = serde_json::json!({
+                            "ind_name": "Nat", "major_pos": 0, "arity": 3, "interesting_ctors": []
+                        });
+                    },
+                    "is a sparse `casesOn` of no constructor",
+                ),
+                (
+                    "a grind attribute on a definition",
+                    &|data| data["declarations"][1]["grind"] = "eq_lhs".into(),
+                    "carries a `grind` attribute but is not a theorem",
+                ),
+                (
+                    "tags out of order",
+                    &|data| {
+                        data["declarations"][1]["tags"] =
+                            serde_json::json!(["protected", "protected"])
+                    },
+                    "not strictly ordered",
+                ),
+                (
+                    "a group that omits its member",
+                    &|data| data["declarations"][1]["all"] = serde_json::json!(["V2Fixture.other"]),
+                    "is absent from its own group",
+                ),
+                (
+                    "an unknown name escape",
+                    &|data| data["nodes"][5]["n"] = "V2Fixture.\\x".into(),
+                    "unknown name escape",
+                ),
+                (
+                    "a numeric component without digits",
+                    &|data| data["nodes"][5]["n"] = "V2Fixture.#".into(),
+                    "numeric name component",
+                ),
+                (
+                    "an annotation entry that is not a natural number",
+                    &|data| data["nodes"][2]["m"][2]["v"]["v"] = "-3".into(),
+                    "is not a natural number",
+                ),
+            ] {
+                let source = module(edit);
+                let refused = project_in("1.2", &source);
+                let error = refused.check_fails_with("LLI9001");
+                assert!(error.to_string().contains(message), "{what}: {error}");
+                refused.assert_no_backend_output_with("LLI9001");
+            }
+            // An expression deeper than `max_scope_depth` is a resource limit,
+            // refused before the printer, which recurses by depth, can run.
+            let deep = module(&|data| {
+                let nodes = data["nodes"].as_array_mut().expect("nodes");
+                let base = nodes.len();
+                for step in 0..1100 {
+                    let below = if step == 0 { 0 } else { base + step - 1 };
+                    nodes.push(serde_json::json!({"k": "a", "f": below, "x": 0}));
+                }
+            });
+            let refused = project_in("1.2", &deep);
+            let error = refused.check_fails_with("LLS8002");
+            assert!(
+                error
+                    .to_string()
+                    .contains("max_scope_depth exceeded in phase link (native core module)"),
+                "{error}"
+            );
+            refused.assert_no_backend_output_with("LLS8002");
         }
         other => panic!("no semantic-ir case is wired for {other}"),
     }

@@ -1,0 +1,2212 @@
+\begin{lexlean}{PremiseSound}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{certification.titles@1.0.0}
+\importmodule{Facts}
+\title{Certification library premise soundness}
+\begin{coremodule}
+imports [Init, LexLeanCertification.Facts]
+
+theorem LexLeanCertification.allAgree_sublist_le._proof_1_1 : @29 := @465 {
+  all: [LexLeanCertification.allAgree_sublist_le._proof_1_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanCertification.allAgree_sublist_le : @501 := @617 {
+  all: [LexLeanCertification.allAgree_sublist_le],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanCertification.premiseFact_sound._proof_1_1 : @648 := @981 {
+  all: [LexLeanCertification.premiseFact_sound._proof_1_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanCertification.premiseFact_sound._proof_1_3 : @993 := @1303 {
+  all: [LexLeanCertification.premiseFact_sound._proof_1_3],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanCertification.premiseFact_sound : @1330 := @3825 {
+  all: [LexLeanCertification.premiseFact_sound],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanTarget.Certification.improves.eq_1 : @3859 := @3864 {
+  all: [LexLeanTarget.Certification.improves.eq_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+
+@0 := Nat
+@1 := LE.le.{0}
+@2 := @1 @0
+@3 := instLENat
+@4 := @2 @3
+@5 := #0
+@6 := @4 @5
+@7 := #2
+@8 := @6 @7
+@9 := Eq.{1}
+@10 := @9 @0
+@11 := @10 @7
+@12 := #1
+@13 := @11 @12
+@14 := Not
+@15 := #3
+@16 := @4 @15
+@17 := #4
+@18 := @16 @17
+@20 := @14 (annot [noImplicitLambda := bool true] @18)
+@21 := False
+@29 := {F : @0} ->
+  {F' : @0} ->
+  {c : @0} ->
+  {x : @0} ->
+  (y : @0) ->
+  (hy : @8) ->
+  (this : @13) ->
+  (a._@._internal.#0.LexLeanCertification.PremiseSound.#2315562385._hygCtx._hyg.#67 : @20) -> @21
+@30 := proof(Lean.Omega.Constraint.not_sat'_of_isImpossible)
+@31 := proof(Lean.Omega.Constraint.mk)
+@32 := proof(Option.some.{0})
+@33 := proof(Int)
+@34 := proof(@32 @33)
+@35 := OfNat.ofNat.{0}
+@36 := proof(@35 @33)
+@37 := 0
+@38 := proof(@36 @37)
+@39 := proof(instOfNat)
+@41 := proof(@38 proof(@39 @37))
+@42 := proof(@34 @41)
+@43 := proof(@31 @42)
+@47 := proof(proof(proof(Neg.neg.{0}) @33) proof(Int.instNegInt))
+@48 := proof(1)
+@51 := proof(proof(@36 @48) proof(@39 @48))
+@52 := proof(@47 @51)
+@53 := proof(@34 @52)
+@54 := proof(@43 @53)
+@55 := proof(@30 @54)
+@56 := proof(of_decide_eq_true)
+@57 := Bool
+@58 := @9 @57
+@59 := proof(Lean.Omega.Constraint.isImpossible)
+@60 := proof(@59 @54)
+@61 := proof(@58 @60)
+@62 := proof(Bool.true)
+@63 := proof(@61 @62)
+@64 := proof(@56 @63)
+@65 := proof(instDecidableEqBool)
+@67 := proof(proof(@65 @60) @62)
+@68 := proof(@64 @67)
+@69 := proof(id.{0})
+@70 := proof(Decidable.decide)
+@75 := proof(@69 proof(proof(@58 proof(proof(@70 @63) @67)) @62))
+@76 := proof(Eq.refl.{1})
+@77 := proof(@76 @57)
+@78 := proof(@77 @62)
+@81 := proof(@55 proof(@68 proof(@75 @78)))
+@82 := proof(List.cons.{0})
+@83 := proof(@82 @33)
+@84 := proof(@83 @41)
+@85 := proof(@83 @51)
+@86 := proof(@83 @52)
+@87 := List.nil.{0}
+@88 := proof(@87 @33)
+@89 := proof(@86 @88)
+@93 := proof(@84 proof(@84 proof(@85 proof(@84 @89))))
+@94 := proof(@81 @93)
+@95 := proof(Lean.Omega.Coeffs.ofList)
+@99 := proof(proof(proof(Nat.cast.{0}) @33) proof(instNatCastInt))
+@100 := #6
+@101 := proof(@99 @100)
+@102 := proof(@83 @101)
+@103 := #7
+@104 := proof(@99 @103)
+@105 := proof(@83 @104)
+@106 := #5
+@107 := proof(@99 @106)
+@108 := proof(@83 @107)
+@109 := proof(@99 @15)
+@110 := proof(@83 @109)
+@111 := proof(@99 @17)
+@112 := proof(@83 @111)
+@113 := proof(@112 @88)
+@114 := proof(@110 @113)
+@118 := proof(@95 proof(@102 proof(@105 proof(@108 @114))))
+@119 := proof(@94 @118)
+@120 := proof(Lean.Omega.Constraint.combine_sat')
+@121 := proof(Option.none.{0})
+@122 := proof(@121 @33)
+@124 := proof(proof(@31 @122) @53)
+@125 := proof(@120 @124)
+@126 := proof(@43 @122)
+@129 := proof(proof(proof(@125 @126) @93) @118)
+@130 := proof(Lean.Omega.tidy_sat)
+@132 := proof(@31 proof(@34 @51))
+@133 := proof(@132 @122)
+@134 := proof(@130 @133)
+@135 := proof(@85 @88)
+@136 := proof(@84 @135)
+@139 := proof(@84 proof(@84 proof(@86 @136)))
+@141 := proof(proof(@134 @139) @118)
+@142 := proof(Lean.Omega.Constraint.addInequality_sat)
+@143 := proof(@142 @52)
+@145 := proof(proof(@143 @139) @118)
+@148 := proof(proof(proof(le_of_le_of_eq.{0}) @33) @41)
+@149 := proof(HSub.hSub.{0, 0, 0})
+@152 := proof(proof(proof(@149 @33) @33) @33)
+@153 := proof(instHSub.{0})
+@157 := proof(@152 proof(proof(@153 @33) proof(Int.instSub)))
+@158 := proof(@157 @111)
+@159 := HAdd.hAdd.{0, 0, 0}
+@162 := proof(proof(proof(@159 @33) @33) @33)
+@163 := instHAdd.{0}
+@167 := proof(@162 proof(proof(@163 @33) proof(Int.instAdd)))
+@168 := proof(@167 @107)
+@169 := proof(@168 @51)
+@170 := proof(@158 @169)
+@171 := proof(@148 @170)
+@172 := proof(Lean.Omega.LinearCombo.eval)
+@173 := proof(Lean.Omega.LinearCombo)
+@180 := proof(proof(proof(proof(@149 @173) @173) @173)
+      proof(proof(@153 @173) proof(Lean.Omega.LinearCombo.instSub)))
+@181 := proof(Lean.Omega.LinearCombo.mk)
+@182 := proof(@181 @41)
+@183 := proof(@84 @136)
+@184 := proof(@84 @183)
+@185 := proof(@84 @184)
+@186 := proof(@182 @185)
+@187 := proof(@180 @186)
+@188 := proof(@181 @51)
+@189 := proof(@188 @183)
+@192 := proof(proof(@172 proof(@187 @189)) @118)
+@193 := proof(@171 @192)
+@194 := proof(Int.instLEInt)
+@195 := proof(@193 @194)
+@196 := proof(Int.sub_nonneg_of_le)
+@197 := proof(@196 @111)
+@198 := proof(@197 @169)
+@199 := proof(Int.add_one_le_of_lt)
+@201 := proof(proof(@199 @107) @111)
+@202 := proof(Lean.Omega.Int.ofNat_lt_of_lt)
+@204 := proof(proof(@202 @106) @17)
+@205 := proof(Nat.lt_of_not_le)
+@212 := proof(@195 proof(@198 proof(@201 proof(@204 proof(proof(proof(@205 @17) @106) @5)))))
+@213 := proof(Eq.trans.{1})
+@214 := proof(@213 @33)
+@215 := proof(@214 @170)
+@216 := proof(Lean.Omega.LinearCombo.coordinate)
+@217 := @35 @0
+@218 := proof(4)
+@219 := proof(@217 @218)
+@220 := instOfNatNat
+@224 := proof(@172 proof(@216 proof(@219 proof(@220 @218))))
+@225 := proof(@224 @118)
+@226 := proof(@157 @225)
+@233 := proof(proof(proof(proof(@159 @173) @173) @173)
+      proof(proof(@163 @173) proof(Lean.Omega.LinearCombo.instAdd)))
+@234 := proof(@182 @183)
+@235 := proof(@233 @234)
+@236 := proof(@188 @88)
+@239 := proof(proof(@172 proof(@235 @236)) @118)
+@242 := proof(proof(@215 proof(@226 @239)) @192)
+@243 := proof(Lean.Omega.Int.sub_congr)
+@244 := proof(@243 @111)
+@245 := proof(@244 @225)
+@247 := proof(proof(@245 @169) @239)
+@248 := proof(Eq.symm.{1})
+@249 := proof(@248 @33)
+@251 := proof(proof(@249 @225) @111)
+@252 := proof(Lean.Omega.LinearCombo.coordinate_eval_4)
+@259 := proof(@251 proof(proof(proof(proof(proof(proof(@252 @101) @104) @107) @109) @111) @88))
+@260 := proof(@247 @259)
+@261 := proof(@214 @169)
+@262 := proof(2)
+@268 := proof(proof(@172 proof(@216 proof(proof(@217 @262) proof(@220 @262)))) @118)
+@269 := proof(@167 @268)
+@270 := proof(@172 @236)
+@271 := proof(@270 @118)
+@274 := proof(proof(@261 proof(@269 @271)) @239)
+@275 := proof(Lean.Omega.Int.add_congr)
+@276 := proof(@275 @107)
+@279 := proof(proof(proof(@276 @268) @51) @271)
+@287 := proof(proof(proof(@249 @268) @107)
+      proof(proof(proof(proof(proof(Lean.Omega.LinearCombo.coordinate_eval_2) @101) @104) @107)
+          @114))
+@288 := proof(@279 @287)
+@289 := proof(@9 @33)
+@290 := proof(@289 @51)
+@292 := proof(@69 proof(@290 @271))
+@293 := proof(@76 @33)
+@294 := proof(@293 @51)
+@297 := proof(@274 proof(@288 proof(@292 @294)))
+@298 := proof(@249 @239)
+@300 := proof(proof(@172 @234) @118)
+@303 := proof(@298 proof(proof(@167 @300) @271))
+@304 := proof(Lean.Omega.LinearCombo.add_eval)
+@311 := proof(@242 proof(@260 proof(@297 proof(@303 proof(proof(proof(@304 @234) @236) @118)))))
+@312 := proof(@249 @192)
+@313 := proof(@172 @186)
+@315 := proof(@157 proof(@313 @118))
+@319 := proof(@312 proof(@315 proof(proof(@172 @189) @118)))
+@320 := proof(Lean.Omega.LinearCombo.sub_eval)
+@321 := proof(@320 @186)
+@329 := proof(@129
+      proof(@141 proof(@145 proof(@212 proof(@311 proof(@319 proof(proof(@321 @189) @118)))))))
+@330 := proof(Lean.Omega.combo_sat')
+@331 := proof(@43 @42)
+@332 := proof(@330 @331)
+@334 := proof(proof(@332 @126) @51)
+@335 := proof(@85 @89)
+@337 := proof(@84 proof(@84 @335))
+@338 := proof(@84 @337)
+@342 := proof(proof(proof(proof(@334 @338) @51) @337) @118)
+@343 := proof(@130 @331)
+@344 := proof(@86 @135)
+@347 := proof(@84 proof(@84 proof(@84 @344)))
+@349 := proof(proof(@343 @347) @118)
+@351 := proof(proof(Lean.Omega.Constraint.addEquality_sat) @41)
+@353 := proof(proof(@351 @347) @118)
+@354 := proof(@182 @184)
+@357 := proof(proof(@172 proof(@187 @354)) @118)
+@358 := proof(@214 @357)
+@359 := proof(@158 @109)
+@361 := proof(proof(@358 @359) @41)
+@363 := proof(proof(@249 @359) @357)
+@364 := proof(@214 @359)
+@365 := proof(3)
+@370 := proof(@172 proof(@216 proof(proof(@217 @365) proof(@220 @365))))
+@371 := proof(@370 @118)
+@374 := proof(proof(@364 proof(@226 @371)) @357)
+@377 := proof(proof(proof(@245 @109) @371) @259)
+@379 := proof(proof(@249 @371) @109)
+@380 := proof(Lean.Omega.LinearCombo.coordinate_eval_3)
+@386 := proof(@379 proof(proof(proof(proof(proof(@380 @101) @104) @107) @109) @113))
+@388 := proof(@374 proof(@377 @386))
+@389 := proof(@249 @357)
+@390 := proof(@172 @354)
+@391 := proof(@390 @118)
+@399 := proof(@361
+      proof(@363 proof(@388 proof(proof(@389 proof(@315 @391)) proof(proof(@321 @354) @118)))))
+@401 := proof(proof(Int.sub_eq_zero_of_eq) @111)
+@402 := proof(@401 @109)
+@404 := proof(proof(Lean.Omega.Int.ofNat_congr) @17)
+@411 := proof(@342 proof(@349 proof(@353 proof(@399 proof(@402 proof(proof(@404 @15) @12))))))
+@412 := proof(@142 @41)
+@414 := proof(proof(@412 @337) @118)
+@416 := proof(proof(@157 @107) @109)
+@417 := proof(@148 @416)
+@421 := proof(proof(@172 proof(proof(@180 @234) @354)) @118)
+@423 := proof(proof(@417 @421) @194)
+@425 := proof(proof(@196 @107) @109)
+@426 := proof(Lean.Omega.Int.ofNat_le_of_le)
+@465 := proof(fun {F : @0} =>
+    proof(fun {F' : @0} =>
+      proof(fun {c : @0} =>
+        proof(fun {x : @0} =>
+          proof(fun (y : @0) =>
+            proof(fun (hy : @8) =>
+              proof(fun (this : @13) =>
+                proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#2315562385._hygCtx._hyg.#67 : @20) =>
+                  proof(@119
+                      proof(@329
+                          proof(@411
+                              proof(@414
+                                  proof(proof(@423
+                                        proof(@425 proof(proof(proof(@426 @15) @106) @7)))
+                                      proof(proof(proof(proof(proof(@214 @416)
+                                                proof(proof(@157 @268) @371))
+                                              @421)
+                                            proof(proof(proof(proof(proof(proof(@243 @107) @268)
+                                                      @109)
+                                                    @371)
+                                                  @287)
+                                                @386))
+                                          proof(proof(proof(@249 @421) proof(proof(@157 @300) @391))
+                                              proof(proof(proof(@320 @234) @354)
+                                                  @118))))))))))))))))
+@466 := LexLeanTarget.TargetSyntax.Program
+@467 := @4 @12
+@468 := @467 @5
+@469 := List.{0}
+@470 := LexLeanTarget.TargetSyntax.Value
+@471 := @469 @470
+@475 := List.Sublist.{0} @470 @7 @15
+@476 := LexLeanCertification.AllAgree
+@477 := #9
+@478 := @476 @477
+@479 := #8
+@483 := @478 @479 @103 @15 @12
+@484 := #10
+@489 := @476 @484 @477 @103 @106 @15
+@501 := {sys : @466} ->
+  {ref : @466} ->
+  {F : @0} ->
+  {F' : @0} ->
+  (hle : @468) ->
+  {D : @471} ->
+  {S : @471} -> {c : @0} -> {x : @0} -> (hS : @475) -> (hx : @483) -> (hD : @489) -> @18
+@502 := proof(Exists.casesOn.{1})
+@503 := proof(@502 @0)
+@504 := proof(And)
+@505 := proof(@6 @106)
+@506 := proof(@504 @505)
+@507 := proof(#12)
+@508 := proof(@476 @507)
+@509 := proof(#11)
+@514 := proof(@506 proof(proof(proof(proof(@508 @509) @477) @100) @5))
+@515 := proof(fun (x : @0) => @514)
+@516 := proof(@503 @515)
+@517 := proof(Exists.{1})
+@518 := proof(@517 @0)
+@519 := proof(@518 @515)
+@520 := proof(@4 @17)
+@533 := proof(proof(@516 proof(fun (x : @519) => proof(@520 @106)))
+      proof(proof(proof(proof(proof(proof(proof(proof(proof(LexLeanCertification.allAgree_sublist)
+                        @509)
+                      @484)
+                    @479)
+                  @100)
+                @17)
+              @5)
+            @106)
+          @7))
+@534 := proof(And.casesOn.{0})
+@535 := proof(@467 @100)
+@536 := proof(@534 @535)
+@537 := proof(#13)
+@542 := proof(proof(proof(proof(proof(@476 @537) @507) @484) @103) @12)
+@550 := proof(proof(proof(@536 @542)
+        proof(fun (x : proof(proof(@504 @535) @542)) => proof(proof(@4 @100) @103)))
+      @5)
+@551 := proof(#14)
+@556 := proof(proof(proof(proof(proof(@476 @551) @537) @509) @479) @7)
+@557 := proof(@10 @103)
+@558 := proof(@557 @15)
+@559 := proof(LexLeanCertification.allAgree_unique)
+@560 := proof(#15)
+@577 := proof(proof(proof(proof(proof(proof(proof(proof(@559 @560) @551) @507) @477) @103) @15)
+        proof(proof(proof(proof(proof(proof(proof(proof(proof(LexLeanCertification.allAgree_stable)
+                          @560)
+                        @551)
+                      @537)
+                    @507)
+                  @509)
+                @477)
+              @103)
+            @106))
+      @5)
+@578 := proof(Decidable.byContradiction)
+@581 := proof(annot [noImplicitLambda := bool true] proof(proof(@4 @479) @477))
+@582 := proof(@578 @581)
+@583 := proof(Nat.decLe)
+@617 := proof(fun {sys : @466} =>
+    proof(fun {ref : @466} =>
+      proof(fun {F : @0} =>
+        proof(fun {F' : @0} =>
+          proof(fun (hle : @468) =>
+            proof(fun {D : @471} =>
+              proof(fun {S : @471} =>
+                proof(fun {c : @0} =>
+                  proof(fun {x : @0} =>
+                    proof(fun (hS : @475) =>
+                      proof(fun (hx : @483) =>
+                        proof(fun (hD : @489) =>
+                          proof(@533
+                              proof(fun (y : @0) =>
+                                proof(fun (h._@.LexLeanCertification.PremiseSound.#2315562385._hygCtx._hyg.#44 : @514) =>
+                                  proof(@550
+                                      proof(fun (hy : @535) =>
+                                        proof(fun (hay : @556) =>
+                                          proof(have this : @558 := @577;
+                                            proof(proof(@582 proof(proof(@583 @479) @477))
+                                                proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#2315562385._hygCtx._hyg.#67 : proof(@14
+                                                      @581)) =>
+                                                  proof(proof(proof(proof(proof(proof(proof(proof(proof(LexLeanCertification.allAgree_sublist_le._proof_1_1)
+                                                                    @560)
+                                                                  @551)
+                                                                @484)
+                                                              @477)
+                                                            @106)
+                                                          @15)
+                                                        @12)
+                                                      @5))))))))))))))))))))))
+@618 := LexLeanTarget.Gnaf.Request
+@619 := LexLeanTarget.Gnaf.Grammar
+@620 := LexLeanTarget.Gnaf.Selector
+@621 := @16 @5
+@628 := @159 @0 @0 @0 (@163 @0 instAddNat)
+@629 := @628 @17
+@630 := LexLeanTarget.Certification.staticCharge
+@633 := @630 @103 @100 @106
+@635 := @4 (@629 @633)
+@636 := @628 @12
+@639 := @14 (@635 (@636 @633))
+@648 := (req : @618) ->
+  (g : @619) ->
+  (s : @620) ->
+  (steps : @0) ->
+  (size : @0) ->
+  (F' : @0) ->
+  (steps' : @0) ->
+  (this : @621) ->
+  (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#287 : @639) -> @21
+@649 := proof(@132 @42)
+@650 := proof(@30 @649)
+@651 := proof(@59 @649)
+@653 := proof(proof(@58 @651) @62)
+@654 := proof(@56 @653)
+@656 := proof(proof(@65 @651) @62)
+@665 := proof(@650
+      proof(proof(@654 @656)
+          proof(proof(@69 proof(proof(@58 proof(proof(@70 @653) @656)) @62)) @78)))
+@666 := proof(@84 @88)
+@667 := proof(@84 @666)
+@671 := proof(@84 proof(@84 proof(@84 proof(@84 @667))))
+@672 := proof(@665 @671)
+@673 := proof(LexLeanTarget.Gnaf.Machine.fuel)
+@674 := proof(LexLeanTarget.Gnaf.Request.machine)
+@676 := proof(@673 proof(@674 @479))
+@677 := proof(@99 @676)
+@678 := proof(@83 @677)
+@679 := proof(@99 @7)
+@680 := proof(@83 @679)
+@683 := proof(proof(proof(@630 @479) @103) @100)
+@684 := proof(@99 @683)
+@686 := proof(proof(@83 @684) @88)
+@687 := proof(@108 @686)
+@692 := proof(@95 proof(@112 proof(@110 proof(@678 proof(@680 @687)))))
+@693 := proof(@672 @692)
+@695 := proof(proof(@134 @671) @692)
+@707 := proof(proof(proof(proof(proof(proof(proof(@330 @126) @124) @51) @338) @52)
+        proof(@84 proof(@84 proof(@84 proof(@85 proof(@86 @666))))))
+      @692)
+@709 := proof(proof(@412 @338) @692)
+@711 := proof(proof(@157 @679) @107)
+@712 := proof(@148 @711)
+@716 := proof(proof(@172 proof(proof(@180 @354) @186)) @692)
+@725 := proof(proof(proof(@712 @716) @194)
+      proof(proof(proof(@196 @679) @107) proof(proof(proof(@426 @106) @7) @12)))
+@726 := proof(@214 @711)
+@727 := proof(@370 @692)
+@728 := proof(@157 @727)
+@729 := proof(@224 @692)
+@732 := proof(proof(@726 proof(@728 @729)) @716)
+@736 := proof(proof(proof(proof(@243 @679) @727) @107) @729)
+@744 := proof(proof(proof(@249 @727) @679)
+      proof(proof(proof(proof(proof(@380 @111) @109) @677) @679) @687))
+@745 := proof(@736 @744)
+@754 := proof(proof(proof(@249 @729) @107)
+      proof(proof(proof(proof(proof(proof(@252 @111) @109) @677) @679) @107) @686))
+@756 := proof(@732 proof(@745 @754))
+@757 := proof(@249 @716)
+@758 := proof(@390 @692)
+@759 := proof(@157 @758)
+@760 := proof(@313 @692)
+@770 := proof(@707
+      proof(@709
+          proof(@725
+              proof(@756
+                  proof(proof(@757 proof(@759 @760)) proof(proof(proof(@320 @354) @186) @692))))))
+@775 := proof(@84 proof(@84 proof(@84 proof(@86 proof(@85 @666)))))
+@777 := proof(proof(@134 @775) @692)
+@779 := proof(proof(@143 @775) @692)
+@780 := proof(@628 @106)
+@781 := proof(@780 @683)
+@782 := proof(@99 @781)
+@783 := proof(@157 @782)
+@784 := proof(@628 @7)
+@785 := proof(@784 @683)
+@786 := proof(@99 @785)
+@788 := proof(proof(@167 @786) @51)
+@789 := proof(@783 @788)
+@790 := proof(@148 @789)
+@796 := proof(@182 proof(@84 proof(@84 proof(@84 proof(@84 proof(@85 @135))))))
+@797 := proof(@180 @796)
+@801 := proof(@84 proof(@84 proof(@84 proof(@85 @136))))
+@802 := proof(@188 @801)
+@805 := proof(proof(@172 proof(@797 @802)) @692)
+@820 := proof(proof(proof(@790 @805) @194)
+      proof(proof(proof(@196 @782) @788)
+          proof(proof(proof(@199 @786) @782)
+              proof(proof(proof(@202 @785) @781) proof(proof(proof(@205 @781) @785) @5)))))
+@821 := proof(@214 @789)
+@822 := proof(@233 @186)
+@824 := proof(@182 proof(@84 @185))
+@827 := proof(proof(@172 proof(@822 @824)) @692)
+@828 := proof(@157 @827)
+@829 := proof(@182 @801)
+@833 := proof(proof(@172 proof(proof(@233 @829) @236)) @692)
+@836 := proof(proof(@821 proof(@828 @833)) @805)
+@840 := proof(proof(proof(proof(@243 @782) @827) @788) @833)
+@841 := proof(@214 @782)
+@842 := proof(@168 @684)
+@844 := proof(proof(@841 @842) @827)
+@845 := proof(Int.natCast_add)
+@848 := proof(@844 proof(proof(@845 @106) @683))
+@849 := proof(@214 @842)
+@850 := proof(@167 @729)
+@851 := proof(5)
+@857 := proof(proof(@172 proof(@216 proof(proof(@217 @851) proof(@220 @851)))) @692)
+@860 := proof(proof(@849 proof(@850 @857)) @827)
+@864 := proof(proof(proof(proof(@276 @729) @684) @857) @754)
+@875 := proof(proof(proof(@249 @857) @684)
+      proof(proof(proof(proof(proof(proof(proof(proof(Lean.Omega.LinearCombo.coordinate_eval_5)
+                      @111)
+                    @109)
+                  @677)
+                @679)
+              @107)
+            @684)
+          @88))
+@877 := proof(@860 proof(@864 @875))
+@878 := proof(@249 @827)
+@879 := proof(@167 @760)
+@881 := proof(proof(@172 @824) @692)
+@890 := proof(@840
+      proof(@848
+          proof(@877 proof(proof(@878 proof(@879 @881)) proof(proof(proof(@304 @186) @824) @692)))))
+@891 := proof(@214 @788)
+@895 := proof(proof(@172 proof(proof(@233 @354) @824)) @692)
+@896 := proof(@167 @895)
+@897 := proof(@270 @692)
+@900 := proof(proof(@891 proof(@896 @897)) @833)
+@904 := proof(proof(proof(proof(@275 @786) @895) @51) @897)
+@905 := proof(@214 @786)
+@907 := proof(proof(@167 @679) @684)
+@981 := proof(fun (req : @618) =>
+    proof(fun (g : @619) =>
+      proof(fun (s : @620) =>
+        proof(fun (steps : @0) =>
+          proof(fun (size : @0) =>
+            proof(fun (F' : @0) =>
+              proof(fun (steps' : @0) =>
+                proof(fun (this : @621) =>
+                  proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#287 : @639) =>
+                    proof(@693
+                        proof(@695
+                            proof(@770
+                                proof(@777
+                                    proof(@779
+                                        proof(@820
+                                            proof(proof(@836
+                                                  proof(@890
+                                                      proof(proof(@900
+                                                            proof(proof(@904
+                                                                  proof(proof(proof(proof(@905 @907)
+                                                                          @895)
+                                                                        proof(proof(@845 @7) @683))
+                                                                      proof(proof(proof(proof(proof(@214
+                                                                                  @907)
+                                                                                proof(proof(@167
+                                                                                      @727)
+                                                                                    @857))
+                                                                              @895)
+                                                                            proof(proof(proof(proof(proof(proof(@275
+                                                                                          @679)
+                                                                                        @727)
+                                                                                      @684)
+                                                                                    @857)
+                                                                                  @744)
+                                                                                @875))
+                                                                          proof(proof(proof(@249
+                                                                                  @895)
+                                                                                proof(proof(@167
+                                                                                      @758)
+                                                                                    @881))
+                                                                              proof(proof(proof(@304
+                                                                                      @354)
+                                                                                    @824)
+                                                                                  @692)))))
+                                                                proof(proof(@69 proof(@290 @897))
+                                                                    @294)))
+                                                          proof(proof(proof(@249 @833)
+                                                                proof(proof(@167
+                                                                      proof(proof(@172 @829) @692))
+                                                                    @897))
+                                                              proof(proof(proof(@304 @829) @236)
+                                                                  @692)))))
+                                                proof(proof(proof(@249 @805)
+                                                      proof(proof(@157 proof(proof(@172 @796) @692))
+                                                          proof(proof(@172 @802) @692)))
+                                                    proof(proof(proof(@320 @796) @802)
+                                                        @692))))))))))))))))))
+@982 := @10 @12
+@985 := @217 @37 (@220 @37)
+@986 := @628 @985
+@987 := @986 @5
+@988 := @982 @987
+@989 := @14 @13
+@993 := (tp : @0) ->
+  (k : @0) ->
+  (hk : @988) ->
+  (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#407 : @989) -> @21
+@994 := proof(Or.elim)
+@996 := proof(proof(LT.lt.{0}) @0)
+@997 := proof(instLTNat)
+@998 := proof(@996 @997)
+@999 := proof(@998 @15)
+@1000 := proof(@999 @7)
+@1001 := proof(@994 @1000)
+@1006 := proof(proof(proof(proof(proof(GT.gt.{0}) @0) @997) @15) @7)
+@1013 := proof(proof(proof(@1001 @1006) @21)
+      proof(proof(proof(proof(Nat.lt_or_gt_of_ne) @15) @7) @5))
+@1014 := proof(@665 @667)
+@1015 := proof(@110 @88)
+@1017 := proof(@95 proof(@112 @1015))
+@1018 := proof(@1014 @1017)
+@1020 := proof(proof(@134 @667) @1017)
+@1021 := proof(@332 @133)
+@1026 := proof(proof(proof(proof(proof(@1021 @51) @335) @51) @344) @1017)
+@1028 := proof(proof(@351 @335) @1017)
+@1029 := proof(@182 @135)
+@1030 := proof(@180 @1029)
+@1031 := proof(@182 @136)
+@1034 := proof(proof(@172 proof(@1030 @1031)) @1017)
+@1035 := proof(@214 @1034)
+@1036 := proof(@986 @15)
+@1037 := proof(@99 @1036)
+@1038 := proof(@158 @1037)
+@1040 := proof(proof(@1035 @1038) @41)
+@1042 := proof(proof(@249 @1038) @1034)
+@1043 := proof(@214 @1038)
+@1046 := proof(proof(@172 proof(@216 @985)) @1017)
+@1047 := proof(@157 @1046)
+@1048 := proof(@182 @88)
+@1052 := proof(proof(@172 proof(proof(@233 @1048) @1031)) @1017)
+@1055 := proof(proof(@1043 proof(@1047 @1052)) @1034)
+@1056 := proof(@244 @1046)
+@1058 := proof(proof(@1056 @1037) @1052)
+@1064 := proof(proof(proof(@249 @1046) @111)
+      proof(proof(proof(Lean.Omega.LinearCombo.coordinate_eval_0) @111) @1015))
+@1065 := proof(@1058 @1064)
+@1066 := proof(@214 @1037)
+@1067 := proof(@99 @985)
+@1069 := proof(proof(@167 @1067) @109)
+@1074 := proof(proof(proof(@1066 @1069) @1052) proof(proof(@845 @985) @15))
+@1075 := proof(@214 @1069)
+@1077 := proof(proof(@172 @1048) @1017)
+@1078 := proof(@167 @1077)
+@1084 := proof(proof(@172 proof(@216 proof(proof(@217 @48) proof(@220 @48)))) @1017)
+@1087 := proof(proof(@1075 proof(@1078 @1084)) @1052)
+@1097 := proof(proof(proof(proof(proof(@275 @1067) @1077) @109) @1084)
+      proof(proof(@69 proof(proof(@289 @1067) @1077)) proof(@293 @1067)))
+@1104 := proof(proof(proof(@249 @1084) @109)
+      proof(proof(proof(proof(Lean.Omega.LinearCombo.coordinate_eval_1) @111) @109) @88))
+@1106 := proof(@1087 proof(@1097 @1104))
+@1107 := proof(@249 @1052)
+@1109 := proof(proof(@172 @1031) @1017)
+@1119 := proof(@1055
+      proof(@1065
+          proof(@1074
+              proof(@1106
+                  proof(proof(@1107 proof(@1078 @1109))
+                      proof(proof(proof(@304 @1048) @1031) @1017))))))
+@1120 := proof(@249 @1034)
+@1122 := proof(proof(@172 @1029) @1017)
+@1123 := proof(@157 @1122)
+@1125 := proof(@1120 proof(@1123 @1109))
+@1126 := proof(@320 @1029)
+@1138 := proof(@1028
+      proof(proof(@1040 proof(@1042 proof(@1119 proof(@1125 proof(proof(@1126 @1031) @1017)))))
+          proof(proof(@401 @1037) proof(proof(@404 @1036) @7))))
+@1139 := proof(@1026 @1138)
+@1141 := proof(proof(@143 @344) @1017)
+@1142 := proof(@157 @109)
+@1144 := proof(proof(@167 @111) @51)
+@1145 := proof(@1142 @1144)
+@1146 := proof(@148 @1145)
+@1147 := proof(@180 @1031)
+@1148 := proof(@188 @135)
+@1151 := proof(proof(@172 proof(@1147 @1148)) @1017)
+@1163 := proof(proof(proof(@1146 @1151) @194)
+      proof(proof(proof(@196 @109) @1144)
+          proof(proof(proof(@199 @111) @109) proof(proof(proof(@202 @17) @15) @5))))
+@1164 := proof(@214 @1145)
+@1165 := proof(@157 @1084)
+@1169 := proof(proof(@172 proof(proof(@233 @1029) @236)) @1017)
+@1172 := proof(proof(@1164 proof(@1165 @1169)) @1151)
+@1177 := proof(proof(proof(proof(proof(@243 @109) @1084) @1144) @1169) @1104)
+@1178 := proof(@214 @1144)
+@1179 := proof(@167 @1046)
+@1180 := proof(@270 @1017)
+@1183 := proof(proof(@1178 proof(@1179 @1180)) @1169)
+@1188 := proof(proof(proof(proof(proof(@275 @111) @1046) @51) @1180) @1064)
+@1191 := proof(proof(@69 proof(@290 @1180)) @294)
+@1222 := proof(@1013
+      proof(fun (h₁ : @1000) =>
+        proof(@1018
+            proof(@1020
+                proof(@1139
+                    proof(@1141
+                        proof(@1163
+                            proof(proof(@1172
+                                  proof(@1177
+                                      proof(proof(@1183 proof(@1188 @1191))
+                                          proof(proof(proof(@249 @1169)
+                                                proof(proof(@167 @1122) @1180))
+                                              proof(proof(proof(@304 @1029) @236) @1017)))))
+                                proof(proof(proof(@249 @1151)
+                                      proof(proof(@157 @1109) proof(proof(@172 @1148) @1017)))
+                                    proof(proof(proof(@320 @1031) @1148) @1017))))))))))
+@1228 := proof(proof(proof(proof(proof(proof(@1021 @52) @335) @51) @335) @1017) @1138)
+@1230 := proof(proof(@143 @335) @1017)
+@1232 := proof(proof(@167 @109) @51)
+@1233 := proof(@158 @1232)
+@1234 := proof(@148 @1233)
+@1235 := proof(@188 @136)
+@1238 := proof(proof(@172 proof(@1030 @1235)) @1017)
+@1249 := proof(proof(proof(@1234 @1238) @194)
+      proof(proof(@197 @1232)
+          proof(proof(proof(@199 @109) @111) proof(proof(proof(@202 @15) @17) @5))))
+@1250 := proof(@214 @1233)
+@1254 := proof(proof(@172 proof(proof(@233 @1031) @236)) @1017)
+@1303 := proof(fun (tp : @0) =>
+    proof(fun (k : @0) =>
+      proof(fun (hk : @988) =>
+        proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#407 : @989) =>
+          proof(@1222
+              proof(fun (h₂ : @1006) =>
+                proof(@1018
+                    proof(@1020
+                        proof(@1228
+                            proof(@1230
+                                proof(@1249
+                                    proof(proof(proof(proof(@1250 proof(@1047 @1254)) @1238)
+                                          proof(proof(proof(proof(@1056 @1232) @1254) @1064)
+                                              proof(proof(proof(proof(proof(@214 @1232)
+                                                        proof(proof(@167 @1084) @1180))
+                                                      @1254)
+                                                    proof(proof(proof(proof(proof(proof(@275 @109)
+                                                                @1084)
+                                                              @51)
+                                                            @1180)
+                                                          @1104)
+                                                        @1191))
+                                                  proof(proof(proof(@249 @1254)
+                                                        proof(proof(@167 @1109) @1180))
+                                                      proof(proof(proof(@304 @1031) @236) @1017)))))
+                                        proof(proof(proof(@249 @1238)
+                                              proof(@1123 proof(proof(@172 @1235) @1017)))
+                                            proof(proof(@1126 @1235) @1017))))))))))))))
+@1304 := @469 @620
+@1305 := LexLeanTarget.Certification.Premise
+@1307 := Ne.{1} @471
+@1308 := LexLeanTarget.Gnaf.Request.domain
+@1310 := @1307 (@1308 @17)
+@1311 := @87 @470
+@1312 := @1310 @1311
+@1313 := LexLeanCertification.FactSound
+@1317 := @1313 @106 @17 @15 @7
+@1318 := LexLeanTarget.Certification.premiseFact
+@1330 := (req : @618) ->
+  (g : @619) ->
+  (U : @1304) ->
+  (s : @620) -> (premise : @1305) -> (hD : @1312) -> @1317 (@1318 @106 @17 @15 @7 @12)
+@1331 := proof(LexLeanTarget.Certification.Premise.casesOn.{0})
+@1332 := proof(@9 @1305)
+@1333 := proof(@1332 @7)
+@1334 := proof(@1333 @5)
+@1338 := proof(proof(proof(proof(@1313 @103) @100) @106) @17)
+@1342 := proof(proof(proof(proof(@1318 @103) @100) @106) @17)
+@1348 := proof(proof(@1331
+        proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#32 : @1305) =>
+          proof((h : @1334) -> proof(@1338 proof(@1342 @15)))))
+      @12)
+@1349 := proof(LexLeanTarget.Certification.Premise.excluded)
+@1351 := proof(@1333 proof(@1349 @5))
+@1352 := proof(Eq.ndrec.{0, 1})
+@1353 := proof(@1352 @1305)
+@1354 := proof(@1349 @12)
+@1355 := proof(@1353 @1354)
+@1359 := proof(proof(proof(proof(@1313 @479) @103) @100) @106)
+@1366 := proof(fun (premise : @1305) =>
+    proof(@1359 proof(proof(proof(proof(proof(@1318 @479) @103) @100) @106) @5)))
+@1367 := proof(@1355 @1366)
+@1370 := proof(@69 proof(@1338 proof(@1342 @1354)))
+@1371 := proof(LexLeanTarget.Gnaf.realize)
+@1373 := proof(proof(@1371 @100) @17)
+@1374 := proof(LexLeanTarget.Certification.premiseFact.match_7.{1})
+@1375 := proof(LexLeanTarget.Certification.Fact)
+@1377 := proof(@1374
+      proof(fun (premise._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#27 : @1305) =>
+        @1375))
+@1379 := proof(@1377 proof(@1349 @7))
+@1380 := proof(LexLeanTarget.Certification.premiseFact.match_3.{1})
+@1381 := Option.{0}
+@1382 := proof(@1381 @470)
+@1384 := proof(@1380
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#50 : @1382) => @1375))
+@1385 := proof(LexLeanTarget.Certification.valueAt)
+@1386 := proof(@1308 @477)
+@1387 := proof(@1385 @1386)
+@1389 := proof(@1384 proof(@1387 @5))
+@1390 := Unit
+@1391 := proof(LexLeanTarget.Certification.Fact.unproven)
+@1392 := proof(fun ("_" : @1390) => @1391)
+@1393 := proof(@1389 @1392)
+@1394 := proof(LexLeanTarget.Certification.premiseFact.match_1.{1})
+@1395 := proof(LexLeanTarget.Gnaf.Status)
+@1397 := proof(@1394
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#104 : @1395) => @1375))
+@1398 := proof(LexLeanTarget.Gnaf.statusOn)
+@1399 := proof(@1398 @7)
+@1400 := proof(LexLeanTarget.Gnaf.Request.reference)
+@1401 := proof(@1400 @484)
+@1402 := proof(@1399 @1401)
+@1404 := proof(@673 proof(@674 @484))
+@1405 := proof(@1402 @1404)
+@1406 := proof(@82 @470)
+@1408 := proof(proof(@1406 @5) @1311)
+@1410 := proof(@1397 proof(@1405 @1408))
+@1412 := proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#3.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#113 : @0) =>
+    proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#114 : @0) =>
+      @1391))
+@1413 := proof(@1410 @1412)
+@1415 := proof(fun ("_" : @1390) => proof(LexLeanTarget.Certification.Fact.inadmissible))
+@1420 := proof(fun (position : @0) =>
+    proof(@1393 proof(fun (argument : @470) => proof(proof(@1413 @1415) @1392))))
+@1421 := proof(@1379 @1420)
+@1422 := proof(@469 @0)
+@1423 := proof(LexLeanTarget.Certification.pickFrom)
+@1425 := proof(proof(@1423 @1386) @985)
+@1426 := proof(@1425 @5)
+@1428 := proof(proof(ite.{1}) @1375)
+@1429 := Bool.and
+@1430 := proof(Nat.beq)
+@1431 := proof(LexLeanRuntime.length)
+@1432 := proof(@1431 @471)
+@1433 := proof(LexLeanRuntime.instLengthableList)
+@1435 := proof(@1432 proof(@1433 @470))
+@1437 := proof(@1430 proof(@1435 @5))
+@1440 := proof(proof(@1431 @1422) proof(@1433 @0))
+@1441 := proof(@1440 @12)
+@1443 := proof(@1429 proof(@1437 @1441))
+@1444 := proof(LexLeanTarget.Certification.ascending)
+@1446 := proof(proof(@1444 @12) @985)
+@1447 := proof(@1443 @1446)
+@1453 := proof(proof(@1428 proof(proof(@58 @1447) @62)) proof(proof(@65 @1447) @62))
+@1455 := proof(@1394
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#227 : @1395) => @1375))
+@1457 := proof(@1455 proof(@1405 @5))
+@1458 := proof(LexLeanTarget.Certification.Fact.atLeast)
+@1463 := proof(@1458 proof(@636 proof(proof(proof(@630 @507) @509) @477)))
+@1464 := LexLeanTarget.Certification.staticSize
+@1469 := proof(fun (steps : @0) =>
+    proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#235 : @0) =>
+      proof(@1463 proof(proof(@1464 @509) @477))))
+@1476 := proof(fun (positions : @1422) =>
+    proof(have picked : @471 := @1426;
+      proof(proof(@1453 proof(proof(proof(@1457 @1469) @1392) @1392)) @1391)))
+@1477 := proof(@1421 @1476)
+@1479 := proof(@1394
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#299 : @1395) => @1375))
+@1480 := proof(LexLeanTarget.Gnaf.status)
+@1483 := proof(proof(proof(@1480 @477) @479) @100)
+@1484 := proof(@1479 @1483)
+@1489 := proof(fun (cost : @0) =>
+    proof(fun (size : @0) => proof(proof(proof(LexLeanTarget.Certification.Fact.admitted) @12) @5)))
+@1491 := proof(proof(@1484 @1489) @1415)
+@1493 := proof(fun ("_" : @1390) => proof(LexLeanTarget.Certification.Fact.unresolved))
+@1495 := proof(fun ("_" : @1390) => proof(@1491 @1493))
+@1496 := proof(@1477 @1495)
+@1497 := LexLeanTarget.Certification.Schema
+@1498 := LexLeanTarget.Certification.improves.match_1.{1}
+@1499 := @1381 @620
+@1501 := proof(@1498
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#345 : @1499) => @1375))
+@1502 := LexLeanTarget.Certification.rewrite
+@1503 := @1502 @5
+@1506 := proof(proof(@1501 proof(@1503 @100)) @1392)
+@1507 := proof(LexLeanTarget.Certification.premiseFact.match_5.{1})
+@1508 := proof(@1381 @0)
+@1510 := proof(@1507
+      proof(fun (x._@.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#373 : @1508) => @1375))
+@1511 := proof(LexLeanTarget.Certification.positionOf)
+@1512 := proof(@1511 @479)
+@1516 := proof(proof(@1510 proof(proof(@1512 @5) @985)) @1392)
+@1517 := LexLeanTarget.Certification.improves
+@1520 := proof(proof(proof(@1517 @509) @484) @479)
+@1521 := proof(@1520 @7)
+@1527 := proof(proof(@1428 proof(proof(@58 @1521) @62)) proof(proof(@65 @1521) @62))
+@1528 := proof(LexLeanTarget.Certification.Fact.reduces)
+@1529 := proof(@1528 @5)
+@1536 := proof(fun (schema : @1497) =>
+    proof(@1506
+        proof(fun (target : @620) =>
+          proof(@1516 proof(fun (targetPosition : @0) => proof(proof(@1527 @1529) @1391))))))
+@1540 := proof(@69 proof(@1338 proof(have system : @466 := @1373; proof(@1496 @1536))))
+@1541 := proof(Option.casesOn.{0, 0})
+@1542 := proof(@1541 @470)
+@1543 := proof(@9 @1382)
+@1544 := proof(@1308 @479)
+@1545 := proof(@1385 @1544)
+@1546 := proof(@1545 @7)
+@1547 := proof(@1543 @1546)
+@1548 := proof(@1547 @5)
+@1552 := proof(proof(proof(proof(@1313 @477) @479) @103) @100)
+@1553 := proof(@1387 @15)
+@1555 := proof(proof(@1384 @1553) @1392)
+@1560 := proof(proof(proof(@1398 proof(proof(@1371 @477) @103)) @1401) @1404)
+@1571 := proof(@1542
+      proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#43 : @1382) =>
+        proof((h : @1548) ->
+          proof(@1552
+              proof(@1555
+                  proof(fun (argument : @470) =>
+                    proof(proof(proof(proof(@1397 proof(@1560 @1408)) @1412) @1415) @1392)))))))
+@1572 := proof(@1308 @103)
+@1574 := proof(proof(@1385 @1572) @12)
+@1575 := proof(@1571 @1574)
+@1576 := proof(@1543 @1574)
+@1577 := proof(@121 @470)
+@1578 := proof(@1576 @1577)
+@1579 := proof(@1352 @1382)
+@1580 := proof(@1579 @1577)
+@1581 := proof(@1543 @1553)
+@1582 := proof(@1581 @5)
+@1586 := proof(proof(proof(proof(@1313 @484) @477) @479) @103)
+@1588 := proof(proof(@1384 @12) @1392)
+@1596 := proof(proof(proof(@1398 proof(proof(@1371 @484) @479)) proof(@1400 @509))
+      proof(@673 proof(@674 @509)))
+@1602 := proof(fun (argument : @470) =>
+    proof(proof(proof(proof(@1397 proof(@1596 @1408)) @1412) @1415) @1392))
+@1607 := proof(@1580
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#42 : @1382) =>
+        proof((hv : @1582) -> proof(@1586 proof(@1588 @1602)))))
+@1608 := proof(@1547 @1577)
+@1609 := proof(trivial)
+@1612 := proof(proof(@1607 proof(fun (hv : @1608) => @1609)) @1546)
+@1613 := proof(@248 @1382)
+@1617 := proof(@1612 proof(proof(proof(@1613 @1546) @1577) @5))
+@1618 := proof(@76 @1382)
+@1622 := proof(@1575
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#44 : @1578) =>
+        proof(@1617 proof(@1618 @1546))))
+@1623 := proof(@32 @470)
+@1625 := proof(@1547 proof(@1623 @5))
+@1626 := proof(@1623 @12)
+@1627 := proof(@1579 @1626)
+@1628 := proof(@1308 @484)
+@1632 := proof(proof(@1543 proof(proof(@1385 @1628) @17)) @5)
+@1636 := proof(proof(proof(proof(@1313 @509) @484) @477) @479)
+@1638 := proof(proof(@1371 @509) @477)
+@1639 := proof(@1398 @1638)
+@1640 := proof(@1400 @507)
+@1641 := proof(@1639 @1640)
+@1643 := proof(@673 proof(@674 @507))
+@1644 := proof(@1641 @1643)
+@1655 := proof(@1627
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#42 : @1382) =>
+        proof((hv : @1632) ->
+          proof(@1636
+              proof(@1588
+                  proof(fun (argument : @470) =>
+                    proof(proof(proof(proof(@1397 proof(@1644 @1408)) @1412) @1415) @1392)))))))
+@1656 := proof(@1581 @1626)
+@1662 := proof(@69 proof(@1586 proof(proof(proof(@1384 proof(@1623 @7)) @1392) @1602)))
+@1663 := proof(LexLeanTarget.Gnaf.Status.casesOn.{0})
+@1664 := proof(@9 @1395)
+@1667 := proof(@1596 proof(proof(@1406 @15) @1311))
+@1668 := proof(@1664 @1667)
+@1669 := proof(@1668 @5)
+@1673 := proof(proof(proof(proof(@1313 @507) @509) @484) @477)
+@1676 := proof(@1644 proof(proof(@1406 @17) @1311))
+@1684 := proof(@1663
+      proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#68 : @1395) =>
+        proof((h : @1669) ->
+          proof(@1673 proof(proof(proof(proof(@1397 @1676) @1412) @1415) @1392)))))
+@1687 := proof(@1560 proof(proof(@1406 @7) @1311))
+@1688 := proof(@1684 @1687)
+@1689 := proof(@1664 @1676)
+@1690 := proof(LexLeanTarget.Gnaf.Status.admitted)
+@1691 := proof(@1690 @12)
+@1692 := proof(@1691 @5)
+@1693 := proof(@1689 @1692)
+@1694 := proof(@1352 @1395)
+@1695 := proof(@1690 @7)
+@1696 := proof(@1695 @12)
+@1697 := proof(@1694 @1696)
+@1710 := proof(proof(@1664
+        proof(proof(proof(proof(@1398 proof(proof(@1371 @537) @509)) proof(@1400 @551))
+              proof(@673 proof(@674 @551)))
+            proof(proof(@1406 @100) @1311)))
+      @5)
+@1714 := proof(proof(proof(proof(@1313 @560) @551) @537) @507)
+@1718 := proof(proof(proof(proof(@1397 @12) @1412) @1415) @1392)
+@1722 := proof(@1697
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#67 : @1395) =>
+        proof((hs : @1710) -> proof(@1714 @1718))))
+@1724 := proof(proof(@1371 @507) @484)
+@1725 := proof(@1398 @1724)
+@1726 := proof(@1400 @537)
+@1727 := proof(@1725 @1726)
+@1729 := proof(@673 proof(@674 @537))
+@1733 := proof(proof(@1727 @1729) proof(proof(@1406 @106) @1311))
+@1738 := proof(proof(@1722 proof(fun (hs : proof(proof(@1664 @1733) @1696)) => @1609)) @1733)
+@1739 := proof(@248 @1395)
+@1743 := proof(@1738 proof(proof(proof(@1739 @1733) @1696) @5))
+@1744 := proof(@76 @1395)
+@1750 := proof(@1688
+      proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#3.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#69 : @0) =>
+        proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#70 : @0) =>
+          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#71 : @1693) =>
+            proof(@1743 proof(@1744 @1733))))))
+@1751 := proof(@1664 @1687)
+@1752 := proof(LexLeanTarget.Gnaf.Status.inadmissible)
+@1753 := proof(@1751 @1752)
+@1754 := proof(@1694 @1752)
+@1755 := proof(@1689 @5)
+@1759 := proof(proof(proof(proof(@1313 @537) @507) @509) @484)
+@1762 := proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#67 : @1395) =>
+    proof((hs : @1755) -> proof(@1759 @1718)))
+@1763 := proof(@1754 @1762)
+@1764 := proof(@1668 @1752)
+@1766 := proof(proof(@4 @1729) @5)
+@1767 := proof(LexLeanCertification.statusAt)
+@1768 := proof(#16)
+@1774 := proof(proof(@1664 proof(proof(proof(proof(@1767 @1768) @560) @537) @15)) @1692)
+@1775 := proof(@502 @470)
+@1781 := proof(proof(proof(proof(Membership.mem.{0, 0}) @470) @471)
+      proof(proof(List.instMembership.{0}) @470))
+@1786 := proof(@504 proof(proof(@1781 proof(proof(@1406 @484) @1311)) @5))
+@1788 := proof(@9 proof(LexLeanCertification.Trial))
+@1789 := proof(LexLeanCertification.trialOf)
+@1790 := proof(#17)
+@1793 := proof(@1789 proof(proof(@1371 @1790) @560))
+@1794 := proof(#18)
+@1801 := proof(@1788 proof(proof(proof(@1793 proof(@1400 @1794)) proof(@673 proof(@674 @1794))) @5))
+@1802 := proof(LexLeanCertification.Trial.disagrees)
+@1804 := proof(@1786 proof(@1801 @1802))
+@1805 := proof(fun (a : @470) => @1804)
+@1824 := proof(proof(proof(@1775 @1805) proof(fun (x : proof(proof(@517 @470) @1805)) => @21))
+      proof(proof(proof(proof(proof(proof(LexLeanCertification.inadmissible_witness)
+                  proof(proof(@1371 @1768) @551))
+                proof(@1400 @1790))
+              proof(@673 proof(@674 @1790)))
+            proof(proof(@1406 @477) @1311))
+          @106))
+@1828 := proof(proof(@1781 proof(proof(@1406 @509) @1311)) @12)
+@1829 := proof(@534 @1828)
+@1832 := proof(@1789 proof(proof(@1371 @1794) @1768))
+@1833 := proof(#19)
+@1841 := proof(proof(@1788
+        proof(proof(proof(@1832 proof(@1400 @1833)) proof(@673 proof(@674 @1833))) @12))
+      @1802)
+@1847 := proof(proof(proof(@1829 @1841) proof(fun (x : proof(proof(@504 @1828) @1841)) => @21)) @5)
+@1849 := proof(proof(@1371 @1833) @1790)
+@1850 := proof(@1789 @1849)
+@1851 := proof(#20)
+@1852 := proof(@1400 @1851)
+@1859 := proof(proof(@1788 proof(proof(proof(@1850 @1852) proof(@673 proof(@674 @1851))) @7)) @1802)
+@1860 := proof(#21)
+@1861 := proof(@1308 @1860)
+@1863 := proof(proof(@1781 @1861) @15)
+@1866 := proof(proof(proof(@9 @470) @15) @537)
+@1867 := proof(Eq.mp.{0})
+@1871 := proof(proof(@1781 proof(proof(@1406 @537) @1311)) @15)
+@1873 := proof(proof(@1867 @1871) @1866)
+@1874 := proof(Sort 0)
+@1875 := proof(@213 @1874)
+@1876 := proof(@1875 @1871)
+@1878 := proof(proof(Or) @1866)
+@1880 := proof(proof(@1781 @1311) @15)
+@1881 := proof(@1878 @1880)
+@1889 := proof(proof(proof(@1876 @1881) @1866)
+      proof(proof(proof(proof(proof(List.mem_cons._simp_1.{0}) @470) @537) @1311) @15))
+@1893 := proof(proof(proof(@1875 @1881) proof(@1878 @21)) @1866)
+@1894 := proof(congrArg.{1, 1})
+@1896 := proof(proof(@1894 @1874) @1874)
+@1910 := proof(proof(@1873
+        proof(@1889
+            proof(proof(@1893
+                  proof(proof(proof(proof(@1896 @1880) @21) @1878)
+                      proof(proof(proof(List.not_mem_nil._simp_1.{0}) @470) @15)))
+                proof(proof(or_false) @1866))))
+      @12)
+@1911 := proof(Eq.mpr.{0})
+@1912 := proof(#22)
+@1913 := proof(@1308 @1912)
+@1914 := proof(@1781 @1913)
+@1916 := proof(annot [noImplicitLambda := bool true] proof(@1914 @17))
+@1917 := proof(@1911 @1916)
+@1919 := proof(annot [noImplicitLambda := bool true] proof(@1914 @551))
+@1920 := proof(@1917 @1919)
+@1921 := proof(@9 @1874)
+@1924 := proof(@69 proof(proof(@1921 @1916) @1919))
+@1928 := proof(proof(proof(proof(@1894 @470) @1874) @17) @551)
+@1929 := proof(#23)
+@1930 := proof(@1308 @1929)
+@1945 := proof(have this : @1866 := @1910;
+    proof(proof(@1920
+          proof(@1924
+              proof(proof(@1928
+                    proof(fun (_a : @470) =>
+                      proof(annot [noImplicitLambda := bool true] proof(proof(@1781 @1930) @5))))
+                  @5)))
+        proof(proof(proof(proof(proof(LexLeanCertification.valueAt_mem) @1913) @1768) @551) @507)))
+@1953 := proof(@1664
+      proof(proof(proof(proof(@1398 proof(proof(@1371 @1912) @1851)) proof(@1400 @1929)) @484)
+          @1930))
+@1954 := proof(@1690 @5)
+@1955 := proof(@1954 @985)
+@1957 := proof(@504 proof(@1953 @1955))
+@1958 := proof(@10 @479)
+@1959 := proof(@628 @5)
+@1962 := proof(proof(proof(@630 @1929) @1912) @1851)
+@1965 := proof(@504 proof(@1958 proof(@1959 @1962)))
+@1967 := proof(proof(@1464 @1912) @1851)
+@1970 := proof(@1957 proof(@1965 proof(@557 @1967)))
+@1971 := proof(fun (steps : @0) => @1970)
+@1972 := proof(@503 @1971)
+@1973 := proof(@518 @1971)
+@1974 := proof(annot [noImplicitLambda := bool true] @21)
+@1976 := proof(@1972 proof(fun (x : @1973) => @1974))
+@1977 := proof(LexLeanCertification.statusAt_admitted)
+@1985 := proof(@1976
+      proof(proof(proof(proof(proof(proof(proof(@1977 @1912) @1860) @1833) @477) @103) @100) @106))
+@1988 := proof(@1398 proof(proof(@1371 @1929) @1860))
+@1989 := proof(#24)
+@1995 := proof(@1664 proof(proof(proof(@1988 proof(@1400 @1989)) @509) proof(@1308 @1989)))
+@1996 := proof(@1691 @985)
+@1997 := proof(@1995 @1996)
+@1998 := proof(@534 @1997)
+@1999 := proof(@10 @477)
+@2002 := proof(proof(proof(@630 @1989) @1929) @1860)
+@2005 := proof(@504 proof(@1999 proof(@636 @2002)))
+@2007 := proof(proof(@1464 @1929) @1860)
+@2009 := proof(@2005 proof(@1958 @2007))
+@2015 := proof(proof(proof(@1998 @2009) proof(fun (x : proof(proof(@504 @1997) @2009)) => @1974))
+      @5)
+@2016 := proof(@10 @484)
+@2017 := proof(#25)
+@2020 := proof(proof(proof(@630 @2017) @1989) @1912)
+@2027 := proof(proof(@504 proof(@2016 proof(@784 @2020)))
+      proof(@1999 proof(proof(@1464 @1989) @1912)))
+@2028 := proof(@10 @509)
+@2029 := proof(@628 @15)
+@2030 := proof(#26)
+@2032 := proof(proof(@630 @2030) @2017)
+@2033 := proof(@2032 @1929)
+@2035 := proof(@2028 proof(@2029 @2033))
+@2036 := proof(@534 @2035)
+@2037 := proof(@1464 @2017)
+@2038 := proof(@2037 @1929)
+@2039 := proof(@2016 @2038)
+@2045 := proof(proof(proof(@2036 @2039) proof(fun (x : proof(proof(@504 @2035) @2039)) => @1974))
+      @5)
+@2047 := proof(proof(@1464 @2030) @1989)
+@2048 := proof(@2028 @2047)
+@2049 := proof(LexLeanCertification.disagree_not_admitted)
+@2050 := proof(#27)
+@2052 := proof(proof(@1371 @2050) @2017)
+@2053 := proof(@2049 @2052)
+@2054 := proof(#28)
+@2055 := proof(@1400 @2054)
+@2061 := proof(proof(proof(proof(@2053 @2055) proof(@673 proof(@674 @2054))) @560) @551)
+@2062 := proof(@1308 @2054)
+@2093 := proof(proof(@1763
+        proof(fun (hs : @1764) =>
+          proof(fun (F' : @0) =>
+            proof(fun (hle : @1766) =>
+              proof(fun (c : @0) =>
+                proof(fun (z : @0) =>
+                  proof(fun (h : @1774) =>
+                    proof(@1824
+                        proof(fun (a : @470) =>
+                          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#90 : @1804) =>
+                            proof(@1847
+                                proof(fun (ha : @1828) =>
+                                  proof(fun (hd : @1859) =>
+                                    proof(have ha' : @1863 := @1945;
+                                      proof(@1985
+                                          proof(fun (steps : @0) =>
+                                            proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#181 : @1970) =>
+                                              proof(@2015
+                                                  proof(fun (hs' : @1997) =>
+                                                    proof(fun (right._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#182 : @2027) =>
+                                                      proof(@2045
+                                                          proof(fun (left._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#183 : @2035) =>
+                                                            proof(fun (right._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#184 : @2048) =>
+                                                              proof(proof(proof(proof(proof(proof(proof(@2061
+                                                                              @2062)
+                                                                            @484)
+                                                                          @100)
+                                                                        @103)
+                                                                      @106)
+                                                                    @985)
+                                                                  @15))))))))))))))))))))))))
+      @1667)
+@2094 := proof(@1739 @1667)
+@2097 := proof(@2093 proof(proof(@2094 @1752) @5))
+@2098 := proof(@1744 @1667)
+@2101 := proof(@1750
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#81 : @1753) =>
+        proof(@2097 @2098)))
+@2102 := proof(LexLeanTarget.Gnaf.Status.unresolved)
+@2103 := proof(@1751 @2102)
+@2104 := proof(@1694 @2102)
+@2136 := proof(proof(@1367
+        proof(@1370
+            proof(@1540
+                proof(proof(@1622
+                      proof(fun (argument : @470) =>
+                        proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#49 : @1625) =>
+                          proof(proof(proof(proof(@1655
+                                    proof(fun (hv : @1656) =>
+                                      proof(@1662
+                                          proof(proof(@2101
+                                                proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#76 : @2103) =>
+                                                  proof(proof(proof(proof(proof(@2104 @1762)
+                                                            proof(fun (hs : proof(@1668 @2102)) =>
+                                                              @1609))
+                                                          @1667)
+                                                        proof(proof(@2094 @2102) @5))
+                                                      @2098)))
+                                              proof(@1744 @1687)))))
+                                  @1553)
+                                proof(proof(proof(@1613 @1553) @1626) @5))
+                              proof(@1618 @1553)))))
+                    proof(@1618 @1574)))))
+      @15)
+@2137 := proof(@248 @1305)
+@2138 := proof(@2137 @15)
+@2144 := proof(@1348
+      proof(fun (position : @0) =>
+        proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#33 : @1351) =>
+          proof(@2136 proof(proof(@2138 @1354) @5)))))
+@2145 := proof(LexLeanTarget.Certification.Premise.paysAtLeast)
+@2147 := proof(@1333 proof(@2145 @5))
+@2148 := proof(@2145 @12)
+@2150 := proof(proof(@1353 @2148) @1366)
+@2153 := proof(@69 proof(@1338 proof(@1342 @2148)))
+@2162 := proof(@69
+      proof(@1338
+          proof(have system : @466 := @1373;
+            proof(proof(proof(proof(proof(@1377 proof(@2145 @7)) @1420) @1476) @1495) @1536))))
+@2163 := proof(Decidable.casesOn.{0})
+@2171 := proof(proof(@1429
+        proof(proof(@1430 proof(@1435 proof(proof(proof(@1423 @1572) @985) @12))) @1441))
+      @1446)
+@2173 := proof(proof(@58 @2171) @62)
+@2174 := proof(@2163 @2173)
+@2175 := proof(Decidable)
+@2176 := proof(@2175 @2173)
+@2178 := proof(proof(@1423 @1544) @985)
+@2179 := proof(@2178 @7)
+@2187 := proof(proof(@1429 proof(proof(@1430 proof(@1435 @2179)) proof(@1440 @7)))
+      proof(proof(@1444 @7) @985))
+@2189 := proof(proof(@58 @2187) @62)
+@2190 := proof(@1428 @2189)
+@2192 := proof(proof(@65 @2187) @62)
+@2193 := proof(@2190 @2192)
+@2200 := proof(proof(proof(proof(@1398 proof(proof(@1371 @103) @106)) proof(@1400 @479)) @676)
+      @2179)
+@2214 := proof(proof(proof(proof(@1455 @2200)
+          proof(fun (steps : @0) =>
+            proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#235 : @0) =>
+              proof(proof(@1458 proof(@636 proof(proof(proof(@630 @484) @477) @103)))
+                  proof(proof(@1464 @477) @103)))))
+        @1392)
+      @1392)
+@2216 := proof(proof(@2193 @2214) @1391)
+@2217 := proof(@1359 @2216)
+@2222 := proof(proof(@2174 proof(fun (x : @2176) => @2217)) proof(proof(@65 @2171) @62))
+@2223 := proof(@14 @2173)
+@2224 := proof(@1911 @2217)
+@2225 := proof(@1359 @1391)
+@2226 := proof(@2224 @2225)
+@2227 := proof(@1921 @2217)
+@2229 := proof(@69 proof(@2227 @2225))
+@2231 := proof(proof(@1894 @1375) @1874)
+@2232 := proof(@2231 @2216)
+@2234 := proof(proof(@2232 @1391) @1359)
+@2235 := proof(if_neg.{1})
+@2247 := proof(@2222
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#199 : @2223) =>
+        proof(proof(@2226
+              proof(@2229
+                  proof(@2234
+                      proof(proof(proof(proof(proof(proof(@2235 @2189) @2192) @5) @1375) @2214)
+                          @1391))))
+            @1609)))
+@2248 := proof(@1359 @2214)
+@2249 := proof(@2224 @2248)
+@2251 := proof(@69 proof(@2227 @2248))
+@2253 := proof(proof(@2232 @2214) @1359)
+@2254 := proof(if_pos.{1})
+@2263 := proof(@2249
+      proof(@2251
+          proof(@2253
+              proof(proof(proof(proof(proof(proof(@2254 @2189) @2192) @5) @1375) @2214) @1391))))
+@2266 := proof(@1398 proof(proof(@1371 @479) @100))
+@2267 := proof(@1400 @477)
+@2268 := proof(@2266 @2267)
+@2270 := proof(@673 proof(@674 @477))
+@2273 := proof(proof(@2268 @2270) proof(@1425 @15))
+@2274 := proof(@1664 @2273)
+@2275 := proof(@2274 @5)
+@2279 := proof(@1560 proof(proof(proof(@1423 @1628) @985) @17))
+@2288 := proof(proof(@1663
+        proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#220 : @1395) =>
+          proof((h : @2275) ->
+            proof(@1586 proof(proof(proof(proof(@1455 @2279) @1469) @1392) @1392)))))
+      @2200)
+@2289 := proof(@1664 @2279)
+@2290 := proof(@2289 @1692)
+@2294 := proof(proof(proof(@1423 proof(@1308 @507)) @985) @100)
+@2297 := proof(proof(@1664 proof(@1644 @2294)) @5)
+@2298 := proof(@1455 @12)
+@2308 := proof(fun (steps : @0) =>
+    proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#235 : @0) =>
+      proof(proof(@1458 proof(@636 proof(proof(proof(@630 @560) @551) @507)))
+          proof(proof(@1464 @551) @507))))
+@2315 := proof(@1697
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#219 : @1395) =>
+        proof((hs : @2297) -> proof(@1759 proof(proof(proof(@2298 @2308) @1392) @1392)))))
+@2320 := proof(@1596 proof(proof(proof(@1423 proof(@1308 @509)) @985) @106))
+@2322 := proof(proof(@1664 @2320) @1696)
+@2323 := proof(@11 @985)
+@2324 := proof(@534 @2323)
+@2329 := proof(proof(proof(proof(proof(@476 @1638) @1640) @1643) @2294) @15)
+@2341 := proof(proof(@2324 @2329)
+      proof(fun (x : proof(proof(@504 @2323) @2329)) =>
+        proof(@1759
+            proof(proof(proof(proof(@1455 proof(proof(@1690 @17) @15)) @2308) @1392) @1392))))
+@2342 := proof(LexLeanCertification.allAgree_of_admitted)
+@2350 := proof(@2341
+      proof(proof(proof(proof(proof(proof(proof(@2342 @1638) @1640) @1643) @2294) @15) @7) @5))
+@2359 := proof(proof(proof(proof(proof(@476 @1724) @1726) @1729)
+        proof(proof(proof(@1423 proof(@1308 @537)) @985) @103))
+      @17)
+@2363 := proof(proof(@4 proof(@673 proof(@674 @560))) @5)
+@2369 := proof(proof(@1664 proof(proof(proof(proof(@1767 @1794) @1790) @560) @15)) @1692)
+@2377 := proof(@504
+      proof(proof(@1664 proof(proof(proof(proof(@1398 @1849) @1852) @106) proof(@1308 @1851)))
+          @1955))
+@2378 := proof(@10 @15)
+@2381 := proof(proof(proof(@630 @1851) @1833) @1790)
+@2384 := proof(@504 proof(@2378 proof(@1959 @2381)))
+@2387 := proof(@11 proof(proof(@1464 @1833) @1790))
+@2389 := proof(@2377 proof(@2384 @2387))
+@2390 := proof(fun (steps : @0) => @2389)
+@2408 := proof(proof(proof(@503 @2390)
+        proof(fun (x : proof(@518 @2390)) =>
+          proof(proof(@504 proof(proof(@4 proof(proof(@628 @509) @2381)) @15)) @2387)))
+      proof(proof(proof(proof(proof(proof(proof(@1977 @1833) @1794) @1768) @17) @7) @12) @5))
+@2417 := proof(proof(@1664
+        proof(proof(proof(proof(@1398 proof(proof(@1371 @1851) @1794)) proof(@1400 @1860)) @100)
+            @1861))
+      @1996)
+@2418 := proof(@534 @2417)
+@2419 := proof(@10 @17)
+@2429 := proof(proof(@504 proof(@2419 proof(@636 proof(proof(proof(@630 @1860) @1851) @1794))))
+      proof(@2378 proof(proof(@1464 @1851) @1794)))
+@2430 := proof(@2418 @2429)
+@2432 := proof(proof(@504 @2417) @2429)
+@2433 := proof(@628 @537)
+@2436 := proof(proof(proof(@630 @1912) @1860) @1833)
+@2440 := proof(@504 proof(proof(@4 proof(@2433 @2436)) @106))
+@2443 := proof(@2419 proof(proof(@1464 @1860) @1833))
+@2447 := proof(proof(@2430 proof(fun (x : @2432) => proof(@2440 @2443))) @5)
+@2448 := proof(@10 @106)
+@2452 := proof(proof(@504 proof(@2448 proof(@784 @2436))) @2443)
+@2453 := proof(@10 @100)
+@2455 := proof(@2453 proof(@2029 @1962))
+@2456 := proof(@534 @2455)
+@2457 := proof(@2448 @1967)
+@2458 := proof(@2456 @2457)
+@2460 := proof(proof(@504 @2455) @2457)
+@2465 := proof(@504 proof(proof(@4 proof(proof(@628 @560) @2002)) @103))
+@2466 := proof(@2453 @2007)
+@2470 := proof(proof(@2458 proof(fun (x : @2460) => proof(@2465 @2466))) @5)
+@2471 := proof(@1352 @0)
+@2472 := proof(@780 @2020)
+@2473 := proof(@2471 @2472)
+@2478 := proof(@1664 proof(proof(proof(proof(@1767 @2030) @2017) @1929) @509))
+@2480 := proof(@2478 proof(@1954 @479))
+@2481 := proof(@628 @1794)
+@2484 := proof(proof(proof(@630 @2050) @2030) @1989)
+@2493 := proof(@2473
+      proof(fun (c' : @0) =>
+        proof((h : @2480) ->
+          proof(proof(@504 proof(proof(@4 proof(@2481 @2484)) @12)) proof(@1999 @2047)))))
+@2496 := proof(proof(proof(@1767 @2017) @1989) @1912)
+@2501 := proof(proof(@1664 proof(@2496 @484)) proof(proof(@1690 @2472) @103))
+@2502 := proof(@2471 @2038)
+@2512 := proof(proof(@1664 proof(proof(proof(proof(@1767 @2050) @2030) @1989) @507))
+      proof(proof(@1690 proof(proof(@628 @103) @2484)) @5))
+@2513 := proof(@628 @1833)
+@2515 := proof(proof(@630 @2054) @2050)
+@2516 := proof(@2515 @2017)
+@2522 := proof(@504 proof(proof(@4 proof(@2513 @2516)) proof(proof(@628 @479) @2516)))
+@2523 := proof(@1464 @2050)
+@2524 := proof(@2523 @2017)
+@2529 := proof(@2502 proof(fun (z' : @0) => proof((h : @2512) -> proof(@2522 proof(@982 @2524)))))
+@2534 := proof(@2478 proof(proof(@1690 proof(proof(@628 @100) @2033)) @2038))
+@2536 := proof(proof(@10 @985) @985)
+@2537 := proof(@534 @2536)
+@2539 := proof(proof(@1371 @2030) @1989)
+@2540 := proof(@476 @2539)
+@2541 := proof(@1400 @2050)
+@2543 := proof(proof(@2540 @2541) @507)
+@2544 := proof(@1308 @2050)
+@2546 := proof(proof(@2543 @2544) @103)
+@2562 := proof(proof(proof(@2537 @2546)
+        proof(fun (x : proof(proof(@504 @2536) @2546)) =>
+          proof(@2522 proof(proof(@10 @2524) @2524))))
+      proof(proof(proof(proof(proof(proof(proof(@2342 @2539) @2541) @507) @2544) @103) @985) @106))
+@2567 := proof(proof(proof(proof(proof(@476 @2052) @2055) @537) @2062) @479)
+@2569 := proof(proof(@4 @1851) @477)
+@2573 := proof(proof(LexLeanCertification.allAgree_sublist_le) proof(proof(@1371 @2054) @2030))
+@2574 := proof(#29)
+@2581 := proof(proof(proof(proof(@2573 proof(@1400 @2574)) proof(@673 proof(@674 @2574))) @551)
+      @537)
+@2582 := proof(@1308 @2574)
+@2596 := proof(proof(proof(proof(proof(proof(proof(@2581 @2582)
+                proof(proof(proof(@1423 @2582) @985) @1929))
+              @477)
+            @1851)
+          proof(proof(proof(proof(LexLeanCertification.pickFrom_sublist) @2582) @985) @1929))
+        @560)
+      @5)
+@2597 := proof(And.intro)
+@2598 := proof(@628 @1860)
+@2599 := proof(#30)
+@2602 := proof(proof(proof(@630 @2599) @2574) @2050)
+@2603 := proof(@2598 @2602)
+@2604 := proof(@4 @2603)
+@2606 := proof(proof(@628 @484) @2602)
+@2607 := proof(@2604 @2606)
+@2608 := proof(@2597 @2607)
+@2610 := proof(proof(@1464 @2574) @2050)
+@2613 := proof(@2608 proof(proof(@10 @2610) @2610))
+@2617 := proof(proof(@578 @2607) proof(proof(@583 @2603) @2606))
+@2618 := proof(@14 @2607)
+@2619 := proof(LexLeanCertification.premiseFact_sound._proof_1_1)
+@2620 := proof(#31)
+@2643 := proof(proof(@2529
+        proof(fun (h : @2534) =>
+          proof(@2562
+              proof(fun (left._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#254 : @2536) =>
+                proof(fun (hall' : @2567) =>
+                  proof(have this : @2569 := @2596;
+                    proof(proof(@2613
+                          proof(@2617
+                              proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#287 : @2618) =>
+                                proof(proof(proof(proof(proof(proof(proof(proof(proof(@2619 @2620)
+                                                  @2599)
+                                                @2054)
+                                              @1912)
+                                            @1860)
+                                          @1768)
+                                        @509)
+                                      @12)
+                                    @5))))
+                        proof(proof(proof(rfl.{1}) @0) @2610))))))))
+      @479)
+@2645 := proof(proof(@248 @0) @479)
+@2686 := proof(@2288
+      proof(fun (steps : @0) =>
+        proof(fun (size : @0) =>
+          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#231 : @2290) =>
+            proof(proof(proof(proof(@2315
+                      proof(fun (hs : @2322) =>
+                        proof(@2350
+                            proof(fun (left._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#239 : @2323) =>
+                              proof(fun (hall : @2359) =>
+                                proof(fun (F' : @0) =>
+                                  proof(fun (hle : @2363) =>
+                                    proof(fun (c' : @0) =>
+                                      proof(fun (z' : @0) =>
+                                        proof(fun (h : @2369) =>
+                                          proof(@2408
+                                              proof(fun (steps' : @0) =>
+                                                proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#245 : @2389) =>
+                                                  proof(@2447
+                                                      proof(fun (hs' : @2417) =>
+                                                        proof(fun (right._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#246 : @2452) =>
+                                                          proof(@2470
+                                                              proof(fun (left._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#247 : @2455) =>
+                                                                proof(fun (right._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#248 : @2466) =>
+                                                                  proof(proof(proof(proof(@2493
+                                                                            proof(fun (h : @2501) =>
+                                                                              proof(proof(@2643
+                                                                                    proof(proof(@2645
+                                                                                          @2038)
+                                                                                        @12))
+                                                                                  @5)))
+                                                                          @479)
+                                                                        proof(proof(@2645 @2472)
+                                                                            @12))
+                                                                      @100))))))))))))))))))))
+                    @2320)
+                  proof(proof(proof(@1739 @2320) @1696) @5))
+                proof(@1744 @2320))))))
+@2687 := proof(@1664 @2200)
+@2688 := proof(@2687 @1752)
+@2705 := proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#219 : @1395) =>
+    proof((hs : proof(@2289 @5)) ->
+      proof(@1636
+          proof(proof(proof(@2298
+                  proof(fun (steps : @0) =>
+                    proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#235 : @0) =>
+                      proof(proof(@1458 proof(@636 proof(proof(proof(@630 @537) @507) @484)))
+                          proof(proof(@1464 @507) @484)))))
+                @1392)
+              @1392))))
+@2710 := proof(proof(proof(@1754 @2705) proof(fun (hs : proof(@2274 @1752)) => @1609)) @2273)
+@2711 := proof(@1739 @2273)
+@2714 := proof(@2710 proof(proof(@2711 @1752) @5))
+@2715 := proof(@1744 @2273)
+@2745 := proof(@2144
+      proof(fun (positions : @1422) =>
+        proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#193 : @2147) =>
+          proof(proof(proof(@2150
+                  proof(@2153
+                      proof(@2162
+                          proof(@2247
+                              proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#199 : @2173) =>
+                                proof(@2263
+                                    proof(proof(proof(@2686
+                                            proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#221 : @2688) =>
+                                              proof(@2714 @2715)))
+                                          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#226 : proof(@2687
+                                                @2102)) =>
+                                            proof(proof(proof(proof(proof(@2104 @2705)
+                                                      proof(fun (hs : proof(@2274 @2102)) => @1609))
+                                                    @2273)
+                                                  proof(proof(@2711 @2102) @5))
+                                                @2715)))
+                                        proof(@1744 @2200))))))))
+                @15)
+              proof(proof(@2138 @2148) @5)))))
+@2746 := proof(@1332 @12)
+@2747 := proof(LexLeanTarget.Certification.Premise.measured)
+@2748 := proof(@2746 @2747)
+@2753 := proof(proof(@1353 @2747) proof(fun (premise : @1305) => proof(@1338 proof(@1342 @5))))
+@2757 := proof(proof(proof(proof(@1313 @100) @106) @17) @15)
+@2764 := proof(@69 proof(@2757 proof(proof(proof(proof(proof(@1318 @100) @106) @17) @15) @2747)))
+@2766 := proof(proof(@1371 @106) @15)
+@2767 := proof(@1377 @2747)
+@2770 := proof(proof(@1384 proof(@1545 @5)) @1392)
+@2772 := proof(proof(@1399 @2267) @2270)
+@2802 := proof(proof(@2767
+        proof(fun (position : @0) =>
+          proof(@2770
+              proof(fun (argument : @470) =>
+                proof(proof(proof(proof(@1397 proof(@2772 @1408)) @1412) @1415) @1392)))))
+      proof(fun (positions : @1422) =>
+        proof(have picked : @471 := proof(@2178 @5);
+          proof(proof(@1453
+                proof(proof(proof(proof(@1455 proof(@2772 @5))
+                        proof(fun (steps : @0) =>
+                          proof(fun (x._@.LexLeanTarget.Gnaf.#2943301344._hygCtx.#5.LexLeanTarget.Certification.#815680186._hygCtx._hyg.#235 : @0) =>
+                            proof(proof(@1458 proof(@636 proof(proof(proof(@630 @509) @484) @479)))
+                                proof(proof(@1464 @484) @479)))))
+                      @1392)
+                    @1392))
+              @1391))))
+@2805 := proof(proof(proof(@1480 @479) @103) @106)
+@2809 := proof(proof(proof(proof(@1479 @2805) @1489) @1415) @1493)
+@2811 := proof(@2802 proof(fun ("_" : @1390) => @2809))
+@2814 := proof(proof(@1501 proof(@1503 @106)) @1392)
+@2819 := proof(proof(@1510 proof(proof(proof(@1511 @103) @5) @985)) @1392)
+@2823 := proof(proof(proof(proof(@1517 @484) @477) @103) @7)
+@2840 := proof(@69
+      proof(@2757
+          proof(have system : @466 := @2766;
+            proof(@2811
+                proof(fun (schema : @1497) =>
+                  proof(@2814
+                      proof(fun (target : @620) =>
+                        proof(@2819
+                            proof(fun (targetPosition : @0) =>
+                              proof(proof(proof(proof(@1428 proof(proof(@58 @2823) @62))
+                                      proof(proof(@65 @2823) @62))
+                                    @1529)
+                                  @1391))))))))))
+@2843 := proof(proof(proof(@1480 @103) @100) @17)
+@2844 := proof(@1664 @2843)
+@2849 := proof(@1663
+      proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#304 : @1395) =>
+        proof((h : proof(@2844 @5)) -> proof(@1359 @2809))))
+@2852 := proof(proof(proof(@1480 @100) @106) @15)
+@2853 := proof(@2849 @2852)
+@2854 := proof(@1664 @2805)
+@2855 := proof(@2854 @1692)
+@2860 := proof(proof(@1664 proof(proof(proof(@1480 @484) @477) @103)) @5)
+@2864 := proof(proof(proof(proof(@1479 @12) @1489) @1415) @1493)
+@2890 := proof(@2853
+      proof(fun (c : @0) =>
+        proof(fun (z : @0) =>
+          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#305 : @2855) =>
+            proof(proof(proof(proof(proof(@1697
+                        proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#303 : @1395) =>
+                          proof((hm : @2860) -> proof(@1636 @2864))))
+                      proof(fun (hm : proof(proof(@1664 @1483) @1696)) =>
+                        proof(proof(proof(proof(proof(proof(proof(LexLeanCertification.measured_sound)
+                                      @484)
+                                    @477)
+                                  @103)
+                                @15)
+                              @7)
+                            @5)))
+                    @1483)
+                  proof(proof(proof(@1739 @1483) @1696) @5))
+                proof(@1744 @1483))))))
+@2891 := proof(@1664 @2852)
+@2892 := proof(@2891 @1752)
+@2896 := proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#303 : @1395) =>
+    proof((hm : proof(@2854 @5)) -> proof(@1552 @2864)))
+@2906 := proof(proof(proof(@1754 @2896)
+        proof(fun (hm : proof(@2844 @1752)) =>
+          proof(proof(proof(proof(proof(LexLeanCertification.measured_inadmissible) @479) @103)
+                @106)
+              @5)))
+      @2843)
+@2907 := proof(@1739 @2843)
+@2910 := proof(@2906 proof(proof(@2907 @1752) @5))
+@2911 := proof(@1744 @2843)
+@2938 := proof(@2745
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#293 : @2748) =>
+        proof(proof(proof(@2753
+                proof(@2764
+                    proof(@2840
+                        proof(proof(proof(@2890
+                                proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#316 : @2892) =>
+                                  proof(@2910 @2911)))
+                              proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#325 : proof(@2891
+                                    @2102)) =>
+                                proof(proof(proof(proof(proof(@2104 @2896)
+                                          proof(fun (hm : proof(@2844 @2102)) => @1609))
+                                        @2843)
+                                      proof(proof(@2907 @2102) @5))
+                                    @2911)))
+                            proof(@1744 @2852)))))
+              @7)
+            proof(proof(proof(@2137 @7) @2747) @5))))
+@2939 := proof(LexLeanTarget.Certification.Premise.reduced)
+@2941 := proof(@1333 proof(@2939 @5))
+@2942 := proof(@2939 @12)
+@2944 := proof(proof(@1353 @2942) @1366)
+@2947 := proof(@69 proof(@1338 proof(@1342 @2942)))
+@2956 := proof(@69
+      proof(@1338
+          proof(have system : @466 := @1373;
+            proof(proof(proof(proof(proof(@1377 proof(@2939 @7)) @1420) @1476) @1495) @1536))))
+@2957 := proof(@1541 @620)
+@2958 := proof(@9 @1499)
+@2960 := proof(proof(@1502 @7) @106)
+@2961 := proof(@2958 @2960)
+@2962 := proof(@2961 @5)
+@2964 := proof(proof(@1502 @15) @100)
+@2966 := proof(proof(@1501 @2964) @1392)
+@2967 := proof(@1520 @106)
+@2983 := proof(@2957
+      proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#340 : @1499) =>
+        proof((h : @2962) ->
+          proof(@1552
+              proof(@2966
+                  proof(fun (target : @620) =>
+                    proof(@1516
+                        proof(fun (targetPosition : @0) =>
+                          proof(proof(proof(proof(@1428 proof(proof(@58 @2967) @62))
+                                  proof(proof(@65 @2967) @62))
+                                @1529)
+                              @1391)))))))))
+@2985 := proof(proof(@1502 @12) @17)
+@2986 := proof(@2983 @2985)
+@2987 := proof(@2958 @2985)
+@2988 := proof(@121 @620)
+@2989 := proof(@2987 @2988)
+@2990 := proof(@1352 @1499)
+@2991 := proof(@2990 @2988)
+@2992 := proof(@2958 @2964)
+@2993 := proof(@2992 @5)
+@2995 := proof(proof(@1501 @12) @1392)
+@2996 := proof(@1511 @477)
+@3000 := proof(proof(@1510 proof(proof(@2996 @5) @985)) @1392)
+@3004 := proof(proof(proof(proof(@1517 @507) @509) @477) @100)
+@3015 := proof(fun (target : @620) =>
+    proof(@3000
+        proof(fun (targetPosition : @0) =>
+          proof(proof(proof(proof(@1428 proof(proof(@58 @3004) @62)) proof(proof(@65 @3004) @62))
+                @1529)
+              @1391))))
+@3024 := proof(proof(proof(@2991
+          proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#339 : @1499) =>
+            proof((hrw : @2993) -> proof(@1586 proof(@2995 @3015)))))
+        proof(fun (hrw : proof(@2961 @2988)) => @1609))
+      @2960)
+@3025 := proof(@248 @1499)
+@3029 := proof(@3024 proof(proof(proof(@3025 @2960) @2988) @5))
+@3030 := proof(@76 @1499)
+@3034 := proof(@2986
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#341 : @2989) =>
+        proof(@3029 proof(@3030 @2960))))
+@3035 := proof(@32 @620)
+@3037 := proof(@2961 proof(@3035 @5))
+@3038 := proof(@3035 @12)
+@3039 := proof(@2990 @3038)
+@3043 := proof(proof(@2958 proof(proof(@1502 @17) @103)) @5)
+@3044 := proof(@1511 @484)
+@3048 := proof(proof(@1510 proof(proof(@3044 @5) @985)) @1392)
+@3052 := proof(proof(proof(proof(@1517 @537) @507) @484) @103)
+@3054 := proof(proof(@58 @3052) @62)
+@3055 := proof(@1428 @3054)
+@3057 := proof(proof(@65 @3052) @62)
+@3061 := proof(fun (targetPosition : @0) => proof(proof(proof(@3055 @3057) @1529) @1391))
+@3068 := proof(@3039
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#339 : @1499) =>
+        proof((hrw : @3043) ->
+          proof(@1636 proof(@2995 proof(fun (target : @620) => proof(@3048 @3061)))))))
+@3069 := proof(@2992 @3038)
+@3070 := proof(@3035 @7)
+@3075 := proof(@69 proof(@1586 proof(proof(proof(@1501 @3070) @1392) @3015)))
+@3076 := proof(@1541 @0)
+@3077 := proof(@9 @1508)
+@3079 := proof(proof(@2996 @15) @985)
+@3080 := proof(@3077 @3079)
+@3081 := proof(@3080 @5)
+@3083 := proof(proof(@3044 @17) @985)
+@3090 := proof(@3076
+      proof(fun (t._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#356 : @1508) =>
+        proof((h : @3081) -> proof(@1673 proof(proof(proof(@1510 @3083) @1392) @3061)))))
+@3092 := proof(proof(@1512 @7) @985)
+@3093 := proof(@3090 @3092)
+@3094 := proof(@3077 @3092)
+@3095 := proof(@121 @0)
+@3096 := proof(@3094 @3095)
+@3097 := proof(@1352 @1508)
+@3098 := proof(@3097 @3095)
+@3099 := proof(@3077 @3083)
+@3100 := proof(@3099 @5)
+@3102 := proof(proof(@1510 @12) @1392)
+@3106 := proof(proof(proof(proof(@1517 @551) @537) @509) @479)
+@3108 := proof(proof(@58 @3106) @62)
+@3109 := proof(@1428 @3108)
+@3111 := proof(proof(@65 @3106) @62)
+@3112 := proof(@3109 @3111)
+@3115 := proof(fun (targetPosition : @0) => proof(proof(@3112 @1529) @1391))
+@3124 := proof(proof(proof(@3098
+          proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#355 : @1508) =>
+            proof((hp : @3100) -> proof(@1759 proof(@3102 @3115)))))
+        proof(fun (hp : proof(@3080 @3095)) => @1609))
+      @3079)
+@3125 := proof(@248 @1508)
+@3129 := proof(@3124 proof(proof(proof(@3125 @3079) @3095) @5))
+@3130 := proof(@76 @1508)
+@3134 := proof(@3093
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#357 : @3096) =>
+        proof(@3129 proof(@3130 @3079))))
+@3135 := proof(@32 @0)
+@3137 := proof(@3080 proof(@3135 @5))
+@3138 := proof(@3135 @12)
+@3139 := proof(@3097 @3138)
+@3144 := proof(proof(@3077 proof(proof(proof(@1511 @509) @106) @985)) @5)
+@3148 := proof(proof(proof(proof(@1313 @551) @537) @507) @509)
+@3152 := proof(proof(proof(proof(@1517 @560) @551) @507) @477)
+@3166 := proof(@3139
+      proof(fun (x._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#355 : @1508) =>
+        proof((hp : @3144) ->
+          proof(@3148
+              proof(@3102
+                  proof(fun (targetPosition : @0) =>
+                    proof(proof(proof(proof(@1428 proof(proof(@58 @3152) @62))
+                            proof(proof(@65 @3152) @62))
+                          @1529)
+                        @1391)))))))
+@3167 := proof(@3099 @3138)
+@3173 := proof(@69 proof(@1759 proof(proof(proof(@1510 proof(@3135 @7)) @1392) @3115)))
+@3174 := proof(@2163 @3054)
+@3175 := proof(@2175 @3054)
+@3176 := proof(@1528 @15)
+@3178 := proof(proof(@3112 @3176) @1391)
+@3179 := proof(@3148 @3178)
+@3182 := proof(proof(@3174 proof(fun (x : @3175) => @3179)) @3057)
+@3183 := proof(@14 @3054)
+@3184 := proof(@1911 @3179)
+@3185 := proof(@3148 @1391)
+@3186 := proof(@3184 @3185)
+@3187 := proof(@1921 @3179)
+@3189 := proof(@69 proof(@3187 @3185))
+@3190 := proof(@2231 @3178)
+@3204 := proof(@3182
+      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#367 : @3183) =>
+        proof(proof(@3186
+              proof(@3189
+                  proof(proof(proof(@3190 @1391) @3148)
+                      proof(proof(proof(proof(proof(proof(@2235 @3108) @3111) @5) @1375) @3176)
+                          @1391))))
+            @1609)))
+@3205 := proof(@3148 @3176)
+@3219 := proof(proof(@3184 @3205)
+      proof(proof(@69 proof(@3187 @3205))
+          proof(proof(proof(@3190 @3176) @3148)
+              proof(proof(proof(proof(proof(proof(@2254 @3108) @3111) @5) @1375) @3176) @1391))))
+@3221 := proof(@504 proof(@2419 @987))
+@3222 := proof(LexLeanTarget.Certification.selectorAt)
+@3228 := proof(@3221 proof(proof(@2958 proof(proof(@3222 @537) @5)) proof(@3035 @103)))
+@3229 := proof(fun (k : @0) => @3228)
+@3242 := proof(proof(proof(@503 @3229)
+        proof(fun (x : proof(@518 @3229)) => proof(@1714 proof(@1528 @17))))
+      proof(proof(proof(proof(proof(proof(LexLeanCertification.positionOf_at) @507) @100) @985) @15)
+          @12))
+@3244 := proof(@2448 proof(@986 @12))
+@3245 := proof(@534 @3244)
+@3250 := proof(proof(@2958 proof(proof(@3222 @551) @12)) proof(@3035 @479))
+@3262 := proof(proof(proof(@3245 @3250)
+        proof(fun (x : proof(proof(@504 @3244) @3250)) =>
+          proof(proof(proof(proof(proof(@1313 @1790) @1768) @560) @551) proof(@1528 @100))))
+      @5)
+@3267 := proof(proof(@2958 proof(proof(@3222 @560) @7)) proof(@3035 @477))
+@3280 := proof(proof(proof(@578 @558) proof(proof(proof(instDecidableEqNat) @103) @15))
+      proof(fun (a._@._internal.#0.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#407 : proof(@14
+            @558)) =>
+        proof(proof(proof(proof(proof(LexLeanCertification.premiseFact_sound._proof_1_3) @479) @17)
+              @7)
+            @5)))
+@3298 := proof(proof(@2471 @479)
+      proof(fun (k : @0) =>
+        proof((hk : proof(@1999 @987)) ->
+          proof((hat : proof(proof(@2958 proof(proof(@3222 @1833) @12)) proof(@3035 @537))) ->
+            proof(annot [noImplicitLambda := bool true]
+              proof(proof(proof(proof(proof(@1313 @1912) @1860) @1851) @1833)
+                  proof(@1528 @509)))))))
+@3300 := proof(@1958 proof(@986 @479))
+@3305 := proof(proof(@2958 proof(proof(@3222 @1794) @477)) proof(@3035 @507))
+@3309 := proof(proof(@4 proof(@673 proof(@674 @1912))) @5)
+@3312 := proof(proof(@1664 proof(@2496 @15)) @1692)
+@3319 := proof(@504
+      proof(proof(@1664 proof(proof(proof(proof(@1767 @2054) @2050) @1851) @100)) @1692))
+@3320 := proof(@998 @12)
+@3327 := proof(@518
+      proof(fun (z' : @0) => proof(@3319 proof(proof(@504 proof(@3320 @17)) proof(@6 @15)))))
+@3328 := proof(fun (c' : @0) => @3327)
+@3329 := proof(@503 @3328)
+@3330 := proof(@518 @3328)
+@3331 := proof(@517 @620)
+@3336 := proof(@504 proof(proof(@2958 proof(proof(@3222 @2054) @1833)) @3070))
+@3338 := proof(proof(@1767 @2599) @2574)
+@3356 := proof(@3329
+      proof(fun (x : @3330) =>
+        proof(@3331
+            proof(fun (q : @620) =>
+              proof(@518
+                  proof(fun (c' : @0) =>
+                    proof(@518
+                        proof(fun (z' : @0) =>
+                          proof(@3336
+                              proof(proof(@504
+                                    proof(proof(@1664 proof(proof(@3338 @7) @479)) @1692))
+                                  proof(proof(@504 proof(@3320 @100)) @505)))))))))))
+@3363 := proof(proof(proof(proof(proof(proof(proof(LexLeanCertification.schema_cheaper) @2030)
+              @2017)
+            @1929)
+          @1794)
+        @1851)
+      @1768)
+@3364 := proof(And.left)
+@3365 := LexLeanTarget.Certification.eligible
+@3369 := proof(proof(proof(proof(@3365 @2030) @2017) @1929) @1851)
+@3371 := proof(proof(@58 @3369) @62)
+@3372 := proof(@3364 @3371)
+@3373 := Nat.ble
+@3374 := proof(@2037 @1794)
+@3376 := proof(proof(@3373 @3374) @2038)
+@3378 := proof(proof(@58 @3376) @62)
+@3379 := proof(@504 @3378)
+@3380 := proof(@2032 @1794)
+@3382 := proof(proof(@3373 @3380) @2033)
+@3384 := proof(proof(@58 @3382) @62)
+@3385 := proof(@3379 @3384)
+@3386 := proof(@3372 @3385)
+@3390 := proof(proof(proof(proof(@1517 @2030) @2017) @1929) @1851)
+@3391 := proof(@58 @3390)
+@3392 := proof(@3391 @62)
+@3393 := proof(@1867 @3392)
+@3394 := proof(@504 @3371)
+@3395 := proof(@3394 @3385)
+@3396 := proof(@3393 @3395)
+@3397 := proof(@1875 @3392)
+@3399 := proof(proof(@1429 @3376) @3382)
+@3401 := proof(proof(@58 @3399) @62)
+@3402 := proof(@3394 @3401)
+@3404 := proof(proof(@3397 @3402) @3395)
+@3406 := proof(proof(@1429 @3369) @3399)
+@3407 := proof(@58 @3406)
+@3410 := proof(proof(@3397 proof(@3407 @62)) @3402)
+@3415 := proof(proof(proof(proof(proof(congrFun'.{1, 1}) @57) @1874) @3391) @3407)
+@3421 := proof(proof(proof(proof(proof(@1894 @57) proof((a._@._internal._hyg.#0 : @57) -> @1874))
+          @3390)
+        @3406)
+      @58)
+@3428 := proof(proof(proof(proof(@1894 @1499) @57) proof(proof(@1502 @1851) @1929))
+      proof(@3035 @1794))
+@3430 := @1498 (fun (x._@.LexLeanTarget.Certification.#3378115539._hygCtx._hyg.#22 : @1499) => @57)
+@3431 := proof(@3430 @5)
+@3433 := fun ("_" : @1390) => Bool.false
+@3457 := proof(@3410
+      proof(proof(@3415
+            proof(@3421
+                proof(proof(@3428
+                      proof(fun (x : @1499) =>
+                        proof(proof(@3431 @3433)
+                            proof(fun (target : @620) =>
+                              proof(proof(@1429
+                                    proof(proof(proof(proof(@3365 @2054) @2050) @2017) @1912))
+                                  proof(proof(@1429 proof(proof(@3373 proof(@2523 @5)) @2524))
+                                      proof(proof(@3373 proof(@2515 @5)) @2516)))))))
+                    @1768)))
+          @62))
+@3458 := proof(Bool.and_eq_true)
+@3471 := proof(proof(@3396
+        proof(proof(@3404 proof(@3457 proof(proof(@3458 @3369) @3399)))
+            proof(proof(proof(proof(@1896 @3401) @3385) @3394) proof(proof(@3458 @3376) @3382))))
+      @507)
+@3473 := proof(@3363 proof(@3386 @3471))
+@3474 := proof(@1867 @3378)
+@3477 := proof(proof(@1 proof(annot [borrowed := bool true] @0)) @3)
+@3480 := proof(@3474 proof(proof(@3477 @3374) @2038))
+@3481 := proof(Nat.ble_eq)
+@3484 := proof(@3480 proof(proof(@3481 @3374) @2038))
+@3486 := proof(proof(@3364 @3378) @3384)
+@3487 := proof(And.right)
+@3490 := proof(proof(proof(@3487 @3371) @3385) @3471)
+@3511 := proof(@3356
+      proof(proof(proof(proof(proof(proof(proof(@3473 proof(@3484 proof(@3486 @3490)))
+                    proof(proof(proof(proof(@1867 @3384) proof(proof(@3477 @3380) @2033))
+                          proof(proof(@3481 @3380) @2033))
+                        proof(proof(proof(@3487 @3378) @3384) @3490)))
+                  @1860)
+                @17)
+              @7)
+            @12)
+          @5))
+@3525 := proof(proof(@504
+        proof(proof(@1664 proof(proof(proof(proof(@1767 @2574) @2054) @1860) @103))
+            proof(@1695 @5)))
+      proof(proof(@504 proof(proof(@998 @7) @106)) proof(@6 @17)))
+@3526 := proof(fun (z' : @0) => @3525)
+@3527 := proof(@503 @3526)
+@3528 := proof(@518 @3526)
+@3533 := proof(@504 proof(proof(@2958 proof(proof(@3222 @2599) @1860)) @3070))
+@3534 := proof(#32)
+@3556 := proof(proof(@3527
+        proof(fun (x : @3528) =>
+          proof(@3331
+              proof(fun (q : @620) =>
+                proof(@518
+                    proof(fun (c' : @0) =>
+                      proof(@518
+                          proof(fun (z' : @0) =>
+                            proof(@3533
+                                proof(proof(@504
+                                      proof(proof(@1664
+                                            proof(proof(proof(proof(@1767 @3534) @2620) @7) @484))
+                                          @1692))
+                                    proof(proof(@504 proof(@3320 @479)) proof(@6 @103))))))))))))
+      @5)
+@3562 := proof(proof(@1664 proof(proof(@3338 @1912) @479)) proof(proof(@1690 @15) @12))
+@3563 := proof(@534 @3562)
+@3567 := proof(proof(@504 proof(@999 @100)) proof(@467 @106))
+@3568 := proof(@3563 @3567)
+@3570 := proof(proof(@504 @3562) @3567)
+@3573 := proof(@2958 proof(proof(@3222 @3534) @1929))
+@3575 := proof(@504 proof(@3573 @3070))
+@3576 := proof(#34)
+@3577 := proof(@1767 @3576)
+@3578 := proof(#33)
+@3579 := proof(@3577 @3578)
+@3599 := proof(proof(@3568
+        proof(fun (x : @3570) =>
+          proof(@3331
+              proof(fun (q : @620) =>
+                proof(@518
+                    proof(fun (c' : @0) =>
+                      proof(@518
+                          proof(fun (z' : @0) =>
+                            proof(@3575
+                                proof(proof(@504
+                                      proof(proof(@1664 proof(proof(@3579 @7) @507)) @1692))
+                                    proof(proof(@504 proof(@3320 @484)) proof(@6 @477))))))))))))
+      @5)
+@3605 := proof(proof(@504 proof(proof(@998 @17) @103)) proof(proof(@4 @7) @100))
+@3607 := proof(proof(@998 @106) @479)
+@3608 := proof(@534 @3607)
+@3609 := proof(@16 @103)
+@3610 := proof(@3608 @3609)
+@3612 := proof(proof(@504 @3607) @3609)
+@3615 := proof(@2958 proof(proof(@3222 @3576) @2017))
+@3617 := proof(@504 proof(@3615 @3070))
+@3618 := proof(#36)
+@3619 := proof(@1767 @3618)
+@3620 := proof(#35)
+@3621 := proof(@3619 @3620)
+@3626 := proof(@504 proof(proof(@1664 proof(proof(@3621 @7) @551)) @1692))
+@3630 := proof(proof(@504 proof(@3320 @507)) proof(@6 @509))
+@3641 := proof(proof(@3610
+        proof(fun (x : @3612) =>
+          proof(@3331
+              proof(fun (q : @620) =>
+                proof(@518
+                    proof(fun (c' : @0) =>
+                      proof(@518 proof(fun (z' : @0) => proof(@3617 proof(@3626 @3630))))))))))
+      @5)
+@3642 := proof(@520 @479)
+@3643 := proof(Exists.intro.{1})
+@3670 := proof(proof(proof(@3643 @620)
+        proof(fun (q : @620) =>
+          proof(@518
+              proof(fun (c' : @0) =>
+                proof(@518
+                    proof(fun (z' : @0) =>
+                      proof(proof(@504 proof(proof(@2958 proof(proof(@3222 @3620) @2030)) @3070))
+                          proof(proof(@504
+                                proof(proof(@1664
+                                      proof(proof(proof(proof(@1767 proof(#37)) @3618) @7) @560))
+                                    @1692))
+                              proof(proof(@504 proof(@3320 @537)) proof(@6 @507))))))))))
+      @2030)
+@3671 := proof(@3643 @0)
+@3686 := proof(proof(@3671
+        proof(fun (c' : @0) =>
+          proof(@518
+              proof(fun (z' : @0) =>
+                proof(proof(@504 proof(@3615 proof(@3035 @2054)))
+                    proof(proof(@504 proof(proof(@1664 proof(proof(@3621 @2054) @551)) @1692))
+                        @3630))))))
+      @103)
+@3711 := proof(proof(@3671
+        proof(fun (z' : @0) =>
+          proof(proof(@504 proof(proof(@2958 proof(proof(@3222 @3578) @1989)) proof(@3035 @2050)))
+              proof(proof(@504
+                    proof(proof(@1664 proof(proof(proof(proof(@1767 @3620) @3576) @2050) @537))
+                        proof(proof(@1690 @479) @5)))
+                  proof(proof(@504 proof(proof(@998 @479) @509)) proof(@6 @484))))))
+      @106)
+@3714 := proof(@2597 proof(@3573 proof(@3035 @2030)))
+@3720 := proof(proof(@1664 proof(proof(@3579 @2030) @507)) proof(proof(@1690 @103) @106))
+@3721 := proof(@504 @3720)
+@3723 := proof(proof(@998 @103) @484)
+@3724 := proof(@504 @3723)
+@3726 := proof(proof(@4 @106) @477)
+@3727 := proof(@3724 @3726)
+@3784 := proof(proof(proof(@3166
+          proof(fun (hp : @3167) =>
+            proof(@3173
+                proof(@3204
+                    proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#367 : @3054) =>
+                      proof(@3219
+                          proof(@3242
+                              proof(fun (k : @0) =>
+                                proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#382 : @3228) =>
+                                  proof(@3262
+                                      proof(fun (hk : @3244) =>
+                                        proof(fun (hat : @3267) =>
+                                          proof(have hk' : @558 := @3280;
+                                            proof(proof(proof(proof(proof(@3298
+                                                        proof(fun (hk : @3300) =>
+                                                          proof(fun (hat : @3305) =>
+                                                            proof(fun (F' : @0) =>
+                                                              proof(fun (hle : @3309) =>
+                                                                proof(fun (c : @0) =>
+                                                                  proof(fun (z : @0) =>
+                                                                    proof(fun (h : @3312) =>
+                                                                      proof(@3511
+                                                                          proof(fun (c' : @0) =>
+                                                                            proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#433 : @3327) =>
+                                                                              proof(@3556
+                                                                                  proof(fun (z' : @0) =>
+                                                                                    proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#434 : @3525) =>
+                                                                                      proof(@3599
+                                                                                          proof(fun (hq : @3562) =>
+                                                                                            proof(fun (right._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#435 : @3605) =>
+                                                                                              proof(@3641
+                                                                                                  proof(fun (hlt : @3607) =>
+                                                                                                    proof(fun (hz : @3642) =>
+                                                                                                      proof(@3670
+                                                                                                          proof(@3686
+                                                                                                              proof(@3711
+                                                                                                                  proof(proof(proof(@3714
+                                                                                                                          proof(@3721
+                                                                                                                              @3727))
+                                                                                                                        @537)
+                                                                                                                      proof(proof(proof(proof(@2597
+                                                                                                                                @3720)
+                                                                                                                              @3727)
+                                                                                                                            @15)
+                                                                                                                          proof(proof(proof(proof(@2597
+                                                                                                                                    @3723)
+                                                                                                                                  @3726)
+                                                                                                                                @12)
+                                                                                                                              @5))))))))))))))))))))))))))
+                                                      @17)
+                                                    @5)
+                                                  @7)
+                                                @12))))))))))))))
+        @3083)
+      proof(proof(proof(@3125 @3083) @3138) @5))
+@3825 := proof(fun (req : @618) =>
+    proof(fun (g : @619) =>
+      proof(fun (U : @1304) =>
+        proof(fun (s : @620) =>
+          proof(fun (premise : @1305) =>
+            proof(fun (hD : @1312) =>
+              proof(proof(@2938
+                    proof(fun (schema : @1497) =>
+                      proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#330 : @2941) =>
+                        proof(proof(proof(@2944
+                                proof(@2947
+                                    proof(@2956
+                                        proof(proof(@3034
+                                              proof(fun (target : @620) =>
+                                                proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#346 : @3037) =>
+                                                  proof(proof(proof(proof(@3068
+                                                            proof(fun (hrw : @3069) =>
+                                                              proof(@3075
+                                                                  proof(proof(@3134
+                                                                        proof(fun (tp : @0) =>
+                                                                          proof(fun (h._@.LexLeanCertification.PremiseSound.#858857542._hygCtx._hyg.#362 : @3137) =>
+                                                                            proof(@3784
+                                                                                proof(@3130
+                                                                                    @3083)))))
+                                                                      proof(@3130 @3092)))))
+                                                          @2964)
+                                                        proof(proof(proof(@3025 @2964) @3038) @5))
+                                                      proof(@3030 @2964)))))
+                                            proof(@3030 @2985)))))
+                              @15)
+                            proof(proof(@2138 @2942) @5)))))
+                  proof(proof(@76 @1305) @12))))))))
+@3829 := @1517 @15 @7 @12 @5
+@3830 := @58 @3829
+@3833 := @3430 (@1503 @12) @3433
+@3838 := @1429 (@3365 @17 @15 @7 @12)
+@3839 := @1464 @15
+@3844 := @1429 (@3373 (@3839 @5) (@3839 @7))
+@3846 := @630 @17 @15
+@3859 := (request : @618) ->
+  (grammar : @619) ->
+  (selector : @620) ->
+  (schema : @1497) ->
+  @3830 (@3833 (fun (target : @620) => @3838 (@3844 (@3373 (@3846 @5) (@3846 @7)))))
+@3864 := proof(fun (request : @618) =>
+    proof(fun (grammar : @619) =>
+      proof(fun (selector : @620) => proof(fun (schema : @1497) => proof(@77 @3829)))))
+\end{coremodule}
+\end{lexlean}

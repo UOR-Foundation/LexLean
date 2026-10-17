@@ -887,7 +887,7 @@ fn malformed_non_overlap_tables_are_refused() {
         "spec = \"lexlean/oracle-overlap/1\"",
         "spec = \"lexlean/oracle-overlap/2\"",
     );
-    refused("version = 1", "version = 0");
+    refused("version = 3", "version = 0");
     refused("kind = \"not-runtime\"", "kind = \"vendored\"");
     // A row with a blank reason.
     let mut value: toml::Value = text.parse().expect("the table is TOML");

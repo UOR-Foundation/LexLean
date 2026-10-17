@@ -1,0 +1,97 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{folds.titles@1.0.0}
+\importmodule{Kernels}
+\importmodule{Folds}
+\title{Programs equal for all inputs}
+\begin{semanticmodule}
+definition{
+  name: statistics,
+  parameters: [xs : (List Nat)],
+  result: (Nat * Nat),
+  body: (prim list_fold (fun (p : (Nat * Nat)) (v : Nat) => (((first p) + v), ((second p) + 1))) (0, 0) xs : (Nat * Nat)),
+  executable: true
+}
+
+theorem{
+  name: statistics_one_pass,
+  parameters: [xs : (List Nat)],
+  statement: ((statistics xs) = ((Folds::total xs), (Folds::count xs))),
+  proof: law{
+    name: list_fold_pair,
+    arguments: [
+      (fun (acc : Nat) (v : Nat) => (acc + v)),
+      (fun (acc : Nat) (v : Nat) => (acc + 1)),
+      0,
+      0,
+      xs
+    ],
+    type_arguments: [Nat, Nat, Nat]
+  },
+  axioms: []
+}
+
+definition{
+  name: parity,
+  parameters: [xs : (List Nat)],
+  result: Nat,
+  body: (prim list_fold (fun (acc : Nat) (v : Nat) => (prim remainder (acc + v) 2 0 : Nat)) 0 xs : Nat),
+  executable: true
+}
+
+theorem{
+  name: parity_step,
+  parameters: [a : Nat, x : Nat],
+  statement: ((prim remainder (a + x) 2 0 : Nat) = (prim remainder ((prim remainder a 2 0 : Nat) + x) 2 0 : Nat)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: parity_fused,
+  parameters: [xs : (List Nat)],
+  statement: ((prim remainder (Folds::total xs) 2 0 : Nat) = (prim list_fold (fun (acc : Nat) (v : Nat) => (prim remainder (acc + v) 2 0 : Nat)) (prim remainder 0 2 0 : Nat) xs : Nat)),
+  proof: law{
+    name: list_fold_fusion,
+    arguments: [
+      (fun (acc : Nat) (v : Nat) => (acc + v)),
+      (fun (acc : Nat) (v : Nat) => (prim remainder (acc + v) 2 0 : Nat)),
+      (fun (n : Nat) => (prim remainder n 2 0 : Nat)),
+      0,
+      xs
+    ],
+    premises: [parity_step],
+    type_arguments: [Nat, Nat, Nat]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: parity_of_total,
+  parameters: [xs : (List Nat)],
+  statement: ((prim remainder (Folds::total xs) 2 0 : Nat) = (parity xs)),
+  proof: apply{arguments: [xs], theorem: parity_fused},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: count_append,
+  parameters: [xs : (List Nat), ys : (List Nat)],
+  statement: ((Folds::count (prim append xs ys : (List Nat))) = (prim list_fold (fun (acc : Nat) (v : Nat) => (acc + 1)) (Folds::count xs) ys : Nat)),
+  proof: law{
+    name: list_fold_append,
+    arguments: [(fun (acc : Nat) (v : Nat) => (acc + 1)), 0, xs, ys],
+    type_arguments: [Nat, Nat]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: requantized_total,
+  parameters: [xs : (List Nat), ys : (List Nat)],
+  statement: (((Folds::total xs) <= (Folds::total (prim append xs ys : (List Nat)))) /\ ((Kernels::requantize (0 : Int)) <= (255 : Int))),
+  proof: linear_arithmetic{definitions: [Folds::total, Kernels::requantize]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

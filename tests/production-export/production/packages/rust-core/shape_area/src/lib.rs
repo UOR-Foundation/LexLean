@@ -83,7 +83,7 @@ pub fn f0(v0: u64, v1: u64) -> R<u64> {
 }
 
 pub fn f1(v0: Adt0) -> R<u64> {
-    let m1 = v0.clone();
+    let m1 = v0;
     match m1 {
         Adt0::C0(v1) => {
             let a4 = {

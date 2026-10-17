@@ -39,16 +39,7 @@ pub fn compiler_semantic_id() -> String {
 /// The declarations the semantic module of a committed `.lex.tex` source
 /// states.
 pub(crate) fn declarations(source: &str) -> Result<Vec<serde_json::Value>, String> {
-    let start = source
-        .find("\\semanticdata{")
-        .ok_or("the module states no semantic data")?
-        + "\\semanticdata{".len();
-    let end = source
-        .rfind("\\end{semanticmodule}")
-        .and_then(|end| source[..end].rfind('}'))
-        .ok_or("the semantic data is not closed")?;
-    let data: serde_json::Value = serde_json::from_str(&source[start..end])
-        .map_err(|error| format!("the semantic data is not JSON: {error}"))?;
+    let data = crate::support::try_module_json(source)?;
     data["declarations"]
         .as_array()
         .cloned()

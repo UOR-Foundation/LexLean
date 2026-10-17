@@ -2,13 +2,17 @@
 //!
 //! Certificate B is a derivation of the library's correspondence `Corr`,
 //! which the aligner writes rule by rule. The rule set is closed in three
-//! places that nothing else ties together, so this audit compares their
-//! texts: the aligner's declared rules are exactly `Corr`'s constructors,
-//! each of them is emitted somewhere in the aligner and is a case of the
-//! soundness theorem's induction, and the aligner's block judgment names
-//! every calculus construct with no wildcard arm. A rule the library does
-//! not prove, a constructor the aligner never writes, or a construct the
-//! aligner meets only by default would each break that closure.
+//! places that nothing else ties together, so this audit compares them: the
+//! aligner's declared rules are exactly `Corr`'s constructors, each of them
+//! is emitted somewhere in the aligner and is a case of the soundness
+//! theorem's induction, and the aligner's block judgment names every
+//! calculus construct with no wildcard arm. A rule the library does not
+//! prove, a constructor the aligner never writes, or a construct the aligner
+//! meets only by default would each break that closure.
+//!
+//! The library is native kernel data, so its side of the comparison is not
+//! text: the constructors and the soundness cases arrive as lists, read from
+//! the native modules by the compiler (`preserve::correspondence_rules`).
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
@@ -16,77 +20,16 @@ use std::fmt::Write as _;
 /// The aligner.
 pub const ALIGNER_SOURCE: &str = "crates/lexlean/src/production/rust_cert.rs";
 
-/// The library module declaring the correspondence.
+/// How the audit's reports name the library side of the comparison.
 pub const CORRESPONDENCE_SOURCE: &str =
-    "language/preservation-1.2/library/LexLeanPreservation/RustCorr.lean";
+    "language/preservation-1.2/library (native module LexLeanPreservation.RustCorr)";
 
-/// The library module proving it sound.
+/// How the audit's reports name the soundness theorem.
 pub const SOUNDNESS_SOURCE: &str =
-    "language/preservation-1.2/library/LexLeanPreservation/RustSound.lean";
+    "language/preservation-1.2/library (native module LexLeanPreservation.RustSound)";
 
 /// The calculus, whose expression constructs the aligner must name.
 pub const CALCULUS_SOURCE: &str = "crates/lexlean/src/calculus/mod.rs";
-
-/// The constructors of `inductive Corr`, in declaration order.
-///
-/// # Errors
-///
-/// Returns a reason when the inductive is absent or declares no
-/// constructor.
-pub fn constructors(lean: &str) -> Result<Vec<String>, String> {
-    let mut lines = lean
-        .lines()
-        .skip_while(|line| !line.starts_with("inductive Corr "));
-    if lines.next().is_none() {
-        return Err(format!(
-            "{CORRESPONDENCE_SOURCE}: `inductive Corr` is absent"
-        ));
-    }
-    let mut out = Vec::new();
-    for line in lines {
-        if let Some(rest) = line.strip_prefix("  | ") {
-            out.push(
-                rest.chars()
-                    .take_while(|character| character.is_ascii_alphanumeric())
-                    .collect(),
-            );
-        } else if !line.starts_with("    ") && !line.trim().is_empty() {
-            break;
-        }
-    }
-    if out.is_empty() {
-        return Err(format!(
-            "{CORRESPONDENCE_SOURCE}: `Corr` declares no constructor"
-        ));
-    }
-    Ok(out)
-}
-
-/// The cases of the soundness theorem's induction on a derivation.
-///
-/// # Errors
-///
-/// Returns a reason when `theorem sound` is absent.
-pub fn sound_cases(lean: &str) -> Result<Vec<String>, String> {
-    let start = lean
-        .find("theorem sound ")
-        .ok_or_else(|| format!("{SOUNDNESS_SOURCE}: `theorem sound` is absent"))?;
-    let body = &lean[start..];
-    let body = &body[..body.find("\ntheorem ").unwrap_or(body.len())];
-    let induction = body
-        .find("induction h with")
-        .ok_or_else(|| format!("{SOUNDNESS_SOURCE}: `sound` has no induction on the derivation"))?;
-    Ok(body[induction..]
-        .lines()
-        .skip(1)
-        .filter_map(|line| line.trim_start().strip_prefix("| "))
-        .map(|rest| {
-            rest.chars()
-                .take_while(|character| character.is_ascii_alphanumeric())
-                .collect()
-        })
-        .collect())
-}
 
 /// The rules the aligner declares in its `RULES` constant.
 ///
@@ -196,22 +139,25 @@ fn catch_all(line: &str) -> bool {
                 .all(|character| character == '_' || character.is_ascii_alphanumeric()))
 }
 
-/// Audit the rule set across the aligner, the correspondence, and its
-/// soundness theorem.
+/// Audit the rule set across the aligner, the correspondence's constructors,
+/// and the cases of its soundness theorem.
 ///
 /// # Errors
 ///
 /// Returns every violation, one per line.
 pub fn audit(
     rust: &str,
-    correspondence: &str,
-    soundness: &str,
+    constructors: &[String],
+    cases: &[String],
     calculus: &str,
 ) -> Result<(), String> {
     let mut report = String::new();
-    let constructors = constructors(correspondence)?;
+    if constructors.is_empty() {
+        return Err(format!(
+            "{CORRESPONDENCE_SOURCE}: `Corr` declares no constructor"
+        ));
+    }
     let declared = declared_rules(rust)?;
-    let cases = sound_cases(soundness)?;
     let constructor_set: BTreeSet<&String> = constructors.iter().collect();
     let declared_set: BTreeSet<&String> = declared.iter().collect();
     let case_set: BTreeSet<&String> = cases.iter().collect();
@@ -290,35 +236,42 @@ pub fn audit(
 mod tests {
     use super::*;
 
-    const CORR: &str = "inductive Corr (p : P) : J → Prop where\n  | var {x} : A →\n      B\n  | lNil : C\n\nend X\n";
-    const SOUND: &str = "theorem sound :\n  induction h with\n        | var hx => x\n        | lNil => y\n\ntheorem other : 1 = 1 := rfl\n";
     const CALC: &str = "pub enum Expr {\n    Var {\n        name: u64,\n    },\n    Nil,\n}\n";
     const RUST: &str = "pub const RULES: [&str; 2] = [\"var\", \"lNil\"];\nimpl A {\n    fn b(\n        x: u8,\n    ) {\n        match term {\n            Term::Var { .. } => rule(\"var\"),\n            Term::Nil => rule(\"lNil\"),\n        }\n    }\n    fn c() {}\n}\n";
 
+    fn names(list: &[&str]) -> Vec<String> {
+        list.iter().map(|name| (*name).to_owned()).collect()
+    }
+
     #[test]
     fn a_closed_rule_set_passes() {
-        audit(RUST, CORR, SOUND, CALC).unwrap();
-        assert_eq!(constructors(CORR).unwrap(), ["var", "lNil"]);
-        assert_eq!(sound_cases(SOUND).unwrap(), ["var", "lNil"]);
+        audit(
+            RUST,
+            &names(&["var", "lNil"]),
+            &names(&["var", "lNil"]),
+            CALC,
+        )
+        .unwrap();
     }
 
     #[test]
     fn every_break_of_the_closure_fails() {
-        let plant = |rust: &str, corr: &str, sound: &str, calc: &str, expected: &str| {
+        let both = names(&["var", "lNil"]);
+        let plant = |rust: &str, corr: &[String], sound: &[String], calc: &str, expected: &str| {
             let report = audit(rust, corr, sound, calc).unwrap_err();
             assert!(report.contains(expected), "{expected}: {report}");
         };
         plant(
             &RUST.replace("\"var\", ", ""),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "`var` is not among the aligner's rules",
         );
         plant(
             RUST,
-            &CORR.replace("  | lNil : C\n", "  | lNil : C\n  | extra : D\n"),
-            SOUND,
+            &names(&["var", "lNil", "extra"]),
+            &both,
             CALC,
             "`extra` is not among the aligner's rules",
         );
@@ -327,32 +280,36 @@ mod tests {
                 "[&str; 2] = [\"var\", \"lNil\"]",
                 "[&str; 3] = [\"var\", \"lNil\", \"var\"]",
             ),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "declared twice",
         );
         plant(
             RUST,
-            CORR,
-            &SOUND.replace("        | lNil => y\n", ""),
+            &names(&["var", "var", "lNil"]),
+            &names(&["var", "lNil"]),
+            CALC,
+            "declared twice",
+        );
+        plant(
+            RUST,
+            &both,
+            &names(&["var"]),
             CALC,
             "`lNil` is not a case of the soundness",
         );
         plant(
             RUST,
-            CORR,
-            &SOUND.replace(
-                "        | lNil => y\n",
-                "        | lNil => y\n        | stray => z\n",
-            ),
+            &both,
+            &names(&["var", "lNil", "stray"]),
             CALC,
             "`stray` is no rule",
         );
         plant(
             &RUST.replace("rule(\"lNil\")", "rule(x)"),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "`lNil` is never written",
         );
@@ -361,8 +318,8 @@ mod tests {
                 "            Term::Nil => rule(\"lNil\"),\n",
                 "            _ => rule(\"lNil\"),\n",
             ),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "wildcard arm",
         );
@@ -371,24 +328,25 @@ mod tests {
                 "            Term::Nil => rule(\"lNil\"),\n",
                 "            Term::Nil => rule(\"lNil\"),\n            other => rule(\"lNil\"),\n",
             ),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "wildcard arm",
         );
         plant(
             RUST,
-            CORR,
-            SOUND,
+            &both,
+            &both,
             &CALC.replace("    Nil,\n", "    Nil,\n    Cons,\n"),
             "`Term::Cons`",
         );
         plant(
             &RUST.replace("pub const RULES", "const RULES"),
-            CORR,
-            SOUND,
+            &both,
+            &both,
             CALC,
             "`pub const RULES` is absent",
         );
+        plant(RUST, &[], &both, CALC, "declares no constructor");
     }
 }

@@ -2,6 +2,44 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"second"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Pairs","name":"first","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"first"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Pairs","name":"second","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"fourth"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Pairs","name":"third","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"third"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Pairs","name":"fourth","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: first,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number
+    | Nat.zero => 0
+    | Nat.succ previous => call{arguments: [previous], function: second}),
+  mutual: Pairs,
+  recursive_argument: number
+}
+
+definition{
+  name: second,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number
+    | Nat.zero => 0
+    | Nat.succ previous => call{arguments: [previous], function: first}),
+  mutual: Pairs,
+  recursive_argument: number
+}
+
+definition{
+  name: third,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number | Nat.zero => 0 | Nat.succ previous => (fourth previous)),
+  mutual: Pairs,
+  recursive_argument: number
+}
+
+definition{
+  name: fourth,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number | Nat.zero => 0 | Nat.succ previous => (third previous)),
+  mutual: Pairs,
+  recursive_argument: number
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -295,6 +295,66 @@ fn rewrite_result(bundle: &Utf8Path, edit: impl FnOnce(&mut ProductionResult)) {
     std::fs::write(bundle.join("result.json").as_std_path(), result.to_json()).expect("write");
 }
 
+/// Change an attestation fact with both content identities and every
+/// enclosing file binding refreshed, so only consistency checks reject it.
+fn rewrite_attestation(bundle: &Utf8Path, path: &[&str], value: Option<serde_json::Value>) {
+    let result = result_of(bundle);
+    let file = bundle.join(&result.verification.attestation.path);
+    let mut body: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(file.as_std_path()).expect("attestation"))
+            .expect("attestation JSON");
+    body.as_object_mut()
+        .expect("object")
+        .remove("attestation_id");
+    let (field, parents) = path.split_last().expect("a field path");
+    let mut object = body.as_object_mut().expect("object");
+    for parent in parents {
+        object = object
+            .get_mut(*parent)
+            .and_then(serde_json::Value::as_object_mut)
+            .expect("attestation parent object");
+    }
+    if let Some(value) = value {
+        object.insert((*field).to_owned(), value);
+    } else {
+        object.remove(*field);
+    }
+    let canonical_body = lexlean::artifact::canonical_json::Json::parse(&harness::canonical(&body))
+        .expect("canonical body");
+    let id = lexlean::artifact::content_id::attestation_id(&canonical_body.to_canonical_string());
+    body["attestation_id"] = serde_json::json!(id.to_hex());
+    let bytes = harness::canonical(&body);
+    std::fs::write(file.as_std_path(), &bytes).expect("write attestation");
+    rewrite_result(bundle, |result| {
+        result.verification.attestation_id = id;
+        result.verification.attestation.byte_length = u64::try_from(bytes.len()).expect("length");
+        result.verification.attestation.sha256 = sha(&bytes);
+    });
+}
+
+/// Refresh the input's result and attestation bindings after changing one
+/// scalar pin, so its disagreement with the producing toolchain is exposed.
+fn rewrite_compiler_input_identity(bundle: &Utf8Path, field: &str, value: &str) {
+    let result = result_of(bundle);
+    let file = bundle.join(&result.verification.compiler_input.path);
+    let mut input: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(file.as_std_path()).expect("compiler input"))
+            .expect("compiler input JSON");
+    input["lean"][field] = serde_json::json!(value);
+    let bytes = harness::canonical(&input);
+    std::fs::write(file.as_std_path(), &bytes).expect("write compiler input");
+    rewrite_attestation(
+        bundle,
+        &["compiler_input"],
+        Some(serde_json::json!({"byte_length": bytes.len(), "sha256": sha(&bytes).to_hex()})),
+    );
+    rewrite_result(bundle, |result| {
+        result.verification.compiler_input.byte_length =
+            u64::try_from(bytes.len()).expect("length");
+        result.verification.compiler_input.sha256 = sha(&bytes);
+    });
+}
+
 fn replay_refused(bundle: &Utf8Path, code: &str, what: &str) {
     match production::verify_artifact(bundle) {
         Ok(report) => panic!("{what}: the tampered bundle replayed: {report:?}"),
@@ -407,6 +467,83 @@ pub fn schema_versions_hold(
             return Err(format!(
                 "{name}: the schema changed under `{current}` (recorded {}, now {digest}); a changed schema needs a new spec version",
                 row.2
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The effects each `(root, target)` output must state: those the committed
+/// eligibility of `example` requires of the root on the target, ascending.
+fn committed_effects(example: &str) -> BTreeMap<(String, String), Vec<String>> {
+    let directory = support::repo_root()
+        .join("examples")
+        .join(example)
+        .join("expected/build/production");
+    let mut out = BTreeMap::new();
+    for entry in walkdir::WalkDir::new(directory.as_std_path())
+        .into_iter()
+        .flatten()
+        .filter(|entry| {
+            entry
+                .path()
+                .to_string_lossy()
+                .ends_with(".eligibility.json")
+        })
+    {
+        let report: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(entry.path()).expect("read")).expect("JSON");
+        for root in report["roots"].as_array().expect("roots") {
+            for target in root["targets"].as_array().expect("targets") {
+                let mut effects: Vec<String> = target["effects"]
+                    .as_array()
+                    .expect("effects")
+                    .iter()
+                    .map(|row| row["effect"].as_str().expect("effect").to_owned())
+                    .collect();
+                effects.sort();
+                effects.dedup();
+                out.insert(
+                    (
+                        root["root"].as_str().expect("root").to_owned(),
+                        target["target"].as_str().expect("target").to_owned(),
+                    ),
+                    effects,
+                );
+            }
+        }
+    }
+    out
+}
+
+/// The effects each `(root, target)` output of `result` states.
+fn stated_effects(result: &ProductionResult) -> BTreeMap<(String, String), Vec<String>> {
+    result
+        .roots
+        .iter()
+        .flat_map(|root| {
+            root.outputs.iter().map(|output| {
+                (
+                    (root.root.clone(), output.target.id.clone()),
+                    output.effects.clone(),
+                )
+            })
+        })
+        .collect()
+}
+
+/// Every stated output's effects equal its root's eligibility on its target.
+fn effects_agree(
+    stated: &BTreeMap<(String, String), Vec<String>>,
+    expected: &BTreeMap<(String, String), Vec<String>>,
+) -> Result<(), String> {
+    for ((root, target), effects) in stated {
+        let required = expected
+            .get(&(root.clone(), target.clone()))
+            .ok_or_else(|| format!("{root} on {target}: no committed eligibility"))?;
+        if effects != required {
+            return Err(format!(
+                "{root} on {target}: the result states {effects:?}, eligibility requires {required:?} (recursion asks the host for a stack)"
             ));
         }
     }
@@ -997,6 +1134,10 @@ pub fn run(id: &str) {
                     Box::new(|r| r.compiler.semantics = sha(b"x")),
                 ),
                 (
+                    "compiler version",
+                    Box::new(|r| r.compiler.version.push('x')),
+                ),
+                (
                     "target digest",
                     Box::new(|r| r.roots[0].outputs[0].target.digest = sha(b"x")),
                 ),
@@ -1063,6 +1204,92 @@ pub fn run(id: &str) {
                 rewrite_result(&bundle, edit);
                 replay_refused(&bundle, "LLV7102", what);
             }
+            let attestation_tampers: Vec<(&[&str], Option<serde_json::Value>)> = vec![
+                (&["lexlean", "compiler_semantics"], None),
+                (
+                    &["lexlean", "compiler_semantics"],
+                    Some(serde_json::json!("not a digest")),
+                ),
+                (
+                    &["lexlean", "compiler_semantics"],
+                    Some(serde_json::json!(
+                        sha(b"foreign compiler semantics").to_hex()
+                    )),
+                ),
+                (&["lexlean", "version"], Some(serde_json::json!("0.0.1"))),
+                (&["toolchain"], None),
+                (&["toolchain"], Some(serde_json::json!(7))),
+                (&["toolchain", "lean"], None),
+                (&["toolchain", "lean"], Some(serde_json::json!(7))),
+                (&["toolchain", "lean", "version_output"], None),
+                (
+                    &["toolchain", "lean", "version_output"],
+                    Some(serde_json::json!("unrecognized banner 4.32.1")),
+                ),
+                (
+                    &["toolchain", "lean", "version_output"],
+                    Some(serde_json::json!("Lean (version 4.32.10, release)")),
+                ),
+                (
+                    &["toolchain", "lean", "version_output"],
+                    Some(serde_json::json!(
+                        "Lean (version 4.31.0, built with 4.32.1)"
+                    )),
+                ),
+                (&["toolchain", "lake"], None),
+                (&["toolchain", "lake"], Some(serde_json::json!(7))),
+                (&["toolchain", "lake", "version_output"], None),
+                (
+                    &["toolchain", "lake", "version_output"],
+                    Some(serde_json::json!("unrecognized banner 4.32.1")),
+                ),
+                (
+                    &["toolchain", "lake", "version_output"],
+                    Some(serde_json::json!(
+                        "Lake version 5.0.0 (Lean version 4.32.10)"
+                    )),
+                ),
+                (
+                    &["toolchain", "lake", "version_output"],
+                    Some(serde_json::json!(
+                        "Lake version 4.32.1 (Lean version 4.31.0)"
+                    )),
+                ),
+                (&["spec"], None),
+                (&["spec"], Some(serde_json::json!("lexlean/attestation/1"))),
+                (&["status"], None),
+                (&["status"], Some(serde_json::json!("unverified"))),
+            ];
+            for (path, value) in attestation_tampers {
+                let what = format!("hash-correct attestation {} = {value:?}", path.join("."));
+                let (_dir, bundle) = bundle_copy(exported);
+                rewrite_attestation(&bundle, path, value);
+                replay_refused(&bundle, "LLV7102", &what);
+            }
+            for (field, value) in [
+                ("version", "4.31.0"),
+                ("githash", "0000000000000000000000000000000000000000"),
+            ] {
+                let (_dir, bundle) = bundle_copy(exported);
+                rewrite_compiler_input_identity(&bundle, field, value);
+                replay_refused(
+                    &bundle,
+                    "LLV7102",
+                    &format!("hash-correct compiler input Lean {field}"),
+                );
+            }
+            // Historical crate versions remain replayable when the result
+            // and its producing attestation state the same version.
+            let (_dir, bundle) = bundle_copy(exported);
+            rewrite_attestation(
+                &bundle,
+                &["lexlean", "version"],
+                Some(serde_json::json!("0.0.1")),
+            );
+            rewrite_result(&bundle, |result| {
+                result.compiler.version = "0.0.1".to_owned()
+            });
+            production::verify_artifact(&bundle).expect("a self-consistent historical version");
             // A file added, a file removed.
             let (_dir, bundle) = bundle_copy(exported);
             std::fs::write(bundle.join("evidence/extra.txt").as_std_path(), b"x").expect("write");
@@ -1070,6 +1297,43 @@ pub fn run(id: &str) {
             let (_dir, bundle) = bundle_copy(exported);
             std::fs::remove_file(bundle.join(&output.krate.path).as_std_path()).expect("remove");
             replay_refused(&bundle, "LLV7102", "a removed file");
+            if std::path::Path::new("evidence\\attestation.json")
+                .components()
+                .count()
+                == 1
+            {
+                let (_dir, bundle) = bundle_copy(exported);
+                std::fs::copy(
+                    bundle.join("evidence/attestation.json"),
+                    bundle.join("evidence\\attestation.json"),
+                )
+                .expect("copy alias");
+                replay_refused(&bundle, "LLV7102", "an added literal-backslash alias");
+                let (_dir, bundle) = bundle_copy(exported);
+                std::fs::rename(
+                    bundle.join("evidence/attestation.json"),
+                    bundle.join("evidence\\attestation.json"),
+                )
+                .expect("move to alias");
+                replay_refused(
+                    &bundle,
+                    "LLV7102",
+                    "a file moved to a literal-backslash alias",
+                );
+            } else {
+                support::unix_only("PX-07", "literal-backslash filenames");
+            }
+            if support::non_utf8_names_backed("PX-07") {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::ffi::OsStrExt;
+
+                    let (_dir, bundle) = bundle_copy(exported);
+                    let invalid = std::ffi::OsStr::from_bytes(b"invalid\xff.json");
+                    std::fs::write(bundle.as_std_path().join(invalid), b"invalid").expect("write");
+                    replay_refused(&bundle, "LLV7102", "a non-UTF-8 filename");
+                }
+            }
             // A symlink.
             let (_dir, bundle) = bundle_copy(exported);
             let link = bundle.join("evidence/linked.json");
@@ -1393,6 +1657,59 @@ pub fn run(id: &str) {
                 assert!(
                     !crate::schema::validate(&api_schema(name).1, &unknown).is_empty(),
                     "{name} refuses an unknown field"
+                );
+            }
+        }
+        // §24.7, §17.13: each output states the effects its realization can
+        // exhibit, so a caller sees what `recursion` asks of its host without
+        // reading the package.
+        "PX-13" => {
+            // Armed by the corpus: the committed eligibility of the coverage
+            // example has outputs that recurse and outputs that do not.
+            let expected = committed_effects("production-coverage");
+            let recurses = |effects: &Vec<String>| effects.iter().any(|e| e == "recursion");
+            assert!(
+                expected.values().any(recurses) && !expected.values().all(recurses),
+                "the coverage example arms the case with recursive and non-recursive outputs: {expected:?}"
+            );
+            // The comparison is falsifiable on every host: `recursion` dropped
+            // from an output, or stated for one that cannot recurse, disagrees.
+            effects_agree(&expected, &expected).expect("eligibility agrees with itself");
+            let (key, _) = expected
+                .iter()
+                .find(|(_, e)| recurses(e))
+                .expect("recursive");
+            let mut dropped = expected.clone();
+            dropped
+                .get_mut(key)
+                .expect("the output")
+                .retain(|e| e != "recursion");
+            let error = effects_agree(&dropped, &expected).expect_err("dropped");
+            assert!(error.contains("recursion"), "{error}");
+            let (key, _) = expected
+                .iter()
+                .find(|(_, e)| !recurses(e))
+                .expect("non-recursive");
+            let mut added = expected.clone();
+            let effects = added.get_mut(key).expect("the output");
+            effects.push("recursion".to_owned());
+            effects.sort();
+            let error = effects_agree(&added, &expected).expect_err("added");
+            assert!(error.contains("recursion"), "{error}");
+            // The export states exactly what eligibility requires, and the
+            // report counts the outputs that recurse.
+            if support::lean_backed("PX-13") {
+                let result = &harness::exported("production-coverage").output.result;
+                let stated = stated_effects(result);
+                assert_eq!(
+                    stated.len(),
+                    expected.len(),
+                    "every eligible output of the example is exported"
+                );
+                effects_agree(&stated, &expected).unwrap_or_else(|reason| panic!("{reason}"));
+                assert_eq!(
+                    result.recursive_outputs(),
+                    stated.values().filter(|e| recurses(e)).count()
                 );
             }
         }

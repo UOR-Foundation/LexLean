@@ -15,7 +15,7 @@ use serde_json::{json, Value as Json};
 
 use crate::support::{self, VerifiedFixture, P};
 
-const EXAMPLE: &str = "models";
+pub(super) const EXAMPLE: &str = "models";
 
 /// The four refusal constructors, as elaborated code spells them.
 const VIOLATIONS: [&str; 4] = [
@@ -55,34 +55,15 @@ fn module_path(module: &str) -> String {
     format!("src/{module}.lex.tex")
 }
 
-fn data_bounds(text: &str) -> (usize, usize) {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    (start, end)
-}
-
 /// The semantic data of one module of a project copy.
-fn module_data(project: &P, module: &str) -> Json {
-    let text = project.read(&module_path(module));
-    let (start, end) = data_bounds(&text);
-    serde_json::from_str(&text[start..end]).expect("module data")
+pub(super) fn module_data(project: &P, module: &str) -> Json {
+    crate::support::module_json(&project.read(&module_path(module)))
 }
 
-fn write_module_data(project: &P, module: &str, data: &Json) {
+pub(super) fn write_module_data(project: &P, module: &str, data: &Json) {
     let path = module_path(module);
     let text = project.read(&path);
-    let (start, end) = data_bounds(&text);
-    project.write(
-        &path,
-        &format!(
-            "{}{}{}",
-            &text[..start],
-            serde_json::to_string(data).expect("serializes"),
-            &text[end..]
-        ),
-    );
+    project.write(&path, &crate::support::with_module_json(&text, data));
 }
 
 fn declaration_mut<'a>(data: &'a mut Json, name: &str) -> &'a mut Json {
@@ -95,14 +76,19 @@ fn declaration_mut<'a>(data: &'a mut Json, name: &str) -> &'a mut Json {
 }
 
 /// Edit one declaration of one module in place.
-fn edit_declaration(project: &P, module: &str, name: &str, edit: impl FnOnce(&mut Json)) {
+pub(super) fn edit_declaration(
+    project: &P,
+    module: &str,
+    name: &str,
+    edit: impl FnOnce(&mut Json),
+) {
     let mut data = module_data(project, module);
     edit(declaration_mut(&mut data, name));
     write_module_data(project, module, &data);
 }
 
 /// A copy of the committed example with one declaration edited.
-fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
+pub(super) fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
     let project = P::copy_example(EXAMPLE);
     edit_declaration(&project, module, name, edit);
     project
@@ -110,7 +96,7 @@ fn mutated(module: &str, name: &str, edit: impl FnOnce(&mut Json)) -> P {
 
 /// The mutation is refused with `code`, naming `message`, before either
 /// backend runs.
-fn refused(project: &P, code: &str, message: &str) {
+pub(super) fn refused(project: &P, code: &str, message: &str) {
     let error = project.check_fails_with(code);
     assert!(
         error.to_string().contains(message),
@@ -175,7 +161,7 @@ fn digest(bytes: &[u8]) -> String {
 /// Replace an artifact's bytes and restate its digest and length wherever
 /// they are pinned (the configuration and the declaration), then relock, so
 /// that only the bytes differ.
-fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[u8]) {
+pub(super) fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[u8]) {
     let path = project.root.join(file);
     let old = digest(&std::fs::read(path.as_std_path()).expect("artifact bytes"));
     let new = digest(bytes);
@@ -195,7 +181,7 @@ fn replace_artifact(project: &P, file: &str, module: &str, name: &str, bytes: &[
 // ---------------------------------------------------------------------------
 // Snapshots and the shared verified run.
 
-fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
+pub(super) fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
     project
         .engine()
         .snapshot(CheckRequest {
@@ -205,7 +191,7 @@ fn snapshot(project: &P) -> lexlean::SemanticSnapshot {
 }
 
 /// The elaboration of `module.name` in a snapshot.
-fn elaboration<'a>(
+pub(super) fn elaboration<'a>(
     snapshot: &'a lexlean::SemanticSnapshot,
     module: &str,
     name: &str,
@@ -223,7 +209,7 @@ fn elaboration<'a>(
         .unwrap_or_else(|| panic!("`{module}.{name}` carries its elaboration"))
 }
 
-fn names(values: &[Json]) -> Vec<String> {
+pub(super) fn names(values: &[Json]) -> Vec<String> {
     values
         .iter()
         .map(|value| value["name"].as_str().expect("name").to_owned())
@@ -1082,10 +1068,25 @@ fn md_03() {
     assert!(lean.contains(
         "public theorem DigitContract.postcondition_complete : LexLeanModels.Complete2 ((Models.Recognizer.recognizesCheck)) ((Models.Recognizer.Recognizes)) := Models.Recognizer.recognizes_check_complete"
     ));
-    for helper in ["def Sound1", "def Sound2", "def Complete1", "def Complete2"] {
+    // The fixed model semantics is the model runtime module (§17.12,
+    // *Runtime modules*), which the module imports.
+    assert!(
+        lean.contains(&format!(
+            "public import {}\n",
+            lexlean::backend::runtime::MODELS
+        )),
+        "a module with a model declaration imports the model runtime"
+    );
+    let runtime = lexlean::backend::runtime::modules()
+        .expect("the shipped runtime")
+        .iter()
+        .find(|module| module.name == lexlean::backend::runtime::MODELS)
+        .expect("the model runtime");
+    for helper in ["Sound1", "Sound2", "Complete1", "Complete2"] {
+        let name = format!("LexLeanModels.{helper}");
         assert!(
-            lean.contains(helper),
-            "the fixed model runtime defines `{helper}`"
+            runtime.declarations.iter().any(|(row, _)| *row == name),
+            "the fixed model runtime defines `{name}`"
         );
     }
     let snapshot = snapshot(&project);
@@ -2764,24 +2765,11 @@ fn md_10() {
     let original = id(&base);
     // A reformatted module is the same semantic module.
     let reformatted = P::copy_example(EXAMPLE);
-    let data = module_data(&reformatted, "Recognizer");
     let path = module_path("Recognizer");
     let text = reformatted.read(&path);
-    let (start, end) = data_bounds(&text);
-    let pretty = serde_json::to_string_pretty(&data).expect("serializes");
-    reformatted.write(
-        &path,
-        &format!("{}{}{}", &text[..start], pretty, &text[end..]),
-    );
-    if reformatted
-        .engine()
-        .check(CheckRequest {
-            selection: Selection::Entrypoints,
-        })
-        .is_ok()
-    {
-        assert_eq!(id(&reformatted), original, "layout is not semantics");
-    }
+    reformatted.write(&path, &support::squeezed_notation(&text));
+    reformatted.check_ok();
+    assert_eq!(id(&reformatted), original, "layout is not semantics");
     let mut ids = vec![original];
     // An artifact byte, with its declared digest.
     let bytes = P::copy_example(EXAMPLE);
@@ -3098,15 +3086,23 @@ fn md_12() {
     project.fmt_check_ok();
     // The inventory: every claim and link form of the fixed model semantics
     // is produced by a declaration of the committed example. The names are
-    // read from the emitted runtime itself, so a new form is covered or this
+    // read from the model runtime module itself (§17.12, *Runtime modules*),
+    // which the example's modules import, so a new form is covered or this
     // case fails.
     let build = support::rendered(&project);
     let lean = support::lean_text(&build, "Ledger");
-    let runtime = lean
-        .split("namespace LexLeanModels\n")
-        .nth(1)
-        .and_then(|rest| rest.split("end LexLeanModels").next())
-        .expect("the emitted model runtime");
+    assert!(
+        lean.contains(&format!(
+            "public import {}\n",
+            lexlean::backend::runtime::MODELS
+        )),
+        "a module with a model declaration imports the model runtime"
+    );
+    let runtime = lexlean::backend::runtime::modules()
+        .expect("the shipped runtime")
+        .iter()
+        .find(|module| module.name == lexlean::backend::runtime::MODELS)
+        .expect("the model runtime");
     let decoders = BTreeSet::from([
         "encodeInt",
         "inRange",
@@ -3115,10 +3111,10 @@ fn md_12() {
         "utf8Char",
     ]);
     let forms: BTreeSet<String> = runtime
-        .lines()
-        .filter_map(|line| line.split("public def ").nth(1))
-        .filter_map(|rest| rest.split_whitespace().next())
-        .filter(|name| !decoders.contains(name))
+        .declarations
+        .iter()
+        .filter_map(|(name, _)| name.strip_prefix("LexLeanModels."))
+        .filter(|name| !name.contains('.') && !decoders.contains(name))
         .map(str::to_owned)
         .collect();
     assert!(forms.len() >= 20, "{forms:?}");

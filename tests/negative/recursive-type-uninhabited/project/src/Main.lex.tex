@@ -2,6 +2,11 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Loop"}}],"name":"step"}],"kind":"inductive","name":"Loop","parameters":[],"type_parameters":[]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Loop,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: step, fields: [Loop]}]
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -2,6 +2,18 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"arguments":[],"kind":"named","member":{"name":"Later"}}],"name":"hold"}],"kind":"inductive","name":"Holder","parameters":[],"type_parameters":[]},{"constructors":[{"fields":[],"name":"only"}],"kind":"inductive","name":"Later","parameters":[],"type_parameters":[]}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Holder,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: hold, fields: [Later]}]
+}
+
+inductive{
+  name: Later,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: only, fields: []}]
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -2,6 +2,36 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"kind":"theorem","name":"ping_decreases","parameters":[{"name":"number","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"right":{"kind":"bool","value":false}}}},{"kind":"theorem","name":"pong_decreases","parameters":[{"name":"number","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"right":{"kind":"bool","value":false}}}},{"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"function":{"name":"pong"},"kind":"call"},"kind":"if","then_value":{"kind":"nat","value":"0"}},"kind":"definition","mutual":"Bounce","name":"ping","parameters":[{"name":"number","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"ping_decreases"}],"measure":{"arguments":[{"kind":"var","name":"number"}],"function":{"name":"pong"},"kind":"call"}}},{"body":{"condition":{"kind":"beq","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"0"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"function":{"name":"ping"},"kind":"call"},"kind":"if","then_value":{"kind":"nat","value":"0"}},"kind":"definition","mutual":"Bounce","name":"pong","parameters":[{"name":"number","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"pong_decreases"}],"measure":{"kind":"var","name":"number"}}}],"spec":"lexlean/semantic-module/2"}}
+theorem{
+  name: ping_decreases,
+  parameters: [number : Nat],
+  statement: (((number =? 0) = false) -> ((prim subtract number 1 : Nat) < number)),
+  proof: linear_arithmetic{}
+}
+
+theorem{
+  name: pong_decreases,
+  parameters: [number : Nat],
+  statement: (((number =? 0) = false) -> ((prim subtract number 1 : Nat) < number)),
+  proof: linear_arithmetic{}
+}
+
+definition{
+  name: ping,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (if (number =? 0) then 0 else (pong (prim subtract number 1 : Nat))),
+  mutual: Bounce,
+  termination: {evidence: [ping_decreases], measure: (pong number)}
+}
+
+definition{
+  name: pong,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (if (number =? 0) then 0 else (ping (prim subtract number 1 : Nat))),
+  mutual: Bounce,
+  termination: {evidence: [pong_decreases], measure: number}
+}
 \end{semanticmodule}
 \end{lexlean}

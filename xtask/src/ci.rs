@@ -35,11 +35,17 @@ fn recipe_command(justfile: &str, name: &str) -> Result<String, Fail> {
     Err(format!("RP-13: the Justfile has no recipe `{name}` with a command").into())
 }
 
-/// Run `cargo test <arguments> -- --list` and return what it wrote, stdout
-/// and stderr in the order they were written: `cargo` announces each target on
-/// stderr and the harness lists its tests on stdout, so the two have to share
-/// one file to be read together.
-fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fail> {
+/// Run `cargo test <arguments> -- --list <harness>` and return what it
+/// wrote, stdout and stderr in the order they were written: `cargo` announces
+/// each target on stderr and the harness lists its tests on stdout, so the two
+/// have to share one file to be read together. `harness` holds the filters of
+/// a part of `bdd` (§9.4), which select the tests listed as they select the
+/// tests run.
+fn list_tests(
+    root: &Path,
+    arguments: &[String],
+    harness: &[String],
+) -> Result<inventory::Parsed, Fail> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut file = tempfile::tempfile()?;
     let status = Command::new(cargo)
@@ -48,6 +54,7 @@ fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fa
         .arg("test")
         .args(arguments)
         .args(["--", "--list"])
+        .args(harness)
         .stdin(Stdio::null())
         .stdout(Stdio::from(file.try_clone()?))
         .stderr(Stdio::from(file.try_clone()?))
@@ -58,13 +65,66 @@ fn list_tests(root: &Path, arguments: &[String]) -> Result<inventory::Parsed, Fa
     if !status.success() {
         let tail: Vec<&str> = output.lines().rev().take(20).collect();
         return Err(format!(
-            "RP-13: `cargo test {} -- --list` failed:\n{}",
+            "RP-13: `cargo test {} -- --list{}` failed:\n{}",
             arguments.join(" "),
+            if harness.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", harness.join(" "))
+            },
             tail.into_iter().rev().collect::<Vec<_>>().join("\n")
         )
         .into());
     }
     inventory::parse(&output).map_err(Into::into)
+}
+
+/// The `bdd` recipe (SPEC.md §9.2, §9.4): `cargo test -p repo-conformance
+/// --all-features`, the whole `repo-conformance` suite, or, when
+/// `LEXLEAN_BDD_PART` names a part of `.github/bdd-parts.json`, the same
+/// command with that part's harness filters. Unset or empty, which is what
+/// `just vv` and `release.yml` run, the recipe is the command it always was.
+/// The filters select tests; no case decides whether it runs, and the
+/// inventory proves from the harness's own lists that the parts are the whole
+/// suite, each test in one part (RP-13).
+pub fn bdd(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::bdd_parts::{Plan, CARGO_ARGUMENTS, PART_VARIABLE, PLAN_FILE};
+    let part = std::env::var(PART_VARIABLE)
+        .ok()
+        .filter(|value| !value.is_empty());
+    let mut harness: Vec<String> = Vec::new();
+    if let Some(part) = &part {
+        let plan = Plan::read(root)?;
+        harness.push("--".to_owned());
+        harness.extend(plan.harness_filters(part)?);
+        let what = if *part == plan.remainder {
+            format!(
+                "every test but the {} the other parts name",
+                plan.named_tests().len()
+            )
+        } else {
+            format!("{} conformance cases", plan.parts[part].len())
+        };
+        println!("bdd: the part `{part}` of {PLAN_FILE}: {what} (§9.4)");
+    }
+    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let status = Command::new(cargo)
+        .current_dir(root)
+        .arg("test")
+        .args(CARGO_ARGUMENTS)
+        .args(&harness)
+        .stdin(Stdio::null())
+        .status()?;
+    if !status.success() {
+        return Err(format!(
+            "bdd: `cargo test {}`{} failed",
+            CARGO_ARGUMENTS.join(" "),
+            part.map(|part| format!(" (the part `{part}`)"))
+                .unwrap_or_default()
+        )
+        .into());
+    }
+    Ok(())
 }
 
 /// The names of the binaries that carry the tests of `repo-conformance`:
@@ -104,24 +164,46 @@ fn owned_crates(root: &Path) -> Result<BTreeSet<String>, Fail> {
     Ok(crates)
 }
 
-/// RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`.
+/// RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`,
+/// and the parts of `.github/bdd-parts.json` partition `bdd`.
 pub fn check_test_inventory(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::bdd_parts::{Plan, CARGO_ARGUMENTS, PLAN_FILE};
     let justfile = std::fs::read_to_string(root.join("Justfile"))?;
     let ordinary_line = recipe_command(&justfile, "test")?;
     let owned_line = recipe_command(&justfile, "bdd")?;
+    if owned_line != "cargo xtask bdd" {
+        return Err(format!(
+            "RP-13: the `bdd` recipe is `{owned_line}`, not `cargo xtask bdd`, the command whose arguments the inventory lists"
+        )
+        .into());
+    }
     let reference: Vec<String> = inventory::REFERENCE
         .iter()
         .map(|s| (*s).to_owned())
         .collect();
-    let workspace = list_tests(root, &reference)?;
-    let ordinary = list_tests(root, &inventory::recipe_arguments(&ordinary_line)?)?;
-    let owned = list_tests(root, &inventory::recipe_arguments(&owned_line)?)?;
+    let owned_arguments: Vec<String> = CARGO_ARGUMENTS.iter().map(|s| (*s).to_owned()).collect();
+    let workspace = list_tests(root, &reference, &[])?;
+    let ordinary = list_tests(root, &inventory::recipe_arguments(&ordinary_line)?, &[])?;
+    let owned = list_tests(root, &owned_arguments, &[])?;
     let summary = inventory::compare(&workspace, &ordinary, &owned, &owned_crates(root)?)?;
+    let plan = Plan::read(root)?;
+    let mut parts = Vec::new();
+    for name in plan.names() {
+        let listed = list_tests(root, &owned_arguments, &plan.harness_filters(&name)?)?;
+        parts.push((name, listed));
+    }
+    let count = inventory::compare_parts(&owned, &parts, &plan)?;
     println!(
-        "check-test-inventory: the {} tests of `cargo test {}` are the {} of `test` and the {} of `bdd`, disjoint, none lost (RP-13)",
+        "check-test-inventory: the {} tests of `cargo test {}` are the {} of `test` and the {} of `bdd`, disjoint, none lost; the {count} parts of {PLAN_FILE} ({}) are the {} of `bdd`, each in one part (RP-13)",
         summary.workspace,
         inventory::REFERENCE.join(" "),
         summary.ordinary,
+        summary.owned,
+        parts
+            .iter()
+            .map(|(name, listed)| format!("{name} {}", listed.entries.len()))
+            .collect::<Vec<_>>()
+            .join(", "),
         summary.owned
     );
     Ok(())
@@ -184,4 +266,137 @@ pub fn ci_summary(root: &Path, arguments: &[String]) -> Result<(), Fail> {
         counts.recipes, counts.samples, counts.verifier, counts.examples, counts.cases
     );
     Ok(())
+}
+
+/// The scheduling hints of SPEC.md §22.11, derived from a verifier telemetry
+/// file (§22.12): one entry per module of an elaboration or replay process,
+/// keyed by its full Lean module name, holding the largest `wall_ms` and
+/// `peak_rss_kib` observed under that name in any project or stage. The
+/// largest is the conservative choice: a module name that two examples share
+/// is scheduled as the heavier of the two. Keys are sorted, so the same
+/// telemetry always gives the same bytes.
+pub fn hints_from_telemetry(telemetry: &str) -> Result<String, Fail> {
+    let mut hints: std::collections::BTreeMap<String, (u64, u64)> = Default::default();
+    for (number, line) in telemetry.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: Value = serde_json::from_str(line)
+            .map_err(|error| format!("telemetry line {}: {error}", number + 1))?;
+        if event["event"] != "process"
+            || !matches!(event["stage"].as_str(), Some("elaboration" | "replay"))
+        {
+            continue;
+        }
+        let (Some(module), Some(wall_ms)) = (event["module"].as_str(), event["wall_ms"].as_u64())
+        else {
+            continue;
+        };
+        let peak = event["peak_rss_kib"].as_u64().unwrap_or(0);
+        let entry = hints.entry(module.to_owned()).or_default();
+        *entry = (entry.0.max(wall_ms), entry.1.max(peak));
+    }
+    let object: serde_json::Map<String, Value> = hints
+        .into_iter()
+        .map(|(module, (wall_ms, peak_rss_kib))| {
+            (
+                module,
+                serde_json::json!({ "peak_rss_kib": peak_rss_kib, "wall_ms": wall_ms }),
+            )
+        })
+        .collect();
+    Ok(serde_json::to_string_pretty(&Value::Object(object))? + "\n")
+}
+
+/// Write the scheduling hints that `--from` (a `verify-telemetry.jsonl`)
+/// gives to `--out` (SPEC.md §22.11). The file is a schedule input of the
+/// examples leg and nothing else: a stale hint reorders, it never refuses.
+pub fn ci_hints(arguments: &[String]) -> Result<(), Fail> {
+    let from = option(arguments, "--from").ok_or("ci-hints: --from <verify-telemetry.jsonl>")?;
+    let out = option(arguments, "--out").ok_or("ci-hints: --out <hints.json>")?;
+    let hints = hints_from_telemetry(&std::fs::read_to_string(&from)?)?;
+    lexlean::verify::operational::Operational::parse_hints(&hints).map_err(|diagnostic| {
+        format!("ci-hints: the derived hints do not parse: {diagnostic:?}")
+    })?;
+    std::fs::write(&out, &hints)?;
+    println!(
+        "ci-hints: {} modules from {from} written to {out}",
+        hints.matches("\"wall_ms\"").count()
+    );
+    Ok(())
+}
+
+/// Check the committed partition of an example's verification (SPEC.md §9.4):
+/// every module elaborated by one shard and replayed by one, every import
+/// elaborated by the shard or one it needs, the join needing every other
+/// shard. With the committed hints, print what each shard is expected to
+/// elaborate, as a reader of the plan would want to know; the estimate is
+/// evidence, never an input.
+pub fn ci_shards(root: &Path) -> Result<(), Fail> {
+    use repo_conformance::shards::{check, import_graph, Plan, PLAN_FILE};
+    let plan = Plan::read(root)?;
+    let example = root.join("examples").join(&plan.project);
+    if !example.join("lexlean.toml").is_file() {
+        return Err(format!("{PLAN_FILE}: `{}` is no example directory", plan.project).into());
+    }
+    let graph = import_graph(&example)?;
+    let lines = check(&plan, &graph)?;
+    let hints = std::fs::read_to_string(root.join(".github/verify-hints.json"))
+        .ok()
+        .and_then(|text| lexlean::verify::operational::Operational::parse_hints(&text).ok());
+    for (line, (name, shard)) in lines.iter().zip(&plan.shards) {
+        let expected: u64 = hints.as_ref().map_or(0, |hints| {
+            shard
+                .elaborate
+                .iter()
+                .filter_map(|module| hints.get(module).map(|hint| hint.wall_ms))
+                .sum()
+        });
+        println!(
+            "ci-shards: {line}; elaboration expected {} s",
+            expected / 1000
+        );
+        let _ = name;
+    }
+    println!(
+        "ci-shards: {PLAN_FILE}: {} shards run the {} modules of `{}` once each (§9.4)",
+        plan.shards.len(),
+        graph.len(),
+        plan.project
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hints_from_telemetry;
+
+    #[test]
+    fn hints_keep_the_heaviest_observation_of_each_module() {
+        let telemetry = [
+            r#"{"event":"process","module":"A.M","peak_rss_kib":10,"stage":"elaboration","wall_ms":5}"#,
+            r#"{"event":"process","module":"A.M","peak_rss_kib":30,"stage":"replay","wall_ms":2}"#,
+            r#"{"event":"process","module":"B.M","peak_rss_kib":7,"stage":"elaboration","wall_ms":9}"#,
+            r#"{"event":"process","module":"A.M","peak_rss_kib":99,"stage":"probe","wall_ms":99}"#,
+            r#"{"event":"stage","stage":"elaboration","wall_ms":100}"#,
+        ]
+        .join("\n");
+        let hints = hints_from_telemetry(&telemetry).expect("hints");
+        let parsed =
+            lexlean::verify::operational::Operational::parse_hints(&hints).expect("parses");
+        assert_eq!(parsed.len(), 2, "{hints}");
+        assert_eq!(
+            (parsed["A.M"].wall_ms, parsed["A.M"].peak_rss_kib),
+            (5, Some(30))
+        );
+        assert_eq!(
+            (parsed["B.M"].wall_ms, parsed["B.M"].peak_rss_kib),
+            (9, Some(7))
+        );
+        assert_eq!(
+            hints,
+            hints_from_telemetry(&telemetry).expect("hints"),
+            "deterministic"
+        );
+    }
 }

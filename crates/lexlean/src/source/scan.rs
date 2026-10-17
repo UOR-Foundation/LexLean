@@ -227,18 +227,96 @@ pub fn reject_forbidden_atoms(
 /// Track payload strings in one pass over the primitive atoms. Recognizing
 /// actual controls prevents a control-shaped string or escaped backslash from
 /// reopening a payload; processing each byte once keeps large digests linear.
+///
+/// A `semanticmodule`, `toolingmodule`, or `coremodule` environment is a
+/// payload too: its body is either one `\semanticdata{…}` (`\toolingdata{…}`,
+/// `\coredata{…}`) argument or the authoring notation (SPEC.md §17.21), which
+/// runs to the closing `\end`. Digit runs inside a string of either are exact
+/// string bytes, not numerals.
 #[derive(Default)]
 struct SemanticDataContext {
     awaiting_open: bool,
     depth: usize,
     quoted: bool,
     escaped: bool,
+    /// How much of `\begin{semanticmodule}` (or `toolingmodule`) has been read.
+    environment: u8,
+    /// Inside the body of a `semanticmodule`, before its first atom is known
+    /// to be `\semanticdata`.
+    body: Body,
+}
+
+/// Where the scan is in a `semanticmodule` or `toolingmodule` body.
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
+enum Body {
+    /// Not in one.
+    #[default]
+    Outside,
+    /// In one, before its first non-blank atom.
+    Start,
+    /// In the authoring notation.
+    Notation,
 }
 
 impl SemanticDataContext {
+    fn quote_bytes(&mut self, atom: &Atom) {
+        for byte in atom.text.bytes() {
+            if self.quoted {
+                if self.escaped {
+                    self.escaped = false;
+                } else if byte == b'\\' {
+                    self.escaped = true;
+                } else if byte == b'"' {
+                    self.quoted = false;
+                }
+            } else if byte == b'"' {
+                self.quoted = true;
+            }
+        }
+    }
+
     fn consume(&mut self, atom: &Atom) {
+        if self.body == Body::Start {
+            if atom.class == AtomClass::Whitespace {
+                return;
+            }
+            if atom.class == AtomClass::Control
+                && matches!(
+                    atom.text.as_str(),
+                    "\\semanticdata" | "\\toolingdata" | "\\coredata"
+                )
+            {
+                self.body = Body::Outside;
+                self.awaiting_open = true;
+                return;
+            }
+            self.body = Body::Notation;
+        }
+        if self.body == Body::Notation {
+            if !self.quoted && atom.class == AtomClass::Control && atom.text == "\\end" {
+                self.body = Body::Outside;
+                self.escaped = false;
+                return;
+            }
+            self.quote_bytes(atom);
+            return;
+        }
         if self.depth == 0 {
             if atom.class == AtomClass::Whitespace {
+                return;
+            }
+            // `\begin` `{` `semanticmodule` | `toolingmodule` `}`.
+            self.environment = match (self.environment, atom.class, atom.text.as_str()) {
+                (0, AtomClass::Control, "\\begin") => 1,
+                (1, _, "{") => 2,
+                (2, AtomClass::Word, "semanticmodule" | "toolingmodule" | "coremodule") => 3,
+                (3, _, "}") => {
+                    self.body = Body::Start;
+                    0
+                }
+                _ => 0,
+            };
+            if self.body == Body::Start {
                 return;
             }
             if self.awaiting_open && atom.text == "{" {
@@ -246,7 +324,10 @@ impl SemanticDataContext {
                 self.awaiting_open = false;
             } else {
                 self.awaiting_open = atom.class == AtomClass::Control
-                    && matches!(atom.text.as_str(), "\\semanticdata" | "\\toolingdata");
+                    && matches!(
+                        atom.text.as_str(),
+                        "\\semanticdata" | "\\toolingdata" | "\\coredata"
+                    );
             }
             return;
         }

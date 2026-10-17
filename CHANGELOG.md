@@ -15,6 +15,447 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- Source packages (#161, SPEC.md §10.5, `PK-01`..`PK-04`, language 1.2 only).
+  A project declares `[[source_package]]` tables (`package`, `version`, `kind`
+  `path`, `path`), each naming a member project of the workspace an optional
+  `lexlean-workspace.toml` at the repository root lists, and imports its
+  modules by their own Lean names (`\importmodule{LexLeanStd.Text}`). The lock
+  gains `[[source_package]]` rows (tree digest over the package's manifest and
+  source files, manifest digest, version, prefix, its own packages) that every
+  command recomputes; a changed byte or version is `LLC0105` naming both
+  digests, a pin for an undeclared package `LLC0106`, a module prefix claimed
+  twice `LLC0107`, a project or path outside the workspace rule `LLC0108`
+  (a symlink or an escaping path is `LLS8001`), and an import of a package the
+  scope does not declare `LLR3009`. A package definition is an ordinary
+  definition of the importing project: its own `production:` roots are not
+  roots of the importer and nothing is re-exported. `verify` replays the
+  package modules under the package's prefix, with the package as their
+  `origin` in the build manifest, the snapshot, and the attestation; `fmt`
+  never writes a package file. The schema change moves the language-1.2
+  compiler-semantics ID once; languages 1.0 and 1.1, and a language-1.2 project
+  without source packages, keep their bytes apart from that identity. The
+  register gains `PK-01`..`PK-05` (403 rows with `SL-01`, `BS-01`, and `LM-01`..`LM-03`, `LM-13`); `PK-05`: the `bootstrap/`
+  pilot imports `stdlib/` through a source package, its vendored copy of `Text`
+  and the equivalence assertion of `BS-01` are deleted, the repository gains a
+  root `lexlean-workspace.toml`, and `xtask` stages a project with its packages.
+- The first component of the compiler's own pipeline as language-1.2 source:
+  the exact axiom-output parser (SPEC.md §17.23, §22.5, `BS-01`, #92 step 4;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/` is a language-1.2 project beside `compiler/` and `stdlib/`
+  under the module prefix `LexLeanBoot`; its `AxiomOutput` module declares
+  `parseAuditOutput` and `isClosedLeanName` as production roots for
+  `rust-std`. A project cannot import another's modules, so `Text` is a copy
+  of the standard library's without its `production` declarations, compared
+  with `stdlib/src/Text.lex.tex` on every run. `BS-01` runs the committed
+  golden vectors of `tests/golden/axiom-parser/` and a seeded corpus of
+  generated, wrapped, and mutated audit outputs against the Rust parser
+  `verify::axiom` (the stage-0 oracle, unchanged) under the calculus
+  evaluator and under the pinned rustc, detects seven planted defects, and,
+  under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones under
+  `tests/production-export/bootstrap/`. `bootstrap/expected/` holds the
+  example-gate records. `BS-01` brings the register to 398 IDs.
+- A language-1.2 `tokenizer` elaborates, in linking, to ordinary definitions
+  over the embedded text-laws library and to generated theorems the library
+  proves (SPEC.md §17.12, `LM-01`..`LM-03`, `LM-13`, #30). The library is
+  LexLean source: one native `lexlean/core-module/2` module of the embedded
+  project `language/text-1.2/library`, whose Lean the compiler generates and
+  compiles into the verification's olean root before any module that
+  imports it; the one-time migration of the hand-written proof is recorded
+  in `tests/text-laws/MIGRATION.md` and no authored Lean implementation of
+  the laws exists in the release tree. A tokenizer over a `utf8_lines`
+  vocabulary artifact of role `vocabulary` elaborates to `pieces`, `size`,
+  `encode`, `decode`, `encodeText`, and `decodeText`, and generates
+  `roundtrip`, `in_range`, and `text_roundtrip`, each proved by one library
+  lemma after unfolding exactly the named definitions; a vocabulary of
+  another role or schema, or a tokenizer with type parameters, is refused
+  with `LLT4006`, and a scheme outside `byte_level` and `longest_match` is a
+  schema violation (`LLT4001`). The language-1.2 `semantic_ir`,
+  `lean_backend`, and `latex_backend` versions move to 12, 19, and 12, so
+  every language-1.2 lock, golden, fixture, and verification record is
+  regenerated. The register holds 397 IDs: this slice registers `LM-01`..`LM-03`
+  and `LM-13` only; the remaining text components of the design on #30 add
+  their rows when their slices land, so no registered ID is unwired.
+- The standard library's first member: bytes and text over `Bytes`
+  (SPEC.md §17.22, `SL-01`, #92; no new diagnostic code). `stdlib/` is a
+  language-1.2 project beside `compiler/` under the module prefix
+  `LexLeanStd`, written in the authoring notation; its `Text` module declares
+  `startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, and
+  `find` as production roots for `rust-std`, each admitting exactly the
+  effects its closure realizes. `SL-01` runs every member's lowered program
+  under the calculus evaluator and its rendered package under the pinned
+  rustc on a seeded corpus against Rust's `starts_with`, `ends_with`,
+  `trim_ascii`, `lines`, `split`, `join`, and `find`, detects a planted
+  character class in `trim`, and, under the pinned Lean, compares the
+  certified packages the production export publishes with the committed
+  ones under `tests/production-export/stdlib/`. The project passes the
+  example gates (`verify-examples`, `check-golden`) and
+  `check-production-export` compares its packages. `SL-01` brings the
+  register to 393 IDs.
+- The `bdd` recipe runs in CI as the parts of one run (SPEC.md §9.2, §9.4,
+  `RP-13`, `RP-14`, #131; no new diagnostic code, no new ID). The `rest` leg
+  took 111.5 minutes on the run that merged #152 (CI run 38905653756), 95.7 of
+  them `bdd`, one test process whose cases sum to 22,708 s over four threads.
+  `.github/bdd-parts.json` names four parts of the `repo-conformance` suite by
+  conformance ID, grouped so the cases that share a fixture built once per test
+  process run in one part, and a remainder, `rest`, that runs every test no
+  part names. The recipe is `cargo xtask bdd`: unset, `LEXLEAN_BDD_PART` leaves
+  it `cargo test -p repo-conformance --all-features`, which `just vv` and
+  `release.yml` run; named, it adds the part's harness filters (`--exact` and
+  its tests, or `--exact` and a `--skip` of every named test). `cargo xtask
+  check-test-inventory` lists every part with its filters and requires the
+  parts to be disjoint and their union to be `bdd`'s list (`RP-13`); `ci.yml`
+  runs each named part on a `bdd-<part>` row of the gate's matrix and the
+  remainder on the `rest` leg, every part on exactly one row (`RP-14`).
+- The join of a verification run as parts refuses a record of another
+  executable (#131, the review of #152; SPEC.md §9.4, §22.11, `VR-23`; no new
+  diagnostic code, no new ID). An imported elaboration or audit record must
+  name the join's own digest of `lean`, and a replay record its digest of
+  `leanchecker`; a mismatch is `LLI9001`, naming the record and both digests.
+  Every CI job installs the same pinned toolchain, so this held by practice
+  and is now checked.
+- Certificate E as kernel-term data (SPEC.md §17.17, `SP-14`; stage 1 of #89,
+  stage 5 of #27). The composition certificate of every production root is no
+  longer written as Lean text by `production/certificate.rs`: the compiler
+  builds it as a native core module of schema `lexlean/core-module/2`, the
+  lemma types read from the native preservation library and instantiated
+  binder by binder (`production/kernel.rs`), the recursive groups' theorems as
+  recursor terms, and the one core backend renders it to the Lean verification
+  compiles. The verify record holds the module in the authoring notation
+  (`…/Compose/RustStd.lex.tex` in place of `.lean`), which reads back to the
+  data byte for byte, and `preservation.json` binds those bytes. A certificate
+  held as data is audited row by row (imports, kinds, safety, exact axiom
+  policies, forbidden constants) and the audit module prints and checks the
+  axioms of every one of its rows. The statements of the 76 certificates E of
+  the four corpora are those the text stated, kernel term for kernel term
+  (`tests/preservation-certificates/E-STATEMENTS.md`). Certificates A and B are
+  still Lean text, so the data certificate is rendered outside the module
+  system until they follow. Languages 1.0 and 1.1 have no certificates and are
+  untouched. No diagnostic code is new; the register gains `SP-14` (383 rows with `SP-13`, `RB-09`, and `PX-13`).
+- Program equalities over all inputs (#117, SPEC.md §17.12, `PF-20`..`PF-23`,
+  no new diagnostic code). Language 1.2 orders `Int` and every fixed-width
+  integer type with `<=` and `<`, by mathematical value; language 1.1 keeps
+  `Nat` only. `linear_arithmetic` now reads the runtime: `less_than`,
+  `equal`, `negate`, `quotient`, `remainder` (truncating division by a
+  literal included), and fixed-width order and equality become linear
+  arithmetic, every `if` and `match` left in the goal is split, and `omega`
+  decides each case. The fold laws are LexLean source, the native runtime
+  module `LexLeanRuntime.Laws` (`tests/runtime-library/LAWS.md`). It holds
+  the normal form of additive list, set, and map folds as sums, their
+  linearity, and their invariance under permutation, append, and reverse,
+  which `linear_arithmetic` rewrites with, plus fusion, the fold of a pair,
+  and the fold of an append. The closed `law` proof form applies one of
+  these registered laws (`language/runtime-1.2/laws.toml`) with linking
+  checks. `examples/fold-laws` verifies integer kernels and fold equalities
+  for all inputs, with `decide` only on closed instances. The
+  language-1.2 compiler-semantics ID changes (`semantic_ir` 11,
+  `lean_backend` 18, `proof_lowering` 3), and every language-1.2 lock,
+  golden, fixture expectation, calculus package, production export, and
+  verified record is regenerated. The register holds 391 IDs.
+
+- The runtime gates read what they claimed to (#154, follow-up to #144; no new
+  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
+  literal of the compiler's source outside unit-test items, in production code
+  after a test module, with or without a `namespace` line (a declaration
+  under a runtime name is one), written whole or in literals joined by
+  `concat!`, an array, `+` or `format!`; its statement now also asserts
+  what it said of generated modules: every committed language-1.2 module
+  imports the runtime modules whose constants it names and declares nothing
+  under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
+  with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
+  plants the second direction of the axiom check. Every directory that holds a
+  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
+  beside the sources no longer reads as source. No compiled behavior changes.
+- UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
+  `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
+  minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of
+  Atlas, whose import chain through `Census` and `CensusCert4` no schedule on
+  one runner finishes in under about 65 minutes. `.github/verify-shards.json`
+  partitions Atlas's verification into fourteen shards and a join, checked by
+  `cargo xtask ci-shards` against the import graph of the committed build:
+  every module elaborated by one shard and replayed by one, every import
+  elaborated by the shard or by one it needs. The verifier runs as one part
+  through `lexlean::verify_part` (`verify::partition`): a shard runs the
+  prelude whole, then elaborates, replays, and audits the modules of its plan
+  with the `.olean` files of the shards it needs, and writes its records; the
+  join reads every shard's records, judges each as its stage does, and
+  publishes through the same policy, attestation, and publication as the whole
+  verification, byte-identical to it and with the same attestation identity
+  (`VR-23`, on `peano-arithmetic`). `cargo xtask verify-examples` runs the
+  part `LEXLEAN_EXAMPLES_PART` names: `without:uor-atlas` on the examples leg,
+  `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs; unset, the
+  recipe is unchanged. `ci.yml` runs the shards as jobs after the jobs of the
+  shards they need, from the one executable the `prefix` job builds, with the
+  shards' output as artifacts of the run and nothing across runs, and not while
+  a pull request is a draft. The register has 382 IDs.
+- Child deadlines remain active while reading inherited output pipes after
+  the direct child exits (#132). The process group stays registered until
+  both readers finish, so a timeout or an embedding host can end the remaining
+  group through the existing termination path (`SE-06`, SPEC.md §25.5).
+- Toolchain preflight compares the complete reported Lean version in Lean and
+  Lake banners (`VR-02`, #134), refusing patch-prefix collisions, prerelease
+  suffixes, and a matching version elsewhere in the banner with `LLV7001`.
+- Production results state each output's effects (SPEC.md §24.7, §17.13,
+  `PX-13`, no new diagnostic code), step 3 of #105. A target output of
+  `lexlean/production-result/2` lists the effects its realization can exhibit,
+  exactly those eligibility requires of the root on that target, and the
+  schema states what `recursion` asks of the host: a stack its input-dependent
+  depth fits, whose exhaustion aborts the process. `lexlean production build`
+  reports how many outputs need such a stack. The result schema lives outside
+  the compiler-semantics ID (§21.2), so no identity, package, golden, or
+  verified record changes; `api/schemas/versions.toml` gains the
+  `production-result/2` row beside the released `/1` row.
+  `PX-13` brings the register to 382 IDs.
+
+- Certificates write a list of any length as a term Lean elaborates without
+  binders (SPEC.md §17.17, `SP-13`, #97; no new diagnostic code). Lean's
+  `[…]` macro splits a literal of more than 32 elements in halves under
+  `let` binders, and certificate B's witnesses, whose elements Lean
+  postpones to metavariables, did not unify through them: a valid
+  certificate B of a root calling a function of 33 or more parameters was
+  rejected with `LLV7015`. One helper (`production::lean_list`) now writes
+  every list and array of the three certificate writers: a literal up to 32
+  elements, byte-identical to before, and the `List.cons` chain the macro
+  writes for a short one beyond that. The 100-parameter project of
+  `tests/negative/certificate-heartbeat-rejected` verifies without its
+  shim. The certificates of `examples/models` and `examples/reasoning` that
+  hold such a list change, and their verification records are regenerated,
+  as are the sizes `certificate-resource-exhausted` and
+  `certificate-generation-limit` quote.
+  `SP-13` brings the register to 380 IDs.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
+- Core modules in the authoring notation (SPEC.md §17.21.8, `AU-09`..`AU-12`;
+  stages 3c and 3d of #93). A native `coremodule` of schema `lexlean/core-module/2`
+  can be written as text instead of one `\coredata{…}` argument of canonical
+  JSON: an `imports` line, the declarations (`theorem Name.{u} : @41 := @77 {…}`,
+  the other members in the generic notation), and the table of shared
+  expressions, one statement per node that is not written inside the node that
+  uses it (`@14 := fun (n : @12) => Nat.succ n`), in a Lean-like syntax of
+  explicit arguments, universe levels, and binders. The numbering of the nodes
+  is the order of the text, so the notation reads back to the module, and the
+  canonical JSON it reads to is byte for byte the data the module had: the
+  committed libraries (`compiler/proofs`, 13 modules, and
+  `language/preservation-1.2/library`, 13 modules, 48 MB of data) are written in
+  the notation at about three quarters of the size, and the compiler-semantics
+  ID of language 1.2 (`464235ad…`) is unchanged, because a source of the
+  embedded tree written in the notation contributes its data form (§21.2). The
+  Atlas (language 1.0, schema 1) stays as `\coredata`: languages 1.0 and 1.1
+  accept the data form only, and the notation under either is `LLP2003`. `fmt`
+  writes the notation, `lexlean::sdk` reads, writes, and assembles it
+  (`ModuleKind::Core`), and the core backend's coverage names
+  `lexlean.core::coresource`. No diagnostic code is new. A bound variable is
+  written by the name of its binder when no nearer binder has the name, a
+  constant a binder in scope is named like is written `const "…"`, and a
+  statement may be written `@name := …` and named `@name`, which `fmt` numbers
+  (`AU-12`; stage 3d of #93): a person adds a theorem to a library by writing
+  its declaration and the statements of its type and value, with every
+  argument and level explicit, as a kernel term has them, and counting nothing.
+  The certification library gains the first one written that way,
+  `LexLeanCertification.authored_eq_symm` (symmetry of `Eq` by `Eq.rec`), which
+  the pinned Lean's kernel checks with the rest of the library. Reading the identity of
+  language 1.2 now reads the embedded libraries from the notation, on as many
+  threads as there are cores: 0.8 s on four cores in a release build, and
+  nothing for language 1.0 and 1.1.
+- The authoring API (`lexlean::sdk`, SPEC.md §24.8, `AU-08`; stage 3e of #93):
+  `read_module`, `write_module`, `to_data_form`, `to_notation`,
+  `declaration_spans`, and `assemble` read, rewrite, convert, and assemble the
+  `.lex.tex` source of a semantic or tooling module without a project, with the
+  data as canonical JSON and the offset of an error in the source. The
+  formatter, the identity of the embedded tree, and the conformance suite's own
+  editing of committed sources are written over the same table of module kinds.
+  `AU-07` is the permanent gate that no writer of the repository emits a
+  product source but five named records (the four fixture modules of
+  `compiler/` and the extraction adapter's module, each generated from an input
+  that is not a source); it is shown to fail on a planted writer output.
+- The calculus and the Rust machine are source (SPEC.md §17.14; stage 3e of #93).
+  `compiler/src/{TargetSyntax,TargetSemantics,TargetOracle,RustSyntax,RustSemantics,Main}`,
+  the reasoning oracles, and the project configuration are written and edited as
+  `.lex.tex`: the Rust builders that rendered them (`calculus_source`,
+  `rust_source`, 5,300 lines) and the check that compared them with their own
+  output are removed; so are the builders of the GNAF model and the
+  certification model (`gnaf_model`, `certification_model`, 7,000 lines), whose
+  committed `Gnaf` and `Certification` are source too. `check-calculus` still compares the generated files (the
+  fixtures and the modules that state them, the Rust packages, the shipped
+  copies of the calculus modules), and `conformance_sp_07` now reads the
+  machine's runtime items and their failure and heap classes from the committed
+  `RustSyntax` and `RustSemantics`, and the compiler project's configuration
+  from the production example. No file of the repository changes by this: it
+  is a change of who owns them.
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-08`; stage 3
+- Certificate budgets (SPEC.md §22.6, `SP-02`, no new diagnostic code).
+  Every certificate now lifts both of the pinned Lean's heartbeat budgets, as
+  only the certificates of a program with a match of more than 100 arms did,
+  and certificate B declares its `program` and `krate` terms `noncomputable`.
+  A root whose program carries its parameters as data (`UOR-Foundation/MNIST`
+  at its model root: 243 KB of crate, int_tensor artifacts decoded into
+  literals) was refused twice by a valid certificate: the code generator
+  exhausted its 200 000 heartbeats compiling the crate term, which nothing
+  runs, and then `isDefEq` exhausted the same budget on the function holding
+  the literal. The bound that remains is the wall clock, `child_timeout_ms`,
+  as the specification already said. Every certificate text changes by its
+  header, so the committed certificate records of the examples and the
+  fixture expectations that quote certificate sizes are regenerated. The
+  fixtures `certificate-heartbeat-rejected` and
+  `certificate-resource-exhausted` model an exhausted Lean by a substituted
+  `lake` that set a budget of one heartbeat after `autoImplicit`; it now
+  overrides the lifted budget instead. With the budget lifted, their
+  100-parameter project reaches certificate B for the first time, which
+  refuses it for a reason of its own (#97): Lean elaborates a list literal
+  of more than 32 elements under `let` binders, and a certificate witness
+  with postponed holes in such a list does not unify.
+
+- The language-1.2 authoring notation (SPEC.md §17.21, `AU-01`..`AU-03`; stage 3
+  of #27, #93). A `semanticmodule` can be written as readable text instead of
+  `\semanticdata{…}` JSON: declarations in a fixed grammar, read from the
+  schema, with readable forms for types (`(List Nat)`, `(A * B)`), terms
+  (`(let x : Nat := 1; (x + x))`, `(match s | C x => …)`) and members
+  (`Module::name`), and a generic form `kind{…}` for every other value. The
+  notation and the canonical JSON are in bijection, so a module in the notation
+  has the semantic ID and the generated Lean and LaTeX of its data form, and
+  `fmt` writes the notation canonically and writes a module out of its data
+  form (`fmt --check` reports a language-1.2 module still written as data as
+  `LLL1003`). Every language-1.2 source of the repository is written in the
+  notation: the compiler project, the language libraries, the examples, the
+  fixtures, and every refused fixture the notation can spell (287 sources;
+  `AU-04` keeps the data form to language 1.0 and 1.1 and to refused fixtures
+  that test the data form's own refusal, and the conformance helpers that edit
+  a module's data read and write it in whichever form the source has). No
+  diagnostic code is new: a malformed text is `LLP2001`. Compiler-tooling
+  modules (`toolingmodule`, §17.20) are written in the generic notation of the
+  same family (one object without its `spec`, declarations as `type{…}`,
+  `call{…}`, `function{…}`), `fmt` writes them out of `\toolingdata`, their
+  four committed sources (the embedded extraction adapter and three fixtures)
+  are migrated, and a source map names each declaration's text (`AU-05`). A
+  source of the embedded tree written in the notation contributes its data form
+  to the compiler-semantics ID (§21.2, `AU-06`), so moving the adapter's source
+  to the notation changes no identity. Nothing a build or a
+  verification derives from a module changes, so no compiler-semantics ID, no
+  generated Lean or LaTeX byte, and no verified record changes; the source IDs,
+  the source maps, the coverage records, and the spans of the fixtures'
+  diagnostics, which name the source's own bytes, are regenerated.
+- The verifier's resource profile gains scheduling hints and a memory budget,
+  and the gate's `examples` leg uses it (SPEC.md §9.4, §22.11, `RP-14`, no new
+  ID or code; LexLean #83). `LEXLEAN_VERIFY_HINTS` names a JSON object of
+  per-module `wall_ms` and `peak_rss_kib`, which start the heaviest processes
+  of a stage first; `LEXLEAN_VERIFY_MEMORY_KIB` stops a worker from starting a
+  process whose expected peak would push the running total past the budget, and
+  a process whose expected peak alone passes it runs alone. Neither enters an
+  artifact or an identity; the published directory is byte for byte that of
+  width 1 (`VR-21`). `cargo xtask ci-hints` derives the hints from a run's
+  telemetry. In `ci.yml`, the `examples` leg verifies at width 2 with
+  `.github/verify-hints.json` and a 12 GiB budget, read from its matrix row,
+  and the other leg names no profile; `release.yml` still runs `just vv` at
+  width 1. On the standard runner's 16 GB, 22 of Atlas's 66 modules peak above
+  8 GiB, so the modelled gain is small: about 13 min of Atlas's 169, from main's
+  telemetry. The CI run of this change is the measurement.
+  `fmt` writes the notation canonically (a module written as data stays as it
+  is). No diagnostic code is new: a malformed text is `LLP2001`, and nothing
+  embedded in the compiler-semantics ID changes.
+- Rust runtime library boundary (SPEC.md §17.16, `RB-09`, no new
+  diagnostic code), stage 1 of #91. `rust_library::PRIMITIVES` states the
+  machine primitives the runtime may use, each by its meaning, and
+  `rust_library::LIBRARY` lists every name the runtime text takes from
+  Rust's library with its role: part of a primitive, stated in the closed AST
+  over primitives, or a construct of the closed AST. The audit reads the
+  text and refuses a name outside the table, a row the text does not use,
+  a row citing a non-primitive, and a primitive no row cites. The runtime
+  text is unchanged, so no runtime digest, package, or semantic ID changes.
+- The runtime of generated Lean is LexLean source (SPEC.md §17.12,
+  *Runtime modules*, `RT-01`..`RT-04`, LexLean #90). The portable primitives,
+  the ordered collections, the model predicates, and the reasoning lemmas of
+  language 1.2 were Rust string constants the backend spliced into every
+  module that used them, one copy per module; they are now four native core
+  modules of the embedded project `language/runtime-1.2/library/`
+  (`LexLeanRuntime.Portable`, `.Collections`, `.Models`, `.Reasoning`),
+  migrated once and losslessly (`tests/runtime-library/MIGRATION.md`), which
+  a generated module imports. A verification compiles the runtime modules a
+  project uses before the project's own, replays them, and audits each of
+  their declarations against its exact axioms. A runtime name is
+  `LexLeanRuntime.x`, no longer `<module>.LexLeanRuntime.x`, so the native
+  preservation and certification libraries' references to the copies were
+  renamed, by a pairing of the calculus modules' constants walked through
+  their kernel terms. Languages 1.0 and 1.1 are frozen: their released
+  runtime text is data under `language/runtime-1.2/frozen/`, which their
+  backends alone read, and their output is byte-identical. The decoder of
+  core module 2 is the one Lean text of the language-1.2 compiler not
+  generated from a native module, since it is what loads them. The probe and
+  axiom-audit modules are typed data the backend renders. `LexLeanRuntime`
+  moves from the reserved roots to the library roots (a project without a
+  production root may take it). The differential oracle (§17.19) does not
+  follow a call into another module, so it now refuses the roots whose
+  compiled closure calls a collection template or a reasoner's iteration as
+  `unresolved-external-call`, and generates the two list roots it refused
+  before; `oracle/known-differences.toml` (version 3, with `KD-13`
+  `output-buffer`: the oracle returns a list into a buffer its caller passes)
+  and `oracle/known-non-overlap.toml` (version 2) record what it answers, and
+  the harness passes such a buffer. The language-1.2 compiler-semantics ID
+  changes, and every language-1.2 lock, golden, fixture expectation,
+  production-export package, and verified record is regenerated.
+- `rust-std` rendering: ownership and lists (SPEC.md §17.14, §17.16, `RB-08`,
+  no new diagnostic code). A read of a binding that nothing after it reads
+  is a move and a projection of a pair component that nothing after it
+  reads moves the component out of the pair (`rust::moves`, run after
+  lowering and before validation); every other read clones, as before. The
+  ownership check refuses a component moved out twice and a binding read or
+  moved whole after a component left it. A list is a run of contiguous
+  cells, extended in place when no other list holds its buffer and
+  fronted by a single cell otherwise, so `cons` and `uncons` stay constant
+  work on every list, no buffer is written while another list can see it,
+  and a list built by one consumer is one buffer; every runtime loop still counts what it
+  walks and the counted work of every fixture is unchanged. `RB-08` shows
+  every clone a rendering keeps is one the ownership check requires (each
+  one, made a move, is refused), that the pass makes a last read a move
+  again when it is put back, the three refusals, and the runtime on two
+  hundred thousand cells and two lists on one tail. The renderer and
+  `rust-std` runtime records of `language/semantics-1.2.toml` change
+  (`rust_backend` 3), so the language-1.2 compiler-semantics ID changes,
+  every committed package is re-rendered, and every verified example's
+  records are regenerated. Measured on `UOR-Foundation/MNIST` (LexLean #81),
+  the certified `rust-std` root goes from 28.7 ms to 7.7 ms per image
+  with the same predictions and the same counted work.
+- The certification proof library is LexLean source (SPEC.md §17.18, `GC-09`,
+  `GC-11`; stage 2b of #27, #79). Its 13 hand-written Lean modules (Git tree
+  `298c8f97` at `ba52c601`: 97,597 bytes, 107 registered declarations) are now 13
+  native core modules of `lexlean/core-module/2` in an ordinary closed project,
+  `compiler/proofs/`, which holds no file of Lean source. `library.toml` lists
+  only the modules; the declarations (3,957 audited by name of 4,396) and their
+  exact axioms are read from the native data, and `conformance_gc_09` compiles
+  and audits the Lean generated from them. The migration is lossless
+  (`tests/certification-library/MIGRATION.md`); the library is repository
+  evidence, so no compiler-semantics ID changes. `GC-11` brings the register to 366 IDs.
+- The preservation proof library is LexLean source (SPEC.md §17.10, §17.17,
+  `SM-31`, `SP-12`; stage 2a of #27, #79). Its 13 hand-written Lean modules
+  (Git tree `50f70bb5` at `ba52c601`: 525,026 bytes, 934 registered
+  declarations) are now 13 native core modules of a second schema,
+  `lexlean/core-module/2` (`schemas/core-module-v2.schema.json`, language 1.2
+  only): annotation nodes, extended names (numeric components and escapes),
+  definition safety and groups, compiled and reducibility state, and the
+  matcher, projection, no-confusion, simplification, equation-record,
+  compiler-inlining, sparse-`casesOn`, and `grind` state, decoded by one fixed
+  generic runtime through Lean's checked declaration API (a sparse `casesOn` is
+  remade by the elaborator's own construction in a realization of its type, since
+  its record is private to that construction). A native core module is bounded in
+  expression depth by `max_scope_depth` (`LLS8002`), is rendered on a stack sized
+  for it, and is exempt from the module-name capture rule, since it writes no name
+  relative to the project; the LaTeX document states each row's elaborator state.
+  The library is an ordinary closed project
+  (`language/preservation-1.2/library/`, with a title glossary): it locks,
+  checks, and builds, and `LexLeanPreservation`, like `LexLeanTarget`, may be a
+  project's module prefix when the project has no production root.
+  `library.toml` lists the modules only: the 9,247 declarations carry their exact
+  axioms (what `#print axioms` prints, which for the members of a reference cycle
+  is the pinned Lean's order-dependent answer), 7,740 of them are audited by name
+  where 934 were, all 934 with unchanged axioms. The statement vocabulary SPEC.md
+  quotes is what Lean prints of the generated library in the committed audit
+  output; the certificate-B rule set is read from the native data;
+  `check-reproducibility` builds the library project twice. The exporter is the
+  oracle of a checkpoint commit (`d54dbf85`) and is absent from the release
+  tree; `tests/preservation-library/MIGRATION.md` records the equivalence
+  evidence: re-exporting the regenerated environment gives the same 9,247
+  declarations, equal as kernel terms (313 sparse `casesOn` rows up to the names
+  of bound variables), and an attribute probe over both environments prints equal
+  outputs. Languages 1.0 and 1.1 are byte-identical; every language-1.2 identity
+  changed.
 - Compiler-tooling modules (SPEC.md §17.20, `TL-01`..`TL-11`, `LLT4013`,
   `LLT4014`, `LLT4015`; stage 1a of #27): a third module form beside the
   ordinary declaration environments and the native `coremodule` and
@@ -88,6 +529,10 @@ versions, and the entries below say what each tag does and does not claim.
   variable numbering, with the same nodes, closures, externals, and
   inductives. The register is unchanged
   in size (350 IDs, 74 codes); `TL-03`, `TL-05`, and `NE-04` are reworded.
+- The preservation case `SP-05` reads the verified production export shared
+  with `PX-01`, removing one full verification of the production example
+  within `bdd` (#141). Its artifact assertions and six rejection fixtures
+  remain, and running the case alone lazily performs the real export.
 - The normative CI gate runs in two legs at once (SPEC.md §9.4, `RP-14`, no new
   ID or code): `examples`, which is about three quarters of the gate's time on
   the runner, and the other eleven recipes of `vv` in their order, each leg a
@@ -97,6 +542,22 @@ versions, and the entries below say what each tag does and does not claim.
   whole. The gate's wall time becomes the longer leg, about 2 h 40 min where the
   last full run took 3 h 16 min (an estimate from that run's timings). Each leg
   uploads its own `acceptance-gate-evidence-<leg>`.
+- Production bundle replay binds the compiler version to the producing
+  attestation and refuses an absent, empty, or non-string version with
+  `LLV7102`, including a result whose identity was recomputed after changing
+  its compiler version (`PX-07`, #136).
+- Production replay also binds the attested compiler-semantics digest to the
+  result, requires a verified `lexlean/attestation/2` envelope, and checks the
+  complete Lean-version fields in its Lean and Lake records (`PX-07`, #142).
+  The compiler input's own Lean version and commit must match the same pin;
+  reading that identity requires JSON objects and preserves support for
+  deeply nested LCNF payloads.
+  Missing or malformed facts and inconsistent compiler identities fail with
+  `LLV7102`; self-consistent historical crate versions remain supported.
+- Production bundle replay preserves literal filename characters when it
+  encodes path components, refuses non-UTF-8 names, and rejects duplicate
+  inventory paths. An extra backslash-named file or a canonical file moved to
+  such a name can no longer hide behind another bundle path (`PX-07`, #133).
 - Production export contract (SPEC.md §24.7, `PX-01`..`PX-12`, `CL-23`,
   `LLC0201`..`LLC0204`, `LLV7101`, `LLV7102`): a stable, versioned façade,
   `lexlean::api::production`, through which a consumer such as PrismPM
@@ -221,6 +682,11 @@ versions, and the entries below say what each tag does and does not claim.
   supported-host job drops the `cargo build` its `cargo test` repeated (SPEC.md
   §8.3). Pinned by `conformance_rp_14` and the unit tests of
   `repo_conformance::evidence`; no register ID or code is added.
+- Filesystem confinement rejects Windows drive prefixes in every segment of
+  a configured project-relative path before joining it (#138, SPEC.md §10.1,
+  §25.1, `CF-03`, `SE-01`). Both absolute and drive-relative forms are refused
+  on every host; colon names without a drive prefix retain their existing
+  path policy.
 - A host that embeds the library can end the children the library started
   (SPEC.md §17.17, §24.6, `CL-22`): `lexlean::verify::end_live_children` ends
   every child process group the library started in this process and has not
@@ -1055,6 +1521,36 @@ versions, and the entries below say what each tag does and does not claim.
     `true_and`, and `Option.some.injEq`. The eligibility report gains
     per-root `reasoning` rows, and its schema now admits the model and
     reasoning construct keys. The snapshot elaboration gains `theorems`.
+- A production root that applies a collection, fold, iteration, or graph
+  primitive now admits `recursion` (SPEC.md §17.13, `TC-06`; #105). Those
+  primitives are realized by library templates that call themselves, so the
+  stack depth of the rendered Rust is bounded only by the input (a scan of an
+  80,000-byte name aborted on an 8 MiB stack), yet their registry rows said
+  `recursion = false` and no root declared the effect. The rows are corrected,
+  and `conformance_tc_06` derives each runtime row's `recursion` from its
+  realization (the call graph of a template's instance, or the structural
+  `recursion` reference) instead of trusting the row. The language-1.2
+  compiler-semantics ID changes with the registry; `examples/reasoning` and
+  `examples/production-coverage` declare the effect on the roots that use these
+  primitives.
+- The host legs of CI may run for 120 minutes, where they were cut off at 60:
+  the Intel macOS leg takes 51 to 61 minutes, and a leg cancelled at its limit
+  is not a result about the code.
+- `conformance_rs_12` no longer reports a slow runner as a different claim
+  (#145; test hardening, no compiler change, no new diagnostic code). Its
+  planted verification of a copy of the `compiler` project expects Lean to
+  refuse the planted transcriptions with `LLV7002`; on four runs a runner
+  stall made Lean's children take 5 to 20 times their usual time, one hit
+  the 300 s default of `child_timeout_ms`, and the case saw `LLS8002`
+  instead. The scratch copy now allows 900 s, so the case again states only
+  what Lean said about the planted module. The committed `compiler` project,
+  its limits, and `verified_compiler()` are unchanged.
+- The start-order case of the verifier pool no longer reads the scheduler
+  (#148; test hardening, no compiler change). It recorded the order in which
+  four workers ran, not the order in which they claimed their items, and
+  failed 82 of 600 runs beside eight busy loops and once on an Intel macOS
+  host leg; it now observes the claims through two workers.
+
 ## 0.3.0
 
 - Support exhaustive Boolean matches and keep imported list construction

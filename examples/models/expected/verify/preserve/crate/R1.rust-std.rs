@@ -85,27 +85,79 @@ impl Bytes {
 }
 
 pub struct Node<T> { head: T, tail: List<T> }
-pub struct List<T>(Option<std::rc::Rc<Node<T>>>);
-impl<T> Clone for List<T> { fn clone(&self) -> Self { List(self.0.clone()) } }
-impl<T> Drop for List<T> {
+/// A list is a run of cells laid out contiguously, from the newest at the end of a buffer
+/// to the oldest at its start, or a cell in front of another list. A `cons` onto a run that
+/// owns its buffer alone pushes in place; a `cons` onto any other list is one cell, so
+/// building and taking apart a cell is constant work whatever the sharing, and no buffer is
+/// written while another list can see it.
+pub enum Repr<T> { Nil, Run { buffer: std::rc::Rc<Vec<T>>, len: usize }, Cell(std::rc::Rc<Node<T>>) }
+pub struct List<T>(Repr<T>);
+impl<T> Clone for List<T> {
+    fn clone(&self) -> Self {
+        List(match &self.0 {
+            Repr::Nil => Repr::Nil,
+            Repr::Run { buffer, len } => Repr::Run { buffer: buffer.clone(), len: *len },
+            Repr::Cell(cell) => Repr::Cell(cell.clone()),
+        })
+    }
+}
+impl<T> List<T> {
+    fn take(&mut self) -> Repr<T> { std::mem::replace(&mut self.0, Repr::Nil) }
+}
+impl<T> Drop for Node<T> {
     fn drop(&mut self) {
-        let mut next = self.0.take();
+        let mut next = match self.tail.take() { Repr::Cell(cell) => Some(cell), _ => None };
         while let Some(cell) = next { // release
             match std::rc::Rc::try_unwrap(cell) {
-                Ok(mut node) => next = node.tail.0.take(),
+                Ok(mut node) => next = match node.tail.take() { Repr::Cell(cell) => Some(cell), _ => None },
                 Err(_) => break,
             }
         }
     }
 }
 impl<T: Clone> List<T> {
-    pub fn nil() -> Self { List(None) }
-    pub fn cons(head: T, tail: List<T>) -> Self { List(Some(std::rc::Rc::new(Node { head, tail }))) }
-    pub fn uncons(&self) -> Option<(T, List<T>)> { self.0.as_ref().map(|node| (node.head.clone(), node.tail.clone())) }
+    pub fn nil() -> Self { List(Repr::Nil) }
+    pub fn cons(head: T, mut tail: List<T>) -> Self {
+        List(match tail.take() {
+            Repr::Nil => {
+                let mut buffer = Vec::with_capacity(16);
+                buffer.push(head);
+                Repr::Run { buffer: std::rc::Rc::new(buffer), len: 1 }
+            }
+            Repr::Run { mut buffer, len } => {
+                if let Some(cells) = std::rc::Rc::get_mut(&mut buffer) {
+                    cells.truncate(len);
+                    cells.push(head);
+                    Repr::Run { buffer, len: len + 1 }
+                } else {
+                    Repr::Cell(std::rc::Rc::new(Node { head, tail: List(Repr::Run { buffer, len }) }))
+                }
+            }
+            rest => Repr::Cell(std::rc::Rc::new(Node { head, tail: List(rest) })),
+        })
+    }
+    pub fn uncons(&self) -> Option<(T, List<T>)> {
+        match &self.0 {
+            Repr::Nil => None,
+            Repr::Run { buffer, len } => {
+                let head = buffer[len - 1].clone();
+                Some((head, List(if *len == 1 { Repr::Nil } else { Repr::Run { buffer: buffer.clone(), len: len - 1 } })))
+            }
+            Repr::Cell(cell) => Some((cell.head.clone(), cell.tail.clone())),
+        }
+    }
+    /// Walk the items in order, ticking one per item, until `each` says to stop: the cells
+    /// in front, then the run they end in.
+    fn walk(&self, each: &mut dyn FnMut(&T) -> bool) {
+        let mut cursor = self;
+        while let Repr::Cell(cell) = &cursor.0 { tick(1); if !each(&cell.head) { return; } cursor = &cell.tail; }
+        if let Repr::Run { buffer, len } = &cursor.0 {
+            for item in buffer[..*len].iter().rev() { tick(1); if !each(item) { return; } }
+        }
+    }
     fn items(&self) -> Vec<T> {
         let mut out = Vec::new();
-        let mut cursor = self.0.as_ref();
-        while let Some(node) = cursor { tick(1); out.push(node.head.clone()); cursor = node.tail.0.as_ref(); }
+        self.walk(&mut |item| { out.push(item.clone()); true });
         out
     }
     fn onto(items: Vec<T>, tail: List<T>) -> List<T> {
@@ -158,38 +210,30 @@ pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
     out.extend_from_slice(&b.0);
     Bytes(std::rc::Rc::from(out))
 }
-pub fn length_list<T>(a: List<T>) -> u64 {
+pub fn length_list<T: Clone>(a: List<T>) -> u64 {
     let mut count = 0;
-    let mut cursor = a.0.as_ref();
-    while let Some(node) = cursor { tick(1); count += 1; cursor = node.tail.0.as_ref(); }
+    a.walk(&mut |_| { count += 1; true });
     count
 }
 pub fn length_bytes(a: Bytes) -> u64 { a.0.len() as u64 }
 pub fn length_string(a: Str) -> u64 { chars(&a.0) }
 pub fn index_list<T: Clone>(a: List<T>, i: u64) -> Option<T> {
     let mut position = 0;
-    let mut cursor = a.0.as_ref();
-    while let Some(node) = cursor {
-        tick(1);
-        if position == i { return Some(node.head.clone()); }
-        position += 1;
-        cursor = node.tail.0.as_ref();
-    }
-    None
+    let mut found = None;
+    a.walk(&mut |item| { if position == i { found = Some(item.clone()); return false; } position += 1; true });
+    found
 }
 pub fn index_bytes(a: Bytes, i: u64) -> Option<u8> { usize::try_from(i).ok().and_then(|i| a.0.get(i)).copied() }
 pub fn slice_list<T: Clone>(a: List<T>, start: u64, count: u64) -> Option<List<T>> {
     let end = u128::from(start) + u128::from(count);
     let mut part = Vec::new();
     let mut position: u128 = 0;
-    let mut cursor = a.0.as_ref();
-    while let Some(node) = cursor {
-        tick(1);
-        if position >= end { break; }
-        if position >= u128::from(start) { part.push(node.head.clone()); }
+    a.walk(&mut |item| {
+        if position >= end { return false; }
+        if position >= u128::from(start) { part.push(item.clone()); }
         position += 1;
-        cursor = node.tail.0.as_ref();
-    }
+        true
+    });
     if position < end { None } else { Some(List::onto(part, List::nil())) }
 }
 pub fn slice_bytes(a: Bytes, start: u64, count: u64) -> Option<Bytes> {
@@ -210,16 +254,14 @@ pub fn split_exact(text: Str, delimiter: Str, maximum: u32) -> Option<List<Str>>
 }
 pub fn join(texts: List<Str>, delimiter: Str) -> Str {
     let mut out = String::new();
-    let mut cursor = texts.0.as_ref();
     let mut first = true;
-    while let Some(node) = cursor {
-        tick(1);
+    texts.walk(&mut |text| {
         if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }
         first = false;
-        chars(&node.head.0);
-        out.push_str(&node.head.0);
-        cursor = node.tail.0.as_ref();
-    }
+        chars(&text.0);
+        out.push_str(&text.0);
+        true
+    });
     Str::lit(&out)
 }
 fn canonical_decimal(text: &str) -> Option<Option<i128>> {
@@ -322,9 +364,9 @@ impl Fn3 {
 }
 
 pub fn f0(v0: Adt0) -> R<Result<u64, (bool, bool)>> {
-    let v1: Adt0 = v0.clone();
+    let v1: Adt0 = v0;
     let v2: u64 = f1(v1.clone())?;
-    if f2(v1.clone(), v2) {
+    if f2(v1, v2) {
         Ok(Ok::<u64, (bool, bool)>(v2))
     } else {
         Ok(Err::<u64, (bool, bool)>((true, false)))
@@ -332,18 +374,18 @@ pub fn f0(v0: Adt0) -> R<Result<u64, (bool, bool)>> {
 }
 
 pub fn f1(v0: Adt0) -> R<u64> {
-    f3(v0.clone())
+    f3(v0)
 }
 
 pub fn f2(v0: Adt0, v1: u64) -> bool {
     let a1 = v1;
-    let a2 = f4(v0.clone());
+    let a2 = f4(v0);
     nat_eq(a1, a2)
 }
 
 pub fn f3(v0: Adt0) -> R<u64> {
     let m4 = {
-        let (h3, _) = f5(Fn0::F6, (None::<(u64, i64)>, List::cons(0u64, List::cons(1u64, List::cons(2u64, List::cons(3u64, List::cons(4u64, List::cons(5u64, List::cons(6u64, List::cons(7u64, List::cons(8u64, List::cons(9u64, List::<u64>::nil()))))))))))), f7(v0.clone())?);
+        let (h3, _) = f5(Fn0::F6, (None::<(u64, i64)>, List::cons(0u64, List::cons(1u64, List::cons(2u64, List::cons(3u64, List::cons(4u64, List::cons(5u64, List::cons(6u64, List::cons(7u64, List::cons(8u64, List::cons(9u64, List::<u64>::nil()))))))))))), f7(v0)?);
         h3
     };
     match m4 {
@@ -358,7 +400,7 @@ pub fn f3(v0: Adt0) -> R<u64> {
 }
 
 pub fn f4(v0: Adt0) -> u64 {
-    let m6 = v0.clone();
+    let m6 = v0;
     match m6 {
         Adt0::C0 => {
             0u64
@@ -394,16 +436,16 @@ pub fn f4(v0: Adt0) -> u64 {
 }
 
 pub fn f5(v0: Fn0, v1: (Option<(u64, i64)>, List<u64>), v2: List<i64>) -> (Option<(u64, i64)>, List<u64>) {
-    let m7 = v2.clone();
+    let m7 = v2;
     match m7.uncons() {
         None => {
-            v1.clone()
+            v1
         }
         Some((v3, v4)) => {
             f5(v0.clone(), {
-                let c8: Fn0 = v0.clone();
-                c8.apply(v1.clone(), v3)
-            }, v4.clone())
+                let c8: Fn0 = v0;
+                c8.apply(v1, v3)
+            }, v4)
         }
     }
 }
@@ -415,12 +457,12 @@ pub fn f6(v0: (Option<(u64, i64)>, List<u64>), v1: i64) -> (Option<(u64, i64)>, 
     };
     match m10.uncons() {
         None => {
-            v0.clone()
+            v0
         }
         Some((v2, v3)) => {
             ({
                 let m12 = {
-                    let (h11, _) = v0.clone();
+                    let (h11, _) = v0;
                     h11
                 };
                 match m12 {
@@ -453,48 +495,48 @@ pub fn f6(v0: (Option<(u64, i64)>, List<u64>), v1: i64) -> (Option<(u64, i64)>, 
                         }
                     }
                 }
-            }, v3.clone())
+            }, v3)
         }
     }
 }
 
 pub fn f7(v0: Adt0) -> R<List<i64>> {
-    f8(f9(f10(f11(f12(v0.clone()))?)?)?)
+    f8(f9(f10(f11(f12(v0))?)?)?)
 }
 
 pub fn f8(v0: List<i64>) -> R<List<i64>> {
-    let (h17, _) = f13(Fn1::F14(v0.clone()), (List::<i64>::nil(), f15()), f16())?;
+    let (h17, _) = f13(Fn1::F14(v0), (List::<i64>::nil(), f15()), f16())?;
     Ok(h17)
 }
 
 pub fn f9(v0: List<i64>) -> R<List<i64>> {
-    f17(Fn2::F18, List::<i64>::nil(), v0.clone())
+    f17(Fn2::F18, List::<i64>::nil(), v0)
 }
 
 pub fn f10(v0: List<i64>) -> R<List<i64>> {
-    f17(Fn2::F19, List::<i64>::nil(), v0.clone())
+    f17(Fn2::F19, List::<i64>::nil(), v0)
 }
 
 pub fn f11(v0: List<i64>) -> R<List<i64>> {
-    let (h18, _) = f13(Fn1::F20(v0.clone()), (List::<i64>::nil(), f21()), f22())?;
+    let (h18, _) = f13(Fn1::F20(v0), (List::<i64>::nil(), f21()), f22())?;
     Ok(h18)
 }
 
 pub fn f12(v0: Adt0) -> List<i64> {
-    f23(v0.clone())
+    f23(v0)
 }
 
 pub fn f13(v0: Fn1, v1: (List<i64>, List<i64>), v2: List<List<i64>>) -> R<(List<i64>, List<i64>)> {
-    let m19 = v2.clone();
+    let m19 = v2;
     match m19.uncons() {
         None => {
-            Ok(v1.clone())
+            Ok(v1)
         }
         Some((v3, v4)) => {
             f13(v0.clone(), {
-                let c20: Fn1 = v0.clone();
-                c20.apply(v1.clone(), v3.clone())?
-            }, v4.clone())
+                let c20: Fn1 = v0;
+                c20.apply(v1, v3)?
+            }, v4)
         }
     }
 }
@@ -506,19 +548,19 @@ pub fn f14(v0: List<i64>, v1: (List<i64>, List<i64>), v2: List<i64>) -> R<(List<
     };
     match m22.uncons() {
         None => {
-            Ok(v1.clone())
+            Ok(v1)
         }
         Some((v3, v4)) => {
             Ok(({
                 let a28 = {
-                    let (h23, _) = v1.clone();
+                    let (h23, _) = v1;
                     h23
                 };
                 let a29 = List::cons({
                     let a26 = v3;
                     let a27 = {
                         let a25 = {
-                            let (h24, _) = f24(Fn3::F25, (0i64, v0.clone()), v2.clone())?;
+                            let (h24, _) = f24(Fn3::F25, (0i64, v0), v2)?;
                             h24
                         };
                         int_neg(a25)?
@@ -526,7 +568,7 @@ pub fn f14(v0: List<i64>, v1: (List<i64>, List<i64>), v2: List<i64>) -> R<(List<
                     int_sub(a26, a27)?
                 }, List::<i64>::nil());
                 append_list(a28, a29)
-            }, v4.clone()))
+            }, v4))
         }
     }
 }
@@ -540,22 +582,22 @@ pub fn f16() -> List<List<i64>> {
 }
 
 pub fn f17(v0: Fn2, v1: List<i64>, v2: List<i64>) -> R<List<i64>> {
-    let m30 = v2.clone();
+    let m30 = v2;
     match m30.uncons() {
         None => {
-            Ok(v1.clone())
+            Ok(v1)
         }
         Some((v3, v4)) => {
             f17(v0.clone(), {
-                let c31: Fn2 = v0.clone();
-                c31.apply(v1.clone(), v3)?
-            }, v4.clone())
+                let c31: Fn2 = v0;
+                c31.apply(v1, v3)?
+            }, v4)
         }
     }
 }
 
 pub fn f18(v0: List<i64>, v1: i64) -> R<List<i64>> {
-    let a41 = v0.clone();
+    let a41 = v0;
     let a42 = List::cons({
         let v2: i64 = {
             let a32 = v1;
@@ -607,7 +649,7 @@ pub fn f18(v0: List<i64>, v1: i64) -> R<List<i64>> {
 }
 
 pub fn f19(v0: List<i64>, v1: i64) -> List<i64> {
-    let a46 = v0.clone();
+    let a46 = v0;
     let a47 = List::cons({
         let m45 = {
             let a43 = v1;
@@ -640,19 +682,19 @@ pub fn f20(v0: List<i64>, v1: (List<i64>, List<i64>), v2: List<i64>) -> R<(List<
     };
     match m49.uncons() {
         None => {
-            Ok(v1.clone())
+            Ok(v1)
         }
         Some((v3, v4)) => {
             Ok(({
                 let a55 = {
-                    let (h50, _) = v1.clone();
+                    let (h50, _) = v1;
                     h50
                 };
                 let a56 = List::cons({
                     let a53 = v3;
                     let a54 = {
                         let a52 = {
-                            let (h51, _) = f24(Fn3::F26, (0i64, v0.clone()), v2.clone())?;
+                            let (h51, _) = f24(Fn3::F26, (0i64, v0), v2)?;
                             h51
                         };
                         int_neg(a52)?
@@ -660,7 +702,7 @@ pub fn f20(v0: List<i64>, v1: (List<i64>, List<i64>), v2: List<i64>) -> R<(List<
                     int_sub(a53, a54)?
                 }, List::<i64>::nil());
                 append_list(a55, a56)
-            }, v4.clone()))
+            }, v4))
         }
     }
 }
@@ -674,7 +716,7 @@ pub fn f22() -> List<List<i64>> {
 }
 
 pub fn f23(v0: Adt0) -> List<i64> {
-    let m57 = v0.clone();
+    let m57 = v0;
     match m57 {
         Adt0::C0 => {
             List::cons(1i64, List::cons(1i64, List::cons(1i64, List::cons(1i64, List::cons(1i64, List::cons(1i64, List::cons(0i64, List::<i64>::nil())))))))
@@ -710,16 +752,16 @@ pub fn f23(v0: Adt0) -> List<i64> {
 }
 
 pub fn f24(v0: Fn3, v1: (i64, List<i64>), v2: List<i64>) -> R<(i64, List<i64>)> {
-    let m58 = v2.clone();
+    let m58 = v2;
     match m58.uncons() {
         None => {
-            Ok(v1.clone())
+            Ok(v1)
         }
         Some((v3, v4)) => {
             f24(v0.clone(), {
-                let c59: Fn3 = v0.clone();
-                c59.apply(v1.clone(), v3)?
-            }, v4.clone())
+                let c59: Fn3 = v0;
+                c59.apply(v1, v3)?
+            }, v4)
         }
     }
 }
@@ -731,12 +773,12 @@ pub fn f25(v0: (i64, List<i64>), v1: i64) -> R<(i64, List<i64>)> {
     };
     match m61.uncons() {
         None => {
-            Ok(v0.clone())
+            Ok(v0)
         }
         Some((v2, v3)) => {
             Ok(({
                 let a66 = {
-                    let (h62, _) = v0.clone();
+                    let (h62, _) = v0;
                     h62
                 };
                 let a67 = {
@@ -748,7 +790,7 @@ pub fn f25(v0: (i64, List<i64>), v1: i64) -> R<(i64, List<i64>)> {
                     int_neg(a65)?
                 };
                 int_sub(a66, a67)?
-            }, v3.clone()))
+            }, v3))
         }
     }
 }
@@ -760,12 +802,12 @@ pub fn f26(v0: (i64, List<i64>), v1: i64) -> R<(i64, List<i64>)> {
     };
     match m69.uncons() {
         None => {
-            Ok(v0.clone())
+            Ok(v0)
         }
         Some((v2, v3)) => {
             Ok(({
                 let a74 = {
-                    let (h70, _) = v0.clone();
+                    let (h70, _) = v0;
                     h70
                 };
                 let a75 = {
@@ -777,7 +819,7 @@ pub fn f26(v0: (i64, List<i64>), v1: i64) -> R<(i64, List<i64>)> {
                     int_neg(a73)?
                 };
                 int_sub(a74, a75)?
-            }, v3.clone()))
+            }, v3))
         }
     }
 }

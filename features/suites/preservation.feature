@@ -25,10 +25,10 @@ Feature: preservation
     And an interpreter outcome altered in one case is reported as a disagreement
 
   @SP-04 @build
-  Scenario: Every declaration of the preservation library is registered in library.toml and depends on exactly the axioms it registers, the statement vocabulary SPEC.md quotes equals the library's declarations byte for byte, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused.
-    Given the preservation library, its registry, and the shipped calculus modules
-    When the library is compiled and every declaration's axioms printed, and the shipped modules are compared with the compiler golden
-    Then every declaration's axioms equal the registry and every shipped module equals its golden
+  Scenario: Every declaration of the preservation library is a row of a native module that pins its axioms exactly and depends on exactly them under the pinned Lean, the statement vocabulary SPEC.md quotes equals what the pinned Lean prints of the generated library, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused.
+    Given the preservation library, its registry, the generated audit output, and the shipped calculus modules
+    When the library is compiled and every declaration's axioms and the statement vocabulary printed, and the shipped modules are compared with the compiler golden
+    Then every declaration's axioms equal its native row's policy, the quoted vocabulary equals the printed one, and every shipped module equals its golden
     And a library module with a planted forbidden token, option, or import is refused
 
   @SP-05 @build
@@ -77,3 +77,25 @@ Feature: preservation
     Given every certified root's program, its seeded inputs, and the pinned Rust toolchain
     When each root is rendered in each target as a package, built, and run through its root and its entry
     Then every package builds and every printed outcome equals the interpreter's
+
+  @SP-12 @build
+  Scenario: The preservation library is LexLean source: every module of its registry is one language-1.2 native core module, the library project holds no file of Lean source, and no Lean file anywhere in the release tree declares its namespace or lies under its module root; the registry lists only the modules, and the declarations, their exact axiom policies, the constructors of the correspondence, and the cases of its soundness theorem are read from the native data, which the compiler embeds, hashes into the language-1.2 semantics, and generates the Lean of every verification from. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules.
+    Given the preservation library project, its registry, and the native modules the compiler embeds
+    When the project's files are listed and the registry, the declarations, and the correspondence are read from the native data
+    Then every listed module has exactly one native source and the project holds no Lean file, and no Lean file in the release tree declares the library's namespace
+    And the registry names no declaration, and the constructors and soundness cases the audit uses are those of the native modules
+    And a native source that is missing, extra, of the first schema, or weakened to an inexact policy is refused
+
+  @SP-13 @build
+  Scenario: Certificate text writes every list and array of any length as a term the pinned Lean elaborates without binders: one of at most 32 elements as a literal and a longer one as a chain of List.cons, so that no certificate holds a literal Lean splits under let binders; a root calling a function of 33 parameters with 33 operands, a root copying a record of 33 fields, and a root matching on 33 constructors of one field each verify through the whole pipeline, and none of their certificates writes a literal of more than 32 elements.
+    Given a root calling a function of 33 parameters, a root copying a record of 33 fields, and a root matching on 33 constructors of one field
+    When the certificates of each root are generated and the list literals they write are counted, and each root is verified with the pinned Lean
+    Then no certificate writes a list literal of more than 32 elements
+    And every root verifies, certificate B included
+
+  @SP-14 @build
+  Scenario: Certificate E of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; its theorems state what §17.17 states for the composition, each row pins its axioms exactly and the audit module prints and checks them, a certificate held as data is audited row by row and never as text (no axiom row, no forbidden constant, imports within the environment), and a planted wrong lemma, a changed statement, a forged crate reference, or an added axiom is refused.
+    Given every production root of the committed examples, the lowered programs, and the native preservation library
+    When certificate E of each root is built as a core module, rendered by the core backend, recorded in the notation, and verified under the pinned Lean
+    Then the record reads back to the module byte for byte, every row pins its axioms exactly, and the theorems elaborate, replay, and pass the audit
+    And a wrong lemma application, a changed statement, a forged crate reference, and an added axiom are each refused

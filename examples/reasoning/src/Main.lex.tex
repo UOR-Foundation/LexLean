@@ -7,6 +7,619 @@
 \importmodule{Screening}
 \title{Reasoning roots}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"binder":{"name":"r","type":{"kind":"nat"}},"body":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"module":"Clinic","name":"Indicated"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"var","name":"o"},"right":{"arguments":[{"kind":"var","name":"r"}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},"kind":"forall"},"kind":"definition","name":"Guaranteed","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"o","type":{"error":{"kind":"reasoning_failure"},"kind":"result","ok":{"kind":"nat"}}}],"result":{"kind":"prop"}},{"input":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},"kind":"contract","name":"TriageGuarantee","output":{"name":"o","type":{"error":{"kind":"reasoning_failure"},"kind":"result","ok":{"kind":"nat"}}},"postcondition":{"name":"Guaranteed"}},{"descriptor":{"body":{"arguments":[{"kind":"var","name":"v"}],"function":{"module":"Clinic","name":"Triage.verdict"},"kind":"call"},"kind":"deterministic"},"executable":true,"input":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},"kind":"realization","name":"GatewayTriage","output":{"error":{"kind":"reasoning_failure"},"kind":"result","ok":{"kind":"nat"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"gateway_safe","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}],"proof":{"arguments":[{"kind":"var","name":"v"}],"kind":"apply","theorem":{"module":"Clinic","name":"Triage.verdict_sound"}},"statement":{"arguments":[{"kind":"var","name":"v"},{"arguments":[{"kind":"var","name":"v"}],"function":{"name":"GatewayTriage"},"kind":"call"}],"function":{"name":"Guaranteed"},"kind":"call"}},{"axioms":["Classical.choice","Quot.sound","propext"],"claims":[{"kind":"satisfies_contract","theorem":{"name":"gateway_safe"}}],"contract":{"member":{"name":"TriageGuarantee"}},"kind":"evidence","name":"GatewayEvidence","realization":{"member":{"name":"GatewayTriage"}}},{"contract":{"member":{"name":"TriageGuarantee"}},"evidence":[{"member":{"name":"GatewayEvidence"}}],"kind":"model","name":"GatewayModel","realization":{"member":{"name":"GatewayTriage"}}},{"body":{"kind":"prop_and","left":{"kind":"le","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"conclusion":{"arguments":[{"kind":"var","name":"v"}],"function":{"module":"Clinic","name":"Hypotensive"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}}}},"kind":"definition","name":"Graded","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"and","left":{"kind":"ble","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"right":{"kind":"or","left":{"kind":"not","value":{"kind":"beq","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}}},"right":{"arguments":[{"kind":"var","name":"v"}],"function":{"module":"Clinic","name":"hypotensive"},"kind":"call"}}},"executable":true,"kind":"definition","name":"gradedCheck","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"graded_sound","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"module":"Clinic","name":"Hypotensive"},{"module":"Clinic","name":"hypotensive"},{"name":"Graded"},{"name":"gradedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Graded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"gradedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"gradedCheck"},"kind":"verifier","name":"Scale","sound":{"name":"graded_sound"},"specification":{"name":"Graded"},"subject":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"grade_admitted","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}],"proof":{"arguments":[{"kind":"var","name":"v"}],"kind":"apply","theorem":{"module":"Clinic","name":"admitted_consistent"}},"statement":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Chart"}}],"function":{"module":"Clinic","name":"Consistent"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"grade_pending","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}],"proof":{"arguments":[{"kind":"var","name":"v"}],"kind":"apply","theorem":{"module":"Clinic","name":"admitted_pending"}},"statement":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Chart"}}],"function":{"module":"Clinic","name":"Pending"},"kind":"call"},"right":{"kind":"nat","value":"11"}}},{"body":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"c"}],"function":{"module":"Clinic","name":"Consistent"},"kind":"call"},"right":{"kind":"prop_and","left":{"arguments":[{"kind":"var","name":"c"}],"function":{"module":"Clinic","name":"Warranted"},"kind":"call"},"right":{"kind":"prop_and","left":{"conclusion":{"arguments":[{"field":"vitals","kind":"project","value":{"kind":"var","name":"c"}}],"function":{"module":"Clinic","name":"Hypotensive"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"field":"shock","kind":"project","value":{"kind":"var","name":"c"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"eq","left":{"field":"systolic","kind":"project","value":{"field":"vitals","kind":"project","value":{"kind":"var","name":"c"}}},"right":{"field":"systolic","kind":"project","value":{"kind":"var","name":"v"}}}}}},"kind":"definition","name":"Related","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"c","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}}],"result":{"kind":"prop"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"related_admitted","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}],"proof":{"definitions":[{"module":"Clinic","name":"Consistent"},{"module":"Clinic","name":"Hypotensive"},{"module":"Clinic","name":"Warranted"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"arguments":[{"kind":"var","name":"v"},{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Chart"}}],"function":{"name":"Related"},"kind":"call"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"related_preserved","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"s","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}}],"proof":{"definitions":[{"module":"Clinic","name":"Consistent"},{"module":"Clinic","name":"Febrile"},{"module":"Clinic","name":"Hypotensive"},{"module":"Clinic","name":"Justified"},{"module":"Clinic","name":"Leukocytic"},{"module":"Clinic","name":"Tachycardic"},{"module":"Clinic","name":"Tachypneic"},{"module":"Clinic","name":"Warranted"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"t"}],"function":{"name":"Related"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"function":{"module":"Clinic","name":"Justified"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"s"}],"function":{"name":"Related"},"kind":"call"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"grade_correct","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"chart","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"module":"Clinic","name":"Consistent"},{"module":"Clinic","name":"Hypotensive"},{"module":"Clinic","name":"Warranted"},{"name":"Graded"},{"name":"Related"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Graded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"right":{"arguments":[{"kind":"var","name":"r"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"chart"}],"function":{"name":"Related"},"kind":"call"}}},{"answer":{"name":"chart","type":{"kind":"nat"},"value":{"arguments":[{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Classical.choice","Quot.sound","propext"],"claims":[{"kind":"initial_invariant","theorem":{"name":"grade_admitted"}},{"kind":"terminates","theorem":{"name":"grade_pending"}},{"initial":{"name":"related_admitted"},"kind":"observation_invariant","predicate":{"name":"Related"},"preserved":{"name":"related_preserved"}},{"kind":"answer_correct","theorem":{"name":"grade_correct"}}],"executable":true,"kind":"reasoner","logic":{"member":{"module":"Clinic","name":"Findings"}},"name":"Grade","observation":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},"observe":{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Chart"}},"rules":[{"member":{"module":"Clinic","name":"Fever"}},{"member":{"module":"Clinic","name":"Tachycardia"}},{"member":{"module":"Clinic","name":"Tachypnea"}},{"member":{"module":"Clinic","name":"Leukocytosis"}},{"member":{"module":"Clinic","name":"Sirs"}},{"member":{"module":"Clinic","name":"Sepsis"}},{"member":{"module":"Clinic","name":"Shock"}},{"member":{"module":"Clinic","name":"Escalate"}}],"strategy":{"fuel":{"kind":"nat","value":"11"},"kind":"forward"},"verifier":{"member":{"name":"Scale"}}},{"body":{"kind":"le","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"kind":"definition","name":"Capped","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"3"}},"executable":true,"kind":"definition","name":"cappedCheck","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"capped_sound","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"},{"name":"cappedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Capped"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"cappedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"cappedCheck"},"kind":"verifier","name":"Ceiling","sound":{"name":"capped_sound"},"specification":{"name":"Capped"},"subject":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"cap_correct","parameters":[{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},{"name":"chart","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Capped"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"v"},{"kind":"var","name":"r"}],"function":{"name":"Capped"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"3"},{"arguments":[{"kind":"nat","value":"3"},{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"right":{"arguments":[{"kind":"var","name":"r"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}}},{"answer":{"name":"chart","type":{"kind":"nat"},"value":{"arguments":[{"arguments":[{"kind":"nat","value":"3"},{"arguments":[{"kind":"nat","value":"3"},{"field":"level","kind":"project","value":{"kind":"var","name":"chart"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Classical.choice","Quot.sound","propext"],"claims":[{"kind":"answer_correct","theorem":{"name":"cap_correct"}}],"executable":true,"kind":"reasoner","logic":{"member":{"module":"Clinic","name":"Findings"}},"name":"Cap","observation":{"name":"v","type":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Vitals"}}},"observe":{"fields":[{"field":"vitals","value":{"kind":"var","name":"v"}},{"field":"fever","value":{"kind":"nat","value":"0"}},{"field":"tachycardia","value":{"kind":"nat","value":"0"}},{"field":"tachypnea","value":{"kind":"nat","value":"0"}},{"field":"leukocytosis","value":{"kind":"nat","value":"0"}},{"field":"sirs","value":{"kind":"nat","value":"0"}},{"field":"sepsis","value":{"kind":"nat","value":"0"}},{"field":"shock","value":{"kind":"nat","value":"0"}},{"field":"level","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Chart"}},"rules":[{"member":{"module":"Clinic","name":"Fever"}},{"member":{"module":"Clinic","name":"Tachycardia"}},{"member":{"module":"Clinic","name":"Tachypnea"}},{"member":{"module":"Clinic","name":"Leukocytosis"}},{"member":{"module":"Clinic","name":"Sirs"}},{"member":{"module":"Clinic","name":"Sepsis"}},{"member":{"module":"Clinic","name":"Shock"}},{"member":{"module":"Clinic","name":"Escalate"}}],"strategy":{"fuel":{"kind":"nat","value":"11"},"kind":"forward"},"verifier":{"member":{"name":"Ceiling"}}},{"body":{"branches":[{"binders":["level"],"body":{"kind":"var","name":"level"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"var","name":"temperature"}},{"field":"heartRate","value":{"kind":"var","name":"heartRate"}},{"field":"respiratoryRate","value":{"kind":"var","name":"respiratoryRate"}},{"field":"whiteCells","value":{"kind":"var","name":"whiteCells"}},{"field":"systolic","value":{"kind":"var","name":"systolic"}},{"field":"infection","value":{"kind":"var","name":"infection"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.verdict"},"kind":"call"}},"executable":true,"kind":"definition","name":"triageLevel","parameters":[{"name":"temperature","type":{"kind":"nat"}},{"name":"heartRate","type":{"kind":"nat"}},{"name":"respiratoryRate","type":{"kind":"nat"}},{"name":"whiteCells","type":{"kind":"nat"}},{"name":"systolic","type":{"kind":"nat"}},{"name":"infection","type":{"kind":"nat"}}],"production":{"effects":["overflow"],"targets":["rust-core"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["level"],"body":{"kind":"var","name":"level"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"var","name":"temperature"}},{"field":"heartRate","value":{"kind":"var","name":"heartRate"}},{"field":"respiratoryRate","value":{"kind":"var","name":"respiratoryRate"}},{"field":"whiteCells","value":{"kind":"var","name":"whiteCells"}},{"field":"systolic","value":{"kind":"var","name":"systolic"}},{"field":"infection","value":{"kind":"var","name":"infection"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"GatewayModel"},"kind":"call"}},"executable":true,"kind":"definition","name":"gatewayLevel","parameters":[{"name":"temperature","type":{"kind":"nat"}},{"name":"heartRate","type":{"kind":"nat"}},{"name":"respiratoryRate","type":{"kind":"nat"}},{"name":"whiteCells","type":{"kind":"nat"}},{"name":"systolic","type":{"kind":"nat"}},{"name":"infection","type":{"kind":"nat"}}],"production":{"effects":["overflow"],"targets":["rust-core"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["explained"],"body":{"arguments":[{"kind":"second","value":{"kind":"var","name":"explained"}}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"var","name":"temperature"}},{"field":"heartRate","value":{"kind":"var","name":"heartRate"}},{"field":"respiratoryRate","value":{"kind":"var","name":"respiratoryRate"}},{"field":"whiteCells","value":{"kind":"var","name":"whiteCells"}},{"field":"systolic","value":{"kind":"var","name":"systolic"}},{"field":"infection","value":{"kind":"var","name":"infection"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage"},"kind":"call"}},"executable":true,"kind":"definition","name":"triageSteps","parameters":[{"name":"temperature","type":{"kind":"nat"}},{"name":"heartRate","type":{"kind":"nat"}},{"name":"respiratoryRate","type":{"kind":"nat"}},{"name":"whiteCells","type":{"kind":"nat"}},{"name":"systolic","type":{"kind":"nat"}},{"name":"infection","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"axioms":["propext"],"body":{"branches":[{"binders":["jugs"],"body":{"kind":"first","value":{"kind":"var","name":"jugs"}},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"target"}],"function":{"module":"Planner","name":"Plan.verdict"},"kind":"call"}},"executable":true,"kind":"definition","name":"planLeft","parameters":[{"name":"target","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["dose"],"body":{"kind":"var","name":"dose"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"w"}],"function":{"module":"Screening","name":"Dose.verdict"},"kind":"call"}},"executable":true,"kind":"definition","name":"doseLevel","parameters":[{"name":"w","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["level"],"body":{"kind":"var","name":"level"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"var","name":"temperature"}},{"field":"heartRate","value":{"kind":"var","name":"heartRate"}},{"field":"respiratoryRate","value":{"kind":"var","name":"respiratoryRate"}},{"field":"whiteCells","value":{"kind":"var","name":"whiteCells"}},{"field":"systolic","value":{"kind":"var","name":"systolic"}},{"field":"infection","value":{"kind":"var","name":"infection"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.verdict"},"kind":"call"}},"executable":true,"kind":"definition","name":"gradeLevel","parameters":[{"name":"temperature","type":{"kind":"nat"}},{"name":"heartRate","type":{"kind":"nat"}},{"name":"respiratoryRate","type":{"kind":"nat"}},{"name":"whiteCells","type":{"kind":"nat"}},{"name":"systolic","type":{"kind":"nat"}},{"name":"infection","type":{"kind":"nat"}}],"production":{"effects":["overflow"],"targets":["rust-core"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["dose"],"body":{"kind":"var","name":"dose"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"var","name":"w"}],"function":{"module":"Screening","name":"Screen.verdict"},"kind":"call"}},"executable":true,"kind":"definition","name":"screenDose","parameters":[{"name":"w","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"body":{"branches":[{"binders":["left"],"body":{"kind":"var","name":"left"},"constructor":{"name":"Result.ok"}},{"binders":["failure"],"body":{"kind":"nat","value":"9"},"constructor":{"name":"Result.error"}}],"kind":"match","scrutinee":{"arguments":[{"kind":"pair","left":{"kind":"var","name":"x"},"right":{"kind":"var","name":"x"}}],"function":{"module":"Budget","name":"Spend.verdict"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"executable":true,"kind":"definition","name":"spendLeft","parameters":[{"name":"x","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"nat"}},{"kind":"theorem","name":"triage_shock","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage"},"kind":"call"},"right":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Fever"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Tachycardia"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Tachypnea"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Leukocytosis"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Sirs"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Sepsis"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Shock"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"nil"}}}}}}}}}}}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"triage_level","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"392"},{"kind":"nat","value":"118"},{"kind":"nat","value":"26"},{"kind":"nat","value":"15"},{"kind":"nat","value":"82"},{"kind":"nat","value":"1"}],"function":{"name":"triageLevel"},"kind":"call"},"right":{"kind":"nat","value":"3"}}},{"kind":"theorem","name":"triage_replays","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}},{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Fever"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Tachycardia"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Tachypnea"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Leukocytosis"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Sirs"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Sepsis"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Shock"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Escalate"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"nil"}}}}}}}}}}}],"function":{"module":"Clinic","name":"Triage.answer"},"kind":"call"},"right":{"arguments":[{"kind":"nat","value":"3"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},{"kind":"theorem","name":"triage_iterations","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.run"},"kind":"call"}}}},"right":{"kind":"nat","value":"10"}}},{"kind":"theorem","name":"triage_well","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage"},"kind":"call"},"right":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"nil"}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"triage_forged","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}},{"head":{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Sepsis"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Triage.Step"}},"kind":"nil"}}],"function":{"module":"Clinic","name":"Triage.follow"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.invalid_step"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"triage_inapplicable","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.observe"},"kind":"call"},{"arguments":[],"constructor":{"module":"Clinic","name":"Triage.Step.Shock"},"kind":"constructor"}],"function":{"module":"Clinic","name":"Triage.fire"},"kind":"call"},"right":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"arguments":[],"kind":"named","member":{"module":"Clinic","name":"Chart"}}]}}},{"kind":"theorem","name":"review_exhausted","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.exhausted"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"review_rejected","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.rejected"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"gateway_level","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"392"},{"kind":"nat","value":"118"},{"kind":"nat","value":"26"},{"kind":"nat","value":"15"},{"kind":"nat","value":"82"},{"kind":"nat","value":"1"}],"function":{"name":"gatewayLevel"},"kind":"call"},"right":{"kind":"nat","value":"3"}}},{"kind":"theorem","name":"spend_drained","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend"},"kind":"call","type_arguments":[{"kind":"nat"}]},"right":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"head":{"arguments":[],"constructor":{"module":"Budget","name":"Spend.Step.Tick"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Budget","name":"Spend.Step.Tick"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"cons","tail":{"head":{"arguments":[],"constructor":{"module":"Budget","name":"Spend.Step.Tick"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"cons","tail":{"head":{"arguments":[{"kind":"nat","value":"2"}],"constructor":{"module":"Budget","name":"Spend.Step.Burn"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"cons","tail":{"element":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Budget","name":"Spend.Step"}},"kind":"nil"}}}}}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"element":{"arguments":[{"kind":"nat"}],"kind":"named","member":{"module":"Budget","name":"Spend.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"refund_drained","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.verdict"},"kind":"call"},"right":{"arguments":[{"kind":"nat","value":"0"}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"refund_unsolved","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.unsolved"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"axioms":["propext"],"kind":"theorem","name":"plan_found","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan"},"kind":"call"},"right":{"arguments":[{"kind":"pair","left":{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}},"right":{"head":{"arguments":[],"constructor":{"module":"Planner","name":"Plan.Step.FillA"},"kind":"constructor"},"kind":"cons","tail":{"head":{"arguments":[{"kind":"nat","value":"2"}],"constructor":{"module":"Planner","name":"Plan.Step.Pour"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Planner","name":"Plan.Step"}},"kind":"nil"}}}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Planner","name":"Plan.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"axioms":["propext"],"kind":"theorem","name":"plan_unsolved","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.unsolved"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},{"kind":"reasoning_failure"}]}}},{"axioms":["propext"],"kind":"theorem","name":"plan_frontier","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"nat","value":"4"}}},{"kind":"theorem","name":"screen_found","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen"},"kind":"call"},"right":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"30"},"right":{"head":{"arguments":[{"kind":"nat","value":"30"}],"constructor":{"module":"Screening","name":"Screen.Step.Propose"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Screening","name":"Screen.Step"}},"kind":"nil"}}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Screening","name":"Screen.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"grade_shock","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"392"},{"kind":"nat","value":"118"},{"kind":"nat","value":"26"},{"kind":"nat","value":"15"},{"kind":"nat","value":"82"},{"kind":"nat","value":"1"}],"function":{"name":"gradeLevel"},"kind":"call"},"right":{"kind":"nat","value":"3"}}},{"kind":"theorem","name":"dose_found","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose"},"kind":"call"},"right":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"30"},"right":{"head":{"arguments":[{"kind":"nat","value":"30"}],"constructor":{"module":"Screening","name":"Dose.Step.candidate"},"kind":"constructor"},"kind":"cons","tail":{"element":{"arguments":[],"kind":"named","member":{"module":"Screening","name":"Dose.Step"}},"kind":"nil"}}}],"constructor":{"name":"Result.ok"},"kind":"constructor","type_arguments":[{"kind":"product","left":{"kind":"nat"},"right":{"element":{"arguments":[],"kind":"named","member":{"module":"Screening","name":"Dose.Step"}},"kind":"list"}},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"dose_exhausted","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.exhausted"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"screen_truncated","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.verdict"},"kind":"call"},"right":{"arguments":[{"arguments":[],"constructor":{"name":"ReasoningFailure.exhausted"},"kind":"constructor"}],"constructor":{"name":"Result.error"},"kind":"constructor","type_arguments":[{"kind":"nat"},{"kind":"reasoning_failure"}]}}},{"kind":"theorem","name":"triage_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"10"},"right":{"kind":"pair","left":{"kind":"nat","value":"60"},"right":{"kind":"pair","left":{"kind":"nat","value":"10"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"triage_well_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Triage.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"8"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"review_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"6"},"right":{"kind":"pair","left":{"kind":"nat","value":"21"},"right":{"kind":"pair","left":{"kind":"nat","value":"6"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"grade_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"392"}},{"field":"heartRate","value":{"kind":"nat","value":"118"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"26"}},{"field":"whiteCells","value":{"kind":"nat","value":"15"}},{"field":"systolic","value":{"kind":"nat","value":"82"}},{"field":"infection","value":{"kind":"nat","value":"1"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"10"},"right":{"kind":"pair","left":{"kind":"nat","value":"60"},"right":{"kind":"pair","left":{"kind":"nat","value":"10"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"grade_well_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"368"}},{"field":"heartRate","value":{"kind":"nat","value":"72"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"name":"Grade.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"8"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"review_rejected_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"fields":[{"field":"temperature","value":{"kind":"nat","value":"390"}},{"field":"heartRate","value":{"kind":"nat","value":"100"}},{"field":"respiratoryRate","value":{"kind":"nat","value":"14"}},{"field":"whiteCells","value":{"kind":"nat","value":"7"}},{"field":"systolic","value":{"kind":"nat","value":"120"}},{"field":"infection","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"module":"Clinic","name":"Vitals"}}],"function":{"module":"Clinic","name":"Review.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"24"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"spend_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"2"}}],"function":{"module":"Budget","name":"Spend.account"},"kind":"call","type_arguments":[{"kind":"nat"}]}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"8"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"refund_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"8"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"refund_unsolved_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}},"right":{"field":"frontier","kind":"project","value":{"arguments":[{"kind":"nat","value":"7"}],"function":{"module":"Budget","name":"Refund.account"},"kind":"call"}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"9"},"right":{"kind":"pair","left":{"kind":"nat","value":"13"},"right":{"kind":"pair","left":{"kind":"nat","value":"9"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"0"}}}}}}}},{"axioms":["propext"],"kind":"theorem","name":"plan_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"2"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"15"},"right":{"kind":"pair","left":{"kind":"nat","value":"8"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"4"}}}}}}}},{"axioms":["propext"],"kind":"theorem","name":"plan_unsolved_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"5"}],"function":{"module":"Planner","name":"Plan.run"},"kind":"call"}}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"20"},"right":{"kind":"pair","left":{"kind":"nat","value":"100"},"right":{"kind":"pair","left":{"kind":"nat","value":"51"},"right":{"kind":"pair","left":{"kind":"nat","value":"20"},"right":{"kind":"pair","left":{"kind":"nat","value":"20"},"right":{"kind":"nat","value":"10"}}}}}}}},{"kind":"theorem","name":"screen_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"12"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"3"}}}}}}}},{"kind":"theorem","name":"screen_unsolved_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"0"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"1"}}}}}}}},{"kind":"theorem","name":"screen_truncated_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"kind":"first","value":{"arguments":[{"kind":"nat","value":"100"}],"function":{"module":"Screening","name":"Screen.run"},"kind":"call"}}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"16"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"pair","left":{"kind":"nat","value":"4"},"right":{"kind":"nat","value":"3"}}}}}}}},{"kind":"theorem","name":"dose_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"60"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"0"}}}}}}}},{"kind":"theorem","name":"dose_exhausted_ledger","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"kind":"pair","left":{"field":"iterations","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"attempts","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"firings","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"expansions","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"kind":"pair","left":{"field":"verifications","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}},"right":{"field":"frontier","kind":"project","value":{"field":"ledger","kind":"project","value":{"arguments":[{"kind":"nat","value":"120"}],"function":{"module":"Screening","name":"Dose.run"},"kind":"call"}}}}}}}},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"0"},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"0"}}}}}}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: Guaranteed,
+  parameters: [v : Clinic::Vitals, o : (Result Nat ReasoningFailure)],
+  result: Prop,
+  body: (forall (r : Nat), ((o = (ctor Result.ok [Nat, ReasoningFailure] r)) -> (Clinic::Indicated v r)))
+}
+
+contract{
+  name: TriageGuarantee,
+  input: {name: v, type: Clinic::Vitals},
+  output: {name: o, type: (Result Nat ReasoningFailure)},
+  postcondition: Guaranteed
+}
+
+realization{
+  name: GatewayTriage,
+  descriptor: deterministic{body: (Clinic::Triage.verdict v)},
+  executable: true,
+  input: {name: v, type: Clinic::Vitals},
+  output: (Result Nat ReasoningFailure)
+}
+
+theorem{
+  name: gateway_safe,
+  parameters: [v : Clinic::Vitals],
+  statement: (Guaranteed v (GatewayTriage v)),
+  proof: apply{arguments: [v], theorem: Clinic::Triage.verdict_sound},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+evidence{
+  name: GatewayEvidence,
+  axioms: [Classical.choice, Quot.sound, propext],
+  claims: [satisfies_contract{theorem: gateway_safe}],
+  contract: {member: TriageGuarantee},
+  realization: {member: GatewayTriage}
+}
+
+model{
+  name: GatewayModel,
+  contract: {member: TriageGuarantee},
+  evidence: [{member: GatewayEvidence}],
+  realization: {member: GatewayTriage}
+}
+
+definition{
+  name: Graded,
+  parameters: [v : Clinic::Vitals, r : Nat],
+  result: Prop,
+  body: ((r <= 3) /\ ((r = 3) -> (Clinic::Hypotensive v)))
+}
+
+definition{
+  name: gradedCheck,
+  parameters: [v : Clinic::Vitals, r : Nat],
+  result: Bool,
+  body: ((r <=? 3) && ((not (r =? 3)) || (Clinic::hypotensive v))),
+  executable: true
+}
+
+theorem{
+  name: graded_sound,
+  parameters: [v : Clinic::Vitals, r : Nat],
+  statement: (((gradedCheck v r) = true) -> (Graded v r)),
+  proof: linear_arithmetic{
+    definitions: [Clinic::Hypotensive, Clinic::hypotensive, Graded, gradedCheck]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+verifier{
+  name: Scale,
+  axioms: [Classical.choice, Quot.sound, propext],
+  candidate: {name: r, type: Nat},
+  check: gradedCheck,
+  sound: graded_sound,
+  specification: Graded,
+  subject: {name: v, type: Clinic::Vitals}
+}
+
+theorem{
+  name: grade_admitted,
+  parameters: [v : Clinic::Vitals],
+  statement: (Clinic::Consistent (record Clinic::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})),
+  proof: apply{arguments: [v], theorem: Clinic::admitted_consistent},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: grade_pending,
+  parameters: [v : Clinic::Vitals],
+  statement: ((Clinic::Pending (record Clinic::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})) < 11),
+  proof: apply{arguments: [v], theorem: Clinic::admitted_pending},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: Related,
+  parameters: [v : Clinic::Vitals, c : Clinic::Chart],
+  result: Prop,
+  body: ((Clinic::Consistent c) /\ ((Clinic::Warranted c) /\ ((((project c shock) = 1) -> (Clinic::Hypotensive (project c vitals))) /\ ((project (project c vitals) systolic) = (project v systolic)))))
+}
+
+theorem{
+  name: related_admitted,
+  parameters: [v : Clinic::Vitals],
+  statement: (Related v (record Clinic::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0})),
+  proof: linear_arithmetic{
+    definitions: [Clinic::Consistent, Clinic::Hypotensive, Clinic::Warranted, Related]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: related_preserved,
+  parameters: [v : Clinic::Vitals, s : Clinic::Chart, t : Clinic::Chart],
+  statement: ((Related v s) -> ((Clinic::Justified s t) -> (Related v t))),
+  proof: linear_arithmetic{
+    definitions: [
+      Clinic::Consistent,
+      Clinic::Febrile,
+      Clinic::Hypotensive,
+      Clinic::Justified,
+      Clinic::Leukocytic,
+      Clinic::Tachycardic,
+      Clinic::Tachypneic,
+      Clinic::Warranted,
+      Related
+    ]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: grade_correct,
+  parameters: [v : Clinic::Vitals, chart : Clinic::Chart, r : Nat],
+  statement: ((Related v chart) -> (((ctor Option.some [Nat] (project chart level)) = (ctor Option.some [Nat] r)) -> (Graded v r))),
+  proof: linear_arithmetic{
+    definitions: [Clinic::Consistent, Clinic::Hypotensive, Clinic::Warranted, Graded, Related]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+reasoner{
+  name: Grade,
+  axioms: [Classical.choice, Quot.sound, propext],
+  answer: {name: chart, type: Nat, value: (ctor Option.some [Nat] (project chart level))},
+  claims: [
+    initial_invariant{theorem: grade_admitted},
+    terminates{theorem: grade_pending},
+    observation_invariant{
+      initial: related_admitted,
+      predicate: Related,
+      preserved: related_preserved
+    },
+    answer_correct{theorem: grade_correct}
+  ],
+  executable: true,
+  logic: {member: Clinic::Findings},
+  observation: {name: v, type: Clinic::Vitals},
+  observe: (record Clinic::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0}),
+  rules: [
+    {member: Clinic::Fever},
+    {member: Clinic::Tachycardia},
+    {member: Clinic::Tachypnea},
+    {member: Clinic::Leukocytosis},
+    {member: Clinic::Sirs},
+    {member: Clinic::Sepsis},
+    {member: Clinic::Shock},
+    {member: Clinic::Escalate}
+  ],
+  strategy: forward{fuel: 11},
+  verifier: {member: Scale}
+}
+
+definition{name: Capped, parameters: [v : Clinic::Vitals, r : Nat], result: Prop, body: (r <= 3)}
+
+definition{
+  name: cappedCheck,
+  parameters: [v : Clinic::Vitals, r : Nat],
+  result: Bool,
+  body: (r <=? 3),
+  executable: true
+}
+
+theorem{
+  name: capped_sound,
+  parameters: [v : Clinic::Vitals, r : Nat],
+  statement: (((cappedCheck v r) = true) -> (Capped v r)),
+  proof: linear_arithmetic{definitions: [Capped, cappedCheck]},
+  axioms: [propext]
+}
+
+verifier{
+  name: Ceiling,
+  axioms: [propext],
+  candidate: {name: r, type: Nat},
+  check: cappedCheck,
+  sound: capped_sound,
+  specification: Capped,
+  subject: {name: v, type: Clinic::Vitals}
+}
+
+theorem{
+  name: cap_correct,
+  parameters: [v : Clinic::Vitals, chart : Clinic::Chart, r : Nat],
+  statement: (((ctor Option.some [Nat] (prim subtract 3 (prim subtract 3 (project chart level) : Nat) : Nat)) = (ctor Option.some [Nat] r)) -> (Capped v r)),
+  proof: linear_arithmetic{definitions: [Capped]},
+  axioms: [Quot.sound, propext]
+}
+
+reasoner{
+  name: Cap,
+  axioms: [Classical.choice, Quot.sound, propext],
+  answer: {
+    name: chart,
+    type: Nat,
+    value: (ctor Option.some [Nat] (prim subtract 3 (prim subtract 3 (project chart level) : Nat) : Nat))
+  },
+  claims: [answer_correct{theorem: cap_correct}],
+  executable: true,
+  logic: {member: Clinic::Findings},
+  observation: {name: v, type: Clinic::Vitals},
+  observe: (record Clinic::Chart {vitals := v, fever := 0, tachycardia := 0, tachypnea := 0, leukocytosis := 0, sirs := 0, sepsis := 0, shock := 0, level := 0}),
+  rules: [
+    {member: Clinic::Fever},
+    {member: Clinic::Tachycardia},
+    {member: Clinic::Tachypnea},
+    {member: Clinic::Leukocytosis},
+    {member: Clinic::Sirs},
+    {member: Clinic::Sepsis},
+    {member: Clinic::Shock},
+    {member: Clinic::Escalate}
+  ],
+  strategy: forward{fuel: 11},
+  verifier: {member: Ceiling}
+}
+
+definition{
+  name: triageLevel,
+  parameters: [
+    temperature : Nat,
+    heartRate : Nat,
+    respiratoryRate : Nat,
+    whiteCells : Nat,
+    systolic : Nat,
+    infection : Nat
+  ],
+  result: Nat,
+  body: (match (Clinic::Triage.verdict (record Clinic::Vitals {temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection}))
+    | Result.ok level => level
+    | Result.error failure => 9),
+  executable: true,
+  production: {effects: [overflow, recursion], targets: [rust-core]}
+}
+
+definition{
+  name: gatewayLevel,
+  parameters: [
+    temperature : Nat,
+    heartRate : Nat,
+    respiratoryRate : Nat,
+    whiteCells : Nat,
+    systolic : Nat,
+    infection : Nat
+  ],
+  result: Nat,
+  body: (match (GatewayModel (record Clinic::Vitals {temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection}))
+    | Result.ok level => level
+    | Result.error failure => 9),
+  executable: true,
+  production: {effects: [overflow, recursion], targets: [rust-core]}
+}
+
+definition{
+  name: triageSteps,
+  parameters: [
+    temperature : Nat,
+    heartRate : Nat,
+    respiratoryRate : Nat,
+    whiteCells : Nat,
+    systolic : Nat,
+    infection : Nat
+  ],
+  result: Nat,
+  body: (match (Clinic::Triage (record Clinic::Vitals {temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection}))
+    | Result.ok explained => (prim length (second explained) : Nat)
+    | Result.error failure => 0),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: planLeft,
+  parameters: [target : Nat],
+  result: Nat,
+  body: (match (Planner::Plan.verdict target)
+    | Result.ok jugs => (first jugs)
+    | Result.error failure => 9),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: doseLevel,
+  parameters: [w : Nat],
+  result: Nat,
+  body: (match (Screening::Dose.verdict w) | Result.ok dose => dose | Result.error failure => 9),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: gradeLevel,
+  parameters: [
+    temperature : Nat,
+    heartRate : Nat,
+    respiratoryRate : Nat,
+    whiteCells : Nat,
+    systolic : Nat,
+    infection : Nat
+  ],
+  result: Nat,
+  body: (match (Grade.verdict (record Clinic::Vitals {temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection}))
+    | Result.ok level => level
+    | Result.error failure => 9),
+  executable: true,
+  production: {effects: [overflow, recursion], targets: [rust-core]}
+}
+
+definition{
+  name: screenDose,
+  parameters: [w : Nat],
+  result: Nat,
+  body: (match (Screening::Screen.verdict w) | Result.ok dose => dose | Result.error failure => 9),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: spendLeft,
+  parameters: [x : Nat],
+  result: Nat,
+  body: (match (Budget::Spend.verdict [Nat] (x, x))
+    | Result.ok left => left
+    | Result.error failure => 9),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+theorem{
+  name: triage_shock,
+  parameters: [],
+  statement: ((Clinic::Triage (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) = (ctor Result.ok [(Nat * (List Clinic::Triage.Step)), ReasoningFailure] (3, (cons (ctor Clinic::Triage.Step.Fever) (cons (ctor Clinic::Triage.Step.Tachycardia) (cons (ctor Clinic::Triage.Step.Tachypnea) (cons (ctor Clinic::Triage.Step.Leukocytosis) (cons (ctor Clinic::Triage.Step.Sirs) (cons (ctor Clinic::Triage.Step.Sepsis) (cons (ctor Clinic::Triage.Step.Shock) (cons (ctor Clinic::Triage.Step.Escalate) (cons (ctor Clinic::Triage.Step.Escalate) (cons (ctor Clinic::Triage.Step.Escalate) (nil Clinic::Triage.Step)))))))))))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_level,
+  parameters: [],
+  statement: ((triageLevel 392 118 26 15 82 1) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_replays,
+  parameters: [],
+  statement: ((Clinic::Triage.answer (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1}) (cons (ctor Clinic::Triage.Step.Fever) (cons (ctor Clinic::Triage.Step.Tachycardia) (cons (ctor Clinic::Triage.Step.Tachypnea) (cons (ctor Clinic::Triage.Step.Leukocytosis) (cons (ctor Clinic::Triage.Step.Sirs) (cons (ctor Clinic::Triage.Step.Sepsis) (cons (ctor Clinic::Triage.Step.Shock) (cons (ctor Clinic::Triage.Step.Escalate) (cons (ctor Clinic::Triage.Step.Escalate) (cons (ctor Clinic::Triage.Step.Escalate) (nil Clinic::Triage.Step)))))))))))) = (ctor Option.some [Nat] 3)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_iterations,
+  parameters: [],
+  statement: ((project (project (first (Clinic::Triage.run (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1}))) ledger) iterations) = 10),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_well,
+  parameters: [],
+  statement: ((Clinic::Triage (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) = (ctor Result.ok [(Nat * (List Clinic::Triage.Step)), ReasoningFailure] (0, (nil Clinic::Triage.Step)))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_forged,
+  parameters: [],
+  statement: ((Clinic::Triage.follow (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0}) (cons (ctor Clinic::Triage.Step.Sepsis) (nil Clinic::Triage.Step))) = (ctor Result.error [Clinic::Chart, ReasoningFailure] (ctor ReasoningFailure.invalid_step))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_inapplicable,
+  parameters: [],
+  statement: ((Clinic::Triage.fire (Clinic::Triage.observe (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) (ctor Clinic::Triage.Step.Shock)) = (ctor Option.none [Clinic::Chart])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: review_exhausted,
+  parameters: [],
+  statement: ((Clinic::Review.verdict (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) = (ctor Result.error [Nat, ReasoningFailure] (ctor ReasoningFailure.exhausted))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: review_rejected,
+  parameters: [],
+  statement: ((Clinic::Review.verdict (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) = (ctor Result.error [Nat, ReasoningFailure] (ctor ReasoningFailure.rejected))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: gateway_level,
+  parameters: [],
+  statement: ((gatewayLevel 392 118 26 15 82 1) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: spend_drained,
+  parameters: [],
+  statement: ((Budget::Spend [Nat] (2, 2)) = (ctor Result.ok [(Nat * (List (Budget::Spend.Step Nat))), ReasoningFailure] (0, (cons (ctor Budget::Spend.Step.Tick [Nat]) (cons (ctor Budget::Spend.Step.Tick [Nat]) (cons (ctor Budget::Spend.Step.Tick [Nat]) (cons (ctor Budget::Spend.Step.Burn [Nat] 2) (nil (Budget::Spend.Step Nat))))))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refund_drained,
+  parameters: [],
+  statement: ((Budget::Refund.verdict 2) = (ctor Result.ok [Nat, ReasoningFailure] 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refund_unsolved,
+  parameters: [],
+  statement: ((Budget::Refund.verdict 7) = (ctor Result.error [Nat, ReasoningFailure] (ctor ReasoningFailure.unsolved))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: plan_found,
+  parameters: [],
+  statement: ((Planner::Plan 2) = (ctor Result.ok [((Nat * Nat) * (List Planner::Plan.Step)), ReasoningFailure] ((2, 2), (cons (ctor Planner::Plan.Step.FillA) (cons (ctor Planner::Plan.Step.Pour 2) (nil Planner::Plan.Step)))))),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+theorem{
+  name: plan_unsolved,
+  parameters: [],
+  statement: ((Planner::Plan.verdict 5) = (ctor Result.error [(Nat * Nat), ReasoningFailure] (ctor ReasoningFailure.unsolved))),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+theorem{
+  name: plan_frontier,
+  parameters: [],
+  statement: ((project (project (first (Planner::Plan.run 2)) ledger) frontier) = 4),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+theorem{
+  name: screen_found,
+  parameters: [],
+  statement: ((Screening::Screen 60) = (ctor Result.ok [(Nat * (List Screening::Screen.Step)), ReasoningFailure] (30, (cons (ctor Screening::Screen.Step.Propose 30) (nil Screening::Screen.Step))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: grade_shock,
+  parameters: [],
+  statement: ((gradeLevel 392 118 26 15 82 1) = 3),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: dose_found,
+  parameters: [],
+  statement: ((Screening::Dose 60) = (ctor Result.ok [(Nat * (List Screening::Dose.Step)), ReasoningFailure] (30, (cons (ctor Screening::Dose.Step.candidate 30) (nil Screening::Dose.Step))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: dose_exhausted,
+  parameters: [],
+  statement: ((Screening::Dose.verdict 120) = (ctor Result.error [Nat, ReasoningFailure] (ctor ReasoningFailure.exhausted))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: screen_truncated,
+  parameters: [],
+  statement: ((Screening::Screen.verdict 100) = (ctor Result.error [Nat, ReasoningFailure] (ctor ReasoningFailure.exhausted))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_ledger,
+  parameters: [],
+  statement: (((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) iterations), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) attempts), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) firings), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) expansions), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) verifications), (project (Clinic::Triage.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) frontier)))))) = (10, (60, (10, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: triage_well_ledger,
+  parameters: [],
+  statement: (((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) iterations), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) attempts), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) firings), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) expansions), ((project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) verifications), (project (Clinic::Triage.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) frontier)))))) = (0, (8, (0, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: review_ledger,
+  parameters: [],
+  statement: (((project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) iterations), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) attempts), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) firings), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) expansions), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) verifications), (project (Clinic::Review.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) frontier)))))) = (6, (21, (6, (0, (0, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: grade_ledger,
+  parameters: [],
+  statement: (((project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) iterations), ((project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) attempts), ((project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) firings), ((project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) expansions), ((project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) verifications), (project (Grade.account (record Clinic::Vitals {temperature := 392, heartRate := 118, respiratoryRate := 26, whiteCells := 15, systolic := 82, infection := 1})) frontier)))))) = (10, (60, (10, (0, (0, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: grade_well_ledger,
+  parameters: [],
+  statement: (((project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) iterations), ((project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) attempts), ((project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) firings), ((project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) expansions), ((project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) verifications), (project (Grade.account (record Clinic::Vitals {temperature := 368, heartRate := 72, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) frontier)))))) = (0, (8, (0, (0, (0, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: review_rejected_ledger,
+  parameters: [],
+  statement: (((project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) iterations), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) attempts), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) firings), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) expansions), ((project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) verifications), (project (Clinic::Review.account (record Clinic::Vitals {temperature := 390, heartRate := 100, respiratoryRate := 14, whiteCells := 7, systolic := 120, infection := 0})) frontier)))))) = (4, (24, (4, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: spend_ledger,
+  parameters: [],
+  statement: (((project (Budget::Spend.account [Nat] (2, 2)) iterations), ((project (Budget::Spend.account [Nat] (2, 2)) attempts), ((project (Budget::Spend.account [Nat] (2, 2)) firings), ((project (Budget::Spend.account [Nat] (2, 2)) expansions), ((project (Budget::Spend.account [Nat] (2, 2)) verifications), (project (Budget::Spend.account [Nat] (2, 2)) frontier)))))) = (4, (8, (4, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refund_ledger,
+  parameters: [],
+  statement: (((project (Budget::Refund.account 2) iterations), ((project (Budget::Refund.account 2) attempts), ((project (Budget::Refund.account 2) firings), ((project (Budget::Refund.account 2) expansions), ((project (Budget::Refund.account 2) verifications), (project (Budget::Refund.account 2) frontier)))))) = (4, (8, (4, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: refund_unsolved_ledger,
+  parameters: [],
+  statement: (((project (Budget::Refund.account 7) iterations), ((project (Budget::Refund.account 7) attempts), ((project (Budget::Refund.account 7) firings), ((project (Budget::Refund.account 7) expansions), ((project (Budget::Refund.account 7) verifications), (project (Budget::Refund.account 7) frontier)))))) = (9, (13, (9, (0, (1, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: plan_ledger,
+  parameters: [],
+  statement: (((project (project (first (Planner::Plan.run 2)) ledger) iterations), ((project (project (first (Planner::Plan.run 2)) ledger) attempts), ((project (project (first (Planner::Plan.run 2)) ledger) firings), ((project (project (first (Planner::Plan.run 2)) ledger) expansions), ((project (project (first (Planner::Plan.run 2)) ledger) verifications), (project (project (first (Planner::Plan.run 2)) ledger) frontier)))))) = (4, (15, (8, (3, (4, 4)))))),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+theorem{
+  name: plan_unsolved_ledger,
+  parameters: [],
+  statement: (((project (project (first (Planner::Plan.run 5)) ledger) iterations), ((project (project (first (Planner::Plan.run 5)) ledger) attempts), ((project (project (first (Planner::Plan.run 5)) ledger) firings), ((project (project (first (Planner::Plan.run 5)) ledger) expansions), ((project (project (first (Planner::Plan.run 5)) ledger) verifications), (project (project (first (Planner::Plan.run 5)) ledger) frontier)))))) = (20, (100, (51, (20, (20, 10)))))),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+theorem{
+  name: screen_ledger,
+  parameters: [],
+  statement: (((project (project (first (Screening::Screen.run 60)) ledger) iterations), ((project (project (first (Screening::Screen.run 60)) ledger) attempts), ((project (project (first (Screening::Screen.run 60)) ledger) firings), ((project (project (first (Screening::Screen.run 60)) ledger) expansions), ((project (project (first (Screening::Screen.run 60)) ledger) verifications), (project (project (first (Screening::Screen.run 60)) ledger) frontier)))))) = (4, (12, (4, (3, (4, 3)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: screen_unsolved_ledger,
+  parameters: [],
+  statement: (((project (project (first (Screening::Screen.run 0)) ledger) iterations), ((project (project (first (Screening::Screen.run 0)) ledger) attempts), ((project (project (first (Screening::Screen.run 0)) ledger) firings), ((project (project (first (Screening::Screen.run 0)) ledger) expansions), ((project (project (first (Screening::Screen.run 0)) ledger) verifications), (project (project (first (Screening::Screen.run 0)) ledger) frontier)))))) = (1, (4, (0, (1, (1, 1)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: screen_truncated_ledger,
+  parameters: [],
+  statement: (((project (project (first (Screening::Screen.run 100)) ledger) iterations), ((project (project (first (Screening::Screen.run 100)) ledger) attempts), ((project (project (first (Screening::Screen.run 100)) ledger) firings), ((project (project (first (Screening::Screen.run 100)) ledger) expansions), ((project (project (first (Screening::Screen.run 100)) ledger) verifications), (project (project (first (Screening::Screen.run 100)) ledger) frontier)))))) = (4, (16, (4, (4, (4, 3)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: dose_ledger,
+  parameters: [],
+  statement: (((project (project (Screening::Dose.run 60) ledger) iterations), ((project (project (Screening::Dose.run 60) ledger) attempts), ((project (project (Screening::Dose.run 60) ledger) firings), ((project (project (Screening::Dose.run 60) ledger) expansions), ((project (project (Screening::Dose.run 60) ledger) verifications), (project (project (Screening::Dose.run 60) ledger) frontier)))))) = (3, (3, (0, (0, (3, 0)))))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: dose_exhausted_ledger,
+  parameters: [],
+  statement: (((project (project (Screening::Dose.run 120) ledger) iterations), ((project (project (Screening::Dose.run 120) ledger) attempts), ((project (project (Screening::Dose.run 120) ledger) firings), ((project (project (Screening::Dose.run 120) ledger) expansions), ((project (project (Screening::Dose.run 120) ledger) verifications), (project (project (Screening::Dose.run 120) ledger) frontier)))))) = (3, (3, (0, (0, (3, 0)))))),
+  proof: reflexivity{}
+}
 \end{semanticmodule}
 \end{lexlean}

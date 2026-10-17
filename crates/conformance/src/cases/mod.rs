@@ -5,6 +5,9 @@
 //! pass before its case exists.
 
 mod artifacts;
+mod authoring;
+mod authoring_core;
+mod bootstrap;
 mod calculus;
 mod certification;
 mod cli_api;
@@ -16,6 +19,7 @@ mod extraction;
 pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
 mod gnaf;
 mod grammar;
+mod language_models;
 mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
@@ -23,15 +27,18 @@ mod lexicon;
 mod models;
 mod operational;
 mod oracle;
+mod packages;
 mod preservation;
 mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
 mod repository;
+mod runtime;
 mod rust_backend;
 mod security;
 mod semantic_ir;
+mod stdlib;
 mod tooling;
 mod typed_diagnostics;
 mod verification;
@@ -90,6 +97,7 @@ pub fn run(id: &str) {
         "SM" => semantic_ir::run(id),
         "DF" => declarations::run(id),
         "PF" => proofs::run(id),
+        "LM" => language_models::run(id),
         "LN" => lean_backend::run(id),
         "TX" => latex_pdf::run(id),
         "AR" => artifacts::run(id),
@@ -108,7 +116,12 @@ pub fn run(id: &str) {
         "OR" => oracle::run(id),
         "MD" => models::run(id),
         "RS" => reasoning::run(id),
+        "RT" => runtime::run(id),
         "TL" => tooling::run(id),
+        "AU" => authoring::run(id),
+        "SL" => stdlib::run(id),
+        "BS" => bootstrap::run(id),
+        "PK" => packages::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

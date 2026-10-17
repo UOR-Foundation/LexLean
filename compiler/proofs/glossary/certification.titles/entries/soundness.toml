@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "soundness"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "soundness"
+channel = "text"
+surface = "Certification library soundness"
+canonical_source = true
+features = ["sentence-case", "singular"]

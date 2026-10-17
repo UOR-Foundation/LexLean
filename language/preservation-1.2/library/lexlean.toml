@@ -1,0 +1,32 @@
+spec = "lexlean/project/1"
+name = "preservation-library"
+language = "1.2"
+module_prefix = "LexLeanPreservation"
+source_roots = ["src"]
+entrypoints = ["src/Compose.lex.tex", "src/Fixed.lex.tex"]
+build_root = ".lexlean"
+lockfile = "lexlean.lock"
+lean_workspace = "."
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[lexicon_source]]
+package = "lexlean.std.nat"
+kind = "builtin"
+
+[[lexicon_source]]
+package = "preservation.titles"
+kind = "path"
+path = "glossary/preservation.titles"
+
+[limits]
+max_file_bytes = 33554432
+max_total_source_bytes = 134217728
+max_primitive_atoms = 100000000
+max_token_lattice_edges = 4000000
+max_parse_states = 4000000
+max_ir_nodes = 4000000
+max_scope_depth = 1024
+max_import_depth = 128
+max_diagnostics = 256
+max_child_output_bytes = 16777216
+child_timeout_ms = 10800000

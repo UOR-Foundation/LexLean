@@ -99,7 +99,7 @@ fn atlas_source_cores(root: &Path) -> Result<Vec<AtlasSourceModule>, Fail> {
                 path.display()
             ))
         })?;
-        let core = lexlean::ir::core::CoreModule::parse(&tail[..end])
+        let core = lexlean::ir::core::CoreModule::parse(&tail[..end], "1.0")
             .map_err(|reason| Fail::from(format!("R4: {}: {reason}", path.display())))?;
         let relative = path.strip_prefix(&source_root).map_err(|error| {
             Fail::from(format!(
@@ -869,8 +869,18 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
     gather(
         root,
         &[
-            "crates", "xtask", "language", "schemas", "features", "examples", "model", "tests",
-            "lean", "compiler",
+            "crates",
+            "xtask",
+            "language",
+            "schemas",
+            "features",
+            "examples",
+            "model",
+            "tests",
+            "lean",
+            "compiler",
+            "stdlib",
+            "bootstrap",
         ],
         &[
             ".rs", ".toml", ".json", ".md", ".feature", ".lex.tex", ".lean", ".txt", ".sh",
@@ -1074,7 +1084,15 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
     let mut mention_files = Vec::new();
     gather(
         root,
-        &["tests", "features", "examples", "model", "compiler"],
+        &[
+            "tests",
+            "features",
+            "examples",
+            "model",
+            "compiler",
+            "stdlib",
+            "bootstrap",
+        ],
         &[".toml", ".json", ".feature", ".md", ".txt"],
         &mut mention_files,
     );
@@ -1266,8 +1284,8 @@ fn dependency_roles(manifest: &str, spec: &str) -> Result<usize, Fail> {
 /// is canonical JSON with the expected identity.
 pub fn audit_generated(root: &Path) -> Result<(), Fail> {
     let count = audit_schema_directory(&root.join("schemas"))?;
-    if count != 31 {
-        return Err(format!("§7 commits exactly 31 schemas, found {count}").into());
+    if count != 32 {
+        return Err(format!("§7 commits exactly 32 schemas, found {count}").into());
     }
     // The schema of the compiler-tooling language (§17.20) lies outside the
     // compiler-semantics ID and is held to the same form.
@@ -1670,10 +1688,12 @@ pub fn audit_production_exhaustive(root: &Path) -> Result<(), Fail> {
     use repo_model::correspondence as corr;
     let aligner = read(corr::ALIGNER_SOURCE)?;
     let rules = corr::declared_rules(&aligner).map_err(|report| format!("§17.17: {report}"))?;
+    let library = lexlean::production::preserve::correspondence_rules()
+        .map_err(|report| format!("§17.17 (SP-08): {report}"))?;
     corr::audit(
         &aligner,
-        &read(corr::CORRESPONDENCE_SOURCE)?,
-        &read(corr::SOUNDNESS_SOURCE)?,
+        &library.constructors,
+        &library.soundness_cases,
         &read(corr::CALCULUS_SOURCE)?,
     )
     .map_err(|report| format!("§17.17 (SP-08): {report}"))?;

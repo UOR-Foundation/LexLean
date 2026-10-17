@@ -104,7 +104,7 @@ pub fn f0(v0: u64, v1: u64) -> R<(u64, u64)> {
             }
         };
         nat_add(a4, a5)?
-    }, f2(Adt1::C0(match v2.clone() {
+    }, f2(Adt1::C0(match v2 {
         Adt0::C0(_, h6) => {
             h6
         }
@@ -116,7 +116,7 @@ pub fn f1() -> Adt2 {
 }
 
 pub fn f2(v0: Adt1) -> u64 {
-    match v0.clone() {
+    match v0 {
         Adt1::C0(h7, _) => {
             h7
         }

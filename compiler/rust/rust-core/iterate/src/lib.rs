@@ -102,7 +102,7 @@ pub fn f2(v0: Fn0, v1: u64, v2: u64) -> R<u64> {
     } else {
         let v3 = m3 - 1;
         f2(v0.clone(), v3, {
-            let c4: Fn0 = v0.clone();
+            let c4: Fn0 = v0;
             c4.apply(v2)?
         })
     }

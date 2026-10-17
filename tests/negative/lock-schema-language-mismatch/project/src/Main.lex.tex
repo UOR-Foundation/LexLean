@@ -2,6 +2,25 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"binder":{"name":"doubled","type":{"kind":"nat"}},"body":{"kind":"add","left":{"kind":"var","name":"doubled"},"right":{"kind":"nat","value":"1"}},"kind":"let","value":{"kind":"add","left":{"kind":"var","name":"n"},"right":{"kind":"var","name":"n"}}},"kind":"definition","name":"doubledSuccessor","parameters":[{"name":"n","type":{"kind":"nat"}}],"result":{"kind":"nat"}},{"kind":"theorem","name":"doubled_successor_two","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"arguments":[{"kind":"nat","value":"2"}],"function":{"name":"doubledSuccessor"},"kind":"call"},"right":{"kind":"nat","value":"5"}}},{"kind":"theorem","name":"let_statement_unfolds","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"binder":{"name":"three","type":{"kind":"nat"}},"body":{"kind":"eq","left":{"kind":"add","left":{"kind":"var","name":"three"},"right":{"kind":"var","name":"three"}},"right":{"kind":"nat","value":"6"}},"kind":"let","value":{"kind":"nat","value":"3"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: doubledSuccessor,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (let doubled : Nat := (n + n); (doubled + 1))
+}
+
+theorem{
+  name: doubled_successor_two,
+  parameters: [],
+  statement: ((doubledSuccessor 2) = 5),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: let_statement_unfolds,
+  parameters: [],
+  statement: (let three : Nat := 3; ((three + three) = 6)),
+  proof: reflexivity{}
+}
 \end{semanticmodule}
 \end{lexlean}

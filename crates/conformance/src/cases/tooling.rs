@@ -1898,7 +1898,8 @@ fn tl_10() {
 
         // Each declaration with output has one piece, and its source range is
         // exactly that declaration's own object of the module data.
-        let source = project.read(MAIN);
+        // (The ranges are those of the file's own bytes: the notation.)
+        let source = project.read_raw(MAIN);
         let with_output: Vec<&Json> = declarations
             .iter()
             .filter(|d| {
@@ -1928,9 +1929,14 @@ fn tl_10() {
         );
         for (piece, declaration) in pieces.iter().zip(&with_output) {
             let (start, end) = piece.src_range.expect("a source range");
-            let object: Json = serde_json::from_str(&source[start..end]).unwrap_or_else(|error| {
-                panic!("{fixture}: the piece's source is not an object: {error}")
-            });
+            let object: Json = serde_json::from_str(
+                &lexlean::surface::generic::parse(&source[start..end])
+                    .unwrap_or_else(|error| {
+                        panic!("{fixture}: the piece's source is not a declaration: {error}")
+                    })
+                    .to_canonical_string(),
+            )
+            .expect("canonical JSON");
             assert_eq!(
                 &object, *declaration,
                 "{fixture}: a piece maps to its own object"

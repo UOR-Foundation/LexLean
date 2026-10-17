@@ -2,6 +2,93 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_add","result":{"kind":"option","value":{"kind":"int8"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_subtract","result":{"kind":"option","value":{"kind":"int8"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_multiply","result":{"kind":"option","value":{"kind":"int8"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_quotient","result":{"kind":"option","value":{"kind":"int8"}}},"right":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"checked_negate","result":{"kind":"option","value":{"kind":"int8"}}}}}}},"executable":true,"kind":"definition","name":"fixedSmall","parameters":[{"name":"a","type":{"kind":"int8"}},{"name":"b","type":{"kind":"int8"}}],"production":{"effects":[],"targets":["rust-core","rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"int8"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int8"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int8"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int8"}},"right":{"kind":"option","value":{"kind":"int8"}}}}}}},{"axioms":["Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"a"}],"kind":"primitive","operation":"checked_multiply","result":{"kind":"option","value":{"kind":"int16"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"kind":"integer","representation":"int32","value":"-7"}],"kind":"primitive","operation":"checked_add","result":{"kind":"option","value":{"kind":"int32"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"checked_convert","result":{"kind":"option","value":{"kind":"int32"}}},"right":{"arguments":[{"kind":"var","name":"b"},{"kind":"integer","representation":"int32","value":"3"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}}}},"executable":true,"kind":"definition","name":"fixedMiddle","parameters":[{"name":"a","type":{"kind":"int16"}},{"name":"b","type":{"kind":"int32"}}],"production":{"effects":[],"targets":["rust-core","rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"int16"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int32"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int32"}},"right":{"kind":"bool"}}}}},{"axioms":["Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_add","result":{"kind":"option","value":{"kind":"int64"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_subtract","result":{"kind":"option","value":{"kind":"int64"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_multiply","result":{"kind":"option","value":{"kind":"int64"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_quotient","result":{"kind":"option","value":{"kind":"int64"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"checked_negate","result":{"kind":"option","value":{"kind":"int64"}}},"right":{"arguments":[{"kind":"var","name":"c"},{"kind":"integer","representation":"uint64","value":"1"}],"kind":"primitive","operation":"checked_add","result":{"kind":"option","value":{"kind":"uint64"}}}}}}}},"executable":true,"kind":"definition","name":"fixedWide","parameters":[{"name":"a","type":{"kind":"int64"}},{"name":"b","type":{"kind":"int64"}},{"name":"c","type":{"kind":"uint64"}}],"production":{"effects":[],"targets":["rust-core","rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"int64"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int64"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int64"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int64"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"int64"}},"right":{"kind":"option","value":{"kind":"uint64"}}}}}}}},{"axioms":["Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"bit_and","result":{"kind":"uint16"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"bit_or","result":{"kind":"uint16"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"bit_xor","result":{"kind":"uint16"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"bit_not","result":{"kind":"uint16"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"s"}],"kind":"primitive","operation":"shift_left","result":{"kind":"option","value":{"kind":"uint16"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"},{"kind":"integer","representation":"uint32","value":"3"}],"kind":"primitive","operation":"shift_right","result":{"kind":"option","value":{"kind":"uint16"}}},"right":{"arguments":[{"kind":"var","name":"a"},{"kind":"var","name":"b"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}}}}}}},"executable":true,"kind":"definition","name":"bits","parameters":[{"name":"a","type":{"kind":"uint16"}},{"name":"b","type":{"kind":"uint16"}},{"name":"s","type":{"kind":"uint32"}}],"production":{"effects":[],"targets":["rust-core","rust-std"]},"result":{"kind":"product","left":{"kind":"uint16"},"right":{"kind":"product","left":{"kind":"uint16"},"right":{"kind":"product","left":{"kind":"uint16"},"right":{"kind":"product","left":{"kind":"uint16"},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"uint16"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"uint16"}},"right":{"kind":"bool"}}}}}}}},{"axioms":["Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"checked_convert","result":{"kind":"option","value":{"kind":"uint16"}}},"right":{"arguments":[{"kind":"var","name":"b"}],"kind":"primitive","operation":"checked_convert","result":{"kind":"option","value":{"kind":"int64"}}}},"executable":true,"kind":"definition","name":"conversions","parameters":[{"name":"a","type":{"kind":"int"}},{"name":"b","type":{"kind":"int8"}}],"production":{"effects":[],"targets":["rust-core","rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"uint16"}},"right":{"kind":"option","value":{"kind":"int64"}}}},{"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"xs"},{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}],"kind":"primitive","operation":"append","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"hex":"0a","kind":"bytes"}],"kind":"primitive","operation":"append","result":{"kind":"bytes"}},"right":{"kind":"pair","left":{"kind":"add","left":{"arguments":[{"kind":"var","name":"xs"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"b"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"xs"},{"kind":"var","name":"i"}],"kind":"primitive","operation":"index","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"kind":"var","name":"i"}],"kind":"primitive","operation":"index","result":{"kind":"option","value":{"kind":"uint8"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"xs"},{"kind":"var","name":"i"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"slice","result":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"kind":"nat","value":"0"},{"kind":"var","name":"i"}],"kind":"primitive","operation":"slice","result":{"kind":"option","value":{"kind":"bytes"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"b"},{"hex":"","kind":"bytes"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}},"right":{"arguments":[{"arguments":[{"kind":"var","name":"i"},{"kind":"nat","value":"3"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}},{"kind":"bool","value":true}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}}}}}}}}},"executable":true,"kind":"definition","name":"sequences","parameters":[{"name":"xs","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"b","type":{"kind":"bytes"}},{"name":"i","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"element":{"kind":"nat"},"kind":"list"},"right":{"kind":"product","left":{"kind":"bytes"},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"nat"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"uint8"}},"right":{"kind":"product","left":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"bytes"}},"right":{"kind":"product","left":{"kind":"bool"},"right":{"kind":"bool"}}}}}}}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"parse_decimal","result":{"kind":"option","value":{"kind":"int"}}},"right":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"parse_decimal","result":{"kind":"option","value":{"kind":"uint32"}}}},"executable":true,"kind":"definition","name":"decimals","parameters":[{"name":"s","type":{"kind":"string"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"option","value":{"kind":"int"}},"right":{"kind":"option","value":{"kind":"uint32"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"a"}],"kind":"primitive","operation":"format_decimal","result":{"kind":"string"}},"right":{"arguments":[{"kind":"var","name":"b"}],"kind":"primitive","operation":"format_decimal","result":{"kind":"string"}}},"executable":true,"kind":"definition","name":"formats","parameters":[{"name":"a","type":{"kind":"int"}},{"name":"b","type":{"kind":"int8"}}],"production":{"effects":["allocation"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"string"},"right":{"kind":"string"}}},{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"binder":{"name":"raw","type":{"kind":"bytes"}},"body":{"kind":"pair","left":{"kind":"var","name":"raw"},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"raw"}],"kind":"primitive","operation":"utf8_decode","result":{"kind":"option","value":{"kind":"string"}}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"raw"},{"hex":"00ff","kind":"bytes"}],"kind":"primitive","operation":"compare_bytes","result":{"kind":"ordering"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"d"},{"kind":"integer","representation":"uint32","value":"4"}],"kind":"primitive","operation":"split_exact","result":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}}},"right":{"kind":"pair","left":{"arguments":[{"head":{"kind":"var","name":"s"},"kind":"cons","tail":{"head":{"kind":"string","value":"x\"y"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}},{"kind":"var","name":"d"}],"kind":"primitive","operation":"join","result":{"kind":"string"}},"right":{"kind":"pair","left":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"length","result":{"kind":"nat"}},"right":{"kind":"and","left":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"d"}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}},"right":{"arguments":[{"arguments":[{"kind":"var","name":"raw"},{"kind":"var","name":"raw"}],"kind":"primitive","operation":"compare_bytes","result":{"kind":"ordering"}},{"arguments":[{"hex":"","kind":"bytes"},{"hex":"01","kind":"bytes"}],"kind":"primitive","operation":"compare_bytes","result":{"kind":"ordering"}}],"kind":"primitive","operation":"equal","result":{"kind":"bool"}}}}}}}}},"kind":"let","value":{"arguments":[{"kind":"var","name":"s"}],"kind":"primitive","operation":"utf8_encode","result":{"kind":"bytes"}}},"executable":true,"kind":"definition","name":"text","parameters":[{"name":"s","type":{"kind":"string"}},{"name":"d","type":{"kind":"string"}}],"production":{"effects":["allocation","overflow"],"targets":["rust-std"]},"result":{"kind":"product","left":{"kind":"bytes"},"right":{"kind":"product","left":{"kind":"option","value":{"kind":"string"}},"right":{"kind":"product","left":{"kind":"ordering"},"right":{"kind":"product","left":{"kind":"option","value":{"element":{"kind":"string"},"kind":"list"}},"right":{"kind":"product","left":{"kind":"string"},"right":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}}}}}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: fixedSmall,
+  parameters: [a : Int8, b : Int8],
+  result: ((Option Int8) * ((Option Int8) * ((Option Int8) * ((Option Int8) * (Option Int8))))),
+  body: ((prim checked_add a b : (Option Int8)), ((prim checked_subtract a b : (Option Int8)), ((prim checked_multiply a b : (Option Int8)), ((prim checked_quotient a b : (Option Int8)), (prim checked_negate a : (Option Int8)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: fixedMiddle,
+  parameters: [a : Int16, b : Int32],
+  result: ((Option Int16) * ((Option Int32) * ((Option Int32) * Bool))),
+  body: ((prim checked_multiply a a : (Option Int16)), ((prim checked_add b (-7 : Int32) : (Option Int32)), ((prim checked_convert a : (Option Int32)), (prim equal b (3 : Int32) : Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: fixedWide,
+  parameters: [a : Int64, b : Int64, c : UInt64],
+  result: ((Option Int64) * ((Option Int64) * ((Option Int64) * ((Option Int64) * ((Option Int64) * (Option UInt64)))))),
+  body: ((prim checked_add a b : (Option Int64)), ((prim checked_subtract a b : (Option Int64)), ((prim checked_multiply a b : (Option Int64)), ((prim checked_quotient a b : (Option Int64)), ((prim checked_negate a : (Option Int64)), (prim checked_add c (1 : UInt64) : (Option UInt64))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: bits,
+  parameters: [a : UInt16, b : UInt16, s : UInt32],
+  result: (UInt16 * (UInt16 * (UInt16 * (UInt16 * ((Option UInt16) * ((Option UInt16) * Bool)))))),
+  body: ((prim bit_and a b : UInt16), ((prim bit_or a b : UInt16), ((prim bit_xor a b : UInt16), ((prim bit_not a : UInt16), ((prim shift_left a s : (Option UInt16)), ((prim shift_right a (3 : UInt32) : (Option UInt16)), (prim equal a b : Bool))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: conversions,
+  parameters: [a : Int, b : Int8],
+  result: ((Option UInt16) * (Option Int64)),
+  body: ((prim checked_convert a : (Option UInt16)), (prim checked_convert b : (Option Int64))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: sequences,
+  parameters: [xs : (List Nat), b : Bytes, i : Nat],
+  result: ((List Nat) * (Bytes * (Nat * ((Option Nat) * ((Option UInt8) * ((Option (List Nat)) * ((Option Bytes) * (Bool * Bool)))))))),
+  body: ((prim append xs (cons 1 (nil Nat)) : (List Nat)), ((prim append b 0x0a : Bytes), (((prim length xs : Nat) + (prim length b : Nat)), ((prim index xs i : (Option Nat)), ((prim index b i : (Option UInt8)), ((prim slice xs i 2 : (Option (List Nat))), ((prim slice b 0 i : (Option Bytes)), ((prim equal b 0x : Bool), (prim equal (prim equal i 3 : Bool) true : Bool))))))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: decimals,
+  parameters: [s : String],
+  result: ((Option Int) * (Option UInt32)),
+  body: ((prim parse_decimal s : (Option Int)), (prim parse_decimal s : (Option UInt32))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: formats,
+  parameters: [a : Int, b : Int8],
+  result: (String * String),
+  body: ((prim format_decimal a : String), (prim format_decimal b : String)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: text,
+  parameters: [s : String, d : String],
+  result: (Bytes * ((Option String) * (Ordering * ((Option (List String)) * (String * (Nat * Bool)))))),
+  body: (let raw : Bytes := (prim utf8_encode s : Bytes); (raw, ((prim utf8_decode raw : (Option String)), ((prim compare_bytes raw 0x00ff : Ordering), ((prim split_exact s d (4 : UInt32) : (Option (List String))), ((prim join (cons s (cons "x\"y" (nil String))) d : String), ((prim length s : Nat), ((prim equal s d : Bool) && (prim equal (prim compare_bytes raw raw : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool))))))))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

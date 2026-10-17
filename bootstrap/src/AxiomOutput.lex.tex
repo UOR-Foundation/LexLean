@@ -1,0 +1,636 @@
+\begin{lexlean}{AxiomOutput}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Record,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: declaration, type: Bytes},
+    {name: axioms, type: (List Bytes)},
+    {name: expected, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: Rejection,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: message, type: Bytes}, {name: declaration, type: (Option Bytes)}]
+}
+
+inductive{
+  name: Scan,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: between, fields: [(List Record), (List Bytes)]},
+    {name: inside, fields: [(List Record), (List Bytes), Bytes, (Option Bytes)]},
+    {name: stopped, fields: [Rejection]}
+  ]
+}
+
+definition{
+  name: text,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (cat (text "`") name) (text "`")),
+  executable: true
+}
+
+definition{
+  name: listLength,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: Nat,
+  body: (prim list_fold (fun (count : Nat) (item : 'Item) => (count + 1)) 0 items : Nat),
+  executable: true
+}
+
+definition{
+  name: reversed,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: (List 'Item),
+  body: (prim list_fold (fun (turned : (List 'Item)) (item : 'Item) => (cons item turned)) (nil 'Item) items : (List 'Item)),
+  executable: true
+}
+
+definition{
+  name: rejected,
+  parameters: [message : Bytes, declaration : (Option Bytes)],
+  result: Rejection,
+  body: (record Rejection {message := message, declaration := declaration}),
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [message : Bytes, declaration : (Option Bytes)],
+  result: (Result (List (Bytes * (List Bytes))) Rejection),
+  body: (ctor Result.error [(List (Bytes * (List Bytes))), Rejection] (rejected message declaration)),
+  executable: true
+}
+
+definition{
+  name: inRange,
+  parameters: [byte : UInt8, low : UInt8, high : UInt8],
+  result: Bool,
+  body: (match (prim checked_subtract byte low : (Option UInt8))
+    | Option.some above => (match (prim checked_subtract high byte : (Option UInt8))
+      | Option.some below => true
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isFirst,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (if (inRange byte (65 : UInt8) (90 : UInt8)) then true else (if (inRange byte (97 : UInt8) (122 : UInt8)) then true else (prim equal byte (95 : UInt8) : Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLater,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (if (isFirst byte) then true else (if (inRange byte (48 : UInt8) (57 : UInt8)) then true else (if (prim equal byte (63 : UInt8) : Bool) then true else (prim equal byte (39 : UInt8) : Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameMode,
+  parameters: [mode : Nat, byte : UInt8],
+  result: Nat,
+  body: (if (mode =? 2) then 2 else (if (prim equal byte (46 : UInt8) : Bool) then (if (mode =? 1) then 0 else 2) else (if (isFirst byte) then 1 else (if (mode =? 1) then (if (isLater byte) then 1 else 2) else 2)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameStep,
+  parameters: [subject : Bytes, state : (Nat * Nat)],
+  result: (Option (Nat * Nat)),
+  body: (if ((second state) =? 2) then (ctor Option.none [(Nat * Nat)]) else (match (LexLeanStd.Text::byteAt subject (first state))
+    | Option.some byte => (ctor Option.some [(Nat * Nat)] (((first state) + 1), (nameMode (second state) byte)))
+    | Option.none => (ctor Option.none [(Nat * Nat)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isClosedLeanName,
+  parameters: [raw : Bytes],
+  result: Bool,
+  body: ((second (first (prim iterate_until (fun [raw] (state : (Nat * Nat)) => (nameStep raw state)) (prim length raw : Nat) (0, 0) : ((Nat * Nat) * Bool)))) =? 1),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: byteIs,
+  parameters: [subject : Bytes, position : Nat, value : UInt8],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim equal byte value : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: byteIn,
+  parameters: [subject : Bytes, position : Nat, low : UInt8, high : UInt8],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (inRange byte low high)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: whiteLength,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (if (if (byteIn subject position (9 : UInt8) (13 : UInt8)) then true else (if (byteIs subject position (32 : UInt8)) then true else false)) then 1 else (if (byteIs subject position (194 : UInt8)) then (if (if (byteIs subject (position + 1) (133 : UInt8)) then true else (if (byteIs subject (position + 1) (160 : UInt8)) then true else false)) then 2 else 0) else (if (byteIs subject position (225 : UInt8)) then (if (if (byteIs subject (position + 1) (154 : UInt8)) then (if (byteIs subject (position + 2) (128 : UInt8)) then true else false) else false) then 3 else 0) else (if (byteIs subject position (226 : UInt8)) then (if (byteIs subject (position + 1) (128 : UInt8)) then (if (if (byteIn subject (position + 2) (128 : UInt8) (138 : UInt8)) then true else (if (byteIs subject (position + 2) (168 : UInt8)) then true else (if (byteIs subject (position + 2) (169 : UInt8)) then true else (if (byteIs subject (position + 2) (175 : UInt8)) then true else false)))) then 3 else 0) else (if (if (byteIs subject (position + 1) (129 : UInt8)) then (if (byteIs subject (position + 2) (159 : UInt8)) then true else false) else false) then 3 else 0)) else (if (byteIs subject position (227 : UInt8)) then (if (if (byteIs subject (position + 1) (128 : UInt8)) then (if (byteIs subject (position + 2) (128 : UInt8)) then true else false) else false) then 3 else 0) else 0))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: whiteEnding,
+  parameters: [subject : Bytes, end : Nat],
+  result: Nat,
+  body: (if (end =? 0) then 0 else (if ((whiteLength subject (prim subtract end 1 : Nat)) =? 1) then 1 else (if (if (2 <=? end) then ((whiteLength subject (prim subtract end 2 : Nat)) =? 2) else false) then 2 else (if (if (3 <=? end) then ((whiteLength subject (prim subtract end 3 : Nat)) =? 3) else false) then 3 else 0)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startsWhite,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: (0 <? (whiteLength subject 0)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: skipWhite,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (if (0 <? (whiteLength subject position)) then (ctor Option.some [Nat] (position + (whiteLength subject position))) else (ctor Option.none [Nat]))) (prim length subject : Nat) 0 : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: dropWhiteEnd,
+  parameters: [subject : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [start, subject] (end : Nat) => (if (if (0 <? (whiteEnding subject end)) then ((start + (whiteEnding subject end)) <=? end) else false) then (ctor Option.some [Nat] (prim subtract end (whiteEnding subject end) : Nat)) else (ctor Option.none [Nat]))) (prim length subject : Nat) (prim length subject : Nat) : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: trimmed,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (let start : Nat := (skipWhite subject); (let end : Nat := (dropWhiteEnd subject start); (LexLeanStd.Text::sliceOr subject start (prim subtract end start : Nat)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stripPrefix,
+  parameters: [subject : Bytes, prefix : Bytes],
+  result: (Option Bytes),
+  body: (if (LexLeanStd.Text::startsWith subject prefix) then (ctor Option.some [Bytes] (LexLeanStd.Text::sliceOr subject (prim length prefix : Nat) (prim subtract (prim length subject : Nat) (prim length prefix : Nat) : Nat))) else (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: stripSuffix,
+  parameters: [subject : Bytes, suffix : Bytes],
+  result: (Option Bytes),
+  body: (if (LexLeanStd.Text::endsWith subject suffix) then (ctor Option.some [Bytes] (LexLeanStd.Text::sliceOr subject 0 (prim subtract (prim length subject : Nat) (prim length suffix : Nat) : Nat))) else (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: splitOnce,
+  parameters: [subject : Bytes, delimiter : Bytes],
+  result: (Option (Bytes * Bytes)),
+  body: (match (LexLeanStd.Text::find subject delimiter)
+    | Option.some position => (ctor Option.some [(Bytes * Bytes)] ((LexLeanStd.Text::sliceOr subject 0 position), (LexLeanStd.Text::sliceOr subject (position + (prim length delimiter : Nat)) (prim subtract (prim length subject : Nat) (position + (prim length delimiter : Nat)) : Nat))))
+    | Option.none => (ctor Option.none [(Bytes * Bytes)])),
+  executable: true
+}
+
+definition{
+  name: lastStep,
+  parameters: [subject : Bytes, needle : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.none [Nat]) else (if (0 <? position) then (ctor Option.some [Nat] (prim subtract position 1 : Nat)) else (ctor Option.none [Nat]))),
+  executable: true
+}
+
+definition{
+  name: splitLast,
+  parameters: [subject : Bytes, needle : Bytes],
+  result: (Option (Bytes * Bytes)),
+  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (if (total <? size) then (ctor Option.none [(Bytes * Bytes)]) else (let position : Nat := (first (prim iterate_until (fun [needle, subject] (position : Nat) => (lastStep subject needle position)) (total + 1) (prim subtract total size : Nat) : (Nat * Bool))); (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.some [(Bytes * Bytes)] ((LexLeanStd.Text::sliceOr subject 0 position), (LexLeanStd.Text::sliceOr subject (position + size) (prim subtract total (position + size) : Nat)))) else (ctor Option.none [(Bytes * Bytes)])))))),
+  executable: true
+}
+
+definition{
+  name: digitStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (byteIn subject position (48 : UInt8) (57 : UInt8)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allDigits,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: ((first (prim iterate_until (fun [subject] (position : Nat) => (digitStep subject position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (byteIs subject position (48 : UInt8)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: significant,
+  parameters: [digits : Bytes],
+  result: Bytes,
+  body: (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (LexLeanStd.Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))),
+  executable: true
+}
+
+definition{
+  name: digit,
+  parameters: [number : Nat, place : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr (text "0123456789") (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: decimal,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (let zero : Bytes := (text "0"); (let digits : Bytes := (significant (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)); (if (number =? 0) then zero else digits))),
+  executable: true
+}
+
+definition{
+  name: fitsWord,
+  parameters: [digits : Bytes],
+  result: Bool,
+  body: (if ((prim length digits : Nat) <? 20) then true else (if ((prim length digits : Nat) =? 20) then (not (prim equal (prim compare_bytes digits (text "18446744073709551615") : Ordering) (prim compare_bytes 0x01 0x00 : Ordering) : Bool)) else false)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: isWord,
+  parameters: [raw : Bytes],
+  result: Bool,
+  body: (let digits : Bytes := (match (stripPrefix raw (text "+"))
+    | Option.some unsigned => unsigned
+    | Option.none => raw); (let fits : Bool := (fitsWord (significant digits)); (if (0 <? (prim length digits : Nat)) then (if (allDigits digits) then fits else false) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isCount,
+  parameters: [field : Bytes],
+  result: Bool,
+  body: (isWord (trimmed field)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: afterLabel,
+  parameters: [rest : Bytes],
+  result: (Option Bytes),
+  body: (match (stripPrefix rest (text " "))
+    | Option.some spaced => (stripPrefix spaced (text "info: "))
+    | Option.none => (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: afterLocation,
+  parameters: [column : Bytes, rest : Bytes],
+  result: (Option Bytes),
+  body: (match (splitOnce column (text "-"))
+    | Option.some span => (let low : Bytes := (first span); (let high : Bytes := (second span); (match (splitOnce rest (text ":"))
+      | Option.some tail => (let stop_column : Bytes := (first tail); (let after : Bytes := (second tail); (let labeled : (Option Bytes) := (afterLabel after); (if (isCount low) then (if (isCount high) then (if (isCount stop_column) then labeled else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])))))
+      | Option.none => (ctor Option.none [Bytes]))))
+    | Option.none => (let labeled : (Option Bytes) := (afterLabel rest); (if (isCount column) then labeled else (ctor Option.none [Bytes])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: located,
+  parameters: [line : Bytes],
+  result: (Option Bytes),
+  body: (match (splitOnce line (text ":"))
+    | Option.some head => (match (splitOnce (second head) (text ":"))
+      | Option.some middle => (match (splitOnce (second middle) (text ":"))
+        | Option.some tail => (let line_number : Bytes := (first middle); (let column : Bytes := (first tail); (let rest : Bytes := (second tail); (let located_rest : (Option Bytes) := (afterLocation column rest); (if (isCount line_number) then located_rest else (ctor Option.none [Bytes]))))))
+        | Option.none => (ctor Option.none [Bytes]))
+      | Option.none => (ctor Option.none [Bytes]))
+    | Option.none => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: envelope,
+  parameters: [line : Bytes],
+  result: (Option Bytes),
+  body: (if (LexLeanStd.Text::startsWith line (text "'")) then (ctor Option.some [Bytes] line) else (match (stripPrefix line (text "info: "))
+    | Option.some payload => (ctor Option.some [Bytes] payload)
+    | Option.none => (located line))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: terminates,
+  parameters: [payload : Bytes],
+  result: Bool,
+  body: (match (stripSuffix payload (text "]"))
+    | Option.some bracketed => true
+    | Option.none => (match (stripSuffix payload (text " does not depend on any axioms"))
+      | Option.some sentence => true
+      | Option.none => false)),
+  executable: true
+}
+
+definition{
+  name: lessBytes,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: insertAxiom,
+  parameters: [lemma : Bytes, sorted : (List Bytes)],
+  result: (Option (List Bytes)),
+  body: (match sorted
+    | List.nil => (ctor Option.some [(List Bytes)] (cons lemma (nil Bytes)))
+    | List.cons head tail => (if (prim equal lemma head : Bool) then (ctor Option.none [(List Bytes)]) else (if (lessBytes lemma head) then (ctor Option.some [(List Bytes)] (cons lemma (cons head tail))) else (match (insertAxiom lemma tail)
+      | Option.some inserted => (ctor Option.some [(List Bytes)] (cons head inserted))
+      | Option.none => (ctor Option.none [(List Bytes)]))))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: sorted
+}
+
+definition{
+  name: insertEntry,
+  parameters: [name : Bytes, axioms : (List Bytes), entries : (List (Bytes * (List Bytes)))],
+  result: (Option (List (Bytes * (List Bytes)))),
+  body: (match entries
+    | List.nil => (ctor Option.some [(List (Bytes * (List Bytes)))] (cons (name, axioms) (nil (Bytes * (List Bytes)))))
+    | List.cons head tail => (if (prim equal name (first head) : Bool) then (ctor Option.none [(List (Bytes * (List Bytes)))]) else (if (lessBytes name (first head)) then (ctor Option.some [(List (Bytes * (List Bytes)))] (cons (name, axioms) (cons head tail))) else (match (insertEntry name axioms tail)
+      | Option.some inserted => (ctor Option.some [(List (Bytes * (List Bytes)))] (cons head inserted))
+      | Option.none => (ctor Option.none [(List (Bytes * (List Bytes)))]))))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: entries
+}
+
+definition{
+  name: notLean,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (quoted name) (text " is not a Lean name")),
+  executable: true
+}
+
+definition{
+  name: parsed,
+  parameters: [name : Bytes, axioms : (List Bytes)],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (ctor Result.ok [(Bytes * (List Bytes)), Bytes] (name, axioms)),
+  executable: true
+}
+
+definition{
+  name: malformed,
+  parameters: [message : Bytes],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (ctor Result.error [(Bytes * (List Bytes)), Bytes] message),
+  executable: true
+}
+
+definition{
+  name: unrecognized,
+  parameters: [payload : Bytes],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (malformed (cat (text "unrecognized axiom payload: ") payload)),
+  executable: true
+}
+
+definition{
+  name: collectStep,
+  parameters: [state : (Result (List Bytes) Bytes), piece : Bytes],
+  result: (Result (List Bytes) Bytes),
+  body: (match state
+    | Result.error message => state
+    | Result.ok sorted => (let lemma : Bytes := (trimmed piece); (if (isClosedLeanName lemma) then (match (insertAxiom lemma sorted)
+      | Option.some inserted => (ctor Result.ok [(List Bytes), Bytes] inserted)
+      | Option.none => (ctor Result.error [(List Bytes), Bytes] (cat (text "duplicate axiom name ") (quoted lemma)))) else (ctor Result.error [(List Bytes), Bytes] (notLean lemma))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: axiomList,
+  parameters: [name : Bytes, list : Bytes],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (match (prim list_fold (fun (state : (Result (List Bytes) Bytes)) (piece : Bytes) => (collectStep state piece)) (ctor Result.ok [(List Bytes), Bytes] (nil Bytes)) (LexLeanStd.Text::splitOn list (44 : UInt8)) : (Result (List Bytes) Bytes))
+    | Result.error message => (malformed message)
+    | Result.ok sorted => (match sorted
+      | List.nil => (malformed (text "an axiom list cannot be empty"))
+      | List.cons head tail => (parsed name sorted))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: listed,
+  parameters: [payload : Bytes, body : Bytes],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (match (splitLast body (text "' depends on axioms: ["))
+    | Option.some split => (let name : Bytes := (first split); (let list : Bytes := (second split); (let listed_axioms : (Result (Bytes * (List Bytes)) Bytes) := (axiomList name list); (let refused : (Result (Bytes * (List Bytes)) Bytes) := (malformed (notLean name)); (if (isClosedLeanName name) then listed_axioms else refused)))))
+    | Option.none => (unrecognized payload)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parsePayload,
+  parameters: [payload : Bytes],
+  result: (Result (Bytes * (List Bytes)) Bytes),
+  body: (match (stripPrefix payload (text "'"))
+    | Option.none => (unrecognized payload)
+    | Option.some rest => (match (stripSuffix rest (text "' does not depend on any axioms"))
+      | Option.some name => (let accepted : (Result (Bytes * (List Bytes)) Bytes) := (parsed name (nil Bytes)); (let refused : (Result (Bytes * (List Bytes)) Bytes) := (malformed (notLean name)); (if (isClosedLeanName name) then accepted else refused)))
+      | Option.none => (match (stripSuffix rest (text "]"))
+        | Option.some body => (listed payload body)
+        | Option.none => (unrecognized payload)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: headOf,
+  parameters: [names : (List Bytes)],
+  result: (Option Bytes),
+  body: (match names
+    | List.nil => (ctor Option.none [Bytes])
+    | List.cons head tail => (ctor Option.some [Bytes] head)),
+  executable: true
+}
+
+definition{
+  name: tailOf,
+  parameters: [names : (List Bytes)],
+  result: (List Bytes),
+  body: (match names | List.nil => (nil Bytes) | List.cons head tail => tail),
+  executable: true
+}
+
+definition{
+  name: stop,
+  parameters: [message : Bytes, declaration : (Option Bytes)],
+  result: Scan,
+  body: (ctor Scan.stopped (rejected message declaration)),
+  executable: true
+}
+
+definition{
+  name: extend,
+  parameters: [
+    records : (List Record),
+    remaining : (List Bytes),
+    payload : Bytes,
+    about : (Option Bytes)
+  ],
+  result: Scan,
+  body: (if (terminates payload) then (match (parsePayload payload)
+    | Result.error message => (stop message about)
+    | Result.ok found => (ctor Scan.between (cons (record Record {declaration := (first found), axioms := (second found), expected := about}) records) (tailOf remaining))) else (ctor Scan.inside records remaining payload about)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: continuation,
+  parameters: [line : Bytes],
+  result: (Option Bytes),
+  body: (let cleaned : Bytes := (trimmed line); (if (startsWhite line) then (if (0 =? (prim length cleaned : Nat)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] cleaned)) else (ctor Option.none [Bytes]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanStep,
+  parameters: [state : Scan, line : Bytes],
+  result: Scan,
+  body: (match state
+    | Scan.stopped rejection => state
+    | Scan.inside records remaining payload about => (match (continuation line)
+      | Option.some more => (extend records remaining (cat (cat payload (text " ")) more) about)
+      | Option.none => (stop (cat (text "unterminated axiom payload: ") payload) about))
+    | Scan.between records remaining => (if (0 =? (prim length (trimmed line) : Nat)) then state else (match (envelope (trimmed line))
+      | Option.some payload => (extend records remaining payload (headOf remaining))
+      | Option.none => (stop (cat (text "unrecognized audit line: ") (trimmed line)) (headOf remaining))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: auditStep,
+  parameters: [state : (Result (List (Bytes * (List Bytes))) Rejection), entry : Record],
+  result: (Result (List (Bytes * (List Bytes))) Rejection),
+  body: (match state
+    | Result.error rejection => state
+    | Result.ok entries => (let want : Bytes := (match (project entry expected)
+      | Option.some name => name
+      | Option.none => 0x); (let duplicate : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (text "duplicate record for ") (quoted (project entry declaration))) (ctor Option.some [Bytes] want)); (let mismatch : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (cat (cat (text "expected a record for ") (quoted want)) (text ", found ")) (quoted (project entry declaration))) (ctor Option.some [Bytes] want)); (if (prim equal (project entry declaration) want : Bool) then (match (insertEntry (project entry declaration) (project entry axioms) entries)
+      | Option.some inserted => (ctor Result.ok [(List (Bytes * (List Bytes))), Rejection] inserted)
+      | Option.none => duplicate) else mismatch))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: finish,
+  parameters: [scan : Scan, expected : (List Bytes)],
+  result: (Result (List (Bytes * (List Bytes))) Rejection),
+  body: (match scan
+    | Scan.stopped rejection => (ctor Result.error [(List (Bytes * (List Bytes))), Rejection] rejection)
+    | Scan.inside records remaining payload about => (refuse (cat (text "unterminated axiom payload: ") payload) about)
+    | Scan.between records remaining => (let counted : (Result (List (Bytes * (List Bytes))) Rejection) := (refuse (cat (cat (cat (text "expected ") (decimal (listLength [Bytes] expected))) (text " audit records, found ")) (decimal (listLength [Record] records))) (ctor Option.none [Bytes])); (if ((listLength [Record] records) =? (listLength [Bytes] expected)) then (prim list_fold (fun (state : (Result (List (Bytes * (List Bytes))) Rejection)) (entry : Record) => (auditStep state entry)) (ctor Result.ok [(List (Bytes * (List Bytes))), Rejection] (nil (Bytes * (List Bytes)))) (reversed [Record] records) : (Result (List (Bytes * (List Bytes))) Rejection)) else counted))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: parseAuditOutput,
+  parameters: [stdout : Bytes, expected : (List Bytes)],
+  result: (Result (List (Bytes * (List Bytes))) Rejection),
+  body: (finish (prim list_fold (fun (state : Scan) (line : Bytes) => (scanStep state line)) (ctor Scan.between (nil Record) expected) (LexLeanStd.Text::lines stdout) : Scan) expected),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

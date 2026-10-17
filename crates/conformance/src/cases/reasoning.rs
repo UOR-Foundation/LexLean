@@ -42,33 +42,14 @@ fn module_path(module: &str) -> String {
     format!("src/{module}.lex.tex")
 }
 
-fn data_bounds(text: &str) -> (usize, usize) {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    (start, end)
-}
-
 fn module_data(project: &P, module: &str) -> Json {
-    let text = project.read(&module_path(module));
-    let (start, end) = data_bounds(&text);
-    serde_json::from_str(&text[start..end]).expect("module data")
+    crate::support::module_json(&project.read(&module_path(module)))
 }
 
 fn write_module_data(project: &P, module: &str, data: &Json) {
     let path = module_path(module);
     let text = project.read(&path);
-    let (start, end) = data_bounds(&text);
-    project.write(
-        &path,
-        &format!(
-            "{}{}{}",
-            &text[..start],
-            serde_json::to_string(data).expect("serializes"),
-            &text[end..]
-        ),
-    );
+    project.write(&path, &crate::support::with_module_json(&text, data));
 }
 
 fn declarations_mut(data: &mut Json) -> &mut Vec<Json> {
@@ -336,47 +317,6 @@ fn root<'a>(report: &'a Json, name: &str) -> &'a Json {
         .iter()
         .find(|root| root["root"] == name)
         .unwrap_or_else(|| panic!("root {name}"))
-}
-
-/// Run the pinned Lean on `text` as a standalone module in `project`'s
-/// workspace: whether it is accepted, and what it printed.
-fn lean_run(project: &P, name: &str, text: &str) -> (bool, String) {
-    let _guard = support::env_shared();
-    let inner = lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("load");
-    let toolchain =
-        lexlean::verify::toolchain::preflight(&inner.config.limits).expect("the pinned toolchain");
-    let scratch = project.root.join(".lexlean/runtime-scratch");
-    std::fs::create_dir_all(scratch.as_std_path()).expect("scratch");
-    let source = scratch.join(format!("{name}.lean"));
-    std::fs::write(source.as_std_path(), text).expect("write module");
-    let normalizer = lexlean::verify::child::Normalizer::new(
-        &scratch,
-        &project.root,
-        &project.root,
-        &toolchain.root,
-    );
-    let bin = toolchain.root.join("bin");
-    let record = lexlean::verify::child::run(
-        &lexlean::verify::child::ChildSpec {
-            tool: "lean",
-            module: Some(name.to_owned()),
-            program: &toolchain.lake.path,
-            executable_sha256: toolchain.lean.sha256,
-            argv: vec!["env".to_owned(), "lean".to_owned(), source.to_string()],
-            cwd: &project.root,
-            extra_env: vec![("LEAN_PATH".to_owned(), scratch.to_string())],
-            home: lexlean::verify::child::ChildHome::Toolchain {
-                toolchain_bin: &bin,
-            },
-        },
-        &inner.config.limits,
-        &normalizer,
-    )
-    .expect("lean runs");
-    (
-        record.exit_code == 0 && !record.stdout.contains("error"),
-        record.stdout,
-    )
 }
 
 /// The `kind` constants of the alternatives beneath schema `$defs` entry
@@ -856,9 +796,12 @@ fn rs_04() {
     for theorem in spend.theorems() {
         assert_eq!(theorem["type_parameters"], json!(["T"]), "{theorem}");
     }
-    // The formal runtime is emitted, and no closure reaches it.
+    // The formal runtime is imported, and no closure reaches it.
     let build = support::rendered(&project);
-    assert!(support::lean_text(&build, "Clinic").contains("namespace LexLeanReasoning"));
+    assert!(support::lean_text(&build, "Clinic").contains(&format!(
+        "public import {}\n",
+        lexlean::backend::runtime::REASONING
+    )));
     let report = eligibility(&project, "Main");
     for root in report["roots"].as_array().expect("roots") {
         for member in root["runtime_closure"].as_array().expect("closure") {
@@ -1140,33 +1083,54 @@ fn rs_07() {
     refused_by_lean("RS-07", &["nonterminating-rule", "insufficient-fuel"]);
 }
 
-/// The emitted `LexLeanReasoning` runtime of a rendered module, and the
-/// text after it.
-fn runtime_of(lean: &str) -> (&str, &str) {
-    let start = lean.find("namespace LexLeanReasoning\n").expect("runtime");
-    let end = lean[start..]
-        .find("end LexLeanReasoning\n")
-        .expect("runtime end")
-        + start;
-    (&lean[start..end], &lean[end..])
-}
-
-/// The names a runtime block declares.
-fn runtime_names(runtime: &str) -> Vec<String> {
-    runtime
-        .lines()
-        .filter_map(|line| {
-            [
-                "public theorem ",
-                "@[expose] public def ",
-                "public inductive ",
-            ]
-            .iter()
-            .find_map(|prefix| line.strip_prefix(prefix))
-        })
-        .filter_map(|rest| rest.split_whitespace().next())
-        .map(str::to_owned)
-        .collect()
+/// The reasoning runtime module (§17.12, *Runtime modules*): each top-level
+/// `LexLeanReasoning` declaration, by its short name, with the top-level
+/// runtime names its kernel type and value refer to.
+fn runtime_declarations() -> Vec<(String, BTreeSet<String>)> {
+    use lexlean::ir::core::{CoreModule, CoreNode};
+    let path = lexlean::backend::runtime::native_source_path(lexlean::backend::runtime::REASONING)
+        .expect("a path");
+    let source = std::fs::read_to_string(support::repo_root().join(&path).as_std_path())
+        .expect("the reasoning runtime");
+    let core = CoreModule::from_source(&source, "1.2").expect("a native module");
+    let short = |name: &str| {
+        name.strip_prefix("LexLeanReasoning.")
+            .map(|rest| rest.split('.').next().unwrap_or(rest).to_owned())
+    };
+    let mut out = Vec::new();
+    for row in &core.declarations {
+        let Some(name) = row.name.strip_prefix("LexLeanReasoning.") else {
+            continue;
+        };
+        if row.generated || name.contains('.') {
+            continue;
+        }
+        let mut references = BTreeSet::new();
+        let mut seen = BTreeSet::new();
+        let mut stack = vec![row.r#type];
+        stack.extend(row.value);
+        while let Some(node) = stack.pop() {
+            if !seen.insert(node) {
+                continue;
+            }
+            match &core.nodes[node] {
+                CoreNode::Const { n, .. } => references.extend(short(n)),
+                CoreNode::App { f, x } => stack.extend([*f, *x]),
+                CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
+                    stack.extend([*t, *v]);
+                }
+                CoreNode::Let { t, v, body, .. } => stack.extend([*t, *v, *body]),
+                CoreNode::Projection { x, .. } | CoreNode::Mdata { x, .. } => stack.push(*x),
+                CoreNode::BVar { .. }
+                | CoreNode::Sort { .. }
+                | CoreNode::Nat { .. }
+                | CoreNode::String { .. } => {}
+            }
+        }
+        references.remove(name);
+        out.push((name.to_owned(), references));
+    }
+    out
 }
 
 /// Whether `text` mentions the runtime name `name` as a whole word.
@@ -1186,49 +1150,31 @@ fn rs_08() {
     let project = P::copy_example(EXAMPLE);
     let build = support::rendered(&project);
     let clinic = support::lean_text(&build, "Clinic");
-    let (runtime, _) = runtime_of(&clinic);
-    let declared = runtime_names(runtime);
+    assert!(
+        clinic.contains(&format!(
+            "public import {}\n",
+            lexlean::backend::runtime::REASONING
+        )),
+        "a module with a reasoning declaration imports the reasoning runtime"
+    );
+    let runtime = runtime_declarations();
+    let declared: Vec<String> = runtime.iter().map(|(name, _)| name.clone()).collect();
     assert!(declared.len() >= 30, "{declared:?}");
     // Every runtime name is used by a generated statement or proof of the
     // example, directly or through another runtime name so used.
     let generated: String = MODULES
         .iter()
-        .map(|module| runtime_of(&support::lean_text(&build, module)).1.to_owned())
+        .map(|module| support::lean_text(&build, module))
         .collect();
-    // Each runtime name's block runs from its declaration to the next.
-    let mut blocks: Vec<(&String, String)> = Vec::new();
-    for line in runtime.lines() {
-        match runtime_names(line).first() {
-            Some(name) => {
-                let name = declared
-                    .iter()
-                    .find(|candidate| *candidate == name)
-                    .expect("declared");
-                blocks.push((name, format!("{line}\n")));
-            }
-            None => {
-                if let Some((_, block)) = blocks.last_mut() {
-                    block.push_str(line);
-                    block.push('\n');
-                }
-            }
-        }
-    }
     let mut used: BTreeSet<&String> = declared
         .iter()
         .filter(|name| mentions(&generated, &format!("LexLeanReasoning.{name}")))
         .collect();
     loop {
         let before = used.len();
-        for (name, _) in &blocks {
+        for (name, references) in &runtime {
             if used.contains(name) {
-                continue;
-            }
-            if blocks
-                .iter()
-                .any(|(user, block)| used.contains(user) && user != name && mentions(block, name))
-            {
-                used.insert(name);
+                used.extend(declared.iter().filter(|other| references.contains(*other)));
             }
         }
         if used.len() == before {
@@ -1282,48 +1228,58 @@ fn rs_08() {
             "{name}"
         );
     }
-    // The runtime alone is accepted by pinned Lean, and a mutated lemma
-    // statement is refused.
-    let start = clinic
-        .find("namespace LexLeanReasoning\n")
-        .expect("runtime");
-    let end = clinic.find("end LexLeanReasoning\n").expect("runtime end")
-        + "end LexLeanReasoning\n".len();
-    let namespace = clinic
-        .lines()
-        .find_map(|line| line.strip_prefix("namespace "))
-        .expect("the module namespace");
-    let runtime_module = format!("{}end {namespace}\n", &clinic[..end]);
-    assert!(start < end);
-    // Every runtime lemma is accepted, and depends on no axiom.
-    let audited = format!(
-        "{}{}end {namespace}\n",
-        &clinic[..end],
-        declared
+    // Every runtime name is accepted by pinned Lean and depends on no axiom:
+    // the verification compiled, replayed, and audited the runtime module
+    // the example imports.
+    for name in &declared {
+        let row = attested(&fixture.attestation, &format!("LexLeanReasoning.{name}"));
+        assert_eq!(row["result"], "ok", "{name}");
+        assert_eq!(row["observed"], json!([]), "{name} depends on no axiom");
+    }
+    // A mutated runtime lemma statement is refused: the guarded lemma's row,
+    // in the runtime's own project, states the statement of another lemma.
+    let mutated = P::runtime_project();
+    let relative = "src/Reasoning.lex.tex";
+    let source = mutated.read(relative);
+    let (head, rest) = source.split_once("\\coredata{").expect("the payload");
+    let (payload, tail) = rest
+        .rsplit_once("}\n\\end{coremodule}")
+        .expect("the payload's end");
+    let mut data: Json = serde_json::from_str(payload).expect("the payload is JSON");
+    let statement_of = |data: &Json, name: &str| {
+        data["declarations"]
+            .as_array()
+            .expect("rows")
             .iter()
-            .map(|name| format!("#print axioms LexLeanReasoning.{name}\n"))
-            .collect::<String>()
+            .find(|row| row["name"] == name)
+            .map(|row| row["type"].clone())
+            .unwrap_or_else(|| panic!("the runtime declares `{name}`"))
+    };
+    let other = statement_of(&data, "LexLeanReasoning.checked");
+    assert_ne!(statement_of(&data, "LexLeanReasoning.guarded"), other);
+    for row in data["declarations"].as_array_mut().expect("rows") {
+        if row["name"] == "LexLeanReasoning.guarded" {
+            row["type"] = other.clone();
+        }
+    }
+    mutated.write(
+        relative,
+        &format!(
+            "{head}\\coredata{{{}}}\n\\end{{coremodule}}{tail}",
+            serde_json::to_string(&data).expect("JSON")
+        ),
     );
-    let workspace = P::copy_example(EXAMPLE);
-    let (accepted, printed) = lean_run(&workspace, "RuntimeAccepted", &audited);
+    mutated.relock();
+    let refused = mutated
+        .engine()
+        .verify(VerifyRequest {
+            selection: Selection::Entrypoints,
+        })
+        .err()
+        .expect("a mutated runtime lemma statement is refused");
     assert!(
-        accepted,
-        "the emitted runtime is accepted by pinned Lean: {printed}"
-    );
-    assert_eq!(
-        printed.matches("does not depend on any axioms").count(),
-        declared.len(),
-        "every runtime name is axiom-free: {printed}"
-    );
-    let sound = "= some t -> r s t := by";
-    assert!(
-        runtime_module.contains(sound),
-        "the guarded lemma states soundness"
-    );
-    let planted = runtime_module.replacen(sound, "= some t -> r t s := by", 1);
-    assert!(
-        !lean_run(&workspace, "RuntimeMutated", &planted).0,
-        "a mutated runtime lemma statement is refused"
+        refused.to_string().contains("LexLeanReasoning.guarded"),
+        "{refused}"
     );
 }
 
@@ -2735,6 +2691,20 @@ fn planted_verification() -> &'static Vec<String> {
     static ERROR: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
     ERROR.get_or_init(|| {
         let project = P::compiler();
+        // The case asks which diagnostic Lean's refusal carries, not how
+        // long Lean takes. The planted module elaborates in 26 s to 73 s,
+        // yet a runner that stalled (every Lean child in the run, of every
+        // project, took about 5 to 20 times its usual time for several
+        // minutes) pushed it past the default 300 s and reported `LLS8002`,
+        // which is a different claim (#145). Three times the default
+        // leaves a slowdown of more than 12 times harmless and still ends
+        // a hung child.
+        project.edit(
+            "lexlean.toml",
+            "child_timeout_ms = 300000",
+            "child_timeout_ms = 900000",
+        );
+        project.relock();
         project.write(
             "src/ReasoningFixtures.lex.tex",
             &crate::calculus::reasoning_fixtures_module(&planted_transcriptions()),
@@ -2760,8 +2730,7 @@ fn rs_12() {
             .unwrap_or_else(|error| panic!("{path}: {error}"))
     };
     let declarations = |text: &str| -> Vec<Json> {
-        let (start, end) = data_bounds(text);
-        serde_json::from_str::<Json>(&text[start..end]).expect("module data")["declarations"]
+        support::module_json(text)["declarations"]
             .as_array()
             .expect("declarations")
             .clone()
@@ -2943,7 +2912,7 @@ fn rs_12() {
         );
         let id = crate::calculus::identifier(&case.fixture.name);
         assert!(
-            fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
+            support::declares(&fixtures_text, &format!("{id}Agrees")),
             "{id}Agrees is stated"
         );
         let Outcome::Value {
@@ -3260,7 +3229,7 @@ fn rs_13() {
         );
         let id = crate::calculus::identifier(name);
         assert!(
-            fixtures_text.contains(&format!("\"name\":\"{id}Agrees\"")),
+            support::declares(&fixtures_text, &format!("{id}Agrees")),
             "{id}Agrees is stated"
         );
         let Outcome::Value { value, .. } = &case.fixture.expected else {

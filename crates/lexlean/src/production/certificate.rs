@@ -35,7 +35,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+mod data;
+
 use super::eligibility::BUILTIN_OWNERS;
+use super::lean_list::{array, list, list_by};
 use super::lower::{fixed_kind, Layout, Lowered, Origin, Validation};
 use super::source::{Constructor, Local, Site, Source};
 use super::RootReport;
@@ -67,7 +70,6 @@ pub const LIBRARY_MODULES: [&str; 7] = [
 ];
 
 const SYNTAX: &str = "LexLeanTarget.TargetSyntax";
-const SEMANTICS: &str = "LexLeanTarget.TargetSemantics";
 const NAT_BOUND: &str = "18446744073709551616";
 
 /// One generated certificate module.
@@ -84,6 +86,11 @@ pub struct Certificate {
     pub denote: String,
     /// The generated user modules the certificate imports.
     pub imports: Vec<String>,
+    /// The certificate as kernel-term data, when it is held as data: a
+    /// native core module the core backend rendered `text` from (SP-14).
+    pub data: Option<crate::ir::core::CoreModule>,
+    /// The record of a certificate held as data: its authoring notation.
+    pub source: Option<String>,
 }
 
 /// One constructor of a closed document type, as tooling that writes
@@ -437,50 +444,40 @@ pub fn certificate_e(
 ) -> Result<Certificate, Diagnostic> {
     let mut generator = generator(modules, lowered, max_bytes);
     generator.nest().map_err(failure)?;
-    let text = generator
-        .compose(root_module, root_name, module_a, module_b, module, fallible)
+    let data = generator
+        .compose_data(root_module, root_name, module_a, module_b, module, fallible)
         .map_err(failure)?;
-    let text = from_the_root(&text).map_err(internal)?;
+    let text = crate::backend::core::lean_text_legacy(&data, module)
+        .map_err(|diagnostic| internal(diagnostic.message))?;
     generator.within(text.len()).map_err(failure)?;
+    let source = record_source(module, &data).map_err(internal)?;
     Ok(Certificate {
         module: module.to_owned(),
         theorem: format!("{module}.root"),
         denote: format!("{module_a}.denote"),
         text,
         imports: Vec::new(),
+        data: Some(data),
+        source: Some(source),
     })
 }
 
-/// `text` with every name certificate A defines (its encoders and their
-/// bundles and auxiliaries) qualified by A's module.
-fn qualify(text: &str, module_a: &str) -> String {
-    const DEFINED: [&str; 5] = ["__enc_", "__L_", "__O_", "__aux_", "__items_"];
-    let mut out = String::new();
-    let mut rest = text;
-    loop {
-        let found = DEFINED
-            .iter()
-            .filter_map(|prefix| rest.find(prefix).map(|at| (at, *prefix)))
-            .min();
-        match found {
-            Some((at, prefix)) => {
-                let boundary = rest[..at].chars().next_back().is_none_or(|before| {
-                    !(before.is_alphanumeric() || before == '_' || before == '.')
-                });
-                out.push_str(&rest[..at]);
-                if boundary {
-                    out.push_str(module_a);
-                    out.push('.');
-                }
-                out.push_str(prefix);
-                rest = rest.split_at(at + prefix.len()).1;
-            }
-            None => {
-                out.push_str(rest);
-                return out;
-            }
-        }
-    }
+/// The record of a certificate held as data: the whole source of the module
+/// in the authoring notation (SPEC.md §17.21.8), which reads back to the data.
+fn record_source(module: &str, data: &crate::ir::core::CoreModule) -> Result<String, String> {
+    let name = module.rsplit('.').next().unwrap_or(module);
+    let value = serde_json::to_value(data).map_err(|error| error.to_string())?;
+    crate::sdk::assemble(
+        &crate::sdk::SourceHeader {
+            name,
+            glossaries: &[],
+            imports: &[],
+            title: &format!("Certificate E {module}"),
+        },
+        crate::sdk::ModuleKind::Core,
+        &value,
+    )
+    .map_err(|error| error.message)
 }
 
 /// The generator of a lowered root's certificates, before nesting.
@@ -595,6 +592,8 @@ pub fn certificate(
         denote: format!("{module}.denote"),
         text,
         imports,
+        data: None,
+        source: None,
     })
 }
 
@@ -788,12 +787,8 @@ pub fn render_ty(ty: &Ty) -> String {
         Ty::Pair { left, right } => format!("(.pair {} {})", render_ty(left), render_ty(right)),
         Ty::Adt { index } => format!("(.adt {index})"),
         Ty::Fn { parameters, result } => format!(
-            "(.fn [{}] {})",
-            parameters
-                .iter()
-                .map(render_ty)
-                .collect::<Vec<_>>()
-                .join(", "),
+            "(.fn {} {})",
+            list(parameters.iter().map(render_ty)),
             render_ty(result)
         ),
     }
@@ -821,7 +816,7 @@ fn bytes_literal(hex: &str) -> Result<String, String> {
                 .to_string(),
         );
     }
-    Ok(format!("ByteArray.mk #[{}]", values.join(", ")))
+    Ok(format!("ByteArray.mk {}", array(values)))
 }
 
 /// A calculus value as a `TargetSyntax.Value` term.
@@ -858,12 +853,13 @@ pub fn render_value(value: &Value) -> Result<String, String> {
         Value::Ok { value } => format!("(.ok {})", render_value(value)?),
         Value::Error { value } => format!("(.error {})", render_value(value)?),
         Value::List { items } => format!(
-            "(.list [{}])",
-            items
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.list {})",
+            list(
+                items
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
         Value::Pair { left, right } => {
             format!("(.pair {} {})", render_value(left)?, render_value(right)?)
@@ -872,20 +868,22 @@ pub fn render_value(value: &Value) -> Result<String, String> {
             constructor,
             fields,
         } => format!(
-            "(.adt {constructor} [{}])",
-            fields
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.adt {constructor} {})",
+            list(
+                fields
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
         Value::Closure { function, captures } => format!(
-            "(.closure {function} [{}])",
-            captures
-                .iter()
-                .map(render_value)
-                .collect::<Result<Vec<_>, _>>()?
-                .join(", ")
+            "(.closure {function} {})",
+            list(
+                captures
+                    .iter()
+                    .map(render_value)
+                    .collect::<Result<Vec<_>, _>>()?
+            )
         ),
     })
 }
@@ -959,25 +957,16 @@ fn render_prim(prim: &Prim) -> String {
 }
 
 fn render_exprs(exprs: &[Expr]) -> Result<String, String> {
-    Ok(format!(
-        "[{}]",
+    Ok(list(
         exprs
             .iter()
             .map(render_expr)
-            .collect::<Result<Vec<_>, _>>()?
-            .join(", ")
+            .collect::<Result<Vec<_>, _>>()?,
     ))
 }
 
 fn numbers(names: &[u64]) -> String {
-    format!(
-        "[{}]",
-        names
-            .iter()
-            .map(u64::to_string)
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
+    list(names.iter().map(u64::to_string))
 }
 
 fn render_expr(expr: &Expr) -> Result<String, String> {
@@ -1010,26 +999,27 @@ fn render_expr(expr: &Expr) -> Result<String, String> {
             scrutinee,
             arms,
         } => format!(
-            "(.«match» {} {} [{}])",
+            "(.«match» {} {} {})",
             render_ty(ty),
             render_expr(scrutinee)?,
-            arms.iter()
-                .map(
-                    |Arm {
-                         shape,
-                         binders,
-                         body,
-                     }| {
-                        Ok(format!(
-                            "(.arm {} {} {})",
-                            render_shape(*shape),
-                            numbers(binders),
-                            render_expr(body)?
-                        ))
-                    }
-                )
-                .collect::<Result<Vec<_>, String>>()?
-                .join(", ")
+            list(
+                arms.iter()
+                    .map(
+                        |Arm {
+                             shape,
+                             binders,
+                             body,
+                         }| {
+                            Ok(format!(
+                                "(.arm {} {} {})",
+                                render_shape(*shape),
+                                numbers(binders),
+                                render_expr(body)?
+                            ))
+                        }
+                    )
+                    .collect::<Result<Vec<_>, String>>()?
+            )
         ),
         Expr::Build {
             shape,
@@ -1072,50 +1062,41 @@ fn render_expr(expr: &Expr) -> Result<String, String> {
 ///
 /// Returns the reason a literal is malformed.
 pub fn render_program(program: &Program) -> Result<String, String> {
-    let mut out = String::from("{ adts := [");
-    for (index, adt) in program.adts.iter().enumerate() {
-        if index > 0 {
-            out.push_str(",\n    ");
-        }
-        out.push_str("{ constructors := [");
-        out.push_str(
-            &adt.constructors
-                .iter()
-                .map(|fields| {
-                    format!(
-                        "[{}]",
-                        fields.iter().map(render_ty).collect::<Vec<_>>().join(", ")
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
-        out.push_str("] }");
-    }
-    out.push_str("], functions := [");
-    for (
-        index,
-        Function {
-            parameters,
-            types,
-            result,
-            body,
-        },
-    ) in program.functions.iter().enumerate()
-    {
-        if index > 0 {
-            out.push(',');
-        }
-        out.push_str(&format!(
-            "\n    {{ parameters := {}, types := [{}], result := {},\n      body := {} }}",
-            numbers(parameters),
-            types.iter().map(render_ty).collect::<Vec<_>>().join(", "),
-            render_ty(result),
-            render_expr(body)?
-        ));
-    }
-    out.push_str("] }");
-    Ok(out)
+    let adts = program.adts.iter().map(|adt| {
+        format!(
+            "{{ constructors := {} }}",
+            list(
+                adt.constructors
+                    .iter()
+                    .map(|fields| list(fields.iter().map(render_ty)))
+            )
+        )
+    });
+    let functions = program
+        .functions
+        .iter()
+        .map(
+            |Function {
+                 parameters,
+                 types,
+                 result,
+                 body,
+             }| {
+                Ok::<String, String>(format!(
+                    "\n    {{ parameters := {}, types := {}, result := {},\n      body := {} }}",
+                    numbers(parameters),
+                    list(types.iter().map(render_ty)),
+                    render_ty(result),
+                    render_expr(body)?
+                ))
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(format!(
+        "{{ adts := {}, functions := {} }}",
+        list_by(adts, ",\n    "),
+        list_by(functions, ",")
+    ))
 }
 
 // --- Rendering the source -----------------------------------------------------
@@ -1426,13 +1407,6 @@ impl Gen<'_> {
         }
     }
 
-    fn runtime(&self, site: &Site, namespace: &str, operation: &str) -> Result<String, String> {
-        Ok(format!(
-            "{}.{namespace}.{operation}",
-            self.lean_module(&site.module)?
-        ))
-    }
-
     /// A branch pattern at `site`.
     fn pattern(&self, branch: &SemanticBranch, site: &Site) -> Result<String, String> {
         let mut out = self.member(&branch.constructor, site)?;
@@ -1545,7 +1519,7 @@ impl Gen<'_> {
                 };
                 format!(
                     "({}{} : {})",
-                    self.runtime(site, namespace, name)?,
+                    runtime(namespace, name),
                     self.src_terms(arguments, ctx)?,
                     self.ty(&result)?
                 )
@@ -1744,28 +1718,30 @@ impl Gen<'_> {
                 value,
                 entries,
             } => format!(
-                "([{}] : List (Prod {} {}))",
-                entries
-                    .iter()
-                    .map(|SemanticMapEntry { key, value }| {
-                        Ok::<String, String>(format!(
-                            "({}, {})",
-                            self.src(key, ctx)?,
-                            self.src(value, ctx)?
-                        ))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?
-                    .join(", "),
+                "({} : List (Prod {} {}))",
+                list(
+                    entries
+                        .iter()
+                        .map(|SemanticMapEntry { key, value }| {
+                            Ok::<String, String>(format!(
+                                "({}, {})",
+                                self.src(key, ctx)?,
+                                self.src(value, ctx)?
+                            ))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                ),
                 self.ty(&self.source.close(key, site))?,
                 self.ty(&self.source.close(value, site))?
             ),
             SemanticTerm::SetLiteral { element, elements } => format!(
-                "([{}] : List {})",
-                elements
-                    .iter()
-                    .map(|element| self.src(element, ctx))
-                    .collect::<Result<Vec<_>, _>>()?
-                    .join(", "),
+                "({} : List {})",
+                list(
+                    elements
+                        .iter()
+                        .map(|element| self.src(element, ctx))
+                        .collect::<Result<Vec<_>, _>>()?
+                ),
                 self.ty(&self.source.close(element, site))?
             ),
             // Certificates read elaborated declarations, in which a checked
@@ -1795,16 +1771,9 @@ impl Gen<'_> {
                             targets.push(self.src(target, ctx)?);
                         }
                     }
-                    items.push(format!(
-                        "({}, [{}])",
-                        self.src(source, ctx)?,
-                        targets.join(", ")
-                    ));
+                    items.push(format!("({}, {})", self.src(source, ctx)?, list(targets)));
                 }
-                format!(
-                    "([{}] : List (Prod {node} (List {node})))",
-                    items.join(", ")
-                )
+                format!("({} : List (Prod {node} (List {node})))", list(items))
             }
             SemanticTerm::Eq { left: _, right: _ }
             | SemanticTerm::Le { left: _, right: _ }
@@ -1823,6 +1792,13 @@ impl Gen<'_> {
             }
         })
     }
+}
+
+/// A declaration of the runtime by its namespace and name. The runtime is
+/// one set of imported modules (§17.12), not a copy inside each generated
+/// module, so the name is the same at every site.
+fn runtime(namespace: &str, operation: &str) -> String {
+    format!("{namespace}.{operation}")
 }
 
 /// The runtime namespace and name a primitive is rendered with.
@@ -2201,7 +2177,6 @@ impl Gen<'_> {
         operation: SemanticPrimitive,
         types: &[SemanticType],
         result: &SemanticType,
-        site: &Site,
     ) -> Result<PrimRule, String> {
         let first = types
             .first()
@@ -2252,7 +2227,7 @@ impl Gen<'_> {
                     lemma: lib(&format!("prim_checkedMul_{suffix}")),
                     prefix: if suffix == "i64" {
                         vec![
-                            self.runtime(site, "LexLeanRuntime", "multiplyMagnitudeInt64")?,
+                            runtime("LexLeanRuntime", "multiplyMagnitudeInt64"),
                             "(fun _ _ _ _ => rfl)".to_owned(),
                             "(fun _ _ _ _ _ => rfl)".to_owned(),
                         ]
@@ -2272,7 +2247,7 @@ impl Gen<'_> {
                     lemma: lib(&format!("prim_checkedQuot_{suffix}")),
                     prefix: if suffix == "i64" {
                         vec![
-                            self.runtime(site, "LexLeanRuntime", "divideMagnitudeInt64")?,
+                            runtime("LexLeanRuntime", "divideMagnitudeInt64"),
                             "(fun _ _ _ _ => rfl)".to_owned(),
                             "(fun _ _ _ _ _ => rfl)".to_owned(),
                         ]
@@ -2338,7 +2313,7 @@ impl Gen<'_> {
                             value: Box::new(element),
                         })?,
                         "(fun _ => rfl)".to_owned(),
-                        self.runtime(site, "LexLeanRuntime", "listIndex")?,
+                        runtime("LexLeanRuntime", "listIndex"),
                         "(fun _ => rfl)".to_owned(),
                         "(fun _ _ => rfl)".to_owned(),
                         "(fun _ _ _ => rfl)".to_owned(),
@@ -2566,7 +2541,7 @@ impl Gen<'_> {
                     value: self.src(argument, ctx)?,
                     fits: format!("fun{typed} => __fits_{index}{fits_captures} {applied}"),
                     index: index.to_string(),
-                    captures: format!("[{}]", encoded.join(", ")),
+                    captures: list(encoded),
                     relation: format!("fun{typed} => __rel_{index}{relation_captures} {applied}"),
                     proof: Proof {
                         proof: format!("({} {})", lib("conv_closure"), captured.proof),
@@ -3200,7 +3175,7 @@ impl Gen<'_> {
             // source's `lessThan` unfolds to the key order by its clauses.
             SemanticPrimitive::LessThan => {
                 let key = types.first().ok_or("a key comparison has no operand")?;
-                let coll = format!("{}.LexLeanCollections", self.lean_module(&site.module)?);
+                let coll = "LexLeanCollections".to_owned();
                 let less = format!("{coll}.lessThan");
                 let list = operands(self.proofs(arguments, ctx)?);
                 return Ok(Proof {
@@ -3268,7 +3243,7 @@ impl Gen<'_> {
             | SemanticPrimitive::GraphReachable
             | SemanticPrimitive::GraphTopological => {}
         }
-        let rule = self.prim_rule(operation, &types, &result, &site)?;
+        let rule = self.prim_rule(operation, &types, &result)?;
         let list = operands(self.proofs(arguments, ctx)?);
         let sources = arguments
             .iter()
@@ -3720,12 +3695,12 @@ impl Gen<'_> {
                     rel_binders.push(format!("({} : Nat)", companion.index));
                     rel_binders.push(format!("({} : List {SYNTAX}.Value)", companion.captures));
                     rel_binders.push(format!(
-                        "({} : ∀{binders}, {} __prog {} ({SEMANTICS}.LexLeanRuntime.append {} [{}]) ({} ({}{applied}) ({} ({name}{applied}))))",
+                        "({} : ∀{binders}, {} __prog {} (LexLeanRuntime.append {} {}) ({} ({}{applied}) ({} ({name}{applied}))))",
                         companion.relation,
                         lib("FunRel"),
                         companion.index,
                         companion.captures,
-                        encoded.join(", "),
+                        list(encoded),
                         lib("Rel"),
                         companion.fits,
                         self.enc(codomain)?
@@ -3744,7 +3719,7 @@ impl Gen<'_> {
             fits_binders,
             rel_binders,
             fits_applied,
-            arguments: format!("[{}]", arguments.join(", ")),
+            arguments: list(arguments),
             value: format!("({} ({denotation}))", self.enc(result)?),
             names,
         })
@@ -4025,6 +4000,32 @@ impl<'a> Gen<'a> {
                     claims: _,
                     executable: _,
                     axioms: _,
+                }
+                | SemanticDeclaration::Tokenizer {
+                    name: _,
+                    type_parameters: _,
+                    scheme: _,
+                    vocabulary: _,
+                    axioms: _,
+                }
+                | SemanticDeclaration::ContextWindow {
+                    name: _,
+                    capacity: _,
+                    overflow: _,
+                }
+                | SemanticDeclaration::TextGenerator {
+                    name: _,
+                    tokenizer: _,
+                    window: _,
+                    scorer: _,
+                    max_tokens: _,
+                    stop: _,
+                    policy: _,
+                }
+                | SemanticDeclaration::TextClassifier {
+                    name: _,
+                    tokenizer: _,
+                    model: _,
                 } => {}
             }
         }
@@ -4209,6 +4210,32 @@ impl<'a> Gen<'a> {
                                 claims: _,
                                 executable: _,
                                 axioms: _,
+                            }
+                            | SemanticDeclaration::Tokenizer {
+                                name: _,
+                                type_parameters: _,
+                                scheme: _,
+                                vocabulary: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::ContextWindow {
+                                name: _,
+                                capacity: _,
+                                overflow: _,
+                            }
+                            | SemanticDeclaration::TextGenerator {
+                                name: _,
+                                tokenizer: _,
+                                window: _,
+                                scorer: _,
+                                max_tokens: _,
+                                stop: _,
+                                policy: _,
+                            }
+                            | SemanticDeclaration::TextClassifier {
+                                name: _,
+                                tokenizer: _,
+                                model: _,
                             },
                         )
                         | None => return Err(format!("`{module}.{name}` is not a definition")),
@@ -4436,6 +4463,32 @@ impl<'a> Gen<'a> {
                                 claims: _,
                                 executable: _,
                                 axioms: _,
+                            }
+                            | SemanticDeclaration::Tokenizer {
+                                name: _,
+                                type_parameters: _,
+                                scheme: _,
+                                vocabulary: _,
+                                axioms: _,
+                            }
+                            | SemanticDeclaration::ContextWindow {
+                                name: _,
+                                capacity: _,
+                                overflow: _,
+                            }
+                            | SemanticDeclaration::TextGenerator {
+                                name: _,
+                                tokenizer: _,
+                                window: _,
+                                scorer: _,
+                                max_tokens: _,
+                                stop: _,
+                                policy: _,
+                            }
+                            | SemanticDeclaration::TextClassifier {
+                                name: _,
+                                tokenizer: _,
+                                model: _,
                             },
                         )
                         | None => return Err(format!("`{module}.{name}` is not an instance")),
@@ -5325,9 +5378,9 @@ impl<'a> Gen<'a> {
                         format!("⟨{}⟩", binders.join(", "))
                     };
                     text.push_str(&format!(
-                        "  | {pattern} => {} {position} [{}]\n",
+                        "  | {pattern} => {} {position} {}\n",
                         value_ctor("adt"),
-                        encoded.join(", ")
+                        list(encoded)
                     ));
                 }
                 text.push('\n');
@@ -5346,9 +5399,9 @@ impl<'a> Gen<'a> {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 format!(
-                    "def __enc_{index} (__s : {lean}) : {SYNTAX}.Value :=\n  {} 0 [{}]\n\n",
+                    "def __enc_{index} (__s : {lean}) : {SYNTAX}.Value :=\n  {} 0 {}\n\n",
                     value_ctor("adt"),
-                    fields.join(", ")
+                    list(fields)
                 )
             };
             texts.insert(index, text);
@@ -5540,6 +5593,32 @@ impl<'a> Gen<'a> {
                         claims: _,
                         executable: _,
                         axioms: _,
+                    }
+                    | SemanticDeclaration::Tokenizer {
+                        name: _,
+                        type_parameters: _,
+                        scheme: _,
+                        vocabulary: _,
+                        axioms: _,
+                    }
+                    | SemanticDeclaration::ContextWindow {
+                        name: _,
+                        capacity: _,
+                        overflow: _,
+                    }
+                    | SemanticDeclaration::TextGenerator {
+                        name: _,
+                        tokenizer: _,
+                        window: _,
+                        scorer: _,
+                        max_tokens: _,
+                        stop: _,
+                        policy: _,
+                    }
+                    | SemanticDeclaration::TextClassifier {
+                        name: _,
+                        tokenizer: _,
+                        model: _,
                     },
                 )
                 | None => return Err(format!("`{module}.{name}` has no termination evidence")),
@@ -6273,6 +6352,32 @@ impl<'a> Gen<'a> {
                                         claims: _,
                                         executable: _,
                                         axioms: _,
+                                    }
+                                    | SemanticDeclaration::Tokenizer {
+                                        name: _,
+                                        type_parameters: _,
+                                        scheme: _,
+                                        vocabulary: _,
+                                        axioms: _,
+                                    }
+                                    | SemanticDeclaration::ContextWindow {
+                                        name: _,
+                                        capacity: _,
+                                        overflow: _,
+                                    }
+                                    | SemanticDeclaration::TextGenerator {
+                                        name: _,
+                                        tokenizer: _,
+                                        window: _,
+                                        scorer: _,
+                                        max_tokens: _,
+                                        stop: _,
+                                        policy: _,
+                                    }
+                                    | SemanticDeclaration::TextClassifier {
+                                        name: _,
+                                        tokenizer: _,
+                                        model: _,
                                     },
                                 )
                                 | None => {
@@ -6675,7 +6780,7 @@ impl Gen<'_> {
             .get(&(template.name().to_owned(), tys.clone()))
             .ok_or_else(|| format!("template {} has no instance in the layout", template.name()))?;
         let rendered: Vec<String> = tys.iter().map(render_ty).collect();
-        let coll = format!("{}.LexLeanCollections", self.lean_module(&ctx.site.module)?);
+        let coll = "LexLeanCollections".to_owned();
         let mut proofs = Vec::new();
         let mut values = Vec::new();
         let mut functions = Vec::new();
@@ -7368,446 +7473,6 @@ impl Gen<'_> {
     }
 }
 
-impl Gen<'_> {
-    /// The proof that every value of `ty`, encoded, is well typed: a term
-    /// of `∀ x, WT p c A (enc x) ty`.
-    fn wtf(&self, ty: &SemanticType, module_a: &str) -> Result<String, String> {
-        match self.nested.get(&self.source.type_text(ty)) {
-            Some(nested) => {
-                let n = nested.index;
-                return Ok(match &nested.ty {
-                    SemanticType::List { element: _ }
-                    | SemanticType::Set { element: _ }
-                    | SemanticType::Map { key: _, value: _ }
-                    | SemanticType::ContractViolation
-                    | SemanticType::ReasoningFailure => format!(
-                        "({} {module_a}.__L_{n} {})",
-                        lib("Rust.wt_listEnc"),
-                        self.wtf(&element_of(ty)?, module_a)?
-                    ),
-                    SemanticType::Option { value } => format!(
-                        "({} {module_a}.__O_{n} {})",
-                        lib("Rust.wt_optEnc"),
-                        self.wtf(value, module_a)?
-                    ),
-                    SemanticType::Result { ok: _, error: _ }
-                    | SemanticType::Product { left: _, right: _ }
-                    | SemanticType::Named {
-                        member: _,
-                        arguments: _,
-                    }
-                    | SemanticType::Function {
-                        parameters: _,
-                        result: _,
-                    }
-                    | SemanticType::Type
-                    | SemanticType::Prop
-                    | SemanticType::Parameter { name: _ }
-                    | SemanticType::Nat
-                    | SemanticType::Bool
-                    | SemanticType::Unit
-                    | SemanticType::Int
-                    | SemanticType::Int8
-                    | SemanticType::Int16
-                    | SemanticType::Int32
-                    | SemanticType::Int64
-                    | SemanticType::UInt8
-                    | SemanticType::UInt16
-                    | SemanticType::UInt32
-                    | SemanticType::UInt64
-                    | SemanticType::String
-                    | SemanticType::Bytes
-                    | SemanticType::Ordering => format!("__wtAux_{n}"),
-                });
-            }
-            None => {}
-        }
-        let rust = |name: &str| lib(&format!("Rust.{name}"));
-        Ok(match ty {
-            SemanticType::Nat => rust("wt_nat"),
-            SemanticType::Int => rust("wt_int"),
-            SemanticType::Bool => rust("wt_bool"),
-            SemanticType::String => rust("wt_string"),
-            SemanticType::Bytes => rust("wt_bytes"),
-            SemanticType::Unit => rust("wt_encUnit"),
-            SemanticType::Ordering => rust("wt_encOrdering"),
-            SemanticType::UInt8 => rust("wt_u8"),
-            SemanticType::UInt16 => rust("wt_u16"),
-            SemanticType::UInt32 => rust("wt_u32"),
-            SemanticType::UInt64 => rust("wt_u64"),
-            SemanticType::Int8 => rust("wt_i8"),
-            SemanticType::Int16 => rust("wt_i16"),
-            SemanticType::Int32 => rust("wt_i32"),
-            SemanticType::Int64 => rust("wt_i64"),
-            SemanticType::Option { value } => {
-                format!("({} {})", rust("wt_encOption"), self.wtf(value, module_a)?)
-            }
-            SemanticType::Result { ok, error } => format!(
-                "({} {} {})",
-                rust("wt_encExcept"),
-                self.wtf(error, module_a)?,
-                self.wtf(ok, module_a)?
-            ),
-            SemanticType::List { element } | SemanticType::Set { element } => {
-                format!("({} {})", rust("wt_encList"), self.wtf(element, module_a)?)
-            }
-            SemanticType::Map { key, value } => format!(
-                "({} ({} {} {}))",
-                rust("wt_encList"),
-                rust("wt_encPair"),
-                self.wtf(key, module_a)?,
-                self.wtf(value, module_a)?
-            ),
-            SemanticType::Product { left, right } => format!(
-                "({} {} {})",
-                rust("wt_encPair"),
-                self.wtf(left, module_a)?,
-                self.wtf(right, module_a)?
-            ),
-            SemanticType::ContractViolation | SemanticType::ReasoningFailure => format!(
-                "({} {} {})",
-                rust("wt_encPair"),
-                rust("wt_bool"),
-                rust("wt_bool")
-            ),
-            SemanticType::Named {
-                member: _,
-                arguments: _,
-            } => {
-                let text = self.source.type_text(ty);
-                let index = self
-                    .adts
-                    .get(&text)
-                    .ok_or_else(|| format!("`{text}` has no ADT in the layout"))?;
-                format!("__wt_{index}")
-            }
-            SemanticType::Function {
-                parameters: _,
-                result: _,
-            }
-            | SemanticType::Type
-            | SemanticType::Prop
-            | SemanticType::Parameter { name: _ } => {
-                return Err(format!(
-                    "`{}` crosses no root boundary",
-                    self.source.type_text(ty)
-                ));
-            }
-        })
-    }
-
-    /// The well-typedness proof of `arg` encoded as a field inside a
-    /// recursive group, as [`Self::raw_apply`] encodes it.
-    fn wt_apply(&self, ty: &SemanticType, arg: &str, module_a: &str) -> Result<String, String> {
-        match self.nested.get(&self.source.type_text(ty)) {
-            Some(nested) => Ok(match &nested.ty {
-                SemanticType::List { element: _ }
-                | SemanticType::Set { element: _ }
-                | SemanticType::Map { key: _, value: _ }
-                | SemanticType::ContractViolation
-                | SemanticType::ReasoningFailure => format!(
-                    "({} (__wtItems_{} {arg}))",
-                    lib("Rust.wt_list"),
-                    nested.index
-                ),
-                SemanticType::Option { value: _ }
-                | SemanticType::Result { ok: _, error: _ }
-                | SemanticType::Product { left: _, right: _ }
-                | SemanticType::Named {
-                    member: _,
-                    arguments: _,
-                }
-                | SemanticType::Function {
-                    parameters: _,
-                    result: _,
-                }
-                | SemanticType::Type
-                | SemanticType::Prop
-                | SemanticType::Parameter { name: _ }
-                | SemanticType::Nat
-                | SemanticType::Bool
-                | SemanticType::Unit
-                | SemanticType::Int
-                | SemanticType::Int8
-                | SemanticType::Int16
-                | SemanticType::Int32
-                | SemanticType::Int64
-                | SemanticType::UInt8
-                | SemanticType::UInt16
-                | SemanticType::UInt32
-                | SemanticType::UInt64
-                | SemanticType::String
-                | SemanticType::Bytes
-                | SemanticType::Ordering => format!("(__wtAux_{} {arg})", nested.index),
-            }),
-            None => Ok(format!("({} {arg})", self.wtf(ty, module_a)?)),
-        }
-    }
-
-    /// A list of well-typedness proofs as one proof of `WTL`.
-    fn wtl(proofs: &[String]) -> String {
-        proofs.iter().rev().fold(lib("Rust.wtl_nil"), |tail, head| {
-            format!("({} {head} {tail})", lib("Rust.wtl_cons"))
-        })
-    }
-
-    /// The well-typedness theorems of every document type's encoder and of
-    /// the auxiliaries nested in a recursive group, by the same recursion
-    /// as the encoders: one mutual block per group.
-    fn wt_theorems(&self, module_a: &str, sem: &str) -> Result<String, String> {
-        let graph = self.adt_graph()?;
-        let mut texts: BTreeMap<u64, String> = BTreeMap::new();
-        for (index, adt) in self.layout.adts.iter().enumerate() {
-            let index = index as u64;
-            let shape = self.source.document(&adt.ty)?;
-            let lean = self.ty(&adt.ty)?;
-            let recursive = self.nested.values().any(|nested| nested.group == index)
-                || components(&graph)
-                    .iter()
-                    .any(|component| component.len() > 1 && component.contains(&index))
-                || graph
-                    .get(&index)
-                    .is_some_and(|edges| edges.contains(&index));
-            let statement = |binder: &str| {
-                format!(
-                    "{} {sem} ({module_a}.__enc_{index} {binder}) (.adt {index})",
-                    lib("Rust.WT")
-                )
-            };
-            let text = if shape.kind == "inductive" || recursive {
-                let owner = lean
-                    .trim_start_matches('(')
-                    .split(' ')
-                    .next()
-                    .unwrap_or_default()
-                    .trim_end_matches(')')
-                    .to_owned();
-                let mut text = format!(
-                    "theorem __wt_{index} : ∀ (__v : {lean}), {}\n",
-                    statement("__v")
-                );
-                for (constructor, fields) in shape.names.iter().zip(&shape.fields) {
-                    let binders: Vec<String> = (0..fields.len())
-                        .map(|field| format!("__x{field}"))
-                        .collect();
-                    let proofs = fields
-                        .iter()
-                        .zip(&binders)
-                        .map(|(field, binder)| self.wt_apply(field, binder, module_a))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    let pattern = if shape.kind == "inductive" {
-                        format!(
-                            "{owner}.{}{}",
-                            identifier(constructor),
-                            binders
-                                .iter()
-                                .map(|binder| format!(" {binder}"))
-                                .collect::<String>()
-                        )
-                    } else {
-                        format!("⟨{}⟩", binders.join(", "))
-                    };
-                    text.push_str(&format!(
-                        "  | {pattern} => {} rfl {}\n",
-                        lib("Rust.wt_adt"),
-                        Self::wtl(&proofs)
-                    ));
-                }
-                text.push('\n');
-                text
-            } else {
-                let proofs = shape
-                    .field_names
-                    .iter()
-                    .zip(&shape.fields[0])
-                    .map(|(name, ty)| {
-                        Ok::<String, String>(format!(
-                            "({} (__s).{})",
-                            self.wtf(ty, module_a)?,
-                            identifier(name)
-                        ))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                format!(
-                    "theorem __wt_{index} : ∀ (__s : {lean}), {} :=\n  fun __s => {} rfl {}\n\n",
-                    statement("__s"),
-                    lib("Rust.wt_adt"),
-                    Self::wtl(&proofs)
-                )
-            };
-            texts.insert(index, text);
-        }
-        let mut out = String::new();
-        for component in components(&graph) {
-            let mut items: Vec<String> =
-                component.iter().map(|index| texts[index].clone()).collect();
-            let mut nested: Vec<&Nested> = self
-                .nested
-                .values()
-                .filter(|nested| nested.group == component[0])
-                .collect();
-            nested.sort_by_key(|nested| nested.index);
-            for nested in nested {
-                items.push(self.wt_auxiliary(nested, module_a, sem)?);
-            }
-            out.push_str(&mutual_block(&items));
-        }
-        Ok(out)
-    }
-
-    /// The well-typedness theorem of a nested container's auxiliary.
-    fn wt_auxiliary(&self, nested: &Nested, module_a: &str, sem: &str) -> Result<String, String> {
-        let lean = self.ty(&nested.ty)?;
-        let n = nested.index;
-        let target = render_ty(&self.target_ty(&nested.ty)?);
-        let wt = lib("Rust.WT");
-        Ok(match &nested.ty {
-            SemanticType::List { element: _ }
-            | SemanticType::Set { element: _ }
-            | SemanticType::Map { key: _, value: _ }
-            | SemanticType::ContractViolation | SemanticType::ReasoningFailure => {
-                let element = element_of(&nested.ty)?;
-                format!(
-                    "theorem __wtItems_{n} : ∀ (__v : {lean}), {} {sem} ({module_a}.__items_{n} __v) {}\n  | [] => {}\n  | __x0 :: __x1 => {} {} (__wtItems_{n} __x1)\n\n",
-                    lib("Rust.WTAll"),
-                    render_ty(&self.target_ty(&element)?),
-                    lib("Rust.wtAll_nil"),
-                    lib("Rust.wtAll_cons"),
-                    self.wt_apply(&element, "__x0", module_a)?
-                )
-            }
-            SemanticType::Option { value: inner } => format!(
-                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | none => {}\n  | some __x0 => {} {}\n\n",
-                lib("Rust.wt_noneV"),
-                lib("Rust.wt_someV"),
-                self.wt_apply(inner, "__x0", module_a)?
-            ),
-            SemanticType::Product { left, right } => format!(
-                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | (__x0, __x1) => {} {} {}\n\n",
-                lib("Rust.wt_pairV"),
-                self.wt_apply(left, "__x0", module_a)?,
-                self.wt_apply(right, "__x1", module_a)?
-            ),
-            SemanticType::Result { ok, error } => format!(
-                "theorem __wtAux_{n} : ∀ (__v : {lean}), {wt} {sem} ({module_a}.__aux_{n} __v) {target}\n  | Except.error __x0 => {} {}\n  | Except.ok __x0 => {} {}\n\n",
-                lib("Rust.wt_errorV"),
-                self.wt_apply(error, "__x0", module_a)?,
-                lib("Rust.wt_okV"),
-                self.wt_apply(ok, "__x0", module_a)?
-            ),
-            SemanticType::Named {
-                member: _,
-                arguments: _,
-            }
-            | SemanticType::Function {
-                parameters: _,
-                result: _,
-            }
-            | SemanticType::Type
-            | SemanticType::Prop
-            | SemanticType::Parameter { name: _ }
-            | SemanticType::Nat
-            | SemanticType::Bool
-            | SemanticType::Unit
-            | SemanticType::Int
-            | SemanticType::Int8
-            | SemanticType::Int16
-            | SemanticType::Int32
-            | SemanticType::Int64
-            | SemanticType::UInt8
-            | SemanticType::UInt16
-            | SemanticType::UInt32
-            | SemanticType::UInt64
-            | SemanticType::String
-            | SemanticType::Bytes
-            | SemanticType::Ordering => {
-                return Err(format!(
-                    "`{}` is not a nested container",
-                    self.source.type_text(&nested.ty)
-                ));
-            }
-        })
-    }
-
-    /// The text of certificate E.
-    fn compose(
-        &self,
-        root_module: &str,
-        root_name: &str,
-        module_a: &str,
-        module_b: &str,
-        name: &str,
-        fallible: bool,
-    ) -> Result<String, String> {
-        let fallible = match fallible {
-            true => TRUE,
-            false => "Bool.false",
-        };
-        let sem = format!("{module_b}.program {module_b}.krate {module_b}.flags");
-        let mut out = format!(
-            "import {module_a}\nimport {module_b}\nimport LexLeanPreservation.Compose\nset_option autoImplicit false\nset_option maxRecDepth 100000\nset_option linter.unusedVariables false\nnamespace {name}\n\n"
-        );
-        out.push_str(&self.wt_theorems(module_a, &sem)?);
-        let (parameters, _) = self.source.signature(root_module, root_name, &[])?;
-        let mut binders = Vec::new();
-        let mut names = Vec::new();
-        let mut arguments = Vec::new();
-        let mut proofs = Vec::new();
-        for SemanticParameter {
-            name: local,
-            r#type,
-        } in &parameters
-        {
-            let local = identifier(local);
-            binders.push(format!("({local} : {})", self.ty(r#type)?));
-            arguments.push(format!(
-                "({} {local})",
-                qualify(&self.enc(r#type)?, module_a)
-            ));
-            proofs.push(format!("({} {local})", self.wtf(r#type, module_a)?));
-            names.push(local);
-        }
-        let applied: String = names.iter().map(|local| format!(" {local}")).collect();
-        match self.entry_of() {
-            // The root's entry validates the parameters that carry an
-            // invariant before calling the root: its rendering realizes the
-            // root's observation as `some` when §17.12's invariants hold,
-            // and `none` when one fails.
-            Some((entry, _)) => out.push_str(&format!(
-                "/-- The rendering of the root's entry, invoked on the encoded arguments,\nrealizes the encoded source result when the arguments satisfy §17.12's\ninvariants, and refuses them with `none` otherwise. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {module_b}.krate ({} {entry}) [{}] __e_ro ∧\n    ({module_a}.accepts{applied} → {} {fallible} ({} ({module_a}.denote{applied})) __e_ro) ∧\n    (¬ {module_a}.accepts{applied} → {} {fallible} ({}.value {SYNTAX}.Value.none) __e_ro) :=\n  match {} (fun __e_n => {module_b}.root __e_n {entry}) rfl {} rfl rfl ({module_a}.entry{applied}) ({} _ _) with\n  | ⟨__e_ro, __e_hr, __e_hc⟩ => ⟨__e_ro, __e_hc, fun __e_h => {module_a}.entry_accepts{applied} __e_h ▸ __e_hr, fun __e_h => {module_a}.entry_refuses{applied} __e_h ▸ __e_hr⟩\n\n",
-                binders.join(" "),
-                lib("Rust.RepresentableL"),
-                arguments.join(", "),
-                lib("Rust.RCI"),
-                lib("Rust.fnIdent"),
-                arguments.join(", "),
-                lib("Rust.RealizesFn"),
-                lib("someObs"),
-                lib("Rust.RealizesFn"),
-                lib("Obs"),
-                lib("Rust.compose"),
-                Self::wtl(&proofs),
-                lib("Rust.rel_ne_stuck"),
-            )),
-            None => out.push_str(&format!(
-                "/-- The rendering of the root, invoked on the encoded arguments, realizes\nthe encoded source result. -/\ntheorem root {} (__e_hrep : {} [{}]) : ∃ __e_ro, {} {fallible} ({module_a}.denote{applied}) __e_ro ∧ {} {module_b}.krate ({} 0) [{}] __e_ro :=\n  {} (fun __e_n => {module_b}.root __e_n 0) rfl {} rfl rfl ({module_a}.root{applied}) ({} _ _)\n\n",
-                binders.join(" "),
-                lib("Rust.RepresentableL"),
-                arguments.join(", "),
-                lib("Rust.RealizesFn"),
-                lib("Rust.RCI"),
-                lib("Rust.fnIdent"),
-                arguments.join(", "),
-                lib("Rust.compose"),
-                Self::wtl(&proofs),
-                lib("Rust.rel_ne_stuck"),
-            )),
-        }
-        out.push_str(&format!("end {name}\n"));
-        Ok(out)
-    }
-}
-
 // --- The boundary (SPEC.md §17.17) ------------------------------------------
 
 /// One validator's four statements: its definition, its proposition, the
@@ -8132,8 +7797,8 @@ impl Gen<'_> {
             let mut items: [Vec<String>; 4] = [Vec::new(), Vec::new(), Vec::new(), Vec::new()];
             let mut corollaries = String::new();
             for index in members {
-                let (ty, module, kind) = checks[&index];
-                let stated = self.stated(index, ty, module, kind, recursive)?;
+                let (ty, _, kind) = checks[&index];
+                let stated = self.stated(index, ty, kind, recursive)?;
                 for (slot, text) in items.iter_mut().zip(stated.items) {
                     slot.push(text);
                 }
@@ -8371,7 +8036,6 @@ impl Gen<'_> {
         &self,
         k: u64,
         ty: &SemanticType,
-        module: &str,
         kind: &Validation,
         recursive: bool,
     ) -> Result<Stated, String> {
@@ -8379,7 +8043,7 @@ impl Gen<'_> {
         let value = format!("{SYNTAX}.Value");
         let lean = self.ty(ty)?;
         let enc = self.enc(ty)?;
-        let coll = format!("{}.LexLeanCollections", self.lean_module(module)?);
+        let coll = "LexLeanCollections".to_owned();
         let statements = |valid: &str, inv: &str, viff: &str, vrel: &str| {
             Stated {
             items: [

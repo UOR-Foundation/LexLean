@@ -2,6 +2,171 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"fields":[{"name":"temp","type":{"kind":"nat"}},{"name":"flags","type":{"kind":"nat"}},{"name":"alert","type":{"kind":"nat"}}],"kind":"structure","name":"Memo","parameters":[],"type_parameters":[]},{"body":{"kind":"prop_and","left":{"kind":"eq","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},"right":{"kind":"le","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"t"}},"right":{"kind":"nat","value":"2"}}},"kind":"definition","name":"Justified","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"result":{"kind":"prop"}},{"body":{"kind":"le","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}},"kind":"definition","name":"Sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"result":{"kind":"prop"}},{"body":{"arguments":[{"kind":"nat","value":"2"},{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"executable":true,"kind":"definition","name":"Pending","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"result":{"kind":"nat"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"sound_preserved","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}},{"name":"t","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"proof":{"definitions":[{"name":"Justified"},{"name":"Sound"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"t"}],"function":{"name":"Sound"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"},{"kind":"var","name":"t"}],"function":{"name":"Justified"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Sound"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"invariant":{"predicate":{"name":"Sound"},"preserves":{"name":"sound_preserved"}},"kind":"logic","name":"Triage","ranking":{"name":"Pending"},"relation":{"name":"Justified"},"state":{"name":"s","next":"t","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"fever_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"proof":{"definitions":[{"name":"Justified"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"temp","value":{"kind":"nat","value":"37"}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"field":"alert","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"38"},"right":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"fever_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}}],"proof":{"definitions":[{"name":"Pending"},{"name":"Sound"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"temp","value":{"kind":"nat","value":"37"}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"field":"alert","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"38"},"right":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Sound"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"conclusion":{"fields":[{"field":"temp","value":{"kind":"nat","value":"37"}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"field":"alert","kind":"project","value":{"kind":"var","name":"s"}}}],"kind":"record","type":{"name":"Memo"}},"executable":true,"guard":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"38"},"right":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"kind":"inference_rule","logic":{"member":{"name":"Triage"}},"name":"Fever","progress":{"name":"fever_progress"},"soundness":{"name":"fever_sound"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"pick_sound","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}},{"name":"b","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Justified"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"s"},{"fields":[{"field":"temp","value":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"kind":"var","name":"b"}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Justified"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"100"},"right":{"kind":"var","name":"b"}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"right":{"kind":"bool","value":true}}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"pick_progress","parameters":[{"name":"s","type":{"arguments":[],"kind":"named","member":{"name":"Memo"}}},{"name":"b","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Pending"},{"name":"Sound"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"temp","value":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"kind":"var","name":"b"}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Pending"},"kind":"call"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"100"},"right":{"kind":"var","name":"b"}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"right":{"kind":"bool","value":true}}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"s"}],"function":{"name":"Sound"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"binding":{"candidates":{"head":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}},"kind":"cons","tail":{"head":{"kind":"add","left":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}},"name":"b","type":{"kind":"nat"}},"conclusion":{"fields":[{"field":"temp","value":{"field":"temp","kind":"project","value":{"kind":"var","name":"s"}}},{"field":"flags","value":{"kind":"add","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"1"}}},{"field":"alert","value":{"kind":"var","name":"b"}}],"kind":"record","type":{"name":"Memo"}},"executable":true,"guard":{"kind":"and","left":{"kind":"blt","left":{"kind":"nat","value":"100"},"right":{"kind":"var","name":"b"}},"right":{"kind":"blt","left":{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}},"right":{"kind":"nat","value":"2"}}},"kind":"inference_rule","logic":{"member":{"name":"Triage"}},"name":"Pick","progress":{"name":"pick_progress"},"soundness":{"name":"pick_sound"}},{"body":{"kind":"le","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"2"}},"kind":"definition","name":"Bounded","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"r"},"right":{"kind":"nat","value":"2"}},"executable":true,"kind":"definition","name":"boundedCheck","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"r","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"bounded_sound","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Bounded"},{"name":"boundedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"r"}],"function":{"name":"Bounded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"r"}],"function":{"name":"boundedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"axioms":["propext"],"kind":"theorem","name":"bounded_complete","parameters":[{"name":"x","type":{"kind":"nat"}},{"name":"r","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Bounded"},{"name":"boundedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"r"}],"function":{"name":"boundedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"x"},{"kind":"var","name":"r"}],"function":{"name":"Bounded"},"kind":"call"}}},{"axioms":["propext"],"candidate":{"name":"r","type":{"kind":"nat"}},"check":{"name":"boundedCheck"},"complete":{"name":"bounded_complete"},"kind":"verifier","name":"Bound","sound":{"name":"bounded_sound"},"specification":{"name":"Bounded"},"subject":{"name":"x","type":{"kind":"nat"}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"clinic_initial","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Sound"}],"kind":"linear_arithmetic"},"statement":{"arguments":[{"fields":[{"field":"temp","value":{"kind":"var","name":"x"}},{"field":"flags","value":{"kind":"nat","value":"0"}},{"field":"alert","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Sound"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"clinic_fuel","parameters":[{"name":"x","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Pending"}],"kind":"linear_arithmetic"},"statement":{"kind":"lt","left":{"arguments":[{"fields":[{"field":"temp","value":{"kind":"var","name":"x"}},{"field":"flags","value":{"kind":"nat","value":"0"}},{"field":"alert","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Memo"}}],"function":{"name":"Pending"},"kind":"call"},"right":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"3"}}}},{"answer":{"name":"s","type":{"kind":"nat"},"value":{"arguments":[{"field":"flags","kind":"project","value":{"kind":"var","name":"s"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"axioms":["Quot.sound","propext"],"claims":[{"kind":"initial_invariant","theorem":{"name":"clinic_initial"}},{"kind":"terminates","theorem":{"name":"clinic_fuel"}}],"executable":true,"kind":"reasoner","logic":{"member":{"name":"Triage"}},"name":"Clinic","observation":{"name":"x","type":{"kind":"nat"}},"observe":{"fields":[{"field":"temp","value":{"kind":"var","name":"x"}},{"field":"flags","value":{"kind":"nat","value":"0"}},{"field":"alert","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Memo"}},"rules":[{"member":{"name":"Fever"}},{"member":{"name":"Pick"}}],"strategy":{"fuel":{"kind":"add","left":{"kind":"var","name":"x"},"right":{"kind":"nat","value":"3"}},"kind":"forward"},"verifier":{"member":{"name":"Bound"}}}],"spec":"lexlean/semantic-module/2"}}
+structure{
+  name: Memo,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: temp, type: Nat}, {name: flags, type: Nat}, {name: alert, type: Nat}]
+}
+
+definition{
+  name: Justified,
+  parameters: [s : Memo, t : Memo],
+  result: Prop,
+  body: (((project t flags) = ((project s flags) + 1)) /\ ((project t flags) <= 2))
+}
+
+definition{name: Sound, parameters: [s : Memo], result: Prop, body: ((project s flags) <= 2)}
+
+definition{
+  name: Pending,
+  parameters: [s : Memo],
+  result: Nat,
+  body: (prim subtract 2 (project s flags) : Nat),
+  executable: true
+}
+
+theorem{
+  name: sound_preserved,
+  parameters: [s : Memo, t : Memo],
+  statement: ((Sound s) -> ((Justified s t) -> (Sound t))),
+  proof: linear_arithmetic{definitions: [Justified, Sound]},
+  axioms: [Quot.sound, propext]
+}
+
+logic{
+  name: Triage,
+  axioms: [Quot.sound, propext],
+  invariant: {predicate: Sound, preserves: sound_preserved},
+  ranking: Pending,
+  relation: Justified,
+  state: {name: s, type: Memo, next: t}
+}
+
+theorem{
+  name: fever_sound,
+  parameters: [s : Memo],
+  statement: ((((38 <? (project s temp)) && ((project s flags) <? 2)) = true) -> (Justified s (record Memo {temp := 37, flags := ((project s flags) + 1), alert := (project s alert)}))),
+  proof: linear_arithmetic{definitions: [Justified]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: fever_progress,
+  parameters: [s : Memo],
+  statement: ((Sound s) -> ((((38 <? (project s temp)) && ((project s flags) <? 2)) = true) -> ((Pending (record Memo {temp := 37, flags := ((project s flags) + 1), alert := (project s alert)})) < (Pending s)))),
+  proof: linear_arithmetic{definitions: [Pending, Sound]},
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Fever,
+  axioms: [Quot.sound, propext],
+  conclusion: (record Memo {temp := 37, flags := ((project s flags) + 1), alert := (project s alert)}),
+  executable: true,
+  guard: ((38 <? (project s temp)) && ((project s flags) <? 2)),
+  logic: {member: Triage},
+  progress: fever_progress,
+  soundness: fever_sound
+}
+
+theorem{
+  name: pick_sound,
+  parameters: [s : Memo, b : Nat],
+  statement: ((((100 <? b) && ((project s flags) <? 2)) = true) -> (Justified s (record Memo {temp := (project s temp), flags := ((project s flags) + 1), alert := b}))),
+  proof: linear_arithmetic{definitions: [Justified]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: pick_progress,
+  parameters: [s : Memo, b : Nat],
+  statement: ((Sound s) -> ((((100 <? b) && ((project s flags) <? 2)) = true) -> ((Pending (record Memo {temp := (project s temp), flags := ((project s flags) + 1), alert := b})) < (Pending s)))),
+  proof: linear_arithmetic{definitions: [Pending, Sound]},
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Pick,
+  axioms: [Quot.sound, propext],
+  binding: {
+    name: b,
+    type: Nat,
+    candidates: (cons (project s temp) (cons ((project s temp) + 1) (nil Nat)))
+  },
+  conclusion: (record Memo {temp := (project s temp), flags := ((project s flags) + 1), alert := b}),
+  executable: true,
+  guard: ((100 <? b) && ((project s flags) <? 2)),
+  logic: {member: Triage},
+  progress: pick_progress,
+  soundness: pick_sound
+}
+
+definition{name: Bounded, parameters: [x : Nat, r : Nat], result: Prop, body: (r <= 2)}
+
+definition{
+  name: boundedCheck,
+  parameters: [x : Nat, r : Nat],
+  result: Bool,
+  body: (r <=? 2),
+  executable: true
+}
+
+theorem{
+  name: bounded_sound,
+  parameters: [x : Nat, r : Nat],
+  statement: (((boundedCheck x r) = true) -> (Bounded x r)),
+  proof: linear_arithmetic{definitions: [Bounded, boundedCheck]},
+  axioms: [propext]
+}
+
+theorem{
+  name: bounded_complete,
+  parameters: [x : Nat, r : Nat],
+  statement: ((Bounded x r) -> ((boundedCheck x r) = true)),
+  proof: linear_arithmetic{definitions: [Bounded, boundedCheck]},
+  axioms: [propext]
+}
+
+verifier{
+  name: Bound,
+  axioms: [propext],
+  candidate: {name: r, type: Nat},
+  check: boundedCheck,
+  complete: bounded_complete,
+  sound: bounded_sound,
+  specification: Bounded,
+  subject: {name: x, type: Nat}
+}
+
+theorem{
+  name: clinic_initial,
+  parameters: [x : Nat],
+  statement: (Sound (record Memo {temp := x, flags := 0, alert := 0})),
+  proof: linear_arithmetic{definitions: [Sound]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: clinic_fuel,
+  parameters: [x : Nat],
+  statement: ((Pending (record Memo {temp := x, flags := 0, alert := 0})) < (x + 3)),
+  proof: linear_arithmetic{definitions: [Pending]},
+  axioms: [Quot.sound, propext]
+}
+
+reasoner{
+  name: Clinic,
+  axioms: [Quot.sound, propext],
+  answer: {name: s, type: Nat, value: (ctor Option.some [Nat] (project s flags))},
+  claims: [initial_invariant{theorem: clinic_initial}, terminates{theorem: clinic_fuel}],
+  executable: true,
+  logic: {member: Triage},
+  observation: {name: x, type: Nat},
+  observe: (record Memo {temp := x, flags := 0, alert := 0}),
+  rules: [{member: Fever}, {member: Pick}],
+  strategy: forward{fuel: (x + 3)},
+  verifier: {member: Bound}
+}
 \end{semanticmodule}
 \end{lexlean}

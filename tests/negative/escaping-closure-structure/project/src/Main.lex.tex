@@ -2,6 +2,19 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"fields":[{"name":"run","type":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}}],"kind":"structure","name":"Handler","parameters":[],"type_parameters":[]},{"body":{"fields":[{"field":"run","value":{"kind":"var","name":"step"}}],"kind":"record","type":{"name":"Handler"}},"executable":true,"kind":"definition","name":"make","parameters":[{"name":"step","type":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}}],"result":{"arguments":[],"kind":"named","member":{"name":"Handler"}}}],"spec":"lexlean/semantic-module/2"}}
+structure{
+  name: Handler,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: run, type: (Fn (Nat) Nat)}]
+}
+
+definition{
+  name: make,
+  parameters: [step : (Fn (Nat) Nat)],
+  result: Handler,
+  body: (record Handler {run := step}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -161,7 +161,7 @@ pub fn f7(v0: bool) -> u64 {
 
 pub fn f8(v0: Adt0) -> u64 {
     let m12 = {
-        let m11 = v0.clone();
+        let m11 = v0;
         match m11 {
             Adt0::C0(v1, v2) => {
                 Adt0::C0(v2, v1)

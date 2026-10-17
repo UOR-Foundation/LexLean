@@ -9,6 +9,12 @@
 //! lists below come from `cargo test <args> -- --list` for the whole
 //! workspace and for each phase, and [`compare`] requires the phases'
 //! lists to be disjoint and their union to equal the whole.
+//!
+//! The `bdd` phase itself runs in CI as the parts of `.github/bdd-parts.json`
+//! (§9.4), each selected by the harness's own filters; [`compare_parts`]
+//! requires the parts' lists, made with those filters, to be disjoint and
+//! their union to equal the `bdd` phase's list, so that every test of the
+//! phase runs in exactly one part.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -227,6 +233,67 @@ pub fn compare(
     })
 }
 
+/// Require the parts of the `bdd` plan to partition the `bdd` phase (§9.4):
+/// each part's listing, made with that part's harness filters, disjoint from
+/// every other part's, their union the whole phase's listing, and every test a
+/// named part names among the tests that part lists.
+///
+/// `parts` holds each part's name and listing, in the plan's order.
+///
+/// # Errors
+///
+/// A test two parts run, a test of `bdd` no part runs, a test a part runs that
+/// `bdd` does not list, or a named test its part does not list.
+pub fn compare_parts(
+    owned: &Parsed,
+    parts: &[(String, Parsed)],
+    plan: &crate::bdd_parts::Plan,
+) -> Result<usize, String> {
+    use crate::bdd_parts::PLAN_FILE;
+    let mut runner: BTreeMap<&Entry, &str> = BTreeMap::new();
+    for (name, listed) in parts {
+        for entry in &listed.entries {
+            if let Some(first) = runner.insert(entry, name) {
+                return Err(format!(
+                    "RP-13: `{}` of {} is run by the parts `{first}` and `{name}` of {PLAN_FILE}",
+                    entry.name, entry.target
+                ));
+            }
+        }
+    }
+    let whole: BTreeSet<&Entry> = owned.entries.iter().collect();
+    let union: BTreeSet<&Entry> = runner.keys().copied().collect();
+    if let Some(lost) = whole.difference(&union).next() {
+        let count = whole.difference(&union).count();
+        return Err(format!(
+            "RP-13: {count} test(s) of `bdd` run in no part of {PLAN_FILE}, e.g. `{}` of {}",
+            lost.name, lost.target
+        ));
+    }
+    if let Some(extra) = union.difference(&whole).next() {
+        return Err(format!(
+            "RP-13: the part `{}` of {PLAN_FILE} runs `{}` of {}, which `bdd` does not list",
+            runner[extra], extra.name, extra.target
+        ));
+    }
+    for (name, ids) in &plan.parts {
+        let listed: BTreeSet<&str> = parts
+            .iter()
+            .filter(|(part, _)| part == name)
+            .flat_map(|(_, listed)| listed.entries.iter().map(|entry| entry.name.as_str()))
+            .collect();
+        for id in ids {
+            let test = crate::bdd_parts::test_name(id);
+            if !listed.contains(test.as_str()) {
+                return Err(format!(
+                    "RP-13: the part `{name}` of {PLAN_FILE} names `{id}`, and runs no test `{test}`"
+                ));
+            }
+        }
+    }
+    Ok(parts.len())
+}
+
 /// The arguments of a recipe line `cargo test <args…>`.
 ///
 /// # Errors
@@ -379,6 +446,64 @@ conformance_rp_02: test
         // Nothing at all is not a proof.
         let empty = parse("").expect("parses");
         assert!(compare(&empty, &empty, &empty, &crates()).is_err());
+    }
+
+    #[test]
+    fn the_parts_of_bdd_partition_it_and_every_defect_is_named() {
+        use super::compare_parts;
+        let plan = crate::bdd_parts::Plan::parse(
+            r#"{ "remainder": "rest", "parts": { "first": ["RP-01"] } }"#,
+        )
+        .expect("a plan");
+        let suite = parse(owned()).expect("parses");
+        let first = parse(
+            "     Running tests/conformance.rs (target/debug/deps/conformance-aec8e4616fa41234)\nconformance_rp_01: test\n",
+        )
+        .expect("parses");
+        let rest = parse(&owned().replace("conformance_rp_01: test\n", "")).expect("parses");
+        let parts = |first: &super::Parsed, rest: &super::Parsed| {
+            vec![
+                ("first".to_owned(), first.clone()),
+                ("rest".to_owned(), rest.clone()),
+            ]
+        };
+        assert_eq!(
+            compare_parts(&suite, &parts(&first, &rest), &plan).expect("a partition"),
+            2
+        );
+        // Twice: the remainder also runs the named test.
+        let error = compare_parts(&suite, &parts(&first, &suite), &plan).expect_err("twice");
+        assert!(
+            error.contains("`conformance_rp_01`") && error.contains("parts `first` and `rest`"),
+            "{error}"
+        );
+        // Lost: the remainder drops the meta-gate target's test.
+        let fewer = parse(
+            &owned()
+                .replace("bdd_one: test\n", "")
+                .replace("conformance_rp_01: test\n", ""),
+        )
+        .expect("parses");
+        let error = compare_parts(&suite, &parts(&first, &fewer), &plan).expect_err("lost");
+        assert!(
+            error.contains("run in no part") && error.contains("bdd_one"),
+            "{error}"
+        );
+        // Invented: a part runs a test `bdd` does not list.
+        let invented = parse(&format!(
+            "{}conformance_rp_99: test\n",
+            owned().replace("conformance_rp_01: test\n", "")
+        ))
+        .expect("parses");
+        let error = compare_parts(&suite, &parts(&first, &invented), &plan).expect_err("invented");
+        assert!(error.contains("which `bdd` does not list"), "{error}");
+        // A named ID whose test the part does not run.
+        let missing = crate::bdd_parts::Plan::parse(
+            r#"{ "remainder": "rest", "parts": { "first": ["RP-01", "RP-77"] } }"#,
+        )
+        .expect("a plan");
+        let error = compare_parts(&suite, &parts(&first, &rest), &missing).expect_err("missing");
+        assert!(error.contains("names `RP-77`"), "{error}");
     }
 
     #[test]

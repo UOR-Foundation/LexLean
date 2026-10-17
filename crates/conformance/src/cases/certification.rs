@@ -1,7 +1,7 @@
 //! The `gnaf-certification` suite: GC-01..GC-10, GNAF certification over
 //! requests (SPEC.md §17.18).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -38,6 +38,9 @@ fn committed() -> Vec<(PathBuf, Vec<u8>, CertificateFixture)> {
     );
     out
 }
+
+/// The certification model, a source.
+const MODEL: &str = "compiler/src/Certification.lex.tex";
 
 fn read(relative: &str) -> String {
     std::fs::read_to_string(repo_root().join(relative).as_std_path())
@@ -152,11 +155,7 @@ fn certificate_json(name: &str) -> Json {
 
 /// The semantic data of a committed `compiler/src` module.
 fn module_data(text: &str) -> Json {
-    let start = text.find("\\semanticdata{").expect("semantic data") + "\\semanticdata{".len();
-    let end = text
-        .rfind("}\n\\end{semanticmodule}")
-        .expect("end of semantic data");
-    serde_json::from_str(&text[start..end]).expect("the semantic data is JSON")
+    crate::support::module_json(text)
 }
 
 /// Every declaration of a committed module by name.
@@ -202,6 +201,7 @@ pub fn run(id: &str) {
         "GC-08" => gc_08(),
         "GC-09" => gc_09(),
         "GC-10" => gc_10(),
+        "GC-11" => gc_11(),
         _ => panic!("no GNAF certification case {id}"),
     }
 }
@@ -381,7 +381,7 @@ fn gc_02() {
         let id = crate::calculus::identifier(&fixture.name);
         for theorem in ["Certificate", "Verdict"] {
             assert!(
-                module.contains(&format!("\"name\":\"{id}{theorem}\"")),
+                crate::support::declares(&module, &format!("{id}{theorem}")),
                 "{id}{theorem}"
             );
         }
@@ -390,11 +390,6 @@ fn gc_02() {
         read(generated::PATH),
         module,
         "the committed module equals its generator"
-    );
-    assert_eq!(
-        read(crate::certification_model::PATH),
-        crate::certification_model::module(),
-        "the committed model equals its generator"
     );
     let main = read("compiler/src/Main.lex.tex");
     for import in ["Certification", "GnafCertificates"] {
@@ -1710,7 +1705,7 @@ fn gc_06() {
     // Nothing in the model decides optimality by normality: `isNormal` is
     // read by `normalityVerdict`, which cannot build a certified result, and
     // by no definition that can.
-    let model = declarations(crate::certification_model::PATH);
+    let model = declarations(MODEL);
     let builds_certified = |declaration: &Json| {
         let mut names = BTreeSet::new();
         references(declaration, &mut names);
@@ -2169,7 +2164,6 @@ fn gc_08() {
 /// §17.18: the certification library is kernel-checked and audited.
 #[allow(clippy::too_many_lines)]
 fn gc_09() {
-    use lexlean::production::preserve::audit_tokens;
     let registry = library::registry();
     assert_eq!(registry.spec, library::REGISTRY_SPEC);
     assert_eq!(registry.toolchain, lexlean::LEAN_TOOLCHAIN);
@@ -2180,19 +2174,27 @@ fn gc_09() {
             .map(|stem| library::module_name(stem))
             .collect::<Vec<_>>()
     );
-    let on_disk: BTreeSet<String> =
-        std::fs::read_dir(repo_root().join(library::LIBRARY_DIR).as_std_path())
-            .expect("the library directory")
-            .map(|entry| {
-                entry
-                    .expect("entry")
-                    .path()
-                    .file_stem()
-                    .expect("stem")
-                    .to_string_lossy()
-                    .into_owned()
-            })
-            .collect();
+    // The library is exactly its registered modules, each a native source
+    // (`GC-11` holds the rest of what it is: no Lean file, and the generated
+    // Lean is the project's build).
+    let on_disk: BTreeSet<String> = std::fs::read_dir(
+        repo_root()
+            .join(library::PROJECT_DIR)
+            .join("src")
+            .as_std_path(),
+    )
+    .expect("the library's sources")
+    .map(|entry| {
+        let name = entry
+            .expect("entry")
+            .file_name()
+            .to_string_lossy()
+            .into_owned();
+        name.strip_suffix(".lex.tex")
+            .unwrap_or_else(|| panic!("{name}: a source of the library"))
+            .to_owned()
+    })
+    .collect();
     assert_eq!(
         on_disk,
         library::MODULES
@@ -2201,43 +2203,16 @@ fn gc_09() {
             .collect(),
         "the library has exactly the registered modules"
     );
-    // The library imports only itself, the calculus modules, the generated
-    // modules, and the preservation core; and none of its text contains a
-    // form that admits a statement without proof or trusts code the kernel
-    // does not check.
-    let allowed: BTreeSet<String> = library::MODULES
-        .iter()
-        .map(|stem| library::module_name(stem))
-        .chain(
-            [
-                "LexLeanPreservation.Core",
-                "LexLeanTarget.Gnaf",
-                "LexLeanTarget.Certification",
-                "LexLeanTarget.GnafCertificates",
-                "LexLeanTarget.GnafFixtures",
-                "LexLeanTarget.TargetSemantics",
-                "LexLeanTarget.TargetSyntax",
-            ]
-            .map(str::to_owned),
-        )
-        .collect();
-    let mut scanned: BTreeSet<String> = BTreeSet::new();
-    for stem in library::MODULES {
-        let text = library::library_text(stem);
-        audit_tokens(&text, &allowed)
-            .unwrap_or_else(|error| panic!("{stem}: the library's token audit: {error}"));
-        for name in library::declarations(&text) {
-            scanned.insert(name);
-        }
-    }
+    // Every declaration a Lean command can name is audited under the axioms
+    // its row pins, and those are among the three the library may reach.
     let registered: BTreeSet<String> = registry
         .declaration
         .iter()
         .map(|declaration| declaration.name.clone())
         .collect();
-    assert_eq!(
-        scanned, registered,
-        "the registry lists exactly the library's declarations"
+    assert!(
+        registered.len() > 100,
+        "the native modules state their declarations"
     );
     for declaration in &registry.declaration {
         assert!(
@@ -2245,23 +2220,8 @@ fn gc_09() {
                 .axioms
                 .iter()
                 .all(|axiom| library::AXIOMS.contains(&axiom.as_str())),
-            "{}: only the expected axioms are registered",
+            "{}: only the expected axioms are pinned",
             declaration.name
-        );
-    }
-    // The audit refuses what it exists to refuse.
-    for planted in [
-        "theorem planted : False := by sorry",
-        "axiom planted : False",
-        "theorem planted : 1 = 1 := by native_decide",
-        "#eval 1",
-        "opaque planted : Nat",
-        "theorem planted : True := ofReduceBool _",
-        "set_option maxRecDepth 1 in\nset_option autoImplicit true in\ntheorem planted : True := trivial\nset_option pp.all true",
-    ] {
-        assert!(
-            audit_tokens(&format!("namespace LexLeanCertification\n{planted}\nend LexLeanCertification\n"), &allowed).is_err(),
-            "the audit refuses `{planted}`"
         );
     }
     // The headline theorems are registered with the library's statements.
@@ -2424,25 +2384,78 @@ fn gc_09() {
         false_lemma.contains("error"),
         "Lean refuses a library whose schema_cheaper says the saving is an increase: {false_lemma}"
     );
+    // An axiom added to a theorem is seen by the exact axiom audit: its proof
+    // replaced by `sorryAx` is accepted by the kernel, and what Lean prints
+    // of it is no longer what its row pins.
+    let added = planted_axiom();
+    let registered_axioms = registry
+        .declaration
+        .iter()
+        .find(|declaration| declaration.name == PLANTED_THEOREM)
+        .map(|declaration| declaration.axioms.clone())
+        .expect("the planted theorem is registered");
+    assert_ne!(
+        added.get(PLANTED_THEOREM),
+        Some(&registered_axioms),
+        "the audit sees the planted axiom"
+    );
+    assert!(
+        added
+            .get(PLANTED_THEOREM)
+            .is_some_and(|axioms| axioms.iter().any(|axiom| axiom == "sorryAx")),
+        "Lean reports the planted axiom: {added:?}"
+    );
 }
 
-/// Lean's output on a staged copy of `Schemas` whose `schema_cheaper`
-/// concludes that the rewriting costs more, compiled over the built library.
-fn planted_false_lemma() -> String {
-    let text = library::library_text("Schemas");
-    let plant = "\u{2203} c' z', statusAt req g q F = .admitted c' z' \u{2227} c' < c \u{2227} z' \u{2264} z";
-    assert_eq!(
-        text.matches(plant).count(),
-        1,
-        "the lemma's conclusion is planted once"
-    );
-    let planted = text.replace(plant, &plant.replace("c' < c", "c < c'"));
+/// The theorem the plants change.
+const PLANTED_THEOREM: &str = "LexLeanCertification.schema_cheaper";
+
+/// The native source of `stem`.
+/// The source of a native module as its data form: the canonical JSON the
+/// textual edits below are made in, whichever form the committed source is
+/// written in (§17.21.8).
+fn native_source(stem: &str) -> String {
+    let text = std::fs::read_to_string(repo_root().join(library::source_path(stem)).as_std_path())
+        .unwrap_or_else(|error| panic!("{stem}: {error}"));
+    lexlean::sdk::to_data_form(&text).unwrap_or_else(|error| panic!("{stem}: {error}"))
+}
+
+/// The Lean of a native module whose source is `source`.
+fn generated_text(source: &str) -> String {
+    let core = lexlean::ir::core::CoreModule::from_source(source, "1.2")
+        .expect("the planted module is core data");
+    lexlean::backend::core::lean_text(&core).expect("the planted module renders")
+}
+
+/// The `type` and `value` node numbers of the row named `name` in a native
+/// source, which states each row's keys in sorted order.
+fn row_nodes(source: &str, name: &str) -> (u64, u64) {
+    let start = source
+        .find(&format!("\"name\":\"{name}\""))
+        .unwrap_or_else(|| panic!("{name} is a row"));
+    let rest = &source[start..];
+    let number = |key: &str| -> u64 {
+        let at = rest.find(key).unwrap_or_else(|| panic!("{name} has {key}"));
+        rest[at + key.len()..]
+            .chars()
+            .take_while(char::is_ascii_digit)
+            .collect::<String>()
+            .parse()
+            .expect("a node number")
+    };
+    (number("\"type\":"), number("\"value\":"))
+}
+
+/// A staged build directory holding the library compiled in order, with
+/// `stem` compiled from `text` instead of the native module, over the
+/// environment; returns the directory and Lean's output on `stem`.
+fn staged_with(stem: &str, text: &str) -> (tempfile::TempDir, std::process::Output) {
     let root = tempfile::Builder::new()
-        .prefix("lexlean-false-lemma-")
+        .prefix("lexlean-planted-library-")
         .tempdir()
         .expect("tempdir");
     // Lean resolves a module by its first path component, so the staged
-    // `Schemas` needs the library's other compiled modules beside it.
+    // module needs the library's other compiled modules beside it.
     let staged = root.path().join("build/LexLeanCertification");
     std::fs::create_dir_all(&staged).expect("mkdir");
     for entry in
@@ -2453,16 +2466,88 @@ fn planted_false_lemma() -> String {
     }
     let output = library::compile(
         root.path(),
-        &library::module_name("Schemas"),
-        &planted,
+        &library::module_name(stem),
+        text,
         &[
             library::environment().clone(),
             crate::preservation::shipped().build.clone(),
         ],
     );
+    (root, output)
+}
+
+/// What Lean prints of the axioms of [`PLANTED_THEOREM`] when its proof is
+/// `sorryAx`: the four nodes the proof needs are appended to the module's
+/// table and the row's `value` points at them.
+fn planted_axiom() -> BTreeMap<String, Vec<String>> {
+    let source = native_source("Schemas");
+    let (statement, proof) = row_nodes(&source, PLANTED_THEOREM);
+    let json: serde_json::Value = serde_json::from_str(
+        source
+            .split("\\coredata{")
+            .nth(1)
+            .and_then(|rest| rest.split("}\n\\end{coremodule}").next())
+            .expect("the core data"),
+    )
+    .expect("the data is JSON");
+    let next = json["nodes"].as_array().expect("nodes").len();
+    let table = format!(
+        ",{{\"k\":\"c\",\"n\":\"sorryAx\",\"u\":[{{\"k\":\"z\"}}]}},\
+         {{\"f\":{next},\"k\":\"a\",\"x\":{statement}}},\
+         {{\"k\":\"c\",\"n\":\"Bool.false\",\"u\":[]}},\
+         {{\"f\":{},\"k\":\"a\",\"x\":{}}}",
+        next + 1,
+        next + 2
+    );
+    let joined = "],\"proof_nodes\":";
+    assert_eq!(source.matches(joined).count(), 1, "one node table");
+    let planted = source
+        .replacen(joined, &format!("{table}{joined}"), 1)
+        .replacen(
+            &format!("\"type\":{statement},\"value\":{proof}}}"),
+            &format!("\"type\":{statement},\"value\":{}}}", next + 3),
+            1,
+        );
+    assert_ne!(planted, source, "the proof is replaced");
+    let (root, output) = staged_with("Schemas", &generated_text(&planted));
+    assert!(
+        output.status.success(),
+        "the kernel accepts a proof by `sorryAx`:\n{}",
+        crate::preservation::joined(&output)
+    );
+    let audit = format!("import LexLeanCertification.Schemas\n#print axioms {PLANTED_THEOREM}\n");
+    let audited = library::compile(
+        root.path(),
+        "PlantedAudit",
+        &audit,
+        &[
+            library::environment().clone(),
+            crate::preservation::shipped().build.clone(),
+        ],
+    );
+    library::printed_axioms(&crate::preservation::joined(&audited))
+}
+
+/// Lean's output on a staged copy of `Schemas` whose `schema_cheaper` states
+/// what `improves_preserves` states and keeps its own proof: the row's
+/// statement is exchanged for another theorem's, so the module's proof no
+/// longer proves what it claims.
+fn planted_false_lemma() -> String {
+    let source = native_source("Schemas");
+    let (statement, proof) = row_nodes(&source, PLANTED_THEOREM);
+    let (other, _) = row_nodes(&source, "LexLeanCertification.improves_preserves");
+    assert_ne!(statement, other, "the two statements differ");
+    let plant = format!("\"type\":{statement},\"value\":{proof}}}");
+    assert_eq!(
+        source.matches(&plant).count(),
+        1,
+        "the lemma's statement is planted once"
+    );
+    let planted = source.replace(&plant, &format!("\"type\":{other},\"value\":{proof}}}"));
+    let (_root, output) = staged_with("Schemas", &generated_text(&planted));
     assert!(
         !output.status.success(),
-        "Lean accepts a library whose schema_cheaper says the saving is an increase"
+        "Lean accepts a library whose schema_cheaper claims another statement"
     );
     crate::preservation::joined(&output)
 }
@@ -2541,6 +2626,166 @@ fn weakened_library() -> (String, String) {
     panic!("the library accepts a weakened checker");
 }
 
+/// §17.18: the certification library is LexLean source.
+#[allow(clippy::too_many_lines)]
+fn gc_11() {
+    let (registry, modules) = library::native();
+    assert!(
+        !registry.declaration.is_empty(),
+        "the native modules state declarations"
+    );
+    assert_eq!(modules.len(), library::MODULES.len());
+    support::assert_library_has_no_handwritten_lean(
+        library::PREFIX,
+        "tests/certification-library/oracle",
+    );
+    // The one Lean text beside a module's data is the decoder of core module
+    // 2, which loads native modules (SPEC.md §17.12, RT-04).
+    for stem in library::MODULES {
+        assert_eq!(
+            library::library_text(stem)
+                .matches(lexlean::backend::core_v2::LEAN_CORE_DECODER_V2)
+                .count(),
+            1,
+            "`{stem}` carries the decoder of core module 2 exactly once"
+        );
+    }
+    // The library is LexLean source and nothing else: no Lean file lies
+    // anywhere in its project, and its sources are the listed modules.
+    let project = repo_root().join(library::PROJECT_DIR);
+    let mut stack = vec![project.as_std_path().to_path_buf()];
+    let mut sources = BTreeSet::new();
+    while let Some(directory) = stack.pop() {
+        for entry in std::fs::read_dir(&directory).expect("the library project") {
+            let path = entry.expect("an entry").path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            let name = path.to_string_lossy().into_owned();
+            assert!(
+                !name.ends_with(".lean"),
+                "{name}: an independently authored Lean file lies in the library project"
+            );
+            // Compared as path components: a Windows checkout mixes the
+            // separators of the repository root and of the library's
+            // relative directory.
+            if let Some(stem) = path
+                .strip_prefix(project.as_std_path().join("src"))
+                .ok()
+                .map(|rest| rest.to_string_lossy().replace('\\', "/"))
+                .and_then(|rest| rest.strip_suffix(".lex.tex").map(str::to_owned))
+            {
+                sources.insert(stem);
+            }
+        }
+    }
+    assert_eq!(
+        sources,
+        library::MODULES
+            .iter()
+            .map(|stem| (*stem).to_owned())
+            .collect::<BTreeSet<_>>(),
+        "the native sources are the listed modules"
+    );
+    // The registry lists the modules and nothing else.
+    let table: toml::Table =
+        std::fs::read_to_string(repo_root().join(library::REGISTRY).as_std_path())
+            .expect("the registry")
+            .parse()
+            .expect("the registry is TOML");
+    assert_eq!(
+        table.keys().map(String::as_str).collect::<Vec<_>>(),
+        ["modules", "spec", "toolchain"],
+        "the registry holds no declaration list"
+    );
+    // The library is an ordinary closed project: it locks, checks, and
+    // builds, and the Lean it generates is, byte for byte, the Lean the kernel
+    // check compiles, so neither a stale nor an edited generated module can
+    // stand in for the source.
+    let project = support::P::certification_project();
+    project.relock();
+    let built = project.build_ok();
+    let build_root = project.build_dir(&built.build_id.expect("a build id"));
+    for stem in library::MODULES {
+        let generated = std::fs::read_to_string(
+            build_root
+                .join("modules")
+                .join(format!("LexLeanCertification/{stem}.lean"))
+                .as_std_path(),
+        )
+        .unwrap_or_else(|error| panic!("{stem}: no generated module: {error}"));
+        assert_eq!(
+            generated,
+            library::library_text(stem),
+            "{stem}: the project's generated Lean is the Lean the kernel check compiles"
+        );
+    }
+    // A planted drift of a source is visible in what is generated.
+    let drift = support::P::certification_project();
+    let trials = drift.read("src/Trials.lex.tex");
+    assert!(trials.contains("\"transparency\":\"semireducible\""));
+    drift.write(
+        "src/Trials.lex.tex",
+        &trials.replacen(
+            "\"transparency\":\"semireducible\"",
+            "\"transparency\":\"reducible\"",
+            1,
+        ),
+    );
+    drift.relock();
+    let rebuilt = drift.build_ok();
+    let drifted = std::fs::read_to_string(
+        drift
+            .build_dir(&rebuilt.build_id.expect("a build id"))
+            .join("modules/LexLeanCertification/Trials.lean")
+            .as_std_path(),
+    )
+    .expect("the generated module");
+    assert_ne!(
+        drifted,
+        library::library_text("Trials"),
+        "a drifted source generates different Lean"
+    );
+    // A source that is missing, imports a foreign module, or weakens a policy
+    // is refused.
+    let first = library::source_path(library::MODULES[0]);
+    let original = native_source(library::MODULES[0]);
+    let planted = |edit: &dyn Fn(&str) -> Option<String>| {
+        library::check_sources(&|path| {
+            if path == first {
+                edit(&original).ok_or_else(|| format!("{path}: no such file"))
+            } else {
+                std::fs::read_to_string(repo_root().join(path).as_std_path())
+                    .map_err(|error| format!("{path}: {error}"))
+            }
+        })
+        .map(|_| ())
+    };
+    let error = planted(&|_| None).expect_err("a missing source is refused");
+    assert!(error.contains("no such file"), "{error}");
+    assert!(
+        original.contains("\"imports\":[\"Init\""),
+        "{original:.200}"
+    );
+    let error = planted(&|text| {
+        Some(text.replace("\"imports\":[\"Init\"", "\"imports\":[\"Init\",\"Mathlib\""))
+    })
+    .expect_err("a foreign import is refused");
+    assert!(error.contains("imports `Mathlib`"), "{error}");
+    let error = planted(&|text| Some(text.replace("\"kind\":\"exact\"", "\"kind\":\"allow\"")))
+        .expect_err("an inexact policy is refused");
+    assert!(error.contains("does not pin its axioms exactly"), "{error}");
+    let error = planted(&|text| {
+        Some(text.replace(
+            "\"spec\":\"lexlean/core-module/2\"",
+            "\"spec\":\"lexlean/core-module/1\"",
+        ))
+    })
+    .expect_err("a first-schema module carrying second-schema data is refused");
+    assert!(error.contains("requires"), "{error}");
+}
+
 /// §17.18: generated, deterministic, content-addressed.
 #[allow(clippy::too_many_lines)]
 fn gc_10() {
@@ -2556,7 +2801,6 @@ fn gc_10() {
     assert_eq!(generated::files(), files, "generation is deterministic");
     for expected in [
         generated::PATH,
-        crate::certification_model::PATH,
         "schemas/gnaf-certificate.schema.json",
         "schemas/gnaf-certificate-fixture.schema.json",
     ] {
@@ -2677,10 +2921,6 @@ fn gc_10() {
             );
         }
     }
-    // A planted change to the model changes what it generates.
-    let planted = crate::certification_model::module()
-        .replace("\"name\":\"lowerPosition\"", "\"name\":\"lowerPlaced\"");
-    assert_ne!(planted, read(crate::certification_model::PATH));
     // The negative: nothing in a certificate names an optimizer, a cache, or
     // a discovered candidate; the closed forms are exactly the schemas'.
     let certificate_schema = schema("gnaf-certificate.schema.json");

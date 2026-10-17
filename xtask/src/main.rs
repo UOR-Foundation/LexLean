@@ -37,7 +37,10 @@ fn main() -> ExitCode {
         "check-production-export" => check_production_export(write),
         "check-package" => check_package(&root),
         "check-test-inventory" => ci::check_test_inventory(&root),
+        "bdd" => ci::bdd(&root),
         "ci-summary" => ci::ci_summary(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
+        "ci-hints" => ci::ci_hints(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "ci-shards" => ci::ci_shards(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
@@ -58,8 +61,15 @@ fn main() -> ExitCode {
                  check-production-export §24.7: the consumer's exported packages equal the committed\n\
                                          packages under tests/production-export\n\
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
-                 check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests\n\
+                 check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests,\n\
+                                         and the parts of .github/bdd-parts.json partition `bdd`\n\
+                 bdd                     §9.2: the repo-conformance suite, or the part LEXLEAN_BDD_PART\n\
+                                         names (§9.4)\n\
                  ci-summary              §9.4: summarize ci-evidence/ (recipe, stage, module times; memory)\n\
+                 ci-hints                §22.11: scheduling hints from a verifier telemetry file\n\
+                                         (--from verify-telemetry.jsonl --out hints.json)\n\
+                 ci-shards               §9.4: the committed partition of an example's verification\n\
+                                         runs every process once in import order\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
                  validate                validate-model then validate-spec-links\n\
@@ -80,14 +90,14 @@ fn main() -> ExitCode {
     }
 }
 
-/// §17.14-§17.16: the committed `compiler` project (the calculus modules,
-/// the target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
+/// §17.14-§17.16: the generated files of the committed `compiler` project (the
+/// target and GNAF fixtures, their `TargetFixtures` and `GnafFixtures`
 /// modules, the `Gnaf` model, the Rust packages and negative package
-/// manifests under `compiler/rust/`, and the project configuration) is
-/// exactly what its generator renders, and so is the extraction adapter's
-/// tooling project `language/lcnf-1.2/tooling/` over the registry
-/// `tests/lcnf/registry.json`, which `--write` first regenerates from the
-/// pinned Lean (§22.10).
+/// manifests under `compiler/rust/`) are exactly what their generator
+/// renders, and so is the extraction adapter's tooling project
+/// `language/lcnf-1.2/tooling/` over the registry `tests/lcnf/registry.json`,
+/// which `--write` first regenerates from the pinned Lean (§22.10). The
+/// calculus and the Rust machine are sources, not generated files.
 fn check_calculus(root: &Path, write: bool) -> Result<(), Fail> {
     let count = repo_conformance::calculus::check(root, write)?;
     if write {
@@ -137,6 +147,20 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.14: the compiler project is missing".into());
     }
     dirs.push(compiler);
+    // The standard library (§17.22) is source of the product under the same
+    // gates.
+    let stdlib = root.join("stdlib");
+    if !stdlib.join("lexlean.toml").exists() {
+        return Err("§17.22: the standard library project is missing".into());
+    }
+    dirs.push(stdlib);
+    // The bootstrap project (§17.23) holds the compiler's own components as
+    // language-1.2 source under the same gates.
+    let bootstrap = root.join("bootstrap");
+    if !bootstrap.join("lexlean.toml").exists() {
+        return Err("§17.23: the bootstrap project is missing".into());
+    }
+    dirs.push(bootstrap);
     Ok(dirs)
 }
 
@@ -156,7 +180,18 @@ fn engine_for(dir: &Path) -> Result<lexlean::Engine, Fail> {
 /// probe and audit modules, process records with the platform-bound fields
 /// normalized) must equal it, and `--write` regenerates them.
 fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
-    let dirs = example_dirs(root)?;
+    let part = ExamplesPart::from_environment()?;
+    let dirs: Vec<PathBuf> = example_dirs(root)?
+        .into_iter()
+        .filter(|dir| part.includes(&dir.file_name().unwrap_or_default().to_string_lossy()))
+        .collect();
+    if dirs.is_empty() {
+        return Err(format!(
+            "§9.4: the part `{}` names no example directory",
+            part.describe()
+        )
+        .into());
+    }
     for dir in dirs {
         let started = std::time::Instant::now();
         let name = dir
@@ -173,9 +208,12 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
         // Preserve the example's two-component repository-relative position,
         // so any declared local path requirement resolves exactly as it does
         // in the checkout while the example itself remains a clean copy.
-        let staged = scratch.path().join("examples").join(&name);
-        std::fs::create_dir_all(&staged)?;
-        copy_example(&dir, &staged)?;
+        let staged = stage_project(
+            root,
+            &dir,
+            scratch.path(),
+            &scratch.path().join("examples").join(&name),
+        )?;
         for required in example_path_requirements(&dir, root)? {
             let destination = scratch.path().join(&required);
             std::fs::create_dir_all(&destination)?;
@@ -221,11 +259,84 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             })
             .map_err(|error| format!("{name}: build: {error}"))?;
         lap("build");
-        let verified = engine
-            .verify(lexlean::VerifyRequest {
-                selection: lexlean::Selection::Entrypoints,
-            })
-            .map_err(|error| format!("{name}: verify: {error}"))?;
+        // The part of the gate this job is (§9.4): a shard of one example's
+        // verification runs the processes its plan names and leaves; the join
+        // publishes and is compared like a whole verification.
+        let verified = match &part {
+            ExamplesPart::Shard {
+                example,
+                shard,
+                parts,
+            } if *example == name => {
+                let plan = repo_conformance::shards::Plan::read(root)?;
+                let shard_plan = shard_plan(&plan, &name, shard)?;
+                let imports: Vec<Utf8PathBuf> = plan
+                    .needs_closure(shard)?
+                    .into_iter()
+                    .map(|need| utf8(&parts.join(need)))
+                    .collect::<Result<_, _>>()?;
+                let output = utf8(&parts.join(shard))?;
+                let outcome = lexlean::verify_part(
+                    &engine,
+                    lexlean::VerifyRequest {
+                        selection: lexlean::Selection::Entrypoints,
+                    },
+                    lexlean::VerifyPart::Shard {
+                        plan: shard_plan,
+                        imports,
+                        output,
+                    },
+                )
+                .map_err(|error| format!("{name}: verify (shard {shard}): {error}"))?;
+                lap("verify");
+                let lexlean::VerifyPartOutcome::Shard { output, processes } = outcome else {
+                    return Err(format!("{name}: shard `{shard}` published a verification").into());
+                };
+                println!(
+                    "verify-examples: {name} took {} s",
+                    started.elapsed().as_secs()
+                );
+                println!(
+                    "verify-examples: {name}: shard `{shard}` ran {processes} processes into {output}"
+                );
+                append_example_telemetry(&name, started, &steps, Some(shard));
+                continue;
+            }
+            ExamplesPart::Join { example, parts } if *example == name => {
+                let plan = repo_conformance::shards::Plan::read(root)?;
+                let join_plan = shard_plan(&plan, &name, repo_conformance::shards::JOIN)?;
+                let others: Vec<Utf8PathBuf> = plan
+                    .shards
+                    .keys()
+                    .filter(|shard| shard.as_str() != repo_conformance::shards::JOIN)
+                    .map(|shard| utf8(&parts.join(shard)))
+                    .collect::<Result<_, _>>()?;
+                let outcome = lexlean::verify_part(
+                    &engine,
+                    lexlean::VerifyRequest {
+                        selection: lexlean::Selection::Entrypoints,
+                    },
+                    lexlean::VerifyPart::Join {
+                        plan: join_plan,
+                        parts: others,
+                    },
+                )
+                .map_err(|error| format!("{name}: verify (join): {error}"))?;
+                let lexlean::VerifyPartOutcome::Verified(verified) = outcome else {
+                    return Err(format!("{name}: the join published no verification").into());
+                };
+                println!(
+                    "verify-examples: {name}: joined {} shards",
+                    plan.shards.len() - 1
+                );
+                verified
+            }
+            _ => engine
+                .verify(lexlean::VerifyRequest {
+                    selection: lexlean::Selection::Entrypoints,
+                })
+                .map_err(|error| format!("{name}: verify: {error}"))?,
+        };
         lap("verify");
         // The wall-clock of each example is printed so that a run that
         // approaches the CI job limit shows where its time went.
@@ -253,22 +364,7 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             "verify-examples: {name} verified-digest {}",
             ci::tree_digest(verified.root.as_std_path())?
         );
-        if let Some(directory) = std::env::var_os(lexlean::verify::operational::TELEMETRY_VARIABLE)
-            .filter(|value| !value.is_empty())
-        {
-            lexlean::verify::telemetry::append(
-                Path::new(&directory),
-                "examples-telemetry.jsonl",
-                &serde_json::json!({
-                    "event": "example",
-                    "example": name,
-                    "wall_ms": u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
-                    "process_width": lexlean::verify::operational::Operational::from_environment()
-                        .map_or(0, |operational| operational.width()),
-                    "steps": steps,
-                }),
-            );
-        }
+        append_example_telemetry(&name, started, &steps, None);
 
         let records = normalized_verify_records(verified.root.as_std_path())?;
         let expected_root = dir.join("expected").join("verify");
@@ -302,6 +398,156 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
         );
     }
     Ok(())
+}
+
+/// The variable that names the part of the `examples` recipe a CI job runs
+/// (SPEC.md §9.4). Unset or empty, the recipe verifies every example whole.
+pub const EXAMPLES_PART_VARIABLE: &str = "LEXLEAN_EXAMPLES_PART";
+
+/// The variable that names the directory the parts of a sharded example
+/// exchange their output through: one subdirectory per shard, named after
+/// it. Required by a shard or join part.
+pub const EXAMPLES_PARTS_VARIABLE: &str = "LEXLEAN_EXAMPLES_PARTS";
+
+/// Which part of the `examples` recipe a job runs (§9.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ExamplesPart {
+    /// Every example, whole.
+    All,
+    /// Every example but one, whole.
+    Without(String),
+    /// One shard of one example's verification.
+    Shard {
+        example: String,
+        shard: String,
+        parts: PathBuf,
+    },
+    /// The join of one example's verification.
+    Join { example: String, parts: PathBuf },
+}
+
+impl ExamplesPart {
+    /// Read the part from the environment: `without:<example>`,
+    /// `shard:<example>:<shard>`, or `join:<example>`; unset or empty is
+    /// every example whole.
+    fn from_environment() -> Result<Self, Fail> {
+        let value = std::env::var_os(EXAMPLES_PART_VARIABLE).unwrap_or_default();
+        let text = value
+            .to_str()
+            .ok_or_else(|| format!("{EXAMPLES_PART_VARIABLE}: the value is not Unicode"))?;
+        Self::parse(text, || {
+            std::env::var_os(EXAMPLES_PARTS_VARIABLE)
+                .filter(|value| !value.is_empty())
+                .map(PathBuf::from)
+                .ok_or_else(|| {
+                    format!("{EXAMPLES_PARTS_VARIABLE}: a shard or join part names the directory the parts exchange their output through").into()
+                })
+        })
+    }
+
+    fn parse(text: &str, parts: impl Fn() -> Result<PathBuf, Fail>) -> Result<Self, Fail> {
+        let fields: Vec<&str> = text.split(':').collect();
+        let malformed = || -> Fail {
+            format!(
+                "{EXAMPLES_PART_VARIABLE}: `{text}` is not a part: expected empty, `without:<example>`, `shard:<example>:<shard>`, or `join:<example>`"
+            )
+            .into()
+        };
+        let named = |field: &str| -> Result<String, Fail> {
+            if field.is_empty() || field.contains(['/', '\\', '.']) {
+                return Err(malformed());
+            }
+            Ok(field.to_owned())
+        };
+        match fields.as_slice() {
+            [""] => Ok(Self::All),
+            ["without", example] => Ok(Self::Without(named(example)?)),
+            ["shard", example, shard] => Ok(Self::Shard {
+                example: named(example)?,
+                shard: named(shard)?,
+                parts: parts()?,
+            }),
+            ["join", example] => Ok(Self::Join {
+                example: named(example)?,
+                parts: parts()?,
+            }),
+            _ => Err(malformed()),
+        }
+    }
+
+    /// Does this part run the example directory named `name`?
+    fn includes(&self, name: &str) -> bool {
+        match self {
+            Self::All => true,
+            Self::Without(example) => example != name,
+            Self::Shard { example, .. } | Self::Join { example, .. } => example == name,
+        }
+    }
+
+    fn describe(&self) -> String {
+        match self {
+            Self::All => "all".to_owned(),
+            Self::Without(example) => format!("without:{example}"),
+            Self::Shard { example, shard, .. } => format!("shard:{example}:{shard}"),
+            Self::Join { example, .. } => format!("join:{example}"),
+        }
+    }
+}
+
+/// The plan of one shard of `example`, as the verifier takes it.
+fn shard_plan(
+    plan: &repo_conformance::shards::Plan,
+    example: &str,
+    shard: &str,
+) -> Result<lexlean::VerifyPlan, Fail> {
+    if plan.project != example {
+        return Err(format!(
+            "§9.4: {} partitions `{}`, and the part names `{example}`",
+            repo_conformance::shards::PLAN_FILE,
+            plan.project
+        )
+        .into());
+    }
+    let found = plan.shards.get(shard).ok_or_else(|| {
+        format!(
+            "§9.4: {} has no shard `{shard}`",
+            repo_conformance::shards::PLAN_FILE
+        )
+    })?;
+    Ok(lexlean::VerifyPlan {
+        elaborate: found.elaborate.clone(),
+        replay: found.replay.clone(),
+    })
+}
+
+/// One `example` event of the CI evidence (§22.12): the example, what each
+/// step took, and the part that ran it when the example ran as a part.
+fn append_example_telemetry(
+    name: &str,
+    started: std::time::Instant,
+    steps: &serde_json::Map<String, serde_json::Value>,
+    shard: Option<&str>,
+) {
+    if let Some(directory) = std::env::var_os(lexlean::verify::operational::TELEMETRY_VARIABLE)
+        .filter(|value| !value.is_empty())
+    {
+        let mut event = serde_json::json!({
+            "event": "example",
+            "example": name,
+            "wall_ms": u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            "process_width": lexlean::verify::operational::Operational::from_environment()
+                .map_or(0, |operational| operational.width()),
+            "steps": steps,
+        });
+        if let Some(shard) = shard {
+            event["shard"] = serde_json::Value::String(shard.to_owned());
+        }
+        lexlean::verify::telemetry::append(
+            Path::new(&directory),
+            "examples-telemetry.jsonl",
+            &event,
+        );
+    }
 }
 
 /// The verification records that are platform independent after
@@ -421,12 +667,26 @@ fn compare_tree(
 /// Copy an example into a fresh temporary directory, run a real `build`,
 /// and return the published `.lexlean/build/<id>/` tree as
 /// `(relative, bytes)` plus the temporary root (kept alive by the caller).
-fn published_build(dir: &Path) -> Result<(tempfile::TempDir, Files), Fail> {
+fn published_build(
+    root: &Path,
+    dir: &Path,
+    relock: bool,
+) -> Result<(tempfile::TempDir, Files), Fail> {
     let temp = tempfile::Builder::new()
         .prefix("lexlean-build-")
         .tempdir()?;
-    copy_example(dir, temp.path())?;
-    let engine = engine_for(temp.path())?;
+    let staged = stage_project(root, dir, temp.path(), temp.path())?;
+    let engine = engine_for(&staged)?;
+    if relock {
+        // The preservation library's project is language data, so its lock
+        // would have to contain the digest of the tree that holds the lock.
+        engine
+            .lock(lexlean::LockRequest {
+                check_only: false,
+                allow_network: false,
+            })
+            .map_err(|error| format!("{}: lock: {error}", dir.display()))?;
+    }
     let built = engine
         .build(lexlean::BuildRequest {
             selection: lexlean::Selection::Entrypoints,
@@ -435,11 +695,10 @@ fn published_build(dir: &Path) -> Result<(tempfile::TempDir, Files), Fail> {
     let build_id = built
         .build_id
         .ok_or("a successful build has a build ID (§21.5)")?;
-    let config = utf8(&temp.path().join("lexlean.toml"))?;
+    let config = utf8(&staged.join("lexlean.toml"))?;
     let project = lexlean::project::Project::load(&config)
         .map_err(|error| format!("{}: {error}", dir.display()))?;
-    let published = temp
-        .path()
+    let published = staged
         .join(&project.config.build_root)
         .join("build")
         .join(build_id.to_hex());
@@ -483,7 +742,7 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let (_temp, files) = published_build(&dir)?;
+        let (_temp, files) = published_build(root, &dir, false)?;
         let expected_root = dir.join("expected").join("build");
         if write {
             if expected_root.exists() {
@@ -555,6 +814,66 @@ fn example_path_requirements(dir: &Path, root: &Path) -> Result<Vec<PathBuf>, Fa
     Ok(out)
 }
 
+/// The members of the repository's workspace that a project needs when it
+/// declares source packages (§10.5): its own directory first, then every
+/// package it names and every package those name, as repository-relative
+/// directories. `None` for a project that declares none.
+fn workspace_members_of(root: &Path, dir: &Path) -> Result<Option<Vec<PathBuf>>, Fail> {
+    let read = |directory: &Path| -> Result<lexlean::config::ProjectConfig, Fail> {
+        let bytes = std::fs::read(directory.join("lexlean.toml"))?;
+        lexlean::config::parse_project("lexlean.toml", &bytes)
+            .map_err(|errors| format!("{}: {errors:?}", directory.display()).into())
+    };
+    let config = read(dir)?;
+    if config.source_packages.is_empty() {
+        return Ok(None);
+    }
+    let own = dir.strip_prefix(root)?.to_path_buf();
+    let mut members = vec![own];
+    let mut pending: Vec<String> = config
+        .source_packages
+        .iter()
+        .map(|package| package.path.clone())
+        .collect();
+    while let Some(path) = pending.pop() {
+        let member = PathBuf::from(&path);
+        if members.contains(&member) {
+            continue;
+        }
+        pending.extend(
+            read(&root.join(&member))?
+                .source_packages
+                .iter()
+                .map(|package| package.path.clone()),
+        );
+        members.push(member);
+    }
+    Ok(Some(members))
+}
+
+/// Stage the project at `dir` under `scratch` and return its staged root. A
+/// project that declares source packages is staged at its repository-relative
+/// path beside the workspace file and the members it needs, so the packages
+/// resolve exactly as they do in the checkout; any other project is staged at
+/// `flat`.
+fn stage_project(root: &Path, dir: &Path, scratch: &Path, flat: &Path) -> Result<PathBuf, Fail> {
+    let Some(members) = workspace_members_of(root, dir)? else {
+        std::fs::create_dir_all(flat)?;
+        copy_example(dir, flat)?;
+        return Ok(flat.to_path_buf());
+    };
+    std::fs::copy(
+        root.join(lexlean::source_package::WORKSPACE_FILE),
+        scratch.join(lexlean::source_package::WORKSPACE_FILE),
+    )?;
+    for member in &members {
+        let destination = scratch.join(member);
+        std::fs::create_dir_all(&destination)?;
+        copy_example(&root.join(member), &destination)?;
+    }
+    Ok(scratch.join(&members[0]))
+}
+
 fn copy_example(from: &Path, to: &Path) -> Result<(), Fail> {
     for entry in walkdir::WalkDir::new(from).into_iter().flatten() {
         let relative = entry.path().strip_prefix(from).unwrap_or(entry.path());
@@ -584,8 +903,8 @@ fn check_reproducibility(root: &Path) -> Result<(), Fail> {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let (temp_a, files_a) = published_build(&dir)?;
-        let (temp_b, files_b) = published_build(&dir)?;
+        let (temp_a, files_a) = published_build(root, &dir, false)?;
+        let (temp_b, files_b) = published_build(root, &dir, false)?;
         if temp_a.path() == temp_b.path() {
             return Err("the two build directories must be distinct".into());
         }
@@ -607,6 +926,42 @@ fn check_reproducibility(root: &Path) -> Result<(), Fail> {
         }
         println!(
             "check-reproducibility: {name}: {} published artifacts byte-identical across {} and {} (R10)",
+            files_a.len(),
+            temp_a.path().display(),
+            temp_b.path().display()
+        );
+    }
+    // The proof libraries' own projects (§17.17, §17.18) are built twice as
+    // well; they are not examples, and a lock is made in each copy.
+    for (label, directory) in [
+        (
+            "the preservation library",
+            lexlean::production::preserve::LIBRARY_DIR,
+        ),
+        (
+            "the certification library",
+            repo_conformance::certification_library::PROJECT_DIR,
+        ),
+    ] {
+        let library = root.join(directory);
+        let (temp_a, files_a) = published_build(root, &library, true)?;
+        let (temp_b, files_b) = published_build(root, &library, true)?;
+        if temp_a.path() == temp_b.path() {
+            return Err("the two build directories must be distinct".into());
+        }
+        if files_a != files_b {
+            let differing = files_a
+                .iter()
+                .zip(&files_b)
+                .find(|(a, b)| a != b)
+                .map_or_else(|| "the file sets".to_owned(), |(a, _)| a.0.clone());
+            return Err(format!(
+                "R10: {label}: {differing} differs between two clean builds in distinct directories"
+            )
+            .into());
+        }
+        println!(
+            "check-reproducibility: {label}: {} published artifacts byte-identical across {} and {} (R10)",
             files_a.len(),
             temp_a.path().display(),
             temp_b.path().display()
@@ -926,5 +1281,58 @@ mod tests {
             untouched["argv"][1],
             "/home/someone/.elan/toolchains/x/bin/leanchecker"
         );
+    }
+}
+
+#[cfg(test)]
+mod examples_part_tests {
+    use super::ExamplesPart;
+    use std::path::PathBuf;
+
+    #[test]
+    fn a_part_is_read_from_its_text_and_a_shard_needs_the_parts_directory() {
+        let parts = || Ok(PathBuf::from("parts"));
+        assert_eq!(
+            ExamplesPart::parse("", parts).expect("empty"),
+            ExamplesPart::All
+        );
+        assert_eq!(
+            ExamplesPart::parse("without:uor-atlas", parts).expect("without"),
+            ExamplesPart::Without("uor-atlas".to_owned())
+        );
+        assert_eq!(
+            ExamplesPart::parse("shard:uor-atlas:pairs-a", parts).expect("shard"),
+            ExamplesPart::Shard {
+                example: "uor-atlas".to_owned(),
+                shard: "pairs-a".to_owned(),
+                parts: PathBuf::from("parts"),
+            }
+        );
+        assert_eq!(
+            ExamplesPart::parse("join:uor-atlas", parts).expect("join"),
+            ExamplesPart::Join {
+                example: "uor-atlas".to_owned(),
+                parts: PathBuf::from("parts"),
+            }
+        );
+        for malformed in [
+            "all",
+            "shard:uor-atlas",
+            "join:",
+            "without:../x",
+            "shard:a:b:c",
+        ] {
+            assert!(
+                ExamplesPart::parse(malformed, parts).is_err(),
+                "{malformed}"
+            );
+        }
+        let no_parts = || Err("no parts directory".into());
+        assert!(ExamplesPart::parse("join:uor-atlas", no_parts).is_err());
+        assert!(ExamplesPart::parse("without:uor-atlas", no_parts).is_ok());
+        let shard = ExamplesPart::parse("shard:uor-atlas:prefix", parts).expect("shard");
+        assert!(shard.includes("uor-atlas") && !shard.includes("compiler"));
+        assert!(ExamplesPart::Without("uor-atlas".to_owned()).includes("compiler"));
+        assert_eq!(shard.describe(), "shard:uor-atlas:prefix");
     }
 }

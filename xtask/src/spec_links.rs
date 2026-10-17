@@ -61,8 +61,8 @@ fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
 pub fn validate(root: &Path) -> Result<(), Fail> {
     let spec = std::fs::read_to_string(root.join("SPEC.md"))?;
     let rows = parse_table(&spec)?;
-    if rows.len() != 363 {
-        return Err(format!("RP-07: the §31 table has {} rows, not 363", rows.len()).into());
+    if rows.len() != 403 {
+        return Err(format!("RP-07: the §31 table has {} rows, not 403", rows.len()).into());
     }
     // The prose total under the table is part of the contract a reader
     // relies on; a row added without it would leave §31 contradicting itself.
@@ -130,13 +130,18 @@ pub fn validate(root: &Path) -> Result<(), Fail> {
     }
     let _ = register;
 
-    // The statement vocabulary the specification quotes equals the library's
+    // The statement vocabulary the specification quotes equals what Lean
+    // printed of the generated library in the committed audit output
     // (§17.17, SP-04).
-    let library = root.join(repo_model::vocabulary::LIBRARY_DIR);
-    repo_model::vocabulary::audit(&spec, &|file| {
-        std::fs::read_to_string(library.join(file)).ok()
-    })
-    .map_err(|report| format!("§17.17 (SP-04): {report}"))?;
+    let audit_output = std::fs::read_to_string(root.join(repo_model::vocabulary::AUDIT_OUTPUT))
+        .map_err(|error| {
+            format!(
+                "§17.17 (SP-04): {}: {error}",
+                repo_model::vocabulary::AUDIT_OUTPUT
+            )
+        })?;
+    repo_model::vocabulary::audit(&spec, &audit_output)
+        .map_err(|report| format!("§17.17 (SP-04): {report}"))?;
 
     // Every source section referenced by an ID exists.
     for row in &rows {

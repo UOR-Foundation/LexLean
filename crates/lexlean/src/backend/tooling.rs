@@ -21,6 +21,8 @@ use crate::link::CheckedModule;
 const SOURCE: DeclarationSource<'static> = DeclarationSource {
     control: "\\toolingdata{",
     owner: "lexlean.core::toolingdata",
+    environment: "toolingmodule",
+    notation_owner: "lexlean.core::toolingsource",
     node: "tooling-declaration",
     skip_blank: true,
 };

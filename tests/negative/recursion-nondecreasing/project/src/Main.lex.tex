@@ -2,6 +2,22 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":true},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"number"}],"function":{"name":"isOdd"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Parity","name":"isEven","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"bool"}},{"body":{"branches":[{"binders":[],"body":{"kind":"bool","value":false},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"isEven"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Parity","name":"isOdd","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"bool"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: isEven,
+  parameters: [number : Nat],
+  result: Bool,
+  body: (match number | Nat.zero => true | Nat.succ previous => (isOdd number)),
+  mutual: Parity,
+  recursive_argument: number
+}
+
+definition{
+  name: isOdd,
+  parameters: [number : Nat],
+  result: Bool,
+  body: (match number | Nat.zero => false | Nat.succ previous => (isEven previous)),
+  mutual: Parity,
+  recursive_argument: number
+}
 \end{semanticmodule}
 \end{lexlean}

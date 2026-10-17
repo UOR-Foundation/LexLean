@@ -2,6 +2,22 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"arguments":[{"kind":"var","name":"previous"}],"function":{"name":"settle"},"kind":"call"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Walk","name":"walkDown","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Nat.zero"}},{"binders":["previous"],"body":{"kind":"var","name":"previous"},"constructor":{"name":"Nat.succ"}}],"kind":"match","scrutinee":{"kind":"var","name":"number"}},"kind":"definition","mutual":"Walk","name":"settle","parameters":[{"name":"number","type":{"kind":"nat"}}],"recursive_argument":"number","result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: walkDown,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number | Nat.zero => 0 | Nat.succ previous => (settle previous)),
+  mutual: Walk,
+  recursive_argument: number
+}
+
+definition{
+  name: settle,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (match number | Nat.zero => 0 | Nat.succ previous => previous),
+  mutual: Walk,
+  recursive_argument: number
+}
 \end{semanticmodule}
 \end{lexlean}

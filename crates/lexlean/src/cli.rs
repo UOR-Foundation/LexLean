@@ -708,8 +708,16 @@ pub fn run(
                     outcome.ids.attestation_id = Some(result.verification.attestation_id);
                     outcome.artifacts.push(output.bundle.to_string());
                     let packages: usize = result.roots.iter().map(|root| root.outputs.len()).sum();
+                    let recursive = result.recursive_outputs();
+                    let host = if recursive == 0 {
+                        String::new()
+                    } else {
+                        format!(
+                            "; {recursive} recurse to a depth bounded only by their input and need a host stack that fits it"
+                        )
+                    };
                     outcome.summary = format!(
-                        "exported {packages} packages at {}; result {}\n",
+                        "exported {packages} packages at {}; result {}{host}\n",
                         output.bundle,
                         result.result_id.to_hex()
                     );
@@ -778,6 +786,7 @@ fn init_project(
             package: "lexlean.std.nat".to_owned(),
         }],
         artifact_sources: Vec::new(),
+        source_packages: Vec::new(),
         limits: INIT_LIMITS,
         pdf: None,
     };

@@ -3,6 +3,20 @@
 \importmodule{Tables}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["Classical.choice","Quot.sound","propext"],"body":{"arguments":[{"arguments":[{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"head":{"kind":"string","value":"b"},"kind":"cons","tail":{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}],"function":{"module":"Tables","name":"buildTable"},"kind":"call"}],"kind":"primitive","operation":"map_size","result":{"kind":"nat"}},"kind":"definition","name":"distinctNames","parameters":[],"result":{"kind":"nat"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"distinct_names","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[],"function":{"name":"distinctNames"},"kind":"call"},"right":{"kind":"nat","value":"2"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: distinctNames,
+  parameters: [],
+  result: Nat,
+  body: (prim map_size (Tables::buildTable (cons "a" (cons "b" (cons "a" (nil String))))) : Nat),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: distinct_names,
+  parameters: [],
+  statement: ((distinctNames) = 2),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
 \end{semanticmodule}
 \end{lexlean}

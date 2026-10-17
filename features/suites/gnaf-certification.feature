@@ -59,11 +59,11 @@ Feature: gnaf-certification
     And every incomplete verdict names its first obligation and a status that claims no optimality
 
   @GC-09 @build
-  Scenario: The certification library is kernel-checked under the pinned Lean with exactly its registered axioms and none of the forbidden forms: it proves that a certified verdict bounds the cost of every well-formed system of the request's grammar universe at the request's fuel and every larger one and that a bound is attained, that a certified frontier is exactly the Pareto frontier of the admitted systems, that normality never certifies, that every certified optimum is GNAF-normal, and that every improving schema application satisfies the module's own `Certification.preserves`, its rewriting keeping the system's observations over the request's domain at strictly lower cost, and its soundness theorem holds of every certified committed certificate.
-    Given the library under `compiler/proofs/`, its registry, and the compiler project's generated modules
-    When the library is staged beside the generated modules, compiled, replayed, and audited, instantiated at every certified committed certificate and at the module's preservation relation, and planted with an unsound lemma
-    Then every theorem is accepted with exactly its registered axioms and every instance is accepted
-    And a planted sorry is refused by the token audit, and a planted false lemma and a planted weakened checker are each refused by Lean
+  Scenario: The certification library, as the Lean its native modules generate, is kernel-checked under the pinned Lean with exactly the axioms its rows pin and none of the forbidden forms, a planted added axiom, false lemma, or weakened checker each being refused: it proves that a certified verdict bounds the cost of every well-formed system of the request's grammar universe at the request's fuel and every larger one and that a bound is attained, that a certified frontier is exactly the Pareto frontier of the admitted systems, that normality never certifies, that every certified optimum is GNAF-normal, and that every improving schema application satisfies the module's own `Certification.preserves`, its rewriting keeping the system's observations over the request's domain at strictly lower cost, and its soundness theorem holds of every certified committed certificate.
+    Given the native library under `compiler/proofs/`, its registry, and the compiler project's generated modules
+    When the Lean generated from the library is staged beside the generated modules, compiled, replayed, and audited, instantiated at every certified committed certificate and at the module's preservation relation, and planted with an added axiom, an unsound lemma, and a weakened checker
+    Then every theorem is accepted with exactly the axioms its row pins and every instance is accepted
+    And a planted added axiom is refused by the exact axiom audit, and a planted false lemma and a planted weakened checker are each refused by Lean
 
   @GC-10 @build
   Scenario: The certification model, certificate fixtures, certificate module, and schemas are generated, deterministic, and content-addressed: they equal their generators, the compiler project reaches them from its entrypoint, certificate identities are recomputed from content, and a planted change to a premise, a bound, or a route changes the verdict or the identity.
@@ -71,3 +71,10 @@ Feature: gnaf-certification
     When they are regenerated, reread, and mutated
     Then they equal their generators, the entrypoint reaches the modules, and every identity is the framed SHA-256 of the certificate's canonical bytes
     And a mutated premise, bound, or route has another identity and, where the mutation matters, another verdict
+
+  @GC-11 @build
+  Scenario: The certification library is LexLean source: every module of its registry is one language-1.2 native core module of the library's own project, which holds no file of Lean source, no Lean file anywhere in the release tree declares the library's namespace or lies under its module root, and the registry lists only the modules; the declarations and their exact axiom policies are read from the native data, a module that imports anything but `Init`, an earlier module, the preservation core, or the generated and calculus modules it is stated against, or that does not pin its axioms exactly, is refused, and the Lean the compiler generates from the sources is, byte for byte, the Lean the certification library's kernel check compiles, so that neither a stale nor an edited generated module can stand in for the source and a planted drift of the source is visible in what is generated. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules.
+    Given the native library under `compiler/proofs/`, its registry, and its own project
+    When the project is built, its sources are read, and its sources are planted with a foreign import, an inexact policy, and a drift
+    Then the generated Lean equals the Lean the kernel check compiles and the project holds no Lean source, and no Lean file in the release tree declares the library's namespace
+    And a planted foreign import and a planted inexact policy are each refused, and a drifted source generates different Lean

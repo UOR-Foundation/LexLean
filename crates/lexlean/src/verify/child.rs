@@ -3,6 +3,7 @@
 //! deterministic allow-list environment, checked limits, and the exact
 //! path-replacement normalization.
 
+use std::collections::BTreeSet;
 use std::io::Read;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -223,6 +224,79 @@ impl ChildRecord {
         }
         Json::object(fields)
     }
+
+    /// A record read back from the JSON [`Self::to_json`] wrote, as a later
+    /// part of a verification reads an earlier part's (§9.4). The stream
+    /// digests are checked against the streams: a record whose text and
+    /// digest disagree was not written by the verifier.
+    ///
+    /// # Errors
+    ///
+    /// A value that is not a process record.
+    pub fn from_json(json: &Json) -> Result<Self, String> {
+        let Json::Obj(fields) = json else {
+            return Err("a process record is an object".to_owned());
+        };
+        let text = |name: &str| -> Result<String, String> {
+            match fields.get(name) {
+                Some(Json::Str(text)) => Ok(text.clone()),
+                _ => Err(format!("`{name}` is a required string")),
+            }
+        };
+        let argv = match fields.get("argv") {
+            Some(Json::Arr(items)) => items
+                .iter()
+                .map(|item| match item {
+                    Json::Str(text) => Ok(text.clone()),
+                    _ => Err("`argv` holds strings".to_owned()),
+                })
+                .collect::<Result<Vec<String>, String>>()?,
+            _ => return Err("`argv` is a required array".to_owned()),
+        };
+        let exit_code = match fields.get("exit_code") {
+            Some(Json::Int(code)) => {
+                i32::try_from(*code).map_err(|_| "`exit_code` is an i32".to_owned())?
+            }
+            _ => return Err("`exit_code` is a required integer".to_owned()),
+        };
+        let stdout = text("stdout")?;
+        let stderr = text("stderr")?;
+        for (name, stream) in [("stdout_sha256", &stdout), ("stderr_sha256", &stderr)] {
+            if text(name)? != Sha256Digest::of(stream.as_bytes()).to_hex() {
+                return Err(format!("`{name}` is not the digest of the stream"));
+            }
+        }
+        let module = match fields.get("module") {
+            None => None,
+            Some(Json::Str(module)) => Some(module.clone()),
+            Some(_) => return Err("`module` is a string".to_owned()),
+        };
+        let known: BTreeSet<&str> = [
+            "tool",
+            "argv",
+            "exit_code",
+            "executable_sha256",
+            "stdout",
+            "stderr",
+            "stdout_sha256",
+            "stderr_sha256",
+            "module",
+        ]
+        .into_iter()
+        .collect();
+        if let Some(unknown) = fields.keys().find(|key| !known.contains(key.as_str())) {
+            return Err(format!("`{unknown}` is not a field of a process record"));
+        }
+        Ok(Self {
+            tool: text("tool")?,
+            module,
+            argv,
+            exit_code,
+            stdout,
+            stderr,
+            executable_sha256: Sha256Digest::from_hex(&text("executable_sha256")?)?,
+        })
+    }
 }
 
 /// The home a child sees (§25.4).
@@ -438,12 +512,15 @@ pub fn run(
         .as_ref()
         .map(|_| telemetry::GroupWatch::new(child.id()));
     let status = {
-        // Registered for as long as the child may be running.
+        // A descendant can hold either pipe after the leader exits. Keep
+        // its group registered and the deadline active until reading ends.
         let _tracked = tracked;
         loop {
             match child.try_wait() {
-                Ok(Some(status)) => break status,
-                Ok(None) => {
+                Ok(Some(status)) if stdout_reader.is_finished() && stderr_reader.is_finished() => {
+                    break status;
+                }
+                Ok(_) => {
                     if let Some(watch) = watch.as_mut() {
                         watch.poll();
                     }
@@ -668,6 +745,111 @@ mod timeout_tests {
             "the group was ended, so the report does not say otherwise: {error:?}"
         );
         assert!(left.is_empty(), "a timeout left running: {left:?}");
+    }
+
+    /// Reaping the leader does not close a pipe its descendant inherited.
+    #[test]
+    fn a_timeout_bounds_stdout_inherited_after_the_leader_exits() {
+        #[cfg(unix)]
+        inherited_pipe_timeout("stdout", "2>/dev/null");
+    }
+
+    #[test]
+    fn a_timeout_bounds_stderr_inherited_after_the_leader_exits() {
+        #[cfg(unix)]
+        inherited_pipe_timeout("stderr", ">/dev/null");
+    }
+
+    #[cfg(unix)]
+    fn inherited_pipe_timeout(stream: &str, redirect: &str) {
+        use std::os::unix::fs::PermissionsExt;
+        use std::time::{Duration, Instant};
+
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("leader");
+        // Finite even with the defect: the failing case leaves no process
+        // behind and never relies on an outer timeout to finish.
+        std::fs::write(
+            &script,
+            format!(
+                "#!/bin/sh\nprintf '%s\\n' \"$$\" > leader.pid\nsleep 3 {redirect} &\nexit 0\n"
+            ),
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "pipe-holder",
+            module: Some(stream.to_owned()),
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let started = Instant::now();
+        let result = run(&spec, &limits(200), &Normalizer::default());
+        let elapsed = started.elapsed();
+        let group = std::fs::read_to_string(directory.path().join("leader.pid"))
+            .expect("the leader recorded its group")
+            .trim()
+            .parse()
+            .expect("a group number");
+        let members =
+            crate::verify::lifeline::group_members(group).expect("the host has /proc or ps");
+        let live: Vec<_> = members.iter().filter(|member| !member.zombie).collect();
+        if !live.is_empty() {
+            let _ = crate::verify::lifeline::end_leader(u32::try_from(group).expect("group"));
+        }
+        let error = result.expect_err("an inherited pipe remains subject to the child timeout");
+        assert_eq!(error.code.as_str(), "LLS8002", "{error:?}");
+        for needle in ["child_timeout_ms", "configured 200", "pipe-holder", stream] {
+            assert!(error.message.contains(needle), "{error:?}");
+        }
+        assert!(live.is_empty(), "a timeout left the descendant running");
+        assert!(
+            elapsed < Duration::from_secs(2),
+            "the finite descendant outlived the configured timeout: {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn output_from_a_descendant_finishing_within_the_timeout_is_retained() {
+        #[cfg(unix)]
+        completed_descendant();
+    }
+
+    #[cfg(unix)]
+    fn completed_descendant() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().expect("tempdir");
+        let script = directory.path().join("leader");
+        std::fs::write(
+            &script,
+            "#!/bin/sh\nprintf 'before\\n'\n(sleep 0.05; printf 'after\\n'; printf 'error\\n' >&2) &\nexit 0\n",
+        )
+        .expect("write");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
+        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
+        let spec = ChildSpec {
+            tool: "pipe-holder",
+            module: None,
+            program,
+            executable_sha256: Sha256Digest::of(b"script"),
+            argv: Vec::new(),
+            cwd,
+            extra_env: Vec::new(),
+            home: ChildHome::Isolated { home: cwd },
+        };
+        let record = run(&spec, &limits(5_000), &Normalizer::default())
+            .expect("the descendant finishes within the timeout");
+        assert_eq!(record.exit_code, 0);
+        assert_eq!(record.stdout, "before\nafter\n");
+        assert_eq!(record.stderr, "error\n");
     }
 
     /// The exit status `code` as the platform makes one.

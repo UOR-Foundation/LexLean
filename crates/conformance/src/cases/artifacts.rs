@@ -362,7 +362,7 @@ pub(crate) fn run(id: &str) {
                 .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
                 .collect();
             assert_eq!(
-                lexlean::artifact::content_id::tree_digest(&disk_refs),
+                support::identity_tree_digest(&disk_refs),
                 lexlean::compiler_semantics_id_for(lexlean::LATEST_LANGUAGE_VERSION),
                 "the on-disk normative set reproduces the embedded ID"
             );
@@ -375,7 +375,7 @@ pub(crate) fn run(id: &str) {
             let flipped = b"tampered".as_slice();
             mutated[0].1 = flipped;
             assert_ne!(
-                lexlean::artifact::content_id::tree_digest(&mutated),
+                support::identity_tree_digest(&mutated),
                 lexlean::compiler_semantics_id_for(lexlean::LATEST_LANGUAGE_VERSION),
                 "one changed input changes the ID"
             );

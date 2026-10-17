@@ -1,0 +1,546 @@
+{
+  "Collections.Main": {
+    "peak_rss_kib": 569036,
+    "wall_ms": 1214
+  },
+  "Collections.Measure": {
+    "peak_rss_kib": 431412,
+    "wall_ms": 686
+  },
+  "Collections.Tables": {
+    "peak_rss_kib": 429284,
+    "wall_ms": 695
+  },
+  "Coverage.Boundary": {
+    "peak_rss_kib": 554592,
+    "wall_ms": 813
+  },
+  "Coverage.Colls": {
+    "peak_rss_kib": 434364,
+    "wall_ms": 797
+  },
+  "Coverage.Main": {
+    "peak_rss_kib": 424580,
+    "wall_ms": 541
+  },
+  "Coverage.Prims": {
+    "peak_rss_kib": 423700,
+    "wall_ms": 565
+  },
+  "Coverage.RecRoots": {
+    "peak_rss_kib": 278028,
+    "wall_ms": 518
+  },
+  "Coverage.Recur": {
+    "peak_rss_kib": 557256,
+    "wall_ms": 749
+  },
+  "Coverage.Syntax": {
+    "peak_rss_kib": 408832,
+    "wall_ms": 531
+  },
+  "Coverage.Types": {
+    "peak_rss_kib": 554296,
+    "wall_ms": 564
+  },
+  "HigherOrder.Combinators": {
+    "peak_rss_kib": 410508,
+    "wall_ms": 519
+  },
+  "HigherOrder.Main": {
+    "peak_rss_kib": 409896,
+    "wall_ms": 517
+  },
+  "LanguageTwelve.Main": {
+    "peak_rss_kib": 277636,
+    "wall_ms": 516
+  },
+  "LexLeanExample.Atlas": {
+    "peak_rss_kib": 1574200,
+    "wall_ms": 4830
+  },
+  "LexLeanExample.Blocks": {
+    "peak_rss_kib": 1952252,
+    "wall_ms": 12161
+  },
+  "LexLeanExample.Category": {
+    "peak_rss_kib": 1348020,
+    "wall_ms": 1845
+  },
+  "LexLeanExample.Census": {
+    "peak_rss_kib": 7887644,
+    "wall_ms": 1088333
+  },
+  "LexLeanExample.CensusCert0": {
+    "peak_rss_kib": 2133444,
+    "wall_ms": 20849
+  },
+  "LexLeanExample.CensusCert10": {
+    "peak_rss_kib": 15590960,
+    "wall_ms": 114639
+  },
+  "LexLeanExample.CensusCert11": {
+    "peak_rss_kib": 12093836,
+    "wall_ms": 78270
+  },
+  "LexLeanExample.CensusCert12": {
+    "peak_rss_kib": 2149424,
+    "wall_ms": 6983
+  },
+  "LexLeanExample.CensusCert13": {
+    "peak_rss_kib": 2147692,
+    "wall_ms": 6948
+  },
+  "LexLeanExample.CensusCert14": {
+    "peak_rss_kib": 2157876,
+    "wall_ms": 6996
+  },
+  "LexLeanExample.CensusCert15": {
+    "peak_rss_kib": 1858760,
+    "wall_ms": 4842
+  },
+  "LexLeanExample.CensusCert4": {
+    "peak_rss_kib": 15693400,
+    "wall_ms": 1307970
+  },
+  "LexLeanExample.CensusCert5": {
+    "peak_rss_kib": 8578132,
+    "wall_ms": 53513
+  },
+  "LexLeanExample.CensusCert6": {
+    "peak_rss_kib": 2188352,
+    "wall_ms": 6779
+  },
+  "LexLeanExample.CensusCert7": {
+    "peak_rss_kib": 1437420,
+    "wall_ms": 1545
+  },
+  "LexLeanExample.CensusCert70": {
+    "peak_rss_kib": 4708588,
+    "wall_ms": 23829
+  },
+  "LexLeanExample.CensusCert71": {
+    "peak_rss_kib": 4639164,
+    "wall_ms": 22974
+  },
+  "LexLeanExample.CensusCert72": {
+    "peak_rss_kib": 3606848,
+    "wall_ms": 15554
+  },
+  "LexLeanExample.CensusCert73": {
+    "peak_rss_kib": 3871060,
+    "wall_ms": 18113
+  },
+  "LexLeanExample.CensusCert74": {
+    "peak_rss_kib": 1505392,
+    "wall_ms": 1992
+  },
+  "LexLeanExample.CensusCert75": {
+    "peak_rss_kib": 1505492,
+    "wall_ms": 1991
+  },
+  "LexLeanExample.CensusCert76": {
+    "peak_rss_kib": 4454784,
+    "wall_ms": 21873
+  },
+  "LexLeanExample.CensusCert77": {
+    "peak_rss_kib": 4882700,
+    "wall_ms": 24736
+  },
+  "LexLeanExample.CensusCert78": {
+    "peak_rss_kib": 5290328,
+    "wall_ms": 26577
+  },
+  "LexLeanExample.CensusCert79": {
+    "peak_rss_kib": 5826884,
+    "wall_ms": 30209
+  },
+  "LexLeanExample.CensusCert8": {
+    "peak_rss_kib": 13182704,
+    "wall_ms": 81331
+  },
+  "LexLeanExample.CensusCert9": {
+    "peak_rss_kib": 2204236,
+    "wall_ms": 6840
+  },
+  "LexLeanExample.CensusClosure": {
+    "peak_rss_kib": 1433748,
+    "wall_ms": 3551
+  },
+  "LexLeanExample.CensusComplete": {
+    "peak_rss_kib": 1446352,
+    "wall_ms": 1776
+  },
+  "LexLeanExample.Closure": {
+    "peak_rss_kib": 15574348,
+    "wall_ms": 182401
+  },
+  "LexLeanExample.ClosureGauge": {
+    "peak_rss_kib": 1530912,
+    "wall_ms": 5323
+  },
+  "LexLeanExample.ClosureOrbit": {
+    "peak_rss_kib": 15668260,
+    "wall_ms": 135752
+  },
+  "LexLeanExample.ClosureOrbitCount": {
+    "peak_rss_kib": 1423552,
+    "wall_ms": 1416
+  },
+  "LexLeanExample.ClosureOrbitTransport": {
+    "peak_rss_kib": 2503616,
+    "wall_ms": 8260
+  },
+  "LexLeanExample.ClosurePairCert0": {
+    "peak_rss_kib": 13084224,
+    "wall_ms": 83487
+  },
+  "LexLeanExample.ClosurePairCert1": {
+    "peak_rss_kib": 13041372,
+    "wall_ms": 83208
+  },
+  "LexLeanExample.ClosurePairCert10": {
+    "peak_rss_kib": 12583488,
+    "wall_ms": 78434
+  },
+  "LexLeanExample.ClosurePairCert11": {
+    "peak_rss_kib": 12533480,
+    "wall_ms": 78965
+  },
+  "LexLeanExample.ClosurePairCert12": {
+    "peak_rss_kib": 12483364,
+    "wall_ms": 79260
+  },
+  "LexLeanExample.ClosurePairCert13": {
+    "peak_rss_kib": 12437136,
+    "wall_ms": 77705
+  },
+  "LexLeanExample.ClosurePairCert14": {
+    "peak_rss_kib": 12387056,
+    "wall_ms": 77190
+  },
+  "LexLeanExample.ClosurePairCert15": {
+    "peak_rss_kib": 11214600,
+    "wall_ms": 69306
+  },
+  "LexLeanExample.ClosurePairCert2": {
+    "peak_rss_kib": 12995284,
+    "wall_ms": 82073
+  },
+  "LexLeanExample.ClosurePairCert3": {
+    "peak_rss_kib": 12938820,
+    "wall_ms": 82049
+  },
+  "LexLeanExample.ClosurePairCert4": {
+    "peak_rss_kib": 12882420,
+    "wall_ms": 81050
+  },
+  "LexLeanExample.ClosurePairCert5": {
+    "peak_rss_kib": 12834448,
+    "wall_ms": 79902
+  },
+  "LexLeanExample.ClosurePairCert6": {
+    "peak_rss_kib": 12786320,
+    "wall_ms": 80551
+  },
+  "LexLeanExample.ClosurePairCert7": {
+    "peak_rss_kib": 12738120,
+    "wall_ms": 79746
+  },
+  "LexLeanExample.ClosurePairCert8": {
+    "peak_rss_kib": 12687788,
+    "wall_ms": 78756
+  },
+  "LexLeanExample.ClosurePairCert9": {
+    "peak_rss_kib": 12631484,
+    "wall_ms": 79311
+  },
+  "LexLeanExample.ClosurePairComplete": {
+    "peak_rss_kib": 1470356,
+    "wall_ms": 1597
+  },
+  "LexLeanExample.ClosurePairs": {
+    "peak_rss_kib": 1446684,
+    "wall_ms": 4262
+  },
+  "LexLeanExample.Functor": {
+    "peak_rss_kib": 1413568,
+    "wall_ms": 2187
+  },
+  "LexLeanExample.Glue": {
+    "peak_rss_kib": 1411436,
+    "wall_ms": 2189
+  },
+  "LexLeanExample.Group": {
+    "peak_rss_kib": 3986392,
+    "wall_ms": 228987
+  },
+  "LexLeanExample.GroupSeries": {
+    "peak_rss_kib": 1837768,
+    "wall_ms": 22666
+  },
+  "LexLeanExample.Main": {
+    "peak_rss_kib": 407360,
+    "wall_ms": 530
+  },
+  "LexLeanExample.Parameters": {
+    "peak_rss_kib": 1407920,
+    "wall_ms": 1448
+  },
+  "LexLeanExample.Places": {
+    "peak_rss_kib": 3088332,
+    "wall_ms": 15342
+  },
+  "LexLeanExample.Prelude.Algebra": {
+    "peak_rss_kib": 1407688,
+    "wall_ms": 1492
+  },
+  "LexLeanExample.Prelude.Bitset": {
+    "peak_rss_kib": 1486936,
+    "wall_ms": 3225
+  },
+  "LexLeanExample.Prelude.Linear": {
+    "peak_rss_kib": 1410012,
+    "wall_ms": 1575
+  },
+  "LexLeanExample.Prelude.NumInstances": {
+    "peak_rss_kib": 1409040,
+    "wall_ms": 1439
+  },
+  "LexLeanExample.Prelude.Perm": {
+    "peak_rss_kib": 1410604,
+    "wall_ms": 1822
+  },
+  "LexLeanExample.Prelude.RingLemmas": {
+    "peak_rss_kib": 1410644,
+    "wall_ms": 1638
+  },
+  "LexLeanExample.Roots": {
+    "peak_rss_kib": 3000780,
+    "wall_ms": 34029
+  },
+  "LexLeanExample.Scales": {
+    "peak_rss_kib": 3251060,
+    "wall_ms": 211687
+  },
+  "LexLeanTarget.BudgetOracle": {
+    "peak_rss_kib": 538204,
+    "wall_ms": 1534
+  },
+  "LexLeanTarget.Certification": {
+    "peak_rss_kib": 541776,
+    "wall_ms": 1408
+  },
+  "LexLeanTarget.Gnaf": {
+    "peak_rss_kib": 539832,
+    "wall_ms": 2211
+  },
+  "LexLeanTarget.GnafCertificates": {
+    "peak_rss_kib": 755912,
+    "wall_ms": 28444
+  },
+  "LexLeanTarget.GnafFixtures": {
+    "peak_rss_kib": 1023704,
+    "wall_ms": 24593
+  },
+  "LexLeanTarget.GradeOracle": {
+    "peak_rss_kib": 1403096,
+    "wall_ms": 18856
+  },
+  "LexLeanTarget.Main": {
+    "peak_rss_kib": 560964,
+    "wall_ms": 543
+  },
+  "LexLeanTarget.PlannerOracle": {
+    "peak_rss_kib": 549144,
+    "wall_ms": 2338
+  },
+  "LexLeanTarget.ReasoningFixtures": {
+    "peak_rss_kib": 1984904,
+    "wall_ms": 38076
+  },
+  "LexLeanTarget.ReasoningOracle": {
+    "peak_rss_kib": 734264,
+    "wall_ms": 7267
+  },
+  "LexLeanTarget.RustSemantics": {
+    "peak_rss_kib": 540744,
+    "wall_ms": 1478
+  },
+  "LexLeanTarget.RustSyntax": {
+    "peak_rss_kib": 541856,
+    "wall_ms": 1018
+  },
+  "LexLeanTarget.ScreeningOracle": {
+    "peak_rss_kib": 535972,
+    "wall_ms": 1935
+  },
+  "LexLeanTarget.TargetFixtures": {
+    "peak_rss_kib": 883856,
+    "wall_ms": 11976
+  },
+  "LexLeanTarget.TargetOracle": {
+    "peak_rss_kib": 535928,
+    "wall_ms": 539
+  },
+  "LexLeanTarget.TargetSemantics": {
+    "peak_rss_kib": 580308,
+    "wall_ms": 17755
+  },
+  "LexLeanTarget.TargetSyntax": {
+    "peak_rss_kib": 537964,
+    "wall_ms": 789
+  },
+  "ListInduction.Main": {
+    "peak_rss_kib": 279272,
+    "wall_ms": 516
+  },
+  "Models.Flows": {
+    "peak_rss_kib": 558140,
+    "wall_ms": 979
+  },
+  "Models.Glyphs": {
+    "peak_rss_kib": 426848,
+    "wall_ms": 583
+  },
+  "Models.Ledger": {
+    "peak_rss_kib": 557032,
+    "wall_ms": 972
+  },
+  "Models.Main": {
+    "peak_rss_kib": 570352,
+    "wall_ms": 782
+  },
+  "Models.Pipeline": {
+    "peak_rss_kib": 632640,
+    "wall_ms": 2164
+  },
+  "Models.Policy": {
+    "peak_rss_kib": 414740,
+    "wall_ms": 518
+  },
+  "Models.Recognizer": {
+    "peak_rss_kib": 685196,
+    "wall_ms": 3974
+  },
+  "Models.Session": {
+    "peak_rss_kib": 556872,
+    "wall_ms": 686
+  },
+  "Models.Triage": {
+    "peak_rss_kib": 556688,
+    "wall_ms": 950
+  },
+  "PeanoArithmetic.Addition": {
+    "peak_rss_kib": 407660,
+    "wall_ms": 529
+  },
+  "PeanoArithmetic.Divisibility": {
+    "peak_rss_kib": 408176,
+    "wall_ms": 516
+  },
+  "PeanoArithmetic.Doubling": {
+    "peak_rss_kib": 409824,
+    "wall_ms": 530
+  },
+  "PeanoArithmetic.Main": {
+    "peak_rss_kib": 408220,
+    "wall_ms": 528
+  },
+  "PeanoArithmetic.Order": {
+    "peak_rss_kib": 407816,
+    "wall_ms": 529
+  },
+  "Production.Kernel": {
+    "peak_rss_kib": 554328,
+    "wall_ms": 562
+  },
+  "Production.Main": {
+    "peak_rss_kib": 555192,
+    "wall_ms": 542
+  },
+  "PropositionalLogic.Main": {
+    "peak_rss_kib": 278060,
+    "wall_ms": 517
+  },
+  "Reasoning.Budget": {
+    "peak_rss_kib": 557640,
+    "wall_ms": 1444
+  },
+  "Reasoning.Clinic": {
+    "peak_rss_kib": 743660,
+    "wall_ms": 7265
+  },
+  "Reasoning.Main": {
+    "peak_rss_kib": 1463228,
+    "wall_ms": 19298
+  },
+  "Reasoning.Planner": {
+    "peak_rss_kib": 560760,
+    "wall_ms": 2347
+  },
+  "Reasoning.Screening": {
+    "peak_rss_kib": 555252,
+    "wall_ms": 1910
+  },
+  "Recursion.Main": {
+    "peak_rss_kib": 557232,
+    "wall_ms": 795
+  },
+  "Recursion.Syntax": {
+    "peak_rss_kib": 409044,
+    "wall_ms": 529
+  },
+  "RecursiveData.Main": {
+    "peak_rss_kib": 411100,
+    "wall_ms": 528
+  },
+  "RecursiveData.Types": {
+    "peak_rss_kib": 554180,
+    "wall_ms": 539
+  },
+  "SemanticFixture.KernelReductionDefinitions": {
+    "peak_rss_kib": 421900,
+    "wall_ms": 530
+  },
+  "SemanticFixture.KernelReductionProofs": {
+    "peak_rss_kib": 277584,
+    "wall_ms": 516
+  },
+  "SemanticFixture.Main": {
+    "peak_rss_kib": 412196,
+    "wall_ms": 528
+  },
+  "SemanticFixture.Portable": {
+    "peak_rss_kib": 427632,
+    "wall_ms": 572
+  },
+  "SemanticFixture.PortableRecursion": {
+    "peak_rss_kib": 410072,
+    "wall_ms": 516
+  },
+  "SemanticFixture.Support": {
+    "peak_rss_kib": 410976,
+    "wall_ms": 518
+  },
+  "SemanticFixture.VariantInstances": {
+    "peak_rss_kib": 277516,
+    "wall_ms": 532
+  },
+  "SemanticFixture.VariantLogic": {
+    "peak_rss_kib": 277828,
+    "wall_ms": 516
+  },
+  "SemanticFixture.VariantProofs": {
+    "peak_rss_kib": 411448,
+    "wall_ms": 529
+  },
+  "SemanticFixture.VariantTerms": {
+    "peak_rss_kib": 408852,
+    "wall_ms": 530
+  },
+  "SemanticFixture.VariantTypes": {
+    "peak_rss_kib": 410520,
+    "wall_ms": 529
+  }
+}

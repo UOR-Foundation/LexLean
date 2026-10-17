@@ -88,17 +88,19 @@ Feature: repository
     And the Justfile release recipe depends on vv and runs `cargo xtask release-check`
 
   @RP-13 @build
-  Scenario: The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice.
-    Given the Justfile test and bdd recipes and the test list of cargo test --workspace --all-features
+  Scenario: The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part.
+    Given the Justfile test and bdd recipes, .github/bdd-parts.json, and the test list of cargo test --workspace --all-features
     When the test lists of the test recipe and of the bdd recipe are taken
     Then the two lists are disjoint and their union equals the workspace list
     And no test of repo-conformance is in the test recipe's list and every conformance_<id> test is in the bdd recipe's list exactly once
     And a test recipe that includes repo-conformance, or a bdd recipe that runs fewer targets, fails the inventory
+    And the test lists of the parts of the bdd plan, each taken with the part's harness filters, are disjoint and their union equals the bdd recipe's list, so that a test two parts run or a test no part runs fails the inventory
 
   @RP-14 @build
-  Scenario: The normative CI job runs every recipe of just vv exactly once, in two parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner at the default verifier width 1, with no cache, path filter, or skipped recipe, and each leg uploads its CI evidence.
-    Given .github/workflows/ci.yml
-    When the runner, the environment, and the job steps are read
-    Then the job runs on ubuntu-24.04 with the verifier width left at its default and the 360-minute limit
-    And its two legs run the recipes of vv, each exactly once, in the order of vv within a leg, and the leg that runs examples asserts that Atlas verified
-    And the vv job has no path filter, no cache action, no condition on a recipe, and each leg uploads its ci-evidence under a name of its own
+  Scenario: The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence.
+    Given .github/workflows/ci.yml, .github/verify-shards.json, and .github/bdd-parts.json
+    When the runner, the environment, the job steps, and the plan are read
+    Then every gate job runs on ubuntu-24.04 with the 360-minute limit, and each verification profile variable is set once per job, from the leg's matrix row or as the examples profile on an Atlas job
+    And the leg that runs examples names width 2, a 12 GiB budget, and the committed hints, which the verifier parses, verifies every example but uor-atlas, and every other leg names no profile and no example part, and the legs run the recipes of vv, each exactly once but bdd, which runs once per part of the bdd plan on the one row that names the part, in the order of vv within a leg, through the one gate command
+    And the Atlas jobs run every shard of the plan exactly once, each after the jobs of the shards it needs, from the one executable the prefix job built, the join asserts that Atlas verified, and the plan elaborates and replays every Atlas module exactly once with every import elaborated by the shard or by one it needs
+    And the vv job has no path filter, no cache action, and no condition on a recipe, the Atlas jobs wait only for a pull request to leave draft, and each job uploads its ci-evidence under a name of its own

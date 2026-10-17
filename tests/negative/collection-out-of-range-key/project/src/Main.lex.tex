@@ -2,6 +2,11 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"element":{"kind":"uint8"},"elements":[{"kind":"integer","representation":"uint8","value":"256"},{"kind":"integer","representation":"uint8","value":"0"}],"kind":"set_literal"},"kind":"definition","name":"bytes","parameters":[],"result":{"element":{"kind":"uint8"},"kind":"set"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: bytes,
+  parameters: [],
+  result: (Set UInt8),
+  body: set_literal{element: UInt8, elements: [(256 : UInt8), (0 : UInt8)]}
+}
 \end{semanticmodule}
 \end{lexlean}

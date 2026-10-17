@@ -262,7 +262,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow}.\par
+\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Clinic.Triage.verdict ((\{ temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection \} : Reasoning.Clinic.Vitals)) with | Except.ok level => level | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -270,7 +270,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow}.\par
+\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match GatewayModel ((\{ temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection \} : Reasoning.Clinic.Vitals)) with | Except.ok level => level | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -278,7 +278,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Clinic.Triage ((\{ temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection \} : Reasoning.Clinic.Vitals)) with | Except.ok explained => (LexLeanRuntime.length ((explained).2) : Nat) | Except.error \_ => 0)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -286,7 +286,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(target : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Planner.Plan.verdict (target) with | Except.ok jugs => (jugs).1 | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{exact [propext]}.\par
@@ -294,7 +294,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(w : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Screening.Dose.verdict (w) with | Except.ok dose => dose | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -302,7 +302,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(temperature : Nat) (heartRate : Nat) (respiratoryRate : Nat) (whiteCells : Nat) (systolic : Nat) (infection : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow}.\par
+\noindent Production root for targets \texttt{rust-core}; admitted effects: \texttt{overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Grade.verdict ((\{ temperature := temperature, heartRate := heartRate, respiratoryRate := respiratoryRate, whiteCells := whiteCells, systolic := systolic, infection := infection \} : Reasoning.Clinic.Vitals)) with | Except.ok level => level | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -310,7 +310,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(w : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Screening.Screen.verdict (w) with | Except.ok dose => dose | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -318,7 +318,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(x : Nat)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
 \noindent Type: \texttt{Nat}.\par
 \noindent Definition: \texttt{(match Reasoning.Budget.Spend.verdict (Nat) ((x, x)) with | Except.ok left => left | Except.error \_ => 9)}.\par
 \noindent Axiom policy: \texttt{none}.\par

@@ -79,7 +79,7 @@ pub enum Adt0 {
 }
 
 pub fn f0(v0: Option<u64>, v1: Result<u64, bool>, v2: Adt0, v3: u64, v4: u64) -> (Option<u64>, (Result<u64, bool>, (Adt0, (Ordering, (Option<u64>, (Option<u64>, (u64, ()))))))) {
-    (v0, (v1, (v2.clone(), ({
+    (v0, (v1, (v2, ({
         let a4 = v3;
         let a5 = v4;
         compare(a4, a5)

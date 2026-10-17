@@ -179,6 +179,19 @@ pub struct ArtifactSource {
     pub path: String,
 }
 
+/// Language 1.2: one source package a project imports modules from (§10.5): a
+/// member project of the workspace, pinned in the lock by the digest of its
+/// manifest and source files. `kind` is `path` and nothing else.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePackage {
+    /// The package identifier, unique in the project.
+    pub package: String,
+    /// The version, for readers: the pin is the digest.
+    pub version: String,
+    /// The workspace-relative member directory.
+    pub path: String,
+}
+
 /// The validated project configuration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectConfig {
@@ -202,6 +215,8 @@ pub struct ProjectConfig {
     pub lexicon_sources: Vec<LexiconSource>,
     /// Language 1.2: model artifact sources, sorted by digest.
     pub artifact_sources: Vec<ArtifactSource>,
+    /// Language 1.2: source packages, sorted by package.
+    pub source_packages: Vec<SourcePackage>,
     /// The explicit resource policy.
     pub limits: Limits,
     /// The optional PDF provider.
@@ -225,6 +240,8 @@ struct RawProject {
     lexicon_sources: Vec<RawLexiconSource>,
     #[serde(default, rename = "artifact_source")]
     artifact_sources: Option<Vec<RawArtifactSource>>,
+    #[serde(default, rename = "source_package")]
+    source_packages: Option<Vec<RawSourcePackage>>,
     limits: Limits,
     pdf: Option<RawPdf>,
 }
@@ -249,6 +266,15 @@ struct RawArtifactSource {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct RawSourcePackage {
+    package: String,
+    version: String,
+    kind: String,
+    path: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawPdf {
     mode: String,
     program: String,
@@ -265,35 +291,44 @@ fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
 }
 
 /// The Lean roots this compiler ships or generates beside a project's own:
-/// the certificate library (`LexLeanPreservation`), the certificates and
-/// their audit (`LexLeanPreserve`, `LexLeanAudit`), the runtime and the model
-/// and collection helpers its generated modules open (`LexLeanRuntime`,
-/// `LexLeanCollections`, `LexLeanModels`, `LexLeanReasoning`, `LexLeanCore`), and what the
-/// extraction and the probes compile (`LexLeanExtract`, `LexLeanProbe`,
-/// `LexLeanIdentityProbe`, `LexLeanTokenProbe`).
-/// `LexLeanTarget`, the root of the calculus modules the library imports, is
-/// the one a project may take (the compiler's own project does), but not for
-/// a module with a production root: see [`SHIPPED_TARGET_ROOT`].
-pub const SHIPPED_ROOTS: [&str; 12] = [
+/// the certificates and their audit (`LexLeanPreserve`, `LexLeanAudit`), the
+/// namespaces of the runtime modules' collection, model, reasoning, and
+/// fold-law definitions (`LexLeanCollections`, `LexLeanModels`,
+/// `LexLeanReasoning`, `LexLeanLaws`),
+/// the native-module decoder (`LexLeanCore`), and what the extraction and the
+/// probes compile (`LexLeanExtract`, `LexLeanProbe`, `LexLeanIdentityProbe`,
+/// `LexLeanTokenProbe`). The roots of the shipped libraries themselves,
+/// [`LIBRARY_ROOTS`], are the three a project may take (the compiler's own
+/// project and the libraries' projects do), but not for a module with a
+/// production root.
+pub const SHIPPED_ROOTS: [&str; 11] = [
     "LexLeanAudit",
     "LexLeanCollections",
     "LexLeanCore",
     "LexLeanExtract",
     "LexLeanIdentityProbe",
+    "LexLeanLaws",
     "LexLeanModels",
-    "LexLeanPreservation",
     "LexLeanPreserve",
     "LexLeanProbe",
     "LexLeanReasoning",
-    "LexLeanRuntime",
     "LexLeanTokenProbe",
 ];
 
-/// The root of the calculus modules that the certificate library imports.
-/// A project may name its modules under it, but the certificates of a root
-/// of such a project would import its module as the library's: its modules
-/// have no production root.
-pub const SHIPPED_TARGET_ROOT: &str = "LexLeanTarget";
+/// The roots of the modules the certificates import: the calculus modules
+/// (`LexLeanTarget`), the proof library (`LexLeanPreservation`), and the
+/// runtime modules every generated language-1.2 module that uses the runtime
+/// imports (`LexLeanRuntime`). A project may name its modules under one,
+/// since each is itself a LexLean project the repository ships, but the
+/// certificates of a root of such a project would import its module as the
+/// library's: its modules have no production root.
+pub const LIBRARY_ROOTS: [&str; 3] = ["LexLeanPreservation", "LexLeanRuntime", "LexLeanTarget"];
+
+/// Whether `root` is one of the [`LIBRARY_ROOTS`].
+#[must_use]
+pub fn is_library_root(root: &str) -> bool {
+    LIBRARY_ROOTS.contains(&root)
+}
 
 /// Whether `root` is a module root a project may not take as the first
 /// segment of its `module_prefix`: the roots of the pinned toolchain's
@@ -318,7 +353,8 @@ pub fn is_reserved_module_root(root: &str) -> bool {
 }
 
 /// Is `text` a project-relative path: nonempty, `/`-separated, no leading
-/// separator, no `.` or `..` segments, no backslash, no NUL?
+/// separator, no `.` or `..` segments, no Windows drive-prefixed segments,
+/// no backslash, no NUL?
 #[must_use]
 pub fn is_project_relative(text: &str) -> bool {
     !text.is_empty()
@@ -326,9 +362,14 @@ pub fn is_project_relative(text: &str) -> bool {
         && !text.contains('\0')
         && !text.starts_with('/')
         && !text.ends_with('/')
-        && text
-            .split('/')
-            .all(|segment| !segment.is_empty() && segment != "." && segment != "..")
+        && text.split('/').all(|segment| {
+            // Even a drive-relative segment replaces a Windows join's root.
+            // Reject it on every host before any per-segment path walk.
+            !segment.is_empty()
+                && segment != "."
+                && segment != ".."
+                && !matches!(segment.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic())
+        })
 }
 
 /// Is one project-relative path equal to, inside, or containing the other?
@@ -347,6 +388,19 @@ pub fn is_project_name(text: &str) -> bool {
         && bytes[1..]
             .iter()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'-')
+}
+
+/// A source package version (§10.5): a reader's string of ASCII letters,
+/// digits, `.`, `+`, and `-`, beginning with a letter or digit, of at most 64
+/// characters. It is pinned in the lock, never interpreted.
+#[must_use]
+pub fn is_package_version(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    (1..=64).contains(&bytes.len())
+        && bytes[0].is_ascii_alphanumeric()
+        && bytes
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-'))
 }
 
 /// One `[A-Z][A-Za-z0-9_]*` Lean-name segment (§10.1).
@@ -778,6 +832,76 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
         }
     }
 
+    // Language 1.2 source packages: unique and strictly sorted by package,
+    // kind `path` alone, and a path that stays inside the workspace (§10.5).
+    let mut source_packages = Vec::new();
+    if let Some(raw_packages) = &raw.source_packages {
+        if raw.language != crate::LANGUAGE_1_2 {
+            diagnostics.push(config_error(
+                path,
+                format!(
+                    "source_package is a language-1.2 field; language {} has no source packages",
+                    raw.language
+                ),
+            ));
+        }
+        for raw_package in raw_packages {
+            if !is_project_name(&raw_package.package) {
+                diagnostics.push(config_error(
+                    path,
+                    format!(
+                        "source_package `{}` is not a valid package identifier",
+                        raw_package.package
+                    ),
+                ));
+            }
+            if !is_package_version(&raw_package.version) {
+                diagnostics.push(config_error(
+                    path,
+                    format!(
+                        "source_package `{}`: `{}` is not a valid version",
+                        raw_package.package, raw_package.version
+                    ),
+                ));
+            }
+            if raw_package.kind != "path" {
+                diagnostics.push(config_error(
+                    path,
+                    format!(
+                        "source_package `{}`: kind `{}` is not a source package kind; only `path` exists",
+                        raw_package.package, raw_package.kind
+                    ),
+                ));
+            }
+            if !is_project_relative(&raw_package.path) {
+                diagnostics.push(
+                    Diagnostic::new(
+                        code!("LLS8001"),
+                        format!(
+                            "source_package `{}`: path `{}` escapes the workspace; it must name a member directory relative to the workspace root",
+                            raw_package.package, raw_package.path
+                        ),
+                    )
+                    .with_span(Span::whole_file(path)),
+                );
+            }
+            source_packages.push(SourcePackage {
+                package: raw_package.package.clone(),
+                version: raw_package.version.clone(),
+                path: raw_package.path.clone(),
+            });
+        }
+        if !raw_packages
+            .windows(2)
+            .all(|pair| pair[0].package < pair[1].package)
+        {
+            diagnostics.push(config_error(
+                path,
+                "source_package tables must be unique and sorted by package",
+            ));
+        }
+    }
+
     // The optional PDF provider (§10.3, §19.7).
     let pdf = match &raw.pdf {
         None => None,
@@ -906,6 +1030,7 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
             lean_workspace: raw.lean_workspace,
             lexicon_sources: sources,
             artifact_sources,
+            source_packages,
             limits: raw.limits,
             pdf,
         })
@@ -1020,6 +1145,15 @@ impl ProjectConfig {
             ));
             out.push_str(&format!("path = {}\n", toml_string(&artifact.path)));
         }
+        // Written only when present, so a project without source packages
+        // keeps its canonical bytes and configuration digest.
+        for package in &self.source_packages {
+            out.push_str("\n[[source_package]]\n");
+            out.push_str(&format!("package = {}\n", toml_string(&package.package)));
+            out.push_str(&format!("version = {}\n", toml_string(&package.version)));
+            out.push_str("kind = \"path\"\n");
+            out.push_str(&format!("path = {}\n", toml_string(&package.path)));
+        }
         out.push_str("\n[limits]\n");
         for (name, value) in self.limits.rows() {
             out.push_str(&format!("{name} = {value}\n"));
@@ -1076,8 +1210,7 @@ mod reserved_root_tests {
             "LeanIR",
             "IO",
             "LexLeanPreserve",
-            "LexLeanPreservation",
-            "LexLeanRuntime",
+            "LexLeanCollections",
             "LexLeanAudit",
         ] {
             assert!(is_reserved_module_root(reserved), "{reserved}");
@@ -1086,6 +1219,8 @@ mod reserved_root_tests {
             "Production",
             "LexLeanExample",
             "LexLeanTarget",
+            "LexLeanPreservation",
+            "LexLeanRuntime",
             "LexLeanExamples",
             "Leanish",
             "Initial",
@@ -1096,7 +1231,8 @@ mod reserved_root_tests {
     }
 
     /// Every root of the shipped library, of the certificates, and of the
-    /// calculus modules is reserved, or is the one documented exception.
+    /// calculus modules is reserved, or is one of the two documented
+    /// exceptions.
     #[test]
     fn every_shipped_root_is_reserved() {
         let library = crate::production::preserve::library().expect("the shipped library");
@@ -1115,7 +1251,7 @@ mod reserved_root_tests {
         roots.insert("LexLeanTarget".to_owned());
         for root in roots {
             assert!(
-                is_reserved_module_root(&root) || root == super::SHIPPED_TARGET_ROOT,
+                is_reserved_module_root(&root) || super::is_library_root(&root),
                 "`{root}` is a root of the shipped library and may be a module prefix"
             );
         }

@@ -1,0 +1,3475 @@
+\begin{lexlean}{Compose}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{preservation.titles@1.0.0}
+\importmodule{RustSound}
+\importmodule{Validate}
+\title{Preservation library composition}
+\begin{coremodule}
+imports [Init, LexLeanPreservation.RustSound, LexLeanPreservation.Validate]
+
+abbrev LexLeanPreservation.Rust.Representable._sparseCasesOn_1.{u} : @79 := @493 {
+  all: [LexLeanPreservation.Rust.Representable._sparseCasesOn_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  sparse: {
+    arity: 12,
+    ind_name: LexLeanTarget.TargetSyntax.Value,
+    interesting_ctors: [
+      LexLeanTarget.TargetSyntax.Value.nat,
+      LexLeanTarget.TargetSyntax.Value.int,
+      LexLeanTarget.TargetSyntax.Value.some,
+      LexLeanTarget.TargetSyntax.Value.ok,
+      LexLeanTarget.TargetSyntax.Value.error,
+      LexLeanTarget.TargetSyntax.Value.list,
+      LexLeanTarget.TargetSyntax.Value.pair,
+      LexLeanTarget.TargetSyntax.Value.adt,
+      LexLeanTarget.TargetSyntax.Value.closure
+    ],
+    major_pos: 1
+  },
+  tags: [sparse_cases_on],
+  transparency: reducible
+}
+abbrev LexLeanPreservation.Rust.Representable.match_1.{u_1} : @521 := @576 {
+  all: [LexLeanPreservation.Rust.Representable.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 2, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [[9, [0, 1, 2, 3, 4, 5, 6, 7, 8]]],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanPreservation.Rust.Representable._f : @585 := @678 {
+  all: [LexLeanPreservation.Rust.Representable._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+abbrev LexLeanPreservation.Rust.RepresentableL.match_1.{u_1} : @696 := @714 {
+  all: [LexLeanPreservation.Rust.RepresentableL.match_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 2, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 0,
+    overlaps: [],
+    u_elim_pos: 0
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+abbrev LexLeanPreservation.Rust.RepresentableL._f : @720 := @737 {
+  all: [LexLeanPreservation.Rust.RepresentableL._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+definition LexLeanPreservation.Rust.Representable : @738 := @747 {
+  all: [LexLeanPreservation.Rust.Representable, LexLeanPreservation.Rust.RepresentableL],
+  class: false,
+  eqn_info: {
+    type: 738,
+    declarations: [LexLeanPreservation.Rust.Representable, LexLeanPreservation.Rust.RepresentableL],
+    levels: [],
+    num_fixed: 0,
+    perms: [[[]], [[]]],
+    rec_arg_pos: 0,
+    rev_deps: [[[]], [[]]],
+    value: 784
+  },
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 12},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanPreservation.Rust.RepresentableL : @785 := @792 {
+  all: [LexLeanPreservation.Rust.Representable, LexLeanPreservation.Rust.RepresentableL],
+  class: false,
+  eqn_info: {
+    type: 785,
+    declarations: [LexLeanPreservation.Rust.Representable, LexLeanPreservation.Rust.RepresentableL],
+    levels: [],
+    num_fixed: 0,
+    perms: [[[]], [[]]],
+    rec_arg_pos: 0,
+    rev_deps: [[[]], [[]]],
+    value: 802
+  },
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 12},
+  tags: [recursive],
+  transparency: semireducible
+}
+definition LexLeanPreservation.Rust.Representable._sunfold : @738 := @829 {
+  all: [LexLeanPreservation.Rust.Representable._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 13},
+  transparency: semireducible
+}
+definition LexLeanPreservation.Rust.RepresentableL._unsafe_rec : @785 := @839 {
+  all: [
+    LexLeanPreservation.Rust.Representable._unsafe_rec,
+    LexLeanPreservation.Rust.RepresentableL._unsafe_rec
+  ],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanPreservation.Rust.Representable._unsafe_rec : @738 := @856 {
+  all: [
+    LexLeanPreservation.Rust.Representable._unsafe_rec,
+    LexLeanPreservation.Rust.RepresentableL._unsafe_rec
+  ],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: opaque{},
+  safety: partial,
+  transparency: semireducible
+}
+definition LexLeanPreservation.Rust.RepresentableL._sunfold : @785 := @864 {
+  all: [LexLeanPreservation.Rust.RepresentableL._sunfold],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: regular{height: 13},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.compose : @974 := @1209 {
+  all: [LexLeanPreservation.Rust.compose],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.rel_ne_stuck : @1216 := @1324 {
+  all: [LexLeanPreservation.Rust.rel_ne_stuck],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.repL_cons : @1332 := @1343 {
+  all: [LexLeanPreservation.Rust.repL_cons],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.repL_nil : @1344 := @1345 {
+  all: [LexLeanPreservation.Rust.repL_nil],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.splitter.{u_1} : @1357 := @1358 {
+  all: [
+    "_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.splitter"
+  ],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: inline,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.runItem_abort_infallible : @1376 := @2465 {
+  all: [LexLeanPreservation.Rust.runItem_abort_infallible],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wtAll_cons : @2492 := @2513 {
+  all: [LexLeanPreservation.Rust.wtAll_cons],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev LexLeanPreservation.Rust.wtAll_map.match_1_1 : @2532 := @2547 {
+  all: [LexLeanPreservation.Rust.wtAll_map.match_1_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 2, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: []
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+theorem LexLeanPreservation.Rust.wtAll_nil : @2556 := @2561 {
+  all: [LexLeanPreservation.Rust.wtAll_nil],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev LexLeanPreservation.Rust.wtAll_map._f : @2597 := @2672 {
+  all: [LexLeanPreservation.Rust.wtAll_map._f],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  reducibility: abbrev{},
+  transparency: reducible
+}
+theorem LexLeanPreservation.Rust.wtAll_map : @2686 := @2707 {
+  all: [LexLeanPreservation.Rust.wtAll_map],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  tags: [recursive],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_adt : @2741 := @2785 {
+  all: [LexLeanPreservation.Rust.wt_adt],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_bool : @2795 := @2801 {
+  all: [LexLeanPreservation.Rust.wt_bool],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_bytes : @2808 := @2812 {
+  all: [LexLeanPreservation.Rust.wt_bytes],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev LexLeanPreservation.Rust.wt_encExcept.match_1_1 : @2836 := @2855 {
+  all: [LexLeanPreservation.Rust.wt_encExcept.match_1_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [
+      {fields: 1, overlaps: 0, unit_thunk: false},
+      {fields: 1, overlaps: 0, unit_thunk: false}
+    ],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 2,
+    overlaps: []
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+theorem LexLeanPreservation.Rust.wt_encExcept : @2896 := @2981 {
+  all: [LexLeanPreservation.Rust.wt_encExcept],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_list : @2996 := @3004 {
+  all: [LexLeanPreservation.Rust.wt_list],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_encList : @3019 := @3043 {
+  all: [LexLeanPreservation.Rust.wt_encList],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev LexLeanPreservation.Rust.wt_encOption.match_1_1 : @3059 := @3073 {
+  all: [LexLeanPreservation.Rust.wt_encOption.match_1_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: []
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+theorem LexLeanPreservation.Rust.wt_encOption : @3090 := @3143 {
+  all: [LexLeanPreservation.Rust.wt_encOption],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_encOrdering : @3153 := @3609 {
+  all: [LexLeanPreservation.Rust.wt_encOrdering],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_encPair : @3637 := @3687 {
+  all: [LexLeanPreservation.Rust.wt_encPair],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_encUnit : @3695 := @3707 {
+  all: [LexLeanPreservation.Rust.wt_encUnit],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_errorV : @3716 := @3725 {
+  all: [LexLeanPreservation.Rust.wt_errorV],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_i16 : @3733 := @3737 {
+  all: [LexLeanPreservation.Rust.wt_i16],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_i32 : @3745 := @3749 {
+  all: [LexLeanPreservation.Rust.wt_i32],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_i64 : @3757 := @3761 {
+  all: [LexLeanPreservation.Rust.wt_i64],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_i8 : @3769 := @3773 {
+  all: [LexLeanPreservation.Rust.wt_i8],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_int : @3780 := @3784 {
+  all: [LexLeanPreservation.Rust.wt_int],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_listEnc : @3807 := @3864 {
+  all: [LexLeanPreservation.Rust.wt_listEnc],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_nat : @3871 := @3875 {
+  all: [LexLeanPreservation.Rust.wt_nat],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_noneV : @3882 := @2561 {
+  all: [LexLeanPreservation.Rust.wt_noneV],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_okV : @3892 := @3901 {
+  all: [LexLeanPreservation.Rust.wt_okV],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+abbrev LexLeanPreservation.Rust.wt_optEnc.match_1_1 : @3905 := @3912 {
+  all: [LexLeanPreservation.Rust.wt_optEnc.match_1_1],
+  class: false,
+  generated: false,
+  inline: inline,
+  matcher: {
+    alts: [{fields: 0, overlaps: 0, unit_thunk: true}, {fields: 1, overlaps: 0, unit_thunk: false}],
+    discrs: [[]],
+    num_discrs: 1,
+    num_params: 1,
+    overlaps: []
+  },
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: implicit-reducible
+}
+theorem LexLeanPreservation.Rust.wt_someV : @3922 := @3930 {
+  all: [LexLeanPreservation.Rust.wt_someV],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_optEnc : @3953 := @4036 {
+  all: [LexLeanPreservation.Rust.wt_optEnc],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_ordering : @4042 := @4046 {
+  all: [LexLeanPreservation.Rust.wt_ordering],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_pairV : @4065 := @4084 {
+  all: [LexLeanPreservation.Rust.wt_pairV],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_string : @4090 := @4094 {
+  all: [LexLeanPreservation.Rust.wt_string],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_u16 : @4102 := @4106 {
+  all: [LexLeanPreservation.Rust.wt_u16],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_u32 : @4114 := @4118 {
+  all: [LexLeanPreservation.Rust.wt_u32],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_u64 : @4126 := @4130 {
+  all: [LexLeanPreservation.Rust.wt_u64],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_u8 : @4138 := @4142 {
+  all: [LexLeanPreservation.Rust.wt_u8],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wt_unitValue : @4150 := @4153 {
+  all: [LexLeanPreservation.Rust.wt_unitValue],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wtl_cons : @4170 := @4186 {
+  all: [LexLeanPreservation.Rust.wtl_cons],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.Rust.wtl_nil : @4195 := @4153 {
+  all: [LexLeanPreservation.Rust.wtl_nil],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encExcept.eq_1 : @4211 := @4218 {
+  all: [LexLeanPreservation.encExcept.eq_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encExcept.eq_2 : @4227 := @4233 {
+  all: [LexLeanPreservation.encExcept.eq_2],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encOption.eq_1 : @4241 := @4244 {
+  all: [LexLeanPreservation.encOption.eq_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encOption.eq_2 : @4255 := @4259 {
+  all: [LexLeanPreservation.encOption.eq_2],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encPair.eq_1 : @4283 := @4289 {
+  all: [LexLeanPreservation.encPair.eq_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanPreservation.encUnit.eq_1 : @4292 := @4294 {
+  all: [LexLeanPreservation.encUnit.eq_1],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [backward_defeq],
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.eq_1.{u_1} : @4322 := @4331 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.eq_1"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.eq_2.{u_1} : @4346 := @4354 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.eq_2"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.splitter.{u_1} : @4360 := @4307 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encExcept.match_1.splitter"],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: inline,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.eq_1.{u_1} : @4381 := @4387 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.eq_1"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.eq_2.{u_1} : @4402 := @4409 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.eq_2"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev _private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.splitter.{u_1} : @4412 := @4370 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanPreservation.encOption.match_1.splitter"],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: inline,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_1.{u_1} : @4444 := @4453 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_1"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_2.{u_1} : @4480 := @4488 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_2"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_3.{u_1} : @4511 := @4518 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_3"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_4.{u_1} : @4532 := @4539 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.eq_4"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+abbrev _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.splitter.{u_1} : @4546 := @4427 {
+  all: [
+    "_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_1.splitter"
+  ],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: inline,
+  policy: exact{axioms: []},
+  reducibility: abbrev{},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.eq_1.{u_1} : @4560 := @4565 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.eq_1"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+theorem _private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.eq_2.{u_1} : @4574 := @4579 {
+  all: ["_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.eq_2"],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
+
+@0 := LexLeanTarget.TargetSyntax.Value
+@2 := (t : @0) -> Sort u
+@3 := Nat
+@4 := #2
+@5 := LexLeanTarget.TargetSyntax.Value.nat
+@6 := #0
+@7 := @5 @6
+@8 := @4 @7
+@9 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#5 : @3) -> @8
+@10 := Int
+@11 := #3
+@12 := LexLeanTarget.TargetSyntax.Value.int
+@13 := @12 @6
+@14 := @11 @13
+@15 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#7 : @10) -> @14
+@16 := #4
+@17 := LexLeanTarget.TargetSyntax.Value.some
+@18 := @17 @6
+@19 := @16 @18
+@20 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#31 : @0) -> @19
+@21 := #5
+@22 := LexLeanTarget.TargetSyntax.Value.ok
+@23 := @22 @6
+@24 := @21 @23
+@25 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#33 : @0) -> @24
+@26 := #6
+@27 := LexLeanTarget.TargetSyntax.Value.error
+@28 := @27 @6
+@29 := @26 @28
+@30 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#35 : @0) -> @29
+@31 := List.{0}
+@32 := @31 @0
+@33 := #7
+@34 := LexLeanTarget.TargetSyntax.Value.list
+@35 := @34 @6
+@36 := @33 @35
+@37 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#37 : @32) -> @36
+@38 := #9
+@39 := LexLeanTarget.TargetSyntax.Value.pair
+@40 := #1
+@42 := @39 @40 @6
+@43 := @38 @42
+@45 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#42 : @0) ->
+  (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#44 : @0) -> @43
+@46 := #10
+@47 := LexLeanTarget.TargetSyntax.Value.adt
+@49 := @47 @40 @6
+@50 := @46 @49
+@52 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#46 : @3) ->
+  (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#48 : @32) -> @50
+@53 := #11
+@54 := LexLeanTarget.TargetSyntax.Value.closure
+@56 := @54 @40 @6
+@57 := @53 @56
+@59 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#53 : @3) ->
+  (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#55 : @32) -> @57
+@60 := Nat.hasNotBit
+@61 := 8323084
+@62 := @60 @61
+@63 := LexLeanTarget.TargetSyntax.Value.ctorIdx
+@65 := @62 (@63 @38)
+@66 := @53 @46
+@79 := {motive_1 : @2} ->
+  (t : @0) ->
+  ("nat" : @9) ->
+  ("int" : @15) ->
+  (some : @20) ->
+  (ok : @25) ->
+  (error : @30) ->
+  (list : @37) ->
+  (pair : @45) ->
+  (adt : @52) ->
+  (closure : @59) ->
+  (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @65) -> @66) -> @66
+@80 := LexLeanTarget.TargetSyntax.Value.rec.{u}
+@82 := @62 (@63 @6)
+@83 := proof(#12)
+@84 := @83 @40
+@86 := (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @82) -> @84) -> @84
+@88 := @80 (fun (t : @0) => @86)
+@89 := PUnit.{u}
+@91 := @88 (fun (t : @32) => @89)
+@92 := LexLeanTarget.TargetSyntax.Value.unit
+@96 := (h : @62 (@63 @92)) -> @53 @92
+@97 := Nat.ne_of_beq_eq_false
+@98 := Nat.land
+@99 := OfNat.ofNat.{0}
+@101 := @99 (annot [borrowed := bool true] @3)
+@102 := 1
+@103 := @101 @102
+@104 := instOfNatNat
+@105 := @104 @102
+@107 := @98 (@103 @105)
+@109 := Nat.shiftRight @61
+@113 := @97 (@107 (@109 0))
+@114 := @99 @3
+@116 := @114 @102 @105
+@117 := @113 @116
+@118 := proof(Eq.refl.{1})
+@119 := Bool
+@120 := proof(@118 @119)
+@121 := Bool.false
+@122 := proof(@120 @121)
+@126 := @91
+    (fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : @96) =>
+    @6 (@117 @122))
+@127 := LexLeanTarget.TargetSyntax.Value.bool
+@128 := @127 @6
+@160 := @126
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#3 : @119) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @128)) ->
+    @83 (@127 @40)) =>
+    @6 (@97 (@107 (@109 @102)) @116 @122))
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#5 : @3) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @7)) ->
+    @83 (@5 @40)) =>
+    @46 @40)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#7 : @10) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @13)) ->
+    @83 (@12 @40)) =>
+    @38 @40)
+@161 := UInt8
+@162 := LexLeanTarget.TargetSyntax.Value.u8
+@163 := @162 @6
+@178 := @160
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#9 : @161) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @163)) ->
+    @83 (@162 @40)) =>
+    @6 (@97 (@107 (@109 4)) @116 @122))
+@179 := UInt16
+@180 := LexLeanTarget.TargetSyntax.Value.u16
+@181 := @180 @6
+@196 := @178
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#11 : @179) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @181)) ->
+    @83 (@180 @40)) =>
+    @6 (@97 (@107 (@109 5)) @116 @122))
+@197 := UInt32
+@198 := LexLeanTarget.TargetSyntax.Value.u32
+@199 := @198 @6
+@214 := @196
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#13 : @197) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @199)) ->
+    @83 (@198 @40)) =>
+    @6 (@97 (@107 (@109 6)) @116 @122))
+@215 := UInt64
+@216 := LexLeanTarget.TargetSyntax.Value.u64
+@217 := @216 @6
+@232 := @214
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#15 : @215) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @217)) ->
+    @83 (@216 @40)) =>
+    @6 (@97 (@107 (@109 7)) @116 @122))
+@233 := Int8
+@234 := LexLeanTarget.TargetSyntax.Value.i8
+@235 := @234 @6
+@250 := @232
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#17 : @233) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @235)) ->
+    @83 (@234 @40)) =>
+    @6 (@97 (@107 (@109 8)) @116 @122))
+@251 := Int16
+@252 := LexLeanTarget.TargetSyntax.Value.i16
+@253 := @252 @6
+@268 := @250
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#19 : @251) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @253)) ->
+    @83 (@252 @40)) =>
+    @6 (@97 (@107 (@109 9)) @116 @122))
+@269 := Int32
+@270 := LexLeanTarget.TargetSyntax.Value.i32
+@271 := @270 @6
+@286 := @268
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#21 : @269) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @271)) ->
+    @83 (@270 @40)) =>
+    @6 (@97 (@107 (@109 10)) @116 @122))
+@287 := Int64
+@288 := LexLeanTarget.TargetSyntax.Value.i64
+@289 := @288 @6
+@304 := @286
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#23 : @287) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @289)) ->
+    @83 (@288 @40)) =>
+    @6 (@97 (@107 (@109 11)) @116 @122))
+@305 := String
+@306 := LexLeanTarget.TargetSyntax.Value.string
+@307 := @306 @6
+@309 := @62 (@63 @307)
+@310 := proof(@306 @40)
+@322 := @304
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#25 : @305) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @309) ->
+    @83 @310) =>
+    @6 (@97 (@107 (@109 12)) @116 @122))
+@323 := ByteArray
+@324 := LexLeanTarget.TargetSyntax.Value.bytes
+@325 := @324 @6
+@327 := @62 (@63 @325)
+@328 := proof(@324 @40)
+@340 := @322
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#27 : @323) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @327) ->
+    @83 @328) =>
+    @6 (@97 (@107 (@109 13)) @116 @122))
+@341 := LexLeanTarget.TargetSyntax.Order
+@342 := LexLeanTarget.TargetSyntax.Value.ordering
+@343 := @342 @6
+@358 := @340
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#29 : @341) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62 (@63 @343)) ->
+    @83 (@342 @40)) =>
+    @6 (@97 (@107 (@109 14)) @116 @122))
+@359 := LexLeanTarget.TargetSyntax.Value.none
+@372 := @358
+    (fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @62
+      (@63 @359)) ->
+    @53 @359) =>
+    @6 (@97 (@107 (@109 15)) @116 @122))
+@373 := proof(@17 @40)
+@375 := @62 (@63 @373)
+@376 := #13
+@377 := @17 @4
+@384 := @372
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#31 : @0) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#31 : @86) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @375) ->
+    @376 @377) =>
+    @38 @4)
+@385 := proof(@22 @40)
+@387 := @62 (@63 @385)
+@388 := proof(@22 @4)
+@390 := (h : @387) -> @376 @388
+@391 := #8
+@396 := @384
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#33 : @0) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#33 : @86) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : @390) => @391 @4)
+@399 := @62 (@63 (@27 @40))
+@400 := proof(@27 @4)
+@402 := (h : @399) -> @376 @400
+@403 := @33 @4
+@407 := @396
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#35 : @0) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#35 : @86) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : @402) => @403)
+@408 := proof(@34 @40)
+@410 := @62 (@63 @408)
+@411 := @34 @4
+@418 := @407
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#37 : @32) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#37 : @89) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @410) ->
+    @376 @411) =>
+    @26 @4)
+@420 := @62 (@63 @40)
+@421 := @376 @4
+@423 := (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @420) -> @421) ->
+  @421
+@424 := proof(#14)
+@425 := @424 @4
+@427 := (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @420) -> @425) ->
+  @425
+@429 := proof(proof(@39 @11) @4)
+@431 := @62 (@63 @429)
+@432 := #15
+@434 := proof(proof(@39 @16) @11)
+@444 := @418
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#42 : @0) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#44 : @0) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#42 : @423) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#44 : @427) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @431) ->
+    @432 @434) =>
+    @33 @16 @11)
+@446 := proof(proof(@47 @4) @40)
+@448 := @62 (@63 @446)
+@450 := proof(proof(@47 @11) @4)
+@459 := @444
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#46 : @3) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#48 : @32) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#48 : @89) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @448) ->
+    @424 @450) =>
+    @21 @11 @4)
+@463 := @62 (@63 (@54 @4 @40))
+@465 := proof(proof(@54 @11) @4)
+@474 := @459
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#53 : @3) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#55 : @32) =>
+    fun (x_ih._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx._hyg.#55 : @89) =>
+    fun (else._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#130 : (h : @463) ->
+    @424 @465) =>
+    @16 @11 @4)
+@475 := PUnit.unit.{u}
+@493 := fun {motive_1 : @2} =>
+  fun (t : @0) =>
+  fun ("nat" : @9) =>
+  fun ("int" : @15) =>
+  fun (some : @20) =>
+  fun (ok : @25) =>
+  fun (error : @30) =>
+  fun (list : @37) =>
+  fun (pair : @45) =>
+  fun (adt : @52) =>
+  fun (closure : @59) =>
+  @474
+    @475
+    (fun (head : @0) => fun (tail : @32) => fun (head_ih : @423) => fun (tail_ih : @89) => @475)
+    @38
+@494 := Sort u_1
+@495 := (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#9.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#20 : @0) ->
+  @494
+@496 := (n : @3) -> @8
+@497 := (i : @10) -> @14
+@498 := (v : @0) -> @19
+@499 := (v : @0) -> @24
+@500 := (v : @0) -> @29
+@501 := (vs : @32) -> @36
+@503 := (a : @0) -> (b : @0) -> @43
+@505 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#99 : @3) ->
+  (vs : @32) -> @50
+@507 := (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#110 : @3) ->
+  (vs : @32) -> @57
+@509 := (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#117 : @0) -> @53 @6
+@521 := (motive : @495) ->
+  (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#9.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#20 : @0) ->
+  (h_1 : @496) ->
+  (h_2 : @497) ->
+  (h_3 : @498) ->
+  (h_4 : @499) ->
+  (h_5 : @500) ->
+  (h_6 : @501) -> (h_7 : @503) -> (h_8 : @505) -> (h_9 : @507) -> (h_10 : @509) -> @66
+@535 := LexLeanPreservation.Rust.Representable._sparseCasesOn_1.{u_1}
+    (fun (x : @0) => @83 @6)
+    @46
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#5.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#131 : @3) =>
+    @46 @6)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#7.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#132 : @10) =>
+    @38 @6)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#31.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#133 : @0) =>
+    @391 @6)
+@536 := proof(@33 @6)
+@538 := @535
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#33.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#134 : @0) =>
+    @536)
+@539 := proof(@26 @6)
+@576 := fun (motive : @495) =>
+  fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#9.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#20 : @0) =>
+  fun (h_1 : @496) =>
+  fun (h_2 : @497) =>
+  fun (h_3 : @498) =>
+  fun (h_4 : @499) =>
+  fun (h_5 : @500) =>
+  fun (h_6 : @501) =>
+  fun (h_7 : @503) =>
+  fun (h_8 : @505) =>
+  fun (h_9 : @507) =>
+  fun (h_10 : @509) =>
+  @538
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#35.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#135 : @0) =>
+    @539)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#37.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#136 : @32) =>
+    @21 @6)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#42.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#137 : @0) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#44.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#138 : @0) =>
+    @21 @40 @6)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#139 : @3) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#48.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#140 : @32) =>
+    @16 @40 @6)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#141 : @3) =>
+    fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#55.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#142 : @32) =>
+    @11 @40 @6)
+    (fun (h._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#143 : @62 (@63 @46)) =>
+    @40 @53)
+@577 := LexLeanTarget.TargetSyntax.Value.below.{1}
+@578 := Sort 0
+@579 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) => @578
+@580 := @577 @579
+@581 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) => @578
+@582 := @580 @581
+@583 := @582 @6
+@585 := (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) -> (f : @583) -> @578
+@586 := LexLeanPreservation.Rust.Representable.match_1.{1}
+@590 := @586
+    (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#9.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#20 : @0) =>
+    (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @583) -> @578)
+    @40
+@591 := @582 @7
+@595 := LT.lt.{0} @3 instLTNat
+@596 := @595 @40
+@597 := 18446744073709551616
+@600 := @114 @597 (@104 @597)
+@604 := @590
+    (fun (n : @3) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @591) => @596 @600)
+@605 := @582 @13
+@606 := And
+@610 := LE.le.{0} @10 Int.instLEInt
+@614 := Neg.neg.{0} @10 Int.instNegInt
+@615 := @99 @10
+@616 := 9223372036854775808
+@617 := @615 @616
+@618 := instOfNat
+@622 := @610 (@614 (@617 (@618 @616)))
+@624 := @606 (@622 @40)
+@625 := @610 @40
+@626 := 9223372036854775807
+@629 := @615 @626 (@618 @626)
+@634 := @604
+    (fun (i : @10) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @605) => @624 (@625 @629))
+@635 := @582 @18
+@636 := proj PProd PProd.fst 0 @6
+@651 := @634
+    (fun (v : @0) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @635) => @636)
+    (fun (v : @0) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @582 @23) => @636)
+    (fun (v : @0) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @582 @28) => @636)
+    (fun (vs : @32) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @582 @35) => @636)
+@652 := @582 @42
+@657 := @606 (proj PProd PProd.fst 0 @636) (proj PProd PProd.fst 0 (proj PProd PProd.snd 1 @6))
+@671 := @651
+    (fun (a : @0) =>
+    fun (b : @0) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @652) => @657)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#99 : @3) =>
+    fun (vs : @32) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @582 @49) => @636)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#110 : @3) =>
+    fun (vs : @32) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @582 @56) => @636)
+@672 := proof(True)
+@678 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) =>
+  fun (f : @583) =>
+  @671
+    (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#117 : @0) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#182 : @583) => @672)
+    @6
+@679 := (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#144.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#155 : @32) ->
+  @494
+@680 := Unit
+@681 := List.nil.{0}
+@682 := @681 @0
+@684 := ("_" : @680) -> @4 @682
+@685 := List.cons.{0}
+@686 := @685 @0
+@688 := @686 @40 @6
+@691 := (v : @0) -> (vs : @32) -> @16 @688
+@692 := @11 @4
+@696 := (motive : @679) ->
+  (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#144.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#155 : @32) ->
+  (h_1 : @684) -> (h_2 : @691) -> @692
+@698 := List.casesOn.{u_1, 0} @0
+@699 := @16 @6
+@702 := @698 (fun (x : @32) => @699) @4
+@703 := Unit.unit
+@704 := @40 @703
+@705 := @702 @704
+@707 := @4 @40 @6
+@714 := fun (motive : @679) =>
+  fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#144.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#155 : @32) =>
+  fun (h_1 : @684) =>
+  fun (h_2 : @691) =>
+  @705
+    (fun (head._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#180 : @0) =>
+    fun (tail._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#181 : @32) => @707)
+@717 := LexLeanTarget.TargetSyntax.Value.below_1.{1} @579 @581
+@718 := @717 @6
+@720 := (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) -> (f : @718) -> @578
+@721 := LexLeanPreservation.Rust.RepresentableL.match_1.{1}
+@737 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) =>
+  fun (f : @718) =>
+  @721
+    (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#144.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#155 : @32) =>
+    (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#199 : @718) -> @578)
+    @40
+    (fun ("_" : @680) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#199 : @717 @682) => @672)
+    (fun (v : @0) =>
+    fun (vs : @32) =>
+    fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#199 : @717 @688) => @657)
+    @6
+@738 := (a._@._internal._hyg.#0 : @0) -> @578
+@742 := LexLeanTarget.TargetSyntax.Value.brecOn.{1} @579 @581 @6
+@743 := LexLeanPreservation.Rust.Representable._f
+@744 := @742 @743
+@745 := LexLeanPreservation.Rust.RepresentableL._f
+@747 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) => @744 @745
+@750 := @586
+    (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#9.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#20 : @0) =>
+    @578)
+    @6
+@752 := @595 @6 @600
+@754 := @750 (fun (n : @3) => @752)
+@759 := @606 (@622 @6) (@610 @6 @629)
+@761 := @754 (fun (i : @10) => @759)
+@762 := LexLeanPreservation.Rust.Representable
+@763 := @762 @6
+@764 := fun (v : @0) => @763
+@767 := @761 @764 @764 @764
+@768 := LexLeanPreservation.Rust.RepresentableL
+@769 := @768 @6
+@770 := fun (vs : @32) => @769
+@771 := @767 @770
+@772 := @762 @40
+@773 := @606 @772
+@774 := @773 @763
+@781 := @771
+    (fun (a : @0) => fun (b : @0) => @774)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#99 : @3) =>
+    @770)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#110 : @3) =>
+    @770)
+@782 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#117 : @0) => @672
+@784 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) => @781 @782
+@785 := (a._@._internal._hyg.#0 : @32) -> @578
+@792 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) =>
+  LexLeanTarget.TargetSyntax.Value.brecOn_1.{1} @579 @581 @6 @743 @745
+@795 := @721
+    (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx.#144.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#155 : @32) =>
+    @578)
+    @6
+@797 := @795 (fun ("_" : @680) => @672)
+@798 := @773 @769
+@802 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) =>
+  @797 (fun (v : @0) => fun (vs : @32) => @798)
+@808 := @750
+    (fun (n : @3) => annot [sunfoldMatchAlt := bool true] @752)
+    (fun (i : @10) => annot [sunfoldMatchAlt := bool true] @759)
+@810 := fun (v : @0) => annot [sunfoldMatchAlt := bool true] @763
+@813 := @808 @810 @810 @810
+@815 := fun (vs : @32) => annot [sunfoldMatchAlt := bool true] @769
+@824 := @813
+    @815
+    (fun (a : @0) => fun (b : @0) => annot [sunfoldMatchAlt := bool true] @774)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#99 : @3) =>
+    @815)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#110 : @3) =>
+    @815)
+@825 := annot [sunfoldMatchAlt := bool true] @672
+@829 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) =>
+  annot [sunfoldMatch := bool true]
+  (@824 (fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#117 : @0) => @825))
+@830 := LexLeanPreservation.Rust.Representable._unsafe_rec
+@832 := @606 (@830 @40)
+@834 := LexLeanPreservation.Rust.RepresentableL._unsafe_rec @6
+@839 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) =>
+  @797 (fun (v : @0) => fun (vs : @32) => @832 @834)
+@840 := @830 @6
+@841 := fun (v : @0) => @840
+@844 := @761 @841 @841 @841
+@845 := fun (vs : @32) => @834
+@856 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#9 : @0) =>
+  @844
+    @845
+    (fun (a : @0) => fun (b : @0) => @832 @840)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#46.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#99 : @3) =>
+    @845)
+    (fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#53.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#110 : @3) =>
+    @845)
+    @782
+@864 := fun (x._@.LexLeanPreservation.Compose.#1308098634._hygCtx._hyg.#144 : @32) =>
+  annot [sunfoldMatch := bool true]
+  (@795
+    (fun ("_" : @680) => @825)
+    (fun (v : @0) => fun (vs : @32) => annot [sunfoldMatchAlt := bool true] @798))
+@865 := LexLeanTarget.TargetSyntax.Program
+@866 := LexLeanPreservation.Rust.RCrate
+@867 := LexLeanPreservation.Rust.Flags
+@868 := LexLeanTarget.TargetSyntax.Function
+@869 := Prod.{0, 0}
+@871 := @869 @3 @0
+@872 := @31 @871
+@873 := LexLeanPreservation.Obs
+@880 := (n : @3) -> LexLeanPreservation.Rust.FunSem @38 @391 @33 @6 @26
+@881 := Eq.{1}
+@882 := Option.{0}
+@883 := @882 @868
+@884 := @881 @883
+@891 := LexLeanRuntime.index (@31 @868) @868 (LexLeanRuntime.instIndexableList @868)
+@892 := LexLeanTarget.TargetSyntax.Program.functions
+@896 := @884 (@891 (@892 @38) @26)
+@897 := Option.some.{0}
+@898 := @897 @868
+@900 := @896 (@898 @21)
+@901 := LexLeanPreservation.Rust.WTL
+@908 := @901 @46 @38 @391 @21 (LexLeanTarget.TargetSyntax.Function.types @26)
+@909 := @882 @872
+@910 := @881 @909
+@911 := LexLeanTarget.TargetSemantics.bindAll
+@912 := LexLeanTarget.TargetSyntax.Function.parameters
+@915 := @911 (@912 @33) @26
+@916 := @681 @871
+@918 := @910 (@915 @916)
+@919 := @897 @872
+@921 := @918 (@919 @21)
+@930 := @881 (@882 @119) (LexLeanPreservation.Rust.fnFallible @53 @38) (@897 @119 @21)
+@931 := LexLeanPreservation.RunConv
+@935 := @931 @376 @46 @391 @21
+@937 := Ne.{1} @873
+@938 := @937 @26
+@939 := LexLeanPreservation.Obs.stuck
+@940 := @938 @939
+@941 := Exists.{1}
+@942 := LexLeanPreservation.Rust.ROut
+@943 := @941 @942
+@944 := LexLeanPreservation.Rust.RealizesFn
+@948 := @606 (@944 @38 @391 @6)
+@949 := LexLeanPreservation.Rust.RCI
+@950 := @949 @432
+@951 := LexLeanPreservation.Rust.fnIdent
+@974 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {f : @3} ->
+  {fn : @868} ->
+  {args : @32} ->
+  {env : @872} ->
+  {F : @119} ->
+  {o : @873} ->
+  (hB : @880) ->
+  (hfn : @900) ->
+  (hwt : @908) ->
+  (hbind : @921) ->
+  (hF : @930) ->
+  (hA : @935) -> (hne : @940) -> @943 (fun (ro : @942) => @948 (@950 (@951 @376) @53 @6))
+@976 := proof(proof(Exists.casesOn.{1}) @3)
+@977 := proof(@882 @873)
+@978 := proof(@881 @977)
+@979 := proof(LexLeanPreservation.obs)
+@980 := proof(LexLeanTarget.TargetSemantics.run)
+@981 := proof(@980 @6)
+@982 := proof(#16)
+@987 := proof(@978 proof(@979 proof(proof(proof(@981 @982) @376) @53)))
+@988 := proof(@897 @873)
+@990 := proof(@987 proof(@988 @391))
+@1011 := proof(proof(proof(@976 proof(fun (n : @3) => @990))
+        proof(fun (x : proof(proof(proof(proof(@931 @432) @83) @46) @33)) =>
+          proof(@943
+              proof(fun (ro : @942) =>
+                proof(proof(@606 proof(proof(proof(@944 @46) @38) @6))
+                    proof(proof(proof(proof(@949 @982) proof(@951 @424)) @83) @6))))))
+      @40)
+@1012 := proof(And.right)
+@1013 := proof(@881 @873)
+@1014 := proof(@1013 @46)
+@1015 := proof(LexLeanPreservation.Obs.value)
+@1017 := proof(@1014 proof(@1015 @6))
+@1018 := LexLeanPreservation.Rust.WT
+@1019 := proof(#19)
+@1020 := proof(@1018 @1019)
+@1021 := proof(#18)
+@1022 := proof(@1020 @1021)
+@1023 := proof(#17)
+@1044 := proof(proof(@1012
+        proof((v : @0) ->
+          proof((a._@._internal._hyg.#0 : @1017) ->
+            proof(proof(proof(@1022 @1023) @40)
+                proof(proof(LexLeanTarget.TargetSyntax.Function.result) @432)))))
+      proof(@943
+          proof(fun (ro : @942) =>
+            proof(proof(@606 proof(proof(proof(@944 @53) @46) @6))
+                proof(proof(proof(proof(@949 @1023) proof(@951 @432)) @376) @6)))))
+@1054 := proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(@391 @40) @376) @83) @53) @46)
+              @33)
+            @26)
+          @21)
+        @16)
+      @38)
+@1055 := proof(Eq.mp.{0})
+@1059 := proof(proof(proof(proof(@980 @40) @1023) @424) @83)
+@1060 := proof(@979 @1059)
+@1061 := proof(@978 @1060)
+@1062 := proof(@988 @38)
+@1064 := proof(@1055 proof(@1061 @1062))
+@1065 := proof(LexLeanTarget.TargetSemantics.eval)
+@1068 := proof(proof(proof(@1065 @40) @1023) @53)
+@1069 := proof(LexLeanTarget.TargetSyntax.Function.body)
+@1071 := proof(@1068 proof(@1069 @376))
+@1072 := proof(@979 @1071)
+@1073 := proof(@978 @1072)
+@1075 := proof(@1064 proof(@1073 @1062))
+@1076 := proof(congrFun'.{1, 1})
+@1080 := proof(proof(proof(proof(@1076 @977) @578) @1061) @1073)
+@1081 := proof(congrArg.{1, 1})
+@1087 := proof(proof(proof(proof(proof(@1081 @977) proof((a._@._internal._hyg.#0 : @977) -> @578))
+          @1060)
+        @1072)
+      @978)
+@1088 := LexLeanTarget.TargetSemantics.Outcome
+@1093 := proof(proof(proof(proof(proof(@1081 @1088) @977) @1059) @1071) @979)
+@1094 := proof(Eq.trans.{1})
+@1095 := proof(@1094 @1088)
+@1098 := proof(proof(LexLeanTarget.TargetSemantics.eval.match_5.{1})
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#1192950892._hygCtx._hyg.#34 : @883) => @1088))
+@1101 := proof(proof(@891 proof(@892 @1023)) @424)
+@1102 := proof(@1098 @1101)
+@1103 := LexLeanTarget.TargetSemantics.Outcome.stuck
+@1104 := proof(fun ("_" : @680) => @1103)
+@1105 := proof(@1102 @1104)
+@1108 := proof(proof(LexLeanTarget.TargetSemantics.eval.match_3.{1})
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#1192950892._hygCtx._hyg.#81 : @909) => @1088))
+@1110 := proof(@911 proof(@912 @6))
+@1114 := proof(proof(@1108 proof(proof(@1110 @376) @916)) @1104)
+@1117 := proof(proof(proof(@1065 @11) @1019) @6)
+@1118 := proof(@1069 @40)
+@1122 := proof(fun (function : @868) =>
+    proof(@1114 proof(fun (environment : @872) => proof(@1117 @1118))))
+@1124 := proof(@1095 proof(@1105 @1122))
+@1125 := proof(@898 @376)
+@1129 := proof(@1124 proof(proof(proof(@1098 @1125) @1104) @1122))
+@1130 := proof(@919 @53)
+@1209 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {f : @3} =>
+          proof(fun {fn : @868} =>
+            proof(fun {args : @32} =>
+              proof(fun {env : @872} =>
+                proof(fun {F : @119} =>
+                  proof(fun {o : @873} =>
+                    proof(fun (hB : @880) =>
+                      proof(fun (hfn : @900) =>
+                        proof(fun (hwt : @908) =>
+                          proof(fun (hbind : @921) =>
+                            proof(fun (hF : @930) =>
+                              proof(fun (hA : @935) =>
+                                proof(fun (hne : @940) =>
+                                  proof(@1011
+                                      proof(fun (n : @3) =>
+                                        proof(fun (hn : @990) =>
+                                          proof(@1044
+                                              proof(proof(@1054
+                                                    proof(proof(@1075
+                                                          proof(proof(@1080
+                                                                proof(@1087
+                                                                    proof(@1093
+                                                                        proof(proof(proof(@1129
+                                                                                proof(proof(proof(@1108
+                                                                                        @1130)
+                                                                                      @1104)
+                                                                                    proof(fun (environment : @872) =>
+                                                                                      proof(proof(proof(proof(@1065
+                                                                                                @4)
+                                                                                              @1021)
+                                                                                            @6)
+                                                                                          proof(@1069
+                                                                                              @424)))))
+                                                                              proof(proof(proof(proof(proof(proof(@1081
+                                                                                            @883)
+                                                                                          @1088)
+                                                                                        @1101)
+                                                                                      @1125)
+                                                                                    proof(fun (x : @883) =>
+                                                                                      proof(proof(proof(@1098
+                                                                                              @6)
+                                                                                            @1104)
+                                                                                          proof(fun (function : @868) =>
+                                                                                            proof(proof(proof(@1108
+                                                                                                    proof(proof(@1110
+                                                                                                          @424)
+                                                                                                        @916))
+                                                                                                  @1104)
+                                                                                                proof(fun (environment : @872) =>
+                                                                                                  proof(proof(proof(proof(@1065
+                                                                                                            @16)
+                                                                                                          proof(p))
+                                                                                                        @6)
+                                                                                                      @1118)))))))
+                                                                                  @33))
+                                                                            proof(proof(proof(proof(proof(proof(@1081
+                                                                                          @909)
+                                                                                        @1088)
+                                                                                      proof(proof(proof(@911
+                                                                                              proof(@912
+                                                                                                  @376))
+                                                                                            @83)
+                                                                                          @916))
+                                                                                    @1130)
+                                                                                  proof(fun (x : @909) =>
+                                                                                    proof(proof(proof(@1108
+                                                                                            @6)
+                                                                                          @1104)
+                                                                                        proof(fun (environment : @872) =>
+                                                                                          proof(@1117
+                                                                                              proof(@1069
+                                                                                                  @432))))))
+                                                                                @21)))))
+                                                              @1062))
+                                                        @6))
+                                                  @4)))))))))))))))))))))
+@1210 := LexLeanPreservation.Rel
+@1216 := (f : @119) -> (v : @0) -> @937 (@1210 @40 @6) @939
+@1217 := proof(Bool.casesOn.{0})
+@1218 := @881 @119
+@1228 := proof(proof(@1217
+        proof(fun (t._@.LexLeanPreservation.Compose.#3109810746._hygCtx._hyg.#22 : @119) =>
+          proof((h : proof(proof(@1218 @4) @6)) ->
+            proof(proof(@937 proof(proof(@1210 @11) @4)) @939))))
+      @40)
+@1229 := proof(@1218 @40)
+@1230 := proof(@1229 @121)
+@1231 := proof(Eq.ndrec.{0, 1})
+@1232 := proof(@1231 @119)
+@1233 := proof(@1232 @121)
+@1238 := proof(fun (f : @119) => proof(proof(@937 proof(proof(@1210 @6) @4)) @939))
+@1239 := proof(@1233 @1238)
+@1240 := proof(of_eq_true)
+@1241 := proof(Not)
+@1242 := proof(LexLeanPreservation.Obs.overflow)
+@1244 := proof(proof(@1013 @1242) @939)
+@1245 := proof(@1241 @1244)
+@1246 := proof(@1240 @1245)
+@1247 := proof(@1094 @578)
+@1248 := proof(@1247 @1245)
+@1249 := proof(False)
+@1250 := proof(@1241 @1249)
+@1252 := proof(proof(@1248 @1250) @672)
+@1254 := proof(proof(@1081 @578) @578)
+@1257 := proof(proof(proof(@1254 @1244) @1249) @1241)
+@1258 := proof(eq_false')
+@1259 := proof(@1258 @1244)
+@1260 := proof(False.elim.{0})
+@1261 := proof(@1260 @1249)
+@1262 := proof(noConfusion_of_Nat.{1})
+@1265 := proof(proof(@1262 @873) proof(LexLeanPreservation.Obs.ctorIdx))
+@1273 := proof(@1252
+      proof(@1257
+          proof(@1259
+              proof(fun (h : @1244) => proof(@1261 proof(proof(proof(@1265 @1242) @939) @6))))))
+@1274 := proof(not_false_eq_true)
+@1278 := proof(proof(@1239 proof(@1246 proof(@1273 @1274))) @4)
+@1279 := proof(Eq.symm.{1})
+@1280 := proof(@1279 @119)
+@1281 := proof(@1280 @4)
+@1286 := proof(@1228
+      proof(fun (h._@.LexLeanPreservation.Compose.#3109810746._hygCtx._hyg.#23 : @1230) =>
+        proof(@1278 proof(proof(@1281 @121) @6))))
+@1287 := proof(Bool.true)
+@1288 := proof(@1229 @1287)
+@1289 := proof(@1232 @1287)
+@1290 := proof(@1289 @1238)
+@1293 := proof(proof(@1013 proof(@1015 @40)) @939)
+@1294 := proof(@1241 @1293)
+@1324 := proof(fun (f : @119) =>
+    proof(fun (v : @0) =>
+      proof(proof(@1286
+            proof(fun (h._@.LexLeanPreservation.Compose.#3109810746._hygCtx._hyg.#24 : @1288) =>
+              proof(proof(proof(@1290
+                      proof(proof(@1240 @1294)
+                          proof(proof(proof(proof(proof(@1247 @1294) @1250) @672)
+                                proof(proof(proof(proof(@1254 @1293) @1249) @1241)
+                                    proof(proof(@1258 @1293)
+                                        proof(fun (h : @1293) =>
+                                          proof(@1261
+                                              proof(proof(proof(@1265 proof(@1015 @4)) @939)
+                                                  @6))))))
+                              @1274)))
+                    @4)
+                  proof(proof(@1281 @1287) @6))))
+          proof(@120 @40))))
+@1325 := @768 @40
+@1332 := {v : @0} -> {vs : @32} -> (hv : @772) -> (hs : @1325) -> @768 (@686 @11 @4)
+@1333 := proof(And.intro)
+@1343 := proof(fun {v : @0} =>
+    proof(fun {vs : @32} =>
+      proof(fun (hv : @772) =>
+        proof(fun (hs : @1325) =>
+          proof(proof(proof(proof(@1333 proof(@762 @11)) proof(@768 @4)) @40) @6)))))
+@1344 := @768 @682
+@1345 := proof(trivial)
+@1346 := LexLeanTarget.RustSyntax.Profile
+@1347 := (profile._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#29 : @1346) -> @494
+@1348 := LexLeanTarget.RustSyntax.Profile.core
+@1349 := @4 @1348
+@1350 := ("_" : @680) -> @1349
+@1351 := LexLeanTarget.RustSyntax.Profile.std
+@1357 := (motive : @1347) ->
+  (profile._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#29 : @1346) ->
+  (h_1 : @1350) -> (h_2 : ("_" : @680) -> @11 @1351) -> @692
+@1358 := LexLeanTarget.RustSemantics.runItem.match_3.{u_1}
+@1359 := LexLeanTarget.RustSyntax.Item
+@1360 := LexLeanTarget.RustSemantics.ROutcome
+@1361 := @881 @1360
+@1366 := @1361 (LexLeanTarget.RustSemantics.runItem @4 @40 @6)
+@1367 := LexLeanTarget.RustSemantics.ROutcome.abort
+@1368 := @1366 @1367
+@1369 := LexLeanTarget.RustSemantics.itemFallible
+@1370 := @1369 @4
+@1371 := @1218 @1370
+@1372 := @1371 @121
+@1376 := (profile : @1346) -> (item : @1359) -> (values : @32) -> (h : @1368) -> @1372
+@1377 := proof(@1369 @11)
+@1378 := proof(@1218 @1377)
+@1379 := proof(@1378 @6)
+@1381 := proof(@1218 proof(@1369 @16))
+@1386 := proof(proof(@1217
+        proof(fun (t._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#29 : @119) =>
+          proof((h : @1379) -> proof(@1381 @121))))
+      @1370)
+@1389 := proof(fun (x._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#28 : @119) =>
+    proof((hf : proof(@1381 @6)) -> @1230))
+@1394 := proof(proof(proof(@1233 @1389) proof(fun (hf : proof(@1378 @121)) => @122)) @1377)
+@1395 := proof(@1280 @1377)
+@1398 := proof(@1394 proof(proof(@1395 @121) @6))
+@1399 := proof(@120 @1377)
+@1402 := proof(@1386
+      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#30 : @1372) =>
+        proof(@1398 @1399)))
+@1403 := proof(@1371 @1287)
+@1404 := proof(@1289 @1389)
+@1405 := proof(@1378 @1287)
+@1406 := proof(@1218 @1287)
+@1408 := proof(@1260 proof(@1406 @121))
+@1409 := proof(Decidable.casesOn.{0})
+@1410 := proof(LexLeanTarget.RustSemantics.itemAccepts)
+@1412 := proof(proof(@1410 @16) @11)
+@1414 := proof(proof(@1218 @1412) @1287)
+@1415 := proof(@1409 @1414)
+@1416 := proof(Decidable)
+@1419 := proof(@1415 proof(fun (x : proof(@1416 @1414)) => @1249))
+@1420 := proof(instDecidableEqBool)
+@1423 := proof(@1419 proof(proof(@1420 @1412) @1287))
+@1424 := proof(@1241 @1414)
+@1427 := proof(proof(@1262 @1360) proof(LexLeanTarget.RustSemantics.ROutcome.ctorIdx))
+@1428 := proof(LexLeanTarget.RustSemantics.ROutcome.stuck)
+@1430 := proof(proof(@1427 @1428) @1367)
+@1432 := proof(proof(ite.{1}) @1360)
+@1434 := proof(proof(@1410 @21) @16)
+@1436 := proof(proof(@1218 @1434) @1287)
+@1437 := proof(@1432 @1436)
+@1439 := proof(proof(@1420 @1434) @1287)
+@1440 := proof(@1437 @1439)
+@1443 := proof(proof(LexLeanTarget.RustSemantics.runItem.match_3.{1})
+      proof(fun (profile._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#29 : @1346) =>
+        @1360))
+@1444 := proof(@1443 @26)
+@1445 := proof(LexLeanTarget.RustSemantics.itemHeap)
+@1446 := proof(@1445 @26)
+@1453 := proof(proof(proof(@1432 proof(proof(@1218 @1446) @1287)) proof(proof(@1420 @1446) @1287))
+      @1428)
+@1454 := proof(LexLeanTarget.RustSemantics.runItem.match_1.{1})
+@1456 := proof(@1454
+      proof(fun (x._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#70 : @1088) => @1360))
+@1457 := proof(LexLeanTarget.TargetSemantics.primitive)
+@1458 := proof(LexLeanTarget.RustSemantics.itemPrimitive)
+@1460 := proof(@1457 proof(@1458 @26))
+@1461 := proof(LexLeanTarget.RustSemantics.itemOperands)
+@1464 := proof(@1460 proof(proof(@1461 @26) @21))
+@1465 := proof(@1456 @1464)
+@1466 := proof(LexLeanTarget.RustSemantics.ROutcome.value)
+@1467 := proof(@1466 @385)
+@1469 := proof(fun (computed : @0) =>
+    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+      @1467))
+@1470 := proof(@1465 @1469)
+@1472 := proof(@1466 proof(@27 @92))
+@1473 := proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+    @1472)
+@1474 := proof(@1470 @1473)
+@1475 := proof(fun ("_" : @680) => @1428)
+@1477 := proof(proof(@1474 @1475) @1475)
+@1482 := proof(proof(@1444 proof(fun ("_" : @680) => proof(@1453 @1477)))
+      proof(fun ("_" : @680) => @1477))
+@1484 := proof(proof(@1440 @1482) @1428)
+@1485 := proof(@1361 @1484)
+@1486 := proof(@1485 @1367)
+@1487 := proof(@1055 @1486)
+@1488 := proof(@1361 @1428)
+@1489 := proof(@1488 @1367)
+@1490 := proof(@1487 @1489)
+@1492 := proof(proof(@1076 @1360) @578)
+@1493 := proof(@1492 @1485)
+@1494 := proof(@1493 @1488)
+@1497 := proof(proof(@1081 @1360) proof((a._@._internal._hyg.#0 : @1360) -> @578))
+@1498 := proof(@1497 @1484)
+@1500 := proof(proof(@1498 @1428) @1361)
+@1501 := proof(if_neg.{1})
+@1511 := proof(@1490
+      proof(proof(@1494
+            proof(@1500
+                proof(proof(proof(proof(proof(proof(@1501 @1436) @1439) @6) @1360) @1482) @1428)))
+          @1367))
+@1512 := proof(@1369 @391)
+@1513 := proof(@1218 @1512)
+@1514 := proof(@1513 @1287)
+@1515 := proof(@1432 @1514)
+@1517 := proof(proof(@1420 @1512) @1287)
+@1518 := proof(@1515 @1517)
+@1519 := proof(@1518 @1467)
+@1520 := proof(@1466 @40)
+@1521 := proof(@1519 @1520)
+@1524 := proof(@1465
+      proof(fun (computed : @0) =>
+        proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+          @1521)))
+@1525 := proof(@1369 @33)
+@1533 := proof(proof(proof(proof(@1432 proof(proof(@1218 @1525) @1287))
+          proof(proof(@1420 @1525) @1287))
+        @1472)
+      @1367)
+@1540 := proof(@1444
+      proof(fun ("_" : @680) =>
+        proof(@1453
+            proof(proof(proof(@1524
+                    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+                      @1533))
+                  @1475)
+                @1475))))
+@1542 := proof(@1454
+      proof(fun (x._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#170 : @1088) => @1360))
+@1552 := proof(@1540
+      proof(fun ("_" : @680) =>
+        proof(proof(proof(proof(proof(@1542 @1464)
+                  proof(fun (computed : @0) =>
+                    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#178 : @3) =>
+                      @1521)))
+                proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#207 : @3) =>
+                  @1533))
+              @1475)
+            @1475)))
+@1554 := proof(proof(@1440 @1552) @1428)
+@1555 := proof(@1361 @1554)
+@1558 := proof(proof(@1055 proof(@1555 @1367)) @1486)
+@1560 := proof(proof(@1492 @1555) @1485)
+@1563 := proof(proof(proof(@1497 @1554) @1484) @1361)
+@1565 := proof(proof(ite_congr.{1}) @1360)
+@1573 := proof(proof(proof(proof(proof(proof(proof(proof(@1565 @1436) @1436) @1552) @1428) @1482)
+          @1428)
+        @1439)
+      @1439)
+@1574 := proof(@118 @578)
+@1576 := proof(@1573 proof(@1574 @1436))
+@1577 := proof(congr.{1, 1})
+@1578 := proof(("_" : @680) -> @1360)
+@1580 := proof(proof(@1577 @1578) @1360)
+@1581 := proof(@1443 @33)
+@1582 := proof(@1445 @33)
+@1584 := proof(proof(@1218 @1582) @1287)
+@1585 := proof(@1432 @1584)
+@1587 := proof(proof(@1420 @1582) @1287)
+@1589 := proof(proof(@1585 @1587) @1428)
+@1594 := proof(proof(@1457 proof(@1458 @33)) proof(proof(@1461 @33) @26))
+@1595 := proof(@1456 @1594)
+@1596 := proof(@1369 @38)
+@1597 := proof(@1218 @1596)
+@1598 := proof(@1597 @1287)
+@1599 := proof(@1432 @1598)
+@1601 := proof(proof(@1420 @1596) @1287)
+@1602 := proof(@1599 @1601)
+@1604 := proof(proof(@1602 @1467) @1520)
+@1606 := proof(fun (computed : @0) =>
+    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+      @1604))
+@1607 := proof(@1595 @1606)
+@1609 := proof(proof(@1518 @1472) @1367)
+@1610 := proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+    @1609)
+@1611 := proof(@1607 @1610)
+@1612 := proof(@1611 @1475)
+@1613 := proof(@1612 @1475)
+@1614 := proof(@1589 @1613)
+@1615 := proof(fun ("_" : @680) => @1614)
+@1617 := proof(@1580 proof(@1581 @1615))
+@1618 := proof(@1595 @1469)
+@1619 := proof(@1618 @1473)
+@1620 := proof(@1619 @1475)
+@1621 := proof(@1620 @1475)
+@1622 := proof(@1589 @1621)
+@1623 := proof(fun ("_" : @680) => @1622)
+@1637 := proof(proof(proof(@1617 proof(@1581 @1623))
+        proof(fun ("_" : @680) =>
+          proof(proof(proof(proof(proof(@1542 @1594)
+                    proof(fun (computed : @0) =>
+                      proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#178 : @3) =>
+                        @1604)))
+                  proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#207 : @3) =>
+                    @1609))
+                @1475)
+              @1475)))
+      proof(fun ("_" : @680) => @1621))
+@1643 := proof(proof(proof(proof(proof(@1081 @1578) proof((h_2 : @1578) -> @1360)) @1615) @1623)
+      @1581)
+@1644 := proof(funext.{1, 1})
+@1647 := proof(proof(@1644 @680) proof(fun (x : @680) => @1360))
+@1651 := proof(proof(@1647 proof(fun (x : @680) => @1614)) proof(fun (x : @680) => @1622))
+@1661 := proof(proof(proof(proof(proof(proof(proof(proof(proof(@1565 @1584) @1584) @1428) @1613)
+              @1428)
+            @1621)
+          @1587)
+        @1587)
+      proof(@1574 @1584))
+@1662 := proof(@118 @1360)
+@1663 := proof(@1662 @1428)
+@1665 := proof(@1661 proof(fun (a._@._internal._hyg.#0 : @1584) => @1663))
+@1666 := proof(@1241 @1584)
+@1667 := proof(@1076 @1578)
+@1668 := proof(@1667 @1360)
+@1673 := proof(proof(@1457 proof(@1458 @391)) proof(proof(@1461 @391) @33))
+@1674 := proof(@1456 @1673)
+@1675 := proof(@1369 @46)
+@1676 := proof(@1218 @1675)
+@1677 := proof(@1676 @1287)
+@1678 := proof(@1432 @1677)
+@1680 := proof(proof(@1420 @1675) @1287)
+@1683 := proof(proof(proof(@1678 @1680) @1467) @1520)
+@1685 := proof(fun (computed : @0) =>
+    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+      @1683))
+@1686 := proof(@1674 @1685)
+@1688 := proof(proof(@1602 @1472) @1367)
+@1689 := proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+    @1688)
+@1690 := proof(@1686 @1689)
+@1692 := proof(@1668 proof(@1690 @1475))
+@1693 := proof(@1674 @1469)
+@1694 := proof(@1693 @1473)
+@1695 := proof(@1694 @1475)
+@1696 := proof(@1692 @1695)
+@1697 := proof((h_4 : @1578) -> @1360)
+@1698 := proof(@1667 @1697)
+@1700 := proof(proof(@1698 @1690) @1694)
+@1701 := proof((x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) ->
+    @1360)
+@1702 := proof(@1577 @1701)
+@1703 := proof((h_3 : @1578) -> @1697)
+@1704 := proof(@1702 @1703)
+@1708 := proof(proof(proof(proof(@1704 @1686) @1693) @1689) @1473)
+@1713 := proof(proof(@1081
+        proof((computed : @0) ->
+          proof((x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) ->
+            @1360)))
+      proof((h_2 : @1701) -> @1703))
+@1716 := proof(proof(proof(@1713 @1685) @1469) @1674)
+@1720 := proof(proof(@1644 @0) proof(fun (x : @0) => proof((x : @3) -> @1360)))
+@1721 := proof(fun (x : @3) => @1683)
+@1723 := proof(@1720 proof(fun (x : @0) => @1721))
+@1724 := proof(fun (x : @3) => @1467)
+@1725 := proof(fun (x : @0) => @1724)
+@1726 := proof(@1723 @1725)
+@1729 := proof(proof(@1644 @3) proof(fun (x : @3) => @1360))
+@1731 := proof(proof(@1729 @1721) @1724)
+@1732 := proof(@1094 @1360)
+@1733 := proof(@1732 @1683)
+@1734 := proof(@1432 @672)
+@1735 := proof(instDecidableTrue)
+@1736 := proof(@1734 @1735)
+@1738 := proof(proof(@1736 @1467) @1520)
+@1740 := proof(proof(@1733 @1738) @1467)
+@1748 := proof(proof(proof(proof(proof(proof(proof(proof(@1565 @1677) @672) @1467) @1520) @1467)
+          @1520)
+        @1680)
+      @1735)
+@1749 := proof(@1247 @1677)
+@1750 := proof(@1406 @1287)
+@1752 := proof(proof(@1749 @1750) @672)
+@1754 := proof(proof(@1076 @119) @578)
+@1756 := proof(proof(@1754 @1676) @1406)
+@1759 := proof(proof(@1081 @119) proof((a._@._internal._hyg.#0 : @119) -> @578))
+@1766 := proof(@1752
+      proof(proof(@1756 proof(proof(proof(proof(@1759 @1675) @1287) @1218) @26)) @1287))
+@1769 := proof(proof(proof(eq_self.{1}) @119) @1287)
+@1771 := proof(@1748 proof(@1766 @1769))
+@1774 := proof(fun (a._@._internal._hyg.#0 : @672) => proof(@1662 proof(@1466 @388)))
+@1775 := proof(@1771 @1774)
+@1776 := proof(@1241 @672)
+@1779 := proof(fun (a._@._internal._hyg.#0 : @1776) => proof(@1662 proof(@1466 @4)))
+@1781 := proof(@1740 proof(@1775 @1779))
+@1784 := proof(proof(proof(if_true.{1}) @1360) @1735)
+@1786 := proof(proof(@1784 @1467) @1520)
+@1793 := proof(@1708
+      proof(@1716
+          proof(@1726
+              proof(fun (computed : @0) =>
+                proof(@1731
+                    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+                      proof(@1781 @1786)))))))
+@1795 := proof(@1729 proof(fun (x : @3) => @1688))
+@1796 := proof(fun (x : @3) => @1472)
+@1797 := proof(@1795 @1796)
+@1798 := proof(@1732 @1688)
+@1800 := proof(proof(@1736 @1472) @1367)
+@1802 := proof(proof(@1798 @1800) @1472)
+@1804 := proof(proof(@1565 @1598) @672)
+@1810 := proof(proof(proof(proof(proof(proof(@1804 @1472) @1367) @1472) @1367) @1601) @1735)
+@1823 := proof(proof(proof(proof(proof(@1247 @1598) @1750) @672)
+        proof(proof(proof(proof(@1754 @1597) @1406)
+              proof(proof(proof(proof(@1759 @1596) @1287) @1218) @21))
+            @1287))
+      @1769)
+@1824 := proof(@1810 @1823)
+@1826 := proof(fun (a._@._internal._hyg.#0 : @672) => proof(@1662 @1472))
+@1827 := proof(@1824 @1826)
+@1829 := proof(fun (a._@._internal._hyg.#0 : @1776) => proof(@1662 @1367))
+@1831 := proof(@1802 proof(@1827 @1829))
+@1833 := proof(proof(@1784 @1472) @1367)
+@1847 := proof(@1637
+      proof(@1643
+          proof(@1651
+              proof(fun ("_" : @680) =>
+                proof(@1665
+                    proof(fun (a._@._internal._hyg.#0 : @1666) =>
+                      proof(proof(@1696
+                            proof(proof(@1700
+                                  proof(@1793
+                                      proof(@1797
+                                          proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+                                            proof(@1831 @1833)))))
+                                @1475))
+                          @1475)))))))
+@1851 := proof(proof(@1647 proof(fun (x : @680) => @1613)) proof(fun (x : @680) => @1621))
+@1853 := proof(proof(@1668 @1612) @1620)
+@1855 := proof(proof(@1698 @1611) @1619)
+@1859 := proof(proof(proof(proof(@1704 @1607) @1618) @1610) @1473)
+@1862 := proof(proof(proof(@1713 @1606) @1469) @1595)
+@1863 := proof(fun (x : @3) => @1604)
+@1940 := proof(proof(@1558
+        proof(proof(@1560
+              proof(@1563
+                  proof(proof(@1576
+                        proof(fun (a._@._internal._hyg.#0 : @1436) =>
+                          proof(@1847
+                              proof(@1851
+                                  proof(fun ("_" : @680) =>
+                                    proof(proof(@1853
+                                          proof(proof(@1855
+                                                proof(proof(@1859
+                                                      proof(@1862
+                                                          proof(proof(proof(@1720
+                                                                  proof(fun (x : @0) => @1863))
+                                                                @1725)
+                                                              proof(fun (computed : @0) =>
+                                                                proof(proof(proof(@1729 @1863)
+                                                                      @1724)
+                                                                    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) =>
+                                                                      proof(proof(proof(proof(proof(@1732
+                                                                                  @1604)
+                                                                                @1738)
+                                                                              @1467)
+                                                                            proof(proof(proof(proof(proof(proof(proof(proof(proof(@1804
+                                                                                                @1467)
+                                                                                              @1520)
+                                                                                            @1467)
+                                                                                          @1520)
+                                                                                        @1601)
+                                                                                      @1735)
+                                                                                    @1823)
+                                                                                  @1774)
+                                                                                @1779))
+                                                                          @1786)))))))
+                                                    proof(proof(proof(@1729
+                                                            proof(fun (x : @3) => @1609))
+                                                          @1796)
+                                                        proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) =>
+                                                          proof(proof(proof(proof(proof(@1732 @1609)
+                                                                    @1800)
+                                                                  @1472)
+                                                                proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(@1565
+                                                                                        @1514)
+                                                                                      @672)
+                                                                                    @1472)
+                                                                                  @1367)
+                                                                                @1472)
+                                                                              @1367)
+                                                                            @1517)
+                                                                          @1735)
+                                                                        proof(proof(proof(proof(proof(@1247
+                                                                                    @1514)
+                                                                                  @1750)
+                                                                                @672)
+                                                                              proof(proof(proof(proof(@1754
+                                                                                        @1513)
+                                                                                      @1406)
+                                                                                    proof(proof(proof(proof(@1759
+                                                                                              @1512)
+                                                                                            @1287)
+                                                                                          @1218)
+                                                                                        @16))
+                                                                                  @1287))
+                                                                            @1769))
+                                                                      @1826)
+                                                                    @1829))
+                                                              @1833)))))
+                                              @1475))
+                                        @1475))))))
+                      proof(fun (a._@._internal._hyg.#0 : proof(@1241 @1436)) => @1663))))
+            @1367))
+      @11)
+@1945 := proof(@1423
+      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#54 : @1424) =>
+        proof(@1261 proof(@1430 proof(@1511 @1940)))))
+@1946 := proof(_private.LexLeanPreservation.Compose.#0.LexLeanTarget.RustSemantics.runItem.match_3.splitter.{0})
+@1948 := proof(proof(@881 @1346) @33)
+@1949 := proof(@1948 @6)
+@1950 := proof(@1443 @391)
+@1951 := proof(@1445 @391)
+@1953 := proof(proof(@1218 @1951) @1287)
+@1954 := proof(@1432 @1953)
+@1956 := proof(proof(@1420 @1951) @1287)
+@1958 := proof(proof(@1954 @1956) @1428)
+@1959 := proof(@1695 @1475)
+@1961 := proof(fun ("_" : @680) => proof(@1958 @1959))
+@1962 := proof(@1950 @1961)
+@1963 := proof(fun ("_" : @680) => @1959)
+@1971 := proof(proof(@1946
+        proof(fun (profile._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx.#29.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#59 : @1346) =>
+          proof((h : @1949) -> proof((h : proof(proof(@1361 proof(@1962 @1963)) @1367)) -> @1249))))
+      @26)
+@1972 := proof(@1948 @1348)
+@1973 := proof(@1231 @1346)
+@1974 := proof(@1973 @1348)
+@1975 := proof(@1443 @6)
+@1976 := proof(@1445 @38)
+@1978 := proof(proof(@1218 @1976) @1287)
+@1979 := proof(@1432 @1978)
+@1981 := proof(proof(@1420 @1976) @1287)
+@1983 := proof(proof(@1979 @1981) @1428)
+@1988 := proof(proof(@1457 proof(@1458 @38)) proof(proof(@1461 @38) @391))
+@1993 := proof(proof(proof(proof(proof(@1456 @1988) @1469) @1473) @1475) @1475)
+@1994 := proof(@1983 @1993)
+@2002 := proof(fun (profile : @1346) =>
+    proof((h : proof(proof(@1361
+            proof(proof(@1975 proof(fun ("_" : @680) => @1994)) proof(fun ("_" : @680) => @1993)))
+          @1367)) ->
+      @1249))
+@2003 := proof(@1974 @2002)
+@2004 := proof(id.{0})
+@2011 := proof(@2004
+      proof((h : proof(proof(@1361 proof(proof(proof(@1443 @1348) @1961) @1963)) @1367)) -> @1249))
+@2013 := proof(proof(@1361 @1622) @1367)
+@2018 := proof(proof(proof(@1409 @1953) proof(fun (x : proof(@1416 @1953)) => @1249)) @1956)
+@2019 := proof(@1241 @1953)
+@2020 := proof(LexLeanTarget.TargetSemantics.Outcome.casesOn.{0})
+@2021 := proof(@881 @1088)
+@2026 := proof(proof(@1457 proof(@1458 @46)) proof(proof(@1461 @46) @38))
+@2027 := proof(@2021 @2026)
+@2032 := proof(proof(@2020
+        proof(fun (t._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#141 : @1088) =>
+          proof((h : proof(@2027 @6)) -> @1249)))
+      @1988)
+@2037 := proof(proof(@1457 proof(@1458 @53)) proof(proof(@1461 @53) @46))
+@2038 := proof(@2021 @2037)
+@2039 := LexLeanTarget.TargetSemantics.Outcome.value
+@2041 := @2039 @40 @6
+@2042 := proof(@2038 @2041)
+@2043 := proof(@1231 @1088)
+@2045 := proof(proof(@2039 @4) @40)
+@2046 := proof(@2043 @2045)
+@2055 := proof(fun (r : @1088) =>
+    proof((h : proof(proof(@1361
+            proof(proof(proof(proof(proof(@1456 @6) @1469) @1473) @1475) @1475))
+          @1367)) ->
+      @1249))
+@2056 := proof(@2046 @2055)
+@2063 := proof(proof(@1361 proof(proof(proof(proof(proof(@1456 @2045) @1469) @1473) @1475) @1475))
+      @1367)
+@2074 := proof(proof(@1055
+        proof(proof(@1361
+              proof(proof(proof(proof(proof(@1456 proof(proof(@2039 @11) @4)) @1469) @1473) @1475)
+                  @1475))
+            @1367))
+      @1249)
+@2075 := @22 @11
+@2078 := proof(proof(@1361 proof(@1466 @2075)) @1367)
+@2092 := proof(@2056
+      proof(fun (h : @2063) =>
+        proof(@1261
+            proof(proof(@2074
+                  proof(proof(@1258 @2078)
+                      proof(fun (h : @2078) =>
+                        proof(@1261
+                            proof(proof(proof(@1427 proof(@1466 proof(@22 @16))) @1367) @6)))))
+                @6))))
+@2097 := proof(proof(@1457 proof(@1458 @83)) proof(proof(@1461 @83) @53))
+@2098 := proof(@2092 @2097)
+@2099 := proof(@1279 @1088)
+@2103 := proof(@2098 proof(proof(proof(@2099 @2097) @2045) @6))
+@2104 := proof(@1445 @83)
+@2106 := proof(proof(@1218 @2104) @1287)
+@2107 := proof(@1432 @2106)
+@2109 := proof(proof(@1420 @2104) @1287)
+@2111 := proof(proof(@2107 @2109) @1428)
+@2116 := proof(proof(proof(proof(proof(@1456 @2097) @1469) @1473) @1475) @1475)
+@2117 := proof(@2111 @2116)
+@2118 := proof(@1361 @2117)
+@2120 := proof(@1055 proof(@2118 @1367))
+@2121 := proof(@1361 @2116)
+@2144 := proof(@2032
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#3.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#142 : @0) =>
+        proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#143 : @3) =>
+          proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#144 : @2042) =>
+            proof(@2103
+                proof(proof(proof(@2120 proof(@2121 @1367))
+                      proof(proof(proof(proof(@1492 @2118) @2121)
+                            proof(proof(proof(proof(@1497 @2117) @2116) @1361)
+                                proof(proof(proof(proof(proof(proof(@1501 @2106) @2109) @11) @1360)
+                                      @1428)
+                                    @2116)))
+                          @1367))
+                    @16))))))
+@2145 := LexLeanTarget.TargetSemantics.Outcome.overflow
+@2146 := @2145 @6
+@2147 := proof(@2027 @2146)
+@2148 := proof(@2145 @40)
+@2150 := proof(proof(@2043 @2148) @2055)
+@2157 := proof(proof(@1361 proof(proof(proof(proof(proof(@1456 @2148) @1469) @1473) @1475) @1475))
+      @1367)
+@2167 := proof(proof(@1055
+        proof(proof(@1361
+              proof(proof(proof(proof(proof(@1456 proof(@2145 @4)) @1469) @1473) @1475) @1475))
+            @1367))
+      @1249)
+@2169 := proof(proof(@1361 @1472) @1367)
+@2181 := proof(@2150
+      proof(fun (h : @2157) =>
+        proof(@1261
+            proof(proof(@2167
+                  proof(proof(@1258 @2169)
+                      proof(fun (h : @2169) =>
+                        proof(@1261 proof(proof(proof(@1427 @1472) @1367) @6)))))
+                @6))))
+@2182 := proof(@2181 @2037)
+@2183 := proof(@2099 @2037)
+@2186 := proof(@2182 proof(proof(@2183 @2148) @6))
+@2187 := proof(@1445 @53)
+@2189 := proof(proof(@1218 @2187) @1287)
+@2190 := proof(@1432 @2189)
+@2192 := proof(proof(@1420 @2187) @1287)
+@2194 := proof(proof(@2190 @2192) @1428)
+@2199 := proof(proof(proof(proof(proof(@1456 @2037) @1469) @1473) @1475) @1475)
+@2200 := proof(@2194 @2199)
+@2201 := proof(@1361 @2200)
+@2203 := proof(@1055 proof(@2201 @1367))
+@2204 := proof(@1361 @2199)
+@2226 := proof(@2144
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#145 : @3) =>
+        proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#146 : @2147) =>
+          proof(@2186
+              proof(proof(proof(@2203 proof(@2204 @1367))
+                    proof(proof(proof(proof(@1492 @2201) @2204)
+                          proof(proof(proof(proof(@1497 @2200) @2199) @1361)
+                              proof(proof(proof(proof(proof(proof(@1501 @2189) @2192) @4) @1360)
+                                    @1428)
+                                  @2199)))
+                        @1367))
+                  @11)))))
+@2227 := proof(@2021 @1988)
+@2228 := proof(@2227 @1103)
+@2230 := proof(proof(@2043 @1103) @2055)
+@2237 := proof(proof(@1361 proof(proof(proof(proof(proof(@1456 @1103) @1469) @1473) @1475) @1475))
+      @1367)
+@2239 := proof(proof(@1055 @2237) @1249)
+@2244 := proof(proof(@1258 @1489) proof(fun (h : @1489) => proof(@1261 proof(@1430 @6))))
+@2249 := proof(@2230 proof(fun (h : @2237) => proof(@1261 proof(proof(@2239 @2244) @6))))
+@2250 := proof(@2249 @2026)
+@2251 := proof(@2099 @2026)
+@2254 := proof(@2250 proof(proof(@2251 @1103) @6))
+@2255 := proof(@1445 @46)
+@2257 := proof(proof(@1218 @2255) @1287)
+@2258 := proof(@1432 @2257)
+@2260 := proof(proof(@1420 @2255) @1287)
+@2262 := proof(proof(@2258 @2260) @1428)
+@2267 := proof(proof(proof(proof(proof(@1456 @2026) @1469) @1473) @1475) @1475)
+@2268 := proof(@2262 @2267)
+@2269 := proof(@1361 @2268)
+@2271 := proof(@1055 proof(@2269 @1367))
+@2272 := proof(@1361 @2267)
+@2290 := proof(proof(proof(@2271 proof(@2272 @1367))
+        proof(proof(proof(proof(@1492 @2269) @2272)
+              proof(proof(proof(proof(@1497 @2268) @2267) @1361)
+                  proof(proof(proof(proof(proof(proof(@1501 @2257) @2260) @40) @1360) @1428)
+                      @2267)))
+            @1367))
+      @4)
+@2293 := proof(@2226
+      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#147 : @2228) =>
+        proof(@2254 @2290)))
+@2294 := LexLeanTarget.TargetSemantics.Outcome.exhausted
+@2295 := proof(@2227 @2294)
+@2297 := proof(proof(@2043 @2294) @2055)
+@2304 := proof(proof(@1361 proof(proof(proof(proof(proof(@1456 @2294) @1469) @1473) @1475) @1475))
+      @1367)
+@2311 := proof(@2297
+      proof(fun (h : @2304) => proof(@1261 proof(proof(proof(proof(@1055 @2304) @1249) @2244) @6))))
+@2318 := proof(@2293
+      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#148 : @2295) =>
+        proof(proof(proof(@2311 @2026) proof(proof(@2251 @2294) @6)) @2290)))
+@2319 := proof(@118 @1088)
+@2323 := proof(@2018
+      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#67 : @2019) =>
+        proof(@2318 proof(@2319 @1988))))
+@2324 := proof(@1361 @1994)
+@2327 := proof(proof(@1055 proof(@2324 @1367)) @1489)
+@2329 := proof(proof(@1492 @2324) @1488)
+@2332 := proof(proof(proof(@1497 @1994) @1428) @1361)
+@2333 := proof(if_pos.{1})
+@2352 := proof(proof(@2003
+        proof(@2011
+            proof(fun (h : @2013) =>
+              proof(@2323
+                  proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#67 : @1953) =>
+                    proof(@1261
+                        proof(@1430
+                            proof(proof(@2327
+                                  proof(proof(@2329
+                                        proof(@2332
+                                            proof(proof(proof(proof(proof(proof(@2333 @1978) @1981)
+                                                      @6)
+                                                    @1360)
+                                                  @1428)
+                                                @1993)))
+                                      @1367))
+                                @40))))))))
+      @391)
+@2354 := proof(proof(@1279 @1346) @391)
+@2360 := proof(@1971
+      proof(fun (_._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#60 : @680) =>
+        proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#61 : @1972) =>
+          proof(@2352 proof(proof(@2354 @1348) @6)))))
+@2361 := proof(@1948 @1351)
+@2363 := proof(proof(@1973 @1351) @2002)
+@2370 := proof(@2004
+      proof((h : proof(proof(@1361 proof(proof(proof(@1443 @1351) @1961) @1963)) @1367)) -> @1249))
+@2372 := proof(proof(@1361 @1621) @1367)
+@2396 := proof(proof(proof(proof(@2020
+            proof(fun (t._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#183 : @1088) =>
+              proof((h : proof(@2227 @6)) -> @1249)))
+          @1673)
+        proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#3.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#184 : @0) =>
+          proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#185 : @3) =>
+            proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#186 : proof(@2027
+                  @2041)) =>
+              proof(proof(proof(@2092 @2037) proof(proof(@2183 @2045) @6)) @11)))))
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#187 : @3) =>
+        proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#188 : proof(@2227
+              @2146)) =>
+          proof(proof(proof(@2181 @2026) proof(proof(@2251 @2148) @6)) @4))))
+@2397 := proof(@2021 @1673)
+@2398 := proof(@2397 @1103)
+@2399 := proof(@2249 @1988)
+@2400 := proof(@2099 @1988)
+@2429 := proof(proof(@2360
+        proof(fun (_._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#62 : @680) =>
+          proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#63 : @2361) =>
+            proof(proof(proof(@2363
+                    proof(@2370
+                        proof(fun (h : @2372) =>
+                          proof(proof(proof(@2396
+                                  proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#189 : @2398) =>
+                                    proof(proof(@2399 proof(proof(@2400 @1103) @6)) @40)))
+                                proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#190 : proof(@2397
+                                      @2294)) =>
+                                  proof(proof(proof(@2311 @1988) proof(proof(@2400 @2294) @6))
+                                      @40)))
+                              proof(@2319 @1673)))))
+                  @391)
+                proof(proof(@2354 @1351) @6)))))
+      proof(proof(@118 @1346) @26))
+@2430 := proof(@1361 @1482)
+@2465 := proof(fun (profile : @1346) =>
+    proof(fun (item : @1359) =>
+      proof(fun (values : @32) =>
+        proof(fun (h : @1368) =>
+          proof(proof(@1402
+                proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#31 : @1403) =>
+                  proof(proof(proof(proof(@1404
+                            proof(fun (hf : @1405) =>
+                              proof(@1408
+                                  proof(@1945
+                                      proof(fun (h._@.LexLeanPreservation.Compose.#1230057546._hygCtx._hyg.#54 : @1414) =>
+                                        proof(@2429
+                                            proof(proof(proof(@1487 proof(@2430 @1367))
+                                                  proof(proof(proof(@1493 @2430)
+                                                        proof(proof(proof(@1498 @1482) @1361)
+                                                            proof(proof(proof(proof(proof(proof(@2333
+                                                                          @1436)
+                                                                        @1439)
+                                                                      @6)
+                                                                    @1360)
+                                                                  @1482)
+                                                                @1428)))
+                                                      @1367))
+                                                @1940)))))))
+                          @1377)
+                        proof(proof(@1395 @1287) @6))
+                      @1399)))
+              proof(@120 @1370))))))
+@2466 := LexLeanTarget.TargetSyntax.Ty
+@2469 := @1018 @21 @16 @11
+@2470 := @2469 @4
+@2471 := @2470 @6
+@2472 := LexLeanPreservation.Rust.WTAll
+@2477 := @2472 @26 @21 @16 @4 @40
+@2480 := @2472 @33 @26 @21
+@2484 := @2480 (@686 @16 @11) @4
+@2492 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> {v : @0} -> {vs : @32} -> {t : @2466} -> (h : @2471) -> (hs : @2477) -> @2484
+@2493 := proof(@2004 @2484)
+@2496 := @1018 @33 @26 @21
+@2513 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {v : @0} =>
+          proof(fun {vs : @32} =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @2471) =>
+                proof(fun (hs : @2477) =>
+                  proof(@2493
+                      proof(proof(proof(proof(@1333 proof(proof(@2496 @16) @4))
+                              proof(proof(@2480 @11) @4))
+                            @40)
+                          @6))))))))))
+@2514 := Sort 1
+@2516 := (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx.#37.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#48 : @31
+    @6) ->
+  @578
+@2517 := @31 @40
+@2520 := ("_" : @680) -> @4 (@681 @11)
+@2521 := @31 @16
+@2527 := (x : @11) -> (xs : @2521) -> @16 (@685 @21 @40 @6)
+@2532 := {α : @2514} ->
+  (motive : @2516) ->
+  (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx.#37.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#48 : @2517) ->
+  (h_1 : @2520) -> (h_2 : @2527) -> @692
+@2538 := List.casesOn.{0, 0} @16 (fun (x : @2521) => @699) @4 @704
+@2539 := @31 @21
+@2547 := fun {α : @2514} =>
+  fun (motive : @2516) =>
+  fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx.#37.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#48 : @2517) =>
+  fun (h_1 : @2520) =>
+  fun (h_2 : @2527) =>
+  @2538
+    (fun (head._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#76 : @16) =>
+    fun (tail._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#77 : @2539) => @707)
+@2556 := {p : @865} -> {c : @866} -> {A : @867} -> {t : @2466} -> @2472 @11 @4 @40 @682 @6
+@2557 := proof(True.intro)
+@2561 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun {t : @2466} => @2557))))
+@2562 := (a._@._internal._hyg.#0 : @6) -> @0
+@2565 := @1018 @26 @21 @16
+@2566 := @4 @6
+@2569 := (x : @4) -> @2565 @2566 @40
+@2570 := @31 @11
+@2571 := List.below.{0, 0}
+@2572 := @2571 @16
+@2575 := @2472 @391 @33 @26
+@2576 := List.map.{0, 0}
+@2579 := @2576 @21 @0 @16
+@2583 := fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2521) =>
+  @2575 (@2579 @6) @11
+@2585 := @2572 @2583 @6
+@2597 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} ->
+  {e : @2562} ->
+  {t : @2466} ->
+  (h : @2569) ->
+  (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2570) ->
+  (f : @2585) -> @2575 (@2579 @40) @11
+@2599 := LexLeanPreservation.Rust.wtAll_map.match_1_1 @21
+@2600 := @2571 @26
+@2601 := @31 @26
+@2604 := @2472 @46 @38 @391
+@2607 := @2576 @33 @0 @26
+@2612 := @2600
+    (fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2601) =>
+    @2604 (@2607 @6) @21)
+@2630 := @2599
+    (fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx.#37.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#48 : @2539) =>
+    (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#78 : @2612 @6) ->
+    @2604 (@2607 @40) @21)
+    @40
+    (fun ("_" : @680) =>
+    fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#78 : @2612 (@681 @26)) =>
+    LexLeanPreservation.Rust.wtAll_nil @46 @38 @391 @21)
+@2631 := @2571 @33
+@2632 := @31 @33
+@2635 := @2472 @53 @46 @38
+@2638 := @2576 @391 @0 @33
+@2672 := fun {p : @865} =>
+  fun {c : @866} =>
+  fun {A : @867} =>
+  fun {α : @2514} =>
+  fun {e : @2562} =>
+  fun {t : @2466} =>
+  fun (h : @2569) =>
+  fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2570) =>
+  fun (f : @2585) =>
+  @2630
+    (fun (x : @21) =>
+    fun (xs : @2601) =>
+    fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#78 : @2631
+      (fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2632) =>
+      @2635 (@2638 @6) @26)
+      (@685 @33 @40 @6)) =>
+    LexLeanPreservation.Rust.wtAll_cons @53 @46 @38 @403 (@2638 @40) @26 (@21 @4) @636)
+    @6
+@2674 := @2576 @16 @0
+@2676 := @2674 @11 @6
+@2686 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} -> {e : @2562} -> {t : @2466} -> (h : @2569) -> (xs : @2570) -> @2480 @2676 @4
+@2707 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun {e : @2562} =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @2569) =>
+                proof(fun (x._@.LexLeanPreservation.Compose.#1975509202._hygCtx._hyg.#37 : @2570) =>
+                  proof(proof(proof(proof(proof(List.brecOn.{0, 0}) @16) @2583) @6)
+                      proof(proof(proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.wtAll_map._f)
+                                      @33)
+                                    @26)
+                                  @21)
+                                @16)
+                              @11)
+                            @4)
+                          @40))))))))))
+@2708 := @31 @2466
+@2710 := @881 (@882 @2708)
+@2711 := LexLeanPreservation.Rust.adtFields
+@2715 := @2710 (@2711 @26 @11 @4)
+@2716 := @897 @2708
+@2717 := @2716 @6
+@2718 := @2715 @2717
+@2723 := @901 @33 @26 @21 @4 @40
+@2726 := @1018 @391 @33 @26
+@2729 := @2726 (@47 @16 @11)
+@2730 := LexLeanTarget.TargetSyntax.Ty.adt
+@2732 := @2729 (@2730 @21)
+@2741 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {i : @3} -> {k : @3} -> {fs : @32} -> {tys : @2708} -> (h : @2718) -> (hf : @2723) -> @2732
+@2742 := proof(@2004 @2732)
+@2759 := proof(proof(proof(proof(Exists.intro.{1}) @2708)
+        proof(fun (tys : @2708) =>
+          proof(proof(@606 proof(proof(@2710 proof(proof(proof(@2711 @38) @26) @21)) @2717))
+              proof(proof(proof(proof(proof(@901 @38) @391) @33) @16) @6))))
+      @4)
+@2766 := proof(@1333 proof(proof(@2710 proof(proof(proof(@2711 @391) @21) @16)) proof(@2716 @4)))
+@2769 := @901 @391 @33 @26
+@2771 := proof(proof(@2769 @11) @4)
+@2785 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {i : @3} =>
+          proof(fun {k : @3} =>
+            proof(fun {fs : @32} =>
+              proof(fun {tys : @2708} =>
+                proof(fun (h : @2718) =>
+                  proof(fun (hf : @2723) =>
+                    proof(@2742 proof(@2759 proof(proof(proof(@2766 @2771) @40) @6))))))))))))
+@2788 := @1018 @11 @4 @40
+@2795 := {p : @865} ->
+  {c : @866} -> {A : @867} -> (b : @119) -> @2788 @128 LexLeanTarget.TargetSyntax.Ty.bool
+@2797 := proof(proof(@1240 @1750) @1769)
+@2801 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (b : @119) => @2797))))
+@2802 := @2788 @325
+@2803 := LexLeanTarget.TargetSyntax.Ty.bytes
+@2808 := {p : @865} -> {c : @866} -> {A : @867} -> (b : @323) -> @2802 @2803
+@2812 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (b : @323) => @2557))))
+@2813 := Except.{0, 0}
+@2815 := @2813 @40 @6
+@2816 := (x._@.LexLeanPreservation.Compose.#91735185._hygCtx.#61.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#72 : @2815) ->
+  @578
+@2818 := @2813 @4 @40
+@2819 := Except.ok.{0, 0}
+@2822 := @2819 @16 @11 @6
+@2824 := (a : @4) -> @4 @2822
+@2825 := Except.error.{0, 0}
+@2827 := @2825 @21 @16
+@2830 := (e : @16) -> @11 (@2827 @6)
+@2836 := {ε : @2514} ->
+  {α : @2514} ->
+  (motive : @2816) ->
+  (x._@.LexLeanPreservation.Compose.#91735185._hygCtx.#61.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#72 : @2818) ->
+  (h_1 : @2824) -> (h_2 : @2830) -> @692
+@2844 := Except.casesOn.{0, 0, 0} @21 @16 (fun (x : @2813 @21 @16) => @699) @4
+@2845 := @40 @6
+@2855 := fun {ε : @2514} =>
+  fun {α : @2514} =>
+  fun (motive : @2816) =>
+  fun (x._@.LexLeanPreservation.Compose.#91735185._hygCtx.#61.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#72 : @2818) =>
+  fun (h_1 : @2824) =>
+  fun (h_2 : @2830) =>
+  @2844
+    (fun (a._@._internal.#0.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#87 : @21) => @2845)
+    (fun (a._@._internal.#0.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#88 : @16) => @2566)
+@2856 := (a._@._internal._hyg.#0 : @40) -> @0
+@2859 := @1018 @38 @391 @33
+@2860 := @2859 @699
+@2862 := (x : @21) -> @2860 @40
+@2866 := @1018 @46 @38 @391 @699
+@2868 := (x : @21) -> @2866 @11
+@2870 := @2813 @33 @26
+@2873 := @1018 @53 @46 @38
+@2874 := LexLeanPreservation.encExcept
+@2880 := @2873 (@2874 @391 @33 @26 @21 @6)
+@2881 := LexLeanTarget.TargetSyntax.Ty.result
+@2896 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {ε : @2514} ->
+  {α : @2514} ->
+  {ee : @2856} ->
+  {ea : @2856} ->
+  {s : @2466} -> {t : @2466} -> (he : @2862) -> (ha : @2868) -> (x : @2870) -> @2880 (@2881 @16 @11)
+@2899 := proof(proof(proof(LexLeanPreservation.Rust.wt_encExcept.match_1_1) @391) @33)
+@2901 := proof(proof(@2813 @391) @33)
+@2904 := proof(proof(proof(@1018 @83) @53) @46)
+@2908 := proof(proof(proof(proof(@2874 @38) @391) @33) @26)
+@2910 := proof(@2904 proof(@2908 @6))
+@2912 := proof(proof(@2881 @21) @16)
+@2916 := proof(proof(@2899
+        proof(fun (x._@.LexLeanPreservation.Compose.#91735185._hygCtx.#61.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#72 : @2901) =>
+          proof(@2910 @2912)))
+      @6)
+@2917 := proof(Eq.mpr.{0})
+@2923 := proof(proof(@2904 proof(@2908 proof(proof(proof(@2819 @38) @391) @6))) @2912)
+@2924 := proof(@2917 @2923)
+@2926 := proof(proof(@2904 @539) @21)
+@2927 := proof(@2924 @2926)
+@2928 := proof(@881 @578)
+@2943 := proof(@2916
+      proof(fun (a : @33) =>
+        proof(proof(@2927
+              proof(proof(@2004 proof(proof(@2928 @2923) @2926))
+                  proof(proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_4) @83)
+                              @53)
+                            @46)
+                          @539)
+                        @21)
+                      @16)))
+            @2566)))
+@2949 := proof(proof(@2904 proof(@2908 proof(proof(proof(@2825 @38) @391) @6))) @2912)
+@2950 := proof(@2917 @2949)
+@2952 := proof(proof(@2904 @536) @16)
+@2981 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {ε : @2514} =>
+          proof(fun {α : @2514} =>
+            proof(fun {ee : @2856} =>
+              proof(fun {ea : @2856} =>
+                proof(fun {s : @2466} =>
+                  proof(fun {t : @2466} =>
+                    proof(fun (he : @2862) =>
+                      proof(fun (ha : @2868) =>
+                        proof(fun (x._@.LexLeanPreservation.Compose.#91735185._hygCtx._hyg.#61 : @2870) =>
+                          proof(@2943
+                              proof(fun (e : @391) =>
+                                proof(proof(proof(@2950 @2952)
+                                      proof(proof(@2004 proof(proof(@2928 @2949) @2952))
+                                          proof(proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_5)
+                                                        @83)
+                                                      @53)
+                                                    @46)
+                                                  @536)
+                                                @21)
+                                              @16)))
+                                    proof(@11 @6))))))))))))))))
+@2986 := @2472 @16 @11 @4 @40 @6
+@2987 := @2469 @411
+@2988 := LexLeanTarget.TargetSyntax.Ty.list
+@2989 := @2988 @40
+@2990 := @2987 @2989
+@2996 := {p : @865} -> {c : @866} -> {A : @867} -> {vs : @32} -> {t : @2466} -> (h : @2986) -> @2990
+@3004 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {vs : @32} =>
+          proof(fun {t : @2466} => proof(fun (h : @2986) => proof(proof(@2004 @2990) @6)))))))
+@3009 := @2496 (LexLeanPreservation.encList @16 @11 @6)
+@3010 := @2988 @4
+@3019 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} -> {e : @2562} -> {t : @2466} -> (h : @2569) -> (xs : @2570) -> @3009 @3010
+@3023 := proof(proof(proof(proof(LexLeanPreservation.Rust.wt_list) @33) @26) @21)
+@3025 := proof(proof(@3023 @2676) @4)
+@3030 := proof(proof(proof(proof(proof(LexLeanPreservation.Rust.wtAll_map) @33) @26) @21) @16)
+@3043 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun {e : @2562} =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @2569) =>
+                proof(fun (xs : @2570) =>
+                  proof(@3025 proof(proof(proof(proof(@3030 @11) @4) @40) @6))))))))))
+@3044 := @882 @6
+@3045 := (x._@.LexLeanPreservation.Compose.#3111015518._hygCtx.#41.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#52 : @3044) ->
+  @578
+@3046 := @882 @40
+@3047 := Option.none.{0}
+@3048 := @3047 @11
+@3049 := @4 @3048
+@3050 := ("_" : @680) -> @3049
+@3051 := @897 @16
+@3054 := (a : @11) -> @11 (@3051 @6)
+@3056 := (h_1 : @3050) -> (h_2 : @3054) -> @692
+@3059 := {α : @2514} ->
+  (motive : @3045) ->
+  (x._@.LexLeanPreservation.Compose.#3111015518._hygCtx.#41.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#52 : @3046) ->
+  @3056
+@3061 := Option.casesOn.{0, 0} @16
+@3062 := proof(@882 @16)
+@3066 := @3061 (fun (x : @3062) => @699) @4 @704
+@3073 := fun {α : @2514} =>
+  fun (motive : @3045) =>
+  fun (x._@.LexLeanPreservation.Compose.#3111015518._hygCtx.#41.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#52 : @3046) =>
+  fun (h_1 : @3050) =>
+  fun (h_2 : @3054) =>
+  @3066 (fun (val._@.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#67 : @16) => @2845)
+@3074 := @882 @11
+@3075 := LexLeanPreservation.encOption
+@3079 := @2496 (@3075 @16 @11 @6)
+@3080 := LexLeanTarget.TargetSyntax.Ty.option
+@3081 := @3080 @4
+@3090 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} -> {e : @2562} -> {t : @2466} -> (h : @2569) -> (o : @3074) -> @3079 @3081
+@3092 := proof(proof(LexLeanPreservation.Rust.wt_encOption.match_1_1) @16)
+@3094 := proof(proof(@3075 @21) @16)
+@3096 := proof(@2726 proof(@3094 @6))
+@3097 := proof(@3080 @11)
+@3101 := proof(proof(@3092
+        proof(fun (x._@.LexLeanPreservation.Compose.#3111015518._hygCtx.#41.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#52 : @3062) =>
+          proof(@3096 @3097)))
+      @6)
+@3103 := proof(proof(@2726 @359) @3097)
+@3112 := proof(@3101
+      proof(fun ("_" : @680) =>
+        proof(proof(@1240 @3103)
+            proof(proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_2) @391) @33) @26) @11))))
+@3114 := proof(proof(@897 @21) @6)
+@3117 := proof(proof(@2726 proof(@3094 @3114)) @3097)
+@3118 := proof(@2917 @3117)
+@3120 := proof(proof(@2726 @699) @11)
+@3143 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun {e : @2562} =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @2569) =>
+                proof(fun (x._@.LexLeanPreservation.Compose.#3111015518._hygCtx._hyg.#41 : @3074) =>
+                  proof(@3112
+                      proof(fun (a : @16) =>
+                        proof(proof(proof(@3118 @3120)
+                              proof(proof(@2004 proof(proof(@2928 @3117) @3120))
+                                  proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_3)
+                                              @391)
+                                            @33)
+                                          @26)
+                                        @699)
+                                      @11)))
+                            @2566)))))))))))
+@3144 := Ordering
+@3145 := LexLeanPreservation.encOrdering
+@3146 := @3145 @6
+@3147 := @2788 @3146
+@3148 := LexLeanTarget.TargetSyntax.Ty.ordering
+@3153 := {p : @865} -> {c : @866} -> {A : @867} -> (o : @3144) -> @3147 @3148
+@3154 := proof(Ordering.casesOn.{0})
+@3155 := proof(@881 @3144)
+@3164 := proof(proof(@3154
+        proof(fun (t._@.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#24 : @3144) =>
+          proof((h : proof(proof(@3155 @40) @6)) -> proof(proof(@2469 proof(@3145 @4)) @3148))))
+      @6)
+@3165 := proof(@3155 @6)
+@3166 := proof(Ordering.lt)
+@3167 := proof(@3165 @3166)
+@3168 := proof(@1231 @3144)
+@3169 := proof(@3168 @3166)
+@3172 := proof(fun (o : @3144) => proof(proof(@2469 @3146) @3148))
+@3173 := proof(@3169 @3172)
+@3176 := @1018 @16 @11 @4
+@3178 := proof(@342 proof(LexLeanTarget.TargetSyntax.Order.less))
+@3180 := proof(proof(@3176 @3178) @3148)
+@3181 := proof(@1240 @3180)
+@3182 := proof(@1247 @3180)
+@3186 := proof(proof(@1218 proof(proof(LexLeanPreservation.Rust.inert) @3148)) @1287)
+@3188 := proof(proof(@3182 @3186) @672)
+@3192 := proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_13) @16) @11) @4)
+@3194 := proof(proof(@3192 @3178) @3148)
+@3195 := proof(LexLeanTarget.TargetSyntax.IntKind)
+@3197 := proof(proof(@881 @2466) @3148)
+@3198 := LexLeanTarget.TargetSyntax.Ty.fixed
+@3200 := proof(@3197 proof(@3198 @6))
+@3208 := proof(@1261
+      proof(proof(proof(proof(proof(@1262 @2466) proof(LexLeanTarget.TargetSyntax.Ty.ctorIdx))
+              @3148)
+            proof(@3198 @40))
+          @6))
+@3211 := proof(@3194
+      proof(fun (w._@.#450.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#34 : @3195) =>
+        proof(fun (x._@.#403.#452.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#35 : @3200) =>
+          @3208)))
+@3212 := @881 @0
+@3213 := proof(@3212 @3178)
+@3214 := proof(@3213 @92)
+@3215 := LexLeanTarget.TargetSyntax.Ty.unit
+@3218 := proof(@1260 proof((x._@._hyg.#385.#410 : proof(@3197 @3215)) -> @1249))
+@3220 := proof(proof(@1262 @0) @63)
+@3221 := proof(@3220 @3178)
+@3226 := proof(@3211
+      proof(fun (x._@.#386.#409.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#36 : @3214) =>
+        proof(@3218 proof(proof(@3221 @92) @6))))
+@3227 := proof(@3213 @359)
+@3228 := @3080 @40
+@3229 := proof(@3197 @3228)
+@3231 := proof(@1260 proof((x._@._hyg.#387.#413 : @3229) -> @1249))
+@3237 := proof(@3226
+      proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#5.LexLeanPreservation.RustBase.#2118327401._hygCtx.#66.#411.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#37 : @2466) =>
+        proof(fun (x._@.#388.#412.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#38 : @3227) =>
+          proof(@3231 proof(proof(@3221 @359) @6)))))
+@3238 := proof(@3213 @373)
+@3240 := proof(@1260 proof((x._@._hyg.#389.#417 : @3229) -> @1249))
+@3247 := proof(@3237
+      proof(fun (v._@.#414.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#39 : @0) =>
+        proof(fun (t._@.#415.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#40 : @2466) =>
+          proof(fun (x._@.#390.#416.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#41 : @3238) =>
+            proof(@3240 proof(proof(@3221 @377) @6))))))
+@3248 := proof(@3213 @388)
+@3250 := @2881 @4 @40
+@3251 := proof(@3197 @3250)
+@3253 := proof(@1260 proof((x._@._hyg.#391.#422 : @3251) -> @1249))
+@3261 := proof(@3247
+      proof(fun (v._@.#418.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#42 : @0) =>
+        proof(fun (a._@.#419.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#43 : @2466) =>
+          proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#9.LexLeanPreservation.RustBase.#2118327401._hygCtx.#97.#420.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#44 : @2466) =>
+            proof(fun (x._@.#392.#421.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#45 : @3248) =>
+              proof(@3253 proof(proof(@3221 @2075) @6)))))))
+@3262 := proof(@3213 @400)
+@3264 := proof(@1260 proof((x._@._hyg.#393.#427 : @3251) -> @1249))
+@3265 := @27 @11
+@3273 := proof(@3261
+      proof(fun (v._@.#423.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#46 : @0) =>
+        proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#7.LexLeanPreservation.RustBase.#2118327401._hygCtx.#117.#424.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#47 : @2466) =>
+          proof(fun (b._@.#425.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#48 : @2466) =>
+            proof(fun (x._@.#394.#426.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#49 : @3262) =>
+              proof(@3264 proof(proof(@3221 @3265) @6)))))))
+@3274 := proof(@3213 @408)
+@3277 := proof(@1260 proof((x._@._hyg.#395.#431 : proof(@3197 @2989)) -> @1249))
+@3284 := proof(@3273
+      proof(fun (vs._@.#428.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#50 : @32) =>
+        proof(fun (t._@.#429.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#51 : @2466) =>
+          proof(fun (x._@.#396.#430.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#52 : @3274) =>
+            proof(@3277 proof(proof(@3221 @411) @6))))))
+@3285 := proof(@3213 @429)
+@3286 := LexLeanTarget.TargetSyntax.Ty.pair
+@3291 := proof(@1260
+      proof((x._@._hyg.#397.#437 : proof(@3197 proof(proof(@3286 @4) @40))) -> @1249))
+@3300 := proof(@3284
+      proof(fun (a._@.#432.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#53 : @0) =>
+        proof(fun (b._@.#433.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#54 : @0) =>
+          proof(fun (s._@.#434.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#55 : @2466) =>
+            proof(fun (t._@.#435.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#56 : @2466) =>
+              proof(fun (x._@.#398.#436.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#57 : @3285) =>
+                proof(@3291 proof(proof(@3221 @434) @6))))))))
+@3301 := proof(@3213 @446)
+@3305 := proof(@1260 proof((x._@._hyg.#399.#442 : proof(@3197 proof(@2730 @40))) -> @1249))
+@3313 := proof(@3300
+      proof(fun (k._@.#438.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#58 : @3) =>
+        proof(fun (fs._@.#439.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#59 : @32) =>
+          proof(fun (i._@.#440.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#60 : @3) =>
+            proof(fun (x._@.#400.#441.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#61 : @3301) =>
+              proof(@3305 proof(proof(@3221 @450) @6)))))))
+@3314 := proof(@3213 @465)
+@3320 := proof(@1260
+      proof((x._@._hyg.#401.#448 : proof(@3197
+            proof(proof(proof(LexLeanTarget.TargetSyntax.Ty.fn) @4) @40))) ->
+        @1249))
+@3322 := proof(proof(@54 @16) @11)
+@3331 := proof(@3313
+      proof(fun (f._@.#443.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#62 : @3) =>
+        proof(fun (cs._@.#444.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#63 : @32) =>
+          proof(fun (ps._@.#445.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#64 : @2708) =>
+            proof(fun (r._@.#446.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#65 : @2466) =>
+              proof(fun (x._@.#402.#447.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#66 : @3314) =>
+                proof(@3320 proof(proof(@3221 @3322) @6))))))))
+@3332 := proof(@3213 @307)
+@3333 := LexLeanTarget.TargetSyntax.Ty.string
+@3336 := proof(@1260 proof((x._@._hyg.#405.#455 : proof(@3197 @3333)) -> @1249))
+@3342 := proof(@3331
+      proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#25.LexLeanPreservation.RustBase.#2118327401._hygCtx.#352.#453.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#67 : @305) =>
+        proof(fun (x._@.#406.#454.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#68 : @3332) =>
+          proof(@3336 proof(proof(@3221 @310) @6)))))
+@3343 := proof(@3213 @325)
+@3346 := proof(@1260 proof((x._@._hyg.#407.#458 : proof(@3197 @2803)) -> @1249))
+@3357 := proof(proof(@3173
+        proof(@3181
+            proof(proof(@3188
+                  proof(@3342
+                      proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#27.LexLeanPreservation.RustBase.#2118327401._hygCtx.#363.#456.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#69 : @323) =>
+                        proof(fun (x._@.#408.#457.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#70 : @3343) =>
+                          proof(@3346 proof(proof(@3221 @328) @6))))))
+                @1769)))
+      @40)
+@3359 := proof(proof(@1279 @3144) @40)
+@3364 := proof(@3164
+      proof(fun (h._@.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#25 : @3167) =>
+        proof(@3357 proof(proof(@3359 @3166) @6))))
+@3365 := proof(Ordering.eq)
+@3366 := proof(@3165 @3365)
+@3368 := proof(proof(@3168 @3365) @3172)
+@3370 := proof(@342 proof(LexLeanTarget.TargetSyntax.Order.same))
+@3372 := proof(proof(@3176 @3370) @3148)
+@3373 := proof(@1240 @3372)
+@3376 := proof(proof(proof(@1247 @3372) @3186) @672)
+@3381 := proof(proof(proof(@3192 @3370) @3148)
+      proof(fun (w._@.#450.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#74 : @3195) =>
+        proof(fun (x._@.#403.#452.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#75 : @3200) =>
+          @3208)))
+@3382 := proof(@3212 @3370)
+@3383 := proof(@3382 @92)
+@3384 := proof(@3220 @3370)
+@3483 := proof(@3364
+      proof(fun (h._@.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#26 : @3366) =>
+        proof(proof(proof(@3368
+                proof(@3373
+                    proof(proof(@3376
+                          proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(@3381
+                                                  proof(fun (x._@.#386.#409.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#76 : @3383) =>
+                                                    proof(@3218 proof(proof(@3384 @92) @6))))
+                                                proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#5.LexLeanPreservation.RustBase.#2118327401._hygCtx.#66.#411.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#77 : @2466) =>
+                                                  proof(fun (x._@.#388.#412.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#78 : proof(@3382
+                                                        @359)) =>
+                                                    proof(@3231 proof(proof(@3384 @359) @6)))))
+                                              proof(fun (v._@.#414.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#79 : @0) =>
+                                                proof(fun (t._@.#415.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#80 : @2466) =>
+                                                  proof(fun (x._@.#390.#416.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#81 : proof(@3382
+                                                        @373)) =>
+                                                    proof(@3240 proof(proof(@3384 @377) @6))))))
+                                            proof(fun (v._@.#418.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#82 : @0) =>
+                                              proof(fun (a._@.#419.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#83 : @2466) =>
+                                                proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#9.LexLeanPreservation.RustBase.#2118327401._hygCtx.#97.#420.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#84 : @2466) =>
+                                                  proof(fun (x._@.#392.#421.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#85 : proof(@3382
+                                                        @388)) =>
+                                                    proof(@3253 proof(proof(@3384 @2075) @6)))))))
+                                          proof(fun (v._@.#423.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#86 : @0) =>
+                                            proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#7.LexLeanPreservation.RustBase.#2118327401._hygCtx.#117.#424.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#87 : @2466) =>
+                                              proof(fun (b._@.#425.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#88 : @2466) =>
+                                                proof(fun (x._@.#394.#426.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#89 : proof(@3382
+                                                      @400)) =>
+                                                  proof(@3264 proof(proof(@3384 @3265) @6)))))))
+                                        proof(fun (vs._@.#428.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#90 : @32) =>
+                                          proof(fun (t._@.#429.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#91 : @2466) =>
+                                            proof(fun (x._@.#396.#430.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#92 : proof(@3382
+                                                  @408)) =>
+                                              proof(@3277 proof(proof(@3384 @411) @6))))))
+                                      proof(fun (a._@.#432.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#93 : @0) =>
+                                        proof(fun (b._@.#433.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#94 : @0) =>
+                                          proof(fun (s._@.#434.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#95 : @2466) =>
+                                            proof(fun (t._@.#435.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#96 : @2466) =>
+                                              proof(fun (x._@.#398.#436.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#97 : proof(@3382
+                                                    @429)) =>
+                                                proof(@3291 proof(proof(@3384 @434) @6))))))))
+                                    proof(fun (k._@.#438.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#98 : @3) =>
+                                      proof(fun (fs._@.#439.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#99 : @32) =>
+                                        proof(fun (i._@.#440.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#100 : @3) =>
+                                          proof(fun (x._@.#400.#441.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#101 : proof(@3382
+                                                @446)) =>
+                                            proof(@3305 proof(proof(@3384 @450) @6)))))))
+                                  proof(fun (f._@.#443.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#102 : @3) =>
+                                    proof(fun (cs._@.#444.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#103 : @32) =>
+                                      proof(fun (ps._@.#445.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#104 : @2708) =>
+                                        proof(fun (r._@.#446.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#105 : @2466) =>
+                                          proof(fun (x._@.#402.#447.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#106 : proof(@3382
+                                                @465)) =>
+                                            proof(@3320 proof(proof(@3384 @3322) @6))))))))
+                                proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#25.LexLeanPreservation.RustBase.#2118327401._hygCtx.#352.#453.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#107 : @305) =>
+                                  proof(fun (x._@.#406.#454.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#108 : proof(@3382
+                                        @307)) =>
+                                    proof(@3336 proof(proof(@3384 @310) @6)))))
+                              proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#27.LexLeanPreservation.RustBase.#2118327401._hygCtx.#363.#456.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#109 : @323) =>
+                                proof(fun (x._@.#408.#457.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#110 : proof(@3382
+                                      @325)) =>
+                                  proof(@3346 proof(proof(@3384 @328) @6))))))
+                        @1769)))
+              @40)
+            proof(proof(@3359 @3365) @6))))
+@3484 := proof(Ordering.gt)
+@3485 := proof(@3165 @3484)
+@3487 := proof(proof(@3168 @3484) @3172)
+@3489 := proof(@342 proof(LexLeanTarget.TargetSyntax.Order.more))
+@3491 := proof(proof(@3176 @3489) @3148)
+@3492 := proof(@1240 @3491)
+@3495 := proof(proof(proof(@1247 @3491) @3186) @672)
+@3500 := proof(proof(proof(@3192 @3489) @3148)
+      proof(fun (w._@.#450.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#114 : @3195) =>
+        proof(fun (x._@.#403.#452.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#115 : @3200) =>
+          @3208)))
+@3501 := proof(@3212 @3489)
+@3502 := proof(@3501 @92)
+@3503 := proof(@3220 @3489)
+@3609 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun (o : @3144) =>
+          proof(proof(@3483
+                proof(fun (h._@.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#27 : @3485) =>
+                  proof(proof(proof(@3487
+                          proof(@3492
+                              proof(proof(@3495
+                                    proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(proof(@3500
+                                                            proof(fun (x._@.#386.#409.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#116 : @3502) =>
+                                                              proof(@3218
+                                                                  proof(proof(@3503 @92) @6))))
+                                                          proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#5.LexLeanPreservation.RustBase.#2118327401._hygCtx.#66.#411.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#117 : @2466) =>
+                                                            proof(fun (x._@.#388.#412.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#118 : proof(@3501
+                                                                  @359)) =>
+                                                              proof(@3231
+                                                                  proof(proof(@3503 @359) @6)))))
+                                                        proof(fun (v._@.#414.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#119 : @0) =>
+                                                          proof(fun (t._@.#415.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#120 : @2466) =>
+                                                            proof(fun (x._@.#390.#416.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#121 : proof(@3501
+                                                                  @373)) =>
+                                                              proof(@3240
+                                                                  proof(proof(@3503 @377) @6))))))
+                                                      proof(fun (v._@.#418.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#122 : @0) =>
+                                                        proof(fun (a._@.#419.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#123 : @2466) =>
+                                                          proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#9.LexLeanPreservation.RustBase.#2118327401._hygCtx.#97.#420.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#124 : @2466) =>
+                                                            proof(fun (x._@.#392.#421.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#125 : proof(@3501
+                                                                  @388)) =>
+                                                              proof(@3253
+                                                                  proof(proof(@3503 @2075) @6)))))))
+                                                    proof(fun (v._@.#423.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#126 : @0) =>
+                                                      proof(fun (x._@.LexLeanTarget.TargetSyntax.#324402063._hygCtx.#7.LexLeanPreservation.RustBase.#2118327401._hygCtx.#117.#424.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#127 : @2466) =>
+                                                        proof(fun (b._@.#425.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#128 : @2466) =>
+                                                          proof(fun (x._@.#394.#426.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#129 : proof(@3501
+                                                                @400)) =>
+                                                            proof(@3264
+                                                                proof(proof(@3503 @3265) @6)))))))
+                                                  proof(fun (vs._@.#428.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#130 : @32) =>
+                                                    proof(fun (t._@.#429.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#131 : @2466) =>
+                                                      proof(fun (x._@.#396.#430.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#132 : proof(@3501
+                                                            @408)) =>
+                                                        proof(@3277 proof(proof(@3503 @411) @6))))))
+                                                proof(fun (a._@.#432.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#133 : @0) =>
+                                                  proof(fun (b._@.#433.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#134 : @0) =>
+                                                    proof(fun (s._@.#434.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#135 : @2466) =>
+                                                      proof(fun (t._@.#435.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#136 : @2466) =>
+                                                        proof(fun (x._@.#398.#436.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#137 : proof(@3501
+                                                              @429)) =>
+                                                          proof(@3291
+                                                              proof(proof(@3503 @434) @6))))))))
+                                              proof(fun (k._@.#438.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#138 : @3) =>
+                                                proof(fun (fs._@.#439.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#139 : @32) =>
+                                                  proof(fun (i._@.#440.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#140 : @3) =>
+                                                    proof(fun (x._@.#400.#441.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#141 : proof(@3501
+                                                          @446)) =>
+                                                      proof(@3305 proof(proof(@3503 @450) @6)))))))
+                                            proof(fun (f._@.#443.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#142 : @3) =>
+                                              proof(fun (cs._@.#444.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#143 : @32) =>
+                                                proof(fun (ps._@.#445.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#144 : @2708) =>
+                                                  proof(fun (r._@.#446.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#145 : @2466) =>
+                                                    proof(fun (x._@.#402.#447.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#146 : proof(@3501
+                                                          @465)) =>
+                                                      proof(@3320
+                                                          proof(proof(@3503 @3322) @6))))))))
+                                          proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#25.LexLeanPreservation.RustBase.#2118327401._hygCtx.#352.#453.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#147 : @305) =>
+                                            proof(fun (x._@.#406.#454.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#148 : proof(@3501
+                                                  @307)) =>
+                                              proof(@3336 proof(proof(@3503 @310) @6)))))
+                                        proof(fun (x._@.LexLeanTarget.TargetSyntax.#1953721060._hygCtx.#27.LexLeanPreservation.RustBase.#2118327401._hygCtx.#363.#456.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#149 : @323) =>
+                                          proof(fun (x._@.#408.#457.LexLeanPreservation.Compose.#3624345064._hygCtx._hyg.#150 : proof(@3501
+                                                @325)) =>
+                                            proof(@3346 proof(proof(@3503 @328) @6))))))
+                                  @1769)))
+                        @40)
+                      proof(proof(@3359 @3484) @6))))
+              proof(proof(@118 @3144) @6))))))
+@3611 := (x : @21) -> @2860 @4
+@3613 := (x : @21) -> @2866 @4
+@3615 := @869 @33 @26
+@3616 := LexLeanPreservation.encPair
+@3625 := @2873 (@3616 @391 @33 @26 @21 @6) (@3286 @16 @11)
+@3637 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} ->
+  {β : @2514} ->
+  {ea : @2856} ->
+  {eb : @2856} -> {s : @2466} -> {t : @2466} -> (ha : @3611) -> (hb : @3613) -> (x : @3615) -> @3625
+@3638 := proof(@2917 @3625)
+@3639 := Prod.fst.{0, 0}
+@3642 := proof(proof(proof(@3639 @391) @33) @6)
+@3643 := proof(@26 @3642)
+@3645 := proof(proof(@2873 @3643) @16)
+@3646 := proof(@606 @3645)
+@3647 := Prod.snd.{0, 0}
+@3650 := proof(proof(proof(@3647 @391) @33) @6)
+@3651 := proof(@21 @3650)
+@3653 := proof(proof(@2873 @3651) @11)
+@3654 := proof(@3646 @3653)
+@3687 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun {β : @2514} =>
+            proof(fun {ea : @2856} =>
+              proof(fun {eb : @2856} =>
+                proof(fun {s : @2466} =>
+                  proof(fun {t : @2466} =>
+                    proof(fun (ha : @3611) =>
+                      proof(fun (hb : @3613) =>
+                        proof(fun (x : @3615) =>
+                          proof(proof(proof(@3638 @3654)
+                                proof(proof(@2004 proof(proof(@2928 @3625) @3654))
+                                    proof(proof(proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_7)
+                                                    @53)
+                                                  @46)
+                                                @38)
+                                              @3643)
+                                            @3651)
+                                          @16)
+                                        @11)))
+                              proof(proof(proof(proof(@1333 @3645) @3653) proof(@4 @3642))
+                                  proof(@40 @3650)))))))))))))))
+@3689 := LexLeanPreservation.encUnit @6
+@3695 := {p : @865} -> {c : @866} -> {A : @867} -> (u : @680) -> @2788 @3689 @3215
+@3707 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun (u : @680) =>
+          proof(proof(@1240 proof(proof(@2788 @92) @3215))
+              proof(proof(proof(proof(LexLeanPreservation.Rust.WT.eq_1) @11) @4) @40))))))
+@3709 := @2565 @3265 @3250
+@3716 := {p : @865} ->
+  {c : @866} -> {A : @867} -> {v : @0} -> {s : @2466} -> {t : @2466} -> (h : @2471) -> @3709
+@3725 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {v : @0} =>
+          proof(fun {s : @2466} =>
+            proof(fun {t : @2466} => proof(fun (h : @2471) => proof(proof(@2004 @3709) @6))))))))
+@3733 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @251) -> @2788 @253 (@3198 LexLeanTarget.TargetSyntax.IntKind.i16)
+@3737 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @251) => @2797))))
+@3745 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @269) -> @2788 @271 (@3198 LexLeanTarget.TargetSyntax.IntKind.i32)
+@3749 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @269) => @2797))))
+@3757 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @287) -> @2788 @289 (@3198 LexLeanTarget.TargetSyntax.IntKind.i64)
+@3761 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @287) => @2797))))
+@3769 := {p : @865} ->
+  {c : @866} -> {A : @867} -> (x : @233) -> @2788 @235 (@3198 LexLeanTarget.TargetSyntax.IntKind.i8)
+@3773 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @233) => @2797))))
+@3780 := {p : @865} ->
+  {c : @866} -> {A : @867} -> (n : @10) -> @2788 @13 LexLeanTarget.TargetSyntax.Ty.int
+@3784 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (n : @10) => @2797))))
+@3786 := LexLeanPreservation.ListEnc @6
+@3787 := LexLeanPreservation.ListEnc.elem
+@3793 := (x : @4) -> @2565 (@3787 @11 @4 @6) @40
+@3797 := LexLeanPreservation.ListEnc.enc @16 @11 @6
+@3798 := @2496 @3797
+@3799 := @3798 @3010
+@3807 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> {α : @2514} -> (L : @3786) -> {t : @2466} -> (h : @3793) -> (xs : @2570) -> @3799
+@3808 := proof(@2917 @3799)
+@3810 := proof(proof(@3787 @16) @11)
+@3812 := proof(proof(@2674 @3810) @6)
+@3813 := proof(@34 @3812)
+@3814 := proof(@2496 @3813)
+@3815 := proof(@3814 @3010)
+@3816 := proof(@3808 @3815)
+@3819 := proof(@2004 proof(proof(@2928 @3799) @3815))
+@3823 := proof(proof(proof(proof(@1076 @2466) @578) @3798) @3814)
+@3824 := proof(@1081 @0)
+@3864 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun (L : @3786) =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @3793) =>
+                proof(fun (xs : @2570) =>
+                  proof(proof(@3816
+                        proof(@3819
+                            proof(proof(@3823
+                                  proof(proof(proof(proof(proof(@3824
+                                              proof((a._@._internal._hyg.#0 : @2466) -> @578))
+                                            @3797)
+                                          @3813)
+                                        @2496)
+                                      proof(proof(proof(proof(proof(proof(@1081 @32) @0)
+                                                proof(proof(proof(proof(LexLeanPreservation.ListEnc.items)
+                                                        @16)
+                                                      @11)
+                                                    @6))
+                                              @3812)
+                                            @34)
+                                          proof(proof(proof(proof(LexLeanPreservation.ListEnc.items_eq)
+                                                  @16)
+                                                @11)
+                                              @6))))
+                                @3010)))
+                      proof(proof(proof(@3023 @3812) @4)
+                          proof(proof(proof(proof(@3030 @3810) @4) @40) @6)))))))))))
+@3871 := {p : @865} ->
+  {c : @866} -> {A : @867} -> (n : @3) -> @2788 @7 LexLeanTarget.TargetSyntax.Ty.nat
+@3875 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (n : @3) => @2797))))
+@3882 := {p : @865} -> {c : @866} -> {A : @867} -> {t : @2466} -> @2788 @359 (@3080 @6)
+@3883 := @2470 @40
+@3885 := @2565 @2075 @3250
+@3892 := {p : @865} ->
+  {c : @866} -> {A : @867} -> {v : @0} -> {s : @2466} -> {t : @2466} -> (h : @3883) -> @3885
+@3901 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {v : @0} =>
+          proof(fun {s : @2466} =>
+            proof(fun {t : @2466} => proof(fun (h : @3883) => proof(proof(@2004 @3885) @6))))))))
+@3902 := (x._@.LexLeanPreservation.Compose.#1127684159._hygCtx.#39.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#50 : @3044) ->
+  @578
+@3905 := {α : @2514} ->
+  (motive : @3902) ->
+  (x._@.LexLeanPreservation.Compose.#1127684159._hygCtx.#39.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#50 : @3046) ->
+  @3056
+@3912 := fun {α : @2514} =>
+  fun (motive : @3902) =>
+  fun (x._@.LexLeanPreservation.Compose.#1127684159._hygCtx.#39.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#50 : @3046) =>
+  fun (h_1 : @3050) =>
+  fun (h_2 : @3054) =>
+  @3066 (fun (val._@.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#65 : @16) => @2845)
+@3914 := @3176 @40 @6
+@3916 := @2469 @377 @3228
+@3922 := {p : @865} -> {c : @866} -> {A : @867} -> {v : @0} -> {t : @2466} -> (h : @3914) -> @3916
+@3930 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {v : @0} =>
+          proof(fun {t : @2466} => proof(fun (h : @3914) => proof(proof(@2004 @3916) @6)))))))
+@3932 := LexLeanPreservation.OptEnc @6
+@3933 := LexLeanPreservation.OptEnc.elem
+@3939 := (x : @4) -> @2565 (@3933 @11 @4 @6) @40
+@3940 := LexLeanPreservation.OptEnc.enc
+@3953 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {α : @2514} ->
+  (O : @3932) -> {t : @2466} -> (h : @3939) -> (o : @3074) -> @2496 (@3940 @16 @11 @6) @3081
+@3955 := proof(proof(LexLeanPreservation.Rust.wt_optEnc.match_1_1) @16)
+@3957 := proof(proof(@3940 @21) @16)
+@3963 := proof(proof(@3955
+        proof(fun (x._@.LexLeanPreservation.Compose.#1127684159._hygCtx.#39.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#50 : @3062) =>
+          proof(proof(@2726 proof(@3957 @6)) @3097)))
+      @6)
+@3965 := proof(@3957 proof(@3047 @21))
+@3967 := proof(proof(@2726 @3965) @3097)
+@3969 := proof(proof(@2917 @3967) @3103)
+@3972 := proof(@2004 proof(proof(@2928 @3967) @3103))
+@3973 := proof(@3824 @578)
+@3975 := proof(proof(@3973 @3965) @359)
+@3979 := proof(fun (_a : @0) => proof(proof(@2859 @6) proof(@3080 @16)))
+@3994 := proof(@3963
+      proof(fun ("_" : @680) =>
+        proof(proof(@3969
+              proof(@3972
+                  proof(proof(@3975 @3979)
+                      proof(proof(proof(LexLeanPreservation.OptEnc.enc_none) @21) @16))))
+            proof(proof(proof(proof(proof(LexLeanPreservation.Rust.wt_noneV) @391) @33) @26) @11))))
+@3995 := proof(@3957 @3114)
+@3997 := proof(proof(@2726 @3995) @3097)
+@3998 := proof(@2917 @3997)
+@4001 := proof(proof(proof(@3933 @21) @16) @6)
+@4002 := proof(@17 @4001)
+@4004 := proof(proof(@2726 @4002) @3097)
+@4036 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {α : @2514} =>
+          proof(fun (O : @3932) =>
+            proof(fun {t : @2466} =>
+              proof(fun (h : @3939) =>
+                proof(fun (x._@.LexLeanPreservation.Compose.#1127684159._hygCtx._hyg.#39 : @3074) =>
+                  proof(@3994
+                      proof(fun (a : @16) =>
+                        proof(proof(proof(@3998 @4004)
+                              proof(proof(@2004 proof(proof(@2928 @3997) @4004))
+                                  proof(proof(proof(proof(@3973 @3995) @4002) @3979)
+                                      proof(proof(proof(proof(LexLeanPreservation.OptEnc.enc_some)
+                                              @21)
+                                            @16)
+                                          @6))))
+                            proof(proof(proof(proof(proof(proof(proof(LexLeanPreservation.Rust.wt_someV)
+                                          @391)
+                                        @33)
+                                      @26)
+                                    @4001)
+                                  @11)
+                                @2566))))))))))))
+@4042 := {p : @865} -> {c : @866} -> {A : @867} -> (o : @341) -> @2788 @343 @3148
+@4046 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (o : @341) => @2797))))
+@4047 := @2565 @11
+@4048 := @4047 @40
+@4050 := @2496 @11 @40
+@4056 := @2726 (@39 @21 @16) (@3286 @11 @4)
+@4065 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {a : @0} -> {b : @0} -> {s : @2466} -> {t : @2466} -> (ha : @4048) -> (hb : @4050) -> @4056
+@4066 := proof(@2004 @4056)
+@4067 := proof(@2726 @21)
+@4084 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {a : @0} =>
+          proof(fun {b : @0} =>
+            proof(fun {s : @2466} =>
+              proof(fun {t : @2466} =>
+                proof(fun (ha : @4048) =>
+                  proof(fun (hb : @4050) =>
+                    proof(@4066
+                        proof(proof(proof(proof(@1333 proof(@4067 @11)) proof(proof(@2726 @16) @4))
+                              @40)
+                            @6)))))))))))
+@4090 := {p : @865} -> {c : @866} -> {A : @867} -> (s : @305) -> @2788 @307 @3333
+@4094 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (s : @305) => @2557))))
+@4102 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @179) -> @2788 @181 (@3198 LexLeanTarget.TargetSyntax.IntKind.u16)
+@4106 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @179) => @2797))))
+@4114 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @197) -> @2788 @199 (@3198 LexLeanTarget.TargetSyntax.IntKind.u32)
+@4118 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @197) => @2797))))
+@4126 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} -> (x : @215) -> @2788 @217 (@3198 LexLeanTarget.TargetSyntax.IntKind.u64)
+@4130 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @215) => @2797))))
+@4138 := {p : @865} ->
+  {c : @866} -> {A : @867} -> (x : @161) -> @2788 @163 (@3198 LexLeanTarget.TargetSyntax.IntKind.u8)
+@4142 := proof(fun {p : @865} =>
+    proof(fun {c : @866} => proof(fun {A : @867} => proof(fun (x : @161) => @2797))))
+@4150 := {p : @865} -> {c : @866} -> {A : @867} -> @1018 @4 @40 @6 @92 @3215
+@4153 := proof(fun {p : @865} => proof(fun {c : @866} => proof(fun {A : @867} => @2557)))
+@4154 := @4047 @4
+@4161 := @2769 (@686 @21 @11) (@685 @2466 @16 @4)
+@4170 := {p : @865} ->
+  {c : @866} ->
+  {A : @867} ->
+  {v : @0} -> {t : @2466} -> {vs : @32} -> {ts : @2708} -> (h : @4154) -> (hs : @2723) -> @4161
+@4186 := proof(fun {p : @865} =>
+    proof(fun {c : @866} =>
+      proof(fun {A : @867} =>
+        proof(fun {v : @0} =>
+          proof(fun {t : @2466} =>
+            proof(fun {vs : @32} =>
+              proof(fun {ts : @2708} =>
+                proof(fun (h : @4154) =>
+                  proof(fun (hs : @2723) =>
+                    proof(proof(@2004 @4161)
+                        proof(proof(proof(proof(@1333 proof(@4067 @16)) @2771) @40) @6)))))))))))
+@4195 := {p : @865} -> {c : @866} -> {A : @867} -> @901 @4 @40 @6 @682 (@681 @2466)
+@4199 := @2874 @16 @11 @4 @40
+@4202 := @2825 @16 @11 @6
+@4203 := @4199 @4202
+@4211 := {ε : @2514} ->
+  {α : @2514} -> (ee : @2856) -> (ea : @2856) -> (x_1 : @11) -> @3212 @4203 (@27 @2566)
+@4212 := proof(@118 @0)
+@4218 := proof(fun {ε : @2514} =>
+    proof(fun {α : @2514} =>
+      proof(fun (ee : @2856) =>
+        proof(fun (ea : @2856) => proof(fun (x_1 : @11) => proof(@4212 @4203))))))
+@4219 := @4199 @2822
+@4227 := {ε : @2514} ->
+  {α : @2514} -> (ee : @2856) -> (ea : @2856) -> (a : @4) -> @3212 @4219 (@22 @2845)
+@4233 := proof(fun {ε : @2514} =>
+    proof(fun {α : @2514} =>
+      proof(fun (ee : @2856) =>
+        proof(fun (ea : @2856) => proof(fun (a : @4) => proof(@4212 @4219))))))
+@4237 := @3075 @40 @6 (@3047 @40)
+@4241 := {α : @2514} -> (e : @2562) -> @3212 @4237 @359
+@4244 := proof(fun {α : @2514} => proof(fun (e : @2562) => proof(@4212 @4237)))
+@4249 := @3075 @4 @40 (@897 @4 @6)
+@4255 := {α : @2514} -> (e : @2562) -> (a : @40) -> @3212 @4249 (@17 @2845)
+@4259 := proof(fun {α : @2514} =>
+    proof(fun (e : @2562) => proof(fun (a : @40) => proof(@4212 @4249))))
+@4261 := @869 @11 @4
+@4266 := @3616 @16 @11 @4 @40 @6
+@4283 := {α : @2514} ->
+  {β : @2514} ->
+  (ea : @2856) ->
+  (eb : @2856) -> (p : @4261) -> @3212 @4266 (@39 (@4 (@3639 @16 @11 @6)) (@40 (@3647 @16 @11 @6)))
+@4289 := proof(fun {α : @2514} =>
+    proof(fun {β : @2514} =>
+      proof(fun (ea : @2856) =>
+        proof(fun (eb : @2856) => proof(fun (p : @4261) => proof(@4212 @4266))))))
+@4292 := (x._@.LexLeanPreservation.Values.#1181909315._hygCtx._hyg.#2 : @680) -> @3212 @3689 @92
+@4294 := proof(fun (x : @680) => proof(@4212 @3689))
+@4295 := (x._@.LexLeanPreservation.Values.#1899250947._hygCtx.#15.LexLeanPreservation.Values.#1899250947._hygCtx._hyg.#26 : @2815) ->
+  @494
+@4297 := (x : @11) -> @4 @4202
+@4299 := @2819 @21 @16
+@4302 := (a : @11) -> @11 (@4299 @6)
+@4303 := Eq.{u_1}
+@4304 := @2827 @4
+@4305 := @11 @4304
+@4306 := @4303 @4305
+@4307 := LexLeanPreservation.encExcept.match_1.{u_1}
+@4310 := @4307 @21 @16 @11
+@4313 := @4310 @4304 @40 @6
+@4322 := {ε : @2514} ->
+  {α : @2514} ->
+  (motive : @4295) -> (x : @4) -> (h_1 : @4297) -> (h_2 : @4302) -> @4306 @4313 (@40 @4)
+@4323 := proof(Eq.refl.{u_1})
+@4331 := proof(fun {ε._@._hyg.#3 : @2514} =>
+    proof(fun {α._@._hyg.#4 : @2514} =>
+      proof(fun (motive._@._hyg.#5 : @4295) =>
+        proof(fun (x._@._hyg.#6 : @4) =>
+          proof(fun (h_1._@._hyg.#7 : @4297) =>
+            proof(fun (h_2._@._hyg.#8 : @4302) => proof(proof(@4323 @4305) @4313)))))))
+@4332 := @4299 @4
+@4333 := @11 @4332
+@4334 := @4303 @4333
+@4337 := @4310 @4332 @40 @6
+@4338 := @4334 @4337
+@4339 := @6 @4
+@4346 := {ε : @2514} ->
+  {α : @2514} -> (motive : @4295) -> (a : @40) -> (h_1 : @4297) -> (h_2 : @4302) -> @4338 @4339
+@4354 := proof(fun {ε._@._hyg.#10 : @2514} =>
+    proof(fun {α._@._hyg.#11 : @2514} =>
+      proof(fun (motive._@._hyg.#12 : @4295) =>
+        proof(fun (a._@._hyg.#13 : @40) =>
+          proof(fun (h_1._@._hyg.#14 : @4297) =>
+            proof(fun (h_2._@._hyg.#15 : @4302) => proof(proof(@4323 @4333) @4337)))))))
+@4360 := {ε : @2514} ->
+  {α : @2514} ->
+  (motive : @4295) ->
+  (x._@.LexLeanPreservation.Values.#1899250947._hygCtx.#15.LexLeanPreservation.Values.#1899250947._hygCtx._hyg.#26 : @2818) ->
+  (h_1 : @4297) -> (h_2 : @4302) -> @692
+@4361 := (x._@.LexLeanPreservation.Values.#1079457856._hygCtx.#10.LexLeanPreservation.Values.#1079457856._hygCtx._hyg.#21 : @3044) ->
+  @494
+@4364 := ("_" : @680) -> @40 (@3047 @4)
+@4368 := (a : @4) -> @4 (@897 @11 @6)
+@4369 := @4303 @3049
+@4370 := LexLeanPreservation.encOption.match_1.{u_1}
+@4375 := @4370 @11 @4 @3048 @40 @6
+@4381 := {α : @2514} -> (motive : @4361) -> (h_1 : @4364) -> (h_2 : @4368) -> @4369 @4375 @704
+@4387 := proof(fun {α._@._hyg.#3 : @2514} =>
+    proof(fun (motive._@._hyg.#4 : @4361) =>
+      proof(fun (h_1._@._hyg.#5 : @4364) =>
+        proof(fun (h_2._@._hyg.#6 : @4368) => proof(proof(@4323 @3049) @4375)))))
+@4388 := @3051 @4
+@4389 := @11 @4388
+@4390 := @4303 @4389
+@4395 := @4370 @16 @11 @4388 @40 @6
+@4402 := {α : @2514} ->
+  (motive : @4361) -> (a : @40) -> (h_1 : @3050) -> (h_2 : @3054) -> @4390 @4395 @4339
+@4409 := proof(fun {α._@._hyg.#8 : @2514} =>
+    proof(fun (motive._@._hyg.#9 : @4361) =>
+      proof(fun (a._@._hyg.#10 : @40) =>
+        proof(fun (h_1._@._hyg.#11 : @3050) =>
+          proof(fun (h_2._@._hyg.#12 : @3054) => proof(proof(@4323 @4389) @4395))))))
+@4412 := {α : @2514} ->
+  (motive : @4361) ->
+  (x._@.LexLeanPreservation.Values.#1079457856._hygCtx.#10.LexLeanPreservation.Values.#1079457856._hygCtx._hyg.#21 : @3046) ->
+  @3056
+@4413 := (x._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#70 : @1088) -> @494
+@4416 := (computed : @0) ->
+  (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) ->
+  @16 @2041
+@4418 := (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) ->
+  @16 @2146
+@4420 := ("_" : @680) -> @21 @1103
+@4422 := ("_" : @680) -> @26 @2294
+@4424 := @2039 @21 @16
+@4425 := @26 @4424
+@4426 := @4303 @4425
+@4427 := LexLeanTarget.RustSemantics.runItem.match_1.{u_1}
+@4433 := @4427 @26 @4424 @11 @4 @40 @6
+@4444 := (motive : @4413) ->
+  (computed : @0) ->
+  (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) ->
+  (h_1 : @4416) -> (h_2 : @4418) -> (h_3 : @4420) -> (h_4 : @4422) -> @4426 @4433 (@11 @21 @16)
+@4453 := proof(fun (motive._@._hyg.#3 : @4413) =>
+    proof(fun (computed._@._hyg.#4 : @0) =>
+      proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx.#78._hyg.#5 : @3) =>
+        proof(fun (h_1._@._hyg.#6 : @4416) =>
+          proof(fun (h_2._@._hyg.#7 : @4418) =>
+            proof(fun (h_3._@._hyg.#8 : @4420) =>
+              proof(fun (h_4._@._hyg.#9 : @4422) => proof(proof(@4323 @4425) @4433))))))))
+@4456 := (computed : @0) ->
+  (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) ->
+  @11 @2041
+@4458 := (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) ->
+  @11 @2146
+@4459 := @16 @1103
+@4460 := ("_" : @680) -> @4459
+@4462 := ("_" : @680) -> @21 @2294
+@4463 := @2145 @16
+@4464 := @21 @4463
+@4465 := @4303 @4464
+@4471 := @4427 @21 @4463 @11 @4 @40 @6
+@4480 := (motive : @4413) ->
+  (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) ->
+  (h_1 : @4456) -> (h_2 : @4458) -> (h_3 : @4460) -> (h_4 : @4462) -> @4465 @4471 (@4 @16)
+@4488 := proof(fun (motive._@._hyg.#11 : @4413) =>
+    proof(fun (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx.#107._hyg.#12 : @3) =>
+      proof(fun (h_1._@._hyg.#13 : @4456) =>
+        proof(fun (h_2._@._hyg.#14 : @4458) =>
+          proof(fun (h_3._@._hyg.#15 : @4460) =>
+            proof(fun (h_4._@._hyg.#16 : @4462) => proof(proof(@4323 @4464) @4471)))))))
+@4491 := (computed : @0) ->
+  (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#5.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#78 : @3) ->
+  @4 @2041
+@4493 := (x._@.LexLeanTarget.TargetSemantics.#3524018119._hygCtx.#7.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#107 : @3) ->
+  @4 @2146
+@4495 := ("_" : @680) -> @11 @1103
+@4496 := @16 @2294
+@4497 := ("_" : @680) -> @4496
+@4498 := @4303 @4459
+@4499 := @4427 @16
+@4504 := @4499 @1103 @11 @4 @40 @6
+@4511 := (motive : @4413) ->
+  (h_1 : @4491) -> (h_2 : @4493) -> (h_3 : @4495) -> (h_4 : @4497) -> @4498 @4504 @704
+@4518 := proof(fun (motive._@._hyg.#18 : @4413) =>
+    proof(fun (h_1._@._hyg.#19 : @4491) =>
+      proof(fun (h_2._@._hyg.#20 : @4493) =>
+        proof(fun (h_3._@._hyg.#21 : @4495) =>
+          proof(fun (h_4._@._hyg.#22 : @4497) => proof(proof(@4323 @4459) @4504))))))
+@4519 := @4303 @4496
+@4524 := @4499 @2294 @11 @4 @40 @6
+@4525 := @4519 @4524
+@4526 := @6 @703
+@4532 := (motive : @4413) ->
+  (h_1 : @4491) -> (h_2 : @4493) -> (h_3 : @4495) -> (h_4 : @4497) -> @4525 @4526
+@4539 := proof(fun (motive._@._hyg.#24 : @4413) =>
+    proof(fun (h_1._@._hyg.#25 : @4491) =>
+      proof(fun (h_2._@._hyg.#26 : @4493) =>
+        proof(fun (h_3._@._hyg.#27 : @4495) =>
+          proof(fun (h_4._@._hyg.#28 : @4497) => proof(proof(@4323 @4496) @4524))))))
+@4546 := (motive : @4413) ->
+  (x._@.LexLeanTarget.RustSemantics.#1488085717._hygCtx._hyg.#70 : @1088) ->
+  (h_1 : @4456) -> (h_2 : @4458) -> (h_3 : @4460) -> (h_4 : @4462) -> @21 @16
+@4548 := ("_" : @680) -> @40 @1348
+@4549 := @4 @1351
+@4550 := ("_" : @680) -> @4549
+@4551 := @4303 @1349
+@4552 := @1358 @4
+@4555 := @4552 @1348 @40 @6
+@4560 := (motive : @1347) -> (h_1 : @4548) -> (h_2 : @4550) -> @4551 @4555 @704
+@4565 := proof(fun (motive._@._hyg.#3 : @1347) =>
+    proof(fun (h_1._@._hyg.#4 : @4548) =>
+      proof(fun (h_2._@._hyg.#5 : @4550) => proof(proof(@4323 @1349) @4555))))
+@4566 := @4303 @4549
+@4569 := @4552 @1351 @40 @6
+@4574 := (motive : @1347) -> (h_1 : @4548) -> (h_2 : @4550) -> @4566 @4569 @4526
+@4579 := proof(fun (motive._@._hyg.#7 : @1347) =>
+    proof(fun (h_1._@._hyg.#8 : @4548) =>
+      proof(fun (h_2._@._hyg.#9 : @4550) => proof(proof(@4323 @4549) @4569))))
+\end{coremodule}
+\end{lexlean}

@@ -18,6 +18,11 @@
 \importmodule{GnafCertificates}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"fields":[{"field":"adts","value":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Adt"}},"kind":"nil"}},{"field":"functions","value":{"element":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Function"}},"kind":"nil"}}],"kind":"record","type":{"module":"TargetSyntax","name":"Program"}},"kind":"definition","name":"emptyProgram","parameters":[],"result":{"arguments":[],"kind":"named","member":{"module":"TargetSyntax","name":"Program"}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: emptyProgram,
+  parameters: [],
+  result: TargetSyntax::Program,
+  body: (record TargetSyntax::Program {adts := (nil TargetSyntax::Adt), functions := (nil TargetSyntax::Function)})
+}
 \end{semanticmodule}
 \end{lexlean}

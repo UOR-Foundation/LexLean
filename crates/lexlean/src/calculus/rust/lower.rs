@@ -2308,6 +2308,7 @@ impl<'a> Lowering<'a> {
                     block_of(body)
                 };
                 fold(&mut body);
+                super::moves::apply(&mut body);
                 (parameters, body)
             };
             items.push(ItemDef::Function {

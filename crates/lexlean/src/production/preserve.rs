@@ -1,16 +1,21 @@
-//! The environment of certificate A (SPEC.md §17.17): the hand-written
-//! preservation library and the calculus modules every certificate imports,
-//! shipped as language data, and the workspace in which one project's
-//! certificates compile beside its generated modules.
+//! The environment of certificate A (SPEC.md §17.17): the preservation
+//! library and the calculus modules every certificate imports, shipped as
+//! language data, and the workspace in which one project's certificates
+//! compile beside its generated modules.
 //!
-//! The library is data rather than generated text because the metatheory it
-//! carries (fuel monotonicity of the mutual evaluator, the compatibility of
-//! every construct, the collection templates) quantifies over the
-//! evaluator itself, which LexLean's proof language cannot state. Its
-//! declarations' axioms are pinned per declaration in `library.toml`, so a
+//! The library is LexLean source: native core modules (§17.10), one per
+//! library module, shipped as the embedded project `library/`. Its Lean is
+//! generated from that source by the compiler, never read from a file the
+//! compiler did not write. The metatheory it carries (fuel monotonicity of
+//! the mutual evaluator, the compatibility of every construct, the collection
+//! templates) quantifies over the evaluator itself, which LexLean's proof
+//! language cannot state, so it is kernel data that was migrated losslessly
+//! from an elaborated library, not text. Each declaration carries its exact
+//! axioms, and the audit compares what Lean prints against them, so a
 //! drifted library is caught by an exact comparison, not trusted.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 
@@ -18,14 +23,18 @@ use super::certificate::Certificate;
 use crate::code;
 use crate::diagnostic::Diagnostic;
 
-/// The library registry, hashed into the language-1.2 compiler semantics.
+/// The library's module list, hashed into the language-1.2 compiler
+/// semantics with the sources it names.
 pub const LIBRARY_PATH: &str = "language/preservation-1.2/library.toml";
 
 /// The registry's tag.
-pub const LIBRARY_SPEC: &str = "lexlean/preservation-library/1";
+pub const LIBRARY_SPEC: &str = "lexlean/preservation-library/2";
 
-/// Where the library's modules live, one file per module.
+/// The embedded project of the library; its native sources are in `src/`.
 pub const LIBRARY_DIR: &str = "language/preservation-1.2/library";
+
+/// The module prefix of the library project.
+pub const LIBRARY_PREFIX: &str = "LexLeanPreservation";
 
 /// Where the shipped copies of the calculus modules live. They are
 /// byte-equal to the compiler project's golden modules (§17.14).
@@ -50,6 +59,47 @@ pub const RESERVED_ROOTS: [&str; 3] = ["LexLeanTarget", "LexLeanPreservation", "
 /// none.
 pub const CERTIFICATE_AXIOMS: [&str; 3] = ["Classical.choice", "Quot.sound", "propext"];
 
+/// How the audit module prints one declaration of the statement vocabulary:
+/// `#print` states a definition or an inductive type in full, `#check`
+/// states a theorem's statement without its proof term.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Statement {
+    /// `#print name`.
+    Print,
+    /// `#check @name`.
+    Check,
+}
+
+/// What certificates A, B, and E state, by the library declaration that
+/// states it (SPEC.md §17.17). The audit module prints each, after the
+/// axioms, in this order; the specification quotes the output.
+pub const VOCABULARY: [(&str, Statement); 17] = [
+    ("LexLeanPreservation.Obs", Statement::Print),
+    ("LexLeanPreservation.Rel", Statement::Print),
+    ("LexLeanPreservation.Conv", Statement::Print),
+    ("LexLeanPreservation.FunRel", Statement::Print),
+    ("LexLeanPreservation.RunConv", Statement::Print),
+    ("LexLeanPreservation.Rust.WT", Statement::Print),
+    ("LexLeanPreservation.Rust.WTL", Statement::Print),
+    ("LexLeanPreservation.Rust.fnIdent", Statement::Print),
+    ("LexLeanPreservation.Rust.fnFallible", Statement::Print),
+    ("LexLeanPreservation.Rust.RCI", Statement::Print),
+    ("LexLeanPreservation.Rust.Realizes", Statement::Print),
+    ("LexLeanPreservation.Rust.RealizesFn", Statement::Print),
+    ("LexLeanPreservation.Rust.FunSem", Statement::Print),
+    ("LexLeanPreservation.someObs", Statement::Print),
+    ("LexLeanPreservation.Rust.Representable", Statement::Print),
+    ("LexLeanPreservation.Rust.RepresentableL", Statement::Print),
+    (
+        "LexLeanPreservation.Rust.runItem_abort_infallible",
+        Statement::Check,
+    ),
+];
+
+/// The line that ends the axioms of the audit module's output and begins
+/// the statement vocabulary.
+pub const VOCABULARY_MARKER: &str = "-- statement vocabulary";
+
 /// The parsed library registry.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -58,13 +108,14 @@ pub struct Library {
     pub toolchain: String,
     /// The library's modules in dependency order.
     pub modules: Vec<String>,
-    /// Every declaration of the library with its exact axioms.
+    /// Every declaration of the library a Lean command can name, with its
+    /// exact axioms, read from the native modules.
+    #[serde(skip)]
     pub declaration: Vec<LibraryDeclaration>,
 }
 
 /// One library declaration and its exact axioms.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LibraryDeclaration {
     pub module: String,
     pub name: String,
@@ -77,6 +128,10 @@ pub struct StagedFile {
     pub path: String,
     pub module: String,
     pub text: String,
+    /// The record of a certificate held as kernel data: its authoring
+    /// notation, which the verify record holds in place of the Lean the
+    /// decoder compiles.
+    pub source: Option<String>,
 }
 
 /// The files a project's certificates compile in, and their order.
@@ -110,55 +165,406 @@ pub fn module_path(module: &str) -> String {
     format!("{}.lean", module.replace('.', "/"))
 }
 
-/// The embedded library registry, checked for internal consistency: its
-/// tag and toolchain, each declaration in a listed module, no name twice,
-/// and every axiom list sorted.
-///
-/// # Errors
-///
-/// Returns `LLI9001` when the shipped registry is missing or malformed.
-pub fn library() -> Result<Library, Diagnostic> {
-    let text = embedded_text(LIBRARY_PATH)?;
+/// What the native library renders to and declares, read once.
+struct Native {
+    /// The generated Lean of each library module.
+    texts: BTreeMap<String, String>,
+    /// The declarations a Lean command can name, with their exact axioms.
+    declarations: Vec<LibraryDeclaration>,
+    /// The native modules themselves, by name: the kernel data a certificate
+    /// built as data reads its lemma types from.
+    modules: BTreeMap<String, crate::ir::core::CoreModule>,
+    /// Every declaration row by name: its module and its position.
+    rows: BTreeMap<String, (String, usize)>,
+}
+
+/// The embedded module list, checked for its tag and toolchain.
+fn registry() -> Result<Library, String> {
+    let text = embedded_text(LIBRARY_PATH).map_err(|diagnostic| diagnostic.message)?;
     let library: Library =
-        toml::from_str(text).map_err(|error| internal(format!("{LIBRARY_PATH}: {error}")))?;
+        toml::from_str(text).map_err(|error| format!("{LIBRARY_PATH}: {error}"))?;
     if library.spec != LIBRARY_SPEC {
-        return Err(internal(format!(
+        return Err(format!(
             "{LIBRARY_PATH}: spec `{}` is not `{LIBRARY_SPEC}`",
             library.spec
-        )));
+        ));
     }
     if library.toolchain != crate::LEAN_TOOLCHAIN {
-        return Err(internal(format!(
+        return Err(format!(
             "{LIBRARY_PATH}: toolchain `{}` is not the pinned `{}`",
             library.toolchain,
             crate::LEAN_TOOLCHAIN
-        )));
+        ));
     }
-    let modules: BTreeSet<&str> = library.modules.iter().map(String::as_str).collect();
+    Ok(library)
+}
+
+/// The rules of the correspondence certificate B derives, read from the
+/// native library.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CorrespondenceRules {
+    /// The constructors of `Corr`, in declaration order, by short name.
+    pub constructors: Vec<String>,
+    /// The constructors the soundness theorem handles: all of them when its
+    /// proof term is an induction on a derivation, which the kernel's typing
+    /// of the recursor makes one case per constructor, and none when it is
+    /// not.
+    pub soundness_cases: Vec<String>,
+}
+
+/// The constructors of the correspondence `Corr` and the cases of its
+/// soundness theorem, read from the library's native modules, so that the
+/// aligner's closed rule set is audited against what the library states
+/// and proves.
+///
+/// # Errors
+///
+/// Returns a reason when a native module is absent or does not declare
+/// them.
+pub fn correspondence_rules() -> Result<CorrespondenceRules, String> {
+    const CORR: &str = "LexLeanPreservation.Rust.Corr";
+    const SOUND: &str = "LexLeanPreservation.Rust.sound";
+    let load = |module: &str| -> Result<crate::ir::core::CoreModule, String> {
+        let path = native_source_path(module).ok_or_else(|| format!("no source for `{module}`"))?;
+        let source = embedded_text(&path).map_err(|diagnostic| diagnostic.message)?;
+        crate::ir::core::CoreModule::from_source(source, "1.2")
+            .map_err(|reason| format!("{path}: {reason}"))
+    };
+    let corr = load("LexLeanPreservation.RustCorr")?;
+    let constructors: Vec<String> = corr
+        .declarations
+        .iter()
+        .find(|row| row.name == CORR)
+        .and_then(|row| row.inductive.as_ref())
+        .map(|inductive| {
+            inductive
+                .constructors
+                .iter()
+                .filter_map(|name| name.strip_prefix(&format!("{CORR}.")).map(str::to_owned))
+                .collect()
+        })
+        .ok_or_else(|| format!("the library does not declare the inductive `{CORR}`"))?;
+    if constructors.is_empty() {
+        return Err(format!("`{CORR}` declares no constructor"));
+    }
+    let sound = load("LexLeanPreservation.RustSound")?;
+    let proof = sound
+        .declarations
+        .iter()
+        .find(|row| row.name == SOUND)
+        .and_then(|row| row.value)
+        .ok_or_else(|| format!("the library does not state the theorem `{SOUND}`"))?;
+    let recursor = format!("{CORR}.rec");
+    let mut seen = vec![false; sound.nodes.len()];
+    let mut stack = vec![proof];
+    let mut by_induction = false;
+    while let Some(node) = stack.pop() {
+        if std::mem::replace(&mut seen[node], true) {
+            continue;
+        }
+        match &sound.nodes[node] {
+            crate::ir::core::CoreNode::Const { n, .. } => by_induction |= *n == recursor,
+            crate::ir::core::CoreNode::App { f, x } => stack.extend([*f, *x]),
+            crate::ir::core::CoreNode::Lambda { t, v, .. }
+            | crate::ir::core::CoreNode::Forall { t, v, .. } => stack.extend([*t, *v]),
+            crate::ir::core::CoreNode::Let { t, v, body, .. } => stack.extend([*t, *v, *body]),
+            crate::ir::core::CoreNode::Projection { x, .. }
+            | crate::ir::core::CoreNode::Mdata { x, .. } => stack.push(*x),
+            crate::ir::core::CoreNode::BVar { .. }
+            | crate::ir::core::CoreNode::Sort { .. }
+            | crate::ir::core::CoreNode::Nat { .. }
+            | crate::ir::core::CoreNode::String { .. } => {}
+        }
+    }
+    let soundness_cases = if by_induction {
+        constructors.clone()
+    } else {
+        Vec::new()
+    };
+    Ok(CorrespondenceRules {
+        constructors,
+        soundness_cases,
+    })
+}
+
+/// The path of a library module's native source.
+#[must_use]
+pub fn native_source_path(module: &str) -> Option<String> {
+    let relative = module.strip_prefix(&format!("{LIBRARY_PREFIX}."))?;
+    Some(format!(
+        "{LIBRARY_DIR}/src/{}.lex.tex",
+        relative.replace('.', "/")
+    ))
+}
+
+/// Build the native library from a module list and the native sources it
+/// names: every module parsed, its imports closed over `Init`, the calculus
+/// modules, and the earlier library modules, its Lean generated, its
+/// declarations collected.
+fn build_native(
+    library: &Library,
+    read: &dyn Fn(&str) -> Result<String, String>,
+) -> Result<Native, String> {
+    let mut texts = BTreeMap::new();
+    let mut declarations = Vec::new();
+    let mut modules = BTreeMap::new();
+    let mut rows = BTreeMap::new();
+    let mut seen_modules: BTreeSet<String> = BTreeSet::new();
     let mut names = BTreeSet::new();
-    for declaration in &library.declaration {
-        if !modules.contains(declaration.module.as_str()) {
-            return Err(internal(format!(
-                "{LIBRARY_PATH}: `{}` names the unlisted module `{}`",
-                declaration.name, declaration.module
-            )));
+    // The source that first declared each equation lemma, by name.
+    let mut equation_lemmas: BTreeMap<String, String> = BTreeMap::new();
+    for module in &library.modules {
+        let path = native_source_path(module)
+            .ok_or_else(|| format!("{LIBRARY_PATH}: `{module}` is outside `{LIBRARY_PREFIX}`"))?;
+        let source = read(&path)?;
+        let core = crate::ir::core::CoreModule::from_source(&source, "1.2")
+            .map_err(|reason| format!("{path}: {reason}"))?;
+        for import in &core.imports {
+            let allowed = import == "Init"
+                || TARGET_MODULES.contains(&import.as_str())
+                || seen_modules.contains(import);
+            if !allowed {
+                return Err(format!(
+                    "{path}: imports `{import}`, which is neither `Init`, a calculus module, nor an earlier library module"
+                ));
+            }
         }
-        if !names.insert(declaration.name.as_str()) {
-            return Err(internal(format!(
-                "{LIBRARY_PATH}: `{}` is listed twice",
-                declaration.name
-            )));
+        for row in &core.declarations {
+            if row.generated {
+                continue;
+            }
+            if !names.insert(row.name.clone()) {
+                // Lean realizes the equation lemma of a definition in every
+                // module that asks for it, and imports the copies of two
+                // modules as one: two library modules that do not import
+                // each other may each declare it, as the same declaration up
+                // to the names of bound variables. It is audited once.
+                let earlier = equation_lemmas
+                    .get(&row.name)
+                    .map(|earlier| -> Result<bool, String> {
+                        let source = read(earlier)?;
+                        let earlier_core = crate::ir::core::CoreModule::from_source(&source, "1.2")
+                            .map_err(|reason| format!("{earlier}: {reason}"))?;
+                        Ok(earlier_core
+                            .declarations
+                            .iter()
+                            .find(|candidate| candidate.name == row.name)
+                            .is_some_and(|candidate| {
+                                earlier_core.declaration_up_to_binder_names(candidate)
+                                    == core.declaration_up_to_binder_names(row)
+                            }))
+                    })
+                    .transpose()?;
+                if earlier == Some(true) {
+                    continue;
+                }
+                return Err(format!("{path}: `{}` is declared twice", row.name));
+            }
+            if is_equation_lemma(&row.name) {
+                equation_lemmas.insert(row.name.clone(), path.clone());
+            }
+            if !matches!(row.policy, crate::ir::core::CoreAxiomPolicy::Exact(_)) {
+                return Err(format!(
+                    "{path}: `{}` does not pin its axioms exactly",
+                    row.name
+                ));
+            }
+            // Only a name of plain identifier segments, which Lean prints as
+            // written (a projection named `at` is one), can be audited by
+            // name; a private or escaped auxiliary is covered by every
+            // declaration that uses it.
+            if crate::ir::core::is_closed_lean_name(&row.name) {
+                let mut axioms = row.policy.axioms().to_vec();
+                axioms.sort();
+                declarations.push(LibraryDeclaration {
+                    module: module.clone(),
+                    name: row.name.clone(),
+                    axioms,
+                });
+            }
         }
-        let mut sorted = declaration.axioms.clone();
-        sorted.sort();
-        sorted.dedup();
-        if sorted != declaration.axioms {
-            return Err(internal(format!(
-                "{LIBRARY_PATH}: the axioms of `{}` are not sorted and unique",
-                declaration.name
-            )));
+        let text = crate::backend::core::lean_text(&core)
+            .map_err(|diagnostic| format!("{path}: {}", diagnostic.message))?;
+        texts.insert(module.clone(), text);
+        for (position, row) in core.declarations.iter().enumerate() {
+            rows.insert(row.name.clone(), (module.clone(), position));
+        }
+        modules.insert(module.clone(), core);
+        seen_modules.insert(module.clone());
+    }
+    Ok(Native {
+        texts,
+        declarations,
+        modules,
+        rows,
+    })
+}
+
+/// Whether a declaration name is an equation lemma Lean realizes on demand:
+/// its last segment is `eq_` and a number.
+fn is_equation_lemma(name: &str) -> bool {
+    name.rsplit('.')
+        .next()
+        .and_then(|last| last.strip_prefix("eq_"))
+        .is_some_and(|number| {
+            !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit())
+        })
+}
+
+fn load_native() -> Result<Native, String> {
+    let library = registry()?;
+    build_native(&library, &|path| {
+        embedded_text(path)
+            .map(str::to_owned)
+            .map_err(|diagnostic| diagnostic.message)
+    })
+}
+
+/// Check a native library read from `read` instead of the embedded one: the
+/// conformance gate plants defects in the sources this way. Returns the
+/// number of declarations a Lean command can name.
+///
+/// # Errors
+///
+/// Returns the first reason the library is refused.
+pub fn check_native_sources(
+    read: &dyn Fn(&str) -> Result<String, String>,
+) -> Result<usize, String> {
+    let library = registry()?;
+    build_native(&library, read).map(|native| native.declarations.len())
+}
+
+fn native() -> Result<&'static Native, Diagnostic> {
+    static NATIVE: OnceLock<Result<Native, String>> = OnceLock::new();
+    NATIVE.get_or_init(load_native).as_ref().map_err(internal)
+}
+
+/// A declaration of the native library by name, with the module that holds
+/// it: the kernel data a certificate built as data reads a lemma's type
+/// from (SPEC.md §17.17).
+///
+/// # Errors
+///
+/// A name no native module declares, or a library that does not load.
+pub(crate) fn native_declaration(
+    name: &str,
+) -> Result<
+    (
+        &'static crate::ir::core::CoreModule,
+        &'static crate::ir::core::CoreDeclaration,
+    ),
+    String,
+> {
+    let native = native().map_err(|diagnostic| diagnostic.message.clone())?;
+    let (module, position) = native
+        .rows
+        .get(name)
+        .ok_or_else(|| format!("the preservation library declares no `{name}`"))?;
+    let core = native
+        .modules
+        .get(module)
+        .ok_or_else(|| format!("the library has no module `{module}`"))?;
+    Ok((core, &core.declarations[*position]))
+}
+
+/// The exact axioms the registry records for a library declaration.
+///
+/// # Errors
+///
+/// A name no native module declares.
+pub(crate) fn library_axioms(name: &str) -> Result<Vec<String>, String> {
+    let (_, declaration) = native_declaration(name)?;
+    Ok(declaration.policy.axioms().to_vec())
+}
+
+/// Audit a certificate held as kernel data, row by row and node by node
+/// (SP-14): it imports only modules of the environment, declares only
+/// theorems, definitions, and abbreviations, every one of them safe, with its
+/// axioms pinned exactly, and names no forbidden constant in any spelling. A
+/// certificate as data has no text to scan: the schema admits no axiom and
+/// no tactic, and the kernel checks every term.
+///
+/// # Errors
+///
+/// The first rule the module breaks.
+pub fn audit_core(
+    module: &crate::ir::core::CoreModule,
+    environment: &BTreeSet<String>,
+) -> Result<(), String> {
+    use crate::ir::core::{CoreAxiomPolicy, CoreDeclKind, CoreNode};
+    for import in &module.imports {
+        if !environment.contains(import) {
+            return Err(format!("the import `{import}` is outside the environment"));
         }
     }
+    for row in &module.declarations {
+        if row.generated {
+            return Err(format!("the row `{}` is marked generated", row.name));
+        }
+        if !matches!(
+            row.kind,
+            CoreDeclKind::Theorem | CoreDeclKind::Definition | CoreDeclKind::Abbrev
+        ) {
+            return Err(format!(
+                "the row `{}` declares a {:?}, which a certificate does not",
+                row.name, row.kind
+            ));
+        }
+        if row.safety.is_some() {
+            return Err(format!("the row `{}` is not a safe definition", row.name));
+        }
+        if !matches!(row.policy, CoreAxiomPolicy::Exact(_)) {
+            return Err(format!(
+                "the row `{}` does not pin its axioms exactly",
+                row.name
+            ));
+        }
+    }
+    for node in &module.nodes {
+        if let CoreNode::Const { n, .. } = node {
+            if n.split('.')
+                .any(|segment| FORBIDDEN_CONSTANTS.contains(&segment))
+            {
+                return Err(format!("the forbidden constant `{n}`"));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Audit a certificate: as data when it is held as data, else token by token
+/// as text.
+fn audit_certificate(
+    certificate: &Certificate,
+    environment: &BTreeSet<String>,
+) -> Result<(), String> {
+    match &certificate.data {
+        Some(data) => audit_core(data, environment),
+        None => audit_tokens(&certificate.text, environment),
+    }
+}
+
+/// The bytes a verify record holds for a certificate: the notation of one
+/// held as data, else its Lean text.
+#[must_use]
+pub fn recorded_bytes(certificate: &Certificate) -> &[u8] {
+    match &certificate.source {
+        Some(source) => source.as_bytes(),
+        None => certificate.text.as_bytes(),
+    }
+}
+
+/// The library registry: the module list the project ships and every
+/// declaration of the native modules a Lean command can name, with its exact
+/// axioms.
+///
+/// # Errors
+///
+/// Returns `LLI9001` when the shipped list or a native module is missing or
+/// malformed.
+pub fn library() -> Result<Library, Diagnostic> {
+    let mut library = registry().map_err(internal)?;
+    library.declaration = native()?.declarations.clone();
     Ok(library)
 }
 
@@ -168,12 +574,25 @@ pub fn library() -> Result<Library, Diagnostic> {
 ///
 /// Returns `LLI9001` when the module is not shipped.
 pub fn module_text(module: &str) -> Result<&'static str, Diagnostic> {
-    let directory = if TARGET_MODULES.contains(&module) {
-        MODULES_DIR
-    } else {
-        LIBRARY_DIR
-    };
-    embedded_text(&format!("{directory}/{}", module_path(module)))
+    if TARGET_MODULES.contains(&module) {
+        return embedded_text(&format!("{MODULES_DIR}/{}", module_path(module)));
+    }
+    native()?
+        .texts
+        .get(module)
+        .map(String::as_str)
+        .ok_or_else(|| internal(format!("the library has no module `{module}`")))
+}
+
+/// The path of a certificate held as kernel data in a verify record: the
+/// module's path with the authoring notation's extension (SPEC.md §17.21.8).
+#[must_use]
+pub fn notation_path(module: &str) -> String {
+    let path = module_path(module);
+    match path.strip_suffix(".lean") {
+        Some(stem) => format!("{stem}.lex.tex"),
+        None => format!("{path}.lex.tex"),
+    }
 }
 
 /// The modules a Lean source imports.
@@ -244,6 +663,24 @@ fn audit_text(library: &Library, certificates: &[Certificate]) -> String {
     }
     for certificate in certificates {
         text.push_str(&format!("#print axioms {}\n", certificate.theorem));
+    }
+    // A certificate held as data pins the axioms of every row: the audit
+    // prints them all, so a row whose policy lies is refused.
+    for certificate in certificates {
+        if let Some(data) = &certificate.data {
+            for row in &data.declarations {
+                if row.name != certificate.theorem {
+                    text.push_str(&format!("#print axioms {}\n", row.name));
+                }
+            }
+        }
+    }
+    text.push_str(&format!("#print \"{VOCABULARY_MARKER}\"\n"));
+    for (name, statement) in VOCABULARY {
+        match statement {
+            Statement::Print => text.push_str(&format!("#print {name}\n")),
+            Statement::Check => text.push_str(&format!("#check @{name}\n")),
+        }
     }
     text
 }
@@ -807,6 +1244,22 @@ pub fn audit_tokens(text: &str, imports: &BTreeSet<String>) -> Result<(), String
 /// The audit module's name.
 pub const AUDIT_MODULE: &str = "LexLeanPreserve.Audit";
 
+/// The runtime modules (§17.12) a set of generated Lean texts imports, in
+/// dependency order, as staged files.
+fn runtime_files<'a>(
+    texts: impl IntoIterator<Item = &'a str>,
+) -> Result<Vec<StagedFile>, Diagnostic> {
+    Ok(crate::backend::runtime::imported_by(texts)?
+        .into_iter()
+        .map(|runtime| StagedFile {
+            path: module_path(&runtime.name),
+            text: runtime.text.clone(),
+            module: runtime.name.clone(),
+            source: None,
+        })
+        .collect())
+}
+
 /// Stage the workspace of a project's certificates.
 ///
 /// # Errors
@@ -824,21 +1277,32 @@ pub fn workspace(
         .map(|module| (*module).to_owned())
         .collect();
     let mut files = Vec::new();
+    // Every runtime module (§17.12), first: one module root is one directory
+    // of compiled modules, so the shared environment holds all of them, not
+    // only those a given project imports.
+    for runtime in crate::backend::runtime::modules()? {
+        environment.insert(runtime.name.clone());
+        files.push(StagedFile {
+            path: module_path(&runtime.name),
+            text: runtime.text.clone(),
+            module: runtime.name.clone(),
+            source: None,
+        });
+    }
     for module in TARGET_MODULES
         .iter()
         .map(|module| (*module).to_owned())
         .chain(library.modules.clone())
     {
+        // A library module is rendered from validated native data: the
+        // token audit is for text a person or a generator wrote.
         let text = module_text(&module)?;
-        if library.modules.contains(&module) {
-            audit_tokens(text, &environment)
-                .map_err(|reason| internal(format!("the library module `{module}`: {reason}")))?;
-        }
         environment.insert(module.clone());
         files.push(StagedFile {
             path: module_path(&module),
             text: text.to_owned(),
             module,
+            source: None,
         });
     }
     for (module, text) in ordered(user)? {
@@ -854,11 +1318,12 @@ pub fn workspace(
             path: module_path(&module),
             module,
             text,
+            source: None,
         });
     }
     environment.extend(user.iter().map(|(module, _)| module.clone()));
     for certificate in certificates {
-        audit_tokens(&certificate.text, &environment).map_err(|reason| {
+        audit_certificate(certificate, &environment).map_err(|reason| {
             internal(format!(
                 "the certificate `{}`: {reason}",
                 certificate.module
@@ -875,6 +1340,7 @@ pub fn workspace(
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
             text: certificate.text.clone(),
+            source: certificate.source.clone(),
         });
     }
     Ok(Workspace {
@@ -887,6 +1353,7 @@ pub fn workspace(
             path: module_path(AUDIT_MODULE),
             module: AUDIT_MODULE.to_owned(),
             text: audit_text(&library, certificates),
+            source: None,
         },
     })
 }
@@ -895,6 +1362,12 @@ pub fn workspace(
 /// output.
 fn printed_axioms(output: &str) -> BTreeMap<String, Vec<String>> {
     let mut found = BTreeMap::new();
+    // The statement vocabulary follows the axioms, and a printed
+    // definition may hold an apostrophe the quote scan would take for a
+    // name's.
+    let output = output
+        .find(VOCABULARY_MARKER)
+        .map_or(output, |at| &output[..at]);
     let mut rest = output;
     while let Some(start) = rest.find('\'') {
         let after = &rest[start + 1..];
@@ -971,6 +1444,27 @@ pub fn audit(output: &str, certificates: &[Certificate]) -> Result<(), String> {
                 ));
             }
         }
+        if let Some(data) = &certificate.data {
+            for row in &data.declarations {
+                let mut pinned = row.policy.axioms().to_vec();
+                pinned.sort();
+                match printed.get(&row.name) {
+                    Some(axioms) if *axioms == pinned => {}
+                    Some(axioms) => {
+                        return Err(format!(
+                            "the certificate row `{}` depends on {axioms:?}, its policy pins {pinned:?}",
+                            row.name
+                        ));
+                    }
+                    None => {
+                        return Err(format!(
+                            "the audit printed no axioms for the certificate row `{}`",
+                            row.name
+                        ));
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -1006,27 +1500,34 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
         .map(|module| (*module).to_owned())
         .collect();
     let mut environment = Vec::new();
+    // The runtime modules the calculus modules import (§17.12), first.
+    let calculus = TARGET_MODULES
+        .iter()
+        .map(|module| module_text(module))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|diagnostic| drift(diagnostic.message))?;
+    for runtime in runtime_files(calculus).map_err(|diagnostic| drift(diagnostic.message))? {
+        imports.insert(runtime.module.clone());
+        environment.push(runtime);
+    }
     for module in TARGET_MODULES
         .iter()
         .map(|module| (*module).to_owned())
         .chain(library.modules.clone())
     {
         let text = module_text(&module).map_err(|diagnostic| drift(diagnostic.message))?;
-        if library.modules.contains(&module) {
-            audit_tokens(text, &imports)
-                .map_err(|reason| drift(format!("the library module `{module}`: {reason}")))?;
-        }
         imports.insert(module.clone());
         environment.push(StagedFile {
             path: module_path(&module),
             text: text.to_owned(),
             module,
+            source: None,
         });
     }
     imports.extend(modules.iter().cloned());
     let mut staged = Vec::new();
     for certificate in certificates {
-        audit_tokens(&certificate.text, &imports).map_err(|reason| {
+        audit_certificate(certificate, &imports).map_err(|reason| {
             internal(format!(
                 "the certificate `{}`: {reason}",
                 certificate.module
@@ -1039,6 +1540,7 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
             path: module_path(&certificate.module),
             module: certificate.module.clone(),
             text: certificate.text.clone(),
+            source: certificate.source.clone(),
         });
     }
     Ok(Stage {
@@ -1048,6 +1550,7 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
             path: module_path(AUDIT_MODULE),
             module: AUDIT_MODULE.to_owned(),
             text: audit_text(&library, certificates),
+            source: None,
         },
     })
 }
@@ -1125,6 +1628,40 @@ pub struct CertifiedRoot {
     pub renderings: Vec<CertifiedRendering>,
 }
 
+/// The identity of the library a record is about: the framed SHA-256 of
+/// the module list and, in its order, every native source. A source written
+/// in the authoring notation contributes its data form (§21.2), as it does to
+/// the compiler-semantics ID: the form a library is written in is not part of
+/// what it is, so writing it differently changes no record.
+fn library_identity() -> String {
+    library_identity_of(&|path| embedded_text(path).unwrap_or_default().to_owned())
+}
+
+/// [`library_identity`] over the sources `read` supplies for the library's
+/// paths in place of the embedded ones: how the identity is shown not to depend
+/// on the form a source is written in.
+#[doc(hidden)]
+#[must_use]
+pub fn library_identity_of(read: &dyn Fn(&str) -> String) -> String {
+    use crate::artifact::content_id::FramedHasher;
+    let mut hasher = FramedHasher::new("lexlean-preservation-library-v1");
+    let registry = read(LIBRARY_PATH);
+    hasher.frame("registry", registry.as_bytes());
+    if let Ok(library) = registry_modules() {
+        for module in library {
+            if let Some(path) = native_source_path(&module) {
+                let source = read(&path);
+                hasher.frame(&module, &crate::identity_bytes(&path, source.as_bytes()));
+            }
+        }
+    }
+    hasher.finish().to_hex()
+}
+
+fn registry_modules() -> Result<Vec<String>, String> {
+    registry().map(|library| library.modules)
+}
+
 /// The tag of `preservation.json`.
 pub const PRESERVATION_SPEC: &str = "lexlean/preservation/1";
 
@@ -1134,16 +1671,13 @@ pub const PRESERVATION_SPEC: &str = "lexlean/preservation/1";
 pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json {
     use crate::artifact::canonical_json::Json;
     use crate::artifact::content_id::Sha256Digest;
-    let registry = embedded_text(LIBRARY_PATH).unwrap_or_default();
+    let library_identity = library_identity();
     Json::object(vec![
         ("spec", Json::Str(PRESERVATION_SPEC.to_owned())),
         (
             "library",
             Json::object(vec![
-                (
-                    "registry_sha256",
-                    Json::Str(Sha256Digest::of(registry.as_bytes()).to_hex()),
-                ),
+                ("registry_sha256", Json::Str(library_identity)),
                 (
                     "axioms",
                     Json::Arr(
@@ -1263,14 +1797,16 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                                         ),
                                                         (
                                                             "byte_length",
-                                                            Json::from_usize(composed.text.len()),
+                                                            Json::from_usize(
+                                                                recorded_bytes(composed).len(),
+                                                            ),
                                                         ),
                                                         (
                                                             "sha256",
                                                             Json::Str(
-                                                                Sha256Digest::of(
-                                                                    composed.text.as_bytes(),
-                                                                )
+                                                                Sha256Digest::of(recorded_bytes(
+                                                                    composed,
+                                                                ))
                                                                 .to_hex(),
                                                             ),
                                                         ),
@@ -1294,6 +1830,15 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
 /// rejection concerns.
 #[must_use]
 pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    // A certificate held as data is added by the decoder, whose message
+    // names the declaration the kernel refused.
+    if let Some(named) = output.lines().find_map(|line| {
+        let (_, rest) = line.split_once("native core declaration '")?;
+        let (name, _) = rest.split_once('\'')?;
+        name.rsplit('.').next().map(str::to_owned)
+    }) {
+        return Some(named);
+    }
     let line: usize = output.lines().find_map(|line| {
         let (_, rest) = line.split_once(".lean:")?;
         let (number, rest) = rest.split_once(':')?;

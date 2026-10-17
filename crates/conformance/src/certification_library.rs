@@ -1,8 +1,9 @@
-//! The certification library's environment (SPEC.md §17.18): the hand-written
-//! Lean library under `compiler/proofs/`, compiled with the pinned Lean beside
-//! the compiler project's generated modules and the shipped calculus modules,
-//! replayed through `leanchecker`, and audited declaration by declaration
-//! against its registry.
+//! The certification library's environment (SPEC.md §17.18): the native
+//! LexLean modules under `compiler/proofs/`, the Lean the compiler generates
+//! from them compiled with the pinned Lean beside the compiler project's
+//! generated modules and the shipped calculus modules, replayed through
+//! `leanchecker`, and audited declaration by declaration against the axioms
+//! the native rows pin.
 //!
 //! The library is repository evidence, not a shipped file: it quantifies over
 //! the evaluator and the certificate checker, which LexLean's proof language
@@ -10,7 +11,7 @@
 //! generated modules the compiler project verifies (their text is the
 //! project's rendered build, so a drifted module is the library's problem too).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -19,14 +20,17 @@ use serde::Deserialize;
 use crate::preservation::{joined, pinned_with, shipped};
 use crate::support::{self, repo_root, P};
 
-/// The directory of the library, relative to the repository root.
-pub const LIBRARY_DIR: &str = "compiler/proofs/LexLeanCertification";
+/// The library's own project, relative to the repository root.
+pub const PROJECT_DIR: &str = "compiler/proofs";
 
-/// The registry of the library's declarations and their axioms.
+/// The module list of the library, which names no declaration.
 pub const REGISTRY: &str = "compiler/proofs/library.toml";
 
 /// The registry's tag.
-pub const REGISTRY_SPEC: &str = "lexlean/certification-library/1";
+pub const REGISTRY_SPEC: &str = "lexlean/certification-library/2";
+
+/// The module prefix of the library project.
+pub const PREFIX: &str = "LexLeanCertification";
 
 /// The library's modules, in dependency order.
 pub const MODULES: [&str; 13] = [
@@ -59,9 +63,9 @@ pub const GENERATED: [&str; 6] = [
 /// The axioms every library declaration may reach.
 pub const AXIOMS: [&str; 3] = ["Classical.choice", "Quot.sound", "propext"];
 
-/// The registry.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+/// The registry: the module list the library project ships, and every
+/// declaration of the native modules with its exact axioms.
+#[derive(Debug, Clone)]
 pub struct Registry {
     /// The registry's tag.
     pub spec: String,
@@ -69,72 +73,176 @@ pub struct Registry {
     pub toolchain: String,
     /// The library's modules, in dependency order.
     pub modules: Vec<String>,
-    /// The registered declarations.
-    #[serde(default)]
+    /// The declarations the native modules state that a Lean command can name.
     pub declaration: Vec<Declaration>,
 }
 
-/// One registered declaration: its module, name, and exact axioms.
+/// The module list as `library.toml` states it.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ModuleList {
+    spec: String,
+    toolchain: String,
+    modules: Vec<String>,
+}
+
+/// One declaration of a native module: its module, name, and exact axioms.
+#[derive(Debug, Clone)]
 pub struct Declaration {
     /// The module declaring it.
     pub module: String,
     /// Its qualified name.
     pub name: String,
-    /// The exact axioms it reaches.
+    /// The exact axioms its row pins.
     pub axioms: Vec<String>,
 }
 
 /// A module of the library by its name.
 #[must_use]
 pub fn module_name(stem: &str) -> String {
-    format!("LexLeanCertification.{stem}")
+    format!("{PREFIX}.{stem}")
 }
 
-/// The text of the library module `stem`.
+/// The project-relative path of the native source of the module `stem`.
+#[must_use]
+pub fn source_path(stem: &str) -> String {
+    format!("{PROJECT_DIR}/src/{stem}.lex.tex")
+}
+
+/// The Lean modules a library module may import besides itself and `Init`:
+/// the preservation core and the calculus and generated modules the library is
+/// stated against.
+pub const ALLOWED_IMPORTS: [&str; 7] = [
+    "LexLeanPreservation.Core",
+    "LexLeanTarget.Gnaf",
+    "LexLeanTarget.Certification",
+    "LexLeanTarget.GnafCertificates",
+    "LexLeanTarget.GnafFixtures",
+    "LexLeanTarget.TargetSemantics",
+    "LexLeanTarget.TargetSyntax",
+];
+
+/// The native modules read through `read`, in the registry's order, with the
+/// registry they state: each parsed as language-1.2 core data, its imports
+/// closed over `Init`, [`ALLOWED_IMPORTS`], and the earlier modules, every
+/// declaration it states pinning its axioms exactly to the expected three,
+/// and no name stated twice.
+///
+/// # Errors
+///
+/// Returns the first reason the library is refused.
+pub fn check_sources(
+    read: &dyn Fn(&str) -> Result<String, String>,
+) -> Result<(Registry, Vec<(String, lexlean::ir::core::CoreModule)>), String> {
+    let text = read(REGISTRY)?;
+    let list: ModuleList = toml::from_str(&text).map_err(|error| format!("{REGISTRY}: {error}"))?;
+    if list.spec != REGISTRY_SPEC {
+        return Err(format!(
+            "{REGISTRY}: spec `{}` is not `{REGISTRY_SPEC}`",
+            list.spec
+        ));
+    }
+    let mut seen: BTreeSet<String> = BTreeSet::new();
+    let mut names: BTreeSet<String> = BTreeSet::new();
+    let mut declaration = Vec::new();
+    let mut modules = Vec::new();
+    for module in &list.modules {
+        let stem = module
+            .strip_prefix(&format!("{PREFIX}."))
+            .ok_or_else(|| format!("{REGISTRY}: `{module}` is outside `{PREFIX}`"))?;
+        let path = source_path(stem);
+        let core = lexlean::ir::core::CoreModule::from_source(&read(&path)?, "1.2")
+            .map_err(|reason| format!("{path}: {reason}"))?;
+        for import in &core.imports {
+            let allowed = import == "Init"
+                || ALLOWED_IMPORTS.contains(&import.as_str())
+                || seen.contains(import);
+            if !allowed {
+                return Err(format!(
+                    "{path}: imports `{import}`, which is neither `Init`, a module the library is stated against, nor an earlier library module"
+                ));
+            }
+        }
+        for row in &core.declarations {
+            if row.generated {
+                continue;
+            }
+            if !names.insert(row.name.clone()) {
+                return Err(format!("{path}: `{}` is declared twice", row.name));
+            }
+            if !matches!(row.policy, lexlean::ir::core::CoreAxiomPolicy::Exact(_)) {
+                return Err(format!(
+                    "{path}: `{}` does not pin its axioms exactly",
+                    row.name
+                ));
+            }
+            // A name Lean prints as written is audited by name; a private or
+            // escaped auxiliary is covered by every declaration using it.
+            if lexlean::ir::core::is_closed_lean_name(&row.name) {
+                let mut axioms = row.policy.axioms().to_vec();
+                axioms.sort();
+                declaration.push(Declaration {
+                    module: module.clone(),
+                    name: row.name.clone(),
+                    axioms,
+                });
+            }
+        }
+        seen.insert(module.clone());
+        modules.push((stem.to_owned(), core));
+    }
+    Ok((
+        Registry {
+            spec: list.spec,
+            toolchain: list.toolchain,
+            modules: list.modules,
+            declaration,
+        },
+        modules,
+    ))
+}
+
+fn on_disk(path: &str) -> Result<String, String> {
+    std::fs::read_to_string(repo_root().join(path).as_std_path())
+        .map_err(|error| format!("{path}: {error}"))
+}
+
+/// The native modules and the registry of the repository's library.
 ///
 /// # Panics
 ///
-/// Panics when the file is unreadable.
+/// Panics when the library is refused.
 #[must_use]
-pub fn library_text(stem: &str) -> String {
-    std::fs::read_to_string(
-        repo_root()
-            .join(format!("{LIBRARY_DIR}/{stem}.lean"))
-            .as_std_path(),
-    )
-    .unwrap_or_else(|error| panic!("{stem}: {error}"))
+pub fn native() -> &'static (Registry, Vec<(String, lexlean::ir::core::CoreModule)>) {
+    static NATIVE: OnceLock<(Registry, Vec<(String, lexlean::ir::core::CoreModule)>)> =
+        OnceLock::new();
+    NATIVE.get_or_init(|| check_sources(&on_disk).unwrap_or_else(|reason| panic!("{reason}")))
 }
 
 /// The registry.
 ///
 /// # Panics
 ///
-/// Panics when it is unreadable or malformed.
+/// Panics when the library is refused.
 #[must_use]
 pub fn registry() -> Registry {
-    let text = std::fs::read_to_string(repo_root().join(REGISTRY).as_std_path())
-        .unwrap_or_else(|error| panic!("{REGISTRY}: {error}"));
-    toml::from_str(&text).unwrap_or_else(|error| panic!("{REGISTRY}: {error}"))
+    native().0.clone()
 }
 
-/// The top-level declarations of a library module's text: structures,
-/// inductives, definitions, and theorems, qualified by the library's
-/// namespace.
+/// The Lean the compiler generates from the native module `stem`.
+///
+/// # Panics
+///
+/// Panics when the module is unknown or cannot be rendered.
 #[must_use]
-pub fn declarations(text: &str) -> Vec<String> {
-    text.lines()
-        .filter_map(|line| {
-            let mut words = line.split_whitespace();
-            match words.next() {
-                Some("theorem" | "def" | "structure" | "inductive" | "abbrev") => words
-                    .next()
-                    .map(|name| format!("LexLeanCertification.{name}")),
-                _ => None,
-            }
-        })
-        .collect()
+pub fn library_text(stem: &str) -> String {
+    let core = native()
+        .1
+        .iter()
+        .find(|(candidate, _)| candidate == stem)
+        .unwrap_or_else(|| panic!("the library has no module `{stem}`"));
+    lexlean::backend::core::lean_text(&core.1)
+        .unwrap_or_else(|diagnostic| panic!("{stem}: {}", diagnostic.message))
 }
 
 /// One Lean source to compile.

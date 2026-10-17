@@ -2,6 +2,14 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"Option.none"}},{"binders":["none"],"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"1"},"constructor":{"name":"Option.none"}},{"binders":["n"],"body":{"kind":"var","name":"n"},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"kind":"var","name":"none"}},"constructor":{"name":"Option.some"}}],"kind":"match","scrutinee":{"kind":"var","name":"o"}},"executable":true,"kind":"definition","name":"f","parameters":[{"name":"o","type":{"kind":"option","value":{"kind":"option","value":{"kind":"nat"}}}}],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: f,
+  parameters: [o : (Option (Option Nat))],
+  result: Nat,
+  body: (match o
+    | Option.none => 0
+    | Option.some none => (match none | Option.none => 1 | Option.some n => n)),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

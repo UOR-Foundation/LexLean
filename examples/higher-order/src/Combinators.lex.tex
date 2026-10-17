@@ -2,6 +2,89 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"branches":[{"binders":[],"body":{"element":{"kind":"parameter","name":"Output"},"kind":"nil"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"head":{"arguments":[{"kind":"var","name":"head"}],"function":{"kind":"var","name":"transform"},"kind":"apply"},"kind":"cons","tail":{"arguments":[{"kind":"var","name":"transform"},{"kind":"var","name":"tail"}],"function":{"name":"mapList"},"kind":"call","type_arguments":[{"kind":"parameter","name":"Input"},{"kind":"parameter","name":"Output"}]}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"mapList","parameters":[{"name":"transform","type":{"kind":"function","parameters":[{"kind":"parameter","name":"Input"}],"result":{"kind":"parameter","name":"Output"}}},{"name":"values","type":{"element":{"kind":"parameter","name":"Input"},"kind":"list"}}],"recursive_argument":"values","result":{"element":{"kind":"parameter","name":"Output"},"kind":"list"},"type_parameters":["Input","Output"]},{"body":{"branches":[{"binders":[],"body":{"kind":"var","name":"initial"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"arguments":[{"kind":"var","name":"step"},{"arguments":[{"kind":"var","name":"initial"},{"kind":"var","name":"head"}],"function":{"kind":"var","name":"step"},"kind":"apply"},{"kind":"var","name":"tail"}],"function":{"name":"foldList"},"kind":"call","type_arguments":[{"kind":"parameter","name":"Input"},{"kind":"parameter","name":"Output"}]},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"foldList","parameters":[{"name":"step","type":{"kind":"function","parameters":[{"kind":"parameter","name":"Output"},{"kind":"parameter","name":"Input"}],"result":{"kind":"parameter","name":"Output"}}},{"name":"initial","type":{"kind":"parameter","name":"Output"}},{"name":"values","type":{"element":{"kind":"parameter","name":"Input"},"kind":"list"}}],"recursive_argument":"values","result":{"kind":"parameter","name":"Output"},"type_parameters":["Input","Output"]},{"body":{"body":{"arguments":[{"arguments":[{"kind":"var","name":"value"}],"function":{"kind":"var","name":"inner"},"kind":"apply"}],"function":{"kind":"var","name":"outer"},"kind":"apply"},"captures":["inner","outer"],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"parameter","name":"Input"}}]},"kind":"definition","name":"compose","parameters":[{"name":"outer","type":{"kind":"function","parameters":[{"kind":"parameter","name":"Output"}],"result":{"kind":"parameter","name":"Final"}}},{"name":"inner","type":{"kind":"function","parameters":[{"kind":"parameter","name":"Input"}],"result":{"kind":"parameter","name":"Output"}}}],"result":{"kind":"function","parameters":[{"kind":"parameter","name":"Input"}],"result":{"kind":"parameter","name":"Final"}},"type_parameters":["Input","Output","Final"]},{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"1"}},"executable":true,"kind":"definition","name":"increment","parameters":[{"name":"value","type":{"kind":"nat"}}],"result":{"kind":"nat"}},{"constructors":[{"fields":[{"kind":"nat"}],"name":"literal"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Arith"}},{"arguments":[],"kind":"named","member":{"name":"Arith"}}],"name":"plus"},{"fields":[{"arguments":[],"kind":"named","member":{"name":"Arith"}}],"name":"twice"}],"kind":"inductive","name":"Arith","parameters":[],"type_parameters":[]},{"fields":[{"name":"onLiteral","type":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}},{"name":"onPlus","type":{"kind":"function","parameters":[{"kind":"nat"},{"kind":"nat"}],"result":{"kind":"nat"}}},{"name":"onTwice","type":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}}],"kind":"structure","name":"Visitor","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":["value"],"body":{"arguments":[{"kind":"var","name":"value"}],"function":{"field":"onLiteral","kind":"project","value":{"kind":"var","name":"visitor"}},"kind":"apply"},"constructor":{"name":"Arith.literal"}},{"binders":["left","right"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"visitor"},{"kind":"var","name":"left"}],"function":{"name":"visit"},"kind":"call"},{"arguments":[{"kind":"var","name":"visitor"},{"kind":"var","name":"right"}],"function":{"name":"visit"},"kind":"call"}],"function":{"field":"onPlus","kind":"project","value":{"kind":"var","name":"visitor"}},"kind":"apply"},"constructor":{"name":"Arith.plus"}},{"binders":["inner"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"visitor"},{"kind":"var","name":"inner"}],"function":{"name":"visit"},"kind":"call"}],"function":{"field":"onTwice","kind":"project","value":{"kind":"var","name":"visitor"}},"kind":"apply"},"constructor":{"name":"Arith.twice"}}],"kind":"match","scrutinee":{"kind":"var","name":"expression"}},"kind":"definition","name":"visit","parameters":[{"name":"visitor","type":{"arguments":[],"kind":"named","member":{"name":"Visitor"}}},{"name":"expression","type":{"arguments":[],"kind":"named","member":{"name":"Arith"}}}],"recursive_argument":"expression","result":{"kind":"nat"}},{"body":{"branches":[{"binders":["value"],"body":{"kind":"var","name":"value"},"constructor":{"name":"Arith.literal"}},{"binders":["left","right"],"body":{"kind":"add","left":{"arguments":[{"kind":"var","name":"left"}],"function":{"name":"evaluate"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"right"}],"function":{"name":"evaluate"},"kind":"call"}},"constructor":{"name":"Arith.plus"}},{"binders":["inner"],"body":{"binder":{"name":"half","type":{"kind":"nat"}},"body":{"kind":"add","left":{"kind":"var","name":"half"},"right":{"kind":"var","name":"half"}},"kind":"let","value":{"arguments":[{"kind":"var","name":"inner"}],"function":{"name":"evaluate"},"kind":"call"}},"constructor":{"name":"Arith.twice"}}],"kind":"match","scrutinee":{"kind":"var","name":"expression"}},"executable":true,"kind":"definition","name":"evaluate","parameters":[{"name":"expression","type":{"arguments":[],"kind":"named","member":{"name":"Arith"}}}],"recursive_argument":"expression","result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: mapList,
+  type_parameters: [Input, Output],
+  parameters: [transform : (Fn ('Input) 'Output), values : (List 'Input)],
+  result: (List 'Output),
+  body: (match values
+    | List.nil => (nil 'Output)
+    | List.cons head tail => (cons (apply transform head) (mapList ['Input, 'Output] transform tail))),
+  executable: true,
+  recursive_argument: values
+}
+
+definition{
+  name: foldList,
+  type_parameters: [Input, Output],
+  parameters: [step : (Fn ('Output 'Input) 'Output), initial : 'Output, values : (List 'Input)],
+  result: 'Output,
+  body: (match values
+    | List.nil => initial
+    | List.cons head tail => (foldList ['Input, 'Output] step (apply step initial head) tail)),
+  executable: true,
+  recursive_argument: values
+}
+
+definition{
+  name: compose,
+  type_parameters: [Input, Output, Final],
+  parameters: [outer : (Fn ('Output) 'Final), inner : (Fn ('Input) 'Output)],
+  result: (Fn ('Input) 'Final),
+  body: (fun [inner, outer] (value : 'Input) => (apply outer (apply inner value)))
+}
+
+definition{
+  name: increment,
+  parameters: [value : Nat],
+  result: Nat,
+  body: (value + 1),
+  executable: true
+}
+
+inductive{
+  name: Arith,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: literal, fields: [Nat]},
+    {name: plus, fields: [Arith, Arith]},
+    {name: twice, fields: [Arith]}
+  ]
+}
+
+structure{
+  name: Visitor,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: onLiteral, type: (Fn (Nat) Nat)},
+    {name: onPlus, type: (Fn (Nat Nat) Nat)},
+    {name: onTwice, type: (Fn (Nat) Nat)}
+  ]
+}
+
+definition{
+  name: visit,
+  parameters: [visitor : Visitor, expression : Arith],
+  result: Nat,
+  body: (match expression
+    | Arith.literal value => (apply (project visitor onLiteral) value)
+    | Arith.plus left right => (apply (project visitor onPlus) (visit visitor left) (visit visitor right))
+    | Arith.twice inner => (apply (project visitor onTwice) (visit visitor inner))),
+  recursive_argument: expression
+}
+
+definition{
+  name: evaluate,
+  parameters: [expression : Arith],
+  result: Nat,
+  body: (match expression
+    | Arith.literal value => value
+    | Arith.plus left right => ((evaluate left) + (evaluate right))
+    | Arith.twice inner => (let half : Nat := (evaluate inner); (half + half))),
+  executable: true,
+  recursive_argument: expression
+}
 \end{semanticmodule}
 \end{lexlean}

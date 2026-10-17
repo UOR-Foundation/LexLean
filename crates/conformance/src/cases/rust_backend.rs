@@ -74,6 +74,64 @@ fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> boo
     })
 }
 
+/// The harness of `RB-08` over the `rust-std` lists package: the list runtime
+/// builds and takes apart two hundred thousand cells counting no work and
+/// overflowing no stack, two lists built on one tail each see their own
+/// items, and the walking items count exactly their length.
+const LIST_HARNESS: &str = r#"use PACKAGE::{append_list, length_list, work, List};
+fn main() {
+    let before = work();
+    let mut long: List<u64> = List::nil();
+    for i in 0..200_000u64 { long = List::cons(i, long); }
+    let mut cursor = long.clone();
+    let mut count = 0u64;
+    while let Some((head, rest)) = cursor.uncons() { assert_eq!(head, 199_999 - count); count += 1; cursor = rest; }
+    assert_eq!(count, 200_000);
+    assert_eq!(work() - before, 0, "cons and uncons count no work");
+    let tail: List<u64> = List::cons(2, List::cons(1, List::nil()));
+    let left = List::cons(10, tail.clone());
+    let right = List::cons(20, tail.clone());
+    let items = |list: &List<u64>| { let mut out = Vec::new(); let mut c = list.clone(); while let Some((h, r)) = c.uncons() { out.push(h); c = r; } out };
+    assert_eq!(items(&left), vec![10, 2, 1]);
+    assert_eq!(items(&right), vec![20, 2, 1]);
+    assert_eq!(items(&tail), vec![2, 1]);
+    let alone: List<u64> = List::cons(3, List::cons(2, List::cons(1, List::nil())));
+    let (head, rest) = alone.uncons().expect("three cells");
+    assert_eq!(head, 3);
+    drop(alone);
+    let rebuilt = List::cons(99, rest);
+    assert_eq!(items(&rebuilt), vec![99, 2, 1], "a run extended by its only holder keeps only its own cells");
+    let before = work();
+    assert_eq!(length_list(left.clone()), 3);
+    assert_eq!(work() - before, 3, "length counts its items");
+    let before = work();
+    let joined = append_list(left, right);
+    assert_eq!(items(&joined), vec![10, 2, 1, 20, 2, 1]);
+    assert_eq!(work() - before, 6, "append counts the left items twice: read and rebuilt");
+    drop(long);
+    println!("lists");
+}
+"#;
+
+/// Apply `edit` to the first expression under `root`, depth first, it accepts.
+fn edit_first_in(root: &mut Expr, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
+    let mut krate = Crate {
+        profile: Profile::Std,
+        items: vec![ItemDef::Function {
+            name: lexlean::calculus::rust::ast::Ident::Function(0),
+            parameters: Vec::new(),
+            result: Type::Unit,
+            body: Block::of(root.clone()),
+            at: Origin::of("function"),
+        }],
+    };
+    let edited = edit_first(&mut krate, edit);
+    if let Some(ItemDef::Function { body, .. }) = krate.items.pop() {
+        *root = body.tail;
+    }
+    edited
+}
+
 fn lowered(name: &str, profile: Profile) -> Crate {
     let case = cases()
         .into_iter()
@@ -1164,6 +1222,375 @@ pub fn run(id: &str) {
             // refused by the generated-file gate.
             crate::calculus::check(repo_root().as_std_path(), false)
                 .expect("the committed packages equal their generator");
+        }
+        // §17.16: a last read moves, a last projection moves the component,
+        // every clone kept is one the ownership check requires, a list is
+        // a run of cells with constant-work cons and uncons, and reading or
+        // moving a binding after a component left it is refused.
+        "RB-08" => {
+            // Every clone a rendering keeps is required: made a move, the
+            // crate is refused as reading or moving what was moved. Every
+            // move the rendering makes is accepted. Over every fixture in
+            // every profile that renders it.
+            let mut clones = 0usize;
+            let mut moves = 0usize;
+            let mut parted = 0usize;
+            let mut fixtures = 0usize;
+            for case in cases() {
+                for profile in Profile::ALL {
+                    let Ok(krate) = rust::lower(&case.fixture.program, profile) else {
+                        continue;
+                    };
+                    fixtures += 1;
+                    validate::validate(&krate).unwrap_or_else(|failure| {
+                        panic!("{}: the rendering is refused: {failure}", case.fixture.name)
+                    });
+                    let mut sites = 0usize;
+                    let _ = edit_first(&mut krate.clone(), &mut |expr| {
+                        match expr {
+                            Expr::Clone(..) => {
+                                clones += 1;
+                                sites += 1;
+                            }
+                            Expr::Move(..) => moves += 1,
+                            _ => {}
+                        }
+                        false
+                    });
+                    for site in 0..sites {
+                        let mut planted = krate.clone();
+                        let mut seen = 0usize;
+                        let edited = edit_first(&mut planted, &mut |expr| {
+                            if let Expr::Clone(ident, at) = expr {
+                                if seen == site {
+                                    *expr = Expr::Move(ident.clone(), at.clone());
+                                    return true;
+                                }
+                                seen += 1;
+                            }
+                            false
+                        });
+                        assert!(edited, "{}: clone {site} exists", case.fixture.name);
+                        let failure = validate::validate(&planted).err().unwrap_or_else(|| {
+                            panic!(
+                                "{}/{}: clone {site} is kept but a move of it is accepted",
+                                case.fixture.name,
+                                profile.target()
+                            )
+                        });
+                        assert!(
+                            failure.starts_with("ownership: "),
+                            "{}: {failure}",
+                            case.fixture.name
+                        );
+                    }
+                    // Every kept projection clone is required too: moved out
+                    // of its pair, the crate is refused.
+                    for item in &krate.items {
+                        let ItemDef::Function { body, .. } = item else {
+                            continue;
+                        };
+                        let mut whole = Expr::Block(Box::new(body.clone()));
+                        let mut projections = Vec::new();
+                        let _ = edit_first_in(&mut whole, &mut |expr| {
+                            if let Expr::Block(block) = expr {
+                                for (index, binding) in block.lets.iter().enumerate() {
+                                    if let (Pat::Tuple(parts), Expr::Clone(..)) =
+                                        (&binding.pat, &binding.value)
+                                    {
+                                        if parts.iter().filter(|part| **part != Pat::Wild).count()
+                                            == 1
+                                        {
+                                            projections.push((block.clone(), index));
+                                        }
+                                    }
+                                }
+                            }
+                            false
+                        });
+                        for (block, index) in projections {
+                            let mut planted = krate.clone();
+                            let target = block.lets[index].clone();
+                            let edited = edit_first(&mut planted, &mut |expr| {
+                                if let Expr::Block(candidate) = expr {
+                                    if let Some(binding) = candidate.lets.get_mut(index) {
+                                        if *binding == target {
+                                            if let Expr::Clone(ident, at) = &binding.value {
+                                                binding.value =
+                                                    Expr::Move(ident.clone(), at.clone());
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                }
+                                false
+                            });
+                            assert!(edited, "{}: the projection exists", case.fixture.name);
+                            parted += 1;
+                            let failure = validate::validate(&planted).err().unwrap_or_else(|| {
+                                panic!(
+                                    "{}: a projection clone is kept but moving the component is accepted",
+                                    case.fixture.name
+                                )
+                            });
+                            assert!(failure.starts_with("ownership: "), "{failure}");
+                        }
+                    }
+                }
+            }
+            assert!(
+                fixtures > 100 && moves > clones,
+                "{fixtures} renderings, {moves} moves, {clones} clones"
+            );
+            assert!(
+                parted > 0,
+                "a projection clone the ownership check requires exists"
+            );
+            // The pass is what makes a last read a move: a move put back to
+            // a clone is made a move again.
+            let mut krate = lowered("graph-reachable", Profile::Std);
+            let mut restored = krate.clone();
+            let planted = edit_first(&mut krate, &mut |expr| {
+                if let Expr::Move(ident @ lexlean::calculus::rust::ast::Ident::Local(_), at) = expr
+                {
+                    *expr = Expr::Clone(ident.clone(), at.clone());
+                    return true;
+                }
+                false
+            });
+            assert!(planted, "the plant site exists");
+            assert_ne!(krate, restored, "the plant changed the crate");
+            for item in &mut krate.items {
+                if let ItemDef::Function { body, .. } = item {
+                    rust::moves::apply(body);
+                }
+            }
+            for item in &mut restored.items {
+                if let ItemDef::Function { body, .. } = item {
+                    rust::moves::apply(body);
+                }
+            }
+            assert_eq!(krate, restored, "the pass makes the last read a move again");
+            // The ownership check refuses a read or a move after a component
+            // was moved out, and a component moved twice.
+            for (follow, message) in [
+                (
+                    Expr::Clone(
+                        lexlean::calculus::rust::ast::Ident::Local(0),
+                        Origin::of("expr:var"),
+                    ),
+                    "is read after a component was moved out of it",
+                ),
+                (
+                    Expr::Move(
+                        lexlean::calculus::rust::ast::Ident::Local(0),
+                        Origin::of("expr:var"),
+                    ),
+                    "is moved after a component was moved out of it",
+                ),
+            ] {
+                let mut krate = lowered("pair-and-list-match", Profile::Std);
+                let planted = edit_first(&mut krate, &mut |expr| {
+                    if let Expr::Block(block) = expr {
+                        block.lets.insert(
+                            0,
+                            Let {
+                                pat: Pat::Tuple(vec![
+                                    Pat::Bind(lexlean::calculus::rust::ast::Ident::Part(900)),
+                                    Pat::Wild,
+                                ]),
+                                ty: None,
+                                value: Expr::Move(
+                                    lexlean::calculus::rust::ast::Ident::Local(0),
+                                    Origin::of("expr:var"),
+                                ),
+                                at: Origin::of("expr:first"),
+                            },
+                        );
+                        block.lets.insert(
+                            1,
+                            Let {
+                                pat: Pat::Wild,
+                                ty: None,
+                                value: follow.clone(),
+                                at: Origin::of("expr:var"),
+                            },
+                        );
+                        return true;
+                    }
+                    false
+                });
+                assert!(planted, "the plant site exists");
+                refused(&krate, message);
+            }
+            let mut krate = lowered("pair-and-list-match", Profile::Std);
+            let planted = edit_first(&mut krate, &mut |expr| {
+                if let Expr::Block(block) = expr {
+                    for part in [901, 902] {
+                        block.lets.insert(
+                            0,
+                            Let {
+                                pat: Pat::Tuple(vec![
+                                    Pat::Bind(lexlean::calculus::rust::ast::Ident::Part(part)),
+                                    Pat::Wild,
+                                ]),
+                                ty: None,
+                                value: Expr::Move(
+                                    lexlean::calculus::rust::ast::Ident::Local(0),
+                                    Origin::of("expr:var"),
+                                ),
+                                at: Origin::of("expr:first"),
+                            },
+                        );
+                    }
+                    return true;
+                }
+                false
+            });
+            assert!(planted, "the plant site exists");
+            refused(&krate, "component 0 of `v0` is moved twice");
+            // The list runtime: a run of cells. Building and taking apart
+            // 200,000 cells counts no work and overflows no stack, two lists
+            // built on one tail both see their own items, and the walking
+            // items count exactly their length.
+            let dir = tempfile::Builder::new()
+                .prefix("lexlean-rust-lists-")
+                .tempdir()
+                .expect("tempdir");
+            let committed = rust_packages::packages()
+                .into_iter()
+                .find(|committed| committed.fixture == "lists" && committed.profile == Profile::Std)
+                .expect("the lists package in rust-std");
+            let name = committed.manifest.name.clone();
+            let harness = LIST_HARNESS.replace("PACKAGE", &name);
+            workspace(
+                dir.path(),
+                &[Built {
+                    name: name.clone(),
+                    files: committed_files(&committed),
+                    harness,
+                }],
+            );
+            let build = cargo_in(
+                dir.path(),
+                &["build", "--offline", "--workspace", "--quiet"],
+            );
+            assert!(
+                build.status.success(),
+                "the list harness does not build:\n{}",
+                String::from_utf8_lossy(&build.stderr)
+            );
+            let binary = dir
+                .path()
+                .join("target/debug")
+                .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
+            let ran = std::process::Command::new(&binary)
+                .output()
+                .expect("the harness runs");
+            assert!(
+                ran.status.success(),
+                "the list runtime: {}{}",
+                String::from_utf8_lossy(&ran.stdout),
+                String::from_utf8_lossy(&ran.stderr)
+            );
+        }
+        // §17.16: the runtime's library surface is closed, and each name on
+        // it is a primitive, stated over primitives, or an AST construct.
+        "RB-09" => {
+            use lexlean::calculus::rust::runtime::{CORE, STD};
+            use lexlean::calculus::rust_library::{
+                audit, audit_runtime, Kind, Primitive, Role, LIBRARY, PRIMITIVES,
+            };
+            audit_runtime().expect("the runtime keeps to its library table");
+            let primitives = LIBRARY
+                .iter()
+                .filter(|(_, _, role)| matches!(role, Role::Primitive(_)))
+                .count();
+            assert!(
+                primitives > 0 && LIBRARY.len() > primitives && PRIMITIVES.len() > 1,
+                "an empty table refuses nothing"
+            );
+            let runtime = format!("{CORE}{STD}");
+            let refused = |text: &str,
+                           library: &[(Kind, &str, Role)],
+                           primitives: &[Primitive],
+                           expected: &str| {
+                let error = audit(text, library, primitives).expect_err(expected);
+                assert!(error.contains(expected), "{error}");
+            };
+            // A library function the table does not list.
+            refused(
+                &format!("{runtime}pub fn planted(a: u64) -> u64 {{ a.wrapping_add(1) }}\n"),
+                LIBRARY,
+                PRIMITIVES,
+                "the runtime uses the method `wrapping_add`",
+            );
+            // A path, a macro, and a type outside the table.
+            for (planted, expected) in [
+                (
+                    "pub fn planted() { std::process::abort() }\n",
+                    "the path `std::process::abort`",
+                ),
+                (
+                    "pub fn planted() -> u64 { 0 }\nconst _: () = assert!(true);\n",
+                    "the macro `assert`",
+                ),
+                ("pub fn planted(_: Box<u64>) {}\n", "the name `Box`"),
+            ] {
+                refused(
+                    &format!("{runtime}{planted}"),
+                    LIBRARY,
+                    PRIMITIVES,
+                    expected,
+                );
+            }
+            // A row removed: what it covered is now outside the table.
+            let without: Vec<_> = LIBRARY
+                .iter()
+                .copied()
+                .filter(|(kind, name, _)| !(*kind == Kind::Path && *name == "Vec::new"))
+                .collect();
+            assert_eq!(without.len() + 1, LIBRARY.len(), "the row exists");
+            refused(
+                &runtime,
+                &without,
+                PRIMITIVES,
+                "the runtime uses the path `Vec::new`",
+            );
+            // A row the runtime does not use.
+            let mut extra = LIBRARY.to_vec();
+            extra.push((Kind::Method, "wrapping_mul", Role::Stated(&["checked_mul"])));
+            refused(
+                &runtime,
+                &extra,
+                PRIMITIVES,
+                "the method row `wrapping_mul` names nothing the runtime uses",
+            );
+            // A role citing a name that is not a primitive.
+            let mut stated = LIBRARY.to_vec();
+            let row = stated
+                .iter_mut()
+                .find(|(_, name, _)| *name == "saturating_sub")
+                .expect("the row exists");
+            row.2 = Role::Stated(&["wrapping_sub"]);
+            refused(
+                &runtime,
+                &stated,
+                PRIMITIVES,
+                "the method row `saturating_sub` cites `wrapping_sub`, which is not a primitive",
+            );
+            // A primitive no row cites.
+            let mut unused = PRIMITIVES.to_vec();
+            unused.push(Primitive {
+                name: "checked_pow",
+                meaning: "planted",
+            });
+            refused(
+                &runtime,
+                LIBRARY,
+                &unused,
+                "the primitive `checked_pow` is cited by no row",
+            );
         }
         other => panic!("no Rust backend case is wired for {other}"),
     }

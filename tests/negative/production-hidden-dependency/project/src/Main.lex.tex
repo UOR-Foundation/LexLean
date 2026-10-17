@@ -3,6 +3,13 @@
 \importmodule{Helper}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"body":{"arguments":[{"kind":"var","name":"limit"}],"function":{"module":"Helper","name":"relay"},"kind":"call"},"executable":true,"kind":"definition","name":"entry","parameters":[{"name":"limit","type":{"kind":"nat"}}],"production":{"effects":[],"targets":["rust-core"]},"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: entry,
+  parameters: [limit : Nat],
+  result: Nat,
+  body: (Helper::relay limit),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
 \end{semanticmodule}
 \end{lexlean}

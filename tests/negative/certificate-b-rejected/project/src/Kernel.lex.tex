@@ -2,6 +2,74 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"constructors":[{"fields":[{"kind":"nat"}],"name":"circle"},{"fields":[{"kind":"nat"},{"kind":"nat"}],"name":"rectangle"}],"kind":"inductive","name":"Shape","parameters":[],"type_parameters":[]},{"body":{"branches":[{"binders":["radius"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"radius"},{"kind":"var","name":"radius"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},{"kind":"nat","value":"3"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"constructor":{"name":"Shape.circle"}},{"binders":["width","height"],"body":{"arguments":[{"kind":"var","name":"width"},{"kind":"var","name":"height"}],"kind":"primitive","operation":"multiply","result":{"kind":"nat"}},"constructor":{"name":"Shape.rectangle"}}],"kind":"match","scrutinee":{"kind":"var","name":"shape"}},"executable":true,"kind":"definition","name":"area","parameters":[{"name":"shape","type":{"arguments":[],"kind":"named","member":{"name":"Shape"}}}],"result":{"kind":"nat"}},{"body":{"arguments":[{"arguments":[{"kind":"var","name":"value"}],"function":{"kind":"var","name":"step"},"kind":"apply"}],"function":{"kind":"var","name":"step"},"kind":"apply"},"executable":true,"kind":"definition","name":"applyTwice","parameters":[{"name":"step","type":{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}},{"name":"value","type":{"kind":"nat"}}],"result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"nat","value":"0"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"kind":"add","left":{"kind":"var","name":"head"},"right":{"arguments":[{"kind":"var","name":"tail"}],"function":{"name":"total"},"kind":"call"}},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"total","parameters":[{"name":"values","type":{"element":{"kind":"nat"},"kind":"list"}}],"recursive_argument":"values","result":{"kind":"nat"}},{"body":{"branches":[{"binders":[],"body":{"kind":"var","name":"fallback"},"constructor":{"name":"List.nil"}},{"binders":["head","tail"],"body":{"kind":"var","name":"head"},"constructor":{"name":"List.cons"}}],"kind":"match","scrutinee":{"kind":"var","name":"values"}},"executable":true,"kind":"definition","name":"firstOr","parameters":[{"name":"values","type":{"element":{"kind":"parameter","name":"Item"},"kind":"list"}},{"name":"fallback","type":{"kind":"parameter","name":"Item"}}],"result":{"kind":"parameter","name":"Item"},"type_parameters":["Item"]},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"countdown_decreases","parameters":[{"name":"number","type":{"kind":"nat"}},{"name":"steps","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"blt","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"2"}},"right":{"kind":"bool","value":false}}}},{"axioms":["Quot.sound","propext"],"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"2"}},"else_value":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},{"kind":"add","left":{"kind":"var","name":"steps"},"right":{"kind":"nat","value":"1"}}],"function":{"name":"countdown"},"kind":"call"},"kind":"if","then_value":{"kind":"var","name":"steps"}},"executable":true,"kind":"definition","name":"countdown","parameters":[{"name":"number","type":{"kind":"nat"}},{"name":"steps","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"countdown_decreases"}],"measure":{"kind":"var","name":"number"}}},{"body":{"kind":"lt","left":{"kind":"nat","value":"0"},"right":{"kind":"var","name":"value"}},"kind":"definition","name":"positive","parameters":[{"name":"value","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"kind":"theorem","name":"area_square","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"kind":"nat","value":"3"},{"kind":"nat","value":"3"}],"constructor":{"name":"Shape.rectangle"},"kind":"constructor"}],"function":{"name":"area"},"kind":"call"},"right":{"kind":"nat","value":"9"}}}],"spec":"lexlean/semantic-module/2"}}
+inductive{
+  name: Shape,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: circle, fields: [Nat]}, {name: rectangle, fields: [Nat, Nat]}]
+}
+
+definition{
+  name: area,
+  parameters: [shape : Shape],
+  result: Nat,
+  body: (match shape
+    | Shape.circle radius => (prim multiply (prim multiply radius radius : Nat) 3 : Nat)
+    | Shape.rectangle width height => (prim multiply width height : Nat)),
+  executable: true
+}
+
+definition{
+  name: applyTwice,
+  parameters: [step : (Fn (Nat) Nat), value : Nat],
+  result: Nat,
+  body: (apply step (apply step value)),
+  executable: true
+}
+
+definition{
+  name: total,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (match values | List.nil => 0 | List.cons head tail => (head + (total tail))),
+  executable: true,
+  recursive_argument: values
+}
+
+definition{
+  name: firstOr,
+  type_parameters: [Item],
+  parameters: [values : (List 'Item), fallback : 'Item],
+  result: 'Item,
+  body: (match values | List.nil => fallback | List.cons head tail => head),
+  executable: true
+}
+
+theorem{
+  name: countdown_decreases,
+  parameters: [number : Nat, steps : Nat],
+  statement: (((number <? 2) = false) -> ((prim subtract number 2 : Nat) < number)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: countdown,
+  parameters: [number : Nat, steps : Nat],
+  result: Nat,
+  body: (if (number <? 2) then steps else (countdown (prim subtract number 2 : Nat) (steps + 1))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  termination: {evidence: [countdown_decreases], measure: number}
+}
+
+definition{name: positive, parameters: [value : Nat], result: Prop, body: (0 < value)}
+
+theorem{
+  name: area_square,
+  parameters: [],
+  statement: ((area (ctor Shape.rectangle 3 3)) = 9),
+  proof: decide{}
+}
 \end{semanticmodule}
 \end{lexlean}

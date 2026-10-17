@@ -81,6 +81,9 @@ struct Checker<'a> {
     scope: Vec<Ident>,
     /// The names moved on the current path.
     moved: BTreeSet<Ident>,
+    /// The pair components moved out of a name on the current path; the name
+    /// itself is then neither read nor moved whole.
+    parted: BTreeMap<Ident, BTreeSet<usize>>,
     /// Whether a `?` occurs in the current function.
     propagates: bool,
     /// Whether the current function is fallible, so its tail may return a
@@ -172,6 +175,12 @@ impl Checker<'_> {
                 ident_text(ident)
             ));
         }
+        if self.parted.contains_key(ident) {
+            return fail(format!(
+                "ownership: `{}` is read after a component was moved out of it",
+                ident_text(ident)
+            ));
+        }
         Ok(())
     }
 
@@ -179,8 +188,39 @@ impl Checker<'_> {
         if !self.scope.contains(ident) {
             return fail(format!("`{}` is not bound", ident_text(ident)));
         }
+        if self.parted.contains_key(ident) {
+            return fail(format!(
+                "ownership: `{}` is moved after a component was moved out of it",
+                ident_text(ident)
+            ));
+        }
         if !self.moved.insert(ident.clone()) {
             return fail(format!("ownership: `{}` is moved twice", ident_text(ident)));
+        }
+        Ok(())
+    }
+
+    /// Move the components of `ident` that `parts` binds out of it: a
+    /// projection `let (h, _) = v;`. Each component moves at most once, and
+    /// a name whose component was moved is not read or moved whole.
+    fn consume_parts(&mut self, ident: &Ident, parts: &[Pat]) -> Result<(), String> {
+        if !self.scope.contains(ident) {
+            return fail(format!("`{}` is not bound", ident_text(ident)));
+        }
+        if self.moved.contains(ident) {
+            return fail(format!(
+                "ownership: a component of `{}` is moved after it was moved",
+                ident_text(ident)
+            ));
+        }
+        let taken = self.parted.entry(ident.clone()).or_default();
+        for (index, part) in parts.iter().enumerate() {
+            if *part != Pat::Wild && !taken.insert(index) {
+                return fail(format!(
+                    "ownership: component {index} of `{}` is moved twice",
+                    ident_text(ident)
+                ));
+            }
         }
         Ok(())
     }
@@ -214,7 +254,14 @@ impl Checker<'_> {
             if let Some(ty) = &binding.ty {
                 self.ty(ty)?;
             }
-            self.expr(&binding.value, false)?;
+            match (&binding.pat, &binding.value) {
+                // A tuple pattern leaving a component in place moves the
+                // others out of the binding, not the binding.
+                (Pat::Tuple(parts), Expr::Move(ident, _)) if parts.contains(&Pat::Wild) => {
+                    self.consume_parts(ident, parts)?;
+                }
+                _ => self.expr(&binding.value, false)?,
+            }
             self.bind(&binding.pat)?;
         }
         let checked = self.expr(&block.tail, tail);
@@ -229,10 +276,10 @@ impl Checker<'_> {
         branches: impl IntoIterator<Item = (Option<&'b Pat>, &'b Block)>,
         tail: bool,
     ) -> Result<(), String> {
-        let before = self.moved.clone();
+        let before = (self.moved.clone(), self.parted.clone());
         let mut after = before.clone();
         for (pattern, body) in branches {
-            self.moved = before.clone();
+            (self.moved, self.parted) = before.clone();
             let depth = self.scope.len();
             if let Some(pattern) = pattern {
                 self.bind(pattern)?;
@@ -240,9 +287,16 @@ impl Checker<'_> {
             let checked = self.block(body, tail);
             self.scope.truncate(depth);
             checked?;
-            after.extend(self.moved.iter().cloned());
+            after.0.extend(self.moved.iter().cloned());
+            for (ident, parts) in &self.parted {
+                after
+                    .1
+                    .entry(ident.clone())
+                    .or_default()
+                    .extend(parts.iter().copied());
+            }
         }
-        self.moved = after;
+        (self.moved, self.parted) = after;
         Ok(())
     }
 
@@ -583,6 +637,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
             bound: BTreeSet::new(),
             scope: Vec::new(),
             moved: BTreeSet::new(),
+            parted: BTreeMap::new(),
             propagates: false,
             fallible: false,
         };

@@ -18,6 +18,17 @@ use crate::support::{self, P};
 /// The examples the consumer exports.
 pub const EXAMPLES: [&str; 2] = ["production", "production-coverage"];
 
+/// The standard library (§17.22), exported as the examples are.
+pub const STDLIB: &str = "stdlib";
+
+/// The bootstrap project (§17.23), exported as the examples are.
+pub const BOOTSTRAP: &str = "bootstrap";
+
+/// Every project the consumer exports: the examples, the standard library,
+/// and the bootstrap project, whose packages `check-production-export`
+/// compares.
+pub const EXPORTED: [&str; 4] = ["production", "production-coverage", STDLIB, BOOTSTRAP];
+
 /// The root the GNAF evidence is built for, and where it is written.
 pub const GNAF_ROOT: &str = "Production.Main.sumAll";
 /// The project-relative GNAF request path.
@@ -201,6 +212,17 @@ impl Exported {
     pub fn bundle(&self) -> Utf8PathBuf {
         self.project.root.join(&self.output.bundle)
     }
+
+    /// The verified directory retained beside the export's production area.
+    #[must_use]
+    pub(crate) fn verified_root(&self) -> Utf8PathBuf {
+        self.bundle()
+            .parent()
+            .and_then(Utf8Path::parent)
+            .expect("a production bundle is below its build root's production area")
+            .join("verified")
+            .join(self.output.result.verification.attestation_id.to_hex())
+    }
 }
 
 /// Export one example through the public consumer, with GNAF evidence for
@@ -210,7 +232,14 @@ impl Exported {
 ///
 /// The contract's failure, as text.
 pub fn export(example: &str) -> Result<Exported, String> {
-    let project = P::copy_example(example);
+    // The export reads the environment (the toolchain, `PATH`), which a case
+    // that sets it for a moment must not change under it.
+    let _environment = support::env_shared();
+    let project = match example {
+        STDLIB => P::stdlib(),
+        BOOTSTRAP => P::bootstrap(),
+        _ => P::copy_example(example),
+    };
     let gnaf = (example == "production").then(|| gnaf_evidence(&project));
     let mut evidence = Vec::new();
     if let Some(gnaf) = &gnaf {
@@ -229,12 +258,27 @@ pub fn export(example: &str) -> Result<Exported, String> {
             certificate_id: gnaf.certificate_id,
         });
     }
+    // Preserve the interrupted-run cleanup assertion that SP-05's former
+    // independent verification established through `support::verify_ok`.
+    let stale = project
+        .root
+        .join(".lexlean/verified/.staging-interrupted-export");
+    std::fs::create_dir_all(stale.join("inner").as_std_path()).expect("stale staging");
+    std::fs::write(
+        stale.join("inner/Leftover.lean").as_std_path(),
+        "-- left behind",
+    )
+    .expect("stale staging file");
     let (output, report) = production_consumer::export(
         &project.root.join("lexlean.toml"),
         &application(example),
         &evidence,
     )
     .map_err(|error| format!("{example}: {:?}", error.diagnostics))?;
+    assert!(
+        !stale.as_std_path().exists(),
+        "{stale}: the staging directory of an interrupted run is removed by the next verify"
+    );
     Ok(Exported {
         project,
         output,
@@ -252,9 +296,13 @@ pub fn export(example: &str) -> Result<Exported, String> {
 pub fn exported(example: &str) -> &'static Exported {
     static PRODUCTION: OnceLock<Exported> = OnceLock::new();
     static COVERAGE: OnceLock<Exported> = OnceLock::new();
+    static STANDARD: OnceLock<Exported> = OnceLock::new();
+    static BOOT: OnceLock<Exported> = OnceLock::new();
     let cell = match example {
         "production" => &PRODUCTION,
         "production-coverage" => &COVERAGE,
+        STDLIB => &STANDARD,
+        BOOTSTRAP => &BOOT,
         other => panic!("`{other}` is not an exported example"),
     };
     cell.get_or_init(|| export(example).unwrap_or_else(|reason| panic!("{reason}")))
@@ -289,7 +337,7 @@ pub fn tree(root: &Utf8Path) -> BTreeMap<String, Vec<u8>> {
 /// Every difference, or the export's failure.
 pub fn check(write: bool) -> Result<(), String> {
     let mut unmet = Vec::new();
-    for example in EXAMPLES {
+    for example in EXPORTED {
         let exported = export(example)?;
         let packages = tree(&exported.bundle().join("packages"));
         let expected_root = fixture_dir(example).join("packages");

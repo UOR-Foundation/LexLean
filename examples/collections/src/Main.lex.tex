@@ -4,6 +4,633 @@
 \importmodule{Measure}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"axioms":["propext"],"body":{"arguments":[{"body":{"binder":{"name":"derived","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}},"body":{"condition":{"kind":"beq","left":{"arguments":[{"kind":"var","name":"derived"}],"kind":"primitive","operation":"set_size","result":{"kind":"nat"}},"right":{"arguments":[{"kind":"var","name":"state"}],"kind":"primitive","operation":"set_size","result":{"kind":"nat"}}},"else_value":{"arguments":[{"kind":"var","name":"derived"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}]},"kind":"if","then_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}]}},"kind":"let","value":{"arguments":[{"body":{"arguments":[{"body":{"condition":{"kind":"beq","left":{"kind":"second","value":{"kind":"var","name":"left"}},"right":{"kind":"first","value":{"kind":"var","name":"right"}}},"else_value":{"kind":"var","name":"inner"},"kind":"if","then_value":{"arguments":[{"kind":"var","name":"inner"},{"kind":"pair","left":{"kind":"first","value":{"kind":"var","name":"left"}},"right":{"kind":"second","value":{"kind":"var","name":"right"}}}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}}},"captures":["left"],"kind":"lambda","parameters":[{"name":"inner","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}},{"name":"right","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}]},{"kind":"var","name":"outer"},{"kind":"var","name":"state"}],"kind":"primitive","operation":"set_fold","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}},"captures":["state"],"kind":"lambda","parameters":[{"name":"outer","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}},{"name":"left","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}}}]},{"kind":"var","name":"state"},{"kind":"var","name":"state"}],"kind":"primitive","operation":"set_fold","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}}},"captures":[],"kind":"lambda","parameters":[{"name":"state","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}}]},{"kind":"nat","value":"8"},{"kind":"var","name":"parents"}],"kind":"primitive","operation":"iterate_until","result":{"kind":"product","left":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"},"right":{"kind":"bool"}}},"executable":true,"kind":"definition","name":"ancestors","parameters":[{"name":"parents","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}}],"result":{"kind":"product","left":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"},"right":{"kind":"bool"}}},{"body":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"elements":[{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"4"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"2"}},{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"3"}}],"kind":"set_literal"},"kind":"definition","name":"family","parameters":[],"result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"kind":"set"}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"table_slots","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"head":{"kind":"string","value":"x"},"kind":"cons","tail":{"head":{"kind":"string","value":"y"},"kind":"cons","tail":{"head":{"kind":"string","value":"x2"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}],"function":{"module":"Tables","name":"buildTable"},"kind":"call"},"right":{"entries":[{"key":{"kind":"string","value":"y"},"value":{"kind":"nat","value":"1"}},{"key":{"kind":"string","value":"x"},"value":{"kind":"nat","value":"0"}},{"key":{"kind":"string","value":"x2"},"value":{"kind":"nat","value":"2"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"table_lookup","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"head":{"kind":"string","value":"b"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}],"function":{"module":"Tables","name":"buildTable"},"kind":"call"},{"kind":"string","value":"b"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"arguments":[{"kind":"nat","value":"1"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"call_order","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[],"function":{"module":"Tables","name":"callOrder"},"kind":"call"},"right":{"arguments":[{"head":{"kind":"string","value":"main"},"kind":"cons","tail":{"head":{"kind":"string","value":"emit"},"kind":"cons","tail":{"head":{"kind":"string","value":"parse"},"kind":"cons","tail":{"head":{"kind":"string","value":"report"},"kind":"cons","tail":{"head":{"kind":"string","value":"lex"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"element":{"kind":"string"},"kind":"list"}]}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"parse_reaches_lex","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[],"function":{"module":"Tables","name":"reachableFromParse"},"kind":"call"},"right":{"element":{"kind":"string"},"elements":[{"kind":"string","value":"parse"},{"kind":"string","value":"lex"}],"kind":"set_literal"}}},{"kind":"theorem","name":"cycle_has_no_order","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"1"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}]}],"kind":"primitive","operation":"graph_topological","result":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}}},"right":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"element":{"kind":"nat"},"kind":"list"}]}}},{"axioms":["propext"],"kind":"theorem","name":"ancestor_closure","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"arguments":[],"function":{"name":"family"},"kind":"call"}],"function":{"name":"ancestors"},"kind":"call"},"right":{"kind":"pair","left":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"nat"}},"elements":[{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"2"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"3"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"nat","value":"4"}},{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"3"}},{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"nat","value":"4"}},{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"nat","value":"4"}}],"kind":"set_literal"},"right":{"kind":"bool","value":true}}}},{"kind":"theorem","name":"bounded_iteration","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"2"}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"3"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"iterate","result":{"kind":"nat"}},"right":{"kind":"nat","value":"7"}}},{"kind":"theorem","name":"reordered_literals_agree","parameters":[],"proof":{"kind":"reflexivity"},"statement":{"kind":"eq","left":{"entries":[{"key":{"kind":"nat","value":"2"},"value":{"kind":"bool","value":false}},{"key":{"kind":"nat","value":"1"},"value":{"kind":"bool","value":true}}],"key":{"kind":"nat"},"kind":"map_literal","value":{"kind":"bool"}},"right":{"entries":[{"key":{"kind":"nat","value":"1"},"value":{"kind":"bool","value":true}},{"key":{"kind":"nat","value":"2"},"value":{"kind":"bool","value":false}}],"key":{"kind":"nat"},"kind":"map_literal","value":{"kind":"bool"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_insert","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"c"},{"kind":"nat","value":"3"}],"kind":"primitive","operation":"map_insert","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"entries":[{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}},{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"c"},"value":{"kind":"nat","value":"3"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_insert_replaces","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"a"},{"kind":"nat","value":"9"}],"kind":"primitive","operation":"map_insert","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"entries":[{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"9"}},{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_remove","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"a"}],"kind":"primitive","operation":"map_remove","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_remove_absent","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"z"}],"kind":"primitive","operation":"map_remove","result":{"key":{"kind":"string"},"kind":"map","value":{"kind":"nat"}}},"right":{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_lookup","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"b"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"arguments":[{"kind":"nat","value":"2"}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_lookup_absent","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"z"}],"kind":"primitive","operation":"map_lookup","result":{"kind":"option","value":{"kind":"nat"}}},"right":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"op_map_contains","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}},{"kind":"string","value":"a"}],"kind":"primitive","operation":"map_contains","result":{"kind":"bool"}},"right":{"kind":"bool","value":true}}},{"kind":"theorem","name":"op_map_size","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}],"kind":"primitive","operation":"map_size","result":{"kind":"nat"}},"right":{"kind":"nat","value":"2"}}},{"kind":"theorem","name":"op_map_keys","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}],"kind":"primitive","operation":"map_keys","result":{"element":{"kind":"string"},"kind":"list"}},"right":{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"head":{"kind":"string","value":"b"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}},{"kind":"theorem","name":"op_map_values","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}],"kind":"primitive","operation":"map_values","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}},{"kind":"theorem","name":"op_map_entries","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}],"kind":"primitive","operation":"map_entries","result":{"element":{"kind":"product","left":{"kind":"string"},"right":{"kind":"nat"}},"kind":"list"}},"right":{"head":{"kind":"pair","left":{"kind":"string","value":"a"},"right":{"kind":"nat","value":"1"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"string","value":"b"},"right":{"kind":"nat","value":"2"}},"kind":"cons","tail":{"element":{"kind":"product","left":{"kind":"string"},"right":{"kind":"nat"}},"kind":"nil"}}}}},{"kind":"theorem","name":"op_map_fold","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"head":{"kind":"var","name":"key"},"kind":"cons","tail":{"kind":"var","name":"visited"}},"captures":[],"kind":"lambda","parameters":[{"name":"visited","type":{"element":{"kind":"string"},"kind":"list"}},{"name":"key","type":{"kind":"string"}},{"name":"value","type":{"kind":"nat"}}]},{"element":{"kind":"string"},"kind":"nil"},{"entries":[{"key":{"kind":"string","value":"b"},"value":{"kind":"nat","value":"2"}},{"key":{"kind":"string","value":"a"},"value":{"kind":"nat","value":"1"}}],"key":{"kind":"string"},"kind":"map_literal","value":{"kind":"nat"}}],"kind":"primitive","operation":"map_fold","result":{"element":{"kind":"string"},"kind":"list"}},"right":{"head":{"kind":"string","value":"b"},"kind":"cons","tail":{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}},{"kind":"theorem","name":"op_set_insert","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"kind":"nat","value":"0"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"0"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_set_remove","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"set_remove","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"1"},{"kind":"nat","value":"3"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_set_contains","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"kind":"nat","value":"4"}],"kind":"primitive","operation":"set_contains","result":{"kind":"bool"}},"right":{"kind":"bool","value":false}}},{"kind":"theorem","name":"op_set_size","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_size","result":{"kind":"nat"}},"right":{"kind":"nat","value":"3"}}},{"kind":"theorem","name":"op_set_elements","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_elements","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}},{"kind":"theorem","name":"op_set_union","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"5"},{"kind":"nat","value":"0"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_union","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"0"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"},{"kind":"nat","value":"5"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_set_intersection","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"9"},{"kind":"nat","value":"3"},{"kind":"nat","value":"2"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_intersection","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"2"},{"kind":"nat","value":"3"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_set_difference","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"},{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"2"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_difference","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"1"},{"kind":"nat","value":"3"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_set_fold","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"head":{"kind":"var","name":"element"},"kind":"cons","tail":{"kind":"var","name":"visited"}},"captures":[],"kind":"lambda","parameters":[{"name":"visited","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"element","type":{"kind":"nat"}}]},{"element":{"kind":"nat"},"kind":"nil"},{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"3"},{"kind":"nat","value":"1"},{"kind":"nat","value":"2"}],"kind":"set_literal"}],"kind":"primitive","operation":"set_fold","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}},{"kind":"theorem","name":"op_list_fold","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"head":{"kind":"var","name":"element"},"kind":"cons","tail":{"kind":"var","name":"visited"}},"captures":[],"kind":"lambda","parameters":[{"name":"visited","type":{"element":{"kind":"nat"},"kind":"list"}},{"name":"element","type":{"kind":"nat"}}]},{"element":{"kind":"nat"},"kind":"nil"},{"head":{"kind":"nat","value":"5"},"kind":"cons","tail":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"4"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"nat"},"kind":"list"}},"right":{"head":{"kind":"nat","value":"4"},"kind":"cons","tail":{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"5"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}},{"kind":"theorem","name":"op_iterate_zero","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"2"}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"0"},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"iterate","result":{"kind":"nat"}},"right":{"kind":"nat","value":"1"}}},{"kind":"theorem","name":"op_iterate_until_fixed_point","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"3"}},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"if","then_value":{"arguments":[{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"1"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"10"},{"kind":"nat","value":"0"}],"kind":"primitive","operation":"iterate_until","result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}},"right":{"kind":"pair","left":{"kind":"nat","value":"3"},"right":{"kind":"bool","value":true}}}},{"kind":"theorem","name":"op_iterate_until_exhausted","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"3"}},"else_value":{"arguments":[],"constructor":{"name":"Option.none"},"kind":"constructor","type_arguments":[{"kind":"nat"}]},"kind":"if","then_value":{"arguments":[{"kind":"add","left":{"kind":"var","name":"value"},"right":{"kind":"nat","value":"1"}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"kind":"nat"}]}},"captures":[],"kind":"lambda","parameters":[{"name":"value","type":{"kind":"nat"}}]},{"kind":"nat","value":"2"},{"kind":"nat","value":"0"}],"kind":"primitive","operation":"iterate_until","result":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"bool"}}},"right":{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"bool","value":false}}}},{"kind":"theorem","name":"op_graph_successors","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"3"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"4"}},{"source":{"kind":"nat","value":"3"},"target":{"kind":"nat","value":"4"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"},{"kind":"nat","value":"4"}]},{"kind":"nat","value":"1"}],"kind":"primitive","operation":"graph_successors","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"2"},{"kind":"nat","value":"3"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_graph_successors_absent","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"3"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"4"}},{"source":{"kind":"nat","value":"3"},"target":{"kind":"nat","value":"4"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"},{"kind":"nat","value":"4"}]},{"kind":"nat","value":"9"}],"kind":"primitive","operation":"graph_successors","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[],"kind":"set_literal"}}},{"axioms":["propext"],"kind":"theorem","name":"op_graph_reachable","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"3"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"4"}},{"source":{"kind":"nat","value":"3"},"target":{"kind":"nat","value":"4"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"},{"kind":"nat","value":"4"}]},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"graph_reachable","result":{"element":{"kind":"nat"},"kind":"set"}},"right":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"2"},{"kind":"nat","value":"4"}],"kind":"set_literal"}}},{"kind":"theorem","name":"op_graph_topological","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"arguments":[{"edges":[{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"2"}},{"source":{"kind":"nat","value":"1"},"target":{"kind":"nat","value":"3"}},{"source":{"kind":"nat","value":"2"},"target":{"kind":"nat","value":"4"}},{"source":{"kind":"nat","value":"3"},"target":{"kind":"nat","value":"4"}}],"kind":"graph_literal","node":{"kind":"nat"},"nodes":[{"kind":"nat","value":"1"},{"kind":"nat","value":"2"},{"kind":"nat","value":"3"},{"kind":"nat","value":"4"}]}],"kind":"primitive","operation":"graph_topological","result":{"kind":"option","value":{"element":{"kind":"nat"},"kind":"list"}}},"right":{"arguments":[{"head":{"kind":"nat","value":"1"},"kind":"cons","tail":{"head":{"kind":"nat","value":"2"},"kind":"cons","tail":{"head":{"kind":"nat","value":"3"},"kind":"cons","tail":{"head":{"kind":"nat","value":"4"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}],"constructor":{"name":"Option.some"},"kind":"constructor","type_arguments":[{"element":{"kind":"nat"},"kind":"list"}]}}},{"kind":"theorem","name":"key_order_nat","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"nat"},"elements":[{"kind":"nat","value":"10"},{"kind":"nat","value":"9"},{"kind":"nat","value":"100"},{"kind":"nat","value":"0"},{"kind":"nat","value":"11"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"nat"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"nat"},"kind":"set"}},{"name":"element","type":{"kind":"nat"}}]},{"element":{"kind":"nat"},"elements":[],"kind":"set_literal"},{"head":{"kind":"nat","value":"10"},"kind":"cons","tail":{"head":{"kind":"nat","value":"9"},"kind":"cons","tail":{"head":{"kind":"nat","value":"100"},"kind":"cons","tail":{"head":{"kind":"nat","value":"0"},"kind":"cons","tail":{"head":{"kind":"nat","value":"11"},"kind":"cons","tail":{"element":{"kind":"nat"},"kind":"nil"}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"nat"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_int","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"int"},"elements":[{"kind":"integer","representation":"int","value":"3"},{"kind":"integer","representation":"int","value":"-2"},{"kind":"integer","representation":"int","value":"0"},{"kind":"integer","representation":"int","value":"-10"},{"kind":"integer","representation":"int","value":"100"},{"kind":"integer","representation":"int","value":"-100"},{"kind":"integer","representation":"int","value":"9"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"int"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"int"},"kind":"set"}},{"name":"element","type":{"kind":"int"}}]},{"element":{"kind":"int"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"int","value":"3"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"-2"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"-10"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"100"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"-100"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int","value":"9"},"kind":"cons","tail":{"element":{"kind":"int"},"kind":"nil"}}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"int"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_int8","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"int8"},"elements":[{"kind":"integer","representation":"int8","value":"127"},{"kind":"integer","representation":"int8","value":"-1"},{"kind":"integer","representation":"int8","value":"0"},{"kind":"integer","representation":"int8","value":"-128"},{"kind":"integer","representation":"int8","value":"9"},{"kind":"integer","representation":"int8","value":"-9"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"int8"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"int8"},"kind":"set"}},{"name":"element","type":{"kind":"int8"}}]},{"element":{"kind":"int8"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"int8","value":"127"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int8","value":"-1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int8","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int8","value":"-128"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int8","value":"9"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int8","value":"-9"},"kind":"cons","tail":{"element":{"kind":"int8"},"kind":"nil"}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"int8"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_int16","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"int16"},"elements":[{"kind":"integer","representation":"int16","value":"32767"},{"kind":"integer","representation":"int16","value":"-1"},{"kind":"integer","representation":"int16","value":"0"},{"kind":"integer","representation":"int16","value":"-32768"},{"kind":"integer","representation":"int16","value":"10"},{"kind":"integer","representation":"int16","value":"-10"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"int16"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"int16"},"kind":"set"}},{"name":"element","type":{"kind":"int16"}}]},{"element":{"kind":"int16"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"int16","value":"32767"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int16","value":"-1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int16","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int16","value":"-32768"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int16","value":"10"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int16","value":"-10"},"kind":"cons","tail":{"element":{"kind":"int16"},"kind":"nil"}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"int16"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_int32","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"int32"},"elements":[{"kind":"integer","representation":"int32","value":"2147483647"},{"kind":"integer","representation":"int32","value":"-1"},{"kind":"integer","representation":"int32","value":"0"},{"kind":"integer","representation":"int32","value":"-2147483648"},{"kind":"integer","representation":"int32","value":"100"},{"kind":"integer","representation":"int32","value":"-100"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"int32"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"int32"},"kind":"set"}},{"name":"element","type":{"kind":"int32"}}]},{"element":{"kind":"int32"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"int32","value":"2147483647"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int32","value":"-1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int32","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int32","value":"-2147483648"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int32","value":"100"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int32","value":"-100"},"kind":"cons","tail":{"element":{"kind":"int32"},"kind":"nil"}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"int32"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_int64","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"int64"},"elements":[{"kind":"integer","representation":"int64","value":"9223372036854775807"},{"kind":"integer","representation":"int64","value":"-1"},{"kind":"integer","representation":"int64","value":"0"},{"kind":"integer","representation":"int64","value":"-9223372036854775808"},{"kind":"integer","representation":"int64","value":"99"},{"kind":"integer","representation":"int64","value":"-99"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"int64"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"int64"},"kind":"set"}},{"name":"element","type":{"kind":"int64"}}]},{"element":{"kind":"int64"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"int64","value":"9223372036854775807"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int64","value":"-1"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int64","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int64","value":"-9223372036854775808"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int64","value":"99"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"int64","value":"-99"},"kind":"cons","tail":{"element":{"kind":"int64"},"kind":"nil"}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"int64"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_uint8","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"uint8"},"elements":[{"kind":"integer","representation":"uint8","value":"255"},{"kind":"integer","representation":"uint8","value":"0"},{"kind":"integer","representation":"uint8","value":"7"},{"kind":"integer","representation":"uint8","value":"70"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"uint8"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"uint8"},"kind":"set"}},{"name":"element","type":{"kind":"uint8"}}]},{"element":{"kind":"uint8"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"uint8","value":"255"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint8","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint8","value":"7"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint8","value":"70"},"kind":"cons","tail":{"element":{"kind":"uint8"},"kind":"nil"}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"uint8"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_uint16","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"uint16"},"elements":[{"kind":"integer","representation":"uint16","value":"65535"},{"kind":"integer","representation":"uint16","value":"0"},{"kind":"integer","representation":"uint16","value":"9"},{"kind":"integer","representation":"uint16","value":"10"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"uint16"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"uint16"},"kind":"set"}},{"name":"element","type":{"kind":"uint16"}}]},{"element":{"kind":"uint16"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"uint16","value":"65535"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint16","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint16","value":"9"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint16","value":"10"},"kind":"cons","tail":{"element":{"kind":"uint16"},"kind":"nil"}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"uint16"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_uint32","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"uint32"},"elements":[{"kind":"integer","representation":"uint32","value":"4294967295"},{"kind":"integer","representation":"uint32","value":"0"},{"kind":"integer","representation":"uint32","value":"99"},{"kind":"integer","representation":"uint32","value":"100"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"uint32"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"uint32"},"kind":"set"}},{"name":"element","type":{"kind":"uint32"}}]},{"element":{"kind":"uint32"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"uint32","value":"4294967295"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint32","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint32","value":"99"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint32","value":"100"},"kind":"cons","tail":{"element":{"kind":"uint32"},"kind":"nil"}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"uint32"},"kind":"set"}}}},{"kind":"theorem","name":"key_order_uint64","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"uint64"},"elements":[{"kind":"integer","representation":"uint64","value":"18446744073709551615"},{"kind":"integer","representation":"uint64","value":"0"},{"kind":"integer","representation":"uint64","value":"9"},{"kind":"integer","representation":"uint64","value":"10"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"uint64"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"uint64"},"kind":"set"}},{"name":"element","type":{"kind":"uint64"}}]},{"element":{"kind":"uint64"},"elements":[],"kind":"set_literal"},{"head":{"kind":"integer","representation":"uint64","value":"18446744073709551615"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint64","value":"0"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint64","value":"9"},"kind":"cons","tail":{"head":{"kind":"integer","representation":"uint64","value":"10"},"kind":"cons","tail":{"element":{"kind":"uint64"},"kind":"nil"}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"uint64"},"kind":"set"}}}},{"axioms":["propext"],"kind":"theorem","name":"key_order_bool","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"bool"},"elements":[{"kind":"bool","value":true},{"kind":"bool","value":false}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"bool"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"bool"},"kind":"set"}},{"name":"element","type":{"kind":"bool"}}]},{"element":{"kind":"bool"},"elements":[],"kind":"set_literal"},{"head":{"kind":"bool","value":true},"kind":"cons","tail":{"head":{"kind":"bool","value":false},"kind":"cons","tail":{"element":{"kind":"bool"},"kind":"nil"}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"bool"},"kind":"set"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"key_order_string","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"string"},"elements":[{"kind":"string","value":"z"},{"kind":"string","value":"é"},{"kind":"string","value":"a"},{"kind":"string","value":"Z"},{"kind":"string","value":"ß"},{"kind":"string","value":"日本"},{"kind":"string","value":"😀"},{"kind":"string","value":"ab"},{"kind":"string","value":""},{"kind":"string","value":"a b"}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"string"},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"string"},"kind":"set"}},{"name":"element","type":{"kind":"string"}}]},{"element":{"kind":"string"},"elements":[],"kind":"set_literal"},{"head":{"kind":"string","value":"z"},"kind":"cons","tail":{"head":{"kind":"string","value":"é"},"kind":"cons","tail":{"head":{"kind":"string","value":"a"},"kind":"cons","tail":{"head":{"kind":"string","value":"Z"},"kind":"cons","tail":{"head":{"kind":"string","value":"ß"},"kind":"cons","tail":{"head":{"kind":"string","value":"日本"},"kind":"cons","tail":{"head":{"kind":"string","value":"😀"},"kind":"cons","tail":{"head":{"kind":"string","value":"ab"},"kind":"cons","tail":{"head":{"kind":"string","value":""},"kind":"cons","tail":{"head":{"kind":"string","value":"a b"},"kind":"cons","tail":{"element":{"kind":"string"},"kind":"nil"}}}}}}}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"string"},"kind":"set"}}}},{"axioms":["Classical.choice","Quot.sound","propext"],"kind":"theorem","name":"key_order_product","parameters":[],"proof":{"kind":"decide"},"statement":{"kind":"eq","left":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"elements":[{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"string","value":"a"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"string","value":"z"}},{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"string","value":"B"}},{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"string","value":"a"}}],"kind":"set_literal"},"right":{"arguments":[{"body":{"arguments":[{"kind":"var","name":"built"},{"kind":"var","name":"element"}],"kind":"primitive","operation":"set_insert","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"set"}},"captures":[],"kind":"lambda","parameters":[{"name":"built","type":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"set"}},{"name":"element","type":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}}}]},{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"elements":[],"kind":"set_literal"},{"head":{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"string","value":"a"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"string","value":"z"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"2"},"right":{"kind":"string","value":"B"}},"kind":"cons","tail":{"head":{"kind":"pair","left":{"kind":"nat","value":"1"},"right":{"kind":"string","value":"a"}},"kind":"cons","tail":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"nil"}}}}}],"kind":"primitive","operation":"list_fold","result":{"element":{"kind":"product","left":{"kind":"nat"},"right":{"kind":"string"}},"kind":"set"}}}}],"spec":"lexlean/semantic-module/2"}}
+definition{
+  name: ancestors,
+  parameters: [parents : (Set (Nat * Nat))],
+  result: ((Set (Nat * Nat)) * Bool),
+  body: (prim iterate_until (fun (state : (Set (Nat * Nat))) => (let derived : (Set (Nat * Nat)) := (prim set_fold (fun [state] (outer : (Set (Nat * Nat))) (left : (Nat * Nat)) => (prim set_fold (fun [left] (inner : (Set (Nat * Nat))) (right : (Nat * Nat)) => (if ((second left) =? (first right)) then (prim set_insert inner ((first left), (second right)) : (Set (Nat * Nat))) else inner)) outer state : (Set (Nat * Nat)))) state state : (Set (Nat * Nat))); (if ((prim set_size derived : Nat) =? (prim set_size state : Nat)) then (ctor Option.none [(Set (Nat * Nat))]) else (ctor Option.some [(Set (Nat * Nat))] derived)))) 8 parents : ((Set (Nat * Nat)) * Bool)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: family,
+  parameters: [],
+  result: (Set (Nat * Nat)),
+  body: set_literal{element: (Nat * Nat), elements: [(3, 4), (1, 2), (2, 3)]}
+}
+
+theorem{
+  name: table_slots,
+  parameters: [],
+  statement: ((Tables::buildTable (cons "x" (cons "y" (cons "x2" (nil String))))) = map_literal{
+    entries: [{key: "y", value: 1}, {key: "x", value: 0}, {key: "x2", value: 2}],
+    key: String,
+    value: Nat
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: table_lookup,
+  parameters: [],
+  statement: ((prim map_lookup (Tables::buildTable (cons "a" (cons "b" (nil String)))) "b" : (Option Nat)) = (ctor Option.some [Nat] 1)),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: call_order,
+  parameters: [],
+  statement: ((Tables::callOrder) = (ctor Option.some [(List String)] (cons "main" (cons "emit" (cons "parse" (cons "report" (cons "lex" (nil String)))))))),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: parse_reaches_lex,
+  parameters: [],
+  statement: ((Tables::reachableFromParse) = set_literal{
+    element: String,
+    elements: ["parse", "lex"]
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: cycle_has_no_order,
+  parameters: [],
+  statement: ((prim graph_topological graph_literal{
+    edges: [{source: 1, target: 2}, {source: 2, target: 1}],
+    node: Nat,
+    nodes: [1, 2]
+  } : (Option (List Nat))) = (ctor Option.none [(List Nat)])),
+  proof: decide{}
+}
+
+theorem{
+  name: ancestor_closure,
+  parameters: [],
+  statement: ((ancestors (family)) = (set_literal{
+    element: (Nat * Nat),
+    elements: [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
+  }, true)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: bounded_iteration,
+  parameters: [],
+  statement: ((prim iterate (fun (value : Nat) => (value + 2)) 3 1 : Nat) = 7),
+  proof: decide{}
+}
+
+theorem{
+  name: reordered_literals_agree,
+  parameters: [],
+  statement: (map_literal{
+    entries: [{key: 2, value: false}, {key: 1, value: true}],
+    key: Nat,
+    value: Bool
+  } = map_literal{entries: [{key: 1, value: true}, {key: 2, value: false}], key: Nat, value: Bool}),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: op_map_insert,
+  parameters: [],
+  statement: ((prim map_insert map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "c" 3 : (Map String Nat)) = map_literal{
+    entries: [{key: "a", value: 1}, {key: "b", value: 2}, {key: "c", value: 3}],
+    key: String,
+    value: Nat
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_insert_replaces,
+  parameters: [],
+  statement: ((prim map_insert map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "a" 9 : (Map String Nat)) = map_literal{
+    entries: [{key: "a", value: 9}, {key: "b", value: 2}],
+    key: String,
+    value: Nat
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_remove,
+  parameters: [],
+  statement: ((prim map_remove map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "a" : (Map String Nat)) = map_literal{
+    entries: [{key: "b", value: 2}],
+    key: String,
+    value: Nat
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_remove_absent,
+  parameters: [],
+  statement: ((prim map_remove map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "z" : (Map String Nat)) = map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  }),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_lookup,
+  parameters: [],
+  statement: ((prim map_lookup map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "b" : (Option Nat)) = (ctor Option.some [Nat] 2)),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_lookup_absent,
+  parameters: [],
+  statement: ((prim map_lookup map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "z" : (Option Nat)) = (ctor Option.none [Nat])),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_contains,
+  parameters: [],
+  statement: ((prim map_contains map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } "a" : Bool) = true),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: op_map_size,
+  parameters: [],
+  statement: ((prim map_size map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } : Nat) = 2),
+  proof: decide{}
+}
+
+theorem{
+  name: op_map_keys,
+  parameters: [],
+  statement: ((prim map_keys map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } : (List String)) = (cons "a" (cons "b" (nil String)))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_map_values,
+  parameters: [],
+  statement: ((prim map_values map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } : (List Nat)) = (cons 1 (cons 2 (nil Nat)))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_map_entries,
+  parameters: [],
+  statement: ((prim map_entries map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } : (List (String * Nat))) = (cons ("a", 1) (cons ("b", 2) (nil (String * Nat))))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_map_fold,
+  parameters: [],
+  statement: ((prim map_fold (fun (visited : (List String)) (key : String) (value : Nat) => (cons key visited)) (nil String) map_literal{
+    entries: [{key: "b", value: 2}, {key: "a", value: 1}],
+    key: String,
+    value: Nat
+  } : (List String)) = (cons "b" (cons "a" (nil String)))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_insert,
+  parameters: [],
+  statement: ((prim set_insert set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } 0 : (Set Nat)) = set_literal{element: Nat, elements: [0, 1, 2, 3]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_remove,
+  parameters: [],
+  statement: ((prim set_remove set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } 2 : (Set Nat)) = set_literal{element: Nat, elements: [1, 3]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_contains,
+  parameters: [],
+  statement: ((prim set_contains set_literal{element: Nat, elements: [3, 1, 2]} 4 : Bool) = false),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_size,
+  parameters: [],
+  statement: ((prim set_size set_literal{element: Nat, elements: [3, 1, 2]} : Nat) = 3),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_elements,
+  parameters: [],
+  statement: ((prim set_elements set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } : (List Nat)) = (cons 1 (cons 2 (cons 3 (nil Nat))))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_union,
+  parameters: [],
+  statement: ((prim set_union set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } set_literal{
+    element: Nat,
+    elements: [5, 0]
+  } : (Set Nat)) = set_literal{element: Nat, elements: [0, 1, 2, 3, 5]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_intersection,
+  parameters: [],
+  statement: ((prim set_intersection set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } set_literal{
+    element: Nat,
+    elements: [9, 3, 2]
+  } : (Set Nat)) = set_literal{element: Nat, elements: [2, 3]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_difference,
+  parameters: [],
+  statement: ((prim set_difference set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } set_literal{
+    element: Nat,
+    elements: [2]
+  } : (Set Nat)) = set_literal{element: Nat, elements: [1, 3]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_set_fold,
+  parameters: [],
+  statement: ((prim set_fold (fun (visited : (List Nat)) (element : Nat) => (cons element visited)) (nil Nat) set_literal{
+    element: Nat,
+    elements: [3, 1, 2]
+  } : (List Nat)) = (cons 3 (cons 2 (cons 1 (nil Nat))))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_list_fold,
+  parameters: [],
+  statement: ((prim list_fold (fun (visited : (List Nat)) (element : Nat) => (cons element visited)) (nil Nat) (cons 5 (cons 1 (cons 4 (nil Nat)))) : (List Nat)) = (cons 4 (cons 1 (cons 5 (nil Nat))))),
+  proof: decide{}
+}
+
+theorem{
+  name: op_iterate_zero,
+  parameters: [],
+  statement: ((prim iterate (fun (value : Nat) => (value + 2)) 0 1 : Nat) = 1),
+  proof: decide{}
+}
+
+theorem{
+  name: op_iterate_until_fixed_point,
+  parameters: [],
+  statement: ((prim iterate_until (fun (value : Nat) => (if (value <? 3) then (ctor Option.some [Nat] (value + 1)) else (ctor Option.none [Nat]))) 10 0 : (Nat * Bool)) = (3, true)),
+  proof: decide{}
+}
+
+theorem{
+  name: op_iterate_until_exhausted,
+  parameters: [],
+  statement: ((prim iterate_until (fun (value : Nat) => (if (value <? 3) then (ctor Option.some [Nat] (value + 1)) else (ctor Option.none [Nat]))) 2 0 : (Nat * Bool)) = (2, false)),
+  proof: decide{}
+}
+
+theorem{
+  name: op_graph_successors,
+  parameters: [],
+  statement: ((prim graph_successors graph_literal{
+    edges: [
+      {source: 1, target: 2},
+      {source: 1, target: 3},
+      {source: 2, target: 4},
+      {source: 3, target: 4}
+    ],
+    node: Nat,
+    nodes: [1, 2, 3, 4]
+  } 1 : (Set Nat)) = set_literal{element: Nat, elements: [2, 3]}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_graph_successors_absent,
+  parameters: [],
+  statement: ((prim graph_successors graph_literal{
+    edges: [
+      {source: 1, target: 2},
+      {source: 1, target: 3},
+      {source: 2, target: 4},
+      {source: 3, target: 4}
+    ],
+    node: Nat,
+    nodes: [1, 2, 3, 4]
+  } 9 : (Set Nat)) = set_literal{element: Nat, elements: []}),
+  proof: decide{}
+}
+
+theorem{
+  name: op_graph_reachable,
+  parameters: [],
+  statement: ((prim graph_reachable graph_literal{
+    edges: [
+      {source: 1, target: 2},
+      {source: 1, target: 3},
+      {source: 2, target: 4},
+      {source: 3, target: 4}
+    ],
+    node: Nat,
+    nodes: [1, 2, 3, 4]
+  } 2 : (Set Nat)) = set_literal{element: Nat, elements: [2, 4]}),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: op_graph_topological,
+  parameters: [],
+  statement: ((prim graph_topological graph_literal{
+    edges: [
+      {source: 1, target: 2},
+      {source: 1, target: 3},
+      {source: 2, target: 4},
+      {source: 3, target: 4}
+    ],
+    node: Nat,
+    nodes: [1, 2, 3, 4]
+  } : (Option (List Nat))) = (ctor Option.some [(List Nat)] (cons 1 (cons 2 (cons 3 (cons 4 (nil Nat))))))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_nat,
+  parameters: [],
+  statement: (set_literal{
+    element: Nat,
+    elements: [10, 9, 100, 0, 11]
+  } = (prim list_fold (fun (built : (Set Nat)) (element : Nat) => (prim set_insert built element : (Set Nat))) set_literal{
+    element: Nat,
+    elements: []
+  } (cons 10 (cons 9 (cons 100 (cons 0 (cons 11 (nil Nat)))))) : (Set Nat))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_int,
+  parameters: [],
+  statement: (set_literal{
+    element: Int,
+    elements: [(3 : Int), (-2 : Int), (0 : Int), (-10 : Int), (100 : Int), (-100 : Int), (9 : Int)]
+  } = (prim list_fold (fun (built : (Set Int)) (element : Int) => (prim set_insert built element : (Set Int))) set_literal{
+    element: Int,
+    elements: []
+  } (cons (3 : Int) (cons (-2 : Int) (cons (0 : Int) (cons (-10 : Int) (cons (100 : Int) (cons (-100 : Int) (cons (9 : Int) (nil Int)))))))) : (Set Int))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_int8,
+  parameters: [],
+  statement: (set_literal{
+    element: Int8,
+    elements: [(127 : Int8), (-1 : Int8), (0 : Int8), (-128 : Int8), (9 : Int8), (-9 : Int8)]
+  } = (prim list_fold (fun (built : (Set Int8)) (element : Int8) => (prim set_insert built element : (Set Int8))) set_literal{
+    element: Int8,
+    elements: []
+  } (cons (127 : Int8) (cons (-1 : Int8) (cons (0 : Int8) (cons (-128 : Int8) (cons (9 : Int8) (cons (-9 : Int8) (nil Int8))))))) : (Set Int8))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_int16,
+  parameters: [],
+  statement: (set_literal{
+    element: Int16,
+    elements: [
+      (32767 : Int16),
+      (-1 : Int16),
+      (0 : Int16),
+      (-32768 : Int16),
+      (10 : Int16),
+      (-10 : Int16)
+    ]
+  } = (prim list_fold (fun (built : (Set Int16)) (element : Int16) => (prim set_insert built element : (Set Int16))) set_literal{
+    element: Int16,
+    elements: []
+  } (cons (32767 : Int16) (cons (-1 : Int16) (cons (0 : Int16) (cons (-32768 : Int16) (cons (10 : Int16) (cons (-10 : Int16) (nil Int16))))))) : (Set Int16))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_int32,
+  parameters: [],
+  statement: (set_literal{
+    element: Int32,
+    elements: [
+      (2147483647 : Int32),
+      (-1 : Int32),
+      (0 : Int32),
+      (-2147483648 : Int32),
+      (100 : Int32),
+      (-100 : Int32)
+    ]
+  } = (prim list_fold (fun (built : (Set Int32)) (element : Int32) => (prim set_insert built element : (Set Int32))) set_literal{
+    element: Int32,
+    elements: []
+  } (cons (2147483647 : Int32) (cons (-1 : Int32) (cons (0 : Int32) (cons (-2147483648 : Int32) (cons (100 : Int32) (cons (-100 : Int32) (nil Int32))))))) : (Set Int32))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_int64,
+  parameters: [],
+  statement: (set_literal{
+    element: Int64,
+    elements: [
+      (9223372036854775807 : Int64),
+      (-1 : Int64),
+      (0 : Int64),
+      (-9223372036854775808 : Int64),
+      (99 : Int64),
+      (-99 : Int64)
+    ]
+  } = (prim list_fold (fun (built : (Set Int64)) (element : Int64) => (prim set_insert built element : (Set Int64))) set_literal{
+    element: Int64,
+    elements: []
+  } (cons (9223372036854775807 : Int64) (cons (-1 : Int64) (cons (0 : Int64) (cons (-9223372036854775808 : Int64) (cons (99 : Int64) (cons (-99 : Int64) (nil Int64))))))) : (Set Int64))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_uint8,
+  parameters: [],
+  statement: (set_literal{
+    element: UInt8,
+    elements: [(255 : UInt8), (0 : UInt8), (7 : UInt8), (70 : UInt8)]
+  } = (prim list_fold (fun (built : (Set UInt8)) (element : UInt8) => (prim set_insert built element : (Set UInt8))) set_literal{
+    element: UInt8,
+    elements: []
+  } (cons (255 : UInt8) (cons (0 : UInt8) (cons (7 : UInt8) (cons (70 : UInt8) (nil UInt8))))) : (Set UInt8))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_uint16,
+  parameters: [],
+  statement: (set_literal{
+    element: UInt16,
+    elements: [(65535 : UInt16), (0 : UInt16), (9 : UInt16), (10 : UInt16)]
+  } = (prim list_fold (fun (built : (Set UInt16)) (element : UInt16) => (prim set_insert built element : (Set UInt16))) set_literal{
+    element: UInt16,
+    elements: []
+  } (cons (65535 : UInt16) (cons (0 : UInt16) (cons (9 : UInt16) (cons (10 : UInt16) (nil UInt16))))) : (Set UInt16))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_uint32,
+  parameters: [],
+  statement: (set_literal{
+    element: UInt32,
+    elements: [(4294967295 : UInt32), (0 : UInt32), (99 : UInt32), (100 : UInt32)]
+  } = (prim list_fold (fun (built : (Set UInt32)) (element : UInt32) => (prim set_insert built element : (Set UInt32))) set_literal{
+    element: UInt32,
+    elements: []
+  } (cons (4294967295 : UInt32) (cons (0 : UInt32) (cons (99 : UInt32) (cons (100 : UInt32) (nil UInt32))))) : (Set UInt32))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_uint64,
+  parameters: [],
+  statement: (set_literal{
+    element: UInt64,
+    elements: [(18446744073709551615 : UInt64), (0 : UInt64), (9 : UInt64), (10 : UInt64)]
+  } = (prim list_fold (fun (built : (Set UInt64)) (element : UInt64) => (prim set_insert built element : (Set UInt64))) set_literal{
+    element: UInt64,
+    elements: []
+  } (cons (18446744073709551615 : UInt64) (cons (0 : UInt64) (cons (9 : UInt64) (cons (10 : UInt64) (nil UInt64))))) : (Set UInt64))),
+  proof: decide{}
+}
+
+theorem{
+  name: key_order_bool,
+  parameters: [],
+  statement: (set_literal{
+    element: Bool,
+    elements: [true, false]
+  } = (prim list_fold (fun (built : (Set Bool)) (element : Bool) => (prim set_insert built element : (Set Bool))) set_literal{
+    element: Bool,
+    elements: []
+  } (cons true (cons false (nil Bool))) : (Set Bool))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: key_order_string,
+  parameters: [],
+  statement: (set_literal{
+    element: String,
+    elements: ["z", "é", "a", "Z", "ß", "日本", "😀", "ab", "", "a b"]
+  } = (prim list_fold (fun (built : (Set String)) (element : String) => (prim set_insert built element : (Set String))) set_literal{
+    element: String,
+    elements: []
+  } (cons "z" (cons "é" (cons "a" (cons "Z" (cons "ß" (cons "日本" (cons "😀" (cons "ab" (cons "" (cons "a b" (nil String))))))))))) : (Set String))),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: key_order_product,
+  parameters: [],
+  statement: (set_literal{
+    element: (Nat * String),
+    elements: [(2, "a"), (1, "z"), (2, "B"), (1, "a")]
+  } = (prim list_fold (fun (built : (Set (Nat * String))) (element : (Nat * String)) => (prim set_insert built element : (Set (Nat * String)))) set_literal{
+    element: (Nat * String),
+    elements: []
+  } (cons (2, "a") (cons (1, "z") (cons (2, "B") (cons (1, "a") (nil (Nat * String)))))) : (Set (Nat * String)))),
+  proof: decide{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
 \end{semanticmodule}
 \end{lexlean}

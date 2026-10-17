@@ -2,6 +2,19 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \title{Natural number addition}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"kind":"theorem","name":"halve_decreases","parameters":[{"name":"number","type":{"kind":"nat"}}],"proof":{"kind":"linear_arithmetic"},"statement":{"conclusion":{"kind":"lt","left":{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}},"right":{"kind":"var","name":"number"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"blt","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"2"}},"right":{"kind":"bool","value":false}}}},{"body":{"condition":{"kind":"blt","left":{"kind":"var","name":"number"},"right":{"kind":"nat","value":"2"}},"else_value":{"kind":"add","left":{"arguments":[{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"2"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"function":{"name":"halve"},"kind":"call"},"right":{"arguments":[{"kind":"var","name":"number"}],"function":{"function":{"name":"halve"},"kind":"function_ref"},"kind":"apply"}},"kind":"if","then_value":{"kind":"nat","value":"0"}},"kind":"definition","name":"halve","parameters":[{"name":"number","type":{"kind":"nat"}}],"result":{"kind":"nat"},"termination":{"evidence":[{"name":"halve_decreases"}],"measure":{"kind":"var","name":"number"}}}],"spec":"lexlean/semantic-module/2"}}
+theorem{
+  name: halve_decreases,
+  parameters: [number : Nat],
+  statement: (((number <? 2) = false) -> ((prim subtract number 2 : Nat) < number)),
+  proof: linear_arithmetic{}
+}
+
+definition{
+  name: halve,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (if (number <? 2) then 0 else ((halve (prim subtract number 2 : Nat)) + (apply (ref halve) number))),
+  termination: {evidence: [halve_decreases], measure: number}
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -3,6 +3,132 @@
 \useglossary{models.titles@1.0.0}
 \title{Session windows}
 \begin{semanticmodule}
-\semanticdata{{"declarations":[{"fields":[{"name":"used","type":{"kind":"nat"}},{"name":"items","type":{"kind":"nat"}}],"kind":"structure","name":"Window","parameters":[],"type_parameters":[]},{"body":{"kind":"le","left":{"kind":"var","name":"cost"},"right":{"kind":"nat","value":"16"}},"kind":"definition","name":"Affordable","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"kind":"var","name":"cost"},"right":{"kind":"nat","value":"16"}},"executable":true,"kind":"definition","name":"affordableCheck","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"affordable_check_sound","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Affordable"},{"name":"affordableCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"Affordable"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"affordableCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"body":{"kind":"le","left":{"field":"used","kind":"project","value":{"kind":"var","name":"window"}},"right":{"kind":"nat","value":"64"}},"kind":"definition","name":"Bounded","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}}],"result":{"kind":"prop"}},{"body":{"kind":"ble","left":{"field":"used","kind":"project","value":{"kind":"var","name":"window"}},"right":{"kind":"nat","value":"64"}},"executable":true,"kind":"definition","name":"boundedCheck","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}}],"result":{"kind":"bool"}},{"axioms":["propext"],"kind":"theorem","name":"bounded_check_sound","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}}],"proof":{"definitions":[{"name":"Bounded"},{"name":"boundedCheck"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"arguments":[{"kind":"var","name":"window"}],"function":{"name":"Bounded"},"kind":"call"},"kind":"implies","premise":{"kind":"eq","left":{"arguments":[{"kind":"var","name":"window"}],"function":{"name":"boundedCheck"},"kind":"call"},"right":{"kind":"bool","value":true}}}},{"body":{"kind":"eq","left":{"kind":"add","left":{"field":"used","kind":"project","value":{"kind":"var","name":"updated"}},"right":{"kind":"var","name":"overflow"}},"right":{"kind":"add","left":{"field":"used","kind":"project","value":{"kind":"var","name":"window"}},"right":{"kind":"var","name":"cost"}}},"kind":"definition","name":"Conserves","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}},{"name":"updated","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"overflow","type":{"kind":"nat"}}],"result":{"kind":"prop"}},{"axioms":["propext"],"input":{"name":"cost","type":{"kind":"nat"}},"invariant":{"name":"Bounded"},"kind":"contract","name":"SessionContract","output":{"name":"overflow","type":{"kind":"nat"}},"postcondition":{"name":"Conserves"},"precondition":{"name":"Affordable"},"state":{"name":"window","next":"updated","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},"validators":[{"predicate":"invariant","sound":{"name":"bounded_check_sound"},"validator":{"name":"boundedCheck"}},{"predicate":"precondition","sound":{"name":"affordable_check_sound"},"validator":{"name":"affordableCheck"}}]},{"descriptor":{"body":{"binder":{"name":"total","type":{"kind":"nat"}},"body":{"kind":"pair","left":{"fields":[{"field":"used","value":{"arguments":[{"kind":"var","name":"total"},{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"64"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}},{"field":"items","value":{"kind":"add","left":{"field":"items","kind":"project","value":{"kind":"var","name":"window"}},"right":{"kind":"nat","value":"1"}}}],"kind":"record","type":{"name":"Window"}},"right":{"arguments":[{"kind":"var","name":"total"},{"kind":"nat","value":"64"}],"kind":"primitive","operation":"subtract","result":{"kind":"nat"}}},"kind":"let","value":{"kind":"add","left":{"field":"used","kind":"project","value":{"kind":"var","name":"window"}},"right":{"kind":"var","name":"cost"}}},"kind":"deterministic"},"executable":true,"input":{"name":"cost","type":{"kind":"nat"}},"kind":"realization","name":"SessionStep","output":{"kind":"nat"},"state":{"initial":{"fields":[{"field":"used","value":{"kind":"nat","value":"0"}},{"field":"items","value":{"kind":"nat","value":"0"}}],"kind":"record","type":{"name":"Window"}},"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}}},{"kind":"theorem","name":"session_initial","parameters":[],"proof":{"kind":"decide"},"statement":{"arguments":[{"arguments":[],"function":{"name":"SessionStep.initial"},"kind":"call"}],"function":{"name":"Bounded"},"kind":"call"}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"session_preserves","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Affordable"},{"name":"Bounded"},{"name":"SessionStep"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"first","value":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"SessionStep"},"kind":"call"}}],"function":{"name":"Bounded"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"Affordable"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"window"}],"function":{"name":"Bounded"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"kind":"theorem","name":"session_conserves","parameters":[{"name":"window","type":{"arguments":[],"kind":"named","member":{"name":"Window"}}},{"name":"cost","type":{"kind":"nat"}}],"proof":{"definitions":[{"name":"Affordable"},{"name":"Bounded"},{"name":"Conserves"},{"name":"SessionStep"}],"kind":"linear_arithmetic"},"statement":{"conclusion":{"conclusion":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"},{"kind":"first","value":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"SessionStep"},"kind":"call"}},{"kind":"second","value":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"SessionStep"},"kind":"call"}}],"function":{"name":"Conserves"},"kind":"call"},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"window"},{"kind":"var","name":"cost"}],"function":{"name":"Affordable"},"kind":"call"}},"kind":"implies","premise":{"arguments":[{"kind":"var","name":"window"}],"function":{"name":"Bounded"},"kind":"call"}}},{"axioms":["Quot.sound","propext"],"claims":[{"kind":"initial_invariant","theorem":{"name":"session_initial"}},{"kind":"preserves_invariant","theorem":{"name":"session_preserves"}},{"kind":"satisfies_contract","theorem":{"name":"session_conserves"}}],"contract":{"member":{"name":"SessionContract"}},"kind":"evidence","name":"SessionEvidence","realization":{"member":{"name":"SessionStep"}}},{"contract":{"member":{"name":"SessionContract"}},"evidence":[{"member":{"name":"SessionEvidence"}}],"kind":"model","name":"SessionModel","realization":{"member":{"name":"SessionStep"}}}],"spec":"lexlean/semantic-module/2"}}
+structure{
+  name: Window,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: used, type: Nat}, {name: items, type: Nat}]
+}
+
+definition{
+  name: Affordable,
+  parameters: [window : Window, cost : Nat],
+  result: Prop,
+  body: (cost <= 16)
+}
+
+definition{
+  name: affordableCheck,
+  parameters: [window : Window, cost : Nat],
+  result: Bool,
+  body: (cost <=? 16),
+  executable: true
+}
+
+theorem{
+  name: affordable_check_sound,
+  parameters: [window : Window, cost : Nat],
+  statement: (((affordableCheck window cost) = true) -> (Affordable window cost)),
+  proof: linear_arithmetic{definitions: [Affordable, affordableCheck]},
+  axioms: [propext]
+}
+
+definition{
+  name: Bounded,
+  parameters: [window : Window],
+  result: Prop,
+  body: ((project window used) <= 64)
+}
+
+definition{
+  name: boundedCheck,
+  parameters: [window : Window],
+  result: Bool,
+  body: ((project window used) <=? 64),
+  executable: true
+}
+
+theorem{
+  name: bounded_check_sound,
+  parameters: [window : Window],
+  statement: (((boundedCheck window) = true) -> (Bounded window)),
+  proof: linear_arithmetic{definitions: [Bounded, boundedCheck]},
+  axioms: [propext]
+}
+
+definition{
+  name: Conserves,
+  parameters: [window : Window, cost : Nat, updated : Window, overflow : Nat],
+  result: Prop,
+  body: (((project updated used) + overflow) = ((project window used) + cost))
+}
+
+contract{
+  name: SessionContract,
+  axioms: [propext],
+  input: {name: cost, type: Nat},
+  invariant: Bounded,
+  output: {name: overflow, type: Nat},
+  postcondition: Conserves,
+  precondition: Affordable,
+  state: {name: window, type: Window, next: updated},
+  validators: [
+    {predicate: invariant, sound: bounded_check_sound, validator: boundedCheck},
+    {predicate: precondition, sound: affordable_check_sound, validator: affordableCheck}
+  ]
+}
+
+realization{
+  name: SessionStep,
+  descriptor: deterministic{
+    body: (let total : Nat := ((project window used) + cost); ((record Window {used := (prim subtract total (prim subtract total 64 : Nat) : Nat), items := ((project window items) + 1)}), (prim subtract total 64 : Nat)))
+  },
+  executable: true,
+  input: {name: cost, type: Nat},
+  output: Nat,
+  state: {name: window, type: Window, initial: (record Window {used := 0, items := 0})}
+}
+
+theorem{
+  name: session_initial,
+  parameters: [],
+  statement: (Bounded (SessionStep.initial)),
+  proof: decide{}
+}
+
+theorem{
+  name: session_preserves,
+  parameters: [window : Window, cost : Nat],
+  statement: ((Bounded window) -> ((Affordable window cost) -> (Bounded (first (SessionStep window cost))))),
+  proof: linear_arithmetic{definitions: [Affordable, Bounded, SessionStep]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: session_conserves,
+  parameters: [window : Window, cost : Nat],
+  statement: ((Bounded window) -> ((Affordable window cost) -> (Conserves window cost (first (SessionStep window cost)) (second (SessionStep window cost))))),
+  proof: linear_arithmetic{definitions: [Affordable, Bounded, Conserves, SessionStep]},
+  axioms: [Quot.sound, propext]
+}
+
+evidence{
+  name: SessionEvidence,
+  axioms: [Quot.sound, propext],
+  claims: [
+    initial_invariant{theorem: session_initial},
+    preserves_invariant{theorem: session_preserves},
+    satisfies_contract{theorem: session_conserves}
+  ],
+  contract: {member: SessionContract},
+  realization: {member: SessionStep}
+}
+
+model{
+  name: SessionModel,
+  contract: {member: SessionContract},
+  evidence: [{member: SessionEvidence}],
+  realization: {member: SessionStep}
+}
 \end{semanticmodule}
 \end{lexlean}
