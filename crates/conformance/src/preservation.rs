@@ -3168,6 +3168,18 @@ mod dev {
 
     fn family_sizes() {
         let mut projects = crate::stress::families();
+        if let Ok(list) = std::env::var("LEXLEAN_ENUM") {
+            projects = list
+                .split(',')
+                .filter_map(|item| item.trim().parse::<usize>().ok())
+                .map(|count| {
+                    (
+                        format!("enumeration of {count} constructors"),
+                        crate::stress::fitting_enumeration(count),
+                    )
+                })
+                .collect();
+        }
         if std::env::var("LEXLEAN_WIDE").is_ok() {
             projects = [2, 100, 101, 180]
                 .iter()

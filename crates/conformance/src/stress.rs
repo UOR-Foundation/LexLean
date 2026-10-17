@@ -1254,6 +1254,17 @@ pub fn random_shapes(count: usize, seed: u64) -> Vec<Shape> {
         .collect()
 }
 
+/// The constructors of the widest enumeration whose certificate A, recorded in
+/// the authoring notation, fits under the default limit.
+pub const FITTING_CONSTRUCTORS: usize = 420;
+
+/// A program that matches on an enumeration of `constructors` constructors,
+/// under the default limits.
+#[must_use]
+pub fn fitting_enumeration(constructors: usize) -> P {
+    project_limited(&enumeration(constructors, 0), false)
+}
+
 /// Programs that are valid and whose certificates fit under the default
 /// limits, with the default limits: none may be refused. A match on 420
 /// constructors (certificate A of 4.1 MB of the 4 MiB), a string literal of
@@ -1265,8 +1276,8 @@ pub fn fitting() -> Vec<(String, P)> {
     let ascii = json!({"kind": "string", "value": "a".repeat(450_000)});
     vec![
         (
-            "enumeration of 420 constructors".to_owned(),
-            project_limited(&enumeration(420, 0), false),
+            format!("enumeration of {FITTING_CONSTRUCTORS} constructors"),
+            fitting_enumeration(FITTING_CONSTRUCTORS),
         ),
         (
             "string literal of 450000 characters".to_owned(),
