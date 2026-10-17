@@ -3249,4 +3249,67 @@ mod dev {
             .join()
             .expect("the sizes");
     }
+
+    /// Per mixed shape, the largest scaling whose certificate A fits the
+    /// default limit, searched on certificate A alone, and the weight of
+    /// certificate A there under the lifted and the default project.
+    #[test]
+    #[ignore = "a developer's lens on the sizes of certificate A"]
+    fn dev_mixed_edge() {
+        std::thread::Builder::new()
+            .stack_size(1 << 30)
+            .spawn(|| {
+                let weight = |project: &P| -> Result<u64, String> {
+                    let checked = support::checked_project(project);
+                    let modules = linked_modules(&checked);
+                    let limits = support::limits(project);
+                    let root = roots(&checked).expect("reports").remove(0);
+                    let lowered = lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                        .expect("lowering");
+                    let module = format!("LexLeanPreserve.C{}.R0", "x".repeat(32));
+                    certificate(
+                        &modules,
+                        &root.module,
+                        &root.name,
+                        root.report,
+                        &lowered,
+                        &module,
+                        limits.max_file_bytes,
+                    )
+                    .map(|a| a.source.as_ref().map_or(0, String::len) as u64)
+                    .map_err(|diagnostic| diagnostic.message)
+                };
+                let limit = support::limits(&crate::stress::wide_match_default(2)).max_file_bytes;
+                let only: Option<usize> = std::env::var("LEXLEAN_SHAPE").ok().and_then(|v| v.parse().ok());
+                for (index, shape) in crate::stress::mixed_shapes().into_iter().enumerate() {
+                    if only.is_some_and(|only| only != index) {
+                        continue;
+                    }
+                    let (mut low, mut high) = (1_usize, 256_usize);
+                    let lifted = |n: usize| {
+                        weight(&crate::stress::mixed_lifted(shape.scaled(n))).unwrap_or(u64::MAX)
+                    };
+                    if lifted(high) <= limit {
+                        low = high;
+                    } else {
+                        while high - low > 1 {
+                            let middle = (low + high) / 2;
+                            if lifted(middle) <= limit {
+                                low = middle;
+                            } else {
+                                high = middle;
+                            }
+                        }
+                    }
+                    eprintln!(
+                        "EDGE {index}: low {low}, lifted {}, default {:?}",
+                        lifted(low),
+                        weight(&crate::stress::mixed_default(shape.scaled(low)))
+                    );
+                }
+            })
+            .expect("a thread")
+            .join()
+            .expect("the sizes");
+    }
 }
