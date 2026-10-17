@@ -4,10 +4,20 @@
 # `just vv` is the single gate, run from a clean checkout on Linux x86-64 with
 # the exact pinned toolchains and no build cache: §9.4 says "from a clean
 # checkout", and a restored target directory is not one. CI runs its twelve
-# recipes as two legs at once, each its own clean checkout: `examples`, which
-# here verifies every example but UOR Atlas, and the other eleven in the order
-# of `vv`. Together they run every recipe of `vv` exactly once, so the gate is
-# the same and the wall time is the longer leg rather than the sum.
+# recipes as legs at once, each its own clean checkout: `examples`, which here
+# verifies every example but UOR Atlas, and `rest`, the other eleven in the
+# order of `vv`. Together they run every recipe of `vv` exactly once, so the
+# gate is the same and the wall time is the longest leg rather than the sum.
+#
+# `bdd`, the conformance suite, was most of the `rest` leg's time, and it runs
+# as the parts of `.github/bdd-parts.json` (§9.4): each `bdd-<part>` row runs
+# the recipe for the cases of one part, grouped so the cases that share a
+# fixture (a verified project, an export, a compiled environment) run in one
+# test process, and the `rest` leg runs the remainder, every test no other part
+# names. The part is named by the row through `LEXLEAN_BDD_PART`, the harness
+# selects its tests, and `inventory` proves from the harness's own lists that
+# the parts are the whole suite with every test in one part (RP-13). Each row
+# is its own clean checkout and build; nothing passes between rows or runs.
 #
 # UOR Atlas, whose native verification was most of the gate's time, is verified
 # as the parts of one run (§9.4): the shards of `.github/verify-shards.json`,
@@ -70,13 +80,17 @@ env:
 jobs:
   vv:
     name: just vv (${{ matrix.part }})
-    # A failing leg does not cancel the other: each leg's evidence is complete.
+    # A failing leg does not cancel the others: each leg's evidence is complete.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { part: examples, recipes: "examples", examples_part: "without:uor-atlas", width: "2", memory_kib: "12582912", hints: ".github/verify-hints.json" }
-          - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny", examples_part: "", width: "", memory_kib: "", hints: "" }
+          - { part: examples, recipes: "examples", examples_part: "without:uor-atlas", bdd_part: "", width: "2", memory_kib: "12582912", hints: ".github/verify-hints.json" }
+          - { part: rest, recipes: "fmt-check model spec-links lint test features bdd inventory golden repro deny", examples_part: "", bdd_part: "rest", width: "", memory_kib: "", hints: "" }
+          - { part: bdd-compiler, recipes: "bdd", examples_part: "", bdd_part: "compiler", width: "", memory_kib: "", hints: "" }
+          - { part: bdd-preservation, recipes: "bdd", examples_part: "", bdd_part: "preservation", width: "", memory_kib: "", hints: "" }
+          - { part: bdd-production, recipes: "bdd", examples_part: "", bdd_part: "production", width: "", memory_kib: "", hints: "" }
+          - { part: bdd-verification, recipes: "bdd", examples_part: "", bdd_part: "verification", width: "", memory_kib: "", hints: "" }
     runs-on: ubuntu-24.04
     # Complete proof coverage is intentionally the long pole. GitHub-hosted
     # jobs permit six hours; a shorter local-style timeout would turn complete
@@ -90,6 +104,10 @@ jobs:
       # but the one the Atlas jobs below verify as parts; the other leg names
       # none, and runs no example.
       LEXLEAN_EXAMPLES_PART: ${{ matrix.examples_part }}
+      # The part of the `bdd` recipe this row runs (§9.4): a part of
+      # `.github/bdd-parts.json` on the `bdd-<part>` rows, its remainder on the
+      # `rest` leg; the `examples` leg runs no `bdd` and names none.
+      LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}
       # The leg's resource profile (§22.11), read from its matrix row; an empty
       # value is the default. Operational only, like the telemetry: no artifact
       # records it and no identity contains it.

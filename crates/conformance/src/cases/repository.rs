@@ -311,7 +311,7 @@ pub(crate) fn run(id: &str) {
                     "features",
                     "cargo check --workspace --all-features --all-targets",
                 ),
-                ("bdd", "cargo test -p repo-conformance --all-features"),
+                ("bdd", "cargo xtask bdd"),
                 ("inventory", "cargo xtask check-test-inventory"),
                 ("examples", "cargo xtask verify-examples"),
                 ("golden", "cargo xtask check-golden"),
@@ -795,11 +795,13 @@ pub(crate) fn run(id: &str) {
             );
         }
         // §9.2: the ordinary test phase excludes repo-conformance, `bdd` alone
-        // owns its complete suite, and the inventory proves the partition. The
-        // inventory itself lists tests with `cargo test -- --list`; it is a
-        // recipe of `vv`, one line of the log that runs once after both
-        // phases, and this case holds the rest: the recipe lines, the
-        // comparison it applies, and that the documents say what runs.
+        // owns its complete suite, and the inventory proves the partition, of
+        // the workspace into the two phases and of `bdd` into the parts of its
+        // committed plan (§9.4). The inventory itself lists tests with `cargo
+        // test -- --list`; it is a recipe of `vv`, one line of the log that
+        // runs once after both phases, and this case holds the rest: the
+        // recipe lines, the comparisons it applies, and that the documents say
+        // what runs.
         "RP-13" => {
             let justfile = root_file("Justfile");
             let recipes = just_recipes(&justfile);
@@ -815,12 +817,16 @@ pub(crate) fn run(id: &str) {
                 test,
                 "cargo test --workspace --exclude repo-conformance --all-features"
             );
-            assert_eq!(bdd, "cargo test -p repo-conformance --all-features");
+            assert_eq!(bdd, "cargo xtask bdd");
             assert_eq!(inventory, "cargo xtask check-test-inventory");
+            // The recipe runs one `cargo test`, the one the phase always was,
+            // whose arguments the task and the inventory read from one place.
+            let bdd_command = format!("cargo test {}", crate::bdd_parts::CARGO_ARGUMENTS.join(" "));
+            assert_eq!(bdd_command, "cargo test -p repo-conformance --all-features");
             let test_arguments =
                 crate::inventory::recipe_arguments(&test).expect("test is cargo test");
             let bdd_arguments =
-                crate::inventory::recipe_arguments(&bdd).expect("bdd is cargo test");
+                crate::inventory::recipe_arguments(&bdd_command).expect("bdd is cargo test");
             assert!(
                 test_arguments
                     .windows(2)
@@ -896,12 +902,74 @@ pub(crate) fn run(id: &str) {
                 .expect_err("tests lost");
             assert!(lost.contains("neither phase"), "{lost}");
 
+            // The parts of `bdd` (§9.4): the committed plan reads, every ID it
+            // names has its test, and the comparison the inventory applies to
+            // the parts' lists refuses a test two parts run and one no part
+            // runs.
+            let plan = crate::bdd_parts::Plan::read(support::repo_root().as_std_path())
+                .expect("§9.4: the committed bdd plan reads");
+            let tests = root_file("crates/conformance/tests/conformance.rs");
+            for name in plan.named_tests() {
+                assert!(
+                    tests.contains(&format!("fn {name}()")),
+                    "§9.4: the bdd plan names `{name}`, which is no conformance test"
+                );
+            }
+            let plants = crate::bdd_parts::Plan::parse(
+                r#"{ "remainder": "rest", "parts": { "first": ["RP-01"] } }"#,
+            )
+            .expect("a plan");
+            let first = list(&[(
+                "tests/conformance.rs",
+                "conformance-0123456789abcdef",
+                &["conformance_rp_01"][..],
+            )]);
+            let remainder = list(&[
+                (
+                    "tests/conformance.rs",
+                    "conformance-0123456789abcdef",
+                    &["conformance_rp_02"][..],
+                ),
+                bdd_target,
+            ]);
+            let parts = |first: &crate::inventory::Parsed, rest: &crate::inventory::Parsed| {
+                vec![
+                    ("first".to_owned(), first.clone()),
+                    ("rest".to_owned(), rest.clone()),
+                ]
+            };
+            crate::inventory::compare_parts(&owned, &parts(&first, &remainder), &plants)
+                .expect("parts that partition bdd are accepted");
+            let twice = crate::inventory::compare_parts(&owned, &parts(&first, &owned), &plants)
+                .expect_err("a test two parts run");
+            assert!(twice.contains("parts `first` and `rest`"), "{twice}");
+            let lost = crate::inventory::compare_parts(
+                &owned,
+                &parts(&first, &list(&[bdd_target])),
+                &plants,
+            )
+            .expect_err("a test no part runs");
+            assert!(lost.contains("run in no part"), "{lost}");
+            // The task runs the part the variable names through the plan's
+            // filters, after the arguments of the whole phase, and the
+            // inventory lists with the same filters.
+            let task = root_file("xtask/src/ci.rs");
+            assert!(
+                task.contains(".args(CARGO_ARGUMENTS)")
+                    && task.contains("std::env::var(PART_VARIABLE)")
+                    && task.contains("plan.harness_filters(part)")
+                    && task.contains("plan.harness_filters(&name)")
+                    && task.contains("inventory::compare_parts("),
+                "the bdd task and the inventory select a part through the plan's filters"
+            );
+
             // The documents say what runs.
             let xtask = root_file("xtask/src/main.rs");
             assert!(xtask.contains("\"check-test-inventory\" =>"));
+            assert!(xtask.contains("\"bdd\" => ci::bdd(&root)"));
             let spec = root_file("SPEC.md");
             let verification = root_file("VERIFICATION.md");
-            for recipe_command in [&test, &bdd, &inventory] {
+            for recipe_command in [&test, &bdd, &bdd_command, &inventory] {
                 assert!(
                     verification.contains(&format!("`{recipe_command}`")),
                     "VERIFICATION.md names the command `{recipe_command}`"
@@ -989,6 +1057,10 @@ pub(crate) fn run(id: &str) {
                     "LEXLEAN_EXAMPLES_PART",
                     "      LEXLEAN_EXAMPLES_PART: ${{ matrix.examples_part }}\n",
                 ),
+                (
+                    crate::bdd_parts::PART_VARIABLE,
+                    "      LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}\n",
+                ),
             ] {
                 assert_eq!(vv.matches(variable).count(), 1, "§9.4: `{variable}` is set once on the gate job");
                 assert!(vv.contains(line), "§9.4: `{variable}` is read from the matrix row");
@@ -1010,8 +1082,9 @@ pub(crate) fn run(id: &str) {
                 );
             }
             // The gate is one matrix job whose legs run the recipes of `vv`
-            // (§9.4): every recipe exactly once, in the order of `vv` within a
-            // leg, each leg through the one gate command.
+            // (§9.4): every recipe exactly once, but `bdd`, which runs once per
+            // part of its committed plan, in the order of `vv` within a leg,
+            // each leg through the one gate command.
             let recipes_of_vv: Vec<String> = just_recipes(&root_file("Justfile"))
                 .get("vv")
                 .expect("§9.2: the Justfile defines vv")
@@ -1020,7 +1093,8 @@ pub(crate) fn run(id: &str) {
                 .map(str::to_owned)
                 .collect();
             // A matrix row: `- { part: <name>, recipes: "...", examples_part:
-            // "...", width: "...", memory_kib: "...", hints: "..." }`.
+            // "...", bdd_part: "...", width: "...", memory_kib: "...", hints:
+            // "..." }`.
             let field = |row: &str, name: &str| -> Option<String> {
                 let start = row.find(&format!(" {name}: \""))? + name.len() + 4;
                 Some(row[start..start + row[start..].find('"')?].to_owned())
@@ -1086,7 +1160,53 @@ pub(crate) fn run(id: &str) {
                     );
                 }
             }
-            let mut ran: Vec<&String> = legs.iter().flatten().collect();
+            // `bdd` runs as the parts of its committed plan (§9.4): a row runs
+            // the recipe exactly when it names a part, every part of the plan,
+            // the remainder included, is named by exactly one row, and a row
+            // that runs `bdd` alone is named after its part.
+            let bdd_plan = crate::bdd_parts::Plan::read(support::repo_root().as_std_path())
+                .expect("§9.4: the committed bdd plan reads");
+            let mut bdd_rows: std::collections::BTreeMap<String, String> =
+                std::collections::BTreeMap::new();
+            for (row, leg) in rows.iter().zip(&legs) {
+                let part = field(row, "bdd_part")
+                    .unwrap_or_else(|| panic!("§9.4: the row {row} names `bdd_part`"));
+                let runs_bdd = leg.iter().any(|recipe| recipe == "bdd");
+                assert_eq!(
+                    runs_bdd,
+                    !part.is_empty(),
+                    "§9.4: a row names a part of bdd exactly when it runs bdd: {row}"
+                );
+                if !runs_bdd {
+                    continue;
+                }
+                assert!(
+                    bdd_plan.names().contains(&part),
+                    "§9.4: the row {row} runs `{part}`, which is no part of {}",
+                    crate::bdd_parts::PLAN_FILE
+                );
+                if leg.len() == 1 {
+                    assert!(
+                        row.starts_with(&format!("          - {{ part: bdd-{part}, ")),
+                        "§9.4: a row that runs bdd alone is named `bdd-{part}`: {row}"
+                    );
+                }
+                assert!(
+                    bdd_rows.insert(part.clone(), (*row).to_owned()).is_none(),
+                    "§9.4: the part `{part}` of bdd is run by two rows"
+                );
+            }
+            for part in bdd_plan.names() {
+                assert!(
+                    bdd_rows.contains_key(&part),
+                    "§9.4: the part `{part}` of bdd is run by no row"
+                );
+            }
+            let mut ran: Vec<&String> = legs
+                .iter()
+                .flatten()
+                .filter(|recipe| *recipe != "bdd")
+                .collect();
             for leg in &legs {
                 let positions: Vec<usize> = leg
                     .iter()
@@ -1102,11 +1222,22 @@ pub(crate) fn run(id: &str) {
                 );
             }
             ran.sort();
-            let mut all: Vec<&String> = recipes_of_vv.iter().collect();
+            let mut all: Vec<&String> = recipes_of_vv
+                .iter()
+                .filter(|recipe| *recipe != "bdd")
+                .collect();
             all.sort();
             assert_eq!(
                 ran, all,
-                "§9.4: the legs run every recipe of vv exactly once"
+                "§9.4: the legs run every recipe of vv but bdd exactly once"
+            );
+            assert_eq!(
+                legs.iter()
+                    .flatten()
+                    .filter(|recipe| *recipe == "bdd")
+                    .count(),
+                bdd_plan.names().len(),
+                "§9.4: the legs run bdd once per part of its plan"
             );
             assert_eq!(
                 ci.matches(
