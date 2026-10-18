@@ -22,21 +22,43 @@ structure{
   name: Atom,
   type_parameters: [],
   parameters: [],
-  fields: [{name: kind, type: AtomClass}, {name: byteStart, type: Nat}, {name: byteEnd, type: Nat}, {name: lineStart, type: Nat}, {name: columnStart, type: Nat}, {name: lineEnd, type: Nat}, {name: columnEnd, type: Nat}, {name: text, type: Bytes}]
+  fields: [
+    {name: kind, type: AtomClass},
+    {name: byteStart, type: Nat},
+    {name: byteEnd, type: Nat},
+    {name: lineStart, type: Nat},
+    {name: columnStart, type: Nat},
+    {name: lineEnd, type: Nat},
+    {name: columnEnd, type: Nat},
+    {name: text, type: Bytes}
+  ]
 }
 
 structure{
   name: Place,
   type_parameters: [],
   parameters: [],
-  fields: [{name: path, type: Bytes}, {name: byteStart, type: Nat}, {name: byteEnd, type: Nat}, {name: lineStart, type: Nat}, {name: columnStart, type: Nat}, {name: lineEnd, type: Nat}, {name: columnEnd, type: Nat}]
+  fields: [
+    {name: path, type: Bytes},
+    {name: byteStart, type: Nat},
+    {name: byteEnd, type: Nat},
+    {name: lineStart, type: Nat},
+    {name: columnStart, type: Nat},
+    {name: lineEnd, type: Nat},
+    {name: columnEnd, type: Nat}
+  ]
 }
 
 structure{
   name: Rejection,
   type_parameters: [],
   parameters: [],
-  fields: [{name: code, type: Bytes}, {name: message, type: Bytes}, {name: place, type: (Option Place)}, {name: help, type: (Option Bytes)}]
+  fields: [
+    {name: code, type: Bytes},
+    {name: message, type: Bytes},
+    {name: place, type: (Option Place)},
+    {name: help, type: (Option Bytes)}
+  ]
 }
 
 structure{
@@ -50,35 +72,60 @@ structure{
   name: Lexed,
   type_parameters: [],
   parameters: [],
-  fields: [{name: kind, type: AtomClass}, {name: after, type: Cursor}, {name: error, type: (Option Rejection)}]
+  fields: [
+    {name: kind, type: AtomClass},
+    {name: after, type: Cursor},
+    {name: error, type: (Option Rejection)}
+  ]
 }
 
 structure{
   name: ScanState,
   type_parameters: [],
   parameters: [],
-  fields: [{name: cursor, type: Cursor}, {name: atoms, type: (List Atom)}, {name: count, type: Nat}, {name: error, type: (Option Rejection)}]
+  fields: [
+    {name: cursor, type: Cursor},
+    {name: atoms, type: (List Atom)},
+    {name: count, type: Nat},
+    {name: error, type: (Option Rejection)}
+  ]
 }
 
 structure{
   name: Context,
   type_parameters: [],
   parameters: [],
-  fields: [{name: awaitingOpen, type: Bool}, {name: depth, type: Nat}, {name: quoted, type: Bool}, {name: escaped, type: Bool}, {name: environment, type: Nat}, {name: body, type: Nat}]
+  fields: [
+    {name: awaitingOpen, type: Bool},
+    {name: depth, type: Nat},
+    {name: quoted, type: Bool},
+    {name: escaped, type: Bool},
+    {name: environment, type: Nat},
+    {name: body, type: Nat}
+  ]
 }
 
 structure{
   name: Payload,
   type_parameters: [],
   parameters: [],
-  fields: [{name: index, type: Nat}, {name: depth, type: Nat}, {name: quoted, type: Bool}, {name: escaped, type: Bool}]
+  fields: [
+    {name: index, type: Nat},
+    {name: depth, type: Nat},
+    {name: quoted, type: Bool},
+    {name: escaped, type: Bool}
+  ]
 }
 
 structure{
   name: CheckState,
   type_parameters: [],
   parameters: [],
-  fields: [{name: context, type: Context}, {name: previous, type: (Option Atom)}, {name: error, type: (Option Rejection)}]
+  fields: [
+    {name: context, type: Context},
+    {name: previous, type: (Option Atom)},
+    {name: error, type: (Option Rejection)}
+  ]
 }
 
 definition{
@@ -417,7 +464,13 @@ definition{
 
 definition{
   name: atomRejection,
-  parameters: [path : Bytes, atom : Atom, previous : (Option Atom), ctx : Context, forbidden : (List Bytes)],
+  parameters: [
+    path : Bytes,
+    atom : Atom,
+    previous : (Option Atom),
+    ctx : Context,
+    forbidden : (List Bytes)
+  ],
   result: (Option Rejection),
   body: (let t : Bytes := (project atom text); (let code : Nat := (classCode atom); (let hit : Bool := (bytesInList t forbidden); (let zeroLead : Bool := (byteIs t 0 (48 : UInt8)); (let longer : Bool := (1 <? (prim length t : Nat)); (let leading : Bool := (if (code =? 2) then (if longer then zeroLead else false) else false); (let continues : Bool := (match previous
     | Option.some before => (let before_code : Nat := (classCode before); (let adjacent : Bool := ((project before byteEnd) =? (project atom byteStart)); (let joiner : Bool := (let bt : Bytes := (project before text); (if (prim equal bt 0x5f : Bool) then true else (if (prim equal bt 0x27 : Bool) then true else (prim equal bt 0x2d : Bool)))); (if adjacent then (if (before_code =? 1) then true else (if (before_code =? 4) then joiner else false)) else false))))
