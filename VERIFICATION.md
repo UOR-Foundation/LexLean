@@ -9063,3 +9063,58 @@ elaborates, because each keeps the statement it had; a piece missing from the
 Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
 shard plan is refused by `cargo xtask ci-shards` and by the plan check of
 RP-14.
+
+### the refusal of the data form can fail (`AU-13`, #149)
+
+`AU-13` states that a language-1.2 module written with `\semanticdata`,
+`\toolingdata` or `\coredata` is refused with `LLP2003` at its data argument,
+naming the control and the authoring notation, that `fmt` leaves the bytes,
+that the SDK's two conversions are inverses, and that language 1.1 and the
+Atlas keep the data form. The case was written before the refusal and fails on
+`main` (it finds the data form accepted). Four defects were then planted in the
+refusal, one at a time, each undone before the next; each turns
+`conformance_au_13` red:
+
+- **a language-1.2 source in the data form is accepted again** (the semantic
+  branch of the refusal removed from `link.rs`). The case finds the example
+  written as data links:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:758:14:
+  check fails
+  ```
+
+- **a tooling module written as data is accepted again.**
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:745:28:
+  commands: a tooling module written as data linked
+  ```
+
+- **a core module written as data is accepted again.** The same
+  `check fails` from `support.rs:758:14`, reached in the core part of the case
+  after the semantic and tooling parts pass.
+
+- **the refusal at the wrong position** (the span of the first atom of the
+  file instead of the data argument):
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:676:28:
+  language-1.2: the position is not after \semanticdata
+  ```
+
+The cases that compared a language-1.2 build of the data form with the build of
+the notation (`AU-02`, `AU-05`, `AU-10`) can no longer do so, because that form
+is not a source; their statements and scenarios were restated to what they
+still check (builds with source maps that name the notation, `fmt` the identity
+on it), and the equivalence of the two forms is carried by the SDK's
+conversions (`AU-08`, `AU-13`). The plants of other cases that edited the data
+form of a language-1.2 module (`DF-15`, `SP-02`, `SP-12`, `GC-11`, `RT-01`,
+`TL-01`, `CF-18`) now hand the compiler the notation of the edit, or the
+decoder the data directly where the notation cannot say it (a spec tag of
+another schema, the canonical bytes of a tooling module, an empty arity); the
+fixture `tests/negative/semantic-module-v1-under-1.2` is a fixture of this
+refusal and expects `LLP2003`.
+
+Not run for this record: the records the change regenerates (the maintainer's
+wave) and every Lean-backed case, which needs the pinned toolchain.
