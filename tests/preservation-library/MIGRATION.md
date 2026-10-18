@@ -274,3 +274,54 @@ production records, and verified records were not regenerated here: they are
 regenerated once, with the rest of the train, so every test that reads a committed
 lock reports `LLC0102` until then.
 
+## Authored proofs repaired for `Callee.machine` and `Lit.overflow` (#91 stage 2, `SP-18`)
+
+`RustSyntax` gained a callee and a literal: `Callee.machine` over the eight
+primitives of `Machine`, and `Lit.overflow`. Every row the pinned Lean makes
+itself is derived (above), so the 7,203 of them are made for the new modules and
+nothing stored goes stale. Five authored declarations are one case short, as hh
+measured on #91:
+
+| declaration | module | what the new constructor changes in its proof |
+| --- | --- | --- |
+| `stable` | `RustBase` | 20 applications of `eval.match_3` take a third alternative, and its `Callee.casesOn` a third arm |
+| `rc_call_function` | `RustLemmas` | 2 applications of `eval.match_3` take a third alternative |
+| `rc_call_runtime` | `RustLemmas` | 2 applications of `eval.match_3` take a third alternative |
+| `rc_call_halt` | `RustLemmas` | 4 applications of `eval.match_3` take a third alternative |
+| `rc_negate` | `RustLemmas` | its `Lit.casesOn` takes a ninth arm |
+
+**How.** The one-time tool is the oracle of checkpoint commit `37468a723`
+(`tests/preservation-library/oracle-machine/`, removed from the release tree by the
+commit that follows it). It edits kernel terms; it adds no Lean. The new alternative
+of the matcher is `fun primitive => runMachine primitive <operands>`, the operands
+those of the alternative for `Callee.runtime`. The new arm of `Callee.casesOn` is the
+arm for `runtime` over a primitive instead of an item, since the proof of that case
+does not depend on what the callee runs: both sides of the goal are the same
+`returned (…) prop`. The new arm of `Lit.casesOn` is the arm for `unit` with
+`Lit.overflow` in its place: `negateR` leaves a literal that is not a Boolean as `Not`
+of it, so the case closes with the hypothesis about `Not` of the literal. A
+declaration's statement is not edited.
+
+**What it established.**
+
+- Each of the five is needed: with the other four repaired and any one left as it
+  was, `RustBase` or `RustLemmas` is refused at that declaration (`stable`,
+  `rc_call_function`, `rc_call_runtime`, `rc_call_halt`, and `rc_negate`, each in
+  its own run). With all five repaired, the 13 modules compile over the new
+  modules with no error, so these five are the whole set.
+- Nothing else changed. Compared as trees of kernel terms, the old and new
+  `RustBase` and `RustLemmas` (358 and 6,040 declarations, including their derived
+  rows) differ in exactly these five declarations; the other 11 modules are
+  byte-identical, and the statement of each of the five is the tree it was.
+- The result verifies. `lexlean lock && lexlean verify` in a copy of the project of
+  `tests/negative/preservation-drift` compiles the library over the regenerated
+  modules, replays every module, and audits the exact axioms of the 7,740 declarations
+  audited by name (`verified 2 modules`), and the compiler project verifies with the
+  regenerated `RustSyntax` and `RustSemantics` (`verified 17 modules`).
+
+`RustBase` has 33,911 nodes after (32,780) and `RustLemmas` 392,182 (390,732), the
+edited values being copies. The shipped copies of `RustSyntax` and `RustSemantics`
+in `language/preservation-1.2/modules/` are regenerated from `compiler/src`; their
+golden under `compiler/expected/` is not, with the rest of the records bound to the
+compiler-semantics ID.
+

@@ -1533,6 +1533,59 @@ bound to the language-1.2 compiler-semantics ID was regenerated, so every case t
 reads a committed lock (for example `conformance_au_10`, `conformance_au_11`, and
 `conformance_au_12`) reports `LLC0102` until the train regenerates.
 
+### the machine's primitives and the overflow literal can fail (SP-18)
+
+`RustSyntax` declares eight machine primitives, `Callee.machine`, and `Lit.overflow`,
+and `RustSemantics` evaluates them (`SP-18`, §17.14, §17.16, #91 stage 2). The case
+reads the constructors from the committed `compiler/src` modules, and has the pinned
+Lean 4.32.1 evaluate 19 claims over the shipped copies of the modules (the boundary
+values of `u8` and `i8`, a shift by the width and by the width less one, an
+operand of another width, `try_from` out of and into range, the overflow literal,
+and the same calls through `eval`). Each plant was run on `main` `efea57d8` with the
+change in a Linux container, with `cargo test -p repo-conformance --test conformance --
+conformance_sp_18`; the two that change the semantics were regenerated into the
+shipped copies (`lexlean build` in a copy of `compiler/`) before the run, and every
+file was restored with `git checkout`.
+
+Planted (a): `machineAccepts` made `true`, so a shift of a `u16` is run as a shift of
+a `u8`. Expected: the claim that it is stuck fails.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpF9nFg5/Machine.lean:16:100: error: Type mismatch
+  rfl
+```
+
+Planted (b): the literal `Overflow` evaluated to `Value.bool false` in `literal`.
+Expected: the claims about the literal, and about `Err(Overflow)` built by `eval`,
+fail.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpdTa9It/Machine.lean:19:52: error: Type mismatch
+```
+
+Planted (c): the `tryFrom` primitive removed from `Machine` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared primitives are not the eight.
+
+```text
+assertion `left == right` failed: the machine's primitives, each at a width
+  left: [("checkedAdd", 1), …, ("checkedShr", 1)]
+ right: [("checkedAdd", 1), …, ("checkedShr", 1), ("tryFrom", 1)]
+```
+
+Planted (d): `overflow` removed from `Lit`. Expected: the literal is not declared.
+
+```text
+the literal Overflow is declared
+```
+
+Not planted: the arm of `eval` that runs a machine callee. A module without it does
+not link (the match is not total), which is the semantic modules' own check, not this
+case's. The five authored declarations of the library that the constructors leave a
+case short are in `tests/preservation-library/MIGRATION.md`, with the run that shows
+each is needed.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
