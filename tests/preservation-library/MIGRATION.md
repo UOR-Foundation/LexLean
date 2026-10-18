@@ -298,8 +298,9 @@ those of the alternative for `Callee.runtime`. The new arm of `Callee.casesOn` i
 arm for `runtime` over a primitive instead of an item, since the proof of that case
 does not depend on what the callee runs: both sides of the goal are the same
 `returned (…) prop`. The new arm of `Lit.casesOn` is the arm for `unit` with
-`Lit.overflow` in its place: `negateR` leaves a literal that is not a Boolean as `Not`
-of it, so the case closes with the hypothesis about `Not` of the literal. A
+`Lit.overflow` in its place: `negateR` writes a literal that is not a Boolean as
+`Expr.not` of it, so the case closes with the hypothesis about `Expr.not` of the
+literal. A
 declaration's statement is not edited.
 
 **What it established.**
