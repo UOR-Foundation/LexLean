@@ -9063,3 +9063,51 @@ elaborates, because each keeps the statement it had; a piece missing from the
 Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
 shard plan is refused by `cargo xtask ci-shards` and by the plan check of
 RP-14.
+
+## Negative fixtures for older diagnostic codes (Issue #33)
+
+Fourteen of the 26 codes registered before v0.3 that had no fixture now have one
+under `tests/negative/`. Each is a refusal the CLI emits on that input, its
+`expected/` written by the fixture writer for that directory alone, and the whole
+suite (`conformance_ex_07`) passes with the pinned toolchain installed. Each was
+planted against: the refusal's message reworded at the emitting source with a
+leading `~`, the fixture's comparison observed to fail on `expected/command.json`,
+and the edit restored.
+
+| Fixture | Code | Reworded in |
+| --- | --- | --- |
+| `source-invalid-utf8` | `LLL1001` | `source/normalize.rs` |
+| `numeral-leading-zero` | `LLL1003` | `source/scan.rs` |
+| `math-island-nested` | `LLL1006` | `grammar/chart.rs` |
+| `math-dollar-delimiters` | `LLP2001` | `grammar/chart.rs` |
+| `math-nonassociative-chain` | `LLP2004` | `grammar/math.rs` |
+| `proof-step-after-closure` | `LLF5002` | `elaborate/proofs.rs` |
+| `proof-leaves-goal-open` | `LLF5004` | `elaborate/proofs.rs` |
+| `check-duplicate-selection` | `LLC0002` | `project.rs` |
+| `git-lexicon-offline` | `LLS8003` | `lock.rs` |
+| `lexicon-unsafe-surface` | `LLR3006` | `lexicon/entry.rs` |
+| `lexicon-reserved-alias` | `LLR3002` | `lexicon/resolve.rs` |
+| `lexicon-raw-unicode-render` | `LLB6002` | `backend/latex.rs` |
+| `definition-binder-mismatch` | `LLT4004` | `elaborate/definitions.rs` |
+| `lake-dependency-absent` | `LLV7007` | `verify/workspace.rs` |
+
+`lake-dependency-absent` runs `verify`, so it needs the pinned toolchain, as
+`vr-11-exact-mismatch` does.
+
+The other twelve have no fixture:
+
+- `LLC0001`: a command-line usage error is emitted in JSON mode without a
+  `primary` span, and `diagnostic.schema.json` requires one, so a fixture fails
+  `conformance_ex_07`'s schema check. The emitter and the schema disagree; a
+  fixture would only hide that.
+- `LLC0104`: a case-folded collision needs two paths differing only by case, which
+  a repository cannot hold on a case-insensitive checkout, and a duplicate
+  logical module is refused earlier as `LLP2003`.
+- `LLT4002`: no input was found that reaches it; the one emission site needs
+  several overloaded candidates none of which fits.
+- `LLL1005`, `LLB6001`, `LLB6003`, `LLI9001`: internal invariants and publication
+  failures no input of a fixture reaches.
+- `LLB6004`, `LLV7006`: need an external PDF provider, or a Lean warning from
+  generated code.
+- `LLV7008`, `LLV7009`, `LLV7010`: depend on the host (a non-UTF-8 path, git and
+  the network, a filesystem failure).
