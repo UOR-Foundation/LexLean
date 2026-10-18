@@ -1575,10 +1575,11 @@ impl<'a> Writer<'_, 'a> {
                 vars.push((parameter, encoded));
                 let binding = Binding { vars, pair: None };
                 let derived = self.chain_pf(&binding, inner, &arm.body, &checks, spec.direct)?;
+                let (_, pre_arms) = self.prepare_arms(arms)?;
                 let mut arms_pf =
-                    self.arm_hit(base, encoded, arms, arm_index, &fields, inner, derived)?;
+                    self.arm_hit(base, encoded, &pre_arms, arm_index, &fields, inner, derived)?;
                 for earlier in (0..arm_index).rev() {
-                    arms_pf = self.arm_miss(base, encoded, arms, earlier, arms_pf)?;
+                    arms_pf = self.arm_miss(base, encoded, &pre_arms, earlier, arms_pf)?;
                 }
                 let Expr::Var { name } = scrutinee else {
                     return Err(
