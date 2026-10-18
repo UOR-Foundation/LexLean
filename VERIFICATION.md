@@ -1615,6 +1615,53 @@ case's. The five authored declarations of the library that the constructors leav
 case short are in `tests/preservation-library/MIGRATION.md`, with the run that shows
 each is needed.
 
+### the loop over a state can fail (SP-19)
+
+`RustSyntax` declares `Expr.loop` over a state binding and a body block, and
+`RustSemantics` evaluates it by recursing through `eval` (`SP-19`, §17.14, §17.16,
+#91 stage 3). The case reads the constructor from the committed `compiler/src`
+module, and has the pinned Lean 4.32.1 evaluate four claims over the shipped copies
+of the modules (a countdown from three ends at zero, a countdown from zero ends at
+once, the same countdown at fuel two is exhausted, and a body whose value is neither
+`Ok` nor `Err` is stuck), and refuse three wrong statements of the same loops. The
+Rust side is covered by unit tests in `calculus::rust::ast` (the printed loop rebinds
+the state and breaks with the payload of `Err`; the validator accepts a body that
+moves only the state and refuses one that moves another binding), by the exhaustive
+matches of the moves pass, the lowering, the validator, and the certificate-B term
+builder, and by `audit-production`, which needs a disposition for the new
+construct. Each plant was run in a Linux container with `cargo test -p
+repo-conformance --test conformance -- conformance_sp_19`; the files were restored
+afterwards and compared byte for byte.
+
+Planted (a): the shipped `RustSemantics` evaluating the loop again without rebinding
+the state. Expected: the countdown claim fails. Observed: caught earlier, because
+the library's proof `stable_loop` states the equation of `eval` for `loop`; the
+shipped module is rejected.
+
+```text
+the shipped module `LexLeanPreservation.RustBase` was rejected:
+… error: native core declaration 'LexLeanPreservation.Rust.stable_loop':
+  (kernel) application type mismatch
+```
+
+Planted (b): the shipped `RustSemantics` ending the loop with the unit value
+instead of the payload of `Err`. Expected: the countdown claim fails. Observed: the
+same rejection of `stable_loop`.
+
+Planted (c): the constructor `loop` removed from `Expr` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared expressions lack the loop.
+
+```text
+thread 'conformance_sp_19' panicked at crates/conformance/src/cases/preservation.rs:4795:18:
+the expression Loop is declared
+```
+
+Plants (a) and (b) are caught by the proof library before the claims run, which is
+the stronger gate and not the one this case adds; the claims themselves are shown to
+be able to fail by the three statements of a wrong value, each of which the pinned
+Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
+stuck loop stated as the unit value).
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`

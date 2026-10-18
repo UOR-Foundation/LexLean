@@ -129,3 +129,10 @@ Feature: preservation
     When RustSyntax is read for its machine primitives, its callees, and its literals, and the pinned Lean evaluates calls of every machine primitive and of the overflow literal on the boundary values of the widths
     Then RustSyntax declares exactly the eight machine primitives, the callee that names one, and the literal Overflow, and each evaluation is the value the calculus primitive states
     And a statement of a wrong value for the same call is refused by the pinned Lean
+
+  @SP-19 @build
+  Scenario: The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its expressions, the pinned Lean evaluates a countdown loop at sufficient and at insufficient fuel and loops whose body is neither Ok nor Err
+    Then RustSyntax declares the expression Loop of a state binding and a body block, each evaluation is the value the semantics states
+    And a statement of a wrong value for the same loop is refused by the pinned Lean

@@ -4773,6 +4773,77 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.14, §17.16: the loop over a state.
+        "SP-19" => {
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("compiler/src/RustSyntax.lex.tex"),
+            );
+            let expression = syntax["declarations"]
+                .as_array()
+                .and_then(|all| all.iter().find(|declaration| declaration["name"] == "Expr"))
+                .expect("`Expr` is declared");
+            let found = expression["constructors"]
+                .as_array()
+                .expect("constructors")
+                .iter()
+                .find(|constructor| constructor["name"] == "loop")
+                .expect("the expression Loop is declared");
+            assert_eq!(
+                found["fields"].as_array().map(Vec::len),
+                Some(2),
+                "a loop is a state binding and a body block"
+            );
+            if !support::lean_backed("SP-19") {
+                return;
+            }
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef loopCrate : Crate := { profile := Profile.std, items := [] }\ndef st : Ident := Ident.generated IdentKind.binding 0\ndef stop : Block := Block.mk [] (Expr.construct (Ctor.err RustType.nat RustType.nat) [Expr.copy st])\ndef step : Block := Block.mk [] (Expr.construct (Ctor.ok RustType.nat RustType.nat) [Expr.predecessor st])\ndef countdown : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.cond (Expr.isZero st) stop step))\ndef neither : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.lit Lit.unit))\n";
+            let claims = [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 0)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.exhausted",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.stuck",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Loop", &text);
+            assert!(
+                output.status.success(),
+                "the loop does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            for wrong in [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 1)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.value Value.unit",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
         _ => panic!("no preservation case is wired for {id}"),
     }
 }

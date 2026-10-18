@@ -164,6 +164,7 @@ public inductive Expr where
   | predecessor (_ : Ident)
   | widen (_ : Expr)
   | succeed (_ : Expr)
+  | loop (_ : Ident) (_ : Block)
 
 public inductive Let where
   | mk (_ : Pat) (_ : Option (RustType)) (_ : Expr)

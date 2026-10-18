@@ -2319,6 +2319,7 @@ fn rust_children(
             out
         }
         R::Block(inner) => block(inner),
+        R::Loop { body, .. } => block(body),
         R::Lit(..)
         | R::Move(..)
         | R::Clone(..)

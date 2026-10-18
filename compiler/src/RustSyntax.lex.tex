@@ -213,7 +213,8 @@ inductive{
     {name: nonZero, fields: [Ident]},
     {name: predecessor, fields: [Ident]},
     {name: widen, fields: [Expr]},
-    {name: succeed, fields: [Expr]}
+    {name: succeed, fields: [Expr]},
+    {name: loop, fields: [Ident, Block]}
   ],
   mutual: Code
 }

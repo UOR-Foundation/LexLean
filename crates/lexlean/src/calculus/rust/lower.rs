@@ -207,7 +207,7 @@ fn fold(block: &mut Block) {
 
 fn fold_expr(expr: &mut Expr) {
     match expr {
-        Expr::Block(block) => fold(block),
+        Expr::Block(block) | Expr::Loop { body: block, .. } => fold(block),
         Expr::Not(inner, _)
         | Expr::Box(inner, _)
         | Expr::Widen(inner, _)
@@ -454,6 +454,10 @@ impl Renamer {
                 }
             }
             Expr::Block(block) => self.block(block),
+            Expr::Loop { state, body } => {
+                self.read(state);
+                self.block(body);
+            }
             Expr::Lit(..) => {}
         }
     }

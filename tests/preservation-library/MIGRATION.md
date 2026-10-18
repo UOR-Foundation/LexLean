@@ -326,3 +326,48 @@ in `language/preservation-1.2/modules/` are regenerated from `compiler/src`; the
 golden under `compiler/expected/` is not, with the rest of the records bound to the
 compiler-semantics ID.
 
+## Authored proofs repaired for `Expr.loop` (#91 stage 3, `SP-19`)
+
+`Expr` gained a constructor, `loop` over an `Ident` and a `Block`, and
+`RustSemantics.eval` an arm that recurses through `eval` itself, so the mutual group
+and the statement of `stable` are the ones they were. Every declaration that does
+`Expr.casesOn` is one case short. The oracle is checkpoint commit `a549a3d48`
+(`tests/preservation-library/oracle-loop/`, removed by the commit that follows it).
+
+| module | declarations | repair |
+| --- | --- | --- |
+| `RustBase` | `stable` | an arm for `loop` made from the arm for `block` with its proof replaced by an application of `stable_loop`; `stable_loop` and the derived row `eval.eq_23` are added before it |
+| `RustLemmas` | `rc_read`, `rcb_flat`, `foldStep_spec`, `rc_negate`, `rc_negate_halt` | an arm for `loop` made from a donor constructor's arm, whose proof uses its fields only through the constructor |
+| `RustLemmas` | `rc_litValue.match_1` | a matcher alternative for `loop` (its type, value, arm of `Expr.casesOn`, and record), and the alternative passed at each application |
+| `RustMatches` | `ctorOf_eq`, `loadOf_spec`, `rc_partRead`, `rebuildArg_rc`, `rebuild_value` | the same donor arm |
+
+`stable_loop` is the one new proof. It is Lean, compiled over the new machine modules,
+exported with the exporter of checkpoint `d54dbf85`, and grafted in; its text is:
+
+```lean
+theorem stable_loop (n : Nat)
+    (ihE : ∀ (c : Crate) (env : List (Ident × Value)) (e : RustSyntax.Expr),
+      eval n c env e ≠ ROutcome.exhausted → eval (n + 1) c env e = eval n c env e)
+    (ihB : ∀ (c : Crate) (env : List (Ident × Value)) (b : Block),
+      evalBlock n c env b ≠ ROutcome.exhausted → evalBlock (n + 1) c env b = evalBlock n c env b)
+    (c : Crate) (env : List (Ident × Value)) (s : Ident) (b : Block)
+    (h : eval (n + 1) c env (RustSyntax.Expr.loop s b) ≠ ROutcome.exhausted) :
+    eval (n + 1 + 1) c env (RustSyntax.Expr.loop s b) = eval (n + 1) c env (RustSyntax.Expr.loop s b) := by
+  rw [eval, eval] at *
+  have hb : evalBlock n c env b ≠ ROutcome.exhausted := by
+    intro hx; rw [hx] at h; exact h rfl
+  rw [ihB c env b hb]
+  generalize evalBlock n c env b = r at *
+  cases r with
+  | value step =>
+    cases step <;> simp at h ⊢
+    all_goals first | rfl | skip
+    exact ihE c _ _ h
+  | _ => rfl
+```
+
+A declaration's statement is not edited, and the 13 modules compile over the loop-extended
+machine modules with no error. What was not run: the compiler project's `verify` needs the
+records the maintainer regenerates, and reports that the compiler semantics changed since
+locking.
+

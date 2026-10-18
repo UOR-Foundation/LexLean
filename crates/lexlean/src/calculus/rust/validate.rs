@@ -493,6 +493,34 @@ impl Checker<'_> {
             }
             Expr::Block(block) => self.block(block, tail),
             Expr::Widen(inner, _) | Expr::Succeed(inner, _) => self.expr(inner, false),
+            // `let mut s = s;` moves the state into the loop's own binding,
+            // which the body may move and the loop rebinds. The body runs
+            // again after each `Ok`, so it moves nothing else.
+            Expr::Loop { state, body } => {
+                self.consume(state)?;
+                let outer = (self.moved.clone(), self.parted.clone());
+                self.moved.remove(state);
+                let entry = (self.moved.clone(), self.parted.clone());
+                self.block(body, false)?;
+                for ident in &self.moved {
+                    if ident != state && !entry.0.contains(ident) {
+                        return fail(format!(
+                            "ownership: `{}` is moved in the body of a loop that runs again",
+                            ident_text(ident)
+                        ));
+                    }
+                }
+                for (ident, parts) in &self.parted {
+                    if entry.1.get(ident) != Some(parts) {
+                        return fail(format!(
+                            "ownership: a component of `{}` is moved in the body of a loop that runs again",
+                            ident_text(ident)
+                        ));
+                    }
+                }
+                (self.moved, self.parted) = outer;
+                Ok(())
+            }
         }
     }
 }
@@ -606,6 +634,7 @@ fn apply_types_expr(
                 .try_for_each(|(_, body)| apply_types(body, declared, types, tail))
         }
         Expr::Block(block) => apply_types(block, declared, types, tail),
+        Expr::Loop { body, .. } => apply_types(body, declared, types, false),
         Expr::Lit(..)
         | Expr::Move(..)
         | Expr::Copy(..)
@@ -971,7 +1000,7 @@ impl Found {
                     self.block(body);
                 }
             }
-            Expr::Block(block) => self.block(block),
+            Expr::Block(block) | Expr::Loop { body: block, .. } => self.block(block),
             Expr::IsZero(_, origin) | Expr::NonZero(_, origin) => self.at("match:nat", origin),
             Expr::Uncons(_) | Expr::Predecessor(_) => {}
             Expr::Widen(inner, origin) => {
