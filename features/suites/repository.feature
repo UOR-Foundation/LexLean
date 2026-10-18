@@ -105,3 +105,11 @@ Feature: repository
     And the leg that runs examples names width 2, a 12 GiB budget, and the committed hints, which the verifier parses, verifies every example but uor-atlas, and every other leg names no profile and no example part, and the legs run the recipes of vv, each exactly once but bdd, which runs once per part of the bdd plan on the one row that names the part, in the order of vv within a leg, through the one gate command
     And the Atlas jobs run every shard of the plan exactly once, each after the jobs of the shards it needs, from the one executable the prefix job built, the join asserts that Atlas verified, and the plan elaborates and replays every Atlas module exactly once with every import elaborated by the shard or by one it needs
     And the vv job has no path filter, no cache action, and no condition on a recipe, the Atlas jobs and the host matrix run only when the plan names the whole gate, and each job uploads its ci-evidence under a name of its own, and the plan script names the rest leg alone for a draft pull request and the whole gate for a ready one, a request, and a push, and names no job for a merge whose tree is its second parent's only when a run of that parent passed every job, the Atlas join, every host, and every leg, and for a skipped or failed job, a missing join, host, or leg, a failed call, a changed tree, and a push that merges nothing it names the whole gate
+
+  @RP-15 @build
+  Scenario: The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused.
+    Given .devcontainer/Dockerfile, rust-toolchain.toml, and lean-toolchain
+    When the toolchains the image installs are read from the Dockerfile
+    Then the Rust toolchain it installs is the channel rust-toolchain.toml pins and the Lean toolchain it installs is the one lean-toolchain pins
+    And it installs no other toolchain and selects no unpinned default
+    And a Dockerfile that names another version of either, a second toolchain, or an unpinned default is refused
