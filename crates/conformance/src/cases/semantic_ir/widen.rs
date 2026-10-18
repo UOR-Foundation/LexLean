@@ -166,6 +166,62 @@ pub(super) fn run() {
         );
     }
 
+    // A production root over `UInt64` and `Int64` reaches `to_int`'s overflow
+    // at or above 2^63 (§17.12 *Widening conversions* rule 2), while inputs
+    // below 2^63 evaluate to their exact integer values.
+    {
+        use lexlean::calculus::{interp, Outcome, Value};
+        let wide = P::copy_example("production");
+        let wide_src = "\\begin{lexlean}{Main}\n\\useglossary{lexlean.std.nat@1.2.0}\n\\title{Natural number addition}\n\\begin{semanticmodule}\ndefinition{\n  name: widenWide,\n  parameters: [u64 : UInt64, i64 : Int64],\n  result: (Int * Nat),\n  body: ((prim subtract (prim to_int u64 : Int) (prim to_int i64 : Int) : Int), (prim to_nat u64 : Nat)),\n  axioms: [Quot.sound, propext],\n  executable: true,\n  production: {effects: [overflow], targets: [rust-core, rust-std]}\n}\n\\end{semanticmodule}\n\\end{lexlean}\n";
+        wide.write("src/Main.lex.tex", wide_src);
+        wide.check_ok();
+        let certified = crate::preservation::certificates(&wide);
+        assert_eq!(certified.len(), 1, "one production root");
+        let program = &certified[0].program;
+        let run = |u: u64, i: i64| -> Outcome {
+            interp::run(
+                program,
+                100_000,
+                0,
+                &[
+                    Value::U64 {
+                        value: u.to_string(),
+                    },
+                    Value::I64 {
+                        value: i.to_string(),
+                    },
+                ],
+            )
+        };
+        match run((1_u64 << 63) - 1, 0) {
+            Outcome::Value {
+                value: Value::Pair { left, right },
+                ..
+            } => {
+                assert_eq!(
+                    *left,
+                    Value::Int {
+                        value: i64::MAX.to_string()
+                    }
+                );
+                assert_eq!(
+                    *right,
+                    Value::Nat {
+                        value: ((1_u64 << 63) - 1).to_string()
+                    }
+                );
+            }
+            other => panic!("expected Value at 2^63 - 1, got {other:?}"),
+        }
+        for u in [1_u64 << 63, u64::MAX] {
+            let outcome = run(u, 0);
+            assert!(
+                matches!(outcome, Outcome::Overflow { .. }),
+                "`to_int` on UInt64 {u} (>= 2^63) must overflow Int64 in the calculus: got {outcome:?}"
+            );
+        }
+    }
+
     // The kernel decides every width at its bounds.
     let bounds = P::language_1_2_example();
     bounds.write("src/Main.lex.tex", &bounds_module());

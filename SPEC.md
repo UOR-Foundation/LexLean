@@ -2774,7 +2774,10 @@ either backend runs; they do not defer to what Lean would accept.
     `Type`, `UInt8`..`UInt64`, `Unit`, `and_congr`, `and_true`, `beq_iff_eq`,
     `congr`, `decide`, `decide_eq_false_iff_not`, `decide_eq_true_eq`,
     `false`, `id`, `reduceIte`, `rfl`, `true`, `true_and`), and to every imported declaration through
-    the project's module prefix, all without qualification. In a
+    the project's module prefix, all without qualification (a byte literal
+    instead qualifies `_root_.ByteArray.mk` and `_root_.UInt8.ofNat (nat_lit n)`
+    from the root and binds literal-local `let __byteN` variables whose `__`
+    prefix no source binder can spell). In a
     `lexlean/semantic-module/2` module no binder (a type parameter, a value
     parameter, or a pattern, `let`, quantifier, lambda, or proof binder) is
     spelled like a declaration of the module, one of those built-in names, or
@@ -3807,15 +3810,19 @@ counter by counter by Lean's kernel.
    result `Nat`. Any other operand type, result type, or argument count is
    rejected in linking (`LLT4001`) before either backend runs.
 2. **Elaboration.** A widening conversion is a total, exact conversion of its
-   operand's value. Linking elaborates each application into an ordinary
-   language-1.2 term before Lean rendering, production eligibility, or
-   production lowering runs: the operand is bound once to a generated local
-   `__widen<n>` (`n` counted in evaluation order within each declaration),
-   each bit $k$ of the width is tested with `bit_and` and `equal` against the
-   fixed-width mask $2^k$, and the bit weights are summed in a balanced tree
-   over `Int` (`subtract` and `negate`, with the sign bit of a signed width
-   weighted by $-2^{w-1}$ and bit 63 of `UInt64` expressed as $2^{62} + 2^{62}$
-   so every literal lies within 64-bit signed range) or over `Nat` (`add`).
+   operand's value in Lean (`Int` and `Nat` are unbounded). Linking elaborates
+   each application into an ordinary language-1.2 term before Lean rendering,
+   production eligibility, or production lowering runs: the operand is bound
+   once to a generated local `__widen<n>` (`n` counted in evaluation order
+   within each declaration), each bit $k$ of the width is tested with `bit_and`
+   and `equal` against the fixed-width mask $2^k$, and the bit weights are
+   summed in a balanced tree over `Int` (`subtract` and `negate`, with the sign
+   bit of a signed width weighted by $-2^{w-1}$ and bit 63 of `UInt64` expressed
+   as $2^{62} + 2^{62}$ so every literal lies within 64-bit signed range; in the
+   production calculus `Int` is 64-bit signed, so `to_int` on a `UInt64` at or
+   above $2^{63}$ overflows the calculus's `Int64` range at the sum of those two
+   $2^{62}$ terms, while `to_nat` on `UInt64` is total in both, `conformance_sm_32`)
+   or over `Nat` (`add`).
    Generated Lean, production eligibility, production lowering, and the
    preservation certificates read the elaborated declaration, so a root that
    indexes a `Bytes` value and widens the resulting `UInt8` lowers to bit
@@ -4920,8 +4927,12 @@ large for different reasons, and the sum of what they have in common is no
 bound on the largest (a match on 200 constructors returned with a string of
 330 000 characters has a certificate A of 1.1 MB, from the match, and a
 certificate B of 1.0 MB, from the string; no certificate is the sum). Each
-cost of certificates B and E is half of the greatest for which its bound stays
-below its certificate, found by linear programming over every root of the three example corpora and of
+cost of certificate B is a quarter of the text-era cost (half of the greatest
+for which the text bound stayed below the text certificate, halved again
+because the authoring notation certificate B is recorded in and weighed by takes
+about a quarter of the bytes of its Lean text), and each cost of certificate E is
+half of the greatest for which its bound stays below its certificate, found by
+linear programming over every root of the three example corpora and of
 families of programs that grow one dimension at a time (let chains, call
 chains, many parameters, enumerations of many constructors, matches nested
 under one another, wide structures, record copies, long literals, a generic
@@ -4932,9 +4943,11 @@ random shapes, the wide matches, and the four example corpora has a certificate
 A smaller than its bound, with five percent to spare. `conformance_sp_02` requires that each bound is never
 above its certificate (for B and E, the smaller of the targets') on any of
 them, and on random combinations of five dimensions, none of which the costs
-were fitted to, and requires that the largest scaling of each of nine mixed
-shapes whose certificates are all under the default limit, a program at the
-edge of what fits, is not refused. The early refusal refuses, and only
+were fitted to, and requires that for each of nine mixed shapes the largest
+scaling at most 256 whose certificates are all under the default limit is not
+refused (when a shape fits only below its full scale of 256, that largest
+scaling sits within forty percent of the limit; a shape that fits at its full
+scale of 256 is checked to fit and not edge-checked). The early refusal refuses, and only
 refuses early: a root whose certificates fit under `max_file_bytes` is not
 refused by it (a match on 240 constructors, whose certificate A is 3.9 MB in the notation it is recorded in; a
 string literal of 450 000 characters, whose certificate B is 1.4 MB; a match
@@ -4955,23 +4968,41 @@ floor, not a measured least), would take more than `max_file_bytes` of
 certificate B: the crate is built after this, so a program that large is never
 rendered.
 
-The guarantee is the byte budget. Every certificate is generated under
-`max_file_bytes`: the proof of each term of certificate A, each match arm,
-the encoders, each function, and the boundary, the terms and derivations of
-certificate B, and certificate E are counted as they are built, and generation stops with
-`LLS8002` as soon as a part is beyond the limit, so that no program makes the
-generator produce, or the stage after it hold, much more than the limit (one
-part past it: a function's derivation, or a term's proof). Certificates are
-generated, for every root, right after lowering and before the toolchain is
-touched, so every refusal is `LLS8002` before any Lean work. A derivation is
-built, written, and dropped without recursion in the number of a match's arms,
-so a limit that allows thousands of arms cannot overflow the stack
-(`conformance_sp_08` derives 9000 on a 2 MiB stack). Certificates A and B are
-kernel data in which a repeated subterm is one node, so the types of a program
-cost its certificates nothing beyond their first occurrence, and the chain
-above verifies 16 deep (its 2^16 type nodes are charged to `max_ir_nodes`);
-what the generation stops and the early bound does not see is a part of one
-certificate past the limit, a function's derivation or a term's proof.
+The guarantee is the byte budget. Every certificate is weighed against
+`max_file_bytes` before any file is staged or the toolchain is touched, so no
+oversized certificate is ever accepted and every refusal is `LLS8002` before
+any Lean work. Certificates A, B, and E are built as native core modules
+(`lexlean/core-module/2`, kernel-term DAGs in which a repeated subterm is one
+node, so the types of a program cost its certificates nothing beyond their
+first occurrence, and the chain above verifies 16 deep while its 2^16 type nodes
+are charged to `max_ir_nodes`) and weighed in the authoring notation they are
+recorded in (`record_source`):
+- **Before generation**, lowering's lower bound (`COSTS_A`, `COSTS_B`,
+  `COSTS_E`) and certificate B's field-read floor (`8` bytes per pattern entry)
+  refuse any root whose Linear-Program lower bound or field-read floor already
+  exceeds `max_file_bytes`.
+- **During generation**, certificate B's aligner counts each new kernel node of
+  a function's derivation at `12` bytes (`NODE_BYTES`, the shortest row of the
+  authoring notation) and stops with `LLS8002` at the end of a step once that
+  floor passes `max_file_bytes`. Because a record-read node takes about `35`
+  bytes in the recorded notation (and the corpora's nodes `14` to `18`), a
+  derivation can hold about three times `max_file_bytes` of recorded notation
+  before that per-node floor stops it (`conformance_sp_02` checks that a quarter
+  of the recorded size of `record copy 100` stops B during derivation).
+  Certificates A and E have no per-node counter during construction; each builds
+  its `CoreModule` in memory for a root that passed lowering's lower bound.
+- **When a certificate is finished**, its recorded notation (`record_source` for
+  A and B, `lean_text_legacy` and `record_source` for E) is weighed once against
+  `max_file_bytes` (`certificate.rs`, `data_b.rs`) and refused with `LLS8002`
+  if it exceeds the limit (fixture `certificate-generation-limit`: the sum of
+  500 fields of a record passes lowering's floor and B's 12-byte-per-node
+  derivation floor and is refused at its exact notation weight of `8 513 069`
+  bytes against `4 194 304`, holding about `2.03` times the limit in memory
+  before refusal).
+
+A derivation of certificate B is built without recursion in the number of a
+match's arms, so a limit that allows thousands of arms cannot overflow the
+stack (`conformance_sp_08` derives 9000 on a 2 MiB stack).
 
 The roots of a project are bounded together, in two places. A closure member
 of the eligibility report (§17.13, a build artifact) records its shortest call
@@ -4999,31 +5030,38 @@ functions from one root is accepted and one of 2360 refused, and a chain of 243
 roots is accepted (a report of 66 508 069 bytes, 4.5 seconds and 75 MB to
 check, 14 seconds and 675 MB to build) and one of 244 refused in the same time
 and memory. The certificates of the roots repeat their closures too, so their
-texts grow with the square of the number of chained roots (1.1 KB of
-certificate A and 2.4 KB of each certificate B for every function of a closure;
-243 roots would take about 110 MB), each of them under `max_file_bytes`. The
+recorded modules grow with the square of the number of chained roots (about 1.9 KB of
+certificate A and 0.6 KB of each certificate B in the recorded notation for every
+function of a closure, where the text certificates took 1.1 KB and 2.4 KB;
+243 roots would take about 75 MB), each of them under `max_file_bytes`. The
 lowered programs, the Rust crates, and the certificates of all the roots
 therefore also count toward `max_total_source_bytes`, as each root generates
 them, and a project that passes the limit is `LLS8002` before the toolchain is
 touched (fixture `certificates-total-limit`, a chain of 40 roots under a limit
 of 2 000 000; a chain of 170 roots under the default).
 
-Lean's own budgets are the fourth bound, and they are not the compiler's. The
-pinned Lean checks certificate B at a time that grows faster than the fourth
-power of the arms of the widest match it derives (the certificate B of a match
-on 130 constructors takes 17 seconds, on 200 constructors 42, on 300
-constructors 200, and one on 440 constructors does not finish in 15 minutes),
-and a certificate A of 23 bytes for each pair of arms takes 59 seconds at 200
-constructors. Its default budgets are exhausted well before: 100 constructors
-are checked within `maxHeartbeats` 200 000 and `synthInstance.maxHeartbeats`
-20 000, 160 exhaust the second, 200 the first, a function returning a
-large literal (a program carrying its parameters as data) costs `isDefEq` as
-much again, and exhausting either in the middle of a proof ends as
-`Application type mismatch`, an error that blames a valid certificate. Every
-certificate therefore sets both budgets to 0, and certificate B declares its
-program and crate terms `noncomputable`, since they are the statement's data,
-unfolded by the proofs and run by nothing, and compiling a large crate term
-alone exhausted the code generator's budget. The limit that remains is the
+Lean's own budgets are the fourth bound, and they are not the compiler's. On
+the text-era certificates, the pinned Lean checked certificate B at a time that
+grew faster than the fourth power of the arms of the widest match it derived
+(the text certificate B of a match on 130 constructors took 17 seconds, on 200
+constructors 42, on 300 constructors 200, and one on 440 constructors did not
+finish in 15 minutes), and a text certificate A of 23 bytes for each pair of
+arms took 59 seconds at 200 constructors (as kernel data, a pair of arms is at
+least `63.6` bytes of certificate A, so the kernel checks fewer constructors per
+megabyte). Lean's default budgets are exhausted well before on the staged
+decoder and any elaborator work: 100 constructors were checked within
+`maxHeartbeats` 200 000 and `synthInstance.maxHeartbeats` 20 000, 160 exhausted
+the second, 200 the first, a function returning a large literal (a program
+carrying its parameters as data) cost `isDefEq` as much again, and exhausting
+either in the middle of a proof ended as `Application type mismatch`, an error
+that blamed a valid certificate. Every certificate therefore sets both budgets
+to 0, and in certificate B's native core module the `program`, `krate`, and
+`flags` definition rows have `compiled: false` ( as `__prog` and the encoders do
+in certificate A, where only `denote` and what it calls set `compiled: true`),
+so the native decoder adds them to the kernel environment without invoking the
+code generator on them (they are the statement's data, unfolded by the kernel
+and run by nothing, and compiling a large crate term alone exhausted the code
+generator's budget). The limit that remains is the
 wall clock: `child_timeout_ms` (300 seconds by default) bounds every Lean
 process, and its exhaustion is `LLS8002`. Each child process (`lake`, which
 starts `lean`, and the PDF provider: every child of `verify` is started the
@@ -5569,9 +5607,12 @@ The well-typedness theorems of a recursive group are the group's recursor
 (`T.rec` for each of its document types and `T.rec_j` of the block's first
 type for the `j`-th container the kernel nests, in the order it nests them),
 an induction hypothesis standing where the text recursed. The one core
-backend renders the module to the Lean verification compiles, with `import`
-lines and no `module` header while the staged certificates import one
-another as such (a `module` cannot import them), and the verify record holds the module in the
+backend renders the module (`lean_text_legacy`) to the Lean verification
+compiles, scoped in `namespace <module>` with `import` lines and no `module`
+header so each certificate's inline core-v2 decoder stays inside its own
+namespace and because certificates A, B, and E and the staged audit module
+import one another outside Lean's `module` system (Lean refuses a `module` that
+imports a non-`module` file), and the verify record holds the module in the
 authoring notation (§17.21.8), at the module's path with the extension
 `.lex.tex`, which reads back to the data byte for byte; `preservation.json`
 binds those bytes. A certificate held as data is audited row by row and
@@ -5661,9 +5702,10 @@ literal, an added axiom, and a row whose policy lies, each refused.
 is an auxiliary module of typed commands (`#print axioms`, `#print "marker"`,
 `#print name`, `#check @name`) that the Lean backend renders. It is rendered
 without the `module` header, because Lean refuses a `module` that imports a
-file that is not one and the certificates are rendered outside the module
-system (the user modules they import are not exposed to a `module`
-certificate). No other string literal under `crates/lexlean/src/production/`,
+file that is not one and the certificates it imports are rendered outside the
+module system via `lean_text_legacy` (scoped in `namespace <module>` without a
+`module` header so each certificate's inline decoder stays local and can be
+imported by certificate E and the audit module). No other string literal under `crates/lexlean/src/production/`,
 and none in the probe and audit module part of `backend/lean.rs` beyond the
 renderer of those commands and the quote of a name, is Lean syntax: a
 lexer-level scan of the sources, which drops test code and reads every string
@@ -9687,7 +9729,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GC-10` | `gnaf-certification` | The certification model, certificate fixtures, certificate module, and schemas are generated, deterministic, and content-addressed: they equal their generators, the compiler project reaches them from its entrypoint, certificate identities are recomputed from content, and a planted change to a premise, a bound, or a route changes the verdict or the identity. | §17.18 |
 | `GC-11` | `gnaf-certification` | The certification library is LexLean source: every module of its registry is one language-1.2 native core module of the library's own project, which holds no file of Lean source, no Lean file anywhere in the release tree declares the library's namespace or lies under its module root, and the registry lists only the modules; the declarations and their exact axiom policies are read from the native data, a module that imports anything but `Init`, an earlier module, the preservation core, or the generated and calculus modules it is stated against, or that does not pin its axioms exactly, is refused, and the Lean the compiler generates from the sources is, byte for byte, the Lean the certification library's kernel check compiles, so that neither a stale nor an edited generated module can stand in for the source and a planted drift of the source is visible in what is generated. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules. | §17.18 |
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
-| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it, and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; and in every case by generating each certificate under the limit, which stops it at the limit; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline. | §17.17 |
+| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it (and a mixed shape that fits at its full scale of 256 is checked to fit and not edge-checked), and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; during certificate B's derivation at 12 bytes a kernel node; and for every certificate by weighing the finished module in the authoring notation it is recorded in against max_file_bytes before any file is staged; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library is a row of a native module that pins its axioms exactly and depends on exactly them under the pinned Lean, the statement vocabulary SPEC.md quotes equals what the pinned Lean prints of the generated library, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; the lowered program and each target's crate the certificates are about are published and bound by that record, which also states the function each crate is invoked through and agrees with certificate E and the crate; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication; and a pinned Lean that gives up on a certificate by heartbeats or recursion depth is reported as that rejection unless the module is at least a quarter of max_file_bytes, in which case, as when it is killed or out of memory, it is an exhausted resource, LLS8002. | §17.17, §22.8, §22.9 |
