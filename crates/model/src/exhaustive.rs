@@ -278,7 +278,7 @@ pub const PRESERVATION_SOURCES: [&str; 4] = [
     "crates/lexlean/src/production/lower.rs",
     "crates/lexlean/src/production/certificate.rs",
     "crates/lexlean/src/production/source.rs",
-    "crates/lexlean/src/production/rust_term.rs",
+    "crates/lexlean/src/production/certificate/data_b/syntax.rs",
 ];
 
 /// Audit the eligibility analysis source against the IR source.

@@ -19,6 +19,7 @@ history = [
   { version = 1, rows_sha256 = "e46beeaee24c5346bd67e6b3e025deb9dc97ed08346b5e2cf474250139aafb2d" },
   { version = 2, rows_sha256 = "2b09c7bbd4a744100b620c3b327ace1a38389e7654b55d2a97b96530c249921f" },
   { version = 3, rows_sha256 = "85cdd5cfbad442e11979c544a52d74423d3ceba4550acf5eee52fe7646325e8e" },
+  { version = 4, rows_sha256 = "378be040b5f03b9abdbf77d22f82989f2e0fa75821b19d9947e3c1099d93ce29" },
 ]
 
 [[table]]
@@ -27,4 +28,5 @@ history = [
   { version = 1, rows_sha256 = "489579755bea40f4d9d79c441cfddf25818926de9ecb435b742d32d292da32d9" },
   { version = 2, rows_sha256 = "9e89707c1feef429273944202895c6351353e77df926b48bf2525dbe44697660" },
   { version = 3, rows_sha256 = "af5c29d1187b1efd96b25aa55722f7d476e8913ad3bd08f3caba09cc68381803" },
+  { version = 4, rows_sha256 = "f873b0725c4adc1581aa24495df9c07c41f3268c8c2239344119f1c4b940ac43" },
 ]

@@ -254,6 +254,55 @@ retains the original accepted identifier language and all source-audit
 prohibitions. Raw logs are retained under ignored
 `target/semantic-reserved-identifiers-{lean-red,complete-variants,mutant}.log`.
 
+### explicit byte-literal lowering can fail
+
+A modeled byte literal used to be written `ByteArray.mk #[n, ...]`. It is now
+written `_root_.ByteArray.mk #[...]` with every octet an explicit
+`_root_.UInt8.ofNat (nat_lit n)`; an octet occurring four or more times in one
+literal is bound once by a `let __byteN` local to that literal, so no generated
+local outside the literal takes part in its meaning. The canonical document
+keeps the original decimal numbers and order. SM-19, for languages 1.1 and 1.2,
+reads every generated literal back with an independent closed-grammar reader
+(it neither evaluates Lean nor calls the renderer), checks the document
+display, verifies, and evaluates the generated definitions against the
+original bytes. MD-02 applies the same reader to every embedded artifact byte.
+The reader's own controls refuse foreign, noncanonical and unused syntax, and
+a binding name that disagrees with its value.
+
+Observed before the change: with the lowerer of `main` `243f0c734` unchanged,
+`conformance_sm_19` fails at its first fixture, the empty array, with
+`closed explicit-octet lowering: "expected closed byte syntax \"_root_.ByteArray.mk #[\""`.
+That is the reader rejecting the old spelling. It is not a Lean failure: the
+largest SM-19 corpus (1024 bytes, all 256 values) elaborates under `main`'s
+rendering at the default `maxRecDepth` (1.1 s; 0.8 s explicit).
+
+Measured, not claimed as an improvement beyond these numbers: Lean 4.32.1
+(x86-64 Linux, 4 cores, one run each) on a file holding one `public def` of a
+seeded-random byte literal in which all 256 values occur.
+
+| bytes | `maxRecDepth` | `main` rendering | explicit rendering |
+| --- | --- | --- | --- |
+| 4096 | 100000 | 3.0 s, ok | 2.1 s, ok |
+| 4096 | default | 2.6 s, ok | 2.3 s, ok |
+| 16384 | 100000 | 12.7 s, ok | 11.3 s, ok |
+| 16384 | default | 10.8 s, recursion depth | 8.9 s, recursion depth |
+| 65536 | 100000 | 37.1 s, heartbeats (`isDefEq`) | 49.2 s, heartbeats (`LCNF compiler`) |
+| 65536 | default | 33.3 s, heartbeats (`isDefEq`) | 42.7 s, recursion depth |
+
+Bisection at the default `maxRecDepth` (no `set_option`), by 16-byte steps
+between 1024 and 16384 bytes, one run per size, seeded-random bytes with all 256
+values present: the largest literal that elaborates is 6394 bytes under both
+renderings, and 6409 bytes fails under both (`maximum recursion depth has been
+reached`). Elaboration time at 4096 bytes is 2.0 s under both; at 6394 bytes it
+is 4.4 s for the `main` rendering and 3.3 s for the explicit one. The lowering
+does not move the largest elaborable literal.
+
+No size succeeds under one rendering and fails under the other. Both fail at
+16384 bytes at the default depth and at 65536 bytes at either depth; the
+explicit form is faster at 4096 and 16384 bytes and slower at 65536. The
+timing script is not committed; it writes the two spellings above for the
+same seeded bytes and runs `lean` on the file.
+
 ### native diagnostic detail can fail
 
 `CL-21` was registered before its named test failed on the unwired case.
@@ -1417,6 +1466,207 @@ carries the header of the lifted budgets), and the derivation bound of
 after: the chain is shorter than the literal Lean splits under binders, and the
 root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
 
+### certificate A is kernel-term data and a defect in it is refused
+
+Planted, first (`SP-15`, #157): the seven LOWERING mutations of
+`conformance_sp_02` (Branches, Arithmetic, Overflow, Constructor, Buffer,
+Recursion, Literal) at the first, a middle, and the last site of
+`examples/production-coverage`, run by hand at commit `7653ed1e` with the
+developer lens `dev_plant`, since removed from the tree (the repository carries
+no ignored test; the record is the evidence): 20 plants. All 20 are caught,
+none accepted. 14 are rejected by the kernel inside the `__rel_<n>` row of the
+mutated function, and 6 are refused by the generator while it writes the
+certificate, because certificate A is derived from the source and the lowering
+in lockstep, so a lowering that no longer follows the source has no certificate
+to give to Lean (`Planted.refused`). The first line of each class:
+
+```text
+.../Planted/P0.lean:531:0: error: native core declaration 'LexLeanPreserve.Planted.P0.__rel_0':
+phase preservation: the lowering of || is not a cond
+phase preservation: the lowering of `low` is not a variable
+phase preservation: the lowering of `i` is not a variable
+phase preservation: the lowering of a literal is not a value
+phase preservation: a call of function 1 lowered to 2
+phase preservation: a call of function 2 lowered to 1
+```
+
+(The kernel line is the same shape for the other 13: Branches fn 6, Arithmetic
+×3, Overflow ×3, Constructor ×3, Recursion fn 21, Literal ×3, each naming
+`__rel_<function>`. The refused six are: Branches fn 0 and fn 3, Buffer ×2,
+Recursion fn 0 and fn 2.)
+
+Planted, second: five plants in the data of one certificate A of
+`examples/production` (`conformance_sp_15`, which prints them with `eprintln!`
+as "SP-15 plants refused"): a wrong lemma (`prim_natAdd` renamed
+`prim_natMul`), a changed statement (`Bool.true` renamed `Bool.false`), a
+forged program literal (one literal of the program row raised by one, on a
+fresh path), an added axiom (`sorryAx` as the root's proof), and a row whose
+policy lies about its axioms.
+
+```text
+wrong lemma: .../R2PlantWrongLemma.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_2':
+      (kernel) application type mismatch
+        LexLeanPreservation.conv_prim
+changed statement: .../R2PlantChangedStatement.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_1':
+      (kernel) application type mismatch
+        LexLeanPreservation.conv_apply
+forged program: .../R2PlantForgedProgram.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__prog':
+      (kernel) application type mismatch
+        1
+added axiom: the forbidden constant `sorryAx`
+lying policy: the certificate row `LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_1` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins []
+```
+
+The added axiom is refused by the data audit before any Lean runs. The lying
+policy compiles (that is not Lean's to refuse) and is refused by the audit
+module.
+
+Removed: the plants were not committed; every plant is applied to a copy in
+the test. With none planted, `conformance_sp_15` passes on the committed
+records (run on regenerated records: "test result: ok. 1 passed; 0 failed;
+... finished in 128.47s"; the certificate hex ID above is the one before the
+train's regeneration), and `conformance_sp_02` passes ("test result: ok. 1
+passed; 0 failed; ... finished in 7951.32s", on `7653ed1e2`). SP-15 also holds
+the source scan: it scans the sources that build certificate A
+(`production/certificate.rs` and `certificate/data_a*`) for Lean-syntax string
+literals and finds a planted template `format!("theorem {}0 : …")`, so the scan
+is armed.
+
+Behind "the largest scaling of each mixed shape fits": SP-02 passes, so at the
+largest scaling every shape's lower bound is at or below its certificate A. The
+tight one, measured by hand, is mixed shape 7 at 256: 5,879 expression nodes,
+certificate A 120,894 bytes in the notation, `COSTS_A` bound about 115.6k
+(5400 + 5879 × 300 / 16), 4.4% under. The other shapes' figures were not
+recorded separately.
+
+### certificate B is kernel-term data and a defect in it is refused
+
+Certificate B of a root is a native core module the compiler builds
+(`production/certificate/data_b` over `production/kernel.rs`), so a defect is
+planted in the data and must be seen where the kernel checks it, or before,
+where the data is audited. `conformance_sp_16` builds every certificate B of the
+four corpora as data (76 certificates, 984 rows, 6,378,738 bytes of notation),
+reads each record back from its notation, checks that its rows are the ones the
+text certificate declared, verifies the production example under the pinned
+Lean, and then plants five defects in the data of one certificate B of that
+example (the second root's, which has several functions and adds), each refused.
+The outputs were recorded on Linux x86-64 with Lean 4.32.1. Command: `cargo test
+-p repo-conformance --test conformance -- conformance_sp_16 --exact --nocapture`.
+
+Planted (a), a wrong lemma: the first two rules of the correspondence the
+certificate uses, in the order of the data, with the first renamed to the second
+in every constant node that names it. Expected: the kernel refuses the
+derivation, since the rule's premises are not the judgment's.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantWrongLemma.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun1':
+  (kernel) application type mismatch
+    @LexLeanPreservation.Rust.Corr.applyF RustCore.program RustCore.krate RustCore.flags
+```
+
+Planted (b), a changed statement: the statement of `fun0` replaced by the statement
+of `fun1`. Expected: the theorem proves `FunOK … 0` and claims `FunOK … 1`.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantChangedStatement.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun0':
+  (kernel) declaration type mismatch, 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun0' has type
+```
+
+Planted (c), a forged program literal: the runtime item `Item.natAdd`, shared by
+the crate literal and every derivation that names it, renamed to `Item.natSub`,
+so the crate's addition is a subtraction the program does not state. Expected:
+no derivation relates them, and the kernel refuses the first rule whose side
+condition names the item.
+
+```text
+<staging>/src/LexLeanPreserve/C3950237c975b30f5dd9298b8e09919c9/R2/RustCorePlantForgedProgram.lean:517:0: error: native core declaration 'LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.fun2':
+  (kernel) application type mismatch
+    LexLeanPreservation.Rust.Corr.primF
+```
+
+Planted (d), an added axiom: a `sorryAx` constant node as the proof of the root
+theorem. Expected: the data audit refuses it before any Lean runs.
+
+```text
+the forbidden constant `sorryAx`
+```
+
+Planted (e), a lying policy: the root's policy set to pin no axiom. It compiles
+(Lean does not read the policy), and the audit module, which prints the axioms
+of every row, refuses it.
+
+```text
+the certificate row `LexLeanPreserve.C3950237c975b30f5dd9298b8e09919c9.R2.RustCore.root` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins []
+```
+
+Removed: the plants were not committed to any generator; they are mutations the
+case applies to a copy of the data. The negative fixture `certificate-b-rejected`
+(its overlay turns the constant node of `Item.natAdd` into `Item.natSub` in the
+rendered data of every certificate B) fails `lexlean verify` with `LLV7015` and
+nothing published, as it did when the overlay edited the text. Before
+`conformance_sp_16` had an arm, the same command failed with `no preservation
+case is wired for SP-16`, the red step of R3.
+
+### no Lean source text template remains in the production compiler
+
+`conformance_sp_17` reads the Rust sources with a lexer
+(`crates/conformance/src/lean_literals.rs`): comments, plain, raw and byte
+strings, character literals and lifetimes the way the Rust lexer reads them,
+every item under `#[cfg(test)]` dropped, and each remaining string literal
+tested for Lean syntax. It covers every source under
+`crates/lexlean/src/production/` and the probe and audit module part of
+`crates/lexlean/src/backend/lean.rs` (from the section "Probe and audit
+modules"; the rest of the file renders the lexicon terms of the program a user
+wrote, which is what the backend is for).
+
+A literal is Lean syntax when it holds one of: `:=`, `=>`, `↦`, `→`, `∀`, `∃`,
+`⟨`, `⟩`, `(.`, `«`, `@[`; a `fun` binder; a line of `#print`, `#check`,
+`#eval`, `import`, `namespace`, `set_option`, `universe`, or `open` with more
+after it; a parenthesized application of a capitalized name (`(Option {})`); or,
+when the literal holds a `:`, a line of `theorem`, `def`, `example`,
+`instance`, `structure`, `inductive`, or `abbrev` with more after it. A bare
+word (`"inductive"`) is a name, and an English diagnostic carries none of the
+above. The allow-list is 11 entries, each with its reason in the source: the
+printouts of kernel terms that developers read (`kernel/ext.rs`, the
+`LEXLEAN_ROWS` and `LEXLEAN_SHOW` printouts), the quote of one segment of a Lean
+name (`certificate.rs`), and the closed commands the auxiliary module renderer
+writes (`backend/lean.rs`). The case also requires every allow-list entry to
+match a literal that exists, so an entry cannot outlive its reason.
+
+Planted templates, each reported by the scan on the real source of the file
+with the template appended, and nothing else reported:
+
+```text
+SP-17 planted in production/preserve.rs: line 2032 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in production/certificate.rs: line 3139 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in production/lower.rs: line 3729 `theorem t (n : Nat) : n = {x} := by decide`
+SP-17 planted in backend/lean.rs: line 2714 `namespace Planted\nend Planted\n`
+```
+
+The same template under `#[cfg(test)]` is not reported, and the definition
+accepts seven Lean literals and refuses five plain ones (the case lists them).
+
+Before it ran, the scan found the templates the survey of #89 named, not only
+the audit module: the `render_ty`, `render_value`, `render_prim`, `render_expr`
+and `render_program` builders of the calculus as Lean text (certificate B's old
+path; the program is a kernel-term row now), `lean_type_text` (the runtime
+spelling of a type, now the structure `RuntimeType` that the differential
+harness spells in the conformance crate), the harness's value printer and list
+literals (moved to the conformance crate, which writes the Lean of its own
+`#eval` inputs), and the unused `budget_options`. The staged audit module is an
+`AuxiliaryModule` of typed commands (`PrintAxioms`, `PrintMarker`, `PrintName`,
+`CheckName`), rendered without the `module` header: Lean refuses a `module`
+file that imports a file that is not one
+(`cannot import non-`module` A from `module``), and the certificates are
+rendered outside the module system by `lean_text_legacy`, because the user
+modules they import are not exposed to a `module` certificate. Retiring that
+rendering changes every certificate's text and so every record, which waits
+for the regeneration; the audit module keeps the unheaded form only because it
+imports them. Its text is the text of before, except that four library
+declarations whose last segment is the Lean token `at` (`Rust.RC.at`,
+`RCB.at`, `RCI.at`, `RCL.at`) are now quoted as every auxiliary module quotes a
+reserved segment (`RC.«at»`), the same name to Lean.
+
 ### certificate E is kernel-term data and a defect in it is refused
 
 Certificate E of a root is a native core module the compiler builds
@@ -1505,6 +1755,12 @@ chain 14 deep: error[LLS8002]: max_file_bytes exceeded in phase certificates: a 
 chain 15 deep: error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 4457541 bytes (262189 program nodes)
 chain 16 deep (negative fixture lowering-size-limit): error[LLS8002]: root `Production.Main.chain`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 8913991 bytes (524336 program nodes)
 ```
+
+Superseded: the figures above are the text certificates'. With certificates A
+and B as kernel data (#157, #163) a repeated type is one node, the chain
+verifies 16 deep, and the fixture is a 400-constructor match; see "The
+size-limit fixture can fail when the certificates stop costing what it
+assumes" below.
 
 (The chain verified 14 deep before certificates wrote every reference to a
 global from the root: `_root_.` adds about 10% to certificate A, which at 14
@@ -1621,8 +1877,15 @@ production-coverage: Coverage.Colls.mapOps: the lower bounds Bounds { a: 51284, 
 
 Planted: the cost of a pair of arms of certificate A raised from 180 to 500.
 Expected: the check that valid programs whose certificates fit are not refused
-(a match on 420 constructors, a string of 450 000 characters, at the default
-limits) refuses the match.
+(a match on 240 constructors, a string of 450 000 characters, at the default
+limits; certificate A is recorded in the notation, which is three times the Lean text of a wide match, so the match is 240 where it was 420) refuses the match.
+
+Not re-run since certificate A became kernel data (#157): the cost of a pair of
+arms is now 1018 sixteenths, so the figures of this plant and its quoted
+`LLS8002` line are the text certificate's. The current evidence that the bound
+refuses, and does not over-refuse, is the fixture `lowering-size-limit` (a
+match on 400 constructors, refused in lowering) and `conformance_sp_02`'s pass
+(the match on 240 constructors fits and is not refused).
 
 ```text
 Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 5524790 bytes (1265 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
@@ -3463,8 +3726,9 @@ Removed: the generator was restored and the packages regenerated;
 
 ### rust lint exceptions and lowering rules are load-bearing
 
-Each of the ten exceptions of `package::ALLOWED_LINTS` was removed in turn
-(its entry renamed to the pedantic `too_many_lines`), and each rendering rule
+Each of the ten exceptions of the package scaffold (the rows of `allowedLints` in
+`language/package-1.2/library/src/RustPackage.lex.tex`, which replaced `package::ALLOWED_LINTS`)
+was removed in turn by dropping its row from the module, and each rendering rule
 of §17.16 **Lowering** was disabled in turn; after each plant the packages
 were regenerated and `conformance_rb_06` (with `conformance_rb_01`) ran.
 Expected: a committed package fails its gate, so no exception or rule is
@@ -3512,6 +3776,64 @@ error: very complex type used. Consider factoring parts into `type` definitions
 
 Removed: every exception and rule was restored and the packages
 regenerated; `conformance_rb_06` passes.
+
+
+### rust package scaffold can fail
+
+The scaffold (`RB-10`..`RB-13`) was made to fail by planting a defect in the
+repository itself, running the case, and restoring the file. Each case is
+`cargo test -p repo-conformance --test conformance -- conformance_rb_NN`.
+
+| Plant | Case | First refusal |
+| --- | --- | --- |
+| a manifest constant (`[lints.clippy]` and an `allow`) appended to `package.rs` | `RB-10` | ``the renderer holds the package scaffolding as text beside its module: package.rs: the literal "[lints.clippy] single_match = \"allow\" " states `single_match` `` |
+| an allowed lint of the module moved to `correctness` | `RB-11` | ``allows a lint in Clippy's `correctness` group (§17.16)`` |
+| the `single_match` row dropped from the module | `RB-11` | ``the specification's `single_match` is not the module's`` |
+| the reader's refusal of `correctness` disabled | `RB-11` | the module with a `correctness` row decodes, and the case's `expect_err` fires |
+| the recursion statement of `language/production-1.2.toml` set back to "explicit failure" | `RB-13` | the statement is printed, and the case demands `aborts the process` |
+| `language/package-1.2/` removed from the files introduced for 1.2 | `RB-12` | `assertion left == right failed` on the language-1.0 identity: the scaffold is hashed into it |
+
+`RB-10` also plants `publish = false`, a key `all = ...`, and `priority = -1`
+as string literals of three renderer files (the audit reads the Boolean and
+the priority as the text a printer would write), and `RB-11` checks the
+module's project (`language/package-1.2/library`) by locking and checking it,
+and refuses a copy whose theorem equates the predicate with `3`. `RB-13` no
+longer claims that production states the root's effects or that replay binds
+them: `PX-01` compares each bundle's `provenance.json` effects with the
+result's, a check that needs a verified export and has no recorded plant.
+
+The same defects are planted inside the cases for what a plant in the
+repository cannot reach: a module whose declaration, constructor, field, or
+body shape differs (`RB-10`), a table row changed, dropped, or added on either
+side and a theorem removed or weakened (`RB-11`), the edition, a lint row, and
+a gate changed in a copy of the embedded tree, which must move the language-1.2
+ID alone (`RB-12`), and effects that are unregistered, unordered,
+or state allocation on `rust-core` (`RB-13`). The ten exceptions are each
+removed by dropping their row of the module in the table above.
+
+A first version of `RB-13` also made the renderer refuse a list that omitted
+an effect the package's program shows (a function that reaches itself, an
+export that can overflow). Run over every committed export with the effects of
+the root's eligibility report, it refused `Coverage.Boundary.groveRoot`
+(`recursion`) and `Coverage.Colls.graphs` and `stringGraph` (`overflow`): the
+entry of a root carries a generated check of its arguments, which recurses over
+a recursive type such as `Grove`, and the graph templates' `nat_add` fuel
+bound can overflow, neither of
+which the root's eligibility reports. The renderer cannot decide what the
+registry means, so the check was removed and the list stays the root's, as
+eligibility decides; `shown_effects` remains only to state the fixtures'.
+That eligibility omits the recursion of the argument check (a stack demand of
+the input's depth) is a finding for #105 and not changed here.
+
+Cases that compare to regenerated records (`RB-02`..`RB-05`, `RB-07`, and the
+cases that read a lock, such as `AU-02`, `AU-03`, and `AU-10`..`AU-12`) fail on
+the hand-written tree alone, because the language-1.2 ID and every package's
+`package.json` and `provenance.json` move. `RB-02`..`RB-05` and `RB-07` passed
+on a scratch copy whose Rust packages were rewritten by the writer of
+`check-calculus` (`rust_packages::files`): every `Cargo.toml` and `src/lib.rs`
+was byte-identical to the committed one, and only `package.json`,
+`provenance.json`, and the negative manifests changed. The regeneration of the
+locks and the remaining records is the train's.
 
 ### rust runtime mutation is detected by the differential
 
@@ -4967,6 +5289,59 @@ is false
 ```
 
 Removed: the copy was discarded; the committed example verifies.
+
+### IEEE-754 dyadic decoding and scale-ratio derivation can fail (Issue #118)
+
+`MD-13` was registered before its named test failed on the missing corpus
+declarations:
+
+```text
+thread 'conformance_md_13' (1417488) panicked at crates/conformance/src/cases/models.rs:3284:9:
+Models.Recognizer declares `Dyadic`
+test conformance_md_13 ... FAILED
+```
+
+Planted, one at a time in a focused copy of `examples/models/src/Recognizer.lex.tex`:
+
+- the normal `binary32` exponent offset `150` (`biased - 127 - 23`) replaced by
+  `149` in `decodeBinary32`, which still links cleanly (`lexlean check` exits
+  `0`) because the result remains an `Option Dyadic`:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    DyadicMatches (decodeBinary32 8388608) 0 8388608 (-149)
+  is false
+  ```
+
+- the tie-to-even rounding branch
+  `(prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int)`
+  in `dyadicRatioRound` replaced by unconditional round-up
+  `(prim subtract q (-1 : Int) : Int)`, which still links cleanly and agrees on
+  every non-tie and odd-tie case, but rounds an exact tie with even quotient up
+  instead of keeping it even:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    scaleRatioRound32 1065353219 1069547520 1140850688 = Option.some 12582916
+  is false
+  ```
+
+- a seeded scale-ratio expectation skewed by `+1` against the independent
+  `u128` rational oracle in `conformance_md_13`:
+
+  ```text
+  error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
+    ...
+  is false
+  ```
+
+`conformance_md_13` plants all three mutations in `Recognizer.lex.tex`,
+asserting that `check` succeeds and `verify` fails with `LLV7002` on each, and
+verifies 40 seeded `binary32`, `binary64`, and `round(a * b / c * 2^32)`
+theorems against the independent exact rational oracle in addition to the
+committed `examples/models` corpus.
+
+Removed: the committed `examples/models` corpus is unchanged; `conformance_md_01`..`conformance_md_13` pass.
 
 ### reasoning rule priority order can fail
 
@@ -8109,6 +8484,30 @@ The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
 a Cargo target directory named `target-check` in the checkout, `RT-01` and
 `SP-12` failed on its Lean files before and pass now.
 
+The fifth runtime module, `LexLeanRuntime.Laws` (#117), declares under the
+namespace `LexLeanLaws`, which the runtime cases' list of namespaces did not
+hold: a copy of a laws declaration in a generated module, or a literal of the
+compiler's source under that namespace, passed `RT-01` and `RT-04`. The list is
+now asserted equal to the first segments of the declarations of every shipped
+runtime module (`rt_04`), so a sixth module cannot be missed the same way. Both
+halves are planted by removing `"LexLeanLaws"` from the list and running
+`cargo test -p repo-conformance --all-features --test conformance --
+conformance_rt_04 --exact`, each caught:
+
+```text
+assertion `left == right` failed: a planted runtime text is found (a declaration under the laws namespace): const PLANTED: &str = "public def LexLeanLaws.sumNat (xs : List Nat) : Nat := xs.length\n";
+  left: 0
+ right: 1
+```
+
+and, with that plant also removed from the case,
+
+```text
+assertion `left == right` failed: the runtime namespaces the gates know are the namespaces the shipped runtime declares
+  left: {"LexLeanCollections", "LexLeanLaws", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
+ right: {"LexLeanCollections", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
+```
+
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted
@@ -8467,6 +8866,37 @@ IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
 
+### byte-to-fixed-width widening conversions in language 1.2 (`SM-32`, #114)
+
+Language 1.2 adds the total widening primitives `to_int` (any fixed-width
+integer to `Int`) and `to_nat` (any unsigned fixed-width integer to `Nat`),
+elaborated in linking to bit tests (`bit_and`, `equal`) and balanced sums over
+`Int` or `Nat` under a generated `__widen<n>` binding so that Lean
+verification, production eligibility, production lowering, and certificates A,
+B, and E operate on the ordinary elaborated terms without decimal formatting or
+parsing (`Coverage.Prims.widenings` and `Coverage.Prims.pixels`).
+
+- **sign bit of a signed width added instead of subtracted.** `bit_contribution`
+  in `ir::semantic::widen` weights the top bit of a signed integer by $+2^{w-1}$
+  instead of $-2^{w-1}$. `-- conformance_sm_32`:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:2151:10:
+  the module verifies with real Lean: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLV7002"), message: "lean failed in phase `LanguageTwelve.Main` (exitSome(1)): ..." }] }
+  ```
+
+- **signed operand accepted by `to_nat`.** `infer_primitive` admits `ToNat` on
+  any `is_fixed_integer()` operand instead of `is_unsigned_fixed_integer()`.
+  `-- conformance_sm_32`:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:607:14:
+  check fails with LLT4001: ()
+  ```
+
+Removed: both edits were restored; `conformance_sm_32` and the unit tests of
+`ir::semantic::widen` pass.
+
 ## The plan of a CI run can fail (RP-14, #131)
 
 `.github/ci-plan.sh` decides what a run of `ci.yml` is: the `rest` leg for a
@@ -8501,3 +8931,31 @@ Against the previous `ci.yml` the case fails at the missing plan, as R3 requires
 cannot show, a run of another repository's pull request and a run that did not
 pass, are pinned by the script's own query (`event=pull_request&status=success`,
 `head_repository.full_name`), which the case reads.
+
+## The size-limit fixture can fail when the certificates stop costing what it assumes (SP-02, integration of #157 and #163)
+
+`tests/negative/lowering-size-limit` asserts that a root whose certificates
+would exceed `max_file_bytes` is refused with `LLS8002` in lowering, before the
+toolchain starts. It was the generic chain `g_k<T> = g_{k+1}<(T, T)>` 16 deep,
+whose type has 2^16 nodes. With certificates A and B as kernel data a repeated
+type is one node (`COSTS_A.type_node` is 0), and the fixtures writer on the
+integrated tree failed on it:
+
+```text
+gate failed: tests/negative/lowering-size-limit: step 1 `verify ` exited 0, case.toml expects 4
+stdout: {"artifacts":[".lexlean/verified/d01384bec176b7fde4ad0e805d8f49b8056ffbd7c82ad66d9e6e7c792047f74b"],"attestation_id":"d01384bec176b7fde4ad0e805d8f49b8056ffbd7c82ad66d9e6e7c792047f74b","build_id":"c4921fdd0c20f1915f1097c2c3834edf8e454917df05f1ffad701d5006267205","command":"verify","diagnostics":[],"exit_code":0,…,"success":true}
+```
+
+The chain verifies, which is correct: its certificates are small. What a
+small source still makes large is the pairs of arms of a match, so the fixture
+is a match on 400 constructors (20 KB of source). Its observed output, in two
+seconds and without starting Lean:
+
+```text
+error[LLS8002]: root `Production.Main.wide`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 10200437 bytes (1205 program nodes)
+```
+
+This is a finding about the fixture's premise, not a planted defect: the
+planted-defect evidence of the early refusal's bound is `conformance_sp_02`'s,
+which was not completed on any host before the train's CI run (the certificate
+A session's runs were killed twice by host restarts).
