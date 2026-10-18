@@ -53,6 +53,25 @@ fn root(
     })
 }
 
+/// The module value as the canonical JSON the printer reads, without the depth
+/// bound the JSON text reader holds.
+fn json_of(value: &Value) -> lexlean::artifact::canonical_json::Json {
+    use lexlean::artifact::canonical_json::Json;
+    match value {
+        Value::Bool(flag) => Json::Bool(*flag),
+        Value::Number(number) => Json::Int(number.as_i64().expect("an integer")),
+        Value::String(text) => Json::Str(text.clone()),
+        Value::Array(items) => Json::Arr(items.iter().map(json_of).collect()),
+        Value::Object(members) => Json::Obj(
+            members
+                .iter()
+                .map(|(name, member)| (name.clone(), json_of(member)))
+                .collect(),
+        ),
+        Value::Null => panic!("a module has no null"),
+    }
+}
+
 fn project(declarations: &[Value]) -> P {
     project_limited(declarations, true)
 }
@@ -75,20 +94,14 @@ fn project_limited(declarations: &[Value], lifted: bool) -> P {
     }
     let data = json!({"declarations": declarations, "spec": "lexlean/semantic-module/2"});
     // Written in the notation, which is what language 1.2 reads (§17.21.1),
-    // from the value itself: a chain nested past the JSON reader's depth is
-    // still a value the notation can carry, and what refuses it is the
-    // compiler.
-    let source = lexlean::sdk::assemble(
-        &lexlean::sdk::SourceHeader {
-            name: "Main",
-            glossaries: &["lexlean.std.nat@1.2.0"],
-            imports: &[],
-            title: "Natural number addition",
-        },
-        lexlean::sdk::ModuleKind::Semantic,
-        &data,
-    )
-    .unwrap_or_else(|error| panic!("{error}"));
+    // printed from the value itself: a chain nested past the depth the JSON
+    // reader allows is still a module the notation can carry, and what refuses
+    // it is the compiler.
+    let printed = lexlean::surface::semantic::print_module(&json_of(&data))
+        .unwrap_or_else(|error| panic!("{error}"));
+    let source = format!(
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n{printed}\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+    );
     project.write("src/Main.lex.tex", &source);
     project.relock();
     project

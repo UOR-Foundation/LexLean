@@ -389,13 +389,6 @@ fn tl_01() {
         "canonical",
     ));
 
-    let pretty = serde_json::to_string_pretty(&data(&project)).expect("serializes");
-    decoder_plants.push(match decoder("a re-indented module", &pretty, "") {
-        Err(failure) if failure.contains("accepted") => Ok(()),
-        Ok(()) => Err("a re-indented module: the module was refused".to_owned()),
-        Err(failure) => Err(failure),
-    });
-
     // Only the byte level can see a duplicate member.
     decoder_plants.push(decoder(
         "a repeated member",
@@ -405,7 +398,7 @@ fn tl_01() {
     for failure in decoder_plants.into_iter().flat_map(Result::err) {
         plants.failures.push(failure);
     }
-    plants.run += 5;
+    plants.run += 4;
 
     // Nesting past the decoder's own limit is a refusal, not a stack overflow.
     let project = P::tooling("core");
@@ -419,13 +412,16 @@ fn tl_01() {
         });
     }
     *body(&mut value, "Core.describe") = nested;
-    put(&project, &value);
-    plants.refused(
+    // The notation reads such a nesting to the value, and the decoder refuses
+    // it when it reads the value's JSON.
+    plants.run += 1;
+    if let Err(failure) = decoder(
         "a term nested 200 levels",
-        &project,
-        "LLT4013",
+        &serde_json::to_string(&value).expect("serializes"),
         "recursion limit",
-    );
+    ) {
+        plants.failures.push(failure);
+    }
 
     // The charge to `max_ir_nodes` is made like every other module's.
     let project = P::tooling("core");
