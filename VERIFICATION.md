@@ -14,7 +14,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `lint` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | no tolerated warnings |
 | `test` | `cargo test --workspace --exclude repo-conformance --all-features` | §28.1 classes 1–2 and 4–5 (unit, property, integration, CLI) of every crate but `repo-conformance`, and the model crate's own tests. `repo-conformance` is excluded, not skipped: `bdd` owns it (RP-13) |
 | `features` | `cargo check --workspace --all-features --all-targets` | every target compiles |
-| `bdd` | `cargo xtask bdd` | `cargo test -p repo-conformance --all-features`, or in CI the part of `.github/bdd-parts.json` that `LEXLEAN_BDD_PART` names (§9.4). R3, §27.7, §27.8: the sole owner of the complete `repo-conformance` suite — its library tests, the `bdd` meta-gate target (register ↔ scenario ↔ test bijection and its own falsifiability test), and the `conformance` target with all 351 conformance tests, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
+| `bdd` | `cargo xtask bdd` | `cargo test -p repo-conformance --all-features`, or in CI the part of `.github/bdd-parts.json` that `LEXLEAN_BDD_PART` names (§9.4). R3, §27.7, §27.8: the sole owner of the complete `repo-conformance` suite — its library tests, the `bdd` meta-gate target (register ↔ scenario ↔ test bijection and its own falsifiability test), and the `conformance` target with every registered conformance test, which include the §28.2 fixture suite (`conformance_ex_07`) and the crate-packaging round trip (`conformance_rp_12`) |
 | `inventory` | `cargo xtask check-test-inventory` | RP-13: the tests listed by `test` and by `bdd` (`cargo test … -- --list`) are disjoint and their union is the list of `cargo test --workspace --all-features`: no test lost, none run twice; the lists of the parts of `.github/bdd-parts.json`, each with its harness filters, are disjoint and their union is `bdd`'s list |
 | `examples` | `cargo xtask verify-examples` | §28.6, EX-01: every example directory and the `compiler` project (§17.14, §17.15) format, lock, check, build, and verify with real Lean 4.32.1; when an example commits `expected/verify/`, its normalized verification records must equal it (§29.5) |
 | `golden` | `cargo xtask check-golden` | R10, §28.3: the *published* build tree of a real `build` in a fresh directory equals the committed oracles byte for byte |
@@ -9091,3 +9091,49 @@ elaborates, because each keeps the statement it had; a piece missing from the
 Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
 shard plan is refused by `cargo xtask ci-shards` and by the plan check of
 RP-14.
+
+## Planted defects for merged IDs that had no record (Issue #33)
+
+Each ID below had a case that passes but no record that the case can fail
+(§27.9). Each defect was planted alone in the named source, the named test run
+once with `cargo test -p repo-conformance --test conformance <test> --
+--exact`, the failure observed, and the plant restored with `git checkout`.
+The first seventeen rows were run on a Linux x86-64 host without the pinned Lean
+toolchain, so each defect is one that the case's platform-independent assertions
+reach before any Lean step. The last eight rows (`DF-18` to `LM-02`) were run
+with `leanprover/lean4:v4.32.1` installed through `elan`. The signatures are
+the first panic message, trimmed.
+
+| ID | Planted defect | Expected failure signature |
+| --- | --- | --- |
+| `GL-18` | `lexicon/package.rs`: the `manifest.language != ctx.language` test made `false &&` | `expected LLC0103, found ["LLR3004"]` (`support.rs`, `expect_code`) |
+| `GL-17` | `lexicon/mod.rs`: `load_bootstrap_for("1.2")` reads `bootstrap-1.1.toml` | `init 1.2: error[LLI9001]: phase language-load: bootstrap schema drift` |
+| `SM-24` | `ir/semantic.rs`: a pair projection of a non-product type returns `Ok(None)` | `check fails` (the mutated project must be refused) |
+| `SM-26` | `ir/semantic.rs`: `alpha_identity` keeps a parameter's own name instead of its alpha-renamed one | `assertion left == right failed` on the two alpha identities |
+| `SM-27` | `ir/semantic.rs`: `alpha_identity` drops the termination evidence (`Vec::new()`) | `assertion left != right failed` on the unchanged digest after rebinding the evidence |
+| `PD-01` | `production/eligibility.rs`: `STRUCTURAL_KEYS` lists `type.nat` where `type.bool` was | `structural keys are unique` (`left: 91`, `right: 92`) |
+| `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
+| `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
+| `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
+| `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
+| `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
+| `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
+| `MD-10` | `artifact/content_id.rs`: `semantic_id_for` stops framing the linked IR | `every change changes the semantic ID` (`left: 1`, `right: 6`) |
+| `LM-01` | `ir/semantic/language_model.rs`: the generated law `in_range` renamed `in_bounds` | `Digits generates its three laws` |
+| `LM-03` | `ir/semantic/model.rs`: both `utf8_lines` carriage-return refusals made `false &&` | `check fails` (an artifact with a CR must be refused) |
+| `LM-13` | `text_laws.rs`: `LAWS_MODULE` names `LexLeanText.Laws` | `the shipped registry: ... LLI9001 ... the registry does not list `LexLeanText.Laws`` |
+| `PK-05` | `link.rs`: a linked module's `origin` is `None` | `the standard library's Text is a module of the project, from the package` (`left: None`, `right: Some("std")`) |
+| `DF-18` | `ir/semantic.rs`: the three-argument test of `Iterate`/`IterateUntil` made `false &&` | `expected "primitive IterateUntil expects 3 argument(s) (step, natural-number bound, initial state), received 2", got LLT4001: ... requires a typed initial state` |
+| `PF-19` | `ir/semantic.rs`: the `linear_arithmetic` prior-definition test made `false &&` | `check fails` (an unfolding of a non-prior definition must be refused) |
+| `TC-05` | `calculus/library.rs`: the `MapLookup` template builds the `map_contains` function | `fixture map-lookup: function 0: the body has type Bool, expected Option { value: String }` |
+| `NE-01` | `production/lcnf.rs`: `Renamer::bind` keeps Lean's name instead of the fresh one | `the production compiler input violates schemas/compiler-input.schema.json: ... `_uniq.19` does not match pattern `^v[0-9]+$`` |
+| `MD-03` | `ir/semantic/model.rs`: the validator order test uses `>` for `>=` | `expected LLT4006, found ["LLT4001"] (LLT4001: phase link: duplicate generated name `DigitContract.postcondition_sound`)` |
+| `MD-05` | `ir/semantic/model.rs`: a model declaration's interface mismatch is filtered out | `expected LLT4006, found ["LLT4009"] (... evidence `ReportEvidence` is about another contract or realization)` |
+| `MD-11` | `calculus/realization.rs`: the `term.checked_apply` table key renamed | `the realization table covers term.checked_apply` |
+| `LM-02` | `ir/semantic/language_model.rs`: the `in_range` law states `false` for `true` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.in_range pieces __bytes` |
+
+Two first attempts were not caught and are not evidence: making
+`require_language_1_2` always succeed leaves `MD-01` green, because the
+declaration-level gate above is the one it exercises; and serializing the
+evidence `claims` away fails `MD-10` on the closed schema, not on the identity,
+so the identity plant above is the one recorded.
