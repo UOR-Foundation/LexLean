@@ -2250,7 +2250,81 @@ const RUSTC_ARGUMENTS: usize = 3_000;
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
-const PLANTS: [super::Plant; 0] = [];
+const PLANTS: [super::Plant; 12] = [
+    super::Plant {
+        label: "the exhaustiveness of a match is not checked",
+        site: "(firstMissing required seen)",
+        replacement: "(ctor Option.none [Shape])",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "a second arm for one shape is accepted",
+        site: "(if (shapeIn covered shape) then",
+        replacement: "(if false then",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "a closure may capture every parameter",
+        site: "(total <=? given)",
+        replacement: "(total <? given)",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "a nat literal may be one past the largest u64",
+        site: "(text \"18446744073709551615\")",
+        replacement: "(text \"18446744073709551616\")",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "`-0` is a canonical decimal",
+        site: "(prim equal literal (text \"-0\") : Bool)",
+        replacement: "(prim equal literal (text \"-1\") : Bool)",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "an arm may bind one name twice",
+        site: "(hasRepeat binders)",
+        replacement: "false",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "`field` is accepted on a type with several constructors",
+        site: "(tyChainLength constructors) =? 1",
+        replacement: "(tyChainLength constructors) =? (tyChainLength constructors)",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "a byte literal may have an odd length",
+        site: "(prim remainder (prim length hex : Nat) 2 0 : Nat)",
+        replacement: "0",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "a shift takes a u64 count",
+        site: "(ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U32)) (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no104",
+        replacement: "(ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U64)) (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no104",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "the tail of a list is typed as its element",
+        site: "(ctor Ty.TCons (tyFirst ty) (ctor Ty.TCons ty",
+        replacement: "(ctor Ty.TCons (tyFirst ty) (ctor Ty.TCons (tyFirst ty)",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "DEL (U+007F) is not escaped in a spelled string",
+        site: "(byte =? 127)",
+        replacement: "(byte =? 128)",
+        root: "checkProgram",
+    },
+    super::Plant {
+        label: "the argument count of an entry is not checked",
+        site: "(valueChainLength arguments) =? (tyChainLength declared)",
+        replacement: "true",
+        root: "checkArguments",
+    },
+];
+
 
 /// The deterministic vectors every host runs: the committed programs, the
 /// refusals of `TC-02`, and the corpora at the fixed seed.

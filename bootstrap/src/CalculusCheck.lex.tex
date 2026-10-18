@@ -828,6 +828,7 @@ definition{
   body: (match (LexLeanStd.Text::byteAt subject position)
     | Option.some byte => (prim to_nat byte : Nat)
     | Option.none => 256),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -836,6 +837,7 @@ definition{
   parameters: [subject : Bytes, position : Nat, byte : Nat],
   result: (Nat * Bytes),
   body: (let following : Nat := (byteNat subject (position + 1)); (if (byte =? 34) then (1, (text "\\\"")) else (if (byte =? 92) then (1, (text "\\\\")) else (if (byte =? 10) then (1, (text "\\n")) else (if (byte =? 13) then (1, (text "\\r")) else (if (byte =? 9) then (1, (text "\\t")) else (if (byte =? 0) then (1, (text "\\0")) else (if (byte <? 32) then (1, (unicodeEscape byte)) else (if (byte =? 127) then (1, (unicodeEscape byte)) else (if (byte =? 194) then (if (128 <=? following) then (if (following <=? 159) then (2, (unicodeEscape following)) else (1, (LexLeanStd.Text::sliceOr subject position 1))) else (1, (LexLeanStd.Text::sliceOr subject position 1))) else (1, (LexLeanStd.Text::sliceOr subject position 1)))))))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -844,6 +846,7 @@ definition{
   parameters: [subject : Bytes, state : (Nat * Bytes)],
   result: (Option (Nat * Bytes)),
   body: (let position : Nat := (first state); (let byte : Nat := (byteNat subject position); (if (byte =? 256) then (ctor Option.none [(Nat * Bytes)]) else (let piece : (Nat * Bytes) := (escapePiece subject position byte); (ctor Option.some [(Nat * Bytes)] ((position + (first piece)), (cat (second state) (second piece)))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -852,6 +855,7 @@ definition{
   parameters: [subject : Bytes],
   result: Bytes,
   body: (cat (text "\"") (cat (second (first (prim iterate_until (fun [subject] (state : (Nat * Bytes)) => (escapeStep subject state)) (prim length subject : Nat) (0, 0x) : ((Nat * Bytes) * Bool)))) (text "\""))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1025,6 +1029,7 @@ definition{
     | Value.VClosure function captures => (cat (text "Closure { function: ") (cat (decimal function) (cat (text ", captures: [") (cat (valDebug captures) (text "] }")))))
     | Value.VNil => (text "")
     | Value.VCons head tail => (let headText : Bytes := (valDebug head); (let rest : Bytes := (valDebug tail); (if (isNilValue tail) then headText else (cat headText (cat (text ", ") rest)))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: value
 }
@@ -1034,6 +1039,7 @@ definition{
   parameters: [subject : Bytes, position : Nat],
   result: Bool,
   body: (let n : Nat := (byteNat subject position); (if (47 <? n) then (n <? 58) else false)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1042,6 +1048,7 @@ definition{
   parameters: [subject : Bytes, position : Nat],
   result: (Option Nat),
   body: (if (digitAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1050,6 +1057,7 @@ definition{
   parameters: [subject : Bytes],
   result: Bool,
   body: ((first (prim iterate_until (fun [subject] (position : Nat) => (digitStep subject position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1058,6 +1066,7 @@ definition{
   parameters: [subject : Bytes, position : Nat],
   result: Bool,
   body: (let n : Nat := (byteNat subject position); (if (47 <? n) then (if (n <? 58) then true else (if (96 <? n) then (n <? 103) else false)) else false)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1066,6 +1075,7 @@ definition{
   parameters: [subject : Bytes, position : Nat],
   result: (Option Nat),
   body: (if (hexDigitAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1074,6 +1084,7 @@ definition{
   parameters: [subject : Bytes],
   result: Bool,
   body: ((first (prim iterate_until (fun [subject] (position : Nat) => (hexStep subject position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1090,6 +1101,7 @@ definition{
   parameters: [left : Bytes, right : Bytes],
   result: Bool,
   body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
   executable: true
 }
 
@@ -1098,6 +1110,7 @@ definition{
   parameters: [digits : Bytes, limit : Bytes],
   result: Bool,
   body: (let shorter : Bool := ((prim length digits : Nat) <? (prim length limit : Nat)); (let same : Bool := ((prim length digits : Nat) =? (prim length limit : Nat)); (let above : Bool := (bytesLess limit digits); (if shorter then true else (if same then (not above) else false))))),
+  axioms: [propext],
   executable: true
 }
 
@@ -1121,6 +1134,7 @@ definition{
   parameters: [left : Decimal, right : Decimal],
   result: Bool,
   body: (let downward : Bool := (magnitudeAtMost (project right digits) (project left digits)); (let upward : Bool := (magnitudeAtMost (project left digits) (project right digits)); (if (project left negative) then (if (project right negative) then downward else true) else (if (project right negative) then false else upward)))),
+  axioms: [propext],
   executable: true
 }
 
@@ -1161,6 +1175,7 @@ definition{
   parameters: [digits : Bytes, literal : Bytes],
   result: Bool,
   body: (if (0 <? (prim length digits : Nat)) then (if (allDigits digits) then (if (prim equal digits (text "0") : Bool) then (not (prim equal literal (text "-0") : Bool)) else (not (byteIs digits 0 (48 : UInt8)))) else false) else false),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1169,6 +1184,7 @@ definition{
   parameters: [literal : Bytes],
   result: (Result Decimal Bytes),
   body: (let negative : Bool := (byteIs literal 0 (45 : UInt8)); (let digits : Bytes := (let rest : Bytes := (LexLeanStd.Text::sliceOr literal 1 (prim subtract (prim length literal : Nat) 1 : Nat)); (if negative then rest else literal)); (let canonical : Bool := (canonicalDigits digits literal); (let fitsPositive : Bool := (magnitudeAtMost digits (text "170141183460469231731687303715884105727")); (let fitsNegative : Bool := (magnitudeAtMost digits (text "170141183460469231731687303715884105728")); (if canonical then (if (if negative then fitsNegative else fitsPositive) then (ctor Result.ok [Decimal, Bytes] (record Decimal {negative := negative, digits := digits})) else (ctor Result.error [Decimal, Bytes] (cat (quoted literal) (text " is outside every realized integer")))) else (ctor Result.error [Decimal, Bytes] (cat (quoted literal) (text " is not a canonical decimal"))))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1179,6 +1195,7 @@ definition{
   body: (match (parseDecimal literal)
     | Result.ok number => (let low : Decimal := (kindLow kind); (let high : Decimal := (kindHigh kind); (let above : Bool := (decimalAtMost low number); (let below : Bool := (decimalAtMost number high); (if above then (if below then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat literal (cat (text " is outside ") (kindName kind))))) else (ctor Result.error [Unit, Bytes] (cat literal (cat (text " is outside ") (kindName kind)))))))))
     | Result.error problem => (ctor Result.error [Unit, Bytes] problem)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1189,6 +1206,7 @@ definition{
   body: (match (parseDecimal literal)
     | Result.ok number => (let fits : Bool := (magnitudeAtMost (project number digits) (text "18446744073709551615")); (if (project number negative) then (ctor Result.error [Unit, Bytes] (cat (text "nat literal ") (cat literal (text " is outside the 64-bit realization")))) else (if fits then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat (text "nat literal ") (cat literal (text " is outside the 64-bit realization")))))))
     | Result.error problem => (ctor Result.error [Unit, Bytes] problem)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1197,6 +1215,7 @@ definition{
   parameters: [hex : Bytes],
   result: (Result Unit Bytes),
   body: (if ((prim remainder (prim length hex : Nat) 2 0 : Nat) =? 0) then (if (allHex hex) then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat (text "byte literal `") (cat hex (text "` is not even-length lowercase hexadecimal"))))) else (ctor Result.error [Unit, Bytes] (cat (text "byte literal `") (cat hex (text "` is not even-length lowercase hexadecimal"))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1333,6 +1352,7 @@ definition{
     | Value.VCons head tail => (let element : Ty := (if (mode =? 2) then (tyFirst ty) else ty); (let later : Ty := (if (mode =? 2) then (tySecond ty) else ty); (let onHead : (Result Unit Bytes) := (valueOk program head element 0); (let onTail : (Result Unit Bytes) := (valueOk program tail later mode); (if (mode =? 0) then (ctor Result.ok [Unit, Bytes] ()) else (if (if (mode =? 2) then (isNilTy ty) else false) then (ctor Result.ok [Unit, Bytes] ()) else (match onHead
       | Result.ok done => onTail
       | Result.error problem => (ctor Result.error [Unit, Bytes] problem))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: value
 }
@@ -1678,6 +1698,7 @@ definition{
         | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
         | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))))) else (ctor Outcome.OFailed (cat (text "shape ") (cat (shapeDebug shape) (cat (text " binds ") (cat (decimal bound) (cat (text " value(s), the arm names ") (decimal named))))))))))
       | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: expr
 }
@@ -1771,6 +1792,7 @@ definition{
         | Outcome.OTyped bodyTy => (match (expectTy bodyTy result (text "the body"))
           | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
           | Result.ok done3 => (ctor Result.ok [Unit, Bytes] ())))))) else (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") (cat (decimal named) (cat (text " parameter names for ") (cat (decimal typed) (text " parameter types")))))))))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1797,6 +1819,7 @@ definition{
     | Expr.ESecond dummy0 => (ctor Result.ok [Unit, Bytes] ())
     | Expr.EField dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
     | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: bodies
 }
@@ -1815,6 +1838,7 @@ definition{
   body: (let program : Program := (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (if (prim equal (project program spec) (text "lexlean/target-program/1") : Bool) then (match (checkAdts program (project program adts) 0)
     | Result.ok done => (checkFunctions program (project program bodies) 0)
     | Result.error problem => (ctor Result.error [Unit, Bytes] problem)) else (ctor Result.error [Unit, Bytes] (cat (text "target program has spec ") (quoted (project program spec)))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
@@ -1835,6 +1859,7 @@ definition{
   body: (let program : Program := (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (match (functionTypes program entry)
     | Option.none => (ctor Result.error [Unit, Bytes] (undeclaredFunction entry))
     | Option.some declared => (let yes137 : (Result Unit Bytes) := (valueOk program arguments declared 2); (let no138 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal entry) (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " argument(s), received ") (decimal (valueChainLength arguments)))))))); (if ((valueChainLength arguments) =? (tyChainLength declared)) then yes137 else no138))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
