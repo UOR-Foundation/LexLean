@@ -106,7 +106,7 @@ mandatory. These are generated backend settings, not caller-provided options.
 
 ## Source packages
 
-A language-1.2 project imports the modules of another project of its workspace without copying them: `[[source_package]]` in `lexlean.toml` names a member directory listed by `lexlean-workspace.toml`, `lexlean.lock` pins the package by the digest of its manifest and source files, every command recomputes the pin, imports are closed to the project's own modules and the declared packages, and `verify` replays the package's modules under its module prefix with the package as their origin (SPEC.md §10.5, `PK-01`..`PK-04`; the workspace the cases use is [tests/packages/workspace](tests/packages/workspace/)).
+A language-1.2 project imports the modules of another project of its workspace without copying them: `[[source_package]]` in `lexlean.toml` names a member directory listed by `lexlean-workspace.toml`, `lexlean.lock` pins the package by the digest of its manifest and source files, every command recomputes the pin, imports are closed to the project's own modules and the declared packages, and `verify` replays the package's modules under its module prefix with the package as their origin (SPEC.md §10.5, `PK-01`..`PK-05`; the workspace the cases use is [tests/packages/workspace](tests/packages/workspace/)).
 
 ## Examples that verify under the pinned toolchain
 
@@ -135,7 +135,7 @@ Every directory under [examples/](examples/) is discovered by the example gate (
 
 ## Building and running the gate
 
-Prerequisites: Rust 1.97 (`rust-toolchain.toml` pins it), [just](https://github.com/casey/just), `cargo-deny`, and the pinned Lean toolchain `leanprover/lean4:v4.32.1` installed through `elan` (the dev container in [.devcontainer/](.devcontainer/) provides all of them).
+Prerequisites: Rust 1.97.1 (`rust-toolchain.toml` pins it), [just](https://github.com/casey/just), `cargo-deny`, and the pinned Lean toolchain `leanprover/lean4:v4.32.1` installed through `elan` (the dev container in [.devcontainer/](.devcontainer/) provides all of them).
 
 ```text
 just vv        # the complete normative acceptance gate (SPEC.md §9.2)
@@ -165,7 +165,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Prose-free deterministic generated Lean with complete token traceability | `LN-01`..`LN-12` | `build` |
 | Canonical LaTeX regeneration and the optional hash-checked PDF provider | `TX-01`..`TX-12` | `build` |
 | Canonical diagnostics, source maps, coverage, manifests, and reproducible builds | `AR-01`..`AR-14` | `build` |
-| Fifteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-23` | `build` |
+| Sixteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-23` | `build` |
 | The exact CLI contract, the stable seven-method Rust `Engine` API, the host-driven end of the children the library started, and the `production` subcommands | `CL-01`..`CL-23` | `build` |
 | Filesystem confinement, no shell, no hidden network, closed failure model | `SE-01`..`SE-12` | `build` |
 | Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit | `PD-01`..`PD-07` | `build` |
@@ -218,7 +218,7 @@ All are enforced by the same golden and conformance gates as everything else.
 
 ## Layout
 
-Language data lives in [language/](language/), claim data in [model/](model/), schemas in [schemas/](schemas/), the compiler in [crates/lexlean/](crates/lexlean/), gates in [xtask/](xtask/) and [crates/conformance/](crates/conformance/), the examples in [examples/](examples/), and the negative fixtures in [tests/negative/](tests/negative/).
+Language data lives in [language/](language/), claim data in [model/](model/), schemas in [schemas/](schemas/), the compiler in [crates/lexlean/](crates/lexlean/), gates in [xtask/](xtask/) and [crates/conformance/](crates/conformance/), the examples in [examples/](examples/), and the negative fixtures in [tests/negative/](tests/negative/). The projects written in LexLean itself are [compiler/](compiler/) (the production calculus, GNAF, and certification), [stdlib/](stdlib/) (the standard library), and [bootstrap/](bootstrap/) (the compiler's own components, beside the Rust they replace, the stage-0 oracle); the pinned differential oracle is described in [oracle/](oracle/) as validation evidence only, and the schemas of the stable API and the tooling interface are under [api/](api/) and [tooling/](tooling/). CI is in [.github/](.github/).
 
 ## License
 
