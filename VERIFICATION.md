@@ -8501,7 +8501,7 @@ pass, are pinned by the script's own query (`event=pull_request&status=success`,
 on main run 39054719580
 `CensusCert4` took 1,419.3 s to elaborate and 2,248.5 s to replay at about
 15 GiB with 3.5 GiB of swap, and `CensusCert10` 114.6 s and 120.8 s at
-14.7 and 15.0 GiB with swap. Each window is now ten width-100 certificates,
+14.3 and 14.7 GiB with swap. Each window is now ten width-100 certificates,
 `CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`, joined
 by `gramRange_append` as `CensusCert7` already was. The statements, the kernel
 `decide` proofs of each piece, and every importer are unchanged.
