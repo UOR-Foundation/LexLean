@@ -7056,6 +7056,28 @@ control characters. Planted defects in the source are each detected by the same
 differential, and the production export (§24.7) certifies both roots beside
 `AxiomOutput` under `tests/production-export/bootstrap/`.
 
+`BS-03` states what the recursion of these roots asks of the host that runs
+them (§17.13, §17.16). The host here is a conformance harness, and the stack it
+gives a root is a recorded fact, not a size picked by habit.
+`tests/stack-bounds.json` holds one row for each package of the committed
+`bootstrap` and `stdlib` exports whose provenance states `recursion`, and no
+other: the least stack, in 64 KiB steps, on which the harness the cases run
+finishes, found by bisecting the stack of one built binary on the cases' own
+corpus, in its debug build (the build the cases run, which the check reads) and
+its release build (the build the issue's table measures). One more row is the
+thread the `BS` cases give the calculus evaluator, which recurses with the
+depth of the program it runs. The stack of the harness thread
+(`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the
+largest recorded bound times the stated headroom of 4, because the bound is the
+least stack that finished on one host and an unoptimized frame differs between
+hosts; a stack below that product, or a root with no row, is refused, and the
+harness of `isClosedLeanName` is run on the stack its bound allows and on a
+quarter of its bound, on which it aborts. The record measures these inputs on
+the host that wrote it. It is evidence at level `build` for the stacks the
+suite gives, and it is not a stack bound for any program, input, or host: a
+package states `recursion` and no more (§17.16), and the host that runs it
+still gives the call a stack its depth fits.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract

@@ -560,6 +560,10 @@ pub fn run(id: &str) {
                     "{name}: {}",
                     String::from_utf8_lossy(&ran.stderr)
                 );
+                crate::stack_bounds::observe(
+                    &crate::stack_bounds::subject("stdlib", name),
+                    &binary,
+                );
                 let stdout = String::from_utf8(ran.stdout).expect("utf8");
                 let printed: Vec<Json> = stdout
                     .lines()

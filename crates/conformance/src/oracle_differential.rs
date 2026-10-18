@@ -1092,7 +1092,8 @@ fn oracle_harness(
     out.push_str("        _ => unreachable!(),\n    }\n}\n");
     let _ = write!(
         out,
-        "\nfn main() {{\n    let runner = std::thread::Builder::new().stack_size(64 << 20).spawn(|| {{\n        for case in 0..{} {{\n            let (outcome, spent) = run(case);\n            println!(\"{{outcome}}\\t{{spent}}\");\n        }}\n    }}).expect(\"the harness thread starts\");\n    if runner.join().is_err() {{\n        std::process::exit(101);\n    }}\n}}\n",
+        "\nfn main() {{\n    let runner = std::thread::Builder::new().stack_size({}).spawn(|| {{\n        for case in 0..{} {{\n            let (outcome, spent) = run(case);\n            println!(\"{{outcome}}\\t{{spent}}\");\n        }}\n    }}).expect(\"the harness thread starts\");\n    if runner.join().is_err() {{\n        std::process::exit(101);\n    }}\n}}\n",
+        crate::rust_harness::HARNESS_STACK,
         cases.len()
     );
     Ok(out)
@@ -3060,10 +3061,10 @@ pub fn render_candidate(
     // and cannot reach either.
     let counted = harness.replacen("#![forbid(unsafe_code)]", "#![deny(unsafe_code)]", 1);
     assert_ne!(counted, harness, "the harness forbids unsafe code");
+    let stack = crate::rust_harness::HARNESS_STACK;
     let harness = format!(
-        "{}\n{COUNTING}\n{}\nfn main() {{\n    harness_main();\n    println!(\"allocations {{}}\", allocations());\n}}\n",
+        "{}\n{COUNTING}\nfn harness_main() {{\n    let runner = std::thread::Builder::new().stack_size({stack}).spawn(harness_runs).expect(\"the harness thread starts\");\n    if runner.join().is_err() {{\n        std::process::exit(101);\n    }}\n}}\nfn main() {{\n    harness_main();\n    println!(\"allocations {{}}\", allocations());\n}}\n",
         counted.split_once("\nfn main() {").map_or("", |(head, _)| head),
-        "fn harness_main() {\n    let runner = std::thread::Builder::new().stack_size(64 << 20).spawn(harness_runs).expect(\"the harness thread starts\");\n    if runner.join().is_err() {\n        std::process::exit(101);\n    }\n}"
     );
     let dir = tempfile::Builder::new()
         .prefix("lexlean-oracle-candidate-")

@@ -16,6 +16,18 @@ use lexlean::calculus::rust::package::Passing;
 use lexlean::calculus::rust::{self, Literals, Profile};
 use lexlean::calculus::{Program, Ty, Value};
 
+/// The stack, in bytes, of the thread a harness runs its calls on. A root that
+/// admits `recursion` (SPEC.md §17.13) is correct only under a stack its
+/// input-dependent depth fits, so this is not a size picked by habit:
+/// `BS-03` checks it against the peak stack each harness-run recursive root
+/// was measured to need (`tests/stack-bounds.json`), with stated headroom.
+pub const HARNESS_STACK: usize = 64 << 20;
+
+/// The environment variable that replaces [`HARNESS_STACK`] in a harness
+/// binary. It exists so that the bound can be measured and a stack below it
+/// shown to abort (`BS-03`); no case relies on it for its own verdict.
+pub const HARNESS_STACK_ENV: &str = "LEXLEAN_HARNESS_STACK";
+
 fn index(number: u64) -> Result<usize, String> {
     usize::try_from(number).map_err(|error| error.to_string())
 }
@@ -364,6 +376,9 @@ pub fn render_calls(
     out.push_str("\nfn harness_runs() {\n");
     out.push_str(&groups.concat());
     out.push_str("    println!(\"work {}\", work());\n}\n");
-    out.push_str("\nfn main() {\n    let runner = std::thread::Builder::new().stack_size(64 << 20).spawn(harness_runs).expect(\"the harness thread starts\");\n    if runner.join().is_err() {\n        std::process::exit(101);\n    }\n}\n");
+    let _ = write!(
+        out,
+        "\nfn main() {{\n    let stack = std::env::var(\"{HARNESS_STACK_ENV}\").ok().and_then(|bytes| bytes.parse().ok()).unwrap_or({HARNESS_STACK});\n    let runner = std::thread::Builder::new().stack_size(stack).spawn(harness_runs).expect(\"the harness thread starts\");\n    if runner.join().is_err() {{\n        std::process::exit(101);\n    }}\n}}\n"
+    );
     Ok(out)
 }

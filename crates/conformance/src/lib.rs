@@ -40,6 +40,7 @@ pub mod rust_harness;
 pub mod rust_packages;
 pub mod schema;
 pub mod shards;
+pub mod stack_bounds;
 pub mod stress;
 pub mod tl;
 pub mod tooling;
