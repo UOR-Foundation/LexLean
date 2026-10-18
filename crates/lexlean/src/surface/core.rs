@@ -590,7 +590,11 @@ fn declaration_text(declaration: &CoreDeclaration) -> Result<String, SurfaceErro
     };
     let mut head = format!("{kind} {}", spell(&declaration.name));
     if !declaration.level_names().is_empty() {
-        let names: Vec<String> = declaration.level_names().iter().map(|name| spell(name)).collect();
+        let names: Vec<String> = declaration
+            .level_names()
+            .iter()
+            .map(|name| spell(name))
+            .collect();
         let _ = write!(head, ".{{{}}}", names.join(", "));
     }
     // A derived row has no type to state: it is the row without a `:`, and

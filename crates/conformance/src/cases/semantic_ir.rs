@@ -2605,14 +2605,47 @@ pub(crate) fn run(id: &str) {
             for absent in ["levels", "type", "value", "reducibility"] {
                 assert!(row.get(absent).is_none(), "a derived row states `{absent}`");
             }
+            // The schema refuses a derived row that states what the
+            // construction decides, and a row that is neither derived nor
+            // stating a type.
+            for (what, edit) in [
+                (
+                    "a derived row with a type",
+                    (&|data: &mut serde_json::Value| data["declarations"][1]["type"] = 0.into())
+                        as &dyn Fn(&mut serde_json::Value),
+                ),
+                ("a derived row with universe parameters", &|data| {
+                    data["declarations"][1]["levels"] = serde_json::json!([])
+                }),
+                ("a row that is not derived and states no type", &|data| {
+                    data["declarations"][1]
+                        .as_object_mut()
+                        .expect("a row")
+                        .remove("derived");
+                }),
+            ] {
+                let mut planted = data.clone();
+                edit(&mut planted);
+                assert!(
+                    !crate::schema::validate(&support::schema("core-module-v2"), &planted)
+                        .is_empty(),
+                    "the schema accepts {what}"
+                );
+            }
             // The notation writes the row without a type and reads it back.
             let text = lexlean::surface::core::print_module(core).expect("notation");
             let line = text
                 .lines()
                 .find(|line| line.starts_with("theorem V2Fixture.one.eq_1"))
                 .expect("the derived row is in the notation");
-            assert!(!line.contains(':') || line.contains("derived: true"), "{line}");
-            assert!(!line.contains(" : @"), "the derived row states a type: {line}");
+            assert!(
+                !line.contains(':') || line.contains("derived: true"),
+                "{line}"
+            );
+            assert!(
+                !line.contains(" : @"),
+                "the derived row states a type: {line}"
+            );
             assert_eq!(
                 &lexlean::surface::core::parse_module(&text).expect("reads back"),
                 core
@@ -2663,6 +2696,50 @@ pub(crate) fn run(id: &str) {
                 assert!(error.to_string().contains(message), "{what}: {error}");
                 refused.assert_no_backend_output_with("LLI9001");
             }
+            // The shipped preservation library states what the pinned Lean
+            // makes as derived rows and nothing else as one.
+            let library = support::repo_root().join("language/preservation-1.2/library/src");
+            let (mut derived_rows, mut stored_rows) = (0usize, 0usize);
+            let mut sources: Vec<_> = std::fs::read_dir(library.as_std_path())
+                .expect("the library sources")
+                .flatten()
+                .map(|entry| entry.path())
+                .collect();
+            sources.sort();
+            for path in sources {
+                let text = std::fs::read_to_string(&path).expect("a library module");
+                let module = lexlean::ir::core::CoreModule::from_source(&text, "1.2")
+                    .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+                for row in &module.declarations {
+                    let last = row.name.rsplit('.').next().unwrap_or(&row.name);
+                    let named_like_derived = matches!(last, "splitter" | "else_eq" | "eq_def")
+                        || last.strip_prefix("eq_").is_some_and(|rest| {
+                            !rest.is_empty() && rest.bytes().all(|byte| byte.is_ascii_digit())
+                        });
+                    assert_eq!(
+                        row.derived,
+                        named_like_derived || row.sparse.is_some(),
+                        "{}: `{}` is {} and must{} be derived",
+                        path.display(),
+                        row.name,
+                        if row.derived { "derived" } else { "stored" },
+                        if named_like_derived || row.sparse.is_some() {
+                            ""
+                        } else {
+                            " not"
+                        }
+                    );
+                    if row.derived {
+                        derived_rows += 1;
+                    } else {
+                        stored_rows += 1;
+                    }
+                }
+            }
+            assert!(
+                derived_rows > 0 && stored_rows > 0,
+                "the library states derived rows and stored rows"
+            );
             accepted.build_ok();
             if !support::lean_backed("SM-34") {
                 return;

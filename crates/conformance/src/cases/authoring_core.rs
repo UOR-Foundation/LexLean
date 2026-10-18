@@ -995,7 +995,9 @@ fn authored() {
     let statement_at = body
         .find(&format!(
             "\n@{} := ",
-            theorem.r#type.expect("the authored theorem states its type")
+            theorem
+                .r#type
+                .expect("the authored theorem states its type")
         ))
         .expect("the statement of the theorem")
         + 1;

@@ -1138,6 +1138,7 @@ impl CoreModule {
             (declaration.inductive.is_some(), "inductive metadata"),
             (declaration.generated, "the generated flag"),
             (declaration.safety.is_some(), "a safety"),
+            (declaration.all.is_some(), "a group"),
         ] {
             if stated {
                 return Err(format!(

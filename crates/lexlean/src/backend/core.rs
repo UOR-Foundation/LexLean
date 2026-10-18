@@ -710,8 +710,8 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
     // Lean's construction reads. The construction reads the environment as
     // it stood when the elaborator made the constant, and the data order of
     // the module is that order, so a derived row follows the derived row
-    // before it in the data, its owners (the rows its name extends), and
-    // the type and constructors of its recipe.
+    // before it in the data, its owners (the rows its name extends) unless it
+    // is a sparse `casesOn`, and the type and constructors of its recipe.
     let mut previous_derived: Option<&str> = None;
     let mut derived_predecessor: BTreeMap<&str, &str> = BTreeMap::new();
     for row in core.declarations.iter().filter(|row| row.derived) {
@@ -735,14 +735,18 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         if declaration.derived {
             let mut required: Vec<String> = Vec::new();
             required.extend(derived_predecessor.get(name).map(|name| (*name).to_owned()));
-            let mut owner = name.rsplit_once('.').map(|(prefix, _)| prefix);
-            while let Some(prefix) = owner {
-                required.push(prefix.to_owned());
-                owner = prefix.rsplit_once('.').map(|(prefix, _)| prefix);
-            }
             if let Some(sparse) = &declaration.sparse {
+                // A sparse `casesOn` is named under the splitter whose
+                // construction needs it, so it comes before its name's owner
+                // and depends on its recipe alone.
                 required.push(sparse.ind_name.clone());
                 required.extend(sparse.interesting_ctors.iter().cloned());
+            } else {
+                let mut owner = name.rsplit_once('.').map(|(prefix, _)| prefix);
+                while let Some(prefix) = owner {
+                    required.push(prefix.to_owned());
+                    owner = prefix.rsplit_once('.').map(|(prefix, _)| prefix);
+                }
             }
             for constant in required {
                 let dependency = if emitted.contains_key(constant.as_str()) {

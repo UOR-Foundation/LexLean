@@ -2463,12 +2463,39 @@ are data of the module, not conventions of a backend.
   not after the module: the `recursive` tag, the transparency, the matcher
   record, the equational-lemma record, and the row's realization context,
   which for a definition with an equational-lemma record is opened once its
-  smart-unfolding row (`_sunfold`) is in. A derived row is therefore what the
-  pinned Lean derives from the module, checked against the data rather than
-  taken from it.
+  smart-unfolding row (`_sunfold`) is in. A row that states its type and
+  value is therefore what the pinned Lean derives from the module, checked
+  against the data rather than taken from it.
+- A row may be *derived* (`"derived": true`): it states its name, its kind
+  (`theorem`, `definition`, or `abbrev`), its transparency and axiom policy,
+  and the extension state it installs (the tags, the compiler inlining
+  attribute, the compiled flag, and the other members of version 2 that are
+  not a term), and for a sparse `casesOn` its record (the type, the
+  constructors that have an arm, the position of the major premise, and the
+  arity), and it states no universe parameters, type, value, reducibility
+  metadata, group, or safety, which the construction decides. The decoder
+  makes the constant at the row's place in the order with the construction
+  the row names, the action the pinned Lean registers for a reserved name or
+  the sparse `casesOn` construction above, installs the state the row
+  states, and refuses the module unless the name is one the pinned Lean
+  reserves or the row states a sparse record, the construction makes the
+  name, and the constant is a theorem when the row is a theorem, an
+  abbreviation (its hint is `abbrev`) when the row is an `abbrev`, and
+  another definition when it is a `definition`. What the construction makes
+  is therefore never stored, so it cannot go stale when a type of the module
+  changes, and an authored proof that needs another equation fails to check
+  and is named. A derived row names no term, so the order of emission is the
+  data's: a derived row follows the derived row before it in the module,
+  the rows its name extends (not a sparse `casesOn`, which is named under
+  the splitter whose construction needs it and so comes first), and the
+  type and the constructors its record names. A certificate cites no
+  derived row, since no type of it is stated. The stored form remains valid:
+  a row that states its type and value is checked as above (`SM-33`), so a
+  library migrated before the derived form decodes unchanged.
 
 A version 2 row that states a field of another kind of declaration is
-rejected; the group of a definition names only declarations of the module; an
+rejected, and so is a derived row that states what its construction decides,
+or a row that states no type and is not derived (`SM-34`); the group of a definition names only declarations of the module; an
 annotation entry's name, a group member, a matcher discriminant name, and an
 equational-lemma record's names obey the name grammar; and the roots of an
 equation record are nodes of the module. The data is exactly what the one
@@ -5598,7 +5625,8 @@ or whose theorem's axioms are not exactly the three above is `LLV7016`.
 **Certificate E as data.** Certificate E is not Lean text. The compiler
 builds it as a native core module of schema `lexlean/core-module/2`
 (§17.10): the terms above as kernel terms, every argument and universe level
-written. A lemma's type is read from the native preservation library and
+written. A lemma's type is read from the native preservation library, whose derived
+rows (§17.10) state none and which no certificate cites, and
 instantiated one binder at a time, so the implicit program, crate, and flags
 of every lemma, the element types and encoders of the container lemmas, the
 field values and types of a document, and the environment the entry binds
@@ -6805,7 +6833,7 @@ language 1.0 or 1.1 is `LLP2003`. The text of a module is:
 
 ```ebnf
 module      = "imports" "[" [ name { "," name } ] "]" { declaration } { statement } ;
-declaration = kind name [ ".{" name { "," name } "}" ] ":" ref [ ":=" ref ] [ members ] ;
+declaration = kind name [ ".{" name { "," name } "}" ] [ ":" ref [ ":=" ref ] ] [ members ] ;
 kind        = "abbrev" | "definition" | "theorem" | "inductive" | "constructor" | "recursor" ;
 members     = object of the generic notation (§17.21.3) ;
 statement   = ref ":=" term ;
@@ -6881,7 +6909,9 @@ statements of its type and value, naming what they mean and counting nothing
 (`AU-12`). The notation does not infer: every argument and every universe level
 of a constant is written, as a kernel term has them (§17.10).
 
-*The declarations.* The other members of a declaration (its transparency,
+*The declarations.* A declaration without `:` and a type is a derived row
+(§17.10): it has no universe parameters, type, or value, and its members say
+`derived: true`. The other members of a declaration (its transparency,
 policy, reducibility, class and generated flags, the members of version 2, and
 every node it states other than its `type` and `value`) are the generic notation
 of the object that has them, so that no member is unspellable and a member added
@@ -9578,7 +9608,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
 | `SM-32` | `semantic-ir` | Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root. | §17.12 |
 | `SM-33` | `semantic-ir` | A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
-| `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, and a stored row is still checked against the construction. | §17.10 |
+| `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row. | §17.10 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
