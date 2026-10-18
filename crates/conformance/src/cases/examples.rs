@@ -220,7 +220,11 @@ pub(crate) fn run(id: &str) {
                 ("pdf-hash-mismatch", "LLS8004"),
                 // §17.12: version routing fails closed before any backend.
                 ("language-1.2-construct-under-1.1", "LLT4001"),
-                ("semantic-module-v1-under-1.2", "LLT4001"),
+                // The v1 payload is data, which language 1.2 refuses before it
+                // reads the schema tag (AU-13); the notation cannot spell a
+                // v1 payload, so the fixture stays data and is a fixture of
+                // that refusal.
+                ("semantic-module-v1-under-1.2", "LLP2003"),
                 ("semantic-module-v2-under-1.1", "LLT4001"),
                 ("unsupported-language-version", "LLC0103"),
                 ("malformed-language-version", "LLC0103"),

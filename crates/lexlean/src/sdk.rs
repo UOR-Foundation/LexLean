@@ -191,8 +191,11 @@ pub fn write_module(text: &str, data: &Value) -> Result<String, AuthoringError> 
 }
 
 /// `text` with its module written as `\semanticdata{…}` (`\toolingdata{…}`),
-/// the canonical JSON the compiler links: the form a module had before the
-/// notation existed.
+/// the canonical JSON the module has: the form a module had before the
+/// notation existed. It is a conversion for a program that wants the wire
+/// form, not a source: language 1.2 refuses a module written this way
+/// (SPEC.md §17.21.1), so the text is for a reader of the JSON or a
+/// language-1.1 project, and [`to_notation`] is the way back.
 ///
 /// # Errors
 ///

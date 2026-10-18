@@ -248,6 +248,27 @@ fn span_of_range(path: &str, atoms: &[Atom], range: AtomRange) -> crate::diagnos
     }
 }
 
+/// The refusal of a data argument under language 1.2 (SPEC.md §17.11,
+/// §17.21.1). It is `LLP2003` as the mirror refusal of the notation under
+/// language 1.1 is: the form is a structural alternative the language does
+/// not admit, so no new code is needed to carry it. It is raised at link, the
+/// first place the project's language is known, and before any payload is
+/// read, so a refused module is never decoded.
+fn data_form_refusal(
+    path: &str,
+    atoms: &[Atom],
+    data: &crate::grammar::structural::BraceArg,
+    control: &str,
+) -> Diagnostic {
+    Diagnostic::new(
+        code!("LLP2003"),
+        format!(
+            "phase link: language 1.2 does not admit `{control}`; write the module in the authoring notation (SPEC.md section 17.21), which `lexlean::sdk::to_notation` produces from the data form"
+        ),
+    )
+    .with_span(span_of_range(path, atoms, data.range))
+}
+
 /// The span of the byte `offset` into a verbatim body (the atoms of `range`),
 /// one scalar wide; the `\begin` atom when the body is empty.
 fn notation_span(
@@ -821,6 +842,14 @@ fn check_project_inline(
                     }
                 }
             } else {
+                if project.config.language == crate::LANGUAGE_1_2 {
+                    return Err(err(vec![data_form_refusal(
+                        &load.path,
+                        &load.atoms,
+                        &ast.data,
+                        "\\coredata",
+                    )]));
+                }
                 CoreModule::parse(&ast.data.text, &project.config.language)
             };
             let core = parsed.map_err(|reason| {
@@ -901,6 +930,14 @@ fn check_project_inline(
                     }
                 }
             } else {
+                if project.config.language == crate::LANGUAGE_1_2 {
+                    return Err(err(vec![data_form_refusal(
+                        &load.path,
+                        &load.atoms,
+                        &ast.data,
+                        "\\semanticdata",
+                    )]));
+                }
                 std::borrow::Cow::Borrowed(ast.data.text.as_str())
             };
             // A package's source writes a sibling module by its own name; the
@@ -991,6 +1028,14 @@ fn check_project_inline(
                     }
                 }
             } else {
+                if project.config.language == crate::LANGUAGE_1_2 {
+                    return Err(err(vec![data_form_refusal(
+                        &load.path,
+                        &load.atoms,
+                        &ast.data,
+                        "\\toolingdata",
+                    )]));
+                }
                 std::borrow::Cow::Borrowed(ast.data.text.as_str())
             };
             Some(

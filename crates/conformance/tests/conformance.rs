@@ -1996,6 +1996,11 @@ fn conformance_au_12() {
 }
 
 #[test]
+fn conformance_au_13() {
+    repo_conformance::cases::run("AU-13");
+}
+
+#[test]
 fn conformance_rt_01() {
     repo_conformance::cases::run("RT-01");
 }
