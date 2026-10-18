@@ -1000,6 +1000,16 @@ impl<'a> Writer<'_, 'a> {
         let e = self.enc(&element)?;
         let h = self.value_of(head)?;
         let value = self.value_ty();
+        // The payload of a list nested in a recursive group is its items row,
+        // which the group's bundle equates with the head's encoding consed on
+        // the tail's items; `List.map` of the element's encoder is the same
+        // list only by an induction the kernel does not do.
+        if let Some(nested) = self.gen.nested.get(&self.gen.source.type_text(ty)) {
+            let index = nested.index;
+            let items = self.own(&format!("__items_{index}"));
+            let t = self.b.app(items, tail_src);
+            return self.apply("construct_cons", &[("h", h), ("t", t)], &[]);
+        }
         let map = self.b.konst_at(
             "List.map",
             vec![

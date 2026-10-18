@@ -1611,4 +1611,66 @@ mod tests {
         let error = environment_declarations(&core).expect_err("unowned generated row is rejected");
         assert!(error.message.contains("no native owner"));
     }
+
+    /// A module of `fillers` independent definitions around a safe mutual
+    /// group `b_enc`, `b_items`, sorted so that the group straddles the first
+    /// command boundary when it is scheduled as two nodes.
+    fn grouped(fillers: usize, group: bool) -> CoreModule {
+        let mut core = fixture();
+        core.declarations.clear();
+        for index in 0..fillers {
+            let mut row = declaration(
+                &format!("Fixture.a_{index:03}"),
+                CoreDeclKind::Definition,
+                false,
+            );
+            row.compiled = true;
+            core.declarations.push(row);
+        }
+        for name in ["Fixture.b_enc", "Fixture.b_items"] {
+            let mut row = declaration(name, CoreDeclKind::Definition, false);
+            row.compiled = true;
+            if group {
+                row.all = Some(vec![
+                    "Fixture.b_enc".to_owned(),
+                    "Fixture.b_items".to_owned(),
+                ]);
+            }
+            core.declarations.push(row);
+        }
+        core
+    }
+
+    fn command_of(core: &CoreModule, name: &str) -> usize {
+        let order = emission_order(core).expect("an order");
+        let ranges = core_command_ranges(core, &order, &generated_owners(core)).expect("ranges");
+        let position = order
+            .iter()
+            .position(|row| row.name == name)
+            .expect("an emitted row");
+        ranges
+            .iter()
+            .position(|range| range.contains(&position))
+            .expect("a command")
+    }
+
+    #[test]
+    fn a_safe_mutual_group_is_one_command() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, true);
+        assert_eq!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "the members of a safe compiled group are compiled together"
+        );
+    }
+
+    #[test]
+    fn the_group_test_is_armed_by_an_ungrouped_pair() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, false);
+        assert_ne!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "without the group the same pair straddles the boundary"
+        );
+    }
 }
