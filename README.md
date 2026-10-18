@@ -23,9 +23,13 @@ published container image carries both and is the shortest path to a run that
 can actually verify:
 
 ```text
-docker pull ghcr.io/afflom/lexlean:0.3.0
-docker run --rm -v "$PWD:/work" ghcr.io/afflom/lexlean:0.3.0 verify
+docker pull ghcr.io/<owner>/lexlean:<version>
+docker run --rm -v "$PWD:/work" ghcr.io/<owner>/lexlean:<version> verify
 ```
+
+`release.yml` publishes the image for a tagged release under the repository's
+owner, with the tag's version as the image tag. The only tag so far is
+`v0.1.0`, whose image is `ghcr.io/afflom/lexlean:0.1.0`.
 
 The image is around 4 GB, nearly all of it the pinned toolchain's compiled
 library — the part `verify` needs and the part a smaller image would have to

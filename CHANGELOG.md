@@ -11,7 +11,9 @@ the first release satisfying the complete specification. No tag before `1.0.0`
 is therefore a §30 release: `cargo xtask release-check` reads the complete
 §30.3 artifact set and §30.4 completion criterion and refuses, naming every
 criterion that does not hold. That refusal is the accurate answer at these
-versions, and the entries below say what each tag does and does not claim.
+versions. Only `v0.1.0` has been tagged: the sections for `0.1.1`, `0.2.0`,
+and `0.3.0` record what the workspace carried at those versions without a tag,
+and Unreleased holds what has landed since.
 
 ## Unreleased
 

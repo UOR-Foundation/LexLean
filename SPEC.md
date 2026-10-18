@@ -8512,7 +8512,7 @@ This metadata is native-only: canonical diagnostic JSON, human rendering,
 diagnostic sorting, registered codes, and accepted-program artifact identities
 are unchanged. The detail accessor is read-only; compiler producers alone set
 the detail. `Diagnostic::new` creates a diagnostic without detail. Adding its
-private storage in the unreleased 0.3.0 API is a Rust struct-literal source
+private storage in the untagged `0.3.0` API is a Rust struct-literal source
 compatibility change: downstream callers construct diagnostics with
 `Diagnostic::new`, not struct literals. It is not a diagnostic wire-version
 change or a claim of unchanged struct-literal source compatibility.
