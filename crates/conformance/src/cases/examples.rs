@@ -527,6 +527,36 @@ pub(crate) fn run(id: &str) {
                 );
             }
 
+            // Every committed expectation is itself a valid diagnostic list,
+            // checked before any fixture runs: the usage-error fixture is
+            // valid only because its code may omit `primary`.
+            let mut expectations = 0;
+            for entry in walkdir::WalkDir::new(root.join("tests").as_std_path())
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_name() == "diagnostics.json")
+                .filter(|entry| {
+                    entry
+                        .path()
+                        .parent()
+                        .is_some_and(|p| p.ends_with("expected"))
+                })
+            {
+                let list: serde_json::Value =
+                    serde_json::from_slice(&std::fs::read(entry.path()).expect("expectation"))
+                        .expect("expected diagnostics are JSON");
+                for diagnostic in list.as_array().expect("a diagnostics array") {
+                    let violations = crate::schema::validate(&diagnostic_schema, diagnostic);
+                    assert!(
+                        violations.is_empty(),
+                        "{}: {violations:?}",
+                        entry.path().display()
+                    );
+                }
+                expectations += 1;
+            }
+            assert!(expectations > 100, "the committed expectations are read");
+
             let lean_available = support::lean_backed("EX-07");
             // The fixtures are independent of one another (each runs in a
             // copy of its project, and the ones that override the toolchain
