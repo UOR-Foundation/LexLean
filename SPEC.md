@@ -2484,7 +2484,13 @@ are data of the module, not conventions of a backend.
   another definition when it is a `definition`. What the construction makes
   is therefore never stored, so it cannot go stale when a type of the module
   changes, and an authored proof that needs another equation fails to check
-  and is named. A derived row names no term, so the order of emission is the
+  and is named. A sparse record's constructors are checked
+  against the type: each is a constructor of it, and none is named twice (the
+  record lists them in the order of the arms, not of the type). Every chunk
+  carries the names of the module's sparse `casesOn` rows, and the decoder refuses
+  a chunk whose construction made a sparse `casesOn` that the module does not
+  state, so a row cannot be left out for the construction to supply. A derived
+  row names no term, so the order of emission is the
   data's: a derived row follows the derived row before it in the module,
   the rows its name extends (not a sparse `casesOn`, which is named under
   the splitter whose construction needs it and so comes first), and the

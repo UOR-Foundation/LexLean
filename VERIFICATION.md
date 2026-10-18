@@ -1468,6 +1468,35 @@ is made, differently, and the library verifies. The recipe is checked against it
 arity and major premise, and against every stored row that uses the constant, and
 not against the constructors the original elaboration chose.
 
+Planted (e): the record of `LexLeanPreservation.Rust.WT._sparseCasesOn_1` naming
+`Value.clos`, which is no constructor of `Value`. Expected: refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1':
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names 'LexLeanTarget.TargetSyntax.Value.clos', which is not a constructor of 'LexLeanTarget.TargetSyntax.Value'
+```
+
+Planted (f): the same record naming `Value.adt` twice. Expected: refused.
+
+```text
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names the constructor 'LexLeanTarget.TargetSyntax.Value.adt' twice
+```
+
+Planted (g): the row `splitter._sparseCasesOn_2` of `src/Keys.lex.tex` removed, so
+that the construction of the splitter makes the constant itself. Expected: the module
+does not state what the construction made.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the construction made the sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_2', which the module does not state
+```
+
+Still not caught (see the note after (c)): the constructors of that record replaced
+by another constructor of the same type, `Ordering.lt` for `Ordering.eq`, in
+`Keys`, where nothing refers to the record, verify. Closing it needs the decoder to
+find a use of every derived sparse `casesOn` among the constants of the whole module,
+a scan of every term at the end of each module, which is not small; it is the
+maintainer's decision.
+
 Planted (d): the name of `LexLeanPreservation.Rel.eq_1` replaced by `Rel.eq_2`,
 which is reserved but which the construction does not make. Expected: refused.
 

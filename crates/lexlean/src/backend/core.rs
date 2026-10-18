@@ -1099,6 +1099,11 @@ fn append_core_command(
     struct CorePayload<'a> {
         declarations: &'a [CoreDeclaration],
         imports: &'a [String],
+        /// Every sparse `casesOn` the whole module states, so that a chunk
+        /// can tell a constant the construction made for a row of another
+        /// chunk from one the module does not state. Core module 2 only.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_sparse: Option<Vec<&'a str>>,
         order: &'a [usize],
         proof_nodes: &'a [usize],
         spec: &'a str,
@@ -1106,6 +1111,13 @@ fn append_core_command(
     let payload = serde_json::to_string(&CorePayload {
         declarations: &chunk.declarations,
         imports: &core.imports,
+        module_sparse: (core.version() == 2).then(|| {
+            core.declarations
+                .iter()
+                .filter(|row| row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect()
+        }),
         order: &chunk.order,
         proof_nodes: &chunk.proof_nodes,
         spec: &core.spec,
