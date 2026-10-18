@@ -7215,7 +7215,7 @@ change.
 `RP-14` reads the profile out of the matrix. The examples leg must name
 exactly that width, budget, and hints file; the width and the hints must parse
 with the verifier's own functions (`Operational::parse_width`,
-`Operational::parse_hints`), and the hints must name `CensusCert4`; any other
+`Operational::parse_hints`), and the hints must name `Census`; any other
 leg must name none; each variable is set once, from the row; and no profile may
 come from `vars.` or `inputs.`.
 

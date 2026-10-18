@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- UOR Atlas, #168: the census windows `CensusCert4` and `CensusCert10`
+  (`gramRange 4000 1000 = true` and `gramRange 10000 1000 = true`, each one
+  `of_decide_eq_true`) are proved from ten width-100 certificates each,
+  `CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`,
+  joined by `gramRange_append` exactly as `CensusCert7` is from
+  `CensusCert70` to `CensusCert79`. Their statements are unchanged and their
+  importers are untouched; the Atlas root imports the twenty pieces
+  (`audit-atlas-exercise`, R4). In `.github/verify-shards.json` the `cert4`
+  shard elaborates the window-4 modules and `cert4-replay` replays them, and
+  `census-a` takes the window-10 pieces beside `CensusCert10`; the join
+  compares 327 normalized records (was 267). Atlas `expected/build` and
+  `expected/verify` are regenerated; no language data moves.
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
   A draft pull request runs the `rest` leg and no other job (about 23 runner
