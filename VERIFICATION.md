@@ -4562,6 +4562,19 @@ README.md:227: The export is not yet supported.
 
 Removed: both files were restored; `audit-deferral` reports nothing deferred.
 
+### the devcontainer pin row (RP-16) can fail
+
+Found by the #34 audit: the devcontainer hard-codes its toolchain versions and no gate compared them with `rust-toolchain.toml` or `lean-toolchain`. `conformance_rp_16` reads the Dockerfile's installs and also runs the same checker on six planted Dockerfiles in memory (another Rust version, another Lean version, a second Lean toolchain, a second Rust toolchain, an unpinned Lean default, an unpinned Rust default), each of which must be refused.
+
+Planted, on the committed file one at a time: `--default-toolchain 1.97.1` changed to `1.97.0` in `.devcontainer/Dockerfile`, then `leanprover/lean4:v4.32.1` changed to `leanprover/lean4:v4.32.0`. Command: `cargo test -p repo-conformance --test conformance conformance_rp_16 -- --exact`.
+
+```text
+the devcontainer installs exactly the pinned toolchains: "Rust toolchains installed [\"1.97.0\"], pinned 1.97.1"
+the devcontainer installs exactly the pinned toolchains: "Lean toolchains installed [\"leanprover/lean4:v4.32.0\"], pinned leanprover/lean4:v4.32.1"
+```
+
+Removed: the Dockerfile was restored and the case passes. SPEC.md §9.3 now says what the container does (the image installs the pins at build) instead of a post-create command it never had.
+
 ### audit-errors can fail
 
 Planted: the literal `"LLL1004"` in `crates/conformance/src/cases/lexical_closure.rs` changed so that its third digit is `9` (a well-shaped but unregistered code) outside any `code!(` invocation. Command: `cargo xtask validate-model`. Expected: R5 rejects the unregistered literal at its line.

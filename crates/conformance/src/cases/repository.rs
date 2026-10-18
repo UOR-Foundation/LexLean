@@ -1,4 +1,4 @@
-//! The `repository` suite: RP-01..RP-14.
+//! The `repository` suite: RP-01..RP-16.
 
 use std::collections::BTreeSet;
 
@@ -1957,6 +1957,90 @@ pub(crate) fn run(id: &str) {
             assert!(root_file(".github/workflows/honesty.yml").contains("just model spec-links"));
             assert!(root_file(".github/workflows/reproducibility.yml").contains("run: just repro"));
         }
+        // §9.3: the image installs the pins and nothing else. The checker is
+        // run on planted Dockerfiles as well, because a check that only ever
+        // sees the committed file cannot be told from one that accepts all.
+        "RP-16" => {
+            let rust = root_file("rust-toolchain.toml");
+            let channel = rust
+                .lines()
+                .find_map(|line| line.trim().strip_prefix("channel = \""))
+                .and_then(|rest| rest.strip_suffix('"'))
+                .expect("rust-toolchain.toml names a channel");
+            let lean = root_file("lean-toolchain");
+            let lean = lean.trim();
+            let dockerfile = root_file(".devcontainer/Dockerfile");
+            devcontainer_pins(&dockerfile, channel, lean)
+                .expect("the devcontainer installs exactly the pinned toolchains");
+            for (planted, why) in [
+                (dockerfile.replace(channel, "1.0.0"), "another Rust version"),
+                (
+                    dockerfile.replace(lean, "leanprover/lean4:v4.0.0"),
+                    "another Lean version",
+                ),
+                (
+                    format!("{dockerfile}RUN elan toolchain install leanprover/lean4:v4.0.0\n"),
+                    "a second Lean toolchain",
+                ),
+                (
+                    format!("{dockerfile}RUN rustup toolchain install nightly\n"),
+                    "a second Rust toolchain",
+                ),
+                (
+                    format!("{dockerfile}RUN elan default leanprover/lean4:stable\n"),
+                    "an unpinned Lean default",
+                ),
+                (
+                    dockerfile.replace(
+                        &format!("--default-toolchain {channel}"),
+                        "--default-toolchain stable",
+                    ),
+                    "an unpinned Rust default",
+                ),
+            ] {
+                assert!(
+                    devcontainer_pins(&planted, channel, lean).is_err(),
+                    "a Dockerfile with {why} is refused"
+                );
+            }
+        }
         other => panic!("no repository case is wired for {other}"),
     }
+}
+
+/// RP-16: every toolchain the Dockerfile installs is the pinned one. A Rust
+/// toolchain is installed by `--default-toolchain <v>` or `rustup toolchain
+/// install <v>`, a Lean toolchain by `elan toolchain install <v>`, and
+/// `elan default` would select one; the pin must appear and nothing else may.
+fn devcontainer_pins(dockerfile: &str, channel: &str, lean: &str) -> Result<(), String> {
+    let words: Vec<&str> = dockerfile.split_whitespace().collect();
+    let after = |lead: &[&str]| -> Vec<&str> {
+        words
+            .windows(lead.len() + 1)
+            .filter(|window| window[..lead.len()] == *lead)
+            .map(|window| window[lead.len()])
+            .collect()
+    };
+    // `--default-toolchain none` is elan's own installer asking for no
+    // toolchain, which the explicit pinned install after it then supplies.
+    let rust: Vec<&str> = after(&["--default-toolchain"])
+        .into_iter()
+        .filter(|version| *version != "none")
+        .chain(after(&["rustup", "toolchain", "install"]))
+        .collect();
+    let leans = after(&["elan", "toolchain", "install"]);
+    if rust != [channel] {
+        return Err(format!(
+            "Rust toolchains installed {rust:?}, pinned {channel}"
+        ));
+    }
+    if leans != [lean] {
+        return Err(format!(
+            "Lean toolchains installed {leans:?}, pinned {lean}"
+        ));
+    }
+    if words.windows(2).any(|pair| pair == ["elan", "default"]) {
+        return Err("`elan default` selects a toolchain".to_owned());
+    }
+    Ok(())
 }
