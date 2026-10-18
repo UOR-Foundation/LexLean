@@ -1094,7 +1094,18 @@ fn append_core_command(
     text: &mut String,
     core: &CoreModule,
     chunk: &CoreChunk,
+    last: bool,
 ) -> Result<(), Diagnostic> {
+    /// What the last chunk checks of the whole module: every derived sparse
+    /// `casesOn` is referred to by the type or value of some row. A recipe
+    /// selects constructors, and one that selects others makes another
+    /// well-typed constant, so nothing but a use checks it: the kernel has
+    /// checked the term of every row that applies the constant against it.
+    #[derive(serde::Serialize)]
+    struct ModuleScan<'a> {
+        rows: Vec<&'a str>,
+        sparse: Vec<&'a str>,
+    }
     #[derive(serde::Serialize)]
     struct CorePayload<'a> {
         declarations: &'a [CoreDeclaration],
@@ -1104,6 +1115,8 @@ fn append_core_command(
         /// chunk from one the module does not state. Core module 2 only.
         #[serde(skip_serializing_if = "Option::is_none")]
         module_sparse: Option<Vec<&'a str>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_scan: Option<ModuleScan<'a>>,
         order: &'a [usize],
         proof_nodes: &'a [usize],
         spec: &'a str,
@@ -1117,6 +1130,19 @@ fn append_core_command(
                 .filter(|row| row.sparse.is_some())
                 .map(|row| row.name.as_str())
                 .collect()
+        }),
+        module_scan: (core.version() == 2 && last).then(|| ModuleScan {
+            rows: core
+                .declarations
+                .iter()
+                .map(|row| row.name.as_str())
+                .collect(),
+            sparse: core
+                .declarations
+                .iter()
+                .filter(|row| row.derived && row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect(),
         }),
         order: &chunk.order,
         proof_nodes: &chunk.proof_nodes,
@@ -1241,9 +1267,9 @@ set_option synthInstance.maxHeartbeats 0
     let order = emission_order(core)?;
     let owners = generated_owners(core);
     let ranges = core_command_ranges(core, &order, &owners)?;
-    for range in &ranges {
+    for (index, range) in ranges.iter().enumerate() {
         let chunk = core_chunk(core, &order[range.clone()], &owners)?;
-        append_core_command(&mut text, core, &chunk)?;
+        append_core_command(&mut text, core, &chunk, index + 1 == ranges.len())?;
     }
     if let Some(scope) = legacy_scope {
         text.push_str(&format!("\nend {scope}\n"));
