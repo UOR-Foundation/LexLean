@@ -8415,6 +8415,14 @@ found, are asserted by the case itself.
    literals).
 4. The same under a `format!` template
    (`public def LexLeanReasoning.{name} : Nat := 0`).
+5. Production code after a non-item `#[cfg(test)]` (#169): a struct with a
+   `#[cfg(test)]` field followed by
+   `const PLANTED_AFTER_CFG_TEST_FIELD: &str = "public def LexLeanRuntime.x : Nat := 0";`
+   appended to `backend/semantic.rs` (`without_test_items` blanks only items
+   under `#[cfg(test)]` and file-leading `#![cfg(test)]`, and the case itself
+   also plants the five shapes of #169 — a struct field, an enum variant, a
+   function parameter, a match arm, and an inline module with `#![cfg(test)]` —
+   as well as `+` concatenation).
 
 ```text
 thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:765:5:
@@ -8423,6 +8431,7 @@ assertion `left == right` failed: the only Lean runtime text in the compiler is 
  right: [("backend/core_v2.rs", 34)]
   left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2965)]     (2 and 3)
   left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2966)]     (4)
+  left: [("backend/core_v2.rs", 83), ("backend/semantic.rs", 3191)]     (5)
 ```
 
 What the gate cannot see is said here and not left to a reader: a text built

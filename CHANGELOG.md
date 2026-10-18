@@ -292,10 +292,12 @@ versions, and the entries below say what each tag does and does not claim.
   golden, fixture expectation, calculus package, production export, and
   verified record is regenerated. The register holds 391 IDs.
 
-- The runtime gates read what they claimed to (#154, follow-up to #144; no new
-  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
-  literal of the compiler's source outside unit-test items, in production code
-  after a test module, with or without a `namespace` line (a declaration
+- The runtime gates read what they claimed to (#154, #169, follow-ups to #144;
+  no new diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any
+  string literal of the compiler's source outside unit-test items, in
+  production code after a test module or after a `#[cfg(test)]` that is not on
+  an item (or an inline `#![cfg(test)]`), with or without a `namespace` line (a
+  declaration
   under a runtime name is one), written whole or in literals joined by
   `concat!`, an array, `+` or `format!`; its statement now also asserts
   what it said of generated modules: every committed language-1.2 module
