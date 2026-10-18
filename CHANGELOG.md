@@ -55,6 +55,17 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- Measured stack bounds for every production root a conformance harness runs
+  on a corpus and that admits `recursion` (SPEC.md §17.13, §17.23, `PD-08`,
+  #105 step 3; no new diagnostic code, no change to any language identity).
+  `tests/stack-bounds.json`, written by the cases in measure mode, holds the
+  recursive packages of the committed `bootstrap` and `stdlib` exports, the
+  evaluator thread, and the growth table of `isClosedLeanName`; `PD-08` holds
+  the harness and evaluator stacks to at least the largest recorded bound
+  times a headroom of 4, the rows to exactly the recursive packages of the
+  exports, and the `isClosedLeanName` harness to finishing on its allowed
+  stack and aborting on a quarter of it. The measurement is Linux-only; the
+  check runs on every host.
 - The third component of the compiler's own pipeline as language-1.2 source:
   the primitive scanner of SPEC.md §12.2 (SPEC.md §17.23, `BS-03`, #92; no new
   diagnostic code, no change to the language-1.2 identity).
