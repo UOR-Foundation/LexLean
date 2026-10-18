@@ -295,26 +295,58 @@ definition{
 }
 
 definition{
+  name: tyFirstOption,
+  parameters: [ty : Ty],
+  result: (Option Ty),
+  body: (match ty
+    | Ty.TUnit => (ctor Option.none [Ty])
+    | Ty.TBool => (ctor Option.none [Ty])
+    | Ty.TNat => (ctor Option.none [Ty])
+    | Ty.TInt => (ctor Option.none [Ty])
+    | Ty.TFixed width => (ctor Option.none [Ty])
+    | Ty.TString => (ctor Option.none [Ty])
+    | Ty.TBytes => (ctor Option.none [Ty])
+    | Ty.TOrdering => (ctor Option.none [Ty])
+    | Ty.TOption value => (ctor Option.some [Ty] value)
+    | Ty.TResult ok error => (ctor Option.some [Ty] ok)
+    | Ty.TList element => (ctor Option.some [Ty] element)
+    | Ty.TPair left right => (ctor Option.some [Ty] left)
+    | Ty.TAdt index => (ctor Option.none [Ty])
+    | Ty.TFn parameters result => (ctor Option.some [Ty] parameters)
+    | Ty.TNil => (ctor Option.none [Ty])
+    | Ty.TCons head tail => (ctor Option.some [Ty] head)),
+  executable: true
+}
+
+definition{
+  name: tySecondOption,
+  parameters: [ty : Ty],
+  result: (Option Ty),
+  body: (match ty
+    | Ty.TUnit => (ctor Option.none [Ty])
+    | Ty.TBool => (ctor Option.none [Ty])
+    | Ty.TNat => (ctor Option.none [Ty])
+    | Ty.TInt => (ctor Option.none [Ty])
+    | Ty.TFixed width => (ctor Option.none [Ty])
+    | Ty.TString => (ctor Option.none [Ty])
+    | Ty.TBytes => (ctor Option.none [Ty])
+    | Ty.TOrdering => (ctor Option.none [Ty])
+    | Ty.TOption value => (ctor Option.none [Ty])
+    | Ty.TResult ok error => (ctor Option.some [Ty] error)
+    | Ty.TList element => (ctor Option.none [Ty])
+    | Ty.TPair left right => (ctor Option.some [Ty] right)
+    | Ty.TAdt index => (ctor Option.none [Ty])
+    | Ty.TFn parameters result => (ctor Option.some [Ty] result)
+    | Ty.TNil => (ctor Option.none [Ty])
+    | Ty.TCons head tail => (ctor Option.some [Ty] tail)),
+  executable: true
+}
+
+definition{
   name: tyFirst,
   parameters: [ty : Ty],
   result: Ty,
-  body: (match ty
-    | Ty.TUnit => (ctor Ty.TUnit)
-    | Ty.TBool => (ctor Ty.TUnit)
-    | Ty.TNat => (ctor Ty.TUnit)
-    | Ty.TInt => (ctor Ty.TUnit)
-    | Ty.TFixed width => (ctor Ty.TUnit)
-    | Ty.TString => (ctor Ty.TUnit)
-    | Ty.TBytes => (ctor Ty.TUnit)
-    | Ty.TOrdering => (ctor Ty.TUnit)
-    | Ty.TOption value => value
-    | Ty.TResult ok error => ok
-    | Ty.TList element => element
-    | Ty.TPair left right => left
-    | Ty.TAdt index => (ctor Ty.TUnit)
-    | Ty.TFn parameters result => parameters
-    | Ty.TNil => (ctor Ty.TUnit)
-    | Ty.TCons head tail => head),
+  body: (match (tyFirstOption ty) | Option.some found => found | Option.none => (ctor Ty.TUnit)),
   executable: true
 }
 
@@ -322,23 +354,7 @@ definition{
   name: tySecond,
   parameters: [ty : Ty],
   result: Ty,
-  body: (match ty
-    | Ty.TUnit => (ctor Ty.TUnit)
-    | Ty.TBool => (ctor Ty.TUnit)
-    | Ty.TNat => (ctor Ty.TUnit)
-    | Ty.TInt => (ctor Ty.TUnit)
-    | Ty.TFixed width => (ctor Ty.TUnit)
-    | Ty.TString => (ctor Ty.TUnit)
-    | Ty.TBytes => (ctor Ty.TUnit)
-    | Ty.TOrdering => (ctor Ty.TUnit)
-    | Ty.TOption value => (ctor Ty.TUnit)
-    | Ty.TResult ok error => error
-    | Ty.TList element => (ctor Ty.TUnit)
-    | Ty.TPair left right => right
-    | Ty.TAdt index => (ctor Ty.TUnit)
-    | Ty.TFn parameters result => result
-    | Ty.TNil => (ctor Ty.TUnit)
-    | Ty.TCons head tail => tail),
+  body: (match (tySecondOption ty) | Option.some found => found | Option.none => (ctor Ty.TUnit)),
   executable: true
 }
 
