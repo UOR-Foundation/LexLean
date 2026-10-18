@@ -767,17 +767,18 @@ impl<'a> Writer<'_, 'a> {
             let enc = self.enc(&argument_ty)?;
             self.b.app(enc, constructed)
         };
+        let (arms_term, pre_arms) = self.prepare_arms(arms)?;
         let mut chain = self.arm_hit(
             env,
             scrutinee_encoded,
-            arms,
+            &pre_arms,
             branch_index,
             &arm_fields,
             arm_env,
             body_pf,
         )?;
         for earlier in (0..branch_index).rev() {
-            chain = self.arm_miss(env, scrutinee_encoded, arms, earlier, chain)?;
+            chain = self.arm_miss(env, scrutinee_encoded, &pre_arms, earlier, chain)?;
         }
         let p = self.prog;
         let number = match scrutinee_expr {
@@ -803,7 +804,6 @@ impl<'a> Writer<'_, 'a> {
             &[("p", p), ("env", env), ("x", x), ("v", scrutinee_encoded)],
             &[Given::Refl],
         )?;
-        let arms_term = self.arms_list(arms)?;
         let match_ty_term = self.ty_term(match_ty);
         let matched = self.apply(
             "conv_match",

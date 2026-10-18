@@ -64,6 +64,9 @@ pub struct Builder {
     /// The loose-variable bound of every node a walk has passed
     /// ([`Self::has_loose`]).
     loose: std::cell::RefCell<HashMap<Term, usize>>,
+    /// The least free-variable id (`$id`) reachable from each node, or
+    /// `usize::MAX` when the node mentions no free variable.
+    min_free: Vec<usize>,
 }
 
 /// The empty binder name, which the notation writes as `_`.
@@ -96,6 +99,67 @@ impl Builder {
             return index;
         }
         let index = self.nodes.len();
+        let (is_clean, loose_bound, min_free) = match &node {
+            CoreNode::BVar { i } => (true, Some(i + 1), usize::MAX),
+            CoreNode::Sort { .. } | CoreNode::Nat { .. } | CoreNode::String { .. } => {
+                (true, Some(0), usize::MAX)
+            }
+            CoreNode::Const { n, .. } => {
+                let free = n
+                    .strip_prefix("\u{1}free.")
+                    .and_then(|id| id.parse().ok())
+                    .unwrap_or(usize::MAX);
+                (!n.starts_with("\u{1}meta."), Some(0), free)
+            }
+            CoreNode::App { f, x } => {
+                let clean = self.clean.borrow();
+                let loose = self.loose.borrow();
+                (
+                    clean.contains(f) && clean.contains(x),
+                    loose.get(f).zip(loose.get(x)).map(|(&a, &b)| a.max(b)),
+                    self.min_free[*f].min(self.min_free[*x]),
+                )
+            }
+            CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
+                let clean = self.clean.borrow();
+                let loose = self.loose.borrow();
+                (
+                    clean.contains(t) && clean.contains(v),
+                    loose
+                        .get(t)
+                        .zip(loose.get(v))
+                        .map(|(&a, &b)| a.max(b.saturating_sub(1))),
+                    self.min_free[*t].min(self.min_free[*v]),
+                )
+            }
+            CoreNode::Let { t, v, body, .. } => {
+                let clean = self.clean.borrow();
+                let loose = self.loose.borrow();
+                (
+                    clean.contains(t) && clean.contains(v) && clean.contains(body),
+                    loose
+                        .get(t)
+                        .zip(loose.get(v))
+                        .zip(loose.get(body))
+                        .map(|((&a, &b), &c)| a.max(b).max(c.saturating_sub(1))),
+                    self.min_free[*t]
+                        .min(self.min_free[*v])
+                        .min(self.min_free[*body]),
+                )
+            }
+            CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => {
+                let clean = self.clean.borrow();
+                let loose = self.loose.borrow();
+                (clean.contains(x), loose.get(x).copied(), self.min_free[*x])
+            }
+        };
+        if is_clean {
+            self.clean.borrow_mut().insert(index);
+        }
+        if let Some(bound) = loose_bound {
+            self.loose.borrow_mut().insert(index, bound);
+        }
+        self.min_free.push(min_free);
         self.nodes.push(node.clone());
         self.shared.insert(node, index);
         index
@@ -262,6 +326,9 @@ impl Builder {
         if let Some(&done) = memo.get(&(term, cutoff)) {
             return done;
         }
+        if self.loose_bound(term) <= cutoff {
+            return term;
+        }
         let out = match self.nodes[term].clone() {
             CoreNode::BVar { i } => {
                 if i >= cutoff {
@@ -323,6 +390,9 @@ impl Builder {
     /// `body` with `#0` replaced by `arg` and every other loose variable
     /// lowered by one: the body of a binder instantiated at `arg`.
     pub fn instantiate(&mut self, body: Term, arg: Term) -> Term {
+        if self.loose_bound(body) == 0 {
+            return body;
+        }
         let mut memo = HashMap::new();
         self.instantiate_memo(body, arg, 0, &mut memo)
     }
@@ -336,6 +406,9 @@ impl Builder {
     ) -> Term {
         if let Some(&done) = memo.get(&(term, depth)) {
             return done;
+        }
+        if self.loose_bound(term) <= depth {
+            return term;
         }
         let out = match self.nodes[term].clone() {
             CoreNode::BVar { i } => {

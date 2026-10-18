@@ -428,16 +428,14 @@ fn record_source(
     kind: &str,
 ) -> Result<String, String> {
     let name = module.rsplit('.').next().unwrap_or(module);
-    let value = serde_json::to_value(data).map_err(|error| error.to_string())?;
-    crate::sdk::assemble(
+    crate::sdk::assemble_core(
         &crate::sdk::SourceHeader {
             name,
             glossaries: &[],
             imports: &[],
             title: &format!("Certificate {kind} {module}"),
         },
-        crate::sdk::ModuleKind::Core,
-        &value,
+        data,
     )
     .map_err(|error| error.message)
 }
