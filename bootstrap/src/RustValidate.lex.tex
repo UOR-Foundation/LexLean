@@ -1464,11 +1464,11 @@ definition{
   body: (match ty
     | Ty.TyLeaf k => (foundType found (cat (text "type:") (leafKey k)))
     | Ty.TyFixed d0 => (foundType found (text "type:fixed"))
-    | Ty.TyUnary k inner => (foundTy (foundType found (cat (text "type:") (unaryKey k))) inner)
-    | Ty.TyBinary k left right => (foundTy (foundTy (foundType found (cat (text "type:") (binaryKey k))) left) right)
+    | Ty.TyUnary k inner => (let f1 : Found := (foundType found (cat (text "type:") (unaryKey k))); (foundTy f1 inner))
+    | Ty.TyBinary k left right => (let f1 : Found := (foundType found (cat (text "type:") (binaryKey k))); (let f2 : Found := (foundTy f1 left); (foundTy f2 right)))
     | Ty.TyNamed k n => (foundType found (cat (text "type:") (nameKey k)))
     | Ty.TyNil => found
-    | Ty.TyCons head tail => (foundTy (foundTy found head) tail)),
+    | Ty.TyCons head tail => (let f1 : Found := (foundTy found head); (foundTy f1 tail))),
   axioms: [propext],
   executable: true,
   recursive_argument: ty
@@ -1720,32 +1720,32 @@ definition{
   body: (match e
     | Expr.ELit lit org => (foundWide found (litKind lit) org (litWidth lit))
     | Expr.ERead k who org => (foundAt found (readConstruct k) org)
-    | Expr.EWrap k inner org => (foundExpr (foundAt found (wrapConstruct k) org) inner)
-    | Expr.ECall callee args propagate org => (match callee
-      | Callee.CalFn n => (foundExpr (foundAt found (text "call:function") org) args)
-      | Callee.CalRt item => (foundExpr (foundWide found (cat (text "call:runtime:") (runtimeKind (lastSegment (itemPath (project found items) item)))) org (itemWidth (project found items) item)) args))
-    | Expr.EApply who args propagate org => (foundExpr (foundAt found (text "apply") org) args)
-    | Expr.EConstruct con args org => (foundExpr (foundAt (foundCon found con) (cat (text "construct:") (conKind con)) org) args)
-    | Expr.EPair left right org => (foundExpr (foundExpr (foundAt found (text "construct:pair") org) left) right)
-    | Expr.EIf condition thenBranch elseBranch org => (foundExpr (foundExpr (foundExpr (foundAt found (text "if") org) condition) thenBranch) elseBranch)
+    | Expr.EWrap k inner org => (let f1 : Found := (foundAt found (wrapConstruct k) org); (foundExpr f1 inner))
+    | Expr.ECall callee args propagate org => (let f1 : Found := (match callee
+      | Callee.CalFn n => (foundAt found (text "call:function") org)
+      | Callee.CalRt item => (foundWide found (cat (text "call:runtime:") (runtimeKind (lastSegment (itemPath (project found items) item)))) org (itemWidth (project found items) item))); (foundExpr f1 args))
+    | Expr.EApply who args propagate org => (let f1 : Found := (foundAt found (text "apply") org); (foundExpr f1 args))
+    | Expr.EConstruct con args org => (let f1 : Found := (foundAt (foundCon found con) (cat (text "construct:") (conKind con)) org); (foundExpr f1 args))
+    | Expr.EPair left right org => (let f1 : Found := (foundAt found (text "construct:pair") org); (let f2 : Found := (foundExpr f1 left); (foundExpr f2 right)))
+    | Expr.EIf condition thenBranch elseBranch org => (let f1 : Found := (foundAt found (text "if") org); (let f2 : Found := (foundExpr f1 condition); (let f3 : Found := (foundExpr f2 thenBranch); (foundExpr f3 elseBranch))))
     | Expr.EMatch scrutinee arms org => (let head : Found := (match (isNilExpr arms)
       | Bool.true => (foundAt found (text "match:empty") org)
       | Bool.false => (match (isUncons scrutinee)
       | Bool.true => (foundAt found (text "match:list") org)
-      | Bool.false => (foundArmPats found arms org))); (foundExpr (foundExpr head scrutinee) arms))
+      | Bool.false => (foundArmPats found arms org))); (let f2 : Found := (foundExpr head scrutinee); (foundExpr f2 arms)))
     | Expr.EBlockE inner => (foundExpr found inner)
     | Expr.EProbe k who org => (match (probeIsNat k)
       | Bool.true => (foundAt found (text "match:nat") org)
       | Bool.false => found)
-    | Expr.EBlock lets tail => (foundExpr (foundExpr found lets) tail)
+    | Expr.EBlock lets tail => (let f1 : Found := (foundExpr found lets); (foundExpr f1 tail))
     | Expr.ENil => found
-    | Expr.ECons head tail => (foundExpr (foundExpr found head) tail)
+    | Expr.ECons head tail => (let f1 : Found := (foundExpr found head); (foundExpr f1 tail))
     | Expr.ELet pat hasTy ty value org rest => (let kind : Bytes := (match (patIsTuple pat)
       | Bool.true => (text "destructure:pair")
       | Bool.false => (text "let")); (let typed : Found := (match hasTy
       | Bool.true => (foundTy found ty)
-      | Bool.false => found); (foundExpr (foundExpr (foundAt typed kind org) value) rest)))
-    | Expr.EArm pat body rest => (foundExpr (foundExpr found body) rest)),
+      | Bool.false => found); (let f1 : Found := (foundAt typed kind org); (let f2 : Found := (foundExpr f1 value); (foundExpr f2 rest)))))
+    | Expr.EArm pat body rest => (let f1 : Found := (foundExpr found body); (foundExpr f1 rest))),
   axioms: [propext],
   executable: true,
   recursive_argument: e
@@ -2523,7 +2523,7 @@ definition{
     | Def.DApply fnType parameters result fallible arms org => (foundTy (foundTy (foundAt found (text "apply:dispatch") org) parameters) result)
     | Def.DFunction name parameters result body org => (foundExpr (foundTy (foundParTys (foundAt found (text "function") org) parameters) result) body)
     | Def.DNil => found
-    | Def.DCons head tail => (foundDefs (foundDefs found head) tail)),
+    | Def.DCons head tail => (let f1 : Found := (foundDefs found head); (foundDefs f1 tail))),
   axioms: [propext],
   executable: true,
   recursive_argument: defs
