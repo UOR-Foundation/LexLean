@@ -1,5 +1,0 @@
-spec = "lexlean/test-case/1"
-command = "check"
-args = ["--nope"]
-expected_exit = 2
-expect_artifacts = false

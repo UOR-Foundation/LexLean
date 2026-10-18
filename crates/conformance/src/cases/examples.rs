@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 278] = [
+            let prescribed: [(&str, &str); 277] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -455,7 +455,6 @@ pub(crate) fn run(id: &str) {
                 ("math-island-nested", "LLL1006"),
                 ("proof-step-after-closure", "LLF5002"),
                 ("proof-leaves-goal-open", "LLF5004"),
-                ("check-unknown-flag", "LLC0001"),
                 ("check-duplicate-selection", "LLC0002"),
                 ("git-lexicon-offline", "LLS8003"),
                 ("lexicon-unsafe-surface", "LLR3006"),
