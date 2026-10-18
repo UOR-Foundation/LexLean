@@ -1180,6 +1180,7 @@ pub fn run(id: &str) {
                     "{shown}: the runtime is the one LexLean's semantics records"
                 );
                 assert_eq!(provenance["sources"], manifest_json["sources"]);
+                assert_eq!(provenance["effects"], manifest_json["effects"]);
                 rust_packages::bound_to_source(&committed)
                     .unwrap_or_else(|reason| panic!("{shown}: {reason}"));
                 count += 1;
@@ -1496,6 +1497,7 @@ pub fn run(id: &str) {
         }
         // §17.16: the runtime's library surface is closed, and each name on
         // it is a primitive, stated over primitives, or an AST construct.
+        "RB-10" | "RB-11" | "RB-12" | "RB-13" => super::rust_scaffold::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{CORE, STD};
             use lexlean::calculus::rust_library::{

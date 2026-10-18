@@ -250,5 +250,498 @@ definition{
   body: (prim index (digitNames) digit : (Option String)),
   executable: true
 }
+
+structure{
+  name: Dyadic,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: sign, type: Nat}, {name: mantissa, type: Int}, {name: exponent, type: Int}]
+}
+
+definition{
+  name: dyadicTriple,
+  parameters: [value : (Option Dyadic)],
+  result: (Option (Nat * (Int * Int))),
+  body: (match value
+    | Option.none => (ctor Option.none [(Nat * (Int * Int))])
+    | Option.some d => (ctor Option.some [(Nat * (Int * Int))] ((project d sign), ((project d mantissa), (project d exponent))))),
+  executable: true
+}
+
+definition{
+  name: DyadicMatches,
+  parameters: [observed : (Option Dyadic), sign : Nat, mantissa : Int, exponent : Int],
+  result: Prop,
+  body: ((dyadicTriple observed) = (ctor Option.some [(Nat * (Int * Int))] (sign, (mantissa, exponent))))
+}
+
+definition{
+  name: byteToInt,
+  parameters: [b : UInt8],
+  result: Int,
+  body: (prim subtract (if (prim equal (prim bit_and b (1 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (1 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (2 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (2 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (4 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (4 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (8 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (8 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (16 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (16 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (32 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (32 : Int)) (prim negate (prim subtract (if (prim equal (prim bit_and b (64 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (64 : Int)) (prim negate (if (prim equal (prim bit_and b (128 : UInt8) : UInt8) (0 : UInt8) : Bool) then (0 : Int) else (128 : Int)) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decodeBinary32,
+  parameters: [bits : Int],
+  result: (Option Dyadic),
+  body: (if ((prim less_than bits (0 : Int) : Bool) || (prim less_than (4294967295 : Int) bits : Bool)) then (ctor Option.none [Dyadic]) else (let signBit : Int := (prim quotient bits (2147483648 : Int) (0 : Int) : Int); (let sign : Nat := (if (prim less_than (0 : Int) signBit : Bool) then 1 else 0); (let rest : Int := (prim remainder bits (2147483648 : Int) (0 : Int) : Int); (let biased : Int := (prim quotient rest (8388608 : Int) (0 : Int) : Int); (let fraction : Int := (prim remainder rest (8388608 : Int) (0 : Int) : Int); (if (not (prim less_than biased (255 : Int) : Bool)) then (ctor Option.none [Dyadic]) else (if (not (prim less_than (0 : Int) biased : Bool)) then (ctor Option.some [Dyadic] (record Dyadic {sign := sign, mantissa := fraction, exponent := (-149 : Int)})) else (ctor Option.some [Dyadic] (record Dyadic {sign := sign, mantissa := (prim subtract (8388608 : Int) (prim negate fraction : Int) : Int), exponent := (prim subtract biased (150 : Int) : Int)})))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: decodeBinary64,
+  parameters: [bits : Int],
+  result: (Option Dyadic),
+  body: (if (prim less_than bits (0 : Int) : Bool) then (let rest : Int := (prim subtract (prim subtract bits (-4611686018427387904 : Int) : Int) (-4611686018427387904 : Int) : Int); (if (prim less_than rest (0 : Int) : Bool) then (ctor Option.none [Dyadic]) else (let biased : Int := (prim quotient rest (4503599627370496 : Int) (0 : Int) : Int); (let fraction : Int := (prim remainder rest (4503599627370496 : Int) (0 : Int) : Int); (if (not (prim less_than biased (2047 : Int) : Bool)) then (ctor Option.none [Dyadic]) else (if (not (prim less_than (0 : Int) biased : Bool)) then (ctor Option.some [Dyadic] (record Dyadic {sign := 1, mantissa := fraction, exponent := (-1074 : Int)})) else (ctor Option.some [Dyadic] (record Dyadic {sign := 1, mantissa := (prim subtract (4503599627370496 : Int) (prim negate fraction : Int) : Int), exponent := (prim subtract biased (1075 : Int) : Int)})))))))) else (let q0 : Int := (prim quotient bits (4503599627370496 : Int) (0 : Int) : Int); (if (not (prim less_than (2047 : Int) q0 : Bool)) then (let fraction : Int := (prim remainder bits (4503599627370496 : Int) (0 : Int) : Int); (if (not (prim less_than q0 (2047 : Int) : Bool)) then (ctor Option.none [Dyadic]) else (if (not (prim less_than (0 : Int) q0 : Bool)) then (ctor Option.some [Dyadic] (record Dyadic {sign := 0, mantissa := fraction, exponent := (-1074 : Int)})) else (ctor Option.some [Dyadic] (record Dyadic {sign := 0, mantissa := (prim subtract (4503599627370496 : Int) (prim negate fraction : Int) : Int), exponent := (prim subtract q0 (1075 : Int) : Int)}))))) else (let rest : Int := (prim subtract (prim subtract bits (4611686018427387904 : Int) : Int) (4611686018427387904 : Int) : Int); (let biased : Int := (prim quotient rest (4503599627370496 : Int) (0 : Int) : Int); (if (not (prim less_than biased (2047 : Int) : Bool)) then (ctor Option.none [Dyadic]) else (let fraction : Int := (prim remainder rest (4503599627370496 : Int) (0 : Int) : Int); (if (not (prim less_than (0 : Int) biased : Bool)) then (ctor Option.some [Dyadic] (record Dyadic {sign := 1, mantissa := fraction, exponent := (-1074 : Int)})) else (ctor Option.some [Dyadic] (record Dyadic {sign := 1, mantissa := (prim subtract (4503599627370496 : Int) (prim negate fraction : Int) : Int), exponent := (prim subtract biased (1075 : Int) : Int)})))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: decodeBinary32Bytes,
+  parameters: [bytes : Bytes, offset : Nat],
+  result: (Option Dyadic),
+  body: (match (prim index bytes offset : (Option UInt8))
+    | Option.none => (ctor Option.none [Dyadic])
+    | Option.some b0 => (match (prim index bytes (offset + 1) : (Option UInt8))
+      | Option.none => (ctor Option.none [Dyadic])
+      | Option.some b1 => (match (prim index bytes (offset + 2) : (Option UInt8))
+        | Option.none => (ctor Option.none [Dyadic])
+        | Option.some b2 => (match (prim index bytes (offset + 3) : (Option UInt8))
+          | Option.none => (ctor Option.none [Dyadic])
+          | Option.some b3 => (decodeBinary32 (prim subtract (byteToInt b0) (prim negate (prim subtract (prim multiply (256 : Int) (byteToInt b1) : Int) (prim negate (prim subtract (prim multiply (65536 : Int) (byteToInt b2) : Int) (prim negate (prim multiply (16777216 : Int) (byteToInt b3) : Int) : Int) : Int) : Int) : Int) : Int) : Int)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decodeBinary64Bytes,
+  parameters: [bytes : Bytes, offset : Nat],
+  result: (Option Dyadic),
+  body: (match (prim index bytes offset : (Option UInt8))
+    | Option.none => (ctor Option.none [Dyadic])
+    | Option.some b0 => (match (prim index bytes (offset + 1) : (Option UInt8))
+      | Option.none => (ctor Option.none [Dyadic])
+      | Option.some b1 => (match (prim index bytes (offset + 2) : (Option UInt8))
+        | Option.none => (ctor Option.none [Dyadic])
+        | Option.some b2 => (match (prim index bytes (offset + 3) : (Option UInt8))
+          | Option.none => (ctor Option.none [Dyadic])
+          | Option.some b3 => (match (prim index bytes (offset + 4) : (Option UInt8))
+            | Option.none => (ctor Option.none [Dyadic])
+            | Option.some b4 => (match (prim index bytes (offset + 5) : (Option UInt8))
+              | Option.none => (ctor Option.none [Dyadic])
+              | Option.some b5 => (match (prim index bytes (offset + 6) : (Option UInt8))
+                | Option.none => (ctor Option.none [Dyadic])
+                | Option.some b6 => (match (prim index bytes (offset + 7) : (Option UInt8))
+                  | Option.none => (ctor Option.none [Dyadic])
+                  | Option.some b7 => (let v7 : Int := (byteToInt b7); (let low7 : Int := (if (prim less_than v7 (128 : Int) : Bool) then v7 else (prim subtract v7 (128 : Int) : Int)); (let low63 : Int := (prim subtract (byteToInt b0) (prim negate (prim subtract (prim multiply (256 : Int) (byteToInt b1) : Int) (prim negate (prim subtract (prim multiply (65536 : Int) (byteToInt b2) : Int) (prim negate (prim subtract (prim multiply (16777216 : Int) (byteToInt b3) : Int) (prim negate (prim subtract (prim multiply (4294967296 : Int) (byteToInt b4) : Int) (prim negate (prim subtract (prim multiply (1099511627776 : Int) (byteToInt b5) : Int) (prim negate (prim subtract (prim multiply (281474976710656 : Int) (byteToInt b6) : Int) (prim negate (prim multiply (72057594037927936 : Int) low7 : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int) : Int); (let signedBits : Int := (if (prim less_than v7 (128 : Int) : Bool) then low63 else (prim subtract (prim subtract low63 (4611686018427387904 : Int) : Int) (4611686018427387904 : Int) : Int)); (decodeBinary64 signedBits))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: dyadicMul,
+  parameters: [a : Dyadic, b : Dyadic],
+  result: Dyadic,
+  body: (record Dyadic {sign := (if ((project a sign) =? (project b sign)) then 0 else 1), mantissa := (prim multiply (project a mantissa) (project b mantissa) : Int), exponent := (prim subtract (project a exponent) (prim negate (project b exponent) : Int) : Int)}),
+  executable: true
+}
+
+definition{
+  name: dyadicRoundShift,
+  parameters: [d : Dyadic, shift : Int],
+  result: Int,
+  body: (if (not (prim less_than (0 : Int) (project d mantissa) : Bool)) then (0 : Int) else (let k : Int := (prim subtract (project d exponent) (prim negate shift : Int) : Int); (let mag : Int := (if (not (prim less_than k (0 : Int) : Bool)) then (second (first (prim iterate_until (fun (st : (Int * Int)) => (if (not (prim less_than (0 : Int) (first st) : Bool)) then (ctor Option.none [(Int * Int)]) else (ctor Option.some [(Int * Int)] ((prim subtract (first st) (1 : Int) : Int), (prim multiply (2 : Int) (second st) : Int))))) 512 (k, (project d mantissa)) : ((Int * Int) * Bool)))) else (let s : Int := (prim negate k : Int); (let stepped : (Int * Int) := (second (first (prim iterate_until (fun (st : (Int * (Int * Int))) => (if (not (prim less_than (0 : Int) (first st) : Bool)) then (ctor Option.none [(Int * (Int * Int))]) else (let qs : (Int * Int) := (second st); (ctor Option.some [(Int * (Int * Int))] ((prim subtract (first st) (1 : Int) : Int), ((prim quotient (first qs) (2 : Int) (0 : Int) : Int), (if ((not (prim less_than (0 : Int) (second qs) : Bool)) && (not (prim less_than (0 : Int) (prim remainder (first qs) (2 : Int) (0 : Int) : Int) : Bool))) then (0 : Int) else (1 : Int)))))))) 512 ((prim subtract s (1 : Int) : Int), ((project d mantissa), (0 : Int))) : ((Int * (Int * Int)) * Bool)))); (let half : Int := (first stepped); (let sticky : Int := (second stepped); (let baseMag : Int := (prim quotient half (2 : Int) (0 : Int) : Int); (let hb : Int := (prim remainder half (2 : Int) (0 : Int) : Int); (if (not (prim less_than (0 : Int) hb : Bool)) then baseMag else (if (prim less_than (0 : Int) sticky : Bool) then (prim subtract baseMag (-1 : Int) : Int) else (prim subtract baseMag (prim negate (prim remainder baseMag (2 : Int) (0 : Int) : Int) : Int) : Int)))))))))); (if ((project d sign) =? 0) then mag else (prim negate mag : Int))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: dyadicRatioRound,
+  parameters: [a : Dyadic, b : Dyadic, c : Dyadic, shift : Int],
+  result: (Option Int),
+  body: (if (not (prim less_than (0 : Int) (project c mantissa) : Bool)) then (ctor Option.none [Int]) else (if ((not (prim less_than (0 : Int) (project a mantissa) : Bool)) || (not (prim less_than (0 : Int) (project b mantissa) : Bool))) then (ctor Option.some [Int] (0 : Int)) else (let product : Int := (prim multiply (project a mantissa) (project b mantissa) : Int); (let divisor : Int := (project c mantissa); (let k : Int := (prim subtract (prim subtract (prim subtract (project a exponent) (prim negate (project b exponent) : Int) : Int) (project c exponent) : Int) (prim negate shift : Int) : Int); (let abSign : Nat := (if ((project a sign) =? (project b sign)) then 0 else 1); (let outSign : Nat := (if (abSign =? (project c sign)) then 0 else 1); (if (not (prim less_than k (0 : Int) : Bool)) then (let initQ : Int := (prim quotient product divisor (0 : Int) : Int); (let initR : Int := (prim remainder product divisor (0 : Int) : Int); (let stepped : ((Int * (Int * Int)) * Bool) := (prim iterate_until (fun [divisor] (st : (Int * (Int * Int))) => (if (not (prim less_than (0 : Int) (first st) : Bool)) then (ctor Option.none [(Int * (Int * Int))]) else (let qr : (Int * Int) := (second st); (let r2 : Int := (prim multiply (2 : Int) (second qr) : Int); (let dq : Int := (prim quotient r2 divisor (0 : Int) : Int); (let nr : Int := (prim remainder r2 divisor (0 : Int) : Int); (ctor Option.some [(Int * (Int * Int))] ((prim subtract (first st) (1 : Int) : Int), ((prim subtract (prim multiply (2 : Int) (first qr) : Int) (prim negate dq : Int) : Int), nr))))))))) 512 (k, (initQ, initR)) : ((Int * (Int * Int)) * Bool)); (if (second stepped) then (let qr : (Int * Int) := (second (first stepped)); (let q : Int := (first qr); (let r : Int := (second qr); (let twoR : Int := (prim multiply (2 : Int) r : Int); (let rounded : Int := (if (prim less_than twoR divisor : Bool) then q else (if (prim less_than divisor twoR : Bool) then (prim subtract q (-1 : Int) : Int) else (prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int))); (ctor Option.some [Int] (if (outSign =? 0) then rounded else (prim negate rounded : Int)))))))) else (ctor Option.none [Int]))))) else (let s : Int := (prim negate k : Int); (let initQ : Int := (prim quotient product divisor (0 : Int) : Int); (let initSticky : Int := (if (not (prim less_than (0 : Int) (prim remainder product divisor (0 : Int) : Int) : Bool)) then (0 : Int) else (1 : Int)); (let stepped : ((Int * (Int * Int)) * Bool) := (prim iterate_until (fun (st : (Int * (Int * Int))) => (if (not (prim less_than (0 : Int) (first st) : Bool)) then (ctor Option.none [(Int * (Int * Int))]) else (let qs : (Int * Int) := (second st); (ctor Option.some [(Int * (Int * Int))] ((prim subtract (first st) (1 : Int) : Int), ((prim quotient (first qs) (2 : Int) (0 : Int) : Int), (if ((not (prim less_than (0 : Int) (second qs) : Bool)) && (not (prim less_than (0 : Int) (prim remainder (first qs) (2 : Int) (0 : Int) : Int) : Bool))) then (0 : Int) else (1 : Int)))))))) 512 ((prim subtract s (1 : Int) : Int), (initQ, initSticky)) : ((Int * (Int * Int)) * Bool)); (if (second stepped) then (let qs : (Int * Int) := (second (first stepped)); (let half : Int := (first qs); (let sticky : Int := (second qs); (let q : Int := (prim quotient half (2 : Int) (0 : Int) : Int); (let hb : Int := (prim remainder half (2 : Int) (0 : Int) : Int); (let rounded : Int := (if (not (prim less_than (0 : Int) hb : Bool)) then q else (if (prim less_than (0 : Int) sticky : Bool) then (prim subtract q (-1 : Int) : Int) else (prim subtract q (prim negate (prim remainder q (2 : Int) (0 : Int) : Int) : Int) : Int))); (ctor Option.some [Int] (if (outSign =? 0) then rounded else (prim negate rounded : Int))))))))) else (ctor Option.none [Int])))))))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: scaleRatioRound32,
+  parameters: [aBits : Int, bBits : Int, cBits : Int],
+  result: (Option Int),
+  body: (match (decodeBinary32 aBits)
+    | Option.none => (ctor Option.none [Int])
+    | Option.some a => (match (decodeBinary32 bBits)
+      | Option.none => (ctor Option.none [Int])
+      | Option.some b => (match (decodeBinary32 cBits)
+        | Option.none => (ctor Option.none [Int])
+        | Option.some c => (dyadicRatioRound a b c (32 : Int))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: scaleMultipliersRound32,
+  parameters: [inputScaleBits : Int, weightScaleBits : (List Int), outputScaleBits : Int],
+  result: (Option (List Int)),
+  body: (let rev : (Option (List Int)) := (prim list_fold (fun [inputScaleBits, outputScaleBits] (acc : (Option (List Int))) (wBits : Int) => (match acc
+    | Option.none => (ctor Option.none [(List Int)])
+    | Option.some xs => (match (scaleRatioRound32 inputScaleBits wBits outputScaleBits)
+      | Option.none => (ctor Option.none [(List Int)])
+      | Option.some m => (ctor Option.some [(List Int)] (cons m xs))))) (ctor Option.some [(List Int)] (nil Int)) weightScaleBits : (Option (List Int))); (match rev
+    | Option.none => (ctor Option.none [(List Int)])
+    | Option.some xs => (ctor Option.some [(List Int)] (prim list_fold (fun (out : (List Int)) (x : Int) => (cons x out)) (nil Int) xs : (List Int))))),
+  axioms: [propext],
+  executable: true
+}
+
+theorem{
+  name: binary32_pos_zero,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (0 : Int)) 0 (0 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_neg_zero,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (2147483648 : Int)) 1 (0 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_min_subnormal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (1 : Int)) 0 (1 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_max_subnormal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (8388607 : Int)) 0 (8388607 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_min_normal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (8388608 : Int)) 0 (8388608 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_one,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (1065353216 : Int)) 0 (8388608 : Int) (-23 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_neg_one_half,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (3217031168 : Int)) 1 (12582912 : Int) (-23 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_unit_scale,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (998277249 : Int)) 0 (8421505 : Int) (-31 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_max_normal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32 (2139095039 : Int)) 0 (16777215 : Int) (104 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_rejects_pos_inf,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary32 (2139095040 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_rejects_neg_inf,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary32 (4286578688 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_rejects_nan,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary32 (2143289344 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_rejects_negative_input,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary32 (-1 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_rejects_overflow_input,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary32 (4294967296 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary32_banner_subnormal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32Bytes (banner) 0) 0 (5065804 : Int) (-149 : Int)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: binary32_banner_normal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary32Bytes (banner) 1) 0 (8408396 : Int) (-148 : Int)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: binary64_pos_zero,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (0 : Int)) 0 (0 : Int) (-1074 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_neg_zero,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (-9223372036854775808 : Int)) 1 (0 : Int) (-1074 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_max_subnormal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (4503599627370495 : Int)) 0 (4503599627370495 : Int) (-1074 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_min_normal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (4503599627370496 : Int)) 0 (4503599627370496 : Int) (-1074 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_min_subnormal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (1 : Int)) 0 (1 : Int) (-1074 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_one,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (4607182418800017408 : Int)) 0 (4503599627370496 : Int) (-52 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_neg_one_half,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (-4613937818241073152 : Int)) 1 (6755399441055744 : Int) (-52 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_max_normal,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64 (9218868437227405311 : Int)) 0 (9007199254740991 : Int) (971 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_rejects_pos_inf,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary64 (9218868437227405312 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_rejects_neg_inf,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary64 (-4503599627370496 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_rejects_nan,
+  parameters: [],
+  statement: ((dyadicTriple (decodeBinary64 (9221120237041090560 : Int))) = (ctor Option.none [(Nat * (Int * Int))])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: binary64_banner_first,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64Bytes (prim append (banner) (banner) : Bytes) 0) 0 (7964866531642444 : Int) (161 : Int)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: binary64_banner_last,
+  parameters: [],
+  statement: (DyadicMatches (decodeBinary64Bytes (prim append (banner) (banner) : Bytes) 2) 0 (4588589715357773 : Int) (-1059 : Int)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: dyadic_round_shift_exact,
+  parameters: [],
+  statement: ((dyadicRoundShift (record Dyadic {sign := 0, mantissa := (8388608 : Int), exponent := (-150 : Int)}) (150 : Int)) = (8388608 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: dyadic_round_shift_tie_even_down,
+  parameters: [],
+  statement: ((dyadicRoundShift (record Dyadic {sign := 0, mantissa := (5 : Int), exponent := (-1 : Int)}) (0 : Int)) = (2 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: dyadic_round_shift_tie_even_up,
+  parameters: [],
+  statement: ((dyadicRoundShift (record Dyadic {sign := 0, mantissa := (7 : Int), exponent := (-1 : Int)}) (0 : Int)) = (4 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: dyadic_round_shift_negative_tie_even,
+  parameters: [],
+  statement: ((dyadicRoundShift (record Dyadic {sign := 1, mantissa := (7 : Int), exponent := (-1 : Int)}) (0 : Int)) = (-4 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_exact_cancel,
+  parameters: [],
+  statement: ((scaleRatioRound32 (998277249 : Int) (1000593162 : Int) (1008981770 : Int)) = (ctor Option.some [Int] (8421505 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_rounds_up,
+  parameters: [],
+  statement: ((scaleRatioRound32 (998277249 : Int) (1000693826 : Int) (1017370378 : Int)) = (ctor Option.some [Int] (4250229 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_rounds_down,
+  parameters: [],
+  statement: ((scaleRatioRound32 (1023410176 : Int) (1017370378 : Int) (1039516303 : Int)) = (ctor Option.some [Int] (22369621 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_tie_odd_to_even,
+  parameters: [],
+  statement: ((scaleRatioRound32 (1065353217 : Int) (1069547520 : Int) (1140850688 : Int)) = (ctor Option.some [Int] (12582914 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_tie_even_stays_even,
+  parameters: [],
+  statement: ((scaleRatioRound32 (1065353219 : Int) (1069547520 : Int) (1140850688 : Int)) = (ctor Option.some [Int] (12582916 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_negative_scale,
+  parameters: [],
+  statement: ((scaleRatioRound32 (3145760897 : Int) (1000693826 : Int) (1017370378 : Int)) = (ctor Option.some [Int] (-4250229 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_subnormal_scales,
+  parameters: [],
+  statement: ((scaleRatioRound32 (3 : Int) (1084227584 : Int) (2 : Int)) = (ctor Option.some [Int] (32212254720 : Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_rejects_zero_divisor,
+  parameters: [],
+  statement: ((scaleRatioRound32 (1065353216 : Int) (1065353216 : Int) (0 : Int)) = (ctor Option.none [Int])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_ratio_rejects_nonfinite,
+  parameters: [],
+  statement: ((scaleRatioRound32 (1065353216 : Int) (2139095040 : Int) (1065353216 : Int)) = (ctor Option.none [Int])),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: scale_multipliers_channel_batch,
+  parameters: [],
+  statement: ((scaleMultipliersRound32 (998277249 : Int) (cons (1000593162 : Int) (cons (1000693826 : Int) (nil Int))) (1017370378 : Int)) = (ctor Option.some [(List Int)] (cons (4210752 : Int) (cons (4250229 : Int) (nil Int))))),
+  proof: decide{},
+  axioms: [propext]
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -515,25 +515,35 @@ pub struct Costs {
 }
 
 /// What certificate A costs at the least.
+///
+/// Certificate A is recorded as kernel data, whose hash-consing shares every
+/// type and every repeated subterm, so a type node costs nothing here and the
+/// costs are those of what is not shared. They are the largest costs, to the
+/// sixteenth of a byte, that no program of the stress families, the mixed and
+/// random shapes, the wide matches, and the four example corpora has a
+/// certificate A smaller than, with five percent to spare (`conformance_sp_02`
+/// checks every one of them).
 pub const COSTS_A: Costs = Costs {
-    base_bytes: 1080,
-    type_node: 284,
-    expr_node: 176,
+    base_bytes: 5400,
+    type_node: 0,
+    expr_node: 300,
     shape_node: 0,
-    arm_pair: 180,
-    string_byte: 7,
-    hex_digit: 19,
+    arm_pair: 1018,
+    string_byte: 15,
+    hex_digit: 433,
 };
 
-/// What certificate B costs at the least.
+/// What certificate B costs at the least, in the authoring notation it is
+/// recorded in and weighed by, which takes about a quarter of the bytes of its
+/// Lean text.
 pub const COSTS_B: Costs = Costs {
-    base_bytes: 800,
+    base_bytes: 200,
     type_node: 0,
-    expr_node: 1072,
-    shape_node: 89,
+    expr_node: 268,
+    shape_node: 22,
     arm_pair: 0,
-    string_byte: 23,
-    hex_digit: 59,
+    string_byte: 6,
+    hex_digit: 15,
 };
 
 /// What certificate E costs at the least.
@@ -804,27 +814,6 @@ pub fn measure_program(program: &Program) -> Measure {
     out
 }
 
-/// The `set_option` lines every certificate about a program starts with,
-/// besides those every certificate has: the removal of both of the pinned
-/// Lean's heartbeat budgets (`maxHeartbeats` 200 000 and
-/// `synthInstance.maxHeartbeats` 20 000 by default).
-///
-/// Certificate B states every arm of a match after the arms before it, and
-/// the pinned Lean spends allocations on that faster than any bound this
-/// project could state (a match on 200 constructors needs between 300 000 and
-/// 400 000 heartbeats, one on 300 needs more than 3 800 000); a function
-/// returning a large literal (a program carrying its parameters as data)
-/// costs `isDefEq` as much again; and exhausting a budget in the middle of a
-/// proof ends as a type mismatch that blames a valid certificate. The budgets
-/// were lifted only above 100 arms, which left every other large program to
-/// that misreading. The budget that remains is the wall clock,
-/// `child_timeout_ms`, whose exhaustion is a registered limit (`LLS8002`) and
-/// not a verdict on the certificate.
-#[must_use]
-pub fn budget_options(_program: &Program) -> String {
-    "set_option maxHeartbeats 0\nset_option synthInstance.maxHeartbeats 0\n".to_owned()
-}
-
 /// The size of a program: the nodes of every type and expression in it.
 #[must_use]
 pub fn program_nodes(program: &Program) -> u64 {
@@ -836,10 +825,11 @@ pub fn program_nodes(program: &Program) -> u64 {
 /// least: a read of a record of `n` fields prints a pattern of `n` entries
 /// into the crate's term, into the statement of the function, and into the
 /// derivation, and the smallest of the three families measured (a record of
-/// `n` fields copied field by field) has 22 bytes in each slot. The least
+/// `n` fields copied field by field) has 22 bytes of Lean text in each slot,
+/// and about half that in the notation it is weighed by. The least
 /// is used because a refusal on it is a refusal of a certificate that is
 /// certainly too large.
-pub const CERTIFICATE_BYTES_PER_SLOT: u64 = 16;
+pub const CERTIFICATE_BYTES_PER_SLOT: u64 = 8;
 
 /// The entries of the patterns the Rust rendering of `program` prints for
 /// its field reads: for each read of a field of a record, the arity of that
@@ -1646,7 +1636,9 @@ pub(crate) fn template_of(
         | SemanticPrimitive::Join
         | SemanticPrimitive::ParseDecimal
         | SemanticPrimitive::FormatDecimal
-        | SemanticPrimitive::LessThan => return Ok(None),
+        | SemanticPrimitive::LessThan
+        | SemanticPrimitive::ToInt
+        | SemanticPrimitive::ToNat => return Ok(None),
     }))
 }
 
@@ -3325,6 +3317,13 @@ impl Lowerer<'_> {
             }
         };
         let operation = match operation {
+            // Every backend reads elaborated declarations, in which a
+            // widening conversion is the ordinary term it means (§17.12).
+            SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
+                return Err(format!(
+                    "{operation:?} is lowered only through its elaboration"
+                ));
+            }
             SemanticPrimitive::Subtract => integer(Prim::NatSub, Prim::IntSub)?,
             SemanticPrimitive::Multiply => integer(Prim::NatMul, Prim::IntMul)?,
             SemanticPrimitive::Quotient => integer(Prim::NatQuot, Prim::IntQuot)?,

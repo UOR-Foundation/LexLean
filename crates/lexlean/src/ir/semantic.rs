@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub mod laws;
 pub mod model;
 pub mod reasoning;
+mod widen;
 
 mod language_model;
 
@@ -110,6 +111,13 @@ pub enum SemanticPrimitive {
     GraphTopological,
     /// Language 1.2: the strict order of an ordered key type, as a Boolean.
     LessThan,
+    /// Language 1.2: the exact value of a fixed-width integer as an `Int`.
+    /// Linking elaborates it to ordinary terms (§17.12, *Widening
+    /// conversions*), so no backend receives it.
+    ToInt,
+    /// Language 1.2: the exact value of an unsigned fixed-width integer as a
+    /// `Nat`, elaborated in linking as [`Self::ToInt`] is.
+    ToNat,
 }
 
 impl SemanticPrimitive {
@@ -143,7 +151,26 @@ impl SemanticPrimitive {
                 | Self::GraphReachable
                 | Self::GraphTopological
                 | Self::LessThan
+                | Self::ToInt
+                | Self::ToNat
         )
+    }
+
+    /// Whether linking elaborates the operation to ordinary terms, so that
+    /// no backend, production analysis, or certificate receives it.
+    #[must_use]
+    pub const fn widening(self) -> bool {
+        matches!(self, Self::ToInt | Self::ToNat)
+    }
+
+    /// The construct a language-1.1 module is refused for when it applies
+    /// the operation.
+    const fn language_1_2_construct(self) -> &'static str {
+        if self.widening() {
+            "widening primitive"
+        } else {
+            "collection primitive"
+        }
     }
 
     /// The argument position holding a function, for the collection
@@ -2369,7 +2396,7 @@ fn language_1_2_construct(term: &SemanticTerm) -> Option<&'static str> {
         SemanticTerm::SetLiteral { .. } => Some("set_literal"),
         SemanticTerm::GraphLiteral { .. } => Some("graph_literal"),
         SemanticTerm::Primitive { operation, .. } if operation.language_1_2() => {
-            Some("collection primitive")
+            Some(operation.language_1_2_construct())
         }
         SemanticTerm::Call { type_arguments, .. } if !type_arguments.is_empty() => {
             Some("call type arguments")
@@ -3466,15 +3493,42 @@ impl SemanticModule {
     /// (§17.12, §17.13)?
     #[must_use]
     pub fn applies_checked(&self, name: &str) -> bool {
+        // The source is read, not whether the elaboration differs from it: a
+        // widening conversion changes the elaboration too.
+        self.source_terms_any(name, &|term| {
+            matches!(term, SemanticTerm::CheckedApply { .. })
+        })
+    }
+
+    /// The widening conversions (`primitive.to_int`, `primitive.to_nat`) the
+    /// elaborated declaration `name` applied, each realized through its
+    /// elaboration (§17.12, *Widening conversions*; §17.13). A declaration a
+    /// model or reasoning declaration generates is named as generated.
+    #[must_use]
+    pub fn widenings(&self, name: &str) -> Vec<&'static str> {
+        self.elaboration
+            .widened
+            .get(name)
+            .map(|found| found.iter().copied().collect())
+            .unwrap_or_default()
+    }
+
+    /// Does a term of the linked ordinary source declaration `name` satisfy
+    /// `test`?
+    fn source_terms_any(&self, name: &str, test: &dyn Fn(&SemanticTerm) -> bool) -> bool {
         self.declarations
             .iter()
             .enumerate()
             .any(|(index, declaration)| {
-                declaration.name() == name
-                    && language_model::elaborated_construct(declaration).is_none()
-                    && self
-                        .elaborated(index)
-                        .is_some_and(|lowered| lowered != std::slice::from_ref(declaration))
+                if declaration.name() != name
+                    || language_model::elaborated_construct(declaration).is_some()
+                    || self.elaborated(index).is_none()
+                {
+                    return false;
+                }
+                let mut found = false;
+                declaration_terms(declaration, &mut |term| found |= test(term));
+                found
             })
     }
 
@@ -6199,7 +6253,7 @@ fn check_term(
             result,
         } => {
             if operation.language_1_2() {
-                require_language_1_2(env, "collection primitive")?;
+                require_language_1_2(env, operation.language_1_2_construct())?;
             }
             check_type(result, env)?;
             for argument in arguments {
@@ -7336,6 +7390,26 @@ fn infer_primitive(
             require_observed(arguments, &[first.clone(), first.clone()], operation)?;
             exact_result(SemanticType::Bool)
         }
+        // Total: every fixed-width value is an `Int`, and every unsigned one a
+        // `Nat`, so neither returns an `Option`.
+        P::ToInt => {
+            if !fixed_integer(&first) {
+                return Err(format!(
+                    "primitive ToInt requires a fixed-width integer, not {first}"
+                ));
+            }
+            require_observed(arguments, core::slice::from_ref(&first), operation)?;
+            exact_result(SemanticType::Int)
+        }
+        P::ToNat => {
+            if !fixed_integer(&first) || signed_integer(&first) {
+                return Err(format!(
+                    "primitive ToNat requires an unsigned fixed-width integer, not {first}"
+                ));
+            }
+            require_observed(arguments, core::slice::from_ref(&first), operation)?;
+            exact_result(SemanticType::Nat)
+        }
     }
 }
 
@@ -8308,6 +8382,57 @@ fn check_elimination_proof(
     locals: &BTreeMap<String, SemanticType>,
     env: &Environment<'_>,
 ) -> Result<(), String> {
+    let expected = elimination_binder_types(scrutinee, induction, locals, env)?;
+    let mut observed = BTreeMap::new();
+    for branch in branches {
+        check_name(&branch.constructor, "proof constructor")?;
+        if observed
+            .insert(branch.constructor.clone(), branch.binders.len())
+            .is_some()
+        {
+            return Err(format!("duplicate proof branch `{}`", branch.constructor));
+        }
+        let expected_binders = expected.get(&branch.constructor).ok_or_else(|| {
+            format!(
+                "proof branch `{}` is not a constructor of `{scrutinee}`",
+                branch.constructor
+            )
+        })?;
+        if branch.binders.len() != expected_binders.len() {
+            return Err(format!(
+                "proof branch `{}` expects {} binder(s), received {}",
+                branch.constructor,
+                expected_binders.len(),
+                branch.binders.len()
+            ));
+        }
+        let mut nested = locals.clone();
+        for (binder, binder_type) in branch.binders.iter().zip(expected_binders) {
+            check_name(binder, "proof binder")?;
+            if nested.insert(binder.clone(), binder_type.clone()).is_some() {
+                return Err(format!("shadowed proof binder `{binder}`"));
+            }
+        }
+        check_proof(&branch.proof, &nested, env)?;
+    }
+    if observed.keys().collect::<Vec<_>>() != expected.keys().collect::<Vec<_>>() {
+        return Err(format!(
+            "proof branches are not exhaustive: expected {:?}, observed {:?}",
+            expected.keys().collect::<Vec<_>>(),
+            observed.keys().collect::<Vec<_>>()
+        ));
+    }
+    Ok(())
+}
+
+/// The binder types of each branch of a `cases` or `induction` proof on the
+/// local `scrutinee`, keyed by the constructor's last name segment.
+fn elimination_binder_types(
+    scrutinee: &str,
+    induction: bool,
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<BTreeMap<String, Vec<SemanticType>>, String> {
     let ty = locals
         .get(scrutinee)
         .ok_or_else(|| format!("proof scrutinee `{scrutinee}` is absent"))?;
@@ -8375,46 +8500,7 @@ fn check_elimination_proof(
             ));
         }
     };
-    let mut observed = BTreeMap::new();
-    for branch in branches {
-        check_name(&branch.constructor, "proof constructor")?;
-        if observed
-            .insert(branch.constructor.clone(), branch.binders.len())
-            .is_some()
-        {
-            return Err(format!("duplicate proof branch `{}`", branch.constructor));
-        }
-        let expected_binders = expected.get(&branch.constructor).ok_or_else(|| {
-            format!(
-                "proof branch `{}` is not a constructor of `{scrutinee}`",
-                branch.constructor
-            )
-        })?;
-        if branch.binders.len() != expected_binders.len() {
-            return Err(format!(
-                "proof branch `{}` expects {} binder(s), received {}",
-                branch.constructor,
-                expected_binders.len(),
-                branch.binders.len()
-            ));
-        }
-        let mut nested = locals.clone();
-        for (binder, binder_type) in branch.binders.iter().zip(expected_binders) {
-            check_name(binder, "proof binder")?;
-            if nested.insert(binder.clone(), binder_type.clone()).is_some() {
-                return Err(format!("shadowed proof binder `{binder}`"));
-            }
-        }
-        check_proof(&branch.proof, &nested, env)?;
-    }
-    if observed.keys().collect::<Vec<_>>() != expected.keys().collect::<Vec<_>>() {
-        return Err(format!(
-            "proof branches are not exhaustive: expected {:?}, observed {:?}",
-            expected.keys().collect::<Vec<_>>(),
-            observed.keys().collect::<Vec<_>>()
-        ));
-    }
-    Ok(())
+    Ok(expected)
 }
 
 impl SemanticModule {
@@ -9140,13 +9226,19 @@ impl SemanticModule {
                 }
             }
         }
-        elaboration.finish(
+        let mut elaboration = elaboration.finish(
             &self.declarations,
             env.models.locals(),
             env.reasoning.locals(),
             env.texts.locals(),
             text_imports,
-        )
+        )?;
+        // Every declaration has been checked with its widening conversions
+        // typed; each is now replaced by the ordinary term it means
+        // (§17.12, *Widening conversions*), with every function and type of
+        // the module known.
+        widen::elaboration(&mut elaboration, &env)?;
+        Ok(elaboration)
     }
 }
 
@@ -9663,13 +9755,27 @@ mod tests {
                 option(ty.clone()),
             );
         }
+        for ty in &fixed_types {
+            accepts(P::ToInt, core::slice::from_ref(ty), T::Int);
+        }
         for ty in [T::UInt8, T::UInt16, T::UInt32, T::UInt64] {
+            accepts(P::ToNat, core::slice::from_ref(&ty), T::Nat);
             assert!(infer_primitive(
                 P::CheckedNegate,
                 &typed(core::slice::from_ref(&ty)),
                 &option(ty)
             )
             .is_err());
+        }
+        for ty in [T::Int8, T::Int16, T::Int32, T::Int64, T::Int, T::Nat] {
+            assert!(
+                infer_primitive(P::ToNat, &typed(core::slice::from_ref(&ty)), &T::Nat).is_err()
+            );
+        }
+        for ty in [T::Int, T::Nat, T::Bool, T::Bytes, T::String] {
+            assert!(
+                infer_primitive(P::ToInt, &typed(core::slice::from_ref(&ty)), &T::Int).is_err()
+            );
         }
     }
 

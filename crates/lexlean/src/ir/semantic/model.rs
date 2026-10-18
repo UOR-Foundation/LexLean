@@ -652,6 +652,10 @@ pub struct Elaboration {
     pub(crate) models: Models,
     /// The reasoning interfaces this module declares, keyed by local name.
     pub(crate) reasoning: super::reasoning::Reasoning,
+    /// The widening conversions each elaborated declaration applied, by its
+    /// name, each now the ordinary term it means (§17.12, *Widening
+    /// conversions*).
+    pub(crate) widened: BTreeMap<String, BTreeSet<&'static str>>,
     /// The tokenizers and context windows this module declares, keyed by
     /// local name.
     pub(crate) text: super::language_model::Texts,

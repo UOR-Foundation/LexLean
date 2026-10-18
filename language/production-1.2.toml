@@ -34,7 +34,7 @@ statement = "A natural-number or mathematical-integer value outside the target w
 
 [[effect]]
 id = "recursion"
-statement = "The realization recurses to a depth bounded only by its input; exhausting the stack stops it with an explicit failure."
+statement = "The realization recurses to a depth bounded only by its input; exhausting the stack aborts the process, and the realization states no failure for it."
 
 [[construct]]
 key = "type.type"
@@ -927,6 +927,22 @@ allocation = false
 overflow = []
 recursion = false
 note = "A key comparison."
+
+[[construct]]
+key = "primitive.to_int"
+disposition = "runtime"
+allocation = false
+overflow = ["int"]
+recursion = false
+note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and an exact integer sum, which leaves the 64-bit range exactly when an unsigned 64-bit operand does."
+
+[[construct]]
+key = "primitive.to_nat"
+disposition = "runtime"
+allocation = false
+overflow = []
+recursion = false
+note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and a natural-number sum, which never leaves the 64-bit range."
 
 [[construct]]
 key = "declaration.structure"

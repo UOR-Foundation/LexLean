@@ -1,0 +1,347 @@
+\begin{lexlean}{R21}
+\title{Certificate A LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21}
+\begin{coremodule}
+imports [
+  LexLeanPreservation.Core,
+  LexLeanPreservation.Values,
+  LexLeanPreservation.Primitives,
+  LexLeanPreservation.Fixed,
+  LexLeanPreservation.Keys,
+  LexLeanPreservation.Templates,
+  LexLeanPreservation.Validate,
+  Coverage.Boundary,
+  Coverage.Colls,
+  Coverage.Main,
+  Coverage.Prims,
+  Coverage.RecRoots,
+  Coverage.Recur,
+  Coverage.Syntax,
+  Coverage.Types
+]
+
+definition LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__prog : @0 := @106 {
+  all: [LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__prog],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__fits_0 : @110 := @142 {
+  all: [LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__fits_0],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+theorem LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__rel_0 : @196 := @517 {
+  all: [LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__rel_0],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+definition LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.denote : @520 := @530 {
+  all: [LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.denote],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  reducibility: regular{height: 2},
+  transparency: semireducible
+}
+theorem LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.root : @537 := @548 {
+  all: [LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.root],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
+  transparency: semireducible
+}
+
+@0 := LexLeanTarget.TargetSyntax.Program
+@1 := LexLeanTarget.TargetSyntax.Program.mk
+@2 := List.nil.{0}
+@5 := @1 (@2 LexLeanTarget.TargetSyntax.Adt)
+@6 := List.cons.{0}
+@7 := LexLeanTarget.TargetSyntax.Function
+@8 := @6 @7
+@9 := LexLeanTarget.TargetSyntax.Function.mk
+@10 := Nat
+@11 := @6 @10
+@13 := OfNat.ofNat.{0} @10
+@14 := 0
+@15 := @13 @14
+@16 := instOfNatNat
+@18 := @15 (@16 @14)
+@19 := @11 @18
+@20 := 1
+@23 := @13 @20 (@16 @20)
+@28 := @9 (@19 (@11 @23 (@2 @10)))
+@29 := LexLeanTarget.TargetSyntax.Ty
+@30 := @6 @29
+@33 := LexLeanTarget.TargetSyntax.Ty.fixed LexLeanTarget.TargetSyntax.IntKind.i8
+@34 := @30 @33
+@38 := @28 (@34 (@34 (@2 @29)))
+@39 := LexLeanTarget.TargetSyntax.Ty.pair
+@41 := LexLeanTarget.TargetSyntax.Ty.option @33
+@42 := @39 @41
+@43 := @42 @41
+@44 := @42 @43
+@45 := @42 @44
+@46 := @42 @45
+@47 := @38 @46
+@48 := LexLeanTarget.TargetSyntax.Expr.build
+@49 := LexLeanTarget.TargetSyntax.Shape.pair
+@50 := @48 @49
+@51 := @50 @46
+@52 := LexLeanTarget.TargetSyntax.Expr
+@53 := @6 @52
+@54 := LexLeanTarget.TargetSyntax.Expr.prim
+@55 := LexLeanTarget.TargetSyntax.Prim.checkedAdd
+@56 := @54 @55
+@57 := LexLeanTarget.TargetSyntax.Expr.var
+@58 := @57 @18
+@59 := @53 @58
+@60 := @57 @23
+@61 := @53 @60
+@62 := @2 @52
+@63 := @61 @62
+@64 := @59 @63
+@65 := @56 @64
+@66 := @53 @65
+@67 := @50 @45
+@68 := LexLeanTarget.TargetSyntax.Prim.checkedSub
+@70 := @54 @68 @64
+@71 := @53 @70
+@72 := @50 @44
+@73 := LexLeanTarget.TargetSyntax.Prim.checkedMul
+@75 := @54 @73 @64
+@76 := @53 @75
+@77 := @50 @43
+@78 := LexLeanTarget.TargetSyntax.Prim.checkedQuot
+@80 := @54 @78 @64
+@81 := @53 @80
+@82 := LexLeanTarget.TargetSyntax.Prim.checkedNeg
+@83 := @54 @82
+@84 := @59 @62
+@85 := @83 @84
+@87 := @53 @85 @62
+@88 := @81 @87
+@89 := @77 @88
+@91 := @53 @89 @62
+@92 := @76 @91
+@93 := @72 @92
+@95 := @53 @93 @62
+@96 := @71 @95
+@97 := @67 @96
+@99 := @53 @97 @62
+@100 := @66 @99
+@102 := @47 (@51 @100)
+@106 := @5 (@8 @102 (@2 @7))
+@107 := Int8
+@110 := (a : @107) -> (b : @107) -> Bool
+@111 := Bool.and
+@112 := Bool.true
+@113 := @111 @112
+@114 := @113 @112
+@115 := @113 @114
+@117 := @111 @115 @112
+@118 := @111 @117
+@120 := @111 @114 @112
+@122 := @111 @120 @112
+@123 := @118 @122
+@125 := @111 @123 @112
+@127 := @111 @125 @112
+@128 := @118 @127
+@130 := @111 @128 @112
+@132 := @111 @130 @112
+@133 := @118 @132
+@135 := @111 @133 @112
+@137 := @111 @135 @112
+@138 := @118 @137
+@142 := fun (a : @107) => fun (b : @107) => @111 @138 @112
+@143 := LexLeanPreservation.FunRel
+@144 := LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__prog
+@146 := @143 @144 @18
+@147 := LexLeanTarget.TargetSyntax.Value
+@148 := @6 @147
+@149 := LexLeanTarget.TargetSyntax.Value.i8
+@150 := #1
+@151 := @149 @150
+@152 := @148 @151
+@153 := #0
+@154 := @149 @153
+@155 := @148 @154
+@156 := @2 @147
+@157 := @155 @156
+@158 := @152 @157
+@159 := @146 @158
+@160 := LexLeanPreservation.Rel
+@163 := LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__fits_0 @150 @153
+@164 := @160 @163
+@165 := LexLeanPreservation.encPair
+@166 := Option.{0}
+@167 := @166 @107
+@168 := @165 @167
+@169 := Prod.{0, 0}
+@170 := @169 @167
+@171 := @170 @167
+@172 := @170 @171
+@174 := @168 (@170 @172)
+@177 := LexLeanPreservation.encOption @107 @149
+@192 := @174
+    @177
+    (@168 @172 @177 (@168 @171 @177 (@168 @167 @177 @177)))
+    (Coverage.Prims.fixedSmall @150 @153)
+@193 := @164 @192
+@196 := (a : @107) -> (b : @107) -> @159 @193
+@202 := LexLeanPreservation.funRel_intro @144 @18 @158 @193 @102
+@204 := @169 @10 @147
+@205 := @6 @204
+@208 := Prod.mk.{0, 0} @10 @147
+@211 := @205 (@208 @23 @154)
+@214 := @205 (@208 @18 @151)
+@215 := @2 @204
+@217 := @211 (@214 @215)
+@218 := @202 @217
+@219 := Eq.refl.{1}
+@221 := @219 (@166 @7)
+@222 := LexLeanRuntime.index
+@223 := List.{0}
+@246 := @218
+    (@221
+      (@222
+        (@223 @7)
+        @7
+        (LexLeanRuntime.instIndexableList @7)
+        (LexLeanTarget.TargetSyntax.Program.functions @144)
+        @18))
+    (@219
+      (@166 (@223 @204))
+      (LexLeanTarget.TargetSemantics.bindAll
+        (LexLeanTarget.TargetSyntax.Function.parameters @102)
+        @158
+        @215))
+@250 := LexLeanPreservation.conv_build @144 @217 @49
+@254 := @250 @46 @100 @138 @112
+@256 := LexLeanRuntime.checkedAdd @107
+@257 := LexLeanRuntime.instFixedInt8
+@261 := @177 (@256 @257 @150 @153)
+@262 := @148 @261
+@263 := LexLeanTarget.TargetSyntax.Value.pair
+@269 := @177 (LexLeanRuntime.checkedSubtract @107 @257 @150 @153)
+@270 := @263 @269
+@276 := @177 (LexLeanRuntime.checkedMultiply @107 @257 @150 @153)
+@277 := @263 @276
+@283 := @177 (LexLeanRuntime.checkedQuotient @107 @257 @150 @153)
+@284 := @263 @283
+@289 := @177 (LexLeanRuntime.checkedNegate @107 @257 @150)
+@290 := @284 @289
+@291 := @277 @290
+@292 := @270 @291
+@294 := @148 @292 @156
+@299 := @254 (@262 @294) (@263 @261 @292)
+@302 := LexLeanPreservation.convL_cons @144 @217
+@308 := @302 @65 @99 @117 @137 @261 @294
+@311 := LexLeanPreservation.conv_prim @144 @217
+@317 := @311 @55 @64 @115 @112 @158 @261
+@318 := @302 @58
+@323 := @318 @63 @112 @114 @151 @157
+@326 := LexLeanPreservation.conv_var @144 @217
+@328 := @326 @18 @151
+@330 := @219 (@166 @147)
+@332 := LexLeanTarget.TargetSemantics.lookup @217
+@335 := @328 (@330 (@332 @18))
+@336 := @323 @335
+@348 := @302 @60 @62 @112 @112 @154 @156 (@326 @23 @154 (@330 (@332 @23)))
+@351 := LexLeanPreservation.convL_nil @144 @217
+@353 := @336 (@348 @351)
+@359 := @308 (@317 @353 (LexLeanPreservation.prim_checkedAdd_i8 @150 @153))
+@365 := @302 @97 @62 @135 @112 @292 @156
+@369 := @250 @45 @96 @133 @112
+@370 := @148 @269
+@372 := @148 @291 @156
+@375 := @369 (@370 @372) @292
+@393 := @302
+    @70
+    @95
+    @117
+    @132
+    @269
+    @372
+    (@311 @68 @64 @115 @112 @158 @269 @353 (LexLeanPreservation.prim_checkedSub_i8 @150 @153))
+@399 := @302 @93 @62 @130 @112 @291 @156
+@403 := @250 @44 @92 @128 @112
+@404 := @148 @276
+@406 := @148 @290 @156
+@409 := @403 (@404 @406) @291
+@427 := @302
+    @75
+    @91
+    @117
+    @127
+    @276
+    @406
+    (@311 @73 @64 @115 @112 @158 @276 @353 (LexLeanPreservation.prim_checkedMul_i8 @150 @153))
+@433 := @302 @89 @62 @125 @112 @290 @156
+@437 := @250 @43 @88 @123 @112
+@438 := @148 @283
+@440 := @148 @289 @156
+@489 := @437
+    (@438 @440)
+    @290
+    (@302
+      @80
+      @87
+      @117
+      @122
+      @283
+      @440
+      (@311 @78 @64 @115 @112 @158 @283 @353 (LexLeanPreservation.prim_checkedQuot_i8 @150 @153))
+      (@302
+        @85
+        @62
+        @120
+        @112
+        @289
+        @156
+        (@311
+          @82
+          @84
+          @114
+          @112
+          (@152 @156)
+          @289
+          (@318 @62 @112 @112 @151 @156 @335 @351)
+          (LexLeanPreservation.prim_checkedNeg_i8 @150))
+        @351))
+@490 := LexLeanPreservation.construct_pair
+@517 := fun (a : @107) =>
+  fun (b : @107) =>
+  @246
+    (@299
+      (@359
+        (@365
+          (@375
+            (@393 (@399 (@409 (@427 (@433 (@489 (@490 @283 @289)) @351)) (@490 @276 @290)) @351))
+            (@490 @269 @291))
+          @351))
+      (@490 @261 @292))
+@518 := LexLeanPreservation.Obs
+@520 := (a : @107) -> (b : @107) -> @518
+@530 := fun (a : @107) =>
+  fun (b : @107) =>
+  cond.{1} @518 @163 (LexLeanPreservation.Obs.value @192) LexLeanPreservation.Obs.overflow
+@537 := (a : @107) -> (b : @107) -> LexLeanPreservation.RunConv @144 @18 @158 @193
+@548 := fun (a : @107) =>
+  fun (b : @107) =>
+  LexLeanPreservation.run_of_funRel
+    @144
+    @18
+    @158
+    @193
+    (LexLeanPreserve.C763ad8b782b549b787d4e95f336e685e.R21.__rel_0 @150 @153)
+\end{coremodule}
+\end{lexlean}

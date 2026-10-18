@@ -914,11 +914,6 @@ fn require_compiler_input_identity(bytes: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
-/// The verified-directory path of a certificate module.
-fn certificate_path(module: &str) -> String {
-    format!("{}.lean", module.replace('.', "/"))
-}
-
 // ---------------------------------------------------------------------------
 // Build
 // ---------------------------------------------------------------------------
@@ -998,6 +993,7 @@ fn manifest_for(
     program: &Program,
     entry: u64,
     semantic_id: Sha256Digest,
+    effects: Vec<String>,
 ) -> Result<Manifest, String> {
     let fallible = crate::calculus::rust::fallible_functions(program)?;
     let function = program
@@ -1021,6 +1017,7 @@ fn manifest_for(
             },
         }],
         sources: vec![semantic_id.to_hex()],
+        effects,
     })
 }
 
@@ -1145,24 +1142,7 @@ fn build_inner(
         let program = lowered.program;
         let mut packages = Vec::new();
         for target in &wanted.targets {
-            let manifest = manifest_for(
-                &wanted.package,
-                &target.id,
-                &program,
-                entry,
-                checked.semantic_id,
-            )
-            .map_err(|reason| internal(format!("root `{}`: {reason}", wanted.root)))?;
-            let rendered = package::package(&manifest).map_err(|reason| {
-                LexLeanError::from_diagnostic(Diagnostic::new(
-                    code!("LLB6005"),
-                    format!(
-                        "root `{}`: package `{}` for {}: {reason}",
-                        wanted.root, wanted.package.name, target.id
-                    ),
-                ))
-            })?;
-            let effects = root
+            let effects: Vec<String> = root
                 .report
                 .targets
                 .iter()
@@ -1176,6 +1156,24 @@ fn build_inner(
                     ids.into_iter().collect()
                 })
                 .unwrap_or_default();
+            let manifest = manifest_for(
+                &wanted.package,
+                &target.id,
+                &program,
+                entry,
+                checked.semantic_id,
+                effects.clone(),
+            )
+            .map_err(|reason| internal(format!("root `{}`: {reason}", wanted.root)))?;
+            let rendered = package::package(&manifest).map_err(|reason| {
+                LexLeanError::from_diagnostic(Diagnostic::new(
+                    code!("LLB6005"),
+                    format!(
+                        "root `{}`: package `{}` for {}: {reason}",
+                        wanted.root, wanted.package.name, target.id
+                    ),
+                ))
+            })?;
             packages.push((target.clone(), manifest, rendered, effects));
         }
         let evidence = match request
@@ -1289,7 +1287,9 @@ fn build_inner(
             )));
         }
         let program = add(format!("evidence/program/R{index}.json"), program_bytes);
-        let a_path = certificate_path(&preserved.module);
+        // Certificates A, B and E are kernel-term data, recorded in the
+        // authoring notation (SPEC.md §17.17).
+        let a_path = crate::production::preserve::notation_path(&preserved.module);
         let certificate_a = CertificateRef {
             role: CertificateRole::A,
             module: preserved.module.clone(),
@@ -1341,12 +1341,7 @@ fn build_inner(
                     &rendering.composed.theorem,
                 ),
             ] {
-                // Certificate E is kernel-term data, recorded in the authoring
-                // notation (SPEC.md §17.17); A and B are Lean text.
-                let path = match role {
-                    CertificateRole::E => crate::production::preserve::notation_path(module),
-                    CertificateRole::A | CertificateRole::B => certificate_path(module),
-                };
+                let path = crate::production::preserve::notation_path(module);
                 certificates.push(CertificateRef {
                     role,
                     module: module.clone(),
@@ -1835,12 +1830,7 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                         && stated_certificate.file.path
                             == format!(
                                 "evidence/certificates/{}",
-                                match role {
-                                    CertificateRole::E =>
-                                        crate::production::preserve::notation_path(module),
-                                    CertificateRole::A | CertificateRole::B =>
-                                        certificate_path(module),
-                                }
+                                crate::production::preserve::notation_path(module)
                             )
                         && (
                             stated_certificate.file.byte_length,
@@ -1880,6 +1870,7 @@ fn replay_files(files: &[(String, Vec<u8>)]) -> Result<ReplayReport, LexLeanErro
                 &program,
                 output.entry.function,
                 result.source.semantic_id,
+                output.effects.clone(),
             )
             .map_err(|reason| replay_error(format!("{directory}: {reason}")))?;
             bind(

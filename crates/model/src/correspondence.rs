@@ -18,7 +18,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 /// The aligner.
-pub const ALIGNER_SOURCE: &str = "crates/lexlean/src/production/rust_cert.rs";
+pub const ALIGNER_SOURCE: &str = "crates/lexlean/src/production/certificate/data_b/align.rs";
 
 /// How the audit's reports name the library side of the comparison.
 pub const CORRESPONDENCE_SOURCE: &str =
