@@ -295,55 +295,73 @@ decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 pub enum Adt0 {
     C0(u64),
     C1(std::rc::Rc<Adt0>, std::rc::Rc<Adt0>),
+    C2(List<Adt1>, std::rc::Rc<Adt0>),
 }
 
-pub fn f0(v0: Adt0) -> (Adt0, Adt0) {
-    (f1(v0.clone()), f2(v0))
+#[derive(Clone)]
+pub enum Adt1 {
+    C0(Str, Adt0),
+    C1(std::rc::Rc<Adt1>, std::rc::Rc<Adt1>),
 }
 
-pub fn f1(v0: Adt0) -> Adt0 {
+pub fn f0(v0: Adt0) -> R<u64> {
+    f1(v0)
+}
+
+pub fn f1(v0: Adt0) -> R<u64> {
     let m1 = v0;
     match m1 {
-        Adt0::C0(v1) => {
-            Adt0::C0(v1)
+        Adt0::C0(_) => {
+            Ok(1u64)
         }
-        Adt0::C1(r5, r6) => {
-            let v2 = (*r5).clone();
-            let v3 = (*r6).clone();
-            let m2 = v2;
-            match m2 {
-                Adt0::C0(v4) => {
-                    Adt0::C1(std::rc::Rc::new(Adt0::C0(v4)), std::rc::Rc::new(f1(v3)))
-                }
-                Adt0::C1(r3, r4) => {
-                    let v5 = (*r3).clone();
-                    let v6 = (*r4).clone();
-                    f1(Adt0::C1(std::rc::Rc::new(v5), std::rc::Rc::new(Adt0::C1(std::rc::Rc::new(v6), std::rc::Rc::new(v3)))))
-                }
-            }
+        Adt0::C1(r8, r9) => {
+            let v2 = (*r8).clone();
+            let v3 = (*r9).clone();
+            let a4 = {
+                let a2 = f1(v2)?;
+                let a3 = f1(v3)?;
+                nat_add(a2, a3)?
+            };
+            let a5 = 1u64;
+            nat_add(a4, a5)
+        }
+        Adt0::C2(v4, r10) => {
+            let v5 = (*r10).clone();
+            let a6 = f2(v4)?;
+            let a7 = f1(v5)?;
+            nat_add(a6, a7)
         }
     }
 }
 
-pub fn f2(v0: Adt0) -> Adt0 {
-    let m7 = v0;
-    match m7 {
-        Adt0::C0(v1) => {
-            Adt0::C0(v1)
+pub fn f2(v0: List<Adt1>) -> R<u64> {
+    let m11 = v0;
+    match m11.uncons() {
+        None => {
+            Ok(0u64)
         }
-        Adt0::C1(r10, r11) => {
-            let v2 = (*r10).clone();
-            let v3 = (*r11).clone();
-            let m8 = v2;
-            match m8 {
-                Adt0::C0(_) => {
-                    f2(v3)
-                }
-                Adt0::C1(r9, _) => {
-                    let v5 = (*r9).clone();
-                    f2(Adt0::C1(std::rc::Rc::new(v5), std::rc::Rc::new(v3)))
-                }
-            }
+        Some((v1, v2)) => {
+            let a12 = f3(v1)?;
+            let a13 = f2(v2)?;
+            nat_add(a12, a13)
+        }
+    }
+}
+
+pub fn f3(v0: Adt1) -> R<u64> {
+    let m14 = v0;
+    match m14 {
+        Adt1::C0(_, v2) => {
+            let a15 = f1(v2)?;
+            let a16 = 1u64;
+            nat_add(a15, a16)
+        }
+        Adt1::C1(r19, r20) => {
+            let v3 = (*r19).clone();
+            let v4 = (*r20).clone();
+            let a17 = f3(v3)?;
+            let a18 = f3(v4)?;
+            nat_add(a17, a18)
         }
     }
 }

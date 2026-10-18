@@ -239,6 +239,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "pixels",
+      "root": "Coverage.Prims.pixels",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "sequences",
       "root": "Coverage.Prims.sequences",
       "targets": [
@@ -250,6 +258,15 @@
       "name": "text",
       "root": "Coverage.Prims.text",
       "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "widenings",
+      "root": "Coverage.Prims.widenings",
+      "targets": [
+        "rust-core",
         "rust-std"
       ],
       "version": "1.0.0"

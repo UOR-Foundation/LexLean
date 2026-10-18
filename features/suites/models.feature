@@ -85,3 +85,10 @@ Feature: models
     When it is verified and a contract and realization mismatch is planted
     Then every claim is kernel-checked
     And the planted mismatch is refused by verification
+
+  @MD-13 @build
+  Scenario: IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation.
+    Given IEEE-754 binary32 and binary64 bit patterns and binary32 scale triples
+    When they are decoded to exact dyadic rationals and round(a * b / c * 2^32) is derived in LexLean
+    Then the decoded rationals and rounded scale ratios equal the independent exact rational computation under Lean
+    And non-finite and out-of-range patterns are rejected and a planted rounding or exponent mutation is refused by verification

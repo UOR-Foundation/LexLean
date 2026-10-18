@@ -345,9 +345,41 @@ fn lean_string(text: &str) -> String {
     out
 }
 
+/// The Lean spelling of a runtime type, for the evaluator's input.
+fn spelling(ty: &lexlean::production::certificate::RuntimeType) -> String {
+    use lexlean::production::certificate::RuntimeType as T;
+    match ty {
+        T::Atom(name) => (*name).to_owned(),
+        T::Option(value) => format!("(Option {})", spelling(value)),
+        T::Except(error, value) => format!("(Except {} {})", spelling(error), spelling(value)),
+        T::List(element) => format!("(List {})", spelling(element)),
+        T::Prod(left, right) => format!("(Prod {} {})", spelling(left), spelling(right)),
+        T::Function(parameters, result) => {
+            let mut out = String::from("(");
+            for parameter in parameters {
+                out.push_str(&spelling(parameter));
+                out.push_str(" -> ");
+            }
+            out.push_str(&spelling(result));
+            out.push(')');
+            out
+        }
+        T::Named(name, arguments) => {
+            let mut out = format!("({name}");
+            for argument in arguments {
+                out.push(' ');
+                out.push_str(&spelling(argument));
+            }
+            out.push(')');
+            out
+        }
+    }
+}
+
 /// The Lean term of the source value `value` encodes at type `ty`.
 fn lean_term(modules: &Modules<'_>, ty: &SemanticType, value: &Value) -> String {
-    let (lean, constructors) = source_type(modules, ty).expect("a closed type");
+    let (runtime, constructors) = source_type(modules, ty).expect("a closed type");
+    let lean = spelling(&runtime);
     let typed = |term: String| format!("({term} : {lean})");
     let element = |ty: &SemanticType, items: &[Value]| {
         typed(format!(

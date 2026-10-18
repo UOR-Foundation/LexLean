@@ -178,4 +178,20 @@ public theorem stream_accepts : (streamCode (spillStream ((10 :: (10 :: (10 :: (
 public theorem stream_refuses_output : (streamCode (spillStream ((10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: ([] : List (Nat))))))))))))))) = 14) := by
   decide
 
+@[expose] public def deriveScaleMultiplier (inputScaleBits : Int) (weightScaleBits : Int) (outputScaleBits : Int) : Option (Int) := Models.Recognizer.scaleRatioRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)
+
+@[expose] public def deriveChannelMultipliers (inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int) : Option (List (Int)) := Models.Recognizer.scaleMultipliersRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)
+
+public theorem corpus_scale_ratio_rounds_up : (deriveScaleMultiplier ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int))) := by
+  decide
+
+public theorem corpus_scale_ratio_rounds_down : (deriveScaleMultiplier ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int))) := by
+  decide
+
+public theorem corpus_scale_ratio_tie_even : ((deriveScaleMultiplier ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int))) /\ (deriveScaleMultiplier ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int)))) := by
+  decide
+
+public theorem corpus_scale_multipliers : (deriveChannelMultipliers ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int)))))) := by
+  decide
+
 end Models.Main
