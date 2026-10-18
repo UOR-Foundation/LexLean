@@ -1523,7 +1523,7 @@ pub(crate) fn run(id: &str) {
                     ))
                     .expect("the committed hints are a hints file the verifier reads");
                     assert!(
-                        hints.contains_key("LexLeanExample.CensusCert4"),
+                        hints.contains_key("LexLeanExample.Census"),
                         "the hints cover the Atlas module that dominates the verification"
                     );
                 } else {
@@ -1824,7 +1824,7 @@ pub(crate) fn run(id: &str) {
             let join_job = job(&runs[crate::shards::JOIN]);
             assert!(
                 join_job.contains("grep -F \"verify-examples: uor-atlas verified (attestation \" ci-evidence/vv.txt")
-                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 267 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
+                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 347 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
                 "the join asserts that Atlas verified"
             );
             assert!(

@@ -7593,7 +7593,7 @@ change.
 `RP-14` reads the profile out of the matrix. The examples leg must name
 exactly that width, budget, and hints file; the width and the hints must parse
 with the verifier's own functions (`Operational::parse_width`,
-`Operational::parse_hints`), and the hints must name `CensusCert4`; any other
+`Operational::parse_hints`), and the hints must name `Census`; any other
 leg must name none; each variable is set once, from the row; and no profile may
 come from `vars.` or `inputs.`.
 
@@ -9029,3 +9029,37 @@ presentation check, and the toolchain/process locators `"HOME"`, `"PATH"`, and
 plants `let _ = std::env::var("LEXLEAN_AXDBG");` on a copy of
 `production/certificate/data_a.rs` and requires the scan to report
 `production/certificate/data_a.rs`.
+
+## Census windows 4 and 10 as width-100 certificates (Issue #168)
+
+`CensusCert4` and `CensusCert10` each proved one window of 1,000 Gram types,
+`gramRange 4000 1000` and `gramRange 10000 1000`, by a single
+`of_decide_eq_true`, and their memory grew with the work of the whole window:
+on main run 39054719580
+`CensusCert4` took 1,419.3 s to elaborate and 2,248.5 s to replay at about
+15 GiB with 3.5 GiB of swap, and `CensusCert10` 114.6 s and 120.8 s at
+14.3 and 14.7 GiB with swap. Each window is now ten width-100 certificates,
+`CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`, joined
+by `gramRange_append` as `CensusCert7` already was. The statements, the kernel
+`decide` proofs of each piece, and every importer are unchanged.
+
+Measured on run 39086315289 (the Atlas jobs of this tree):
+
+| Window | Elaboration (s) | Replay (s) | Largest piece (GiB) | Swap |
+| --- | ---: | ---: | ---: | --- |
+| 4 | 111.5 | 117.6 | 4.5 | none |
+| 10 | 118.1 | 115.4 | 5.6 | none |
+
+No `Census*` process swapped on that run; `Closure` and `ClosureOrbit` still
+did. The join wrote 347 normalized verification records, four for each of the
+twenty new modules beside the 267 before; they are this commit's
+`expected/verify`, and the hints of the 22 changed modules are that run's.
+
+### the census windows can fail
+
+A piece whose window is wrong, or a join that does not sum to the width of its
+window, is refused by the kernel when `CensusCert4` or `CensusCert10`
+elaborates, because each keeps the statement it had; a piece missing from the
+Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
+shard plan is refused by `cargo xtask ci-shards` and by the plan check of
+RP-14.
