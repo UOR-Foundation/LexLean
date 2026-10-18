@@ -1672,6 +1672,44 @@ pub fn audit_no_unsafe(root: &Path) -> Result<(), Fail> {
     Ok(())
 }
 
+/// SM-34 (R8): a `match` that names several variants of a closed semantic
+/// enum names them all, in every consumer under the compiler crate's source:
+/// the Lean and LaTeX backends, validation, charge, production eligibility,
+/// and the calculus with its Rust AST. A catch-all arm there would give a
+/// variant added later a meaning nobody chose.
+pub fn audit_classifications(root: &Path) -> Result<(), Fail> {
+    use repo_model::classification;
+    let base = root.join(classification::SOURCE_ROOT);
+    let mut paths: Vec<PathBuf> = walkdir::WalkDir::new(&base)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .map(walkdir::DirEntry::into_path)
+        .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
+        .collect();
+    paths.sort();
+    let mut sources = Vec::with_capacity(paths.len());
+    for path in paths {
+        let relative = path
+            .strip_prefix(root)
+            .map_err(|error| format!("{}: {error}", path.display()))?
+            .to_string_lossy()
+            .replace('\\', "/");
+        sources.push((relative, std::fs::read_to_string(&path)?));
+    }
+    let summary = classification::audit(&sources)?;
+    println!(
+        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total except {} catch-alls in the {} identity-bound renderer sources (SM-34, R8)",
+        summary.classifications(),
+        classification::CLASSIFYING_ARMS,
+        summary.per_file.len(),
+        summary.files,
+        summary.tolerated.values().sum::<usize>(),
+        summary.tolerated.len()
+    );
+    Ok(())
+}
+
 /// §17.13: the production-eligibility analysis classifies every semantic
 /// construct explicitly. A wildcard arm, rest pattern, implicit-default
 /// binding form, or unnamed IR variant there would admit a construct to

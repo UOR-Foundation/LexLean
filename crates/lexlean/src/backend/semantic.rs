@@ -333,6 +333,172 @@ fn reflected_iff(fields: &[SemanticReflectionField]) -> String {
     }
 }
 
+/// How a primitive is spelled in generated Lean.
+enum Spelling {
+    /// A widening conversion, printed bare: linking elaborates every one
+    /// before Lean is rendered (§17.12), and the canonical document states the
+    /// conversion itself, by a name no Lean runtime declares.
+    Widening(&'static str),
+    /// A function of `LexLeanRuntime`, and for a checked operation the
+    /// specialization that replaces it when the result is an `Option Int64`.
+    Runtime {
+        name: &'static str,
+        int64: Option<&'static str>,
+    },
+    /// A function of `LexLeanCollections`.
+    Collection(&'static str),
+}
+
+/// The spelling of every primitive, named one by one so that a primitive
+/// added to the IR is a compile error here and not a mislabelled call (SM-34).
+fn spelling(operation: SemanticPrimitive) -> Spelling {
+    match operation {
+        SemanticPrimitive::ToNat => Spelling::Widening("toNat"),
+        SemanticPrimitive::ToInt => Spelling::Widening("toInt"),
+        SemanticPrimitive::Subtract => Spelling::Runtime {
+            name: "subtract",
+            int64: None,
+        },
+        SemanticPrimitive::Multiply => Spelling::Runtime {
+            name: "multiply",
+            int64: None,
+        },
+        SemanticPrimitive::Quotient => Spelling::Runtime {
+            name: "quotient",
+            int64: None,
+        },
+        SemanticPrimitive::Remainder => Spelling::Runtime {
+            name: "remainder",
+            int64: None,
+        },
+        SemanticPrimitive::Negate => Spelling::Runtime {
+            name: "negate",
+            int64: None,
+        },
+        SemanticPrimitive::CheckedConvert => Spelling::Runtime {
+            name: "checkedConvert",
+            int64: None,
+        },
+        SemanticPrimitive::CheckedAdd => Spelling::Runtime {
+            name: "checkedAdd",
+            int64: Some("checkedAddInt64"),
+        },
+        SemanticPrimitive::CheckedSubtract => Spelling::Runtime {
+            name: "checkedSubtract",
+            int64: Some("checkedSubtractInt64"),
+        },
+        SemanticPrimitive::CheckedMultiply => Spelling::Runtime {
+            name: "checkedMultiply",
+            int64: Some("checkedMultiplyInt64"),
+        },
+        SemanticPrimitive::CheckedNegate => Spelling::Runtime {
+            name: "checkedNegate",
+            int64: Some("checkedNegateInt64"),
+        },
+        SemanticPrimitive::CheckedQuotient => Spelling::Runtime {
+            name: "checkedQuotient",
+            int64: Some("checkedQuotientInt64"),
+        },
+        SemanticPrimitive::BitAnd => Spelling::Runtime {
+            name: "bitAnd",
+            int64: None,
+        },
+        SemanticPrimitive::BitOr => Spelling::Runtime {
+            name: "bitOr",
+            int64: None,
+        },
+        SemanticPrimitive::BitXor => Spelling::Runtime {
+            name: "bitXor",
+            int64: None,
+        },
+        SemanticPrimitive::BitNot => Spelling::Runtime {
+            name: "bitNot",
+            int64: None,
+        },
+        SemanticPrimitive::ShiftLeft => Spelling::Runtime {
+            name: "shiftLeft",
+            int64: None,
+        },
+        SemanticPrimitive::ShiftRight => Spelling::Runtime {
+            name: "shiftRight",
+            int64: None,
+        },
+        SemanticPrimitive::Append => Spelling::Runtime {
+            name: "append",
+            int64: None,
+        },
+        SemanticPrimitive::Length => Spelling::Runtime {
+            name: "length",
+            int64: None,
+        },
+        SemanticPrimitive::Index => Spelling::Runtime {
+            name: "index",
+            int64: None,
+        },
+        SemanticPrimitive::Slice => Spelling::Runtime {
+            name: "slice",
+            int64: None,
+        },
+        SemanticPrimitive::Utf8Encode => Spelling::Runtime {
+            name: "utf8Encode",
+            int64: None,
+        },
+        SemanticPrimitive::Utf8Decode => Spelling::Runtime {
+            name: "utf8Decode",
+            int64: None,
+        },
+        SemanticPrimitive::CompareBytes => Spelling::Runtime {
+            name: "compareBytes",
+            int64: None,
+        },
+        SemanticPrimitive::Equal => Spelling::Runtime {
+            name: "equal",
+            int64: None,
+        },
+        SemanticPrimitive::SplitExact => Spelling::Runtime {
+            name: "splitExact",
+            int64: None,
+        },
+        SemanticPrimitive::Join => Spelling::Runtime {
+            name: "join",
+            int64: None,
+        },
+        SemanticPrimitive::ParseDecimal => Spelling::Runtime {
+            name: "parseDecimal",
+            int64: None,
+        },
+        SemanticPrimitive::FormatDecimal => Spelling::Runtime {
+            name: "formatDecimal",
+            int64: None,
+        },
+        SemanticPrimitive::MapInsert => Spelling::Collection("mapInsert"),
+        SemanticPrimitive::MapRemove => Spelling::Collection("mapRemove"),
+        SemanticPrimitive::MapLookup => Spelling::Collection("mapLookup"),
+        SemanticPrimitive::MapContains => Spelling::Collection("mapContains"),
+        SemanticPrimitive::MapSize => Spelling::Collection("mapSize"),
+        SemanticPrimitive::MapKeys => Spelling::Collection("mapKeys"),
+        SemanticPrimitive::MapValues => Spelling::Collection("mapValues"),
+        SemanticPrimitive::MapEntries => Spelling::Collection("mapEntries"),
+        SemanticPrimitive::MapFold => Spelling::Collection("mapFold"),
+        SemanticPrimitive::SetInsert => Spelling::Collection("setInsert"),
+        SemanticPrimitive::SetRemove => Spelling::Collection("setRemove"),
+        SemanticPrimitive::SetContains => Spelling::Collection("setContains"),
+        SemanticPrimitive::SetSize => Spelling::Collection("setSize"),
+        SemanticPrimitive::SetElements => Spelling::Collection("setElements"),
+        SemanticPrimitive::SetUnion => Spelling::Collection("setUnion"),
+        SemanticPrimitive::SetIntersection => Spelling::Collection("setIntersection"),
+        SemanticPrimitive::SetDifference => Spelling::Collection("setDifference"),
+        SemanticPrimitive::SetFold => Spelling::Collection("setFold"),
+        SemanticPrimitive::ListFold => Spelling::Collection("listFold"),
+        SemanticPrimitive::Iterate => Spelling::Collection("iterate"),
+        SemanticPrimitive::IterateUntil => Spelling::Collection("iterateUntil"),
+        SemanticPrimitive::GraphSuccessors => Spelling::Collection("graphSuccessors"),
+        SemanticPrimitive::GraphReachable => Spelling::Collection("graphReachable"),
+        SemanticPrimitive::GraphTopological => Spelling::Collection("graphTopological"),
+        SemanticPrimitive::LessThan => Spelling::Collection("lessThan"),
+    }
+}
+
 impl Render<'_> {
     fn member(&self, member: &MemberRef) -> String {
         if member.module.is_none() {
@@ -680,123 +846,28 @@ impl Render<'_> {
         arguments: &[SemanticTerm],
         result: &SemanticType,
     ) -> String {
-        let int64_specialization = match operation {
-            SemanticPrimitive::CheckedAdd => Some("checkedAddInt64"),
-            SemanticPrimitive::CheckedSubtract => Some("checkedSubtractInt64"),
-            SemanticPrimitive::CheckedMultiply => Some("checkedMultiplyInt64"),
-            SemanticPrimitive::CheckedNegate => Some("checkedNegateInt64"),
-            SemanticPrimitive::CheckedQuotient => Some("checkedQuotientInt64"),
-            _ => None,
+        let int64_result =
+            matches!(result, SemanticType::Option { value } if **value == SemanticType::Int64);
+        let (head, ascription) = match spelling(operation) {
+            Spelling::Runtime {
+                int64: Some(specialized),
+                ..
+            } if int64_result => (
+                format!("LexLeanRuntime.{specialized}"),
+                "Option (Int64)".to_owned(),
+            ),
+            Spelling::Runtime { name, .. } => (format!("LexLeanRuntime.{name}"), self.ty(result)),
+            Spelling::Widening(name) => (name.to_owned(), self.ty(result)),
+            Spelling::Collection(name) => (format!("LexLeanCollections.{name}"), self.ty(result)),
         };
-        if matches!(result, SemanticType::Option { value } if **value == SemanticType::Int64) {
-            if let Some(operation) = int64_specialization {
-                let mut out = format!("(LexLeanRuntime.{operation}");
-                for argument in arguments {
-                    out.push_str(" (");
-                    out.push_str(&self.term(argument));
-                    out.push(')');
-                }
-                out.push_str(" : Option (Int64))");
-                return out;
-            }
-        }
-        // Linking elaborates every widening conversion before Lean is rendered
-        // (§17.12); the canonical document states the conversion itself, by
-        // a name no Lean runtime declares.
-        if operation.widening() {
-            let name = match operation {
-                SemanticPrimitive::ToNat => "toNat",
-                _ => "toInt",
-            };
-            let mut out = format!("({name}");
-            for argument in arguments {
-                out.push_str(" (");
-                out.push_str(&self.term(argument));
-                out.push(')');
-            }
-            out.push_str(" : ");
-            out.push_str(&self.ty(result));
-            out.push(')');
-            return out;
-        }
-        let operation = match operation {
-            SemanticPrimitive::Subtract => "subtract",
-            SemanticPrimitive::Multiply => "multiply",
-            SemanticPrimitive::Quotient => "quotient",
-            SemanticPrimitive::Remainder => "remainder",
-            SemanticPrimitive::Negate => "negate",
-            SemanticPrimitive::CheckedConvert => "checkedConvert",
-            SemanticPrimitive::CheckedAdd => "checkedAdd",
-            SemanticPrimitive::CheckedSubtract => "checkedSubtract",
-            SemanticPrimitive::CheckedMultiply => "checkedMultiply",
-            SemanticPrimitive::CheckedNegate => "checkedNegate",
-            SemanticPrimitive::CheckedQuotient => "checkedQuotient",
-            SemanticPrimitive::BitAnd => "bitAnd",
-            SemanticPrimitive::BitOr => "bitOr",
-            SemanticPrimitive::BitXor => "bitXor",
-            SemanticPrimitive::BitNot => "bitNot",
-            SemanticPrimitive::ShiftLeft => "shiftLeft",
-            SemanticPrimitive::ShiftRight => "shiftRight",
-            SemanticPrimitive::Append => "append",
-            SemanticPrimitive::Length => "length",
-            SemanticPrimitive::Index => "index",
-            SemanticPrimitive::Slice => "slice",
-            SemanticPrimitive::Utf8Encode => "utf8Encode",
-            SemanticPrimitive::Utf8Decode => "utf8Decode",
-            SemanticPrimitive::CompareBytes => "compareBytes",
-            SemanticPrimitive::Equal => "equal",
-            SemanticPrimitive::SplitExact => "splitExact",
-            SemanticPrimitive::Join => "join",
-            SemanticPrimitive::ParseDecimal => "parseDecimal",
-            SemanticPrimitive::FormatDecimal => "formatDecimal",
-            collection => {
-                let name = match collection {
-                    SemanticPrimitive::MapInsert => "mapInsert",
-                    SemanticPrimitive::MapRemove => "mapRemove",
-                    SemanticPrimitive::MapLookup => "mapLookup",
-                    SemanticPrimitive::MapContains => "mapContains",
-                    SemanticPrimitive::MapSize => "mapSize",
-                    SemanticPrimitive::MapKeys => "mapKeys",
-                    SemanticPrimitive::MapValues => "mapValues",
-                    SemanticPrimitive::MapEntries => "mapEntries",
-                    SemanticPrimitive::MapFold => "mapFold",
-                    SemanticPrimitive::SetInsert => "setInsert",
-                    SemanticPrimitive::SetRemove => "setRemove",
-                    SemanticPrimitive::SetContains => "setContains",
-                    SemanticPrimitive::SetSize => "setSize",
-                    SemanticPrimitive::SetElements => "setElements",
-                    SemanticPrimitive::SetUnion => "setUnion",
-                    SemanticPrimitive::SetIntersection => "setIntersection",
-                    SemanticPrimitive::SetDifference => "setDifference",
-                    SemanticPrimitive::SetFold => "setFold",
-                    SemanticPrimitive::ListFold => "listFold",
-                    SemanticPrimitive::Iterate => "iterate",
-                    SemanticPrimitive::IterateUntil => "iterateUntil",
-                    SemanticPrimitive::GraphSuccessors => "graphSuccessors",
-                    SemanticPrimitive::GraphReachable => "graphReachable",
-                    SemanticPrimitive::LessThan => "lessThan",
-                    _ => "graphTopological",
-                };
-                let mut out = format!("(LexLeanCollections.{name}");
-                for argument in arguments {
-                    out.push_str(" (");
-                    out.push_str(&self.term(argument));
-                    out.push(')');
-                }
-                out.push_str(" : ");
-                out.push_str(&self.ty(result));
-                out.push(')');
-                return out;
-            }
-        };
-        let mut out = format!("(LexLeanRuntime.{operation}");
+        let mut out = format!("({head}");
         for argument in arguments {
             out.push_str(" (");
             out.push_str(&self.term(argument));
             out.push(')');
         }
         out.push_str(" : ");
-        out.push_str(&self.ty(result));
+        out.push_str(&ascription);
         out.push(')');
         out
     }

@@ -1298,7 +1298,15 @@ pub fn program_allocates(program: &Program) -> bool {
             Ty::Fn { .. } => {
                 out.insert(Owner::Fn(ty.clone()));
             }
-            _ => {}
+            Ty::Unit
+            | Ty::Bool
+            | Ty::Nat
+            | Ty::Int
+            | Ty::Fixed { .. }
+            | Ty::String
+            | Ty::Bytes
+            | Ty::Ordering
+            | Ty::List { .. } => {}
         }
     }
     fn closures(expr: &Expr, out: &mut Vec<(u64, usize)>) {
