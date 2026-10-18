@@ -9,6 +9,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "check_arguments",
+      "root": "LexLeanBoot.CalculusCheck.checkArguments",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "check_program",
+      "root": "LexLeanBoot.CalculusCheck.checkProgram",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -34,4 +50,3 @@
     }
   ]
 }
-
