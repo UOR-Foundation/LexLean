@@ -4827,7 +4827,7 @@ input-dependent depth fits, and exhausting a stack aborts the process.
 `language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
 (`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
 sources (`rust_renderer`: one §21.1 frame per file of
-`rust::RENDERER_FILES`, the eight files of `calculus/rust/`, labeled by its
+`rust::RENDERER_FILES`, the nine files of `calculus/rust/`, labeled by its
 name, under the domain `lexlean-rust-renderer-v1`). Unit tests of the runtime
 and the renderer and the conformance suite check both records, so neither
 the runtime nor any rendering can change without changing LexLean's

@@ -2312,6 +2312,16 @@ impl<'a> Lowering<'a> {
                     block_of(body)
                 };
                 fold(&mut body);
+                let (parameters, mut body) = match super::tail::looped(
+                    position as u64,
+                    &parameters,
+                    &result,
+                    &body,
+                    &mut || self.fresh(),
+                ) {
+                    Some(looped) => looped,
+                    None => (parameters, body),
+                };
                 super::moves::apply(&mut body);
                 (parameters, body)
             };
