@@ -9,6 +9,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "correspond_crate",
+      "root": "LexLeanBoot.RustValidate.correspondCrate",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -27,6 +35,14 @@
     {
       "name": "parse_audit_output",
       "root": "LexLeanBoot.AxiomOutput.parseAuditOutput",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "validate_crate",
+      "root": "LexLeanBoot.RustValidate.validateCrate",
       "targets": [
         "rust-std"
       ],
