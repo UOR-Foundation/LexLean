@@ -8849,7 +8849,7 @@ range checks and byte comparison, as the spike on #92 measured).
 
 Removed: the source was not changed (the plants are made on copies).
 
-### the stacks the harnesses give a recursive root can fail their record (`BS-03`, SPEC.md §17.13, §17.23, #105 step 3)
+### the stacks the harnesses give a recursive root can fail their record (`PD-08`, SPEC.md §17.13, §17.23, #105 step 3)
 
 A root that admits `recursion` is correct only under a stack its depth fits,
 and nothing in a package bounds that depth (§17.16). The conformance harnesses
@@ -8857,7 +8857,7 @@ are the host of the roots they run, and gave them 64 MiB (`rust_harness`) and
 1 GiB (the `BS` evaluator thread) by habit. `tests/stack-bounds.json` records
 what the cases' own inputs need, written by the cases themselves with
 `LEXLEAN_MEASURE_STACK=1` (`all`) or `=scaling` on Linux x86-64 with rustc
-1.97.1; `BS-03` reads it. It is evidence at level `build` from one host and
+1.97.1; `PD-08` reads it. It is evidence at level `build` from one host and
 these inputs, not a stack bound for any program or host.
 
 Method. A harness binary reads `LEXLEAN_HARNESS_STACK` for the stack of its
@@ -8900,7 +8900,7 @@ on one name of `n` bytes (a single call, its argument passed through
 
 Debug costs about 320 bytes a byte of name, so the 64 MiB of the harness covers
 a name of 40,000 bytes with headroom 4 (51,380,224) and not one of 80,000
-(102,498,304); `BS-03` asserts the first and the table states the second.
+(102,498,304); `PD-08` asserts the first and the table states the second.
 Release needs the least stack the method measures (one 64 KiB step) at every
 `n`, which the issue's own release table did not. The cause is not established
 here; the rendering of `f1` (the iteration template) in the committed package
@@ -8911,13 +8911,13 @@ loop. Whether it does is the optimizer's choice and rustc does not guarantee it,
 so `recursion` stays in the declaration and the debug column is the one the
 suite's stacks are held to.
 
-`BS-03` makes each of these plants on every run's input (the record, a stack
+`PD-08` makes each of these plants on every run's input (the record, a stack
 constant, or a case input is changed in a clean tree, the case run, the failure
 observed, paths shortened, and the change removed):
 
 - **the harness stack lowered below a bound.** `rust_harness::HARNESS_STACK`
   set to `16 << 20`. `cargo test -p repo-conformance --test conformance --
-  conformance_bs_03 --exact`:
+  conformance_pd_08 --exact`:
 
   ```text
   panicked at crates/conformance/src/cases/bootstrap.rs:1576:75:
@@ -8962,7 +8962,7 @@ observed, paths shortened, and the change removed):
   a name of 40000 bytes: the harness finishes on 6422528 bytes, its need with headroom
   ```
 
-Removed: each edit was restored and `conformance_bs_03` passes (4 s). One
+Removed: each edit was restored and `conformance_pd_08` passes (4 s). One
 direction is not caught, and the headroom is why: a recorded need smaller than
 the true one by less than a factor of 4 still finishes, which is what the
 headroom of 4 is for. A recursive root that a harness runs without a row fails

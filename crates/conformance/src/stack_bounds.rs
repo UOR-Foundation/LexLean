@@ -1,5 +1,5 @@
 //! The stack a recursive root needs, measured and recorded (SPEC.md §17.13,
-//! `BS-03`).
+//! `PD-08`).
 //!
 //! A root that admits `recursion` is correct only under a stack its
 //! input-dependent depth fits, and nothing in a package bounds that depth. A

@@ -19,13 +19,13 @@ use lexlean::calculus::{Program, Ty, Value};
 /// The stack, in bytes, of the thread a harness runs its calls on. A root that
 /// admits `recursion` (SPEC.md §17.13) is correct only under a stack its
 /// input-dependent depth fits, so this is not a size picked by habit:
-/// `BS-03` checks it against the peak stack each harness-run recursive root
+/// `PD-08` checks it against the peak stack each harness-run recursive root
 /// was measured to need (`tests/stack-bounds.json`), with stated headroom.
 pub const HARNESS_STACK: usize = 64 << 20;
 
 /// The environment variable that replaces [`HARNESS_STACK`] in a harness
 /// binary. It exists so that the bound can be measured and a stack below it
-/// shown to abort (`BS-03`); no case relies on it for its own verdict.
+/// shown to abort (`PD-08`); no case relies on it for its own verdict.
 pub const HARNESS_STACK_ENV: &str = "LEXLEAN_HARNESS_STACK";
 
 fn index(number: u64) -> Result<usize, String> {

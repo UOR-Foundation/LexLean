@@ -1474,7 +1474,7 @@ const TOKEN_PLANTS: [Plant; 7] = [
 
 /// The stack of the thread every `BS` case runs on. The calculus evaluator
 /// recurses with the depth of the program it runs, so this is a stack a bound
-/// has to fit: `BS-03` checks it against the evaluator's recorded bound.
+/// has to fit: `PD-08` checks it against the evaluator's recorded bound.
 const EVALUATOR_STACK: usize = 1 << 30;
 
 /// Run the case for one `BS` conformance ID, on a stack sized for the
@@ -1488,6 +1488,23 @@ pub fn run(id: &str) {
     if let Err(failure) = std::thread::Builder::new()
         .stack_size(EVALUATOR_STACK)
         .spawn(move || case(&id))
+        .expect("thread")
+        .join()
+    {
+        std::panic::resume_unwind(failure);
+    }
+}
+
+/// `PD-08`, on the evaluator's own stack: in measure mode its workload is
+/// what the evaluator row measures.
+///
+/// # Panics
+///
+/// Panics when the case's assertion fails.
+pub fn stack_bounds() {
+    if let Err(failure) = std::thread::Builder::new()
+        .stack_size(EVALUATOR_STACK)
+        .spawn(stack_bounds_case)
         .expect("thread")
         .join()
     {
@@ -1528,7 +1545,7 @@ fn evaluator_workload() {
     }
 }
 
-/// `BS-03`: the stack every harness and the evaluator give a recursive root.
+/// `PD-08`: the stack every harness and the evaluator give a recursive root.
 fn stack_bounds_case() {
     use crate::rust_harness::HARNESS_STACK;
     use crate::stack_bounds::{self, HEADROOM};
@@ -1647,7 +1664,7 @@ const SCALING_SUBJECT: &str = "bootstrap/is_closed_lean_name";
 /// 80,000 aborted it).
 const SCALING_SIZES: [usize; 4] = [1_000, 10_000, 40_000, 80_000];
 
-/// The length the plant of `BS-03` runs.
+/// The length the plant of `PD-08` runs.
 const SCALING_PLANT: usize = 40_000;
 
 /// A workspace holding, for each length, the package of `isClosedLeanName`
@@ -1752,8 +1769,6 @@ fn measure_scaling() {
 #[allow(clippy::too_many_lines)]
 fn case(id: &str) {
     match id {
-        // §17.13: the stack a recursive root is run on.
-        "BS-03" => stack_bounds_case(),
         // §17.23: the first component, the axiom-output parser.
         "BS-01" => {
             let started = Instant::now();
