@@ -56,8 +56,13 @@ versions, and the entries below say what each tag does and does not claim.
   state. Certificates A and B are kernel data in which a repeated type is one
   node, so the chain verifies (it did not fit under `max_file_bytes` as text)
   and the lower bound counts no type node; what a small source still makes
-  large is the pairs of arms of a match, which the fixture now uses. The
-  fixture is refused with `LLS8002` in lowering, as before.
+  large is the pairs of arms of a match, which the fixture now uses. With
+  certificate A as kernel data, a pair of arms costs about 5.7 times its text
+  cost (`1018` against `180` sixteenths of a byte), so the widest match that
+  fits the default `max_file_bytes` falls from about `420` to `240`
+  constructors (`SP-02`, SPEC.md §17.17; a project with a wider match raises
+  `max_file_bytes`). The fixture is refused with `LLS8002` in lowering, as
+  before.
 - The preservation library's statement of
   `LexLeanTarget.TargetSemantics.fromOrdering.eq_1` is the one the elaborator
   makes for the generated module under the explicit byte-literal spelling
@@ -77,7 +82,7 @@ versions, and the entries below say what each tag does and does not claim.
   `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
   rejecting out-of-width patterns and the non-finite biased exponents, and
   derives `round(a * b / c * 2^32)` scale ratios (ties to even) by exact
-  integer division; 43 theorems (39 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
+  integer division; 47 theorems (43 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
   `models` example and the register only: no compiler source moves.
 
 - Widening conversions (#114, SPEC.md §17.12 *Widening conversions*, `SM-32`,
