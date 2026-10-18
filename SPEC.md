@@ -7399,6 +7399,19 @@ Every diagnostic serializes as:
 
 Offsets are zero-based half-open UTF-8 byte offsets. Lines and columns are one-based; columns count Unicode scalar values after normalization.
 
+`primary` is present in every diagnostic except those of the codes below, which the compiler issues where no source position exists. Inventing a span for them would assert a location the failure does not have, so they omit `primary`, and `schemas/diagnostic.schema.json` requires it of every other code:
+
+| Code | Issued without a position when |
+| --- | --- |
+| `LLC0001` | the command line is not valid, an `explain` code is not registered, `init` is refused, or a request file cannot be read |
+| `LLC0101` | no project configuration is found, or the named one cannot be read |
+| `LLC0108` | a project that declares a source package is outside the workspace rule, before any project is loaded |
+| `LLC0201` | a production request is not a closed `lexlean/production-request/1` document |
+| `LLS8001` | a path of the project or of a bundle is confined away, or `clean` meets a symlink |
+| `LLV7008` | a host path is not UTF-8 |
+| `LLV7010` | a host filesystem operation fails outside any project file |
+| `LLV7102` | a published bundle does not replay |
+
 Object keys are canonicalized. Diagnostics sort by:
 
 1. project-relative path;
