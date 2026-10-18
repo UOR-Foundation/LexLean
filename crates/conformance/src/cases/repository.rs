@@ -1,4 +1,4 @@
-//! The `repository` suite: RP-01..RP-15.
+//! The `repository` suite: RP-01..RP-16.
 
 use std::collections::BTreeSet;
 
@@ -1960,7 +1960,7 @@ pub(crate) fn run(id: &str) {
         // §9.3: the image installs the pins and nothing else. The checker is
         // run on planted Dockerfiles as well, because a check that only ever
         // sees the committed file cannot be told from one that accepts all.
-        "RP-15" => {
+        "RP-16" => {
             let rust = root_file("rust-toolchain.toml");
             let channel = rust
                 .lines()
@@ -2008,7 +2008,7 @@ pub(crate) fn run(id: &str) {
     }
 }
 
-/// RP-15: every toolchain the Dockerfile installs is the pinned one. A Rust
+/// RP-16: every toolchain the Dockerfile installs is the pinned one. A Rust
 /// toolchain is installed by `--default-toolchain <v>` or `rustup toolchain
 /// install <v>`, a Lean toolchain by `elan toolchain install <v>`, and
 /// `elan default` would select one; the pin must appear and nothing else may.
