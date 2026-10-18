@@ -344,9 +344,24 @@ private def kindIsMade (made : ConstantInfo) (kindString : String) : Bool :=
   | .defnInfo info, "abbrev" => info.hints.isAbbrev
   | _, _ => false
 
+private def sparseNames (env : Environment) : NameSet :=
+  env.constants.map₂.foldl (fun names name _ =>
+    match name with
+    | .str _ last => if (sparseIndices last).isSome then names.insert name else names
+    | _ => names) {}
+
 private def remakeSparse (name : Name) (sparse : Json) : CoreM Unit := do
   let indName := nameOf (← liftString (stringField sparse "ind_name"))
   let constructors ← liftString (namesOf (← liftString (field sparse "interesting_ctors")))
+  let some (.inductInfo info) := (← getEnv).find? indName
+    | throwError s!"core declaration '{name}' names the type '{indName}', which is not an inductive type"
+  let mut seen : List Name := []
+  for constructor in constructors do
+    if info.ctors.idxOf constructor >= info.ctors.length then
+      throwError s!"core declaration '{name}' names '{constructor}', which is not a constructor of '{indName}'"
+    if seen.contains constructor then
+      throwError s!"core declaration '{name}' names the constructor '{constructor}' twice"
+    seen := constructor :: seen
   let majorPos ← liftString (natField sparse "major_pos")
   let arity ← liftString (natField sparse "arity")
   let (owner, idx, parentIdxs) ← match name with
@@ -589,11 +604,21 @@ def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
   let document ← liftString (Json.parse data)
   let declarations ← liftString (arrayField document "declarations")
   let order ← liftString (arrayField document "order")
+  let sparseBefore := sparseNames (← getEnv)
   for index in order do
     let index ← liftString index.getNat?
     let some declaration := declarations[index]? |
       throwError s!"core declaration order index {index} is out of range"
     addOne nodes declarations declaration
+  let mut stated : NameSet := {}
+  if let some names := optionalField document "module_sparse" then
+    for name in ← liftString names.getArr? do
+      stated := stated.insert (nameOf (← liftString name.getStr?))
+  for declaration in declarations do
+    stated := stated.insert (nameOf (← liftString (stringField declaration "name")))
+  for made in (sparseNames (← getEnv)).toList do
+    unless sparseBefore.contains made || stated.contains made do
+      throwError s!"the construction made the sparse casesOn '{made}', which the module does not state"
   for declaration in declarations do
     if (← liftString (stringField declaration "kind")) == "inductive" then
       let metadata ← liftString (field declaration "inductive")
