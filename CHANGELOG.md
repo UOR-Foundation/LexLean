@@ -15,6 +15,10 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- The decoder of derived rows refuses a module in which a derived sparse
+  `casesOn` is referred to by the type or value of no row (`SM-34`): a recipe
+  is checked by its uses, and SM-34 states that a recipe naming other valid
+  constructors where the use accepts them is not distinguished.
 - Derived rows leave the preservation library's sources (`SM-34`, SPEC.md
   §17.10, the prerequisite of #91 stage 2). A row of `lexlean/core-module/2`
   may be derived: it states its name, kind, and extension state, and for a

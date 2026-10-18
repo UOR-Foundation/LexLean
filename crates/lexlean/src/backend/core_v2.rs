@@ -619,6 +619,18 @@ def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
   for made in (sparseNames (← getEnv)).toList do
     unless sparseBefore.contains made || stated.contains made do
       throwError s!"the construction made the sparse casesOn '{made}', which the module does not state"
+  if let some scan := optionalField document "module_scan" then
+    let env ← getEnv
+    let mut used : NameSet := {}
+    for row in ← liftString (arrayField scan "rows") do
+      if let some info := env.find? (nameOf (← liftString row.getStr?)) then
+        for name in info.type.getUsedConstants do used := used.insert name
+        if let some value := info.value? then
+          for name in value.getUsedConstants do used := used.insert name
+    for row in ← liftString (arrayField scan "sparse") do
+      let name := nameOf (← liftString row.getStr?)
+      unless used.contains name do
+        throwError s!"the derived sparse casesOn '{name}' is referred to by no row of the module"
   for declaration in declarations do
     if (← liftString (stringField declaration "kind")) == "inductive" then
       let metadata ← liftString (field declaration "inductive")

@@ -1490,11 +1490,25 @@ does not state what the construction made.
 error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the construction made the sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_2', which the module does not state
 ```
 
-Accepted as a fidelity limit, by the maintainer's decision: the constructors of that
-record replaced by another valid constructor set of the same type, `Ordering.lt` for
-`Ordering.eq`, in `Keys`, where nothing refers to the record, verify. The kernel
-checks every term that uses a derived row, so nothing provable changes; what remains
-is a stale row with no reader. No use-scan is made, and SM-34 states the boundary.
+Not distinguished, and recorded as a non-evidence note: the constructors of the
+`Ordering.eq` record of `Keys` replaced by `Ordering.lt` (command as in (h), run in the
+same way) still verifies with the use-scan of (h) in place. The splitter that
+refers to the constant is made by the pinned Lean from the constant it finds, so the
+use is of the swapped constant, and nothing in the module can tell. The content of a
+derived row is checked by its uses alone, and SM-34 says so; no further machinery is
+added.
+
+Planted (h): a derived sparse `casesOn` row nothing refers to, added to
+`src/Keys.lex.tex` (a copy of the `splitter._sparseCasesOn_2` row named
+`_sparseCasesOn_3`, with `Ordering.gt` for `Ordering.eq`), built and verified in a
+copy of the project of `tests/negative/preservation-drift` with `lexlean lock &&
+lexlean verify`. Expected: refused, because the use-scan finds no row that refers to
+it. The unplanted library verifies (`verified 2 modules`) with the scan, so every one
+of its 313 derived sparse rows is referred to.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the derived sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_3' is referred to by no row of the module
+```
 
 Planted (d): the name of `LexLeanPreservation.Rel.eq_1` replaced by `Rel.eq_2`,
 which is reserved but which the construction does not make. Expected: refused.
