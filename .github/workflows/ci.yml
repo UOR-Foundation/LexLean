@@ -812,13 +812,15 @@ jobs:
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
     # The Intel macOS runner took 51 to 61 minutes for this job before the data
-    # certificates, 100 with their stress arithmetic (#177), and 140 with BS-02's
-    # differential beside it (#190). A leg cancelled at the limit says nothing
-    # about the code, and the only defence against it was to run the leg again.
-    # Twice the slowest observed time leaves the limit a bound on a hung job,
-    # not a race with the runner's speed; the first gate run after #177's fix
-    # measures the new slowest time, and the limit follows it down.
-    timeout-minutes: 240
+    # certificates, 100 with their stress arithmetic (#177), and 140 when BS-02's
+    # evaluator and seeded differential ran on every host (#190); with #177's
+    # linear data builders and #190's split (the host matrix runs the rustc
+    # differential on the deterministic vectors while the evaluator, seeded
+    # corpora, and plants run once on the normative host), the remaining 413
+    # non-Lean tests plus the rustc vector differential take ~60 minutes on
+    # Intel macOS. Twice the slowest observed time leaves the limit a bound on
+    # a hung job, not a race with the runner's speed.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
