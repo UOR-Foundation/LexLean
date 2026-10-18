@@ -9070,9 +9070,10 @@ RP-14.
 `\toolingdata` or `\coredata` is refused with `LLP2003` at its data argument,
 naming the control and the authoring notation, that `fmt` leaves the bytes,
 that the SDK's two conversions are inverses, and that language 1.1 and the
-Atlas keep the data form. The case was written before the refusal and fails on
-`main` (it finds the data form accepted). Four defects were then planted in the
-refusal, one at a time, each undone before the next; each turns
+Atlas keep the data form. The case was written before the refusal; it was not
+run red on its own before the implementation, and the first plant below
+restores exactly the condition it would have run in. Four defects were planted
+in the refusal, one at a time, each undone before the next; each turns
 `conformance_au_13` red:
 
 - **a language-1.2 source in the data form is accepted again** (the semantic
