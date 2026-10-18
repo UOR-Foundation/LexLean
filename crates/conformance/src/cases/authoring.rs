@@ -729,7 +729,7 @@ fn data_form_refused() {
     for name in TOOLING_FIXTURES {
         let project = P::tooling(name);
         let committed = project.read_raw("src/Main.lex.tex");
-        project.write("src/Main.lex.tex", &support::module_as_data(&committed));
+        project.write_raw("src/Main.lex.tex", &support::module_as_data(&committed));
         let inner = lexlean::project::Project::load(&project.root.join("lexlean.toml"))
             .expect("the project loads")
             .with_tooling();

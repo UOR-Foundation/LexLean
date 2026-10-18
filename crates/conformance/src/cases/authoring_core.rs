@@ -562,7 +562,7 @@ pub(super) fn project(data: &Value, in_notation: bool) -> P {
         title: "Natural number addition",
     };
     let source = assemble(&header, ModuleKind::Core, data).expect("a core source");
-    project.write(
+    project.write_raw(
         MAIN,
         &if in_notation {
             source

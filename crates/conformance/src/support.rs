@@ -675,8 +675,36 @@ impl P {
         self.write("src/Main.lex.tex", &main);
     }
 
-    /// Overwrite a project file.
+    /// Overwrite a project file. A language-1.2 module given as data is
+    /// written in the notation, the one form that language admits (SPEC.md
+    /// §17.21.1): [`Self::read`] presents the notation as data so that a case
+    /// can quote and edit it by fragment, and this is its inverse. Data that
+    /// the notation cannot carry (a payload that is not a module) is written
+    /// as it is, to be refused.
     pub fn write(&self, relative: &str, content: &str) {
+        let content = if relative.ends_with(".lex.tex")
+            && self.language().as_deref() == Some("1.2")
+            && lexlean::surface::module::locate(content).is_some_and(|found| found.data.is_some())
+        {
+            lexlean::sdk::to_notation(content).unwrap_or_else(|_| content.to_owned())
+        } else {
+            content.to_owned()
+        };
+        self.write_raw(relative, &content);
+    }
+
+    /// The `language` the project's `lexlean.toml` states.
+    fn language(&self) -> Option<String> {
+        std::fs::read_to_string(self.root.join("lexlean.toml").as_std_path())
+            .ok()?
+            .lines()
+            .find_map(|line| line.strip_prefix("language = "))
+            .map(|value| value.trim().trim_matches('"').to_owned())
+    }
+
+    /// Overwrite a project file with exactly `content`, whatever form the
+    /// module in it is written in.
+    pub fn write_raw(&self, relative: &str, content: &str) {
         let path = self.root.join(relative);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent.as_std_path()).expect("parent");
