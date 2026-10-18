@@ -43,7 +43,7 @@ and Unreleased holds what has landed since.
   and, under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones. The compiler's identities are
   still computed by `sha2`; replacing it is stage 2 of #126. The register has
-  417 IDs.
+  418 IDs.
 
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
@@ -66,7 +66,7 @@ and Unreleased holds what has landed since.
   vectors, windows, prefixes, and whole committed sources under the pinned
   rustc, and on the normative host the evaluator, 2,500 seeded texts, ten
   planted defects, and the production export run as well (the split #190
-  asks for). `BS-03` brings the register to 417 IDs.
+  asks for). `BS-03` brings the register to 418 IDs.
 - The second component of the compiler's own pipeline as language-1.2 source:
   the preservation lexer and token audit (SPEC.md §17.23, §17.17, `BS-02`, #92;
   no new diagnostic code, no change to the language-1.2 identity).

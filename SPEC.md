@@ -7142,6 +7142,28 @@ one difference fails the case. The evaluator reads windows because it
 interprets the lowered program (issue 190); the whole sources are left to the
 rendered package.
 
+`PD-08` states what the recursion of these roots asks of the host that runs
+them (§17.13, §17.16). The host here is a conformance harness, and the stack it
+gives a root is a recorded fact, not a size picked by habit.
+`tests/stack-bounds.json` holds one row for each package of the committed
+`bootstrap` and `stdlib` exports whose provenance states `recursion`, and no
+other: the least stack, in 64 KiB steps, on which the harness the cases run
+finishes, found by bisecting the stack of one built binary on the cases' own
+corpus, in its debug build (the build the cases run, which the check reads) and
+its release build (the build the issue's table measures). One more row is the
+thread the `BS` cases give the calculus evaluator, which recurses with the
+depth of the program it runs. The stack of the harness thread
+(`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the
+largest recorded bound times the stated headroom of 4, because the bound is the
+least stack that finished on one host and an unoptimized frame differs between
+hosts; a stack below that product, or a root with no row, is refused, and the
+harness of `isClosedLeanName` is run on the stack its bound allows and on a
+quarter of its bound, on which it aborts. The record measures these inputs on
+the host that wrote it. It is evidence at level `build` for the stacks the
+suite gives, and it is not a stack bound for any program, input, or host: a
+package states `recursion` and no more (§17.16), and the host that runs it
+still gives the call a stack its depth fits.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9817,6 +9839,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PD-05` | `production` | A production root fails with LLT4005 before any backend runs when it declares type parameters or is not declared executable, when its boundary holds a universe, proposition, type parameter, or function, directly or in a named type's fields, or when its closure reaches a formal-only construct, a literal outside the target width, unavailable allocation, or an effect the root does not admit. | §17.13, §26.3 |
 | `PD-06` | `production` | Every production root's eligibility report is a deterministic, schema-valid build artifact recording its runtime closure, realized types, erased dependencies, constructs, and per-target effects with their sources. | §17.13, §21.5 |
 | `PD-07` | `production` | The eligibility analysis classifies every semantic construct by an explicit exhaustive match, and the exhaustiveness audit rejects a planted wildcard arm, rest pattern, implicit-default binding form, or unnamed IR variant. | §17.13, §27.10 |
+| `PD-08` | `production` | Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input. | §17.13, §17.23 |
 | `NE-01` | `extraction` | Verifying a project with production roots extracts every root through Lean's compiler front end into one canonical compiler input whose bytes and ID are schema-valid, recorded in the attestation, and identical from distinct project directories, and a project without a production root publishes none. | §22.10, §26.3 |
 | `NE-02` | `extraction` | Each root's extracted closure is exactly its computational dependencies, equals its production-eligibility closure, carries its runtime members and monomorphization instances, names every constant its code uses, marks recursion from the use graph, and records proof-only dependencies as erased and never as runtime members. | §22.10, §26.3 |
 | `NE-03` | `extraction` | An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates. | §22.10, §26.3 |
@@ -9970,7 +9993,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 417.
+**Total required capability IDs:** 418.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

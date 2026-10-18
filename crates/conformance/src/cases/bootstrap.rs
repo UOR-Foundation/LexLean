@@ -1494,8 +1494,13 @@ const TOKEN_PLANTS: [Plant; 7] = [
     },
 ];
 
+/// The stack of the thread every `BS` case runs on. The calculus evaluator
+/// recurses with the depth of the program it runs, so this is a stack a bound
+/// has to fit: `PD-08` checks it against the evaluator's recorded bound.
+const EVALUATOR_STACK: usize = 1 << 30;
+
 /// Run the case for one `BS` conformance ID, on a stack sized for the
-/// interpreter, which recurses with the depth of the program it runs.
+/// evaluator, which recurses with the depth of the program it runs.
 ///
 /// # Panics
 ///
@@ -1503,13 +1508,284 @@ const TOKEN_PLANTS: [Plant; 7] = [
 pub fn run(id: &str) {
     let id = id.to_owned();
     if let Err(failure) = std::thread::Builder::new()
-        .stack_size(1 << 30)
+        .stack_size(EVALUATOR_STACK)
         .spawn(move || case(&id))
         .expect("thread")
         .join()
     {
         std::panic::resume_unwind(failure);
     }
+}
+
+/// `PD-08`, on the evaluator's own stack: in measure mode its workload is
+/// what the evaluator row measures.
+///
+/// # Panics
+///
+/// Panics when the case's assertion fails.
+pub fn stack_bounds() {
+    if let Err(failure) = std::thread::Builder::new()
+        .stack_size(EVALUATOR_STACK)
+        .spawn(stack_bounds_case)
+        .expect("thread")
+        .join()
+    {
+        std::panic::resume_unwind(failure);
+    }
+}
+
+/// What the evaluator runs in `BS-01` and `BS-02`: every root of both
+/// modules on the vectors and the evaluator corpora those cases use.
+fn evaluator_workload() {
+    let project = P::bootstrap();
+    let checked = support::checked_project(&project);
+    let (golden, _, _) = vectors();
+    for (root, _) in ROOTS {
+        let low = lower(&checked, &project, MODULE, root);
+        let mut runs = if root == "parseAuditOutput" {
+            audit_corpus(EVALUATOR_AUDITS)
+        } else {
+            name_corpus(EVALUATOR_NAMES)
+        };
+        if root == "parseAuditOutput" {
+            runs.extend(golden.iter().cloned());
+        }
+        let disagreements = evaluate(&low, &runs, 5);
+        assert!(disagreements.is_empty(), "{root}: {disagreements:?}");
+    }
+    let (lex_vectors, audit_vectors) = token_vectors();
+    for (root, _) in TOKEN_ROOTS {
+        let low = lower(&checked, &project, TOKEN_MODULE, root);
+        let mut runs = token_corpus(root, EVALUATOR_TOKEN_TEXTS);
+        runs.extend(if root == "lex" {
+            lex_vectors.clone()
+        } else {
+            audit_vectors.clone()
+        });
+        let disagreements = evaluate(&low, &runs, 5);
+        assert!(disagreements.is_empty(), "{root}: {disagreements:?}");
+    }
+}
+
+/// `PD-08`: the stack every harness and the evaluator give a recursive root.
+fn stack_bounds_case() {
+    use crate::rust_harness::HARNESS_STACK;
+    use crate::stack_bounds::{self, HEADROOM};
+
+    // Measuring rewrites the record from the three cases that build the
+    // harnesses, and from here for the evaluator; it is not a verdict.
+    if stack_bounds::measuring().is_some() {
+        if stack_bounds::measuring() != Some("scaling".to_owned()) {
+            // The case runs on the evaluator's own thread, so the workload's
+            // peak depth is the touched part of this stack.
+            evaluator_workload();
+            let bound = stack_bounds::touched_stack(EVALUATOR_STACK);
+            eprintln!("{}: {bound} bytes", stack_bounds::EVALUATOR);
+            stack_bounds::record_row(stack_bounds::EVALUATOR, bound);
+        }
+        measure_scaling();
+        return;
+    }
+    let record = stack_bounds::load();
+    assert_eq!(record.headroom as usize, HEADROOM, "the record's headroom");
+    // The rows are exactly the recursive packages of the exports.
+    let recursive = stack_bounds::recursive_packages();
+    let rows: std::collections::BTreeSet<String> = record
+        .rows
+        .keys()
+        .filter(|key| key.as_str() != stack_bounds::EVALUATOR)
+        .cloned()
+        .collect();
+    assert_eq!(
+        rows, recursive,
+        "the record has a row for each recursive package of the bootstrap and stdlib exports and for no other"
+    );
+    assert!(
+        recursive.len() >= 9,
+        "{} recursive packages: the corpus is not vacuous",
+        recursive.len()
+    );
+    // Every harness stack covers its bound with the headroom.
+    for key in record.rows.keys() {
+        let stack = if key == stack_bounds::EVALUATOR {
+            EVALUATOR_STACK
+        } else {
+            HARNESS_STACK
+        };
+        stack_bounds::check(&record, key, stack).unwrap_or_else(|failure| panic!("{failure}"));
+    }
+    // The harness stack covers the growth the issue measured, up to the
+    // length of name that still returned a value on an 8 MiB stack, and the
+    // need does grow with the input, so the table is not a constant.
+    let scale = &record.scaling[SCALING_SUBJECT];
+    assert!(
+        scale
+            .windows(2)
+            .all(|pair| pair[0].input_bytes < pair[1].input_bytes && pair[0].debug < pair[1].debug),
+        "the need of {SCALING_SUBJECT} grows with its input: {scale:?}"
+    );
+    for row in scale
+        .iter()
+        .filter(|row| row.input_bytes <= SCALING_PLANT as u64)
+    {
+        let needed = usize::try_from(row.debug).expect("a bound") * HEADROOM;
+        assert!(
+            needed <= HARNESS_STACK,
+            "a name of {} bytes needs {needed} bytes with headroom, and the harness stack is {HARNESS_STACK}",
+            row.input_bytes
+        );
+    }
+    // A stack below a bound is refused, and so is a root with no row.
+    let (heaviest, bound) = record
+        .rows
+        .iter()
+        .max_by_key(|(_, row)| row.debug)
+        .expect("rows");
+    let needed = stack_bounds::required(&record, heaviest).expect("a row");
+    assert_eq!(needed as u64, bound.debug * HEADROOM as u64);
+    assert!(
+        stack_bounds::check(&record, heaviest, needed - 1).is_err(),
+        "a stack below the bound with its headroom is refused"
+    );
+    assert!(
+        stack_bounds::check(&record, "bootstrap/no_such_root", HARNESS_STACK).is_err(),
+        "a recursive root without a row is refused"
+    );
+    let mut without = stack_bounds::load();
+    without.rows.remove(heaviest);
+    assert!(
+        stack_bounds::check(&without, heaviest, HARNESS_STACK).is_err(),
+        "a record with the row dropped refuses the root"
+    );
+    // The bound is not vacuous: the harness of `isClosedLeanName` on one long
+    // name finishes on the stack its recorded need allows and aborts on a
+    // quarter of the need.
+    let planted = scale
+        .iter()
+        .find(|scale| scale.input_bytes == SCALING_PLANT as u64)
+        .expect("the record measures the planted size");
+    let (dir, names) = scaling_workspace(&[SCALING_PLANT], false);
+    let binary = scaling_binary(dir.path(), "debug", &names[0]);
+    let allowed = usize::try_from(planted.debug).expect("a bound") * HEADROOM;
+    assert!(
+        stack_bounds::finishes(&binary, allowed),
+        "a name of {SCALING_PLANT} bytes: the harness finishes on {allowed} bytes, its need with headroom"
+    );
+    let quarter = usize::try_from(planted.debug).expect("a bound") / 4;
+    assert!(
+        !stack_bounds::finishes(&binary, quarter),
+        "a name of {SCALING_PLANT} bytes: the harness aborts on {quarter} bytes, a quarter of its need"
+    );
+}
+
+/// The subject whose growth with its input the record measures.
+const SCALING_SUBJECT: &str = "bootstrap/is_closed_lean_name";
+
+/// The lengths of the one name the growth is measured on, in bytes: the
+/// issue's own table (1,000 to 40,000 returned a value on an 8 MiB stack, and
+/// 80,000 aborted it).
+const SCALING_SIZES: [usize; 4] = [1_000, 10_000, 40_000, 80_000];
+
+/// The length the plant of `PD-08` runs.
+const SCALING_PLANT: usize = 40_000;
+
+/// A workspace holding, for each length, the package of `isClosedLeanName`
+/// and a harness that calls it once on a name of that many bytes; built in
+/// the debug profile, and the release profile too when `release`. Returns
+/// the crate names, in order.
+fn scaling_workspace(sizes: &[usize], release: bool) -> (tempfile::TempDir, Vec<String>) {
+    let project = P::bootstrap();
+    let checked = support::checked_project(&project);
+    let low = lower(&checked, &project, MODULE, "isClosedLeanName");
+    let mut crates = Vec::new();
+    let mut names = Vec::new();
+    for &size in sizes {
+        let manifest = rust_packages::manifest(
+            &format!("scale_{size}"),
+            &low.program,
+            low.entry(),
+            Profile::Std,
+        );
+        let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
+            .unwrap_or_else(|failure| panic!("{failure:?}"));
+        let harness_source = rust_harness::render_calls(
+            &low.program,
+            Profile::Std,
+            &manifest.name,
+            &[Calls {
+                entry: low.entry(),
+                function: "run",
+                passing: &[Passing::Own],
+                arguments: &[vec![bytes(&vec![b'a'; size])]],
+            }],
+        )
+        .expect("the harness");
+        // The issue's table varies the length at run time; a literal lets the
+        // optimizer of a release build fold the scan away, which would
+        // measure nothing.
+        let opaque = harness_source
+            .replacen(" in [", " in std::hint::black_box([", 1)
+            .replacen("] {\n", "]) {\n", 1);
+        assert_ne!(opaque, harness_source, "the harness iterates its one row");
+        names.push(manifest.name.clone());
+        crates.push(Built {
+            name: manifest.name,
+            files: package.files,
+            harness: opaque,
+        });
+    }
+    let dir = tempfile::Builder::new()
+        .prefix("lexlean-stack-")
+        .tempdir()
+        .expect("tempdir");
+    workspace(dir.path(), &crates);
+    for profile in std::iter::once(None).chain(release.then_some(Some("--release"))) {
+        let mut arguments = vec!["build", "--offline", "--workspace", "--quiet"];
+        arguments.extend(profile);
+        let build = cargo_in(dir.path(), &arguments);
+        assert!(
+            build.status.success(),
+            "the packages do not build:\n{}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+    }
+    (dir, names)
+}
+
+/// The harness binary of crate `name` in `profile`.
+fn scaling_binary(dir: &std::path::Path, profile: &str, name: &str) -> std::path::PathBuf {
+    dir.join("target")
+        .join(profile)
+        .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX))
+}
+
+/// Measure how the need of `isClosedLeanName` grows with its input, in both
+/// profiles, and write it into the record.
+fn measure_scaling() {
+    use crate::rust_harness::HARNESS_STACK;
+    use crate::stack_bounds::{self, least, Scale};
+
+    let (dir, names) = scaling_workspace(&SCALING_SIZES, true);
+    let scales = SCALING_SIZES
+        .iter()
+        .zip(&names)
+        .map(|(&size, name)| {
+            let measure = |profile: &str| {
+                let binary = scaling_binary(dir.path(), profile, name);
+                least(HARNESS_STACK, |stack| {
+                    stack_bounds::finishes(&binary, stack)
+                }) as u64
+            };
+            let scale = Scale {
+                input_bytes: size as u64,
+                debug: measure("debug"),
+                release: measure("release"),
+            };
+            eprintln!("{SCALING_SUBJECT}: {scale:?}");
+            scale
+        })
+        .collect();
+    stack_bounds::record_scaling(SCALING_SUBJECT, scales);
 }
 
 #[allow(clippy::too_many_lines)]
@@ -1705,6 +1981,10 @@ fn case(id: &str) {
                     ran.status.success(),
                     "{name}: {}",
                     String::from_utf8_lossy(&ran.stderr)
+                );
+                crate::stack_bounds::observe(
+                    &crate::stack_bounds::subject("bootstrap", name),
+                    &binary,
                 );
                 let stdout = String::from_utf8(ran.stdout).expect("utf8");
                 let printed: Vec<Json> = stdout
@@ -1995,6 +2275,10 @@ fn case(id: &str) {
                     ran.status.success(),
                     "{name}: {}",
                     String::from_utf8_lossy(&ran.stderr)
+                );
+                crate::stack_bounds::observe(
+                    &crate::stack_bounds::subject("bootstrap", name),
+                    &binary,
                 );
                 let stdout = String::from_utf8(ran.stdout).expect("utf8");
                 let printed: Vec<Json> = stdout
