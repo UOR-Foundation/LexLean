@@ -350,7 +350,7 @@ enum Spelling {
 }
 
 /// The spelling of every primitive, named one by one so that a primitive
-/// added to the IR is a compile error here and not a mislabelled call (SM-34).
+/// added to the IR is a compile error here and not a mislabelled call (RP-15).
 fn spelling(operation: SemanticPrimitive) -> Spelling {
     match operation {
         SemanticPrimitive::ToNat => Spelling::Widening("toNat"),

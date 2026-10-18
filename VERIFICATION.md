@@ -9064,7 +9064,7 @@ Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
 shard plan is refused by `cargo xtask ci-shards` and by the plan check of
 RP-14.
 
-## Classification matches are total (SM-34, Issue #33)
+## Classification matches are total (RP-15, Issue #33)
 
 `cargo xtask validate-model` runs `audit-classifications` (R8). It reads every
 Rust source of `crates/lexlean/src` and finds each `match` whose arms name five
@@ -9127,7 +9127,7 @@ calculus/rust/ast.rs, `lit`: the `Lit::Unit` arm made `_ =>`
 gate failed: R8: crates/lexlean/src/calculus/rust/ast.rs:458: a `match` naming 7 variants of `Lit` has a wildcard arm at line 459; ...
 ```
 
-`conformance_sm_34` plants a wildcard, and then a binding arm, in a
+`conformance_rp_15` plants a wildcard, and then a binding arm, in a
 classification of each of eight consumer functions (`spelling` and
 `render_latex` of the backend, `infer_term` and `type_node_count` of
 validation and charge, `type_key` of eligibility, `prim_type` of the calculus

@@ -1,4 +1,4 @@
-//! The classification-exhaustiveness audit (SM-34, R8).
+//! The classification-exhaustiveness audit (RP-15, R8).
 //!
 //! A `match` that names several variants of a closed enum is a classification:
 //! each variant it names has been decided on, and a default arm decides every
@@ -640,7 +640,7 @@ pub fn audit(sources: &[(String, String)]) -> Result<Summary, String> {
                     failures,
                     "R8: {path}:{}: a `match` naming {} variants of `{}` has {kind} at line {line}; \
                      name every variant, so that a variant added later is a compile error here and \
-                     not a silent default (SM-34)",
+                     not a silent default (RP-15)",
                     classification.line, classification.named, classification.enumeration
                 );
             }
@@ -651,7 +651,7 @@ pub fn audit(sources: &[(String, String)]) -> Result<Summary, String> {
             let _ = writeln!(
                 failures,
                 "R8: {path} holds no catch-all in a classification, or is not read; remove it from \
-                 IDENTITY_BOUND, which exists only for sources that still hold one (SM-34)"
+                 IDENTITY_BOUND, which exists only for sources that still hold one (RP-15)"
             );
         }
     }
@@ -661,7 +661,7 @@ pub fn audit(sources: &[(String, String)]) -> Result<Summary, String> {
                 failures,
                 "R8: {path} holds no `match` naming {CLASSIFYING_ARMS} or more variants of an \
                  audited enum, or is not read; the classification audit would pass over {role} \
-                 without checking it (SM-34)"
+                 without checking it (RP-15)"
             );
         }
     }

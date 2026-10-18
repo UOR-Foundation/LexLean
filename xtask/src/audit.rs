@@ -1672,7 +1672,7 @@ pub fn audit_no_unsafe(root: &Path) -> Result<(), Fail> {
     Ok(())
 }
 
-/// SM-34 (R8): a `match` that names several variants of a closed semantic
+/// RP-15 (R8): a `match` that names several variants of a closed semantic
 /// enum names them all, in every consumer under the compiler crate's source:
 /// the Lean and LaTeX backends, validation, charge, production eligibility,
 /// and the calculus with its Rust AST. A catch-all arm there would give a
@@ -1699,7 +1699,7 @@ pub fn audit_classifications(root: &Path) -> Result<(), Fail> {
     }
     let summary = classification::audit(&sources)?;
     println!(
-        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total except {} catch-alls in the {} identity-bound renderer sources (SM-34, R8)",
+        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total except {} catch-alls in the {} identity-bound renderer sources (RP-15, R8)",
         summary.classifications(),
         classification::CLASSIFYING_ARMS,
         summary.per_file.len(),
