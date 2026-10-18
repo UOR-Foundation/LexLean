@@ -2359,6 +2359,12 @@ pub(super) fn case() {
         .iter()
         .map(|(root, _)| (*root, super::lower(&checked, &project, MODULE, root)))
         .collect();
+    if std::env::var("BS04_ORIGINS").is_ok() {
+        for (index, origin) in lowered["checkProgram"].layout.functions.iter().enumerate() {
+            eprintln!("ORIGIN {index} {origin:?}");
+        }
+        return;
+    }
     let (vector_programs, vector_arguments) = vectors(&sources);
     // The chain is a faithful image of the list: decoding the arguments of
     // every vector returns the program the oracle read.
