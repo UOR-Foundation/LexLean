@@ -235,3 +235,10 @@ Feature: semantic-ir
     When it is verified, and copies give the theorem another proof of the same statement or a reserved name the construction does not make
     Then the pinned Lean verifies the module whose theorem is the one its own action makes
     And each copy fails with LLV7002, naming the row the construction does not make as stated
+
+  @SM-34 @build
+  Scenario: Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left.
+    Given the committed sources of the compiler crate and the closed enums of the IR, the realization calculus, and its Rust AST
+    When the classification audit reads every match that names at least five variants of one enum
+    Then none has a wildcard or binding catch-all arm, and the Lean backend, the LaTeX backend, validation, charge, and the calculus each still hold such a match
+    And a catch-all planted in each of those consumer groups, and a consumer with no such match left, each fails the audit
