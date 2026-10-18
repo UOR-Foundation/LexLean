@@ -4859,6 +4859,18 @@ gate failed: RP-12: the release is refused; unmet criteria:
 
 Removed: the planted `release/` directory was deleted. Refusal remains the honest state until 1.0.0; `conformance_rp_12` additionally builds a synthetic tree without release artifacts and asserts `checksums`, `sbom`, `crate-package`, and `version-output` are each reported unmet.
 
+### release-check's schema criterion can fail, and no longer fails falsely
+
+Found by `cargo xtask release-check` on `main` at `724a55590`: it reported eight schemas (`target-fixture`, `target-program`, `gnaf-request`, `gnaf-fixture`, `gnaf-certificate`, `gnaf-certificate-fixture`, `rust-package`, `rust-provenance`) as validated by no conformance case, although the calculus, GNAF, and certification cases read and validate them. The criterion searched the conformance sources for the bare name in quotes; those cases spell the file name (`"target-fixture.schema.json"`). It now accepts either spelling.
+
+Planted: `schema("target-fixture.schema.json")` in `crates/conformance/src/cases/calculus.rs` changed to `schema("target-fixtureX.schema.json")`. Command: `cargo xtask release-check`.
+
+```text
+  schemas-exercised: schemas/target-fixture.schema.json is validated by no conformance case
+```
+
+Removed: the file was restored; with the criterion fixed, `release-check` reports no `schemas-exercised` line, and the remaining refusals are the `1.0.0` and `release/` ones above.
+
 ### check-fixtures can fail
 
 Planted: the mutated word `banana` in `tests/negative/unknown-word/project/src/Main.lex.tex` changed to `cherry`, so the fixture's diagnostic message no longer equals its committed expectation. Command: `cargo xtask check-fixtures`. Expected: the fixture's `expected/command.json` differs from the observed run (§28.3).

@@ -538,7 +538,14 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
         let Some(name) = file_name.strip_suffix(".schema.json") else {
             continue;
         };
-        if !conformance_source.contains(&format!("\"{name}\"")) {
+        // Two spellings reach a schema in the cases: the bare name through
+        // `support::schema`, and the file name through the per-suite readers
+        // of the calculus, GNAF, and certification cases. Matching only the
+        // first refused a release over schemas that are in fact validated.
+        let exercised = [format!("\"{name}\""), format!("\"{file_name}\"")]
+            .iter()
+            .any(|spelling| conformance_source.contains(spelling));
+        if !exercised {
             fail(
                 "schemas-exercised",
                 format!("schemas/{file_name} is validated by no conformance case"),
