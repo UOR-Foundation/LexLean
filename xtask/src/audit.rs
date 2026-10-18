@@ -21,6 +21,9 @@ fn gather(root: &Path, dirs: &[&str], extensions: &[&str], out: &mut Vec<PathBuf
         for entry in walkdir::WalkDir::new(&base)
             .follow_links(false)
             .into_iter()
+            .filter_entry(|entry| {
+                !(entry.file_type().is_dir() && entry.path().join("CACHEDIR.TAG").is_file())
+            })
             .flatten()
         {
             if entry.file_type().is_dir() {

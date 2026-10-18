@@ -18,11 +18,12 @@ Feature: repository
     And none of the four tooling files still mentions the template's audit-limits remnant
 
   @RP-03 @build
-  Scenario: The completed repository has the required file and crate layout.
-    Given the section 7 layout tree parsed out of the SPEC.md text fence
-    When every tree row is resolved to a path under the repository root
+  Scenario: The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories.
+    Given the section 7 layout tree parsed out of the SPEC.md text fence and the tracked file list from git ls-files
+    When every tree row is resolved to a path under the repository root and every tracked path is inspected for CACHEDIR.TAG and walker-skipped components
     Then each row ending in a slash exists as a directory and every other row exists as a file
     And more than 80 rows were checked
+    And no tracked path is named CACHEDIR.TAG or has a walker-skipped component outside sanctioned expected/ oracle directories
 
   @RP-04 @build
   Scenario: Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling.
