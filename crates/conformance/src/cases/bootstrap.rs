@@ -12,6 +12,8 @@ use lexlean::calculus::{self as target, interp, Value};
 use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
+mod calculus_check;
+
 use crate::production_export as harness;
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::rust_harness::{self, Calls};
@@ -2067,6 +2069,8 @@ fn case(id: &str) {
             );
             eprintln!("BS-02: passed in {:?}", started.elapsed());
         }
+        // §17.23, §17.14: the target calculus's checker.
+        "BS-04" => calculus_check::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
