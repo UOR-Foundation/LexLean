@@ -25,7 +25,7 @@ versions, and the entries below say what each tag does and does not claim.
   (`audit-atlas-exercise`, R4). In `.github/verify-shards.json` the `cert4`
   shard elaborates the window-4 modules and `cert4-replay` replays them, and
   `census-a` takes the window-10 pieces beside `CensusCert10`; the join
-  compares 327 normalized records (was 267). Atlas `expected/build` and
+  compares 347 normalized records (was 267). Atlas `expected/build` and
   `expected/verify` are regenerated; no language data moves.
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.

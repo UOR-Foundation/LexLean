@@ -1750,7 +1750,7 @@ pub(crate) fn run(id: &str) {
             let join_job = job(&runs[crate::shards::JOIN]);
             assert!(
                 join_job.contains("grep -F \"verify-examples: uor-atlas verified (attestation \" ci-evidence/vv.txt")
-                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 327 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
+                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 347 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
                 "the join asserts that Atlas verified"
             );
             assert!(

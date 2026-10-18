@@ -25,7 +25,7 @@
 # each a job of its own clean checkout that elaborates, replays, and audits the
 # modules its plan names and reads the `.olean` files of the modules it imports
 # from the shards before it, then the join, which reads every shard's records,
-# publishes the verified directory, and compares its 327 normalized records
+# publishes the verified directory, and compares its 347 normalized records
 # with `expected/verify` as the leg did. Every process of the verification runs
 # exactly once per run; the executable the shards run is the one the `prefix`
 # shard built from the clean checkout, carried between the jobs of the run as
@@ -775,7 +775,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -F "verify-examples: uor-atlas verified (attestation " ci-evidence/vv.txt
-          grep -F "verify-examples: uor-atlas: 327 normalized verification records equal expected/verify (§29.5)" ci-evidence/vv.txt
+          grep -F "verify-examples: uor-atlas: 347 normalized verification records equal expected/verify (§29.5)" ci-evidence/vv.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
