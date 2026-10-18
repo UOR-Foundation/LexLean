@@ -354,6 +354,309 @@ fn program_arguments(program: &Program) -> Vec<Value> {
     ]
 }
 
+// The encoding is a faithful image of the program: each chain is the list it
+// stands for, so decoding the arguments returns the program. The case decodes
+// every vector and compares.
+
+fn fields(value: &Value) -> (u64, &[Value]) {
+    match value {
+        Value::Adt {
+            constructor,
+            fields,
+        } => (*constructor, fields),
+        other => panic!("not a constructor: {other:?}"),
+    }
+}
+
+fn unchain(value: &Value, nil: u64, cons: u64) -> Vec<&Value> {
+    let mut out = Vec::new();
+    let mut at = value;
+    loop {
+        let (constructor, parts) = fields(at);
+        if constructor == nil {
+            return out;
+        }
+        assert_eq!(constructor, cons, "a chain holds Nil and Cons only");
+        out.push(&parts[0]);
+        at = &parts[1];
+    }
+}
+
+fn dec_text(value: &Value) -> String {
+    let Value::Bytes { hex } = value else {
+        panic!("not bytes: {value:?}")
+    };
+    let raw: Vec<u8> = (0..hex.len())
+        .step_by(2)
+        .map(|at| u8::from_str_radix(&hex[at..at + 2], 16).expect("hex"))
+        .collect();
+    String::from_utf8(raw).expect("UTF-8")
+}
+
+fn dec_nat(value: &Value) -> u64 {
+    let Value::Nat { value } = value else {
+        panic!("not a nat: {value:?}")
+    };
+    value.parse().expect("a nat")
+}
+
+fn dec_kind(value: &Value) -> IntKind {
+    IntKind::ALL[usize::try_from(fields(value).0).expect("index")]
+}
+
+fn dec_tys(value: &Value) -> Vec<Ty> {
+    unchain(value, 14, 15).into_iter().map(dec_ty).collect()
+}
+
+fn dec_ty(value: &Value) -> Ty {
+    let (constructor, parts) = fields(value);
+    let boxed = |at: usize| Box::new(dec_ty(&parts[at]));
+    match constructor {
+        0 => Ty::Unit,
+        1 => Ty::Bool,
+        2 => Ty::Nat,
+        3 => Ty::Int,
+        4 => Ty::Fixed {
+            width: dec_kind(&parts[0]),
+        },
+        5 => Ty::String,
+        6 => Ty::Bytes,
+        7 => Ty::Ordering,
+        8 => Ty::Option { value: boxed(0) },
+        9 => Ty::Result {
+            ok: boxed(0),
+            error: boxed(1),
+        },
+        10 => Ty::List { element: boxed(0) },
+        11 => Ty::Pair {
+            left: boxed(0),
+            right: boxed(1),
+        },
+        12 => Ty::Adt {
+            index: dec_nat(&parts[0]),
+        },
+        13 => Ty::Fn {
+            parameters: dec_tys(&parts[0]),
+            result: boxed(1),
+        },
+        other => panic!("not a type: {other}"),
+    }
+}
+
+fn dec_values(value: &Value) -> Vec<Value> {
+    unchain(value, 23, 24).into_iter().map(dec_value).collect()
+}
+
+fn dec_value(value: &Value) -> Value {
+    let (constructor, parts) = fields(value);
+    let boxed = |at: usize| Box::new(dec_value(&parts[at]));
+    let words = || dec_text(&parts[0]);
+    match constructor {
+        0 => Value::Unit,
+        1 => {
+            let Value::Bool { value } = &parts[0] else {
+                panic!("not a bool")
+            };
+            Value::Bool { value: *value }
+        }
+        2 => Value::Nat { value: words() },
+        3 => Value::Int { value: words() },
+        4 => Value::U8 { value: words() },
+        5 => Value::U16 { value: words() },
+        6 => Value::U32 { value: words() },
+        7 => Value::U64 { value: words() },
+        8 => Value::I8 { value: words() },
+        9 => Value::I16 { value: words() },
+        10 => Value::I32 { value: words() },
+        11 => Value::I64 { value: words() },
+        12 => Value::String { value: words() },
+        13 => Value::Bytes { hex: words() },
+        14 => Value::Ordering {
+            value: match fields(&parts[0]).0 {
+                0 => OrderingValue::Lt,
+                1 => OrderingValue::Eq,
+                _ => OrderingValue::Gt,
+            },
+        },
+        15 => Value::None,
+        16 => Value::Some { value: boxed(0) },
+        17 => Value::Ok { value: boxed(0) },
+        18 => Value::Error { value: boxed(0) },
+        19 => Value::List {
+            items: dec_values(&parts[0]),
+        },
+        20 => Value::Pair {
+            left: boxed(0),
+            right: boxed(1),
+        },
+        21 => Value::Adt {
+            constructor: dec_nat(&parts[0]),
+            fields: dec_values(&parts[1]),
+        },
+        22 => Value::Closure {
+            function: dec_nat(&parts[0]),
+            captures: dec_values(&parts[1]),
+        },
+        other => panic!("not a value: {other}"),
+    }
+}
+
+fn dec_shape(value: &Value) -> Shape {
+    let (constructor, parts) = fields(value);
+    [
+        Shape::None,
+        Shape::Some,
+        Shape::Ok,
+        Shape::Error,
+        Shape::Nil,
+        Shape::Cons,
+        Shape::Zero,
+        Shape::Succ,
+        Shape::Pair,
+        Shape::True,
+        Shape::False,
+        Shape::Unit,
+        Shape::Lt,
+        Shape::Eq,
+        Shape::Gt,
+    ]
+    .get(usize::try_from(constructor).expect("index"))
+    .copied()
+    .unwrap_or_else(|| Shape::Adt {
+        constructor: dec_nat(&parts[0]),
+    })
+}
+
+fn dec_prim(value: &Value) -> Prim {
+    let (constructor, parts) = fields(value);
+    match constructor {
+        40 => Prim::Convert {
+            target: dec_kind(&parts[0]),
+        },
+        41 => Prim::ParseDecimal {
+            target: dec_ty(&parts[0]),
+        },
+        index => all_prims()
+            .into_iter()
+            .find(|candidate| fields(&enc_prim(candidate)).0 == index)
+            .expect("a primitive"),
+    }
+}
+
+fn dec_exprs(value: &Value) -> Vec<Expr> {
+    unchain(value, 13, 14).into_iter().map(dec_expr).collect()
+}
+
+fn dec_expr(value: &Value) -> Expr {
+    let (constructor, parts) = fields(value);
+    let boxed = |at: usize| Box::new(dec_expr(&parts[at]));
+    match constructor {
+        0 => Expr::Value {
+            ty: dec_ty(&parts[0]),
+            value: dec_value(&parts[1]),
+        },
+        1 => Expr::Var {
+            name: dec_nat(&parts[0]),
+        },
+        2 => Expr::Let {
+            name: dec_nat(&parts[0]),
+            ty: dec_ty(&parts[1]),
+            bound: boxed(2),
+            body: boxed(3),
+        },
+        3 => Expr::Cond {
+            condition: boxed(0),
+            then_branch: boxed(1),
+            else_branch: boxed(2),
+        },
+        4 => Expr::Match {
+            ty: dec_ty(&parts[0]),
+            scrutinee: boxed(1),
+            arms: unchain(&parts[2], 13, 14)
+                .into_iter()
+                .map(|arm| {
+                    let (_, arm_parts) = fields(arm);
+                    let Value::List { items } = &arm_parts[1] else {
+                        panic!("binders are a list")
+                    };
+                    Arm {
+                        shape: dec_shape(&arm_parts[0]),
+                        binders: items.iter().map(dec_nat).collect(),
+                        body: dec_expr(&arm_parts[2]),
+                    }
+                })
+                .collect(),
+        },
+        5 => Expr::Build {
+            shape: dec_shape(&parts[0]),
+            ty: dec_ty(&parts[1]),
+            operands: dec_exprs(&parts[2]),
+        },
+        6 => Expr::Call {
+            function: dec_nat(&parts[0]),
+            operands: dec_exprs(&parts[1]),
+        },
+        7 => Expr::Closure {
+            function: dec_nat(&parts[0]),
+            captures: dec_exprs(&parts[1]),
+        },
+        8 => Expr::Apply {
+            target: boxed(0),
+            operands: dec_exprs(&parts[1]),
+        },
+        9 => Expr::Prim {
+            operation: dec_prim(&parts[0]),
+            operands: dec_exprs(&parts[1]),
+        },
+        10 => Expr::First { value: boxed(0) },
+        11 => Expr::Second { value: boxed(0) },
+        12 => Expr::Field {
+            value: boxed(0),
+            index: dec_nat(&parts[1]),
+        },
+        other => panic!("not an expression: {other}"),
+    }
+}
+
+/// The program the arguments of `program_arguments` stand for.
+fn dec_program(arguments: &[Value]) -> Program {
+    let chains = |value: &Value| -> Vec<Vec<Ty>> {
+        unchain(value, 14, 15).into_iter().map(dec_tys).collect()
+    };
+    let constructors: Vec<Vec<Vec<Ty>>> = unchain(&arguments[1], 14, 15)
+        .into_iter()
+        .map(chains)
+        .collect();
+    let Value::List { items: names } = &arguments[2] else {
+        panic!("parameters are a list")
+    };
+    let types = chains(&arguments[3]);
+    let results = dec_tys(&arguments[4]);
+    let bodies = dec_exprs(&arguments[5]);
+    Program {
+        spec: dec_text(&arguments[0]),
+        adts: constructors
+            .into_iter()
+            .map(|constructors| target::Adt { constructors })
+            .collect(),
+        functions: bodies
+            .into_iter()
+            .enumerate()
+            .map(|(at, body)| {
+                let Value::List { items } = &names[at] else {
+                    panic!("names are a list")
+                };
+                Function {
+                    parameters: items.iter().map(dec_nat).collect(),
+                    types: types[at].clone(),
+                    result: results[at].clone(),
+                    body,
+                }
+            })
+            .collect(),
+    }
+}
+
 /// What the oracle makes of a program, as the root returns it: `ok ()` or
 /// the reason's text.
 fn verdict(outcome: Result<(), String>) -> Json {
@@ -2057,6 +2360,19 @@ pub(super) fn case() {
         .map(|(root, _)| (*root, super::lower(&checked, &project, MODULE, root)))
         .collect();
     let (vector_programs, vector_arguments) = vectors(&sources);
+    // The chain is a faithful image of the list: decoding the arguments of
+    // every vector returns the program the oracle read.
+    let every: Vec<Program> = sources.iter().map(|source| source.program.clone()).collect();
+    for program in &every {
+        assert_eq!(&dec_program(&program_arguments(program)), program, "list to chain and back");
+    }
+    for (arguments, _) in vector_programs.iter().chain(&vector_arguments) {
+        let program = dec_program(&arguments[..6]);
+        assert_eq!(program_arguments(&program), arguments[..6], "chain to list and back");
+        if let Some(extra) = arguments.get(7) {
+            assert_eq!(enc_values(&dec_values(extra)), *extra, "argument chain round trip");
+        }
+    }
     eprintln!(
         "BS-04: {} committed programs ({nodes} nodes) and {} vectors ({} refused) of checkProgram, {} of checkArguments ({} refused) ({:?})",
         sources.len(),
