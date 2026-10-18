@@ -9089,26 +9089,25 @@ eligibility, the calculus checker and realization table, and the Rust AST, its
 lowering, and its validator.
 
 At the time of writing it reads 137 sources and finds 244 classifications, all
-total but five catch-alls in two sources named below.
+total. There is no exemption: every source is read alike.
 
-**The carve-out.** `calculus/rust/lower.rs` and `calculus/rust/validate.rs`
-still hold five catch-alls. Their bytes are recorded in the compiler-semantics
-ID (`rust_renderer` in `language/semantics-1.2.toml`, checked by
-`the_compiler_semantics_records_the_renderer`), so editing them moves that ID
-and regenerates every record, which is a decision of its own. The audit lists
-exactly those two files in `IDENTITY_BOUND` and tolerates their catch-alls; it
-fails as soon as either holds none, naming the entry to remove, so the
-exemption cannot outlive its need.
+**What the 27 catch-alls it found became.** Each plain `_` arm lists the
+variants it took by default, and each binding arm is `name @ (A | B | ..)`, so
+the arm body is unchanged; rustc confirms the list is exactly the remaining
+variants. The Lean backend's `primitive` became one exhaustive `spelling` table
+of the 56 primitives. For the 25 in sources the compiler-semantics ID does not
+read, generated output is unchanged: `cargo xtask check-golden` and `cargo xtask
+check-calculus` pass, the `lexlean` unit tests pass, and `cargo clippy
+--workspace --all-targets --all-features -- -D warnings` is clean.
 
-**What the 25 other catch-alls became.** Each plain `_` arm lists the variants
-it took by default, and each binding arm is `name @ (A | B | ..)`, so the arm
-body is unchanged; rustc confirms the list is exactly the remaining variants. The Lean backend's
-`primitive` became one exhaustive `spelling` table of the 56 primitives.
-Generated output is unchanged: `cargo xtask check-golden` and
-`cargo xtask check-calculus` pass, the `lexlean` unit tests pass (including the
-renderer-record test, which passes only because those two sources are
-untouched), and `cargo clippy --workspace --all-targets --all-features -- -D
-warnings` is clean.
+**The renderer.** The other two, in `calculus/rust/lower.rs` and `validate.rs`,
+are sources the compiler-semantics ID reads: their bytes are recorded as
+`rust_renderer` in `language/semantics-1.2.toml` and checked by
+`the_compiler_semantics_records_the_renderer`. Editing them changed that digest,
+so the record moved (`6d1e0639...` to `c7fe1d8d...`) and the compiler-semantics
+ID moves with it. No record was regenerated: the committed locks and the
+expected outputs that carry the ID are stale until the maintainer's identity
+wave regenerates them once, and until then a committed lock fails `LLC0102`.
 
 **Planted.** Each was made alone in the named source, `cargo xtask
 validate-model` run, and the edit restored.
@@ -9128,14 +9127,13 @@ gate failed: R8: crates/lexlean/src/calculus/rust/ast.rs:458: a `match` naming 7
 ```
 
 `conformance_rp_15` plants a wildcard, and then a binding arm, in a
-classification of each of eight consumer functions (`spelling` and
+classification of each of ten consumer functions (`spelling` and
 `render_latex` of the backend, `infer_term` and `type_node_count` of
 validation and charge, `type_key` of eligibility, `prim_type` of the calculus
-checker, `in_place` of the realization table, and `expr` of the Rust AST; the
-Rust lowering and validator are the carve-out) and observes the audit name the
-file. It empties and then removes each consumer and observes `would pass over`,
-and it cleans each identity-bound source and observes `remove it from
-IDENTITY_BOUND`. `cargo test -p repo-model classification` covers the scanner
+checker, `in_place` of the realization table, `expr` of the Rust AST, `item` of
+its lowering, and `expr` of its validator) and observes the audit name the
+file. It empties and then removes each consumer and observes `would pass over`.
+`cargo test -p repo-model classification` covers the scanner
 itself: a total match, a wildcard, a binding, a guarded wildcard, a lookup,
 `Self::` paths, prose and literals, a tuple pairing, block bodies, and raw
 strings.

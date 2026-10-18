@@ -1699,13 +1699,11 @@ pub fn audit_classifications(root: &Path) -> Result<(), Fail> {
     }
     let summary = classification::audit(&sources)?;
     println!(
-        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total except {} catch-alls in the {} identity-bound renderer sources (RP-15, R8)",
+        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total (RP-15, R8)",
         summary.classifications(),
         classification::CLASSIFYING_ARMS,
         summary.per_file.len(),
-        summary.files,
-        summary.tolerated.values().sum::<usize>(),
-        summary.tolerated.len()
+        summary.files
     );
     Ok(())
 }

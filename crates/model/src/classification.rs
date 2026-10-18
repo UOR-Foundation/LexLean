@@ -82,19 +82,6 @@ pub const CONSUMERS: [(&str, &str); 8] = [
     ),
 ];
 
-/// Sources that still hold a catch-all in a classification, because their
-/// bytes are recorded in the compiler-semantics ID (`rust_renderer` in
-/// `language/semantics-1.2.toml`): editing them moves that ID, which is a
-/// decision of its own and is made in the change that next moves the record.
-///
-/// The entry expires by itself. A source listed here that holds no catch-all
-/// fails the audit, so the entry is removed in the change that removes the
-/// last one, and the exemption cannot outlive its need.
-pub const IDENTITY_BOUND: [&str; 2] = [
-    "crates/lexlean/src/calculus/rust/lower.rs",
-    "crates/lexlean/src/calculus/rust/validate.rs",
-];
-
 /// One `match` that names at least [`CLASSIFYING_ARMS`] variants of an enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Classification {
@@ -115,8 +102,6 @@ pub struct Summary {
     pub files: usize,
     /// The number of classifications found, per source file that has any.
     pub per_file: BTreeMap<String, usize>,
-    /// The catch-alls tolerated in [`IDENTITY_BOUND`] sources, per source.
-    pub tolerated: BTreeMap<String, usize>,
 }
 
 impl Summary {
@@ -632,10 +617,6 @@ pub fn audit(sources: &[(String, String)]) -> Result<Summary, String> {
         }
         for classification in found {
             if let Some((line, kind)) = classification.catch_all {
-                if IDENTITY_BOUND.contains(&path.as_str()) {
-                    *summary.tolerated.entry(path.clone()).or_default() += 1;
-                    continue;
-                }
                 let _ = writeln!(
                     failures,
                     "R8: {path}:{}: a `match` naming {} variants of `{}` has {kind} at line {line}; \
@@ -644,15 +625,6 @@ pub fn audit(sources: &[(String, String)]) -> Result<Summary, String> {
                     classification.line, classification.named, classification.enumeration
                 );
             }
-        }
-    }
-    for path in IDENTITY_BOUND {
-        if !summary.tolerated.contains_key(path) {
-            let _ = writeln!(
-                failures,
-                "R8: {path} holds no catch-all in a classification, or is not read; remove it from \
-                 IDENTITY_BOUND, which exists only for sources that still hold one (RP-15)"
-            );
         }
     }
     for (path, role) in CONSUMERS {
@@ -775,8 +747,7 @@ mod tests {
         assert_eq!(plant_catch_all(&source, &ENUMS, "absent"), None);
     }
 
-    /// A total classification for every consumer, and a catch-all in each
-    /// identity-bound one.
+    /// A total classification for every consumer.
     fn consumers() -> Vec<(String, String)> {
         CONSUMERS
             .iter()
@@ -786,14 +757,7 @@ mod tests {
                 } else {
                     "SemanticType"
                 };
-                let mut text = TOTAL.replace("Shape", enumeration);
-                if IDENTITY_BOUND.contains(path) {
-                    text = text.replace(
-                        &format!("{enumeration}::E => 5,"),
-                        &format!("{enumeration}::E => 5,\n        _ => 0,"),
-                    );
-                }
-                ((*path).to_owned(), text)
+                ((*path).to_owned(), TOTAL.replace("Shape", enumeration))
             })
             .collect()
     }
@@ -803,7 +767,6 @@ mod tests {
         let sources = consumers();
         let summary = audit(&sources).expect("a total classification in every consumer");
         assert_eq!(summary.classifications(), CONSUMERS.len());
-        assert_eq!(summary.tolerated.len(), IDENTITY_BOUND.len());
         let mut planted = sources.clone();
         planted[0].1 = planted[0].1.replace(
             "SemanticType::E => 5,",
@@ -816,18 +779,5 @@ mod tests {
         let error = audit(&vacated).expect_err("a consumer with no classification fails");
         assert!(error.contains(CONSUMERS[1].0), "{error}");
         assert!(error.contains("would pass over"), "{error}");
-    }
-
-    #[test]
-    fn an_identity_bound_source_is_tolerated_only_while_it_needs_to_be() {
-        let mut sources = consumers();
-        let at = sources
-            .iter()
-            .position(|(path, _)| path == IDENTITY_BOUND[0])
-            .expect("a consumer");
-        sources[at].1 = TOTAL.replace("Shape", "Ty");
-        let error = audit(&sources).expect_err("a clean source is removed from the list");
-        assert!(error.contains(IDENTITY_BOUND[0]), "{error}");
-        assert!(error.contains("remove it from IDENTITY_BOUND"), "{error}");
     }
 }

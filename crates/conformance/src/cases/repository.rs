@@ -2014,6 +2014,8 @@ fn rp_15() {
         ("crates/lexlean/src/calculus/check.rs", "prim_type"),
         ("crates/lexlean/src/calculus/realization.rs", "in_place"),
         ("crates/lexlean/src/calculus/rust/ast.rs", "expr"),
+        ("crates/lexlean/src/calculus/rust/lower.rs", "item"),
+        ("crates/lexlean/src/calculus/rust/validate.rs", "expr"),
     ];
     for (path, function) in plants {
         let at = sources
@@ -2035,25 +2037,6 @@ fn rp_15() {
         assert!(
             error.contains(path) && error.contains("a binding catch-all arm"),
             "{path}::{function}: {error}"
-        );
-    }
-    // The identity-bound sources keep their catch-alls without failing the
-    // audit, and the entry expires with the last of them.
-    assert_eq!(summary.tolerated.len(), audit::IDENTITY_BOUND.len());
-    for path in audit::IDENTITY_BOUND {
-        let at = sources
-            .iter()
-            .position(|(candidate, _)| candidate == path)
-            .expect("read");
-        let mut clean = sources.clone();
-        clean[at].1 = sources[at]
-            .1
-            .replace("_ =>", "Ty::Unit =>")
-            .replace("other =>", "Ty::Unit =>");
-        let error = audit::audit(&clean).expect_err("a clean identity-bound source fails");
-        assert!(
-            error.contains(path) && error.contains("remove it from IDENTITY_BOUND"),
-            "{path}: {error}"
         );
     }
     // A consumer that no longer holds a classification, or is not read, would
