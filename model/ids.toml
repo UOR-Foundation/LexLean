@@ -1761,6 +1761,12 @@ suite = "rust-backend"
 statement = "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused."
 
 [[id]]
+id = "RB-14"
+level = "build"
+suite = "rust-backend"
+statement = "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused."
+
+[[id]]
 id = "GN-01"
 level = "build"
 suite = "gnaf"

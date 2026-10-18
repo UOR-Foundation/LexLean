@@ -86,3 +86,10 @@ Feature: rust-backend
     Given a recursive program, an overflowing program, and a plain program, each in both profiles
     When each is rendered with the effects its program shows, its provenance is read against the schema, and the render is repeated with an unregistered effect, an unordered list, and allocation on `rust-core`
     Then each rendering's provenance states exactly the manifest's effects, the registry's recursion statement says the process aborts, and each planted manifest is refused as LLB6005 naming the effect
+
+  @RB-14 @build
+  Scenario: A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused.
+    Given the library templates of the realization, each instantiated for the types the fixtures use
+    When each is rendered in both profiles and its self calls are classified as tail calls or not
+    Then every template whose self calls are all tail calls renders as a loop that breaks with its result, and its primitives' registry rows say `recursion = false`
+    And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
