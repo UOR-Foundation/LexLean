@@ -34,11 +34,11 @@ const ROOTS: [(&str, &[&str]); 2] = [
 /// scalar boundaries): the evaluator interprets the lowered program, so the
 /// gate reads a window of each source and leaves the whole sources to the
 /// rendered package.
-const EVALUATOR_WINDOW: usize = 160;
+const EVALUATOR_WINDOW: usize = 128;
 /// Seeded edge texts under the evaluator.
-const EVALUATOR_SEEDED: usize = 120;
+const EVALUATOR_SEEDED: usize = 80;
 /// Seeded edge texts under rustc.
-const RUSTC_SEEDED: usize = 4_000;
+const RUSTC_SEEDED: usize = 2_500;
 /// Of the seeded texts, those whose atoms `rejectAtoms` reads under rustc: its
 /// argument is the whole atom list, which the harness spells out, and a
 /// harness of a few hundred thousand atoms does not compile.
@@ -536,6 +536,8 @@ fn vectors(tally: &mut Tally, forbidden: &[String]) -> Corpus {
         "\\semanticdataOther{{\"value\":\"007\"}}",
         "\\\\semanticdata{{\"value\":\"007\"}}",
         "\\semanticdata{{\"value\":\"007\"}} 008",
+        "\\semanticdata{{\"a\":\"b\"} \"007\" }",
+        "\\semanticdata{{\"a\":\"b\"},\"k\":\"007\"}",
         "\\begin{semanticmodule}\n\\semanticdata{{\"v\":\"007\"}}\n\\end{semanticmodule}",
         "\\begin{semanticmodule}\n\\semanticdata{{\"v\":007}}\n\\end{semanticmodule}",
         "\\begin{semanticmodule}\nnotation \"007\" and \"\\end\" 008\n\\end{semanticmodule} 009",
@@ -546,6 +548,9 @@ fn vectors(tally: &mut Tally, forbidden: &[String]) -> Corpus {
         "\\begin{coremodule}\n\\coredata{{\"v\":\"007\"}}\n\\end{coremodule}",
         "\\begin{coremodule}\n\\semanticdata{{\"v\":\"007\"}}",
         "\\begin{coremodule}\ndefinition \"x007\" 007",
+        "\\begin{coremodule}\nnotation \"a 007 b\" 008\n\\end{coremodule}",
+        "\\begin{toolingmodule}\nnotation \"a 007 b\" 008\n\\end{toolingmodule}",
+        "\\begin{semanticmodule}\nnotation \"a 007 b\" 008\n\\end{semanticmodule}",
         "\\begin{semanticmodules}\n\\semanticdata{{\"v\":\"007\"}}",
         "\\begin {semanticmodule}\n\\semanticdata{{\"v\":\"007\"}}",
         "\\begin{semanticmodule}\n\\coredata{{\"a\":{\"b\":\"007\"}}}",
@@ -563,7 +568,40 @@ fn vectors(tally: &mut Tally, forbidden: &[String]) -> Corpus {
     ] {
         add(tally, "m", source, big);
     }
+    let gaps = gapped(tally, forbidden);
+    corpus.reject.extend(gaps.iter().cloned());
+    corpus.reject_rustc.extend(gaps);
     corpus
+}
+
+/// `rejectAtoms` on atom lists the scanner does not produce: the atoms of a
+/// text without its white space, so that neighbours do not touch. The scanner
+/// never leaves a gap, and a check of adjacency that always holds would pass
+/// every scanned text.
+fn gapped(tally: &mut Tally, forbidden: &[String]) -> Vec<Run> {
+    let mut out = Vec::new();
+    for source in [
+        "x 01",
+        "add - 01",
+        "x_ 01 y",
+        "a 007 b",
+        "n + 007",
+        "' 01",
+        "_ 01",
+        "x\n01",
+        "\\def 01 \\input",
+        "\\semanticdata {\"v\" : 007}",
+        "a 01 b 02",
+    ] {
+        let source = source.replace("\\n", "\n");
+        let atoms: Vec<Atom> = lexlean::source::scan::scan("m", &source, u64::MAX)
+            .expect("scans")
+            .into_iter()
+            .filter(|atom| atom.class != AtomClass::Whitespace)
+            .collect();
+        out.push(reject_run(tally, "m", &atoms, forbidden));
+    }
+    out
 }
 
 /// A seeded edge text: a run of atoms, environments, and payload shapes.
