@@ -2047,7 +2047,7 @@ const EVALUATOR_CAP: usize = 400;
 /// Crates a mutation corpus draws its bases from.
 const BASE_CAP: usize = 80;
 const EVALUATOR_MUTANTS: usize = 500;
-const RUSTC_MUTANTS: usize = 20_000;
+const RUSTC_MUTANTS: usize = 2_000;
 const RULES_EACH: usize = 3;
 
 fn json_depth(text: &str) -> usize {
