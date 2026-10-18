@@ -7089,6 +7089,59 @@ planted defects in the source are each detected by the same differential, and
 the production export (§24.7) certifies both roots beside `AxiomOutput` under
 `tests/production-export/bootstrap/`.
 
+The third component is the primitive scanner (§12.2), the module
+`PrimitiveScan`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `scanSource (path text : Bytes) (maxAtoms : Nat) : Result (List Atom) Rejection` | `source::scan::scan` |
+| `rejectAtoms (path : Bytes) (atoms : List Atom) (forbidden : List Bytes) : Option Rejection` | `source::scan::reject_forbidden_atoms` |
+
+`scanSource` reads the bytes of normalized, valid UTF-8 source (§12.1) into the
+`Atom`s of the eight classes of §12.2 (`AtomClass`: `Control`, `Word`,
+`Numeral`, `Delimiter`, `AsciiSymbol`, `UnicodeSymbol`, `Whitespace`), each with
+its class, its text, its byte span, and its one-based line and column spans,
+columns counting scalars; the width of a scalar is read from its lead byte, and
+the module has no dependency on host Unicode character classes. It refuses with
+`LLL1004` a backslash that is followed by a non-ASCII scalar or by the end of the
+text, with `LLL1001` an ASCII control that no class covers, and with `LLS8002`
+the atom that exceeds `maxAtoms`. `rejectAtoms` transcribes
+`reject_forbidden_atoms` and its payload tracking one to one: an always-forbidden
+control (`LLL1002`), and a numeral with a redundant leading zero (`LLL1003`, with
+its help) that does not continue identifier material and is not inside a payload
+string, where the payload of a `\semanticdata`, `\toolingdata`, or `\coredata`
+argument and the body of a `semanticmodule`, `toolingmodule`, or `coremodule`
+environment are tracked by their quotes, escapes, and braces. A `Rejection` is
+first-order data (§17.13 rule 1): the diagnostic's `code`, its `message` to the
+byte, its `place` (the span, when it has one), and its `help` (when it has
+one). A count in a message is written in base ten by the module, as
+`AxiomOutput` does. The roots take no capability.
+
+`iterate` is still a self-recursive function of the rendered Rust (issue 105), so
+the depth of a scan is the number of its atoms and the module does not chunk the
+text; the whole sources of the rustc differential are bounded by that depth and
+by the size of the harness, not by the oracle.
+
+`BS-03` holds both roots to the oracle, and says where each part runs. On every
+host of the matrix the rendered `rust-std` packages (§17.16), compiled by that
+host's pinned rustc, are run on the deterministic vectors (the unit inputs of
+`source::scan`, the atom limit at N and N+1 and at the extremes of the limit,
+atom lists with gaps, which a scan never produces, and every shape of payload
+string and notation body), on a 128-byte window and a 2,048-byte prefix of
+every committed `.lex.tex` source, and on the whole of each such source up to
+8,192 bytes (for `rejectAtoms`, up to 1,024 bytes and one source in four,
+because its argument is the whole atom list, which the harness spells out and
+which does not compile at the size of the whole tree). On the normative host
+the lowered programs are in addition run under the calculus evaluator (§17.14)
+on the vectors, the windows, and 80 seeded texts; the packages are run on 2,500
+seeded texts and on 500 of their atom lists; each of ten planted defects in the
+source is detected; and the production export (§24.7) certifies both roots
+beside the others under `tests/production-export/bootstrap/`. The outcome of a
+run is the atoms or the rejection with its code, message, span, and help, and
+one difference fails the case. The evaluator reads windows because it
+interprets the lowered program (issue 190); the whole sources are left to the
+rendered package.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9906,6 +9959,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
+| `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -9916,7 +9970,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 416.
+**Total required capability IDs:** 417.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

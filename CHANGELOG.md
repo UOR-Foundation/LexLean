@@ -43,7 +43,7 @@ and Unreleased holds what has landed since.
   and, under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones. The compiler's identities are
   still computed by `sha2`; replacing it is stage 2 of #126. The register has
-  416 IDs.
+  417 IDs.
 
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
@@ -55,6 +55,18 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The third component of the compiler's own pipeline as language-1.2 source:
+  the primitive scanner of SPEC.md §12.2 (SPEC.md §17.23, `BS-03`, #92; no new
+  diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/src/PrimitiveScan.lex.tex` declares `scanSource` and `rejectAtoms`
+  as production roots for `rust-std`: the atoms of the eight classes with their
+  spans, and the rejections of `source::scan::reject_forbidden_atoms` with
+  their code, message, span, and help. `BS-03` holds them to the stage-0 oracle
+  `source::scan`; on every host the rendered packages run the deterministic
+  vectors, windows, prefixes, and whole committed sources under the pinned
+  rustc, and on the normative host the evaluator, 2,500 seeded texts, ten
+  planted defects, and the production export run as well (the split #190
+  asks for). `BS-03` brings the register to 417 IDs.
 - The second component of the compiler's own pipeline as language-1.2 source:
   the preservation lexer and token audit (SPEC.md §17.23, §17.17, `BS-02`, #92;
   no new diagnostic code, no change to the language-1.2 identity).
