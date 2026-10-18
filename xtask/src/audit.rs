@@ -864,9 +864,10 @@ pub fn audit_oracle_isolation(root: &Path) -> Result<(), Fail> {
 /// devcontainer, and the API, oracle, and tooling data, besides the crates and
 /// projects. A deferral parked in prose is as much a deferral as one in a
 /// comment, so the prose markers (phrases that put work in the future)
-/// are read as well (the list below spells them in halves). The one exception is a vendored authority copy: its bytes
-/// are the ones its SHA-256 pins (R6), so rewording it would falsify the
-/// citation, and the row that vendors it names the path.
+/// are read as well (the list below spells them in halves). The one exception
+/// is a vendored authority copy: a text pinned by digest (R6) is the
+/// authority's words, not ours, so rewording it would falsify the citation.
+/// The path comes from the row that vendors it, never from a list here.
 pub fn audit_deferral(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
     let markers = [
         concat!("TO", "DO"),
