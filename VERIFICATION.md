@@ -8805,6 +8805,25 @@ mismatch (`LLV7013`); the module binds such a call to a `let` first, and
 spells a decimal without `iterate_until`. Lean's exact axiom policy was
 aligned declaration by declaration (`Quot.sound`, `propext` for the `UInt8`
 range checks and byte comparison, as the spike on #92 measured).
+### the bootstrap preservation lexer and token audit can fail its oracle (SPEC.md §17.23, §17.17)
+
+`BS-02` holds the two production roots of `LexLeanBoot.TokenAudit` (`bootstrap/src/TokenAudit.lex.tex`) to the stage-0 Rust oracle they replace, `production::preserve::lex` and `production::preserve::audit_tokens`. The corpus of 1,731 deterministic Lean 4 source vectors (accepted modules, rejected control characters, unclosed comments/strings/raw strings/char literals/quoted names, malformed radix/exponent/field-index numbers, interpolated strings, forbidden commands, forbidden tokens inside and outside `@[...]`/`attribute [...]`, qualified forbidden constants, disallowed options, and unlisted imports) and 300 seeded combinations per root run under the calculus evaluator; both roots' rendered `rust-std` packages, compiled by the pinned `rustc`, run 5,731 inputs each. The case passed locally with the production export under the pinned Lean (`audit_tokens` and `lex` committed under `tests/production-export/bootstrap/packages/rust-std/`), and makes each of these seven plants on a copy of `bootstrap/src/TokenAudit.lex.tex` on every run:
+
+- **a nested block comment does not increment depth** (`depth := (dep + 1)` -> `depth := dep`). `-- conformance_bs_02`:
+
+  ```text
+  BS-02: plant detected: a nested block comment does not increment depth: run 48 on "/- /- nested -/ theorem t : False := sorry\n": the program gives ok [...], the oracle error "a comment is not closed"
+  ```
+
+- **a hexadecimal literal rejects uppercase `A..F` digits** (`(inRange byte (65 : UInt8) (70 : UInt8))` -> `(inRange byte (65 : UInt8) (65 : UInt8))`): run 60 on `"def x := 0x1_Fsorry\n"`, the program gives `error "a number has a digit separator or a radix prefix with no digit after it"` where the oracle lexes `0x1_F` followed by `sorry`.
+- **an interpolated string is not refused** (`(if (if (not (project firstSeg quoted)) then (if isBanged then isQuoteAfter else false) else false)` -> `(if false`): run 44 on `"def s := s!\"{sorry}\"\n"`, the program lexes `s!` and `"{sorry}"` where the oracle refuses with `"an interpolated string holds code"`.
+- **a C1 control character (`U+0080..U+009F`) is not refused** (`(byteIn subject (position + 1) (128 : UInt8) (159 : UInt8))` -> `(byteIn subject (position + 1) (128 : UInt8) (128 : UInt8))`): run 97 on `"def x := 1\u{85}\n"`, the program lexes `\u{85}` as a symbol where the oracle refuses with `"a control character U+0085 in the text"`.
+- **a quoted forbidden attribute inside `@[...]` is not refused** (`(let activeTok : Bool := (if (not (project onlySeg quoted)) then true else (0 <? attributeDepth));` -> `(let activeTok : Bool := (not (project onlySeg quoted));`): run 23 on `"@[«implemented_by» g] def h := 1\n"`, the program gives `ok ()` where the oracle refuses with `"the forbidden token `implemented_by`"`.
+- **a qualified forbidden constant is not checked** (`(let bad : Bool := (isForbiddenConstant (project seg text));` -> `(let bad : Bool := false;`): run 20 on `"def x := Lean.ofReduceBool\n"`, the program gives `ok ()` where the oracle refuses with `"the forbidden constant `ofReduceBool` (in `Lean.ofReduceBool`)"`.
+- **an import of an unlisted module is accepted** (`(let okMod : Bool := (bytesInList modName imports);` -> `(let okMod : Bool := true;`): run 94 on `"import Mathlib\n"`, the program gives `ok ()` where the oracle refuses with `"the import of `Mathlib` is not allowed"`.
+
+Removed: the source was not changed (the plants are made on copies).
+
 ### source packages can fail
 
 The cases of the `packages` suite (`PK-01`..`PK-04`, SPEC.md §10.5) were written

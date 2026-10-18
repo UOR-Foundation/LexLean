@@ -25,6 +25,18 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The second component of the compiler's own pipeline as language-1.2 source:
+  the preservation lexer and token audit (SPEC.md §17.23, §17.17, `BS-02`, #92;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/src/TokenAudit.lex.tex` imports `LexLeanStd.Text` via source
+  package and declares `lex` and `auditTokens` as production roots for
+  `rust-std`. `BS-02` runs 1,731 deterministic Lean 4 source vectors and 300
+  seeded combinations per root against the stage-0 Rust oracle
+  `production::preserve::{lex, audit_tokens}` under the calculus evaluator and
+  5,731 inputs per root under the pinned `rustc`, detects seven planted defects,
+  and, under the pinned Lean, compares the certified `audit_tokens` and `lex`
+  packages with the committed ones under `tests/production-export/bootstrap/`.
+  `BS-02` brings the register to 414 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
