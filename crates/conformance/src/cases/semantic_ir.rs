@@ -2552,6 +2552,149 @@ pub(crate) fn run(id: &str) {
         }
         // §17.12: the widening conversions.
         "SM-32" => widen::run(),
+        "SM-34" => {
+            // `V2Fixture.one` states its type and value; `V2Fixture.one.eq_1`
+            // is derived: it states no universe parameters, type, or value,
+            // and the pinned Lean's reserved-name action makes it.
+            let module = |edit: &dyn Fn(&mut serde_json::Value)| -> String {
+                let mut data = serde_json::json!({
+                    "spec": "lexlean/core-module/2",
+                    "imports": ["Init"],
+                    "nodes": [
+                        {"k": "c", "n": "Nat", "u": []},
+                        {"k": "n", "v": "1"}
+                    ],
+                    "proof_nodes": [],
+                    "declarations": [
+                        {"name": "V2Fixture.one", "kind": "definition", "levels": [], "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "reducibility": {"kind": "regular", "height": 1},
+                         "policy": {"kind": "exact", "axioms": []}, "type": 0, "value": 1},
+                        {"name": "V2Fixture.one.eq_1", "kind": "theorem", "class": false,
+                         "generated": false, "transparency": "semireducible",
+                         "policy": {"kind": "exact", "axioms": []}, "derived": true}
+                    ]
+                });
+                edit(&mut data);
+                let text = serde_json::to_string(&data).expect("canonical JSON");
+                format!(
+                    "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{coremodule}}\n\\coredata{{{text}}}\n\\end{{coremodule}}\n\\end{{lexlean}}\n"
+                )
+            };
+            let project_of = |source: &str| {
+                let project = P::example();
+                project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+                project.write("src/Main.lex.tex", source);
+                project.relock();
+                project
+            };
+            // The linker accepts the module, and the module's data form holds
+            // no type, no value, and no universe parameters for the derived row.
+            let accepted = project_of(&module(&|_| {}));
+            let checked = support::checked_project(&accepted);
+            let core = checked.modules["Main"]
+                .document
+                .core
+                .as_ref()
+                .expect("native core module");
+            let derived = &core.declarations[1];
+            assert!(derived.derived && derived.r#type.is_none() && derived.value.is_none());
+            let data = serde_json::to_value(core).expect("core JSON");
+            support::assert_schema("core-module-v2", "derived-row fixture", &data);
+            let row = &data["declarations"][1];
+            for absent in ["levels", "type", "value", "reducibility"] {
+                assert!(row.get(absent).is_none(), "a derived row states `{absent}`");
+            }
+            // The notation writes the row without a type and reads it back.
+            let text = lexlean::surface::core::print_module(core).expect("notation");
+            let line = text
+                .lines()
+                .find(|line| line.starts_with("theorem V2Fixture.one.eq_1"))
+                .expect("the derived row is in the notation");
+            assert!(!line.contains(':') || line.contains("derived: true"), "{line}");
+            assert!(!line.contains(" : @"), "the derived row states a type: {line}");
+            assert_eq!(
+                &lexlean::surface::core::parse_module(&text).expect("reads back"),
+                core
+            );
+            // The linker refuses a derived row that states what the
+            // construction decides, and a row that is not derived but states
+            // no type, before any build output.
+            for (what, edit, message) in [
+                (
+                    "a derived row that states a type",
+                    (&|data: &mut serde_json::Value| data["declarations"][1]["type"] = 0.into())
+                        as &dyn Fn(&mut serde_json::Value),
+                    "states a type",
+                ),
+                (
+                    "a derived row that states a value",
+                    &|data| data["declarations"][1]["value"] = 1.into(),
+                    "states a value",
+                ),
+                (
+                    "a derived row that states universe parameters",
+                    &|data| data["declarations"][1]["levels"] = serde_json::json!([]),
+                    "states universe parameters",
+                ),
+                (
+                    "a derived row that is not a declaration of a constant",
+                    &|data| data["declarations"][1]["kind"] = "inductive".into(),
+                    "is not a theorem, a definition, or an abbreviation",
+                ),
+                (
+                    "a row that states no type and is not derived",
+                    &|data| {
+                        data["declarations"][1]
+                            .as_object_mut()
+                            .expect("a row")
+                            .remove("derived");
+                    },
+                    "states no type or no universe parameters and is not derived",
+                ),
+                (
+                    "a derived row in the first schema",
+                    &|data| data["spec"] = "lexlean/core-module/1".into(),
+                    "requires",
+                ),
+            ] {
+                let refused = project_of(&module(edit));
+                let error = refused.check_fails_with("LLI9001");
+                assert!(error.to_string().contains(message), "{what}: {error}");
+                refused.assert_no_backend_output_with("LLI9001");
+            }
+            accepted.build_ok();
+            if !support::lean_backed("SM-34") {
+                return;
+            }
+            // The pinned Lean verifies the module whose theorem is the one its
+            // own action makes.
+            let _ = support::verify_ok(&accepted);
+            // Each of these is refused by the decoder.
+            for (what, edit, message) in [
+                (
+                    "a derived row whose name the construction does not make",
+                    (&|data: &mut serde_json::Value| {
+                        data["declarations"][1]["name"] = "V2Fixture.one.eq_2".into();
+                    }) as &dyn Fn(&mut serde_json::Value),
+                    "bears a name the elaborator reserves, and its construction does not make it",
+                ),
+                (
+                    "a derived row whose name the pinned Lean does not reserve",
+                    &|data| data["declarations"][1]["name"] = "V2Fixture.one.other".into(),
+                    "bears a name the elaborator does not reserve and states no sparse casesOn record",
+                ),
+                (
+                    "a derived row that is another kind than the construction makes",
+                    &|data| data["declarations"][1]["kind"] = "definition".into(),
+                    "is not a definition as the elaborator's construction makes it",
+                ),
+            ] {
+                let refused = project_of(&module(edit));
+                let error = refused.verify_fails_with("LLV7002");
+                assert!(error.to_string().contains(message), "{what}: {error}");
+            }
+        }
         other => panic!("no semantic-ir case is wired for {other}"),
     }
 }

@@ -824,7 +824,7 @@ impl CompositionMutation {
                     nodes.push(node);
                 }
                 for row in &mut planted.declarations {
-                    row.r#type = map[row.r#type];
+                    row.r#type = row.r#type.map(|root| map[root]);
                     row.value = row.value.map(|value| map[value]);
                 }
                 planted.proof_nodes = planted.proof_nodes.iter().map(|p| map[*p]).collect();

@@ -1159,7 +1159,7 @@ fn assert_data_statement(
     // The binders.
     let parameters = &entry.program.functions[0].parameters;
     let mut binders = Vec::new();
-    let mut body = row.r#type;
+    let mut body = row.r#type.expect("a certificate row states its type");
     while let CoreNode::Forall { n, t, v, .. } = node(body) {
         binders.push((n.clone(), *t));
         body = *v;
@@ -1344,7 +1344,7 @@ fn assert_data_statement(
     }
     // No binder the composition adds is a name a parameter could be.
     let own_names: BTreeSet<&str> = own.iter().map(|(binder, _)| binder.as_str()).collect();
-    for index in reachable(data, row.r#type)
+    for index in reachable(data, row.r#type.expect("a certificate row states its type"))
         .into_iter()
         .chain(reachable(data, row.value.expect("a proof")))
     {

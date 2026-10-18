@@ -110,8 +110,7 @@ fn statements_by_rule(module: &CoreModule) -> BTreeSet<usize> {
         }
     }
     for declaration in &module.declarations {
-        let mut roots = vec![declaration.r#type];
-        roots.extend(declaration.value);
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(equations) = &declaration.eqn_info {
             roots.extend([equations.r#type, equations.value]);
         }
@@ -994,7 +993,10 @@ fn authored() {
         .find(|row| row.name == AUTHORED_NAME)
         .unwrap_or_else(|| panic!("{shown}: the authored theorem is not declared"));
     let statement_at = body
-        .find(&format!("\n@{} := ", theorem.r#type))
+        .find(&format!(
+            "\n@{} := ",
+            theorem.r#type.expect("the authored theorem states its type")
+        ))
         .expect("the statement of the theorem")
         + 1;
     assert_eq!(

@@ -684,7 +684,13 @@ statement = "Language 1.2 widening conversions, to_int from every fixed-width in
 id = "SM-33"
 level = "build"
 suite = "semantic-ir"
-statement = "A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's."
+statement = "A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's."
+
+[[id]]
+id = "SM-34"
+level = "build"
+suite = "semantic-ir"
+statement = "A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, and a stored row is still checked against the construction."
 
 [[id]]
 id = "DF-01"

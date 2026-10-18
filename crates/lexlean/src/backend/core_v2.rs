@@ -29,6 +29,16 @@
 //! which the construction makes of a name made outside an exporting context
 //! in a module.
 //!
+//! A row may be derived: it states its name, its kind, the extension state it
+//! installs, and for a sparse `casesOn` the record of its construction, and
+//! no universe parameters, type, or value. The decoder then makes the
+//! constant, at the row's place in the order, with the construction the data
+//! names (the reserved-name action of the name, or the sparse `casesOn`
+//! construction), refuses the module unless the construction makes the name
+//! and the constant is a theorem, a definition, or an abbreviation as the
+//! row says, and installs the stated state as for any row. A stored row is
+//! still checked against what the construction makes, as described below.
+//!
 //! A row whose name the elaborator reserves (the equations and splitter of a
 //! matcher, the equations and unfolding of a definition, the `else_eq` of a
 //! sparse `casesOn`) is not submitted either: the decoder runs the
@@ -53,10 +63,10 @@ pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.Spars
 
 /// The decoder's entry of a remade sparse `casesOn` in the elaborator's
 /// cache, which [`legacy_decoder`] leaves out.
-pub const LEAN_CORE_V2_CACHE_SEED: &str = "    for isPrivate in [false, true] do
-      modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
-        let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
-        if s.contains key then s else s.insert key name
+pub const LEAN_CORE_V2_CACHE_SEED: &str = "  for isPrivate in [false, true] do
+    modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+      let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
+      if s.contains key then s else s.insert key name
 ";
 
 /// The decoder's removal of its own constants from that cache, which
@@ -327,14 +337,65 @@ private def installAtRow (nodes : Array Expr) (json : Json) : CoreM Unit := do
   if let .str owner "_sunfold" := name then
     if (← getEnv).contains owner then Lean.enableRealizationsForConst owner
 
+private def kindIsMade (made : ConstantInfo) (kindString : String) : Bool :=
+  match made, kindString with
+  | .thmInfo _, "theorem" => true
+  | .defnInfo info, "definition" => !info.hints.isAbbrev
+  | .defnInfo info, "abbrev" => info.hints.isAbbrev
+  | _, _ => false
+
+private def remakeSparse (name : Name) (sparse : Json) : CoreM Unit := do
+  let indName := nameOf (← liftString (stringField sparse "ind_name"))
+  let constructors ← liftString (namesOf (← liftString (field sparse "interesting_ctors")))
+  let majorPos ← liftString (natField sparse "major_pos")
+  let arity ← liftString (natField sparse "arity")
+  let (owner, idx, parentIdxs) ← match name with
+    | .str parent last =>
+        match sparseIndices last with
+        | some (idx :: parents) => pure (parent, idx, parents)
+        | _ => throwError s!"core declaration '{name}' is not named like a sparse casesOn"
+    | _ => throwError s!"core declaration '{name}' is not named like a sparse casesOn"
+  Lean.enableRealizationsForConst indName
+  Lean.Meta.MetaM.run' <| Lean.Meta.realizeConst indName name do
+    setDeclNGen { namePrefix := owner, idx, parentIdxs }
+    let made ← Lean.withExporting (isExporting := !Lean.isPrivateName name)
+      (Lean.Meta.mkSparseCasesOn indName constructors.toArray)
+    unless made == name do
+      throwError s!"the sparse casesOn the elaborator makes is '{made}', not '{name}'"
+  let some info := Lean.Meta.getSparseCasesOnInfoCore (← getEnv) name
+    | throwError s!"core declaration '{name}' has no sparse casesOn record"
+  unless info.indName == indName && info.majorPos == majorPos && info.arity == arity
+      && info.insterestingCtors.toList == constructors do
+    throwError s!"core declaration '{name}' states another sparse casesOn record than the elaborator keeps"
+  for isPrivate in [false, true] do
+    modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
+      let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
+      if s.contains key then s else s.insert key name
+
+private def addDerived (json : Json) (name : Name) (kindString : String) : CoreM Unit := do
+  unless (← getEnv).contains name do
+    if let some sparse := optionalField json "sparse" then
+      remakeSparse name sparse
+    else if Lean.isReservedName (← getEnv) name then
+      Lean.withExporting (isExporting := true) (Lean.executeReservedNameAction name)
+    else
+      throwError s!"derived core declaration '{name}' bears a name the elaborator does not reserve and states no sparse casesOn record"
+  let some made := (← getEnv).find? name
+    | throwError s!"derived core declaration '{name}' bears a name the elaborator reserves, and its construction does not make it"
+  unless kindIsMade made kindString do
+    throwError s!"derived core declaration '{name}' is not a {kindString} as the elaborator's construction makes it"
+
 private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
     (json : Json) : CoreM Unit := do
   if ← liftString (boolField json "generated") then return
   let nameString ← liftString (stringField json "name")
   let name := nameOf nameString
+  let kindString ← liftString (stringField json "kind")
+  if (optionalField json "derived").isSome then
+    addDerived json name kindString
+    return
   let levelParams ← liftString (namesOf (← liftString (field json "levels")))
   let type ← liftString (nodeAt nodes (← liftString (natField json "type")))
-  let kindString ← liftString (stringField json "kind")
   let all ← match optionalField json "all" with
     | some value => liftString (namesOf value)
     | none => pure [name]
@@ -348,36 +409,11 @@ private def addOneUnchecked (nodes : Array Expr) (declarations : Array Json)
     sameAsRow nodes json name levelParams type kindString
     return
   if let some sparse := optionalField json "sparse" then
-    let indName := nameOf (← liftString (stringField sparse "ind_name"))
-    let constructors ← liftString (namesOf (← liftString (field sparse "interesting_ctors")))
-    let majorPos ← liftString (natField sparse "major_pos")
-    let arity ← liftString (natField sparse "arity")
-    let (owner, idx, parentIdxs) ← match name with
-      | .str parent last =>
-          match sparseIndices last with
-          | some (idx :: parents) => pure (parent, idx, parents)
-          | _ => throwError s!"core declaration '{name}' is not named like a sparse casesOn"
-      | _ => throwError s!"core declaration '{name}' is not named like a sparse casesOn"
-    Lean.enableRealizationsForConst indName
-    Lean.Meta.MetaM.run' <| Lean.Meta.realizeConst indName name do
-      setDeclNGen { namePrefix := owner, idx, parentIdxs }
-      let made ← Lean.withExporting (isExporting := !Lean.isPrivateName name)
-        (Lean.Meta.mkSparseCasesOn indName constructors.toArray)
-      unless made == name do
-        throwError s!"the sparse casesOn the elaborator makes is '{made}', not '{name}'"
+    remakeSparse name sparse
     let some made := (← getEnv).find? name | throwError s!"core declaration '{name}' is absent"
     let value ← liftString (nodeAt nodes (← liftString (natField json "value")))
     unless made.type == type && made.value? == some value do
       throwError s!"core declaration '{name}' is not the sparse casesOn the elaborator makes"
-    let some info := Lean.Meta.getSparseCasesOnInfoCore (← getEnv) name
-      | throwError s!"core declaration '{name}' has no sparse casesOn record"
-    unless info.indName == indName && info.majorPos == majorPos && info.arity == arity
-        && info.insterestingCtors.toList == constructors do
-      throwError s!"core declaration '{name}' states another sparse casesOn record than the elaborator keeps"
-    for isPrivate in [false, true] do
-      modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>
-        let key : Lean.Meta.SparseCasesOnKey := { indName, ctors := constructors.toArray, isPrivate }
-        if s.contains key then s else s.insert key name
     return
   match kindString with
   | "inductive" =>
