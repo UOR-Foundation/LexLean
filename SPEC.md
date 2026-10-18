@@ -270,7 +270,7 @@ Every user-visible failure has a registered diagnostic code and a sanctioned exi
 
 ## 7. Repository layout
 
-The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits.
+The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
 
 ```text
 .
@@ -9425,7 +9425,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 |---|---|---|---|
 | `RP-01` | `repository` | The repository, crate, executable, metadata, and licenses have the exact LexLean identity specified. | §2 |
 | `RP-02` | `repository` | The repository is derived from the pinned UOR template commit and contains no inherited domain-specific claim logic. | §2.2 |
-| `RP-03` | `repository` | The completed repository has the required file and crate layout. | §7 |
+| `RP-03` | `repository` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. | §7 |
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
 | `RP-06` | `repository` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. | §27.5 |

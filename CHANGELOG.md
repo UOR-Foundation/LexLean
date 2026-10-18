@@ -305,8 +305,10 @@ versions, and the entries below say what each tag does and does not claim.
   under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
   with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
   plants the second direction of the axiom check. Every directory that holds a
-  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
-  beside the sources no longer reads as source. No compiled behavior changes.
+  `CACHEDIR.TAG` is skipped by every repository walker, so a build directory
+  beside the sources no longer reads as source, and `RP-03` (#170) asserts that
+  the tracked tree (`git ls-files`) holds no `CACHEDIR.TAG` and no walker-skipped
+  path component outside the sanctioned `expected/` oracle directories. No compiled behavior changes.
 - UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
   `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
   minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of

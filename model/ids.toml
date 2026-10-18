@@ -24,7 +24,7 @@ statement = "The repository is derived from the pinned UOR template commit and c
 id = "RP-03"
 level = "build"
 suite = "repository"
-statement = "The completed repository has the required file and crate layout."
+statement = "The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories."
 
 [[id]]
 id = "RP-04"
