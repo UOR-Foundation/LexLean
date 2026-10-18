@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLC0108","help":[],"labels":[],"message":"a project outside any workspace cannot declare a source package: no ancestor directory holds a lexlean-workspace.toml","notes":[],"severity":"error","spec":"lexlean/diagnostic/1"}]

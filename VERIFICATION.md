@@ -9063,3 +9063,43 @@ elaborates, because each keeps the statement it had; a piece missing from the
 Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
 shard plan is refused by `cargo xtask ci-shards` and by the plan check of
 RP-14.
+
+## Negative fixtures for codes only conformance cases reached (Issue #33)
+
+Six of the 18 codes added since v0.3 had no fixture under `tests/negative/`.
+Each fixture below is a refusal the compiler emits on that input, written by
+the fixture writer (`repo_conformance::fixtures::write`, the function behind
+`cargo xtask check-fixtures --write`) for that directory alone, and compared
+byte for byte by `cargo xtask check-fixtures` thereafter. Each was planted
+against: the named edit was made alone in the named source, the fixture's
+comparison observed to fail on `expected/command.json`, and the edit restored.
+
+| Fixture | Code | Planted defect |
+| --- | --- | --- |
+| `production-request-malformed` | `LLC0201` | `api/production.rs`: `request_error` emits `LLC0202` |
+| `production-root-unknown` | `LLC0202` | `api/production.rs`: the unknown-root refusal emits `LLC0201` |
+| `production-target-unregistered` | `LLC0203` | `api/production.rs`: `target_error` emits `LLC0204` |
+| `production-expectation-stale` | `LLC0204` | `api/production.rs`: `stale` emits `LLC0203` |
+| `source-package-outside-workspace` | `LLC0108` | `source_package.rs`: the refusal reads "may not declare" for "cannot declare" |
+| `tooling-module-in-user-project` | `LLT4013` | `link.rs`: the user-project refusal emits `LLT4014` |
+
+The twelve other codes of the list have no fixture, for a reason the runner
+imposes and not a gap in the case that reaches them:
+
+- `LLC0105`, `LLC0106`, `LLC0107`, `LLR3009` need a `lexlean-workspace.toml` in
+  a strict ancestor of the project root (`Workspace::of_project` starts at the
+  parent), and a fixture runs a temporary copy of `project/` alone. A
+  fixture can express only that no workspace exists, which is `LLC0108`.
+  `--project` is read against the process directory, not the copy.
+- `LLT4014`, `LLT4015` are refusals inside a tooling module, and a user project
+  is refused at `LLT4013` before the module is decoded, as the fixture above
+  shows; they are reached only in the tooling projects the compiler embeds.
+- `LLV7018` follows `lexlean::verify::end_live_children`, a host call of the
+  library API; no command line reaches it.
+- `LLV7102` replays a published bundle, which only a verified export produces,
+  and that needs the pinned toolchain; `LLV7101` needs certificate evidence
+  built for the root's lowered program.
+- `LLB6005`, `LLB6006`, `LLB6007` are target programs, GNAF requests, and
+  certificates that the library and `cargo xtask check-calculus` read; no
+  command takes one, and the one production path to `LLB6005` is a package the
+  Rust profile cannot render, which no committed project builds.
