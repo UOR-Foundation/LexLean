@@ -18,7 +18,7 @@ use lexlean::calculus::{IntKind, Value};
 
 use super::{list, option, snake, text, Run, Seeded};
 use crate::production_export as harness;
-use crate::rust_build::{cargo_in, workspace, Built};
+use crate::rust_build::cargo_in;
 use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support;
@@ -1759,6 +1759,22 @@ fn merged(parts: &[&[Run]]) -> Vec<Run> {
     parts.iter().flat_map(|part| part.iter().cloned()).collect()
 }
 
+/// The nodes of a value: what a literal of it costs rustc.
+fn value_nodes(value: &Value) -> usize {
+    1 + match value {
+        Value::Adt { fields, .. } => fields.iter().map(value_nodes).sum(),
+        Value::List { items } => items.iter().map(value_nodes).sum(),
+        Value::Pair { left, right } => value_nodes(left) + value_nodes(right),
+        Value::Some { value } | Value::Ok { value } | Value::Error { value } => value_nodes(value),
+        _ => 0,
+    }
+}
+
+/// The nodes of the arguments one harness binary may hold. A crate is data
+/// of thousands of nodes, which rustc compiles as one literal each, so the
+/// runs are spread over several harness binaries of one compiled package.
+const HARNESS_NODES: usize = 60_000;
+
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
 /// oracle's. Returns the number of runs.
@@ -1768,8 +1784,9 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         .prefix("lexlean-bootstrap-validate-")
         .tempdir()
         .expect("tempdir");
-    let mut crates = Vec::new();
-    let mut expected: BTreeMap<String, Vec<Json>> = BTreeMap::new();
+    let mut members = Vec::new();
+    // (binary, expected outcomes) in order
+    let mut expected: Vec<(String, Vec<Json>)> = Vec::new();
     for (root, low, runs) in roots {
         let manifest = rust_packages::manifest(
             &format!("boot_{}", snake(root)),
@@ -1779,60 +1796,95 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         );
         let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
             .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-        let arguments: Vec<Vec<Value>> = runs.iter().map(|(arguments, _)| arguments.clone()).collect();
+        let name = manifest.name.clone();
+        for (path, bytes) in &package.files {
+            let file = dir.path().join("p").join(&name).join(path);
+            std::fs::create_dir_all(file.parent().expect("parent")).expect("package directory");
+            std::fs::write(file, bytes).expect("package file");
+        }
+        members.push(format!("\"p/{name}\""));
         let arity = low.program.functions[usize::try_from(low.entry()).expect("entry")]
             .types
             .len();
         let passing = vec![Passing::Own; arity];
-        let harness_source = rust_harness::render_calls(
-            &low.program,
-            Profile::Std,
-            &manifest.name,
-            &[Calls {
-                entry: low.entry(),
-                function: "run",
-                passing: &passing,
-                arguments: &arguments,
-            }],
-        )
-        .expect("the differential harness");
-        expected.insert(
-            manifest.name.clone(),
-            runs.iter().map(|(_, expected)| expected.clone()).collect(),
-        );
-        crates.push(Built {
-            name: manifest.name,
-            files: package.files,
-            harness: harness_source,
-        });
+        let mut chunks: Vec<Vec<&Run>> = Vec::new();
+        let mut weight = 0;
+        for run in *runs {
+            let nodes: usize = run.0.iter().map(value_nodes).sum();
+            if chunks.is_empty() || weight + nodes > HARNESS_NODES {
+                chunks.push(Vec::new());
+                weight = 0;
+            }
+            weight += nodes;
+            chunks.last_mut().expect("a chunk").push(run);
+        }
+        for (number, chunk) in chunks.iter().enumerate() {
+            let arguments: Vec<Vec<Value>> = chunk.iter().map(|run| run.0.clone()).collect();
+            let source = rust_harness::render_calls(
+                &low.program,
+                Profile::Std,
+                &name,
+                &[Calls {
+                    entry: low.entry(),
+                    function: "run",
+                    passing: &passing,
+                    arguments: &arguments,
+                }],
+            )
+            .expect("the differential harness");
+            let binary = format!("run_{name}_{number}");
+            let runner = dir.path().join("h").join(&binary);
+            std::fs::create_dir_all(runner.join("src")).expect("harness directory");
+            std::fs::write(
+                runner.join("Cargo.toml"),
+                format!(
+                    "[package]\nname = \"{binary}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{name} = {{ path = \"../../p/{name}\" }}\n"
+                ),
+            )
+            .expect("harness manifest");
+            std::fs::write(runner.join("src/main.rs"), source).expect("harness source");
+            members.push(format!("\"h/{binary}\""));
+            expected.push((binary, chunk.iter().map(|run| run.1.clone()).collect()));
+        }
     }
-    workspace(dir.path(), &crates);
-    let build = cargo_in(dir.path(), &["build", "--offline", "--workspace", "--quiet"]);
+    std::fs::write(
+        dir.path().join("Cargo.toml"),
+        format!("[workspace]\nresolver = \"2\"\nmembers = [{}]\n", members.join(", ")),
+    )
+    .expect("workspace manifest");
+    let build = cargo_in(
+        dir.path(),
+        &["build", "--offline", "--workspace", "--quiet", "--jobs", "2"],
+    );
     assert!(
         build.status.success(),
         "a root's package does not build:\n{}",
         String::from_utf8_lossy(&build.stderr)
     );
-    eprintln!("BS-05: {label}: rustc built the packages ({:?})", started.elapsed());
+    eprintln!(
+        "BS-05: {label}: rustc built the packages and {} harness binaries ({:?})",
+        expected.len(),
+        started.elapsed()
+    );
     let mut total = 0;
-    for (name, outcomes) in &expected {
-        let binary = dir
+    for (binary, outcomes) in &expected {
+        let path = dir
             .path()
             .join("target/debug")
-            .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
-        let ran = std::process::Command::new(&binary)
+            .join(format!("{binary}{}", std::env::consts::EXE_SUFFIX));
+        let ran = std::process::Command::new(&path)
             .output()
             .expect("the differential runs");
-        assert!(ran.status.success(), "{name}: {}", String::from_utf8_lossy(&ran.stderr));
+        assert!(ran.status.success(), "{binary}: {}", String::from_utf8_lossy(&ran.stderr));
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
             .filter(|line| !line.starts_with("work "))
             .map(|line| {
-                serde_json::from_str(line).unwrap_or_else(|error| panic!("{name}: {error}: {line}"))
+                serde_json::from_str(line).unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
             })
             .collect();
-        assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
+        assert_eq!(printed.len(), outcomes.len(), "{binary}: one outcome per run");
         let disagreements: Vec<String> = printed
             .iter()
             .zip(outcomes)
@@ -1842,18 +1894,17 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             .collect();
         assert!(
             disagreements.is_empty(),
-            "{name}: the rendering and the Rust oracle disagree on {} of {} runs: {:?}",
+            "{binary}: the rendering and the Rust oracle disagree on {} of {} runs: {:?}",
             disagreements.len(),
             outcomes.len(),
             &disagreements[..disagreements.len().min(3)]
         );
-        eprintln!(
-            "BS-05: {label}: {name}: {} rustc runs agree with the oracle ({:?})",
-            outcomes.len(),
-            started.elapsed()
-        );
         total += outcomes.len();
     }
+    eprintln!(
+        "BS-05: {label}: {total} rustc runs agree with the oracle ({:?})",
+        started.elapsed()
+    );
     total
 }
 
@@ -2108,6 +2159,9 @@ pub(super) fn case() {
             ],
             "vectors",
         );
+    }
+    if std::env::var("BS05_STOP").as_deref() == Ok("vectors") {
+        return;
     }
     if !support::normative_host() {
         eprintln!(
