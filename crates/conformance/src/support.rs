@@ -2544,6 +2544,19 @@ pub fn as_data_text(text: &str) -> String {
     }
 }
 
+/// `text` with a module written as data written in the notation, the form
+/// language 1.2 reads (SPEC.md §17.21.1); any other text, and data the
+/// notation cannot carry, as it is. The inverse of [`as_data_text`], for a case
+/// that edits the data form and hands the result to the compiler.
+#[must_use]
+pub fn notation_text(text: &str) -> String {
+    if lexlean::surface::module::locate(text).is_some_and(|found| found.data.is_some()) {
+        lexlean::sdk::to_notation(text).unwrap_or_else(|_| text.to_owned())
+    } else {
+        text.to_owned()
+    }
+}
+
 /// `text` with its semantic module written as `\semanticdata{…}`, the
 /// canonical JSON the compiler links, instead of the authoring notation: the
 /// form a module had before it was written in the notation, and the one

@@ -74,12 +74,22 @@ fn project_limited(declarations: &[Value], lifted: bool) -> P {
         );
     }
     let data = json!({"declarations": declarations, "spec": "lexlean/semantic-module/2"});
-    project.write(
-        "src/Main.lex.tex",
-        &format!(
-            "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\\semanticdata{{{data}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
-        ),
-    );
+    // Written in the notation, which is what language 1.2 reads (§17.21.1),
+    // from the value itself: a chain nested past the JSON reader's depth is
+    // still a value the notation can carry, and what refuses it is the
+    // compiler.
+    let source = lexlean::sdk::assemble(
+        &lexlean::sdk::SourceHeader {
+            name: "Main",
+            glossaries: &["lexlean.std.nat@1.2.0"],
+            imports: &[],
+            title: "Natural number addition",
+        },
+        lexlean::sdk::ModuleKind::Semantic,
+        &data,
+    )
+    .unwrap_or_else(|error| panic!("{error}"));
+    project.write("src/Main.lex.tex", &source);
     project.relock();
     project
 }

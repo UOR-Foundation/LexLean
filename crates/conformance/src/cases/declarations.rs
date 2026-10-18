@@ -1285,7 +1285,16 @@ pub(crate) fn run(id: &str) {
                 let end = r#"],"spec":"lexlean/semantic-module/2"}"#;
                 assert!(source.contains(end), "{file} ends its declarations");
                 copy.write(file, &source.replacen(end, &format!(",{declarations}{end}"), 1));
-                let error = copy.check_fails_with("LLT4001");
+                // An empty parameter or argument list is not spelled by the
+                // notation, which language 1.2 reads, so it is refused there
+                // (`LLP2001`) before the decoder's arity rule (`LLT4001`) is
+                // reached; the data form that reached the rule is refused.
+                let (code, message) = if message.contains("at least one") {
+                    ("LLP2001", "at least one")
+                } else {
+                    ("LLT4001", message)
+                };
+                let error = copy.check_fails_with(code);
                 assert!(
                     error.to_string().contains(message),
                     "expected {message:?}, got {error}"

@@ -263,7 +263,7 @@ fn tl_01() {
     // A defect the schema states: the schema and the compiler both refuse it,
     // and the compiler refuses it with LLT4013 alone.
     type Edit = fn(&mut Json);
-    let schema_plants: [(&str, &str, Edit); 11] = [
+    let schema_plants: [(&str, &str, Edit); 10] = [
         ("an unknown member of the module", "core", |v| {
             v["extra"] = json!(1);
         }),
@@ -294,9 +294,6 @@ fn tl_01() {
         ("a traversal flag written with its default", "core", |v| {
             named(v, "Core.sum")["traversal"] = json!(false);
         }),
-        ("another spec tag", "core", |v| {
-            v["spec"] = json!("lexlean/tooling-module/2");
-        }),
     ];
     for (label, fixture, edit) in schema_plants {
         let project = P::tooling(fixture);
@@ -323,6 +320,47 @@ fn tl_01() {
     put(&project, &value);
     plants.refused("an unsorted import list", &project, "LLT4013", "sorted");
 
+    // What the notation cannot say is the decoder's alone: language 1.2 reads
+    // a module in the notation, which names its own spec tag and writes the
+    // canonical bytes, so a module in the data form is refused before the
+    // decoder is reached (`AU-13`). Each plant below is handed to the decoder
+    // as the text of the data argument, which is all that remains of a
+    // module of that form.
+    let decoder = |label: &str, text: &str, needle: &str| {
+        let pin = lexlean::ir::tooling::AuthorityPin {
+            lean_version: lexlean::LEAN_VERSION,
+            lean_githash: lexlean::LEAN_GITHASH,
+        };
+        match lexlean::ir::tooling::ToolingModule::parse(text, "1.2", pin) {
+            Ok(_) => Err(format!("{label}: the module was accepted")),
+            Err(failure)
+                if failure.code.as_str() == "LLT4013" && failure.reason.contains(needle) =>
+            {
+                Ok(())
+            }
+            Err(failure) => Err(format!(
+                "{label}: expected LLT4013 naming {needle:?}, found {} {:?}",
+                failure.code.as_str(),
+                failure.reason
+            )),
+        }
+    };
+    let mut decoder_plants = Vec::new();
+
+    // Another spec tag.
+    let project = P::tooling("core");
+    let mut value = data(&project);
+    value["spec"] = json!("lexlean/tooling-module/2");
+    assert!(
+        !schema_violations(&value).is_empty(),
+        "another spec tag: the committed schema must refuse it"
+    );
+    decoder_plants.push(decoder(
+        "another spec tag",
+        &serde_json::to_string(&value).expect("serializes"),
+        "",
+    ));
+
     // Whitespace outside strings is the grammar's and not part of the value,
     // so a re-indented module is the same module (§17.10 states the same of
     // the other module data); an encoding that differs in anything else is
@@ -338,32 +376,36 @@ fn tl_01() {
         "{{\"spec\":\"lexlean/tooling-module/1\",{}}}",
         &raw[1..raw.len() - tail.len()]
     );
-    put_text(&project, &reordered);
     assert!(
-        schema_violations(&data(&project)).is_empty(),
+        schema_violations(&serde_json::from_str(&reordered).expect("JSON")).is_empty(),
         "a reordered value is schema-valid"
     );
-    plants.refused("members out of order", &project, "LLT4013", "canonical");
+    decoder_plants.push(decoder("members out of order", &reordered, "canonical"));
 
-    let project = P::tooling("core");
-    let raw = data_text(&project);
     assert!(raw.contains("\"α\""), "the fixture names a type variable α");
-    put_text(&project, &raw.replacen("\"α\"", "\"\\u03b1\"", 1));
-    plants.refused("an escaped scalar", &project, "LLT4013", "canonical");
+    decoder_plants.push(decoder(
+        "an escaped scalar",
+        &raw.replacen("\"α\"", "\"\\u03b1\"", 1),
+        "canonical",
+    ));
 
-    let project = P::tooling("core");
     let pretty = serde_json::to_string_pretty(&data(&project)).expect("serializes");
-    put_text(&project, &pretty);
-    accepted("a re-indented module", &project);
+    decoder_plants.push(match decoder("a re-indented module", &pretty, "") {
+        Err(failure) if failure.contains("accepted") => Ok(()),
+        Ok(()) => Err("a re-indented module: the module was refused".to_owned()),
+        Err(failure) => Err(failure),
+    });
 
     // Only the byte level can see a duplicate member.
-    let project = P::tooling("core");
-    let raw = data_text(&project);
-    put_text(
-        &project,
+    decoder_plants.push(decoder(
+        "a repeated member",
         &raw.replacen("{\"authority\"", "{\"spec\":\"x\",\"authority\"", 1),
-    );
-    plants.refused("a repeated member", &project, "LLT4013", "");
+        "",
+    ));
+    for failure in decoder_plants.into_iter().flat_map(Result::err) {
+        plants.failures.push(failure);
+    }
+    plants.run += 5;
 
     // Nesting past the decoder's own limit is a refusal, not a stack overflow.
     let project = P::tooling("core");
@@ -414,7 +456,7 @@ fn tl_01() {
         }),
     ] {
         let project = P::tooling("core");
-        project.write(MAIN, &edit(&project.read(MAIN)));
+        project.write_raw(MAIN, &edit(&project.read(MAIN)));
         plants.refused(label, &project, "LLP2003", "expected `\\end`");
     }
     plants.finish("TL-01");
