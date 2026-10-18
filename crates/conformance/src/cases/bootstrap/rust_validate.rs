@@ -2039,7 +2039,7 @@ fn depth_probe() {
                 (json_depth(&text), index, text.len())
             })
             .collect();
-        for index in [29usize, 47] {
+        for index in [61usize] {
             eprintln!("BS-05: {root}: function {index} is {:?}", low.layout.functions.get(index));
         }
         depths.sort_unstable_by(|a, b| b.cmp(a));

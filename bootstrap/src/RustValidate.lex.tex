@@ -842,21 +842,6 @@ definition{
 }
 
 definition{
-  name: patTuple,
-  parameters: [pat : Pat],
-  result: Pat,
-  body: (match pat
-    | Pat.PLeaf d0 => (ctor Pat.PNil)
-    | Pat.PBind d0 => (ctor Pat.PNil)
-    | Pat.PTuple items => items
-    | Pat.PWrap d0 d1 => (ctor Pat.PNil)
-    | Pat.PAdt d0 d1 d2 => (ctor Pat.PNil)
-    | Pat.PNil => (ctor Pat.PNil)
-    | Pat.PCons d0 d1 => (ctor Pat.PNil)),
-  executable: true
-}
-
-definition{
   name: exprLen,
   parameters: [exprs : Expr],
   result: Nat,
@@ -2073,7 +2058,14 @@ definition{
       | Bool.true => (tyOk cx ty)
       | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
       | Result.ok done => (match (match (tupleMoveTarget pat value)
-      | Option.some who => (consumeParts st who (patTuple pat))
+      | Option.some who => (match pat
+        | Pat.PLeaf d0 => (exprC st cx value false)
+        | Pat.PBind d0 => (exprC st cx value false)
+        | Pat.PTuple parts => (consumeParts st who parts)
+        | Pat.PWrap d0 d1 => (exprC st cx value false)
+        | Pat.PAdt d0 d1 d2 => (exprC st cx value false)
+        | Pat.PNil => (exprC st cx value false)
+        | Pat.PCons d0 d1 => (exprC st cx value false))
       | Option.none => (exprC st cx value false))
       | Result.ok s1 => (match (bindPat s1 (project cx decl) pat)
       | Result.ok s2 => (letsC s2 cx rest)
