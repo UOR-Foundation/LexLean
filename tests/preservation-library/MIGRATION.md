@@ -187,3 +187,90 @@ regenerated:
 
 Every language-1.2 lock, golden, fixture expectation, and verified record was
 regenerated; the goldens and locks of languages 1.0 and 1.1 are unchanged.
+
+## Derived rows (#91 stage 2)
+
+The library stored, for every row the pinned Lean makes itself (the 6,890 rows
+whose names it reserves, which are the equations, unfolding equations, and
+splitters of matchers and definitions and the `else_eq` of sparse `casesOn`
+constants, and the 313 sparse `casesOn` constants), the type and value Lean made,
+and the decoder compared them with what its construction made. A copy of what
+Lean makes goes stale when a type of the calculus changes and nothing outside Lean
+can rewrite it, so these rows are now *derived* (SPEC.md §17.10, `SM-34`): a row
+states its name, kind, and extension state, and for a sparse `casesOn` its record,
+and no universe parameters, type, value, reducibility metadata, or group. The
+decoder makes the constant at the row's place in the order.
+
+**How.** The one-time converter is the oracle of checkpoint commit
+`d87385f92` (`tests/preservation-library/oracle-derived/`, removed from the
+release tree by the commit that follows it). It reads each of the 13 native
+modules, checks that the module is the canonical notation of itself, marks as
+derived every row whose name ends `eq_<n>`, `eq_def`, `splitter`, or `else_eq`
+or that carries a sparse record, drops what the construction decides, removes the
+nodes no remaining row reaches (renumbering the rest in order), checks that the
+module validates and that its notation reads back to it, and writes the notation.
+`lexlean fmt --check` holds the 13 modules canonical.
+
+| module | rows derived | nodes before | nodes after | source bytes before | source bytes after |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `Core` | 121 | 37,821 | 31,011 | 1,218,748 | 968,302 |
+| `Values` | 0 | 2,391 | 2,391 | 70,609 | 70,609 |
+| `Primitives` | 15 | 5,614 | 5,358 | 153,500 | 146,765 |
+| `Fixed` | 3 | 14,674 | 14,632 | 512,246 | 510,964 |
+| `Keys` | 424 | 18,870 | 4,605 | 796,856 | 211,428 |
+| `Templates` | 20 | 37,054 | 35,439 | 829,853 | 765,497 |
+| `Validate` | 35 | 13,051 | 10,309 | 322,612 | 238,989 |
+| `RustBase` | 220 | 48,164 | 32,780 | 1,595,627 | 1,074,826 |
+| `RustCorr` | 184 | 86,704 | 45,828 | 2,880,189 | 1,250,898 |
+| `RustLemmas` | 5,635 | 571,074 | 390,732 | 24,353,232 | 17,219,467 |
+| `RustMatches` | 511 | 243,840 | 157,737 | 9,147,820 | 5,419,902 |
+| `RustSound` | 14 | 12,277 | 9,815 | 418,463 | 338,719 |
+| `Compose` | 21 | 4,580 | 3,813 | 162,717 | 140,680 |
+| total | 7,203 | 1,096,114 | 744,450 | 42,462,472 | 28,357,046 |
+
+The Lean the compiler generates from the library falls from 82,856,219 to
+57,115,996 bytes.
+
+**Equivalence.** The environment the derived rows make is the environment the
+stored rows made. The Lean `lexlean build` generates from the library before and
+after the change was compiled by the pinned Lean 4.32.1 and exported with the
+exporter, `flags.lean`, `probe.lean`, `canon.py`, and `compare.py` of checkpoint
+`d54dbf85` (above), unchanged. The comparison is of the two re-exports, not of the
+new re-export with the committed sources: that checkpoint's exporter predates the
+runtime library (#90) and the later moves of the library, and its re-export of
+the unchanged library already differs from the committed data in all 13 modules
+(the imports, the order of the rows of `Keys` and `RustLemmas`, rows that name
+runtime constants, and the `else_eq` of sparse constants), so it can establish the
+equality of two re-exports and not the equality of one with the committed
+sources.
+
+Result: the two re-exports have the same 9,247 declarations in the same order in
+the same 13 modules, and every module's data, declaration by declaration, is equal
+as trees of kernel terms: kind, universe parameters, type, value, reducibility
+hints and transparency, tags, structure, class, instance, projection, matcher,
+no-confusion, simplification, equation-record, inlining, sparse-`casesOn`, and
+`grind` state, compiled flags, and exact axioms. 9,213 rows are equal in every
+byte of their terms; 34 rows (10 in `RustLemmas`, 24 in `RustMatches`), all sparse
+`casesOn` constants, are equal up to the hygienic names of bound variables, as
+before. The modules' imports are equal beyond the two imports the decoder adds
+(`Lean` and `Lean.Meta.Constructions.SparseCasesOn`) in both. The attribute probe
+(inlining kind, sparse record with its type, major position, arity and
+constructors, `grind` registration, matcher information, specialization,
+noncomputability, of every constant) prints 1,088 identical lines for both
+environments.
+
+**Verification.** `lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift` stages the library into the certificate
+environment, compiles it, replays each module through `leanchecker`, and audits
+the axioms of the 7,740 declarations audited by name against their policies, and
+reports `verified 2 modules`. Derived rows keep their axiom policy, so the audit
+reads the same rows as before. A certificate cites no derived row: the library
+states no type of it, and a certificate that tried would be refused by the
+builder naming the row.
+
+**What this change did not do.** The language-1.2 compiler-semantics ID moves
+with the library and the schema. Its locks, goldens, fixtures, calculus and
+production records, and verified records were not regenerated here: they are
+regenerated once, with the rest of the train, so every test that reads a committed
+lock reports `LLC0102` until then.
+
