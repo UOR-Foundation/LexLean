@@ -1490,12 +1490,11 @@ does not state what the construction made.
 error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the construction made the sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_2', which the module does not state
 ```
 
-Still not caught (see the note after (c)): the constructors of that record replaced
-by another constructor of the same type, `Ordering.lt` for `Ordering.eq`, in
-`Keys`, where nothing refers to the record, verify. Closing it needs the decoder to
-find a use of every derived sparse `casesOn` among the constants of the whole module,
-a scan of every term at the end of each module, which is not small; it is the
-maintainer's decision.
+Accepted as a fidelity limit, by the maintainer's decision: the constructors of that
+record replaced by another valid constructor set of the same type, `Ordering.lt` for
+`Ordering.eq`, in `Keys`, where nothing refers to the record, verify. The kernel
+checks every term that uses a derived row, so nothing provable changes; what remains
+is a stale row with no reader. No use-scan is made, and SM-34 states the boundary.
 
 Planted (d): the name of `LexLeanPreservation.Rel.eq_1` replaced by `Rel.eq_2`,
 which is reserved but which the construction does not make. Expected: refused.
