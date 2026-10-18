@@ -491,6 +491,7 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── oracle/
 │   ├── preservation-library/
 │   ├── production-export/
+│   ├── stdlib/
 │   └── tooling/
 ├── tooling/
 │   └── schemas/
@@ -6940,6 +6941,33 @@ realizes a library template, and no member recurses itself. Theorems over the
 members wait for equality of `Bytes` by evaluation; until then the module's
 behavior is held by the differential (`SL-01`).
 
+The second module, `Sha256`, is FIPS 180-4 SHA-256 (#126, stage 1), stated
+over the closed primitive vocabulary of §17.12 and nothing else: addition
+modulo 2^32 is `checked_add` of the two operands widened to `UInt64` by
+`checked_convert`, narrowed by `bit_and` and `checked_convert`; a rotation is
+two shifts and `bit_or`; the message is never padded as bytes, every word of
+every block is read by position (`index` below the length, `0x80` at it, zero
+beyond it, and the two length words from `quotient` and `remainder` of the
+bit length); the schedule is a sixteen-word window advanced each round; the
+sixty-four rounds are `iterate` over a record of the working variables, the
+window, and the round number, whose constant is a balanced search by `<?`;
+and the digest is the record `Digest` of eight `UInt32` or, for `sha256Hex`,
+its lowercase hexadecimal as `Bytes`, each nibble a balanced test of its bits
+by `bit_and` and `equal`. Both lookups are balanced rather than linear because
+a rendered package's program is canonical JSON read under a fixed nesting
+bound (§17.16), and a linear chain of sixty-four is past it. Its roots and oracles:
+
+| Member | Oracles |
+| --- | --- |
+| `sha256 (message : Bytes) : Digest` | the FIPS 180-4 example digests, as theorems in the module by reflexivity and under the differential |
+| `sha256Hex (message : Bytes) : Bytes` | the FIPS 180-4 example digests, every vector of the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` files under `tests/stdlib/sha256/`, and the `sha2` crate on a seeded corpus whose lengths cover every padding boundary |
+
+A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is
+never resolved by adopting the oracle's digest. The module is the first stage
+of #126: the compiler's own identities (§8, §21) are still computed by the
+`sha2` crate, and switching them to the module is the second stage, which
+waits on the measured cost of the rendered package against `sha2`.
+
 ### 17.23 The bootstrap project
 
 The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
@@ -9874,6 +9902,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
+| `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
@@ -9886,7 +9915,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 414.
+**Total required capability IDs:** 415.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -27,6 +27,22 @@ versions, and the entries below say what each tag does and does not claim.
   `census-a` takes the window-10 pieces beside `CensusCert10`; the join
   compares 347 normalized records (was 267). Atlas `expected/build` and
   `expected/verify` are regenerated; no language data moves.
+- The standard library's SHA-256 (SPEC.md §17.22, `SL-02`, #126 stage 1; no
+  new diagnostic code). `stdlib/src/Sha256.lex.tex` states FIPS 180-4 SHA-256
+  over the closed language-1.2 primitives (`UInt32` bit operations, widening
+  to `UInt64` for modular addition, `iterate` for the rounds and the blocks)
+  with the production roots `sha256 : Bytes -> Digest` and
+  `sha256Hex : Bytes -> Bytes` for `rust-std`, and states the FIPS 180-4
+  example digests as theorems by reflexivity. `SL-02` runs both roots' lowered
+  programs under the calculus evaluator and their rendered packages under the
+  pinned rustc on the FIPS 180-4 examples, every NIST CAVP SHA-256 short- and
+  long-message vector (`tests/stdlib/sha256/`), and a seeded corpus against
+  the `sha2` crate, detects a planted one-bit error in the round function,
+  and, under the pinned Lean, compares the certified packages the production
+  export publishes with the committed ones. The compiler's identities are
+  still computed by `sha2`; replacing it is stage 2 of #126. The register has
+  415 IDs.
+
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
   A draft pull request runs the `rest` leg and no other job (about 23 runner
