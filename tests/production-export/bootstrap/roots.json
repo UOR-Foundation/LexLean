@@ -31,6 +31,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "reject_atoms",
+      "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "scan_source",
+      "root": "LexLeanBoot.PrimitiveScan.scanSource",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
