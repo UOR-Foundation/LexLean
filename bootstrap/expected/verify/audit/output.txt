@@ -61,6 +61,56 @@
 'LexLeanBoot.AxiomOutput.whiteEnding' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.whiteLength' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.zeroStep' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Atom' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.AtomClass' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.CheckState' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Context' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Cursor' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Lexed' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Payload' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Place' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.Rejection' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.ScanState' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.atomRejection' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.bumpOne' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.byteIs' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.byteOrZero' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.bytesInList' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.canonicalDecimal' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.cat' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.checkStep' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.classCode' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.consume' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.decimal' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.digit' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.forbiddenRejection' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.hexDigit' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.inRange' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.isAsciiAlpha' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.isAsciiDigit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.isDataControl' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.leadingRejection' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.lexAtom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.limitRejection' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.listLength' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.lit' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.payloadRun' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.payloadStep' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.placeOf' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.placeOfAtom' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.rejectAtoms' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.rejectBackslash' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.rejectScalar' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.reversed' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.runEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.runMember' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.runStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.scalarWidth' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.scanSource' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.significant' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.stepScan' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.PrimitiveScan.ticks' does not depend on any axioms
+'LexLeanBoot.PrimitiveScan.zeroStep' does not depend on any axioms
 'LexLeanBoot.TokenAudit.AuditState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.CommentState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.LexState' does not depend on any axioms
