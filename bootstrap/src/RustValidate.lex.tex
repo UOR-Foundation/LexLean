@@ -19,6 +19,20 @@ inductive{
   ]
 }
 
+structure{
+  name: Origin,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: element, type: Bytes}, {name: width, type: (Option IntKind)}]
+}
+
+structure{
+  name: Rt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: family, type: Nat}, {name: width, type: (Option IntKind)}]
+}
+
 inductive{
   name: Id,
   type_parameters: [],
@@ -38,27 +52,63 @@ inductive{
 }
 
 inductive{
+  name: LeafKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LkUnit, fields: []},
+    {name: LkBool, fields: []},
+    {name: LkNat, fields: []},
+    {name: LkInt, fields: []},
+    {name: LkOrdering, fields: []},
+    {name: LkStr, fields: []},
+    {name: LkBytes, fields: []}
+  ]
+}
+
+inductive{
+  name: UnaryKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: UkOption, fields: []},
+    {name: UkList, fields: []},
+    {name: UkRc, fields: []},
+    {name: UkFallible, fields: []},
+    {name: UkRef, fields: []}
+  ]
+}
+
+inductive{
+  name: BinaryKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BkResult, fields: []},
+    {name: BkPair, fields: []}
+  ]
+}
+
+inductive{
+  name: NameKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: NkAdt, fields: []},
+    {name: NkFn, fields: []}
+  ]
+}
+
+inductive{
   name: Ty,
   type_parameters: [],
   parameters: [],
   constructors: [
-    {name: TyUnit, fields: []},
-    {name: TyBool, fields: []},
-    {name: TyNat, fields: []},
-    {name: TyInt, fields: []},
+    {name: TyLeaf, fields: [LeafKind]},
     {name: TyFixed, fields: [IntKind]},
-    {name: TyOrdering, fields: []},
-    {name: TyStr, fields: []},
-    {name: TyBytes, fields: []},
-    {name: TyOption, fields: [Ty]},
-    {name: TyResult, fields: [Ty, Ty]},
-    {name: TyList, fields: [Ty]},
-    {name: TyPair, fields: [Ty, Ty]},
-    {name: TyAdt, fields: [Nat]},
-    {name: TyFn, fields: [Nat]},
-    {name: TyRc, fields: [Ty]},
-    {name: TyFallible, fields: [Ty]},
-    {name: TyRef, fields: [Ty]},
+    {name: TyUnary, fields: [UnaryKind, Ty]},
+    {name: TyBinary, fields: [BinaryKind, Ty, Ty]},
+    {name: TyNamed, fields: [NameKind, Nat]},
     {name: TyNil, fields: []},
     {name: TyCons, fields: [Ty, Ty]}
   ]
@@ -97,80 +147,40 @@ inductive{
 }
 
 inductive{
-  name: Pat,
+  name: PatLeaf,
   type_parameters: [],
   parameters: [],
   constructors: [
-    {name: PWild, fields: []},
-    {name: PBind, fields: [Id]},
-    {name: PUnit, fields: []},
-    {name: PTuple, fields: [Pat]},
-    {name: PNone, fields: []},
-    {name: PSome, fields: [Pat]},
-    {name: POk, fields: [Pat]},
-    {name: PErr, fields: [Pat]},
-    {name: POrdering, fields: []},
-    {name: PAdt, fields: [Nat, Nat, Pat]},
-    {name: PNil, fields: []},
-    {name: PCons, fields: [Pat, Pat]}
+    {name: PlWild, fields: []},
+    {name: PlUnit, fields: []},
+    {name: PlNone, fields: []},
+    {name: PlOrdering, fields: []}
   ]
 }
 
 inductive{
-  name: Rt,
+  name: PatWrap,
   type_parameters: [],
   parameters: [],
   constructors: [
-    {name: RtNatAdd, fields: []},
-    {name: RtNatSub, fields: []},
-    {name: RtNatMul, fields: []},
-    {name: RtNatQuot, fields: []},
-    {name: RtNatRem, fields: []},
-    {name: RtNatEq, fields: []},
-    {name: RtNatLe, fields: []},
-    {name: RtNatLt, fields: []},
-    {name: RtNatSucc, fields: []},
-    {name: RtIntAdd, fields: []},
-    {name: RtIntSub, fields: []},
-    {name: RtIntMul, fields: []},
-    {name: RtIntNeg, fields: []},
-    {name: RtIntQuot, fields: []},
-    {name: RtIntRem, fields: []},
-    {name: RtBoolNot, fields: []},
-    {name: RtBoolAnd, fields: []},
-    {name: RtBoolOr, fields: []},
-    {name: RtEqual, fields: []},
-    {name: RtCompare, fields: []},
-    {name: RtCheckedAdd, fields: [IntKind]},
-    {name: RtCheckedSub, fields: [IntKind]},
-    {name: RtCheckedMul, fields: [IntKind]},
-    {name: RtCheckedQuot, fields: [IntKind]},
-    {name: RtCheckedNeg, fields: [IntKind]},
-    {name: RtBitAnd, fields: [IntKind]},
-    {name: RtBitOr, fields: [IntKind]},
-    {name: RtBitXor, fields: [IntKind]},
-    {name: RtBitNot, fields: [IntKind]},
-    {name: RtShiftLeft, fields: [IntKind]},
-    {name: RtShiftRight, fields: [IntKind]},
-    {name: RtConvert, fields: [IntKind]},
-    {name: RtAppendList, fields: []},
-    {name: RtAppendBytes, fields: []},
-    {name: RtLengthList, fields: []},
-    {name: RtLengthBytes, fields: []},
-    {name: RtLengthString, fields: []},
-    {name: RtIndexList, fields: []},
-    {name: RtIndexBytes, fields: []},
-    {name: RtSliceList, fields: []},
-    {name: RtSliceBytes, fields: []},
-    {name: RtUtf8Encode, fields: []},
-    {name: RtUtf8Decode, fields: []},
-    {name: RtCompareBytes, fields: []},
-    {name: RtSplitExact, fields: []},
-    {name: RtJoin, fields: []},
-    {name: RtFormatInt, fields: []},
-    {name: RtFormatFixed, fields: [IntKind]},
-    {name: RtParseInt, fields: []},
-    {name: RtParseFixed, fields: [IntKind]}
+    {name: PwSome, fields: []},
+    {name: PwOk, fields: []},
+    {name: PwErr, fields: []}
+  ]
+}
+
+inductive{
+  name: Pat,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PLeaf, fields: [PatLeaf]},
+    {name: PBind, fields: [Id]},
+    {name: PTuple, fields: [Pat]},
+    {name: PWrap, fields: [PatWrap, Pat]},
+    {name: PAdt, fields: [Nat, Nat, Pat]},
+    {name: PNil, fields: []},
+    {name: PCons, fields: [Pat, Pat]}
   ]
 }
 
@@ -196,11 +206,41 @@ inductive{
   ]
 }
 
-structure{
-  name: Origin,
+inductive{
+  name: ReadKind,
   type_parameters: [],
   parameters: [],
-  fields: [{name: element, type: Bytes}, {name: width, type: (Option IntKind)}]
+  constructors: [
+    {name: RkMove, fields: []},
+    {name: RkClone, fields: []},
+    {name: RkCopy, fields: []},
+    {name: RkDeref, fields: []},
+    {name: RkUnbox, fields: []}
+  ]
+}
+
+inductive{
+  name: WrapKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: WkNot, fields: []},
+    {name: WkBox, fields: []},
+    {name: WkWiden, fields: []},
+    {name: WkSucceed, fields: []}
+  ]
+}
+
+inductive{
+  name: ProbeKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PkIsZero, fields: []},
+    {name: PkNonZero, fields: []},
+    {name: PkUncons, fields: []},
+    {name: PkPred, fields: []}
+  ]
 }
 
 inductive{
@@ -209,13 +249,8 @@ inductive{
   parameters: [],
   constructors: [
     {name: ELit, fields: [Lit, Origin]},
-    {name: EMove, fields: [Id, Origin]},
-    {name: EClone, fields: [Id, Origin]},
-    {name: ECopy, fields: [Id, Origin]},
-    {name: EDeref, fields: [Id, Origin]},
-    {name: ENot, fields: [Expr, Origin]},
-    {name: EUnbox, fields: [Id, Origin]},
-    {name: EBox, fields: [Expr, Origin]},
+    {name: ERead, fields: [ReadKind, Id, Origin]},
+    {name: EWrap, fields: [WrapKind, Expr, Origin]},
     {name: ECall, fields: [Callee, Expr, Bool, Origin]},
     {name: EApply, fields: [Id, Expr, Bool, Origin]},
     {name: EConstruct, fields: [Con, Expr, Origin]},
@@ -223,17 +258,11 @@ inductive{
     {name: EIf, fields: [Expr, Expr, Expr, Origin]},
     {name: EMatch, fields: [Expr, Expr, Origin]},
     {name: EBlockE, fields: [Expr]},
-    {name: EUncons, fields: [Id]},
-    {name: EIsZero, fields: [Id, Origin]},
-    {name: ENonZero, fields: [Id, Origin]},
-    {name: EPred, fields: [Id]},
-    {name: EWiden, fields: [Expr, Origin]},
-    {name: ESucceed, fields: [Expr, Origin]},
+    {name: EProbe, fields: [ProbeKind, Id, Origin]},
     {name: EBlock, fields: [Expr, Expr]},
     {name: ENil, fields: []},
     {name: ECons, fields: [Expr, Expr]},
-    {name: ELet, fields: [Pat, Ty, Expr, Origin, Expr]},
-    {name: ELetU, fields: [Pat, Expr, Origin, Expr]},
+    {name: ELet, fields: [Pat, Bool, Ty, Expr, Origin, Expr]},
     {name: EArm, fields: [Pat, Expr, Expr]}
   ]
 }
@@ -303,10 +332,17 @@ structure{
 }
 
 structure{
+  name: ItemRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: family, type: Nat}, {name: stem, type: Bytes}, {name: form, type: Nat}, {name: fallible, type: Bool}, {name: heap, type: Bool}]
+}
+
+structure{
   name: Cx,
   type_parameters: [],
   parameters: [],
-  fields: [{name: core, type: Bool}, {name: decl, type: Decl}, {name: fallible, type: Bool}]
+  fields: [{name: core, type: Bool}, {name: decl, type: Decl}, {name: fallible, type: Bool}, {name: items, type: (List ItemRow)}]
 }
 
 structure{
@@ -320,7 +356,7 @@ structure{
   name: Found,
   type_parameters: [],
   parameters: [],
-  fields: [{name: insts, type: (List Inst)}, {name: types, type: (List Bytes)}]
+  fields: [{name: insts, type: (List Inst)}, {name: types, type: (List Bytes)}, {name: items, type: (List ItemRow)}]
 }
 
 definition{
@@ -528,27 +564,162 @@ definition{
 }
 
 definition{
+  name: leafName,
+  parameters: [kind : LeafKind],
+  result: Bytes,
+  body: (match kind
+    | LeafKind.LkUnit => (text "Unit")
+    | LeafKind.LkBool => (text "Bool")
+    | LeafKind.LkNat => (text "Nat")
+    | LeafKind.LkInt => (text "Int")
+    | LeafKind.LkOrdering => (text "Ordering")
+    | LeafKind.LkStr => (text "Str")
+    | LeafKind.LkBytes => (text "Bytes")),
+  executable: true
+}
+
+definition{
+  name: leafKey,
+  parameters: [kind : LeafKind],
+  result: Bytes,
+  body: (match kind
+    | LeafKind.LkUnit => (text "unit")
+    | LeafKind.LkBool => (text "bool")
+    | LeafKind.LkNat => (text "nat")
+    | LeafKind.LkInt => (text "int")
+    | LeafKind.LkOrdering => (text "ordering")
+    | LeafKind.LkStr => (text "string")
+    | LeafKind.LkBytes => (text "bytes")),
+  executable: true
+}
+
+definition{
+  name: leafHeap,
+  parameters: [kind : LeafKind],
+  result: Bool,
+  body: (match kind
+    | LeafKind.LkUnit => false
+    | LeafKind.LkBool => false
+    | LeafKind.LkNat => false
+    | LeafKind.LkInt => false
+    | LeafKind.LkOrdering => false
+    | LeafKind.LkStr => true
+    | LeafKind.LkBytes => true),
+  executable: true
+}
+
+definition{
+  name: unaryName,
+  parameters: [kind : UnaryKind],
+  result: Bytes,
+  body: (match kind
+    | UnaryKind.UkOption => (text "Option")
+    | UnaryKind.UkList => (text "List")
+    | UnaryKind.UkRc => (text "Rc")
+    | UnaryKind.UkFallible => (text "Fallible")
+    | UnaryKind.UkRef => (text "Ref")),
+  executable: true
+}
+
+definition{
+  name: unaryKey,
+  parameters: [kind : UnaryKind],
+  result: Bytes,
+  body: (match kind
+    | UnaryKind.UkOption => (text "option")
+    | UnaryKind.UkList => (text "list")
+    | UnaryKind.UkRc => (text "rc")
+    | UnaryKind.UkFallible => (text "fallible")
+    | UnaryKind.UkRef => (text "ref")),
+  executable: true
+}
+
+definition{
+  name: unaryHeap,
+  parameters: [kind : UnaryKind],
+  result: Bool,
+  body: (match kind
+    | UnaryKind.UkOption => false
+    | UnaryKind.UkList => true
+    | UnaryKind.UkRc => true
+    | UnaryKind.UkFallible => false
+    | UnaryKind.UkRef => false),
+  executable: true
+}
+
+definition{
+  name: unaryFallible,
+  parameters: [kind : UnaryKind],
+  result: Bool,
+  body: (match kind
+    | UnaryKind.UkOption => false
+    | UnaryKind.UkList => false
+    | UnaryKind.UkRc => false
+    | UnaryKind.UkFallible => true
+    | UnaryKind.UkRef => false),
+  executable: true
+}
+
+definition{
+  name: binaryName,
+  parameters: [kind : BinaryKind],
+  result: Bytes,
+  body: (match kind
+    | BinaryKind.BkResult => (text "Result")
+    | BinaryKind.BkPair => (text "Pair")),
+  executable: true
+}
+
+definition{
+  name: binaryKey,
+  parameters: [kind : BinaryKind],
+  result: Bytes,
+  body: (match kind
+    | BinaryKind.BkResult => (text "result")
+    | BinaryKind.BkPair => (text "pair")),
+  executable: true
+}
+
+definition{
+  name: nameName,
+  parameters: [kind : NameKind],
+  result: Bytes,
+  body: (match kind
+    | NameKind.NkAdt => (text "Adt")
+    | NameKind.NkFn => (text "Fn")),
+  executable: true
+}
+
+definition{
+  name: nameKey,
+  parameters: [kind : NameKind],
+  result: Bytes,
+  body: (match kind
+    | NameKind.NkAdt => (text "adt")
+    | NameKind.NkFn => (text "fn")),
+  executable: true
+}
+
+definition{
+  name: nameIsFn,
+  parameters: [kind : NameKind],
+  result: Bool,
+  body: (match kind
+    | NameKind.NkAdt => false
+    | NameKind.NkFn => true),
+  executable: true
+}
+
+definition{
   name: tyDebug,
   parameters: [ty : Ty],
   result: Bytes,
   body: (match ty
-    | Ty.TyUnit => (text "Unit")
-    | Ty.TyBool => (text "Bool")
-    | Ty.TyNat => (text "Nat")
-    | Ty.TyInt => (text "Int")
+    | Ty.TyLeaf k => (leafName k)
     | Ty.TyFixed k => (cat (text "Fixed(") (cat (kindUpper k) (text ")")))
-    | Ty.TyOrdering => (text "Ordering")
-    | Ty.TyStr => (text "Str")
-    | Ty.TyBytes => (text "Bytes")
-    | Ty.TyOption inner => (cat (text "Option(") (cat (tyDebug inner) (text ")")))
-    | Ty.TyResult left right => (cat (text "Result(") (cat (tyDebug left) (cat (text ", ") (cat (tyDebug right) (text ")")))))
-    | Ty.TyList inner => (cat (text "List(") (cat (tyDebug inner) (text ")")))
-    | Ty.TyPair left right => (cat (text "Pair(") (cat (tyDebug left) (cat (text ", ") (cat (tyDebug right) (text ")")))))
-    | Ty.TyAdt n => (cat (text "Adt(") (cat (decimal n) (text ")")))
-    | Ty.TyFn n => (cat (text "Fn(") (cat (decimal n) (text ")")))
-    | Ty.TyRc inner => (cat (text "Rc(") (cat (tyDebug inner) (text ")")))
-    | Ty.TyFallible inner => (cat (text "Fallible(") (cat (tyDebug inner) (text ")")))
-    | Ty.TyRef inner => (cat (text "Ref(") (cat (tyDebug inner) (text ")")))
+    | Ty.TyUnary k inner => (cat (unaryName k) (cat (text "(") (cat (tyDebug inner) (text ")"))))
+    | Ty.TyBinary k left right => (cat (binaryName k) (cat (text "(") (cat (tyDebug left) (cat (text ", ") (cat (tyDebug right) (text ")"))))))
+    | Ty.TyNamed k n => (cat (nameName k) (cat (text "(") (cat (decimal n) (text ")"))))
     | Ty.TyNil => (text "unreachable")
     | Ty.TyCons d0 d1 => (text "unreachable")),
   executable: true,
@@ -560,23 +731,13 @@ definition{
   parameters: [ty : Ty],
   result: Bool,
   body: (match ty
-    | Ty.TyUnit => false
-    | Ty.TyBool => false
-    | Ty.TyNat => false
-    | Ty.TyInt => false
+    | Ty.TyLeaf k => (leafHeap k)
     | Ty.TyFixed d0 => false
-    | Ty.TyOrdering => false
-    | Ty.TyStr => true
-    | Ty.TyBytes => true
-    | Ty.TyOption inner => (tyHeap inner)
-    | Ty.TyResult left right => (let l : Bool := (tyHeap left); (let r : Bool := (tyHeap right); (l || r)))
-    | Ty.TyList d0 => true
-    | Ty.TyPair left right => (let l : Bool := (tyHeap left); (let r : Bool := (tyHeap right); (l || r)))
-    | Ty.TyAdt d0 => false
-    | Ty.TyFn d0 => false
-    | Ty.TyRc d0 => true
-    | Ty.TyFallible inner => (tyHeap inner)
-    | Ty.TyRef inner => (tyHeap inner)
+    | Ty.TyUnary k inner => (match (unaryHeap k)
+      | Bool.true => true
+      | Bool.false => (tyHeap inner))
+    | Ty.TyBinary k left right => (let l : Bool := (tyHeap left); (let r : Bool := (tyHeap right); (l || r)))
+    | Ty.TyNamed d0 d1 => false
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
   executable: true,
@@ -588,23 +749,11 @@ definition{
   parameters: [tys : Ty],
   result: Nat,
   body: (match tys
-    | Ty.TyUnit => 0
-    | Ty.TyBool => 0
-    | Ty.TyNat => 0
-    | Ty.TyInt => 0
+    | Ty.TyLeaf d0 => 0
     | Ty.TyFixed d0 => 0
-    | Ty.TyOrdering => 0
-    | Ty.TyStr => 0
-    | Ty.TyBytes => 0
-    | Ty.TyOption d0 => 0
-    | Ty.TyResult d0 d1 => 0
-    | Ty.TyList d0 => 0
-    | Ty.TyPair d0 d1 => 0
-    | Ty.TyAdt d0 => 0
-    | Ty.TyFn d0 => 0
-    | Ty.TyRc d0 => 0
-    | Ty.TyFallible d0 => 0
-    | Ty.TyRef d0 => 0
+    | Ty.TyUnary d0 d1 => 0
+    | Ty.TyBinary d0 d1 d2 => 0
+    | Ty.TyNamed d0 d1 => 0
     | Ty.TyNil => 0
     | Ty.TyCons head tail => (let rest : Nat := (tyLen tail); (1 + rest))),
   executable: true,
@@ -616,23 +765,11 @@ definition{
   parameters: [ty : Ty],
   result: Bool,
   body: (match ty
-    | Ty.TyUnit => false
-    | Ty.TyBool => false
-    | Ty.TyNat => false
-    | Ty.TyInt => false
+    | Ty.TyLeaf d0 => false
     | Ty.TyFixed d0 => false
-    | Ty.TyOrdering => false
-    | Ty.TyStr => false
-    | Ty.TyBytes => false
-    | Ty.TyOption d0 => false
-    | Ty.TyResult d0 d1 => false
-    | Ty.TyList d0 => false
-    | Ty.TyPair d0 d1 => false
-    | Ty.TyAdt d0 => false
-    | Ty.TyFn d0 => false
-    | Ty.TyRc d0 => false
-    | Ty.TyFallible d0 => true
-    | Ty.TyRef d0 => false
+    | Ty.TyUnary k inner => (unaryFallible k)
+    | Ty.TyBinary d0 d1 d2 => false
+    | Ty.TyNamed d0 d1 => false
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
   executable: true
@@ -643,15 +780,10 @@ definition{
   parameters: [pats : Pat],
   result: Nat,
   body: (match pats
-    | Pat.PWild => 0
+    | Pat.PLeaf d0 => 0
     | Pat.PBind d0 => 0
-    | Pat.PUnit => 0
     | Pat.PTuple d0 => 0
-    | Pat.PNone => 0
-    | Pat.PSome d0 => 0
-    | Pat.POk d0 => 0
-    | Pat.PErr d0 => 0
-    | Pat.POrdering => 0
+    | Pat.PWrap d0 d1 => 0
     | Pat.PAdt d0 d1 d2 => 0
     | Pat.PNil => 0
     | Pat.PCons head tail => (let rest : Nat := (patLen tail); (1 + rest))),
@@ -664,15 +796,14 @@ definition{
   parameters: [pat : Pat],
   result: Bool,
   body: (match pat
-    | Pat.PWild => true
+    | Pat.PLeaf k => (match k
+      | PatLeaf.PlWild => true
+      | PatLeaf.PlUnit => false
+      | PatLeaf.PlNone => false
+      | PatLeaf.PlOrdering => false)
     | Pat.PBind d0 => false
-    | Pat.PUnit => false
     | Pat.PTuple d0 => false
-    | Pat.PNone => false
-    | Pat.PSome d0 => false
-    | Pat.POk d0 => false
-    | Pat.PErr d0 => false
-    | Pat.POrdering => false
+    | Pat.PWrap d0 d1 => false
     | Pat.PAdt d0 d1 d2 => false
     | Pat.PNil => false
     | Pat.PCons d0 d1 => false),
@@ -684,15 +815,10 @@ definition{
   parameters: [pat : Pat],
   result: Bool,
   body: (match pat
-    | Pat.PWild => false
+    | Pat.PLeaf d0 => false
     | Pat.PBind d0 => false
-    | Pat.PUnit => false
     | Pat.PTuple d0 => true
-    | Pat.PNone => false
-    | Pat.PSome d0 => false
-    | Pat.POk d0 => false
-    | Pat.PErr d0 => false
-    | Pat.POrdering => false
+    | Pat.PWrap d0 d1 => false
     | Pat.PAdt d0 d1 d2 => false
     | Pat.PNil => false
     | Pat.PCons d0 d1 => false),
@@ -704,15 +830,10 @@ definition{
   parameters: [pats : Pat],
   result: Bool,
   body: (match pats
-    | Pat.PWild => false
+    | Pat.PLeaf d0 => false
     | Pat.PBind d0 => false
-    | Pat.PUnit => false
     | Pat.PTuple d0 => false
-    | Pat.PNone => false
-    | Pat.PSome d0 => false
-    | Pat.POk d0 => false
-    | Pat.PErr d0 => false
-    | Pat.POrdering => false
+    | Pat.PWrap d0 d1 => false
     | Pat.PAdt d0 d1 d2 => false
     | Pat.PNil => false
     | Pat.PCons head tail => (let here : Bool := (patIsWild head); (let rest : Bool := (patHasWild tail); (here || rest)))),
@@ -725,15 +846,10 @@ definition{
   parameters: [pat : Pat],
   result: Pat,
   body: (match pat
-    | Pat.PWild => (ctor Pat.PNil)
+    | Pat.PLeaf d0 => (ctor Pat.PNil)
     | Pat.PBind d0 => (ctor Pat.PNil)
-    | Pat.PUnit => (ctor Pat.PNil)
     | Pat.PTuple items => items
-    | Pat.PNone => (ctor Pat.PNil)
-    | Pat.PSome d0 => (ctor Pat.PNil)
-    | Pat.POk d0 => (ctor Pat.PNil)
-    | Pat.PErr d0 => (ctor Pat.PNil)
-    | Pat.POrdering => (ctor Pat.PNil)
+    | Pat.PWrap d0 d1 => (ctor Pat.PNil)
     | Pat.PAdt d0 d1 d2 => (ctor Pat.PNil)
     | Pat.PNil => (ctor Pat.PNil)
     | Pat.PCons d0 d1 => (ctor Pat.PNil)),
@@ -746,13 +862,8 @@ definition{
   result: Nat,
   body: (match exprs
     | Expr.ELit d0 d1 => 0
-    | Expr.EMove d0 d1 => 0
-    | Expr.EClone d0 d1 => 0
-    | Expr.ECopy d0 d1 => 0
-    | Expr.EDeref d0 d1 => 0
-    | Expr.ENot d0 d1 => 0
-    | Expr.EUnbox d0 d1 => 0
-    | Expr.EBox d0 d1 => 0
+    | Expr.ERead d0 d1 d2 => 0
+    | Expr.EWrap d0 d1 d2 => 0
     | Expr.ECall d0 d1 d2 d3 => 0
     | Expr.EApply d0 d1 d2 d3 => 0
     | Expr.EConstruct d0 d1 d2 => 0
@@ -760,17 +871,11 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => 0
     | Expr.EMatch d0 d1 d2 => 0
     | Expr.EBlockE d0 => 0
-    | Expr.EUncons d0 => 0
-    | Expr.EIsZero d0 d1 => 0
-    | Expr.ENonZero d0 d1 => 0
-    | Expr.EPred d0 => 0
-    | Expr.EWiden d0 d1 => 0
-    | Expr.ESucceed d0 d1 => 0
+    | Expr.EProbe d0 d1 d2 => 0
     | Expr.EBlock d0 d1 => 0
     | Expr.ENil => 0
     | Expr.ECons head tail => (let rest : Nat := (exprLen tail); (1 + rest))
-    | Expr.ELet d0 d1 d2 d3 d4 => 0
-    | Expr.ELetU d0 d1 d2 d3 => 0
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => 0
     | Expr.EArm d0 d1 d2 => 0),
   executable: true,
   recursive_argument: exprs
@@ -878,27 +983,17 @@ definition{
     | Def.DNil => (ctor Result.ok [Decl, Bytes] decl)
     | Def.DCons head tail => (match head
       | Def.DEnum name variants origin => (match name
-      | Ty.TyUnit => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyBool => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyNat => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyInt => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
+      | Ty.TyLeaf d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
       | Ty.TyFixed d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyOrdering => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyStr => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyBytes => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyOption d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyResult d0 d1 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyList d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyPair d0 d1 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyAdt n => (match (hasVariants (project decl adts) n)
-      | Bool.true => (ctor Result.error [Decl, Bytes] (cat (text "hygiene: ") (cat (tyDebug name) (text " is declared twice"))))
-      | Bool.false => (declareDefs (record Decl {adts := (cons (n, (aritiesStep (nil (Nat * Nat)) variants)) (project decl adts)), closures := (project decl closures), applies := (project decl applies), functions := (project decl functions)}) tail))
-      | Ty.TyFn n => (match (hasVariants (project decl closures) n)
+      | Ty.TyUnary d0 d1 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
+      | Ty.TyBinary d0 d1 d2 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
+      | Ty.TyNamed k n => (match (nameIsFn k)
+      | Bool.true => (match (hasVariants (project decl closures) n)
       | Bool.true => (ctor Result.error [Decl, Bytes] (cat (text "hygiene: ") (cat (tyDebug name) (text " is declared twice"))))
       | Bool.false => (declareDefs (record Decl {adts := (project decl adts), closures := (cons (n, (aritiesStep (nil (Nat * Nat)) variants)) (project decl closures)), applies := (project decl applies), functions := (project decl functions)}) tail))
-      | Ty.TyRc d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyFallible d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
-      | Ty.TyRef d0 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
+      | Bool.false => (match (hasVariants (project decl adts) n)
+      | Bool.true => (ctor Result.error [Decl, Bytes] (cat (text "hygiene: ") (cat (tyDebug name) (text " is declared twice"))))
+      | Bool.false => (declareDefs (record Decl {adts := (cons (n, (aritiesStep (nil (Nat * Nat)) variants)) (project decl adts)), closures := (project decl closures), applies := (project decl applies), functions := (project decl functions)}) tail)))
       | Ty.TyNil => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type"))))
       | Ty.TyCons d0 d1 => (ctor Result.error [Decl, Bytes] (cat (text "an enum named ") (cat (tyDebug name) (text " is not a declared type")))))
       | Def.DApply fnType parameters result fallible arms origin => (match (hasFlag (project decl applies) fnType)
@@ -948,31 +1043,19 @@ definition{
   parameters: [cx : Cx, ty : Ty],
   result: (Result Unit Bytes),
   body: (match ty
-    | Ty.TyUnit => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyBool => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyNat => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyInt => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TyLeaf d0 => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyFixed d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyOrdering => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyStr => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyBytes => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyOption inner => (tyWalk cx inner)
-    | Ty.TyResult left right => (match (tyWalk cx left)
+    | Ty.TyUnary k inner => (tyWalk cx inner)
+    | Ty.TyBinary k left right => (match (tyWalk cx left)
       | Result.ok done => (tyWalk cx right)
       | Result.error problem1 => (ctor Result.error [Unit, Bytes] problem1))
-    | Ty.TyList inner => (tyWalk cx inner)
-    | Ty.TyPair left right => (match (tyWalk cx left)
-      | Result.ok done => (tyWalk cx right)
-      | Result.error problem2 => (ctor Result.error [Unit, Bytes] problem2))
-    | Ty.TyAdt n => (match (hasVariants (project (project cx decl) adts) n)
-      | Bool.true => (ctor Result.ok [Unit, Bytes] ())
-      | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Adt") (cat (decimal n) (text " is not declared")))))
-    | Ty.TyFn n => (match (hasVariants (project (project cx decl) closures) n)
+    | Ty.TyNamed k n => (match (nameIsFn k)
+      | Bool.true => (match (hasVariants (project (project cx decl) closures) n)
       | Bool.true => (ctor Result.ok [Unit, Bytes] ())
       | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Fn") (cat (decimal n) (text " is not declared")))))
-    | Ty.TyRc inner => (tyWalk cx inner)
-    | Ty.TyFallible inner => (tyWalk cx inner)
-    | Ty.TyRef inner => (tyWalk cx inner)
+      | Bool.false => (match (hasVariants (project (project cx decl) adts) n)
+      | Bool.true => (ctor Result.ok [Unit, Bytes] ())
+      | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Adt") (cat (decimal n) (text " is not declared"))))))
     | Ty.TyNil => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyCons d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
   executable: true,
@@ -994,27 +1077,15 @@ definition{
   parameters: [cx : Cx, tys : Ty],
   result: (Result Unit Bytes),
   body: (match tys
-    | Ty.TyUnit => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyBool => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyNat => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyInt => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TyLeaf d0 => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyFixed d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyOrdering => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyStr => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyBytes => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyOption d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyResult d0 d1 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyList d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyPair d0 d1 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyAdt d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyFn d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyRc d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyFallible d0 => (ctor Result.ok [Unit, Bytes] ())
-    | Ty.TyRef d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TyUnary d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TyBinary d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TyNamed d0 d1 => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyNil => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyCons head tail => (match (tyOk cx head)
       | Result.ok done => (tysOk cx tail)
-      | Result.error problem3 => (ctor Result.error [Unit, Bytes] problem3))),
+      | Result.error problem2 => (ctor Result.error [Unit, Bytes] problem2))),
   executable: true,
   recursive_argument: tys
 }
@@ -1027,7 +1098,7 @@ definition{
     | Row.RowNil => (ctor Result.ok [Unit, Bytes] ())
     | Row.RowCons number fields rest => (match (tysOk cx fields)
       | Result.ok done => (rowTysOk cx rest)
-      | Result.error problem4 => (ctor Result.error [Unit, Bytes] problem4))),
+      | Result.error problem3 => (ctor Result.error [Unit, Bytes] problem3))),
   executable: true,
   recursive_argument: row
 }
@@ -1135,15 +1206,10 @@ definition{
   parameters: [taken : (List Nat), index : Nat, parts : Pat, owner : Bytes],
   result: (Result (List Nat) Bytes),
   body: (match parts
-    | Pat.PWild => (ctor Result.ok [(List Nat), Bytes] taken)
+    | Pat.PLeaf d0 => (ctor Result.ok [(List Nat), Bytes] taken)
     | Pat.PBind d0 => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.PUnit => (ctor Result.ok [(List Nat), Bytes] taken)
     | Pat.PTuple d0 => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.PNone => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.PSome d0 => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.POk d0 => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.PErr d0 => (ctor Result.ok [(List Nat), Bytes] taken)
-    | Pat.POrdering => (ctor Result.ok [(List Nat), Bytes] taken)
+    | Pat.PWrap d0 d1 => (ctor Result.ok [(List Nat), Bytes] taken)
     | Pat.PAdt d0 d1 d2 => (ctor Result.ok [(List Nat), Bytes] taken)
     | Pat.PNil => (ctor Result.ok [(List Nat), Bytes] taken)
     | Pat.PCons head tail => (let wild : Bool := (patIsWild head); (match wild
@@ -1166,7 +1232,7 @@ definition{
       | Option.some found => found
       | Option.none => (nil Nat)); (match (takeParts have 0 parts (tick (idText who)))
       | Result.ok taken => (ctor Result.ok [St, Bytes] (record St {bound := (project st bound), scope := (project st scope), moved := (project st moved), parted := (partsPut (project st parted) who taken), propagates := (project st propagates)}))
-      | Result.error problem5 => (ctor Result.error [St, Bytes] problem5))))
+      | Result.error problem4 => (ctor Result.error [St, Bytes] problem4))))
       | Bool.false => (ctor Result.error [St, Bytes] (cat (tick (idText who)) (text " is not bound")))),
   executable: true
 }
@@ -1176,17 +1242,12 @@ definition{
   parameters: [st : St, decl : Decl, pat : Pat],
   result: (Result St Bytes),
   body: (match pat
-    | Pat.PWild => (ctor Result.ok [St, Bytes] st)
+    | Pat.PLeaf d0 => (ctor Result.ok [St, Bytes] st)
     | Pat.PBind who => (match (idHas (project st bound) who)
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "hygiene: ") (cat (tick (idText who)) (text " is bound twice in one function"))))
       | Bool.false => (ctor Result.ok [St, Bytes] (record St {bound := (cons who (project st bound)), scope := (cons who (project st scope)), moved := (project st moved), parted := (project st parted), propagates := (project st propagates)})))
-    | Pat.PUnit => (ctor Result.ok [St, Bytes] st)
     | Pat.PTuple inner => (bindPat st decl inner)
-    | Pat.PNone => (ctor Result.ok [St, Bytes] st)
-    | Pat.PSome inner => (bindPat st decl inner)
-    | Pat.POk inner => (bindPat st decl inner)
-    | Pat.PErr inner => (bindPat st decl inner)
-    | Pat.POrdering => (ctor Result.ok [St, Bytes] st)
+    | Pat.PWrap k inner => (bindPat st decl inner)
     | Pat.PAdt adt constructor fields => (match (adtArity decl adt constructor)
         | Option.none => (ctor Result.error [St, Bytes] (cat (text "pattern Adt") (cat (decimal adt) (cat (text "::C") (cat (decimal constructor) (text " is not declared"))))))
         | Option.some arity => (match (arity =? (patLen fields))
@@ -1195,7 +1256,7 @@ definition{
     | Pat.PNil => (ctor Result.ok [St, Bytes] st)
     | Pat.PCons head tail => (match (bindPat st decl head)
       | Result.ok next => (bindPat next decl tail)
-      | Result.error problem6 => (ctor Result.error [St, Bytes] problem6))),
+      | Result.error problem5 => (ctor Result.error [St, Bytes] problem5))),
   executable: true,
   recursive_argument: pat
 }
@@ -1204,249 +1265,75 @@ definition{
   name: callOk,
   parameters: [st : St, cx : Cx, fallible : Bool, propagate : Bool, tail : Bool, what : Bytes],
   result: (Result St Bytes),
-  body: (match fallible
+  body: (let excused : Bool := (if tail then (project cx fallible) else false); (match fallible
       | Bool.true => (match propagate
       | Bool.true => (ctor Result.ok [St, Bytes] (record St {bound := (project st bound), scope := (project st scope), moved := (project st moved), parted := (project st parted), propagates := true}))
-      | Bool.false => (match tail
-      | Bool.true => (match (project cx fallible)
+      | Bool.false => (match excused
       | Bool.true => (ctor Result.ok [St, Bytes] st)
-      | Bool.false => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the fallible call of ") (cat what (text " does not propagate its overflow")))))
       | Bool.false => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the fallible call of ") (cat what (text " does not propagate its overflow"))))))
       | Bool.false => (match propagate
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the infallible call of ") (cat what (text " propagates a failure it cannot have"))))
-      | Bool.false => (ctor Result.ok [St, Bytes] st))),
+      | Bool.false => (ctor Result.ok [St, Bytes] st)))),
+  executable: true
+}
+
+definition{
+  name: itemRowOf,
+  parameters: [rows : (List ItemRow), family : Nat],
+  result: (Option ItemRow),
+  body: (prim list_fold (fun [family] (found : (Option ItemRow)) (row : ItemRow) => (match found
+      | Option.some value => (ctor Option.some [ItemRow] value)
+      | Option.none => (if ((project row family) =? family) then (ctor Option.some [ItemRow] row) else (ctor Option.none [ItemRow])))) (ctor Option.none [ItemRow]) rows : (Option ItemRow)),
+  executable: true
+}
+
+definition{
+  name: widthKind,
+  parameters: [width : (Option IntKind)],
+  result: IntKind,
+  body: (match width
+    | Option.some kind => kind
+    | Option.none => (ctor IntKind.U8)),
   executable: true
 }
 
 definition{
   name: itemPath,
-  parameters: [item : Rt],
+  parameters: [rows : (List ItemRow), item : Rt],
   result: Bytes,
-  body: (match item
-    | Rt.RtNatAdd => (text "nat_add")
-    | Rt.RtNatSub => (text "nat_sub")
-    | Rt.RtNatMul => (text "nat_mul")
-    | Rt.RtNatQuot => (text "nat_quot")
-    | Rt.RtNatRem => (text "nat_rem")
-    | Rt.RtNatEq => (text "nat_eq")
-    | Rt.RtNatLe => (text "nat_le")
-    | Rt.RtNatLt => (text "nat_lt")
-    | Rt.RtNatSucc => (text "nat_succ")
-    | Rt.RtIntAdd => (text "int_add")
-    | Rt.RtIntSub => (text "int_sub")
-    | Rt.RtIntMul => (text "int_mul")
-    | Rt.RtIntNeg => (text "int_neg")
-    | Rt.RtIntQuot => (text "int_quot")
-    | Rt.RtIntRem => (text "int_rem")
-    | Rt.RtBoolNot => (text "bool_not")
-    | Rt.RtBoolAnd => (text "bool_and")
-    | Rt.RtBoolOr => (text "bool_or")
-    | Rt.RtEqual => (text "equal")
-    | Rt.RtCompare => (text "compare")
-    | Rt.RtCheckedAdd k => (cat (text "fixed_") (cat (kindLower k) (text "::checked_add")))
-    | Rt.RtCheckedSub k => (cat (text "fixed_") (cat (kindLower k) (text "::checked_sub")))
-    | Rt.RtCheckedMul k => (cat (text "fixed_") (cat (kindLower k) (text "::checked_mul")))
-    | Rt.RtCheckedQuot k => (cat (text "fixed_") (cat (kindLower k) (text "::checked_quot")))
-    | Rt.RtCheckedNeg k => (cat (text "checked_neg_") (kindLower k))
-    | Rt.RtBitAnd k => (cat (text "fixed_") (cat (kindLower k) (text "::bit_and")))
-    | Rt.RtBitOr k => (cat (text "fixed_") (cat (kindLower k) (text "::bit_or")))
-    | Rt.RtBitXor k => (cat (text "fixed_") (cat (kindLower k) (text "::bit_xor")))
-    | Rt.RtBitNot k => (cat (text "fixed_") (cat (kindLower k) (text "::bit_not")))
-    | Rt.RtShiftLeft k => (cat (text "fixed_") (cat (kindLower k) (text "::shift_left")))
-    | Rt.RtShiftRight k => (cat (text "fixed_") (cat (kindLower k) (text "::shift_right")))
-    | Rt.RtConvert k => (cat (text "fixed_") (cat (kindLower k) (text "::convert")))
-    | Rt.RtAppendList => (text "append_list")
-    | Rt.RtAppendBytes => (text "append_bytes")
-    | Rt.RtLengthList => (text "length_list")
-    | Rt.RtLengthBytes => (text "length_bytes")
-    | Rt.RtLengthString => (text "length_string")
-    | Rt.RtIndexList => (text "index_list")
-    | Rt.RtIndexBytes => (text "index_bytes")
-    | Rt.RtSliceList => (text "slice_list")
-    | Rt.RtSliceBytes => (text "slice_bytes")
-    | Rt.RtUtf8Encode => (text "utf8_encode")
-    | Rt.RtUtf8Decode => (text "utf8_decode")
-    | Rt.RtCompareBytes => (text "compare_bytes")
-    | Rt.RtSplitExact => (text "split_exact")
-    | Rt.RtJoin => (text "join")
-    | Rt.RtFormatInt => (text "format_i64")
-    | Rt.RtFormatFixed k => (cat (text "format_") (kindLower k))
-    | Rt.RtParseInt => (text "parse_int")
-    | Rt.RtParseFixed k => (cat (text "parse_") (kindLower k))),
+  body: (match (itemRowOf rows (project item family))
+    | Option.none => 0x
+    | Option.some row => (if ((project row form) =? 0) then (project row stem) else (if ((project row form) =? 1) then (cat (text "fixed_") (cat (kindLower (widthKind (project item width))) (cat (text "::") (project row stem)))) else (cat (project row stem) (kindLower (widthKind (project item width))))))),
   executable: true
 }
 
 definition{
   name: itemWidth,
-  parameters: [item : Rt],
+  parameters: [rows : (List ItemRow), item : Rt],
   result: (Option IntKind),
-  body: (match item
-    | Rt.RtNatAdd => (ctor Option.none [IntKind])
-    | Rt.RtNatSub => (ctor Option.none [IntKind])
-    | Rt.RtNatMul => (ctor Option.none [IntKind])
-    | Rt.RtNatQuot => (ctor Option.none [IntKind])
-    | Rt.RtNatRem => (ctor Option.none [IntKind])
-    | Rt.RtNatEq => (ctor Option.none [IntKind])
-    | Rt.RtNatLe => (ctor Option.none [IntKind])
-    | Rt.RtNatLt => (ctor Option.none [IntKind])
-    | Rt.RtNatSucc => (ctor Option.none [IntKind])
-    | Rt.RtIntAdd => (ctor Option.none [IntKind])
-    | Rt.RtIntSub => (ctor Option.none [IntKind])
-    | Rt.RtIntMul => (ctor Option.none [IntKind])
-    | Rt.RtIntNeg => (ctor Option.none [IntKind])
-    | Rt.RtIntQuot => (ctor Option.none [IntKind])
-    | Rt.RtIntRem => (ctor Option.none [IntKind])
-    | Rt.RtBoolNot => (ctor Option.none [IntKind])
-    | Rt.RtBoolAnd => (ctor Option.none [IntKind])
-    | Rt.RtBoolOr => (ctor Option.none [IntKind])
-    | Rt.RtEqual => (ctor Option.none [IntKind])
-    | Rt.RtCompare => (ctor Option.none [IntKind])
-    | Rt.RtCheckedAdd k => (ctor Option.some [IntKind] k)
-    | Rt.RtCheckedSub k => (ctor Option.some [IntKind] k)
-    | Rt.RtCheckedMul k => (ctor Option.some [IntKind] k)
-    | Rt.RtCheckedQuot k => (ctor Option.some [IntKind] k)
-    | Rt.RtCheckedNeg k => (ctor Option.some [IntKind] k)
-    | Rt.RtBitAnd k => (ctor Option.some [IntKind] k)
-    | Rt.RtBitOr k => (ctor Option.some [IntKind] k)
-    | Rt.RtBitXor k => (ctor Option.some [IntKind] k)
-    | Rt.RtBitNot k => (ctor Option.some [IntKind] k)
-    | Rt.RtShiftLeft k => (ctor Option.some [IntKind] k)
-    | Rt.RtShiftRight k => (ctor Option.some [IntKind] k)
-    | Rt.RtConvert k => (ctor Option.some [IntKind] k)
-    | Rt.RtAppendList => (ctor Option.none [IntKind])
-    | Rt.RtAppendBytes => (ctor Option.none [IntKind])
-    | Rt.RtLengthList => (ctor Option.none [IntKind])
-    | Rt.RtLengthBytes => (ctor Option.none [IntKind])
-    | Rt.RtLengthString => (ctor Option.none [IntKind])
-    | Rt.RtIndexList => (ctor Option.none [IntKind])
-    | Rt.RtIndexBytes => (ctor Option.none [IntKind])
-    | Rt.RtSliceList => (ctor Option.none [IntKind])
-    | Rt.RtSliceBytes => (ctor Option.none [IntKind])
-    | Rt.RtUtf8Encode => (ctor Option.none [IntKind])
-    | Rt.RtUtf8Decode => (ctor Option.none [IntKind])
-    | Rt.RtCompareBytes => (ctor Option.none [IntKind])
-    | Rt.RtSplitExact => (ctor Option.none [IntKind])
-    | Rt.RtJoin => (ctor Option.none [IntKind])
-    | Rt.RtFormatInt => (ctor Option.none [IntKind])
-    | Rt.RtFormatFixed k => (ctor Option.some [IntKind] k)
-    | Rt.RtParseInt => (ctor Option.none [IntKind])
-    | Rt.RtParseFixed k => (ctor Option.some [IntKind] k)),
+  body: (match (itemRowOf rows (project item family))
+    | Option.none => (ctor Option.none [IntKind])
+    | Option.some row => (if ((project row form) =? 0) then (ctor Option.none [IntKind]) else (ctor Option.some [IntKind] (widthKind (project item width))))),
   executable: true
 }
 
 definition{
   name: itemFallible,
-  parameters: [item : Rt],
+  parameters: [rows : (List ItemRow), item : Rt],
   result: Bool,
-  body: (match item
-    | Rt.RtNatAdd => true
-    | Rt.RtNatSub => false
-    | Rt.RtNatMul => true
-    | Rt.RtNatQuot => false
-    | Rt.RtNatRem => false
-    | Rt.RtNatEq => false
-    | Rt.RtNatLe => false
-    | Rt.RtNatLt => false
-    | Rt.RtNatSucc => true
-    | Rt.RtIntAdd => true
-    | Rt.RtIntSub => true
-    | Rt.RtIntMul => true
-    | Rt.RtIntNeg => true
-    | Rt.RtIntQuot => true
-    | Rt.RtIntRem => false
-    | Rt.RtBoolNot => false
-    | Rt.RtBoolAnd => false
-    | Rt.RtBoolOr => false
-    | Rt.RtEqual => false
-    | Rt.RtCompare => false
-    | Rt.RtCheckedAdd d0 => false
-    | Rt.RtCheckedSub d0 => false
-    | Rt.RtCheckedMul d0 => false
-    | Rt.RtCheckedQuot d0 => false
-    | Rt.RtCheckedNeg d0 => false
-    | Rt.RtBitAnd d0 => false
-    | Rt.RtBitOr d0 => false
-    | Rt.RtBitXor d0 => false
-    | Rt.RtBitNot d0 => false
-    | Rt.RtShiftLeft d0 => false
-    | Rt.RtShiftRight d0 => false
-    | Rt.RtConvert d0 => false
-    | Rt.RtAppendList => false
-    | Rt.RtAppendBytes => false
-    | Rt.RtLengthList => false
-    | Rt.RtLengthBytes => false
-    | Rt.RtLengthString => false
-    | Rt.RtIndexList => false
-    | Rt.RtIndexBytes => false
-    | Rt.RtSliceList => false
-    | Rt.RtSliceBytes => false
-    | Rt.RtUtf8Encode => false
-    | Rt.RtUtf8Decode => false
-    | Rt.RtCompareBytes => false
-    | Rt.RtSplitExact => false
-    | Rt.RtJoin => false
-    | Rt.RtFormatInt => false
-    | Rt.RtFormatFixed d0 => false
-    | Rt.RtParseInt => true
-    | Rt.RtParseFixed d0 => false),
+  body: (match (itemRowOf rows (project item family))
+    | Option.none => false
+    | Option.some row => (project row fallible)),
   executable: true
 }
 
 definition{
   name: itemHeap,
-  parameters: [item : Rt],
+  parameters: [rows : (List ItemRow), item : Rt],
   result: Bool,
-  body: (match item
-    | Rt.RtNatAdd => false
-    | Rt.RtNatSub => false
-    | Rt.RtNatMul => false
-    | Rt.RtNatQuot => false
-    | Rt.RtNatRem => false
-    | Rt.RtNatEq => false
-    | Rt.RtNatLe => false
-    | Rt.RtNatLt => false
-    | Rt.RtNatSucc => false
-    | Rt.RtIntAdd => false
-    | Rt.RtIntSub => false
-    | Rt.RtIntMul => false
-    | Rt.RtIntNeg => false
-    | Rt.RtIntQuot => false
-    | Rt.RtIntRem => false
-    | Rt.RtBoolNot => false
-    | Rt.RtBoolAnd => false
-    | Rt.RtBoolOr => false
-    | Rt.RtEqual => false
-    | Rt.RtCompare => false
-    | Rt.RtCheckedAdd d0 => false
-    | Rt.RtCheckedSub d0 => false
-    | Rt.RtCheckedMul d0 => false
-    | Rt.RtCheckedQuot d0 => false
-    | Rt.RtCheckedNeg d0 => false
-    | Rt.RtBitAnd d0 => false
-    | Rt.RtBitOr d0 => false
-    | Rt.RtBitXor d0 => false
-    | Rt.RtBitNot d0 => false
-    | Rt.RtShiftLeft d0 => false
-    | Rt.RtShiftRight d0 => false
-    | Rt.RtConvert d0 => false
-    | Rt.RtAppendList => true
-    | Rt.RtAppendBytes => true
-    | Rt.RtLengthList => true
-    | Rt.RtLengthBytes => true
-    | Rt.RtLengthString => true
-    | Rt.RtIndexList => true
-    | Rt.RtIndexBytes => true
-    | Rt.RtSliceList => true
-    | Rt.RtSliceBytes => true
-    | Rt.RtUtf8Encode => true
-    | Rt.RtUtf8Decode => true
-    | Rt.RtCompareBytes => true
-    | Rt.RtSplitExact => true
-    | Rt.RtJoin => true
-    | Rt.RtFormatInt => true
-    | Rt.RtFormatFixed d0 => true
-    | Rt.RtParseInt => true
-    | Rt.RtParseFixed d0 => true),
+  body: (match (itemRowOf rows (project item family))
+    | Option.none => false
+    | Option.some row => (project row heap)),
   executable: true
 }
 
@@ -1489,6 +1376,7 @@ definition{
   parameters: [left : Bytes, right : Bytes],
   result: Bool,
   body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
   executable: true
 }
 
@@ -1509,6 +1397,7 @@ definition{
       | Bool.false => (match (bytesLess key item)
       | Bool.true => (true, (cons item (cons key rev)))
       | Bool.false => (false, (cons item rev)))))),
+  axioms: [propext],
   executable: true
 }
 
@@ -1521,6 +1410,7 @@ definition{
     | Bool.false => (let done : (Bool * (List Bytes)) := (prim list_fold (fun [key] (state : (Bool * (List Bytes))) (item : Bytes) => (sortedStep key state item)) (false, (nil Bytes)) items : (Bool * (List Bytes))); (match (first done)
       | Bool.true => (LexLeanStd.Text::reverse (second done))
       | Bool.false => (LexLeanStd.Text::reverse (cons key (second done)))))),
+  axioms: [propext],
   executable: true
 }
 
@@ -1528,7 +1418,24 @@ definition{
   name: foundType,
   parameters: [found : Found, key : Bytes],
   result: Found,
-  body: (record Found {insts := (project found insts), types := (sortedInsert (project found types) key)}),
+  body: (record Found {insts := (project found insts), types := (sortedInsert (project found types) key), items := (project found items)}),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: instSame,
+  parameters: [left : Inst, right : Inst],
+  result: Bool,
+  body: (if (prim equal (project left construct) (project right construct) : Bool) then (if (prim equal (project left element) (project right element) : Bool) then (if (optKindEq (project left originWidth) (project right originWidth)) then (optKindEq (project left width) (project right width)) else false) else false) else false),
+  executable: true
+}
+
+definition{
+  name: instHas,
+  parameters: [insts : (List Inst), inst : Inst],
+  result: Bool,
+  body: (prim list_fold (fun [inst] (found : Bool) (seen : Inst) => (let same : Bool := (instSame seen inst); (found || same))) false insts : Bool),
   executable: true
 }
 
@@ -1536,7 +1443,9 @@ definition{
   name: foundWide,
   parameters: [found : Found, construct : Bytes, origin : Origin, width : (Option IntKind)],
   result: Found,
-  body: (record Found {insts := (cons (record Inst {construct := construct, element := (project origin element), originWidth := (project origin width), width := width}) (project found insts)), types := (project found types)}),
+  body: (let inst : Inst := (record Inst {construct := construct, element := (project origin element), originWidth := (project origin width), width := width}); (match (instHas (project found insts) inst)
+      | Bool.true => found
+      | Bool.false => (record Found {insts := (cons inst (project found insts)), types := (project found types), items := (project found items)}))),
   executable: true
 }
 
@@ -1553,25 +1462,14 @@ definition{
   parameters: [found : Found, ty : Ty],
   result: Found,
   body: (match ty
-    | Ty.TyUnit => (foundType found (text "type:unit"))
-    | Ty.TyBool => (foundType found (text "type:bool"))
-    | Ty.TyNat => (foundType found (text "type:nat"))
-    | Ty.TyInt => (foundType found (text "type:int"))
+    | Ty.TyLeaf k => (foundType found (cat (text "type:") (leafKey k)))
     | Ty.TyFixed d0 => (foundType found (text "type:fixed"))
-    | Ty.TyOrdering => (foundType found (text "type:ordering"))
-    | Ty.TyStr => (foundType found (text "type:string"))
-    | Ty.TyBytes => (foundType found (text "type:bytes"))
-    | Ty.TyOption inner => (foundTy (foundType found (text "type:option")) inner)
-    | Ty.TyResult left right => (foundTy (foundTy (foundType found (text "type:result")) left) right)
-    | Ty.TyList inner => (foundTy (foundType found (text "type:list")) inner)
-    | Ty.TyPair left right => (foundTy (foundTy (foundType found (text "type:pair")) left) right)
-    | Ty.TyAdt d0 => (foundType found (text "type:adt"))
-    | Ty.TyFn d0 => (foundType found (text "type:fn"))
-    | Ty.TyRc inner => (foundTy (foundType found (text "type:rc")) inner)
-    | Ty.TyFallible inner => (foundTy (foundType found (text "type:fallible")) inner)
-    | Ty.TyRef inner => (foundTy (foundType found (text "type:ref")) inner)
+    | Ty.TyUnary k inner => (foundTy (foundType found (cat (text "type:") (unaryKey k))) inner)
+    | Ty.TyBinary k left right => (foundTy (foundTy (foundType found (cat (text "type:") (binaryKey k))) left) right)
+    | Ty.TyNamed k n => (foundType found (cat (text "type:") (nameKey k)))
     | Ty.TyNil => found
     | Ty.TyCons head tail => (foundTy (foundTy found head) tail)),
+  axioms: [propext],
   executable: true,
   recursive_argument: ty
 }
@@ -1609,19 +1507,37 @@ definition{
 }
 
 definition{
+  name: patLeafConstruct,
+  parameters: [kind : PatLeaf],
+  result: (Option Bytes),
+  body: (match kind
+    | PatLeaf.PlWild => (ctor Option.none [Bytes])
+    | PatLeaf.PlUnit => (ctor Option.none [Bytes])
+    | PatLeaf.PlNone => (ctor Option.some [Bytes] (text "match:option"))
+    | PatLeaf.PlOrdering => (ctor Option.some [Bytes] (text "match:ordering"))),
+  executable: true
+}
+
+definition{
+  name: patWrapConstruct,
+  parameters: [kind : PatWrap],
+  result: Bytes,
+  body: (match kind
+    | PatWrap.PwSome => (text "match:option")
+    | PatWrap.PwOk => (text "match:result")
+    | PatWrap.PwErr => (text "match:result")),
+  executable: true
+}
+
+definition{
   name: patConstruct,
   parameters: [pat : Pat],
   result: (Option Bytes),
   body: (match pat
-    | Pat.PWild => (ctor Option.none [Bytes])
+    | Pat.PLeaf k => (patLeafConstruct k)
     | Pat.PBind d0 => (ctor Option.none [Bytes])
-    | Pat.PUnit => (ctor Option.none [Bytes])
     | Pat.PTuple d0 => (ctor Option.none [Bytes])
-    | Pat.PNone => (ctor Option.some [Bytes] (text "match:option"))
-    | Pat.PSome d0 => (ctor Option.some [Bytes] (text "match:option"))
-    | Pat.POk d0 => (ctor Option.some [Bytes] (text "match:result"))
-    | Pat.PErr d0 => (ctor Option.some [Bytes] (text "match:result"))
-    | Pat.POrdering => (ctor Option.some [Bytes] (text "match:ordering"))
+    | Pat.PWrap k inner => (ctor Option.some [Bytes] (patWrapConstruct k))
     | Pat.PAdt d0 d1 d2 => (ctor Option.some [Bytes] (text "match:adt"))
     | Pat.PNil => (ctor Option.none [Bytes])
     | Pat.PCons d0 d1 => (ctor Option.none [Bytes])),
@@ -1634,13 +1550,8 @@ definition{
   result: Found,
   body: (match arms
     | Expr.ELit d0 d1 => found
-    | Expr.EMove d0 d1 => found
-    | Expr.EClone d0 d1 => found
-    | Expr.ECopy d0 d1 => found
-    | Expr.EDeref d0 d1 => found
-    | Expr.ENot d0 d1 => found
-    | Expr.EUnbox d0 d1 => found
-    | Expr.EBox d0 d1 => found
+    | Expr.ERead d0 d1 d2 => found
+    | Expr.EWrap d0 d1 d2 => found
     | Expr.ECall d0 d1 d2 d3 => found
     | Expr.EApply d0 d1 d2 d3 => found
     | Expr.EConstruct d0 d1 d2 => found
@@ -1648,17 +1559,11 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => found
     | Expr.EMatch d0 d1 d2 => found
     | Expr.EBlockE d0 => found
-    | Expr.EUncons d0 => found
-    | Expr.EIsZero d0 d1 => found
-    | Expr.ENonZero d0 d1 => found
-    | Expr.EPred d0 => found
-    | Expr.EWiden d0 d1 => found
-    | Expr.ESucceed d0 d1 => found
+    | Expr.EProbe d0 d1 d2 => found
     | Expr.EBlock d0 d1 => found
     | Expr.ENil => found
     | Expr.ECons d0 d1 => found
-    | Expr.ELet d0 d1 d2 d3 d4 => found
-    | Expr.ELetU d0 d1 d2 d3 => found
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => found
     | Expr.EArm pat body rest => (match (patConstruct pat)
       | Option.some kind => (foundArmPats (foundAt found kind origin) rest origin)
       | Option.none => (foundArmPats found rest origin))),
@@ -1672,13 +1577,8 @@ definition{
   result: Bool,
   body: (match e
     | Expr.ELit d0 d1 => false
-    | Expr.EMove d0 d1 => false
-    | Expr.EClone d0 d1 => false
-    | Expr.ECopy d0 d1 => false
-    | Expr.EDeref d0 d1 => false
-    | Expr.ENot d0 d1 => false
-    | Expr.EUnbox d0 d1 => false
-    | Expr.EBox d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
     | Expr.ECall d0 d1 d2 d3 => false
     | Expr.EApply d0 d1 d2 d3 => false
     | Expr.EConstruct d0 d1 d2 => false
@@ -1686,18 +1586,73 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => false
     | Expr.EMatch d0 d1 d2 => false
     | Expr.EBlockE d0 => false
-    | Expr.EUncons d0 => false
-    | Expr.EIsZero d0 d1 => false
-    | Expr.ENonZero d0 d1 => false
-    | Expr.EPred d0 => false
-    | Expr.EWiden d0 d1 => false
-    | Expr.ESucceed d0 d1 => false
+    | Expr.EProbe d0 d1 d2 => false
     | Expr.EBlock d0 d1 => false
     | Expr.ENil => true
     | Expr.ECons d0 d1 => false
-    | Expr.ELet d0 d1 d2 d3 d4 => false
-    | Expr.ELetU d0 d1 d2 d3 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
     | Expr.EArm d0 d1 d2 => false),
+  executable: true
+}
+
+definition{
+  name: probeIsUncons,
+  parameters: [kind : ProbeKind],
+  result: Bool,
+  body: (match kind
+    | ProbeKind.PkIsZero => false
+    | ProbeKind.PkNonZero => false
+    | ProbeKind.PkUncons => true
+    | ProbeKind.PkPred => false),
+  executable: true
+}
+
+definition{
+  name: probeIsNat,
+  parameters: [kind : ProbeKind],
+  result: Bool,
+  body: (match kind
+    | ProbeKind.PkIsZero => true
+    | ProbeKind.PkNonZero => true
+    | ProbeKind.PkUncons => false
+    | ProbeKind.PkPred => false),
+  executable: true
+}
+
+definition{
+  name: probeNegatable,
+  parameters: [kind : ProbeKind],
+  result: Bool,
+  body: (match kind
+    | ProbeKind.PkIsZero => true
+    | ProbeKind.PkNonZero => true
+    | ProbeKind.PkUncons => false
+    | ProbeKind.PkPred => true),
+  executable: true
+}
+
+definition{
+  name: readConstruct,
+  parameters: [kind : ReadKind],
+  result: Bytes,
+  body: (match kind
+    | ReadKind.RkMove => (text "read")
+    | ReadKind.RkClone => (text "read")
+    | ReadKind.RkCopy => (text "read")
+    | ReadKind.RkDeref => (text "read")
+    | ReadKind.RkUnbox => (text "box")),
+  executable: true
+}
+
+definition{
+  name: wrapConstruct,
+  parameters: [kind : WrapKind],
+  result: Bytes,
+  body: (match kind
+    | WrapKind.WkNot => (text "if")
+    | WrapKind.WkBox => (text "box")
+    | WrapKind.WkWiden => (text "widen")
+    | WrapKind.WkSucceed => (text "succeed")),
   executable: true
 }
 
@@ -1707,13 +1662,8 @@ definition{
   result: Bool,
   body: (match e
     | Expr.ELit d0 d1 => false
-    | Expr.EMove d0 d1 => false
-    | Expr.EClone d0 d1 => false
-    | Expr.ECopy d0 d1 => false
-    | Expr.EDeref d0 d1 => false
-    | Expr.ENot d0 d1 => false
-    | Expr.EUnbox d0 d1 => false
-    | Expr.EBox d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
     | Expr.ECall d0 d1 d2 d3 => false
     | Expr.EApply d0 d1 d2 d3 => false
     | Expr.EConstruct d0 d1 d2 => false
@@ -1721,17 +1671,11 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => false
     | Expr.EMatch d0 d1 d2 => false
     | Expr.EBlockE d0 => false
-    | Expr.EUncons d0 => true
-    | Expr.EIsZero d0 d1 => false
-    | Expr.ENonZero d0 d1 => false
-    | Expr.EPred d0 => false
-    | Expr.EWiden d0 d1 => false
-    | Expr.ESucceed d0 d1 => false
+    | Expr.EProbe k who org => (probeIsUncons k)
     | Expr.EBlock d0 d1 => false
     | Expr.ENil => false
     | Expr.ECons d0 d1 => false
-    | Expr.ELet d0 d1 d2 d3 d4 => false
-    | Expr.ELetU d0 d1 d2 d3 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
     | Expr.EArm d0 d1 d2 => false),
   executable: true
 }
@@ -1765,6 +1709,7 @@ definition{
     | Con.ConClosure d0 d1 => found
     | Con.ConCons => found
     | Con.ConNil ty => (foundTy found ty)),
+  axioms: [propext],
   executable: true
 }
 
@@ -1774,16 +1719,11 @@ definition{
   result: Found,
   body: (match e
     | Expr.ELit lit org => (foundWide found (litKind lit) org (litWidth lit))
-    | Expr.EMove who org => (foundAt found (text "read") org)
-    | Expr.EClone who org => (foundAt found (text "read") org)
-    | Expr.ECopy who org => (foundAt found (text "read") org)
-    | Expr.EDeref who org => (foundAt found (text "read") org)
-    | Expr.ENot inner org => (foundExpr (foundAt found (text "if") org) inner)
-    | Expr.EUnbox who org => (foundAt found (text "box") org)
-    | Expr.EBox inner org => (foundExpr (foundAt found (text "box") org) inner)
+    | Expr.ERead k who org => (foundAt found (readConstruct k) org)
+    | Expr.EWrap k inner org => (foundExpr (foundAt found (wrapConstruct k) org) inner)
     | Expr.ECall callee args propagate org => (match callee
       | Callee.CalFn n => (foundExpr (foundAt found (text "call:function") org) args)
-      | Callee.CalRt item => (foundExpr (foundWide found (cat (text "call:runtime:") (runtimeKind (lastSegment (itemPath item)))) org (itemWidth item)) args))
+      | Callee.CalRt item => (foundExpr (foundWide found (cat (text "call:runtime:") (runtimeKind (lastSegment (itemPath (project found items) item)))) org (itemWidth (project found items) item)) args))
     | Expr.EApply who args propagate org => (foundExpr (foundAt found (text "apply") org) args)
     | Expr.EConstruct con args org => (foundExpr (foundAt (foundCon found con) (cat (text "construct:") (conKind con)) org) args)
     | Expr.EPair left right org => (foundExpr (foundExpr (foundAt found (text "construct:pair") org) left) right)
@@ -1794,22 +1734,19 @@ definition{
       | Bool.true => (foundAt found (text "match:list") org)
       | Bool.false => (foundArmPats found arms org))); (foundExpr (foundExpr head scrutinee) arms))
     | Expr.EBlockE inner => (foundExpr found inner)
-    | Expr.EUncons d0 => found
-    | Expr.EIsZero who org => (foundAt found (text "match:nat") org)
-    | Expr.ENonZero who org => (foundAt found (text "match:nat") org)
-    | Expr.EPred d0 => found
-    | Expr.EWiden inner org => (foundExpr (foundAt found (text "widen") org) inner)
-    | Expr.ESucceed inner org => (foundExpr (foundAt found (text "succeed") org) inner)
+    | Expr.EProbe k who org => (match (probeIsNat k)
+      | Bool.true => (foundAt found (text "match:nat") org)
+      | Bool.false => found)
     | Expr.EBlock lets tail => (foundExpr (foundExpr found lets) tail)
     | Expr.ENil => found
     | Expr.ECons head tail => (foundExpr (foundExpr found head) tail)
-    | Expr.ELet pat ty value org rest => (let kind : Bytes := (match (patIsTuple pat)
+    | Expr.ELet pat hasTy ty value org rest => (let kind : Bytes := (match (patIsTuple pat)
       | Bool.true => (text "destructure:pair")
-      | Bool.false => (text "let")); (foundExpr (foundExpr (foundAt (foundTy found ty) kind org) value) rest))
-    | Expr.ELetU pat value org rest => (let kind : Bytes := (match (patIsTuple pat)
-      | Bool.true => (text "destructure:pair")
-      | Bool.false => (text "let")); (foundExpr (foundExpr (foundAt found kind org) value) rest))
+      | Bool.false => (text "let")); (let typed : Found := (match hasTy
+      | Bool.true => (foundTy found ty)
+      | Bool.false => found); (foundExpr (foundExpr (foundAt typed kind org) value) rest)))
     | Expr.EArm pat body rest => (foundExpr (foundExpr found body) rest)),
+  axioms: [propext],
   executable: true,
   recursive_argument: e
 }
@@ -1825,14 +1762,16 @@ definition{
       | Bool.false => (ctor Option.some [Bytes] seen)))) (ctor Option.none [Bytes]) insts : (Option Bytes))
     | Option.some least => least
     | Option.none => (text "a read")),
+  axioms: [propext],
   executable: true
 }
 
 definition{
   name: constructsOf,
-  parameters: [e : Expr],
+  parameters: [rows : (List ItemRow), e : Expr],
   result: Bytes,
-  body: (minConstruct (project (foundExpr (record Found {insts := (nil Inst), types := (nil Bytes)}) e) insts)),
+  body: (minConstruct (project (foundExpr (record Found {insts := (nil Inst), types := (nil Bytes), items := rows}) e) insts)),
+  axioms: [propext],
   executable: true
 }
 
@@ -1842,13 +1781,8 @@ definition{
   result: Bool,
   body: (match e
     | Expr.ELit d0 d1 => false
-    | Expr.EMove d0 d1 => false
-    | Expr.EClone d0 d1 => false
-    | Expr.ECopy d0 d1 => false
-    | Expr.EDeref d0 d1 => false
-    | Expr.ENot d0 d1 => false
-    | Expr.EUnbox d0 d1 => false
-    | Expr.EBox d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
     | Expr.ECall d0 d1 d2 d3 => false
     | Expr.EApply d0 d1 d2 d3 => false
     | Expr.EConstruct d0 d1 d2 => false
@@ -1856,18 +1790,25 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => false
     | Expr.EMatch d0 d1 d2 => false
     | Expr.EBlockE d0 => false
-    | Expr.EUncons d0 => false
-    | Expr.EIsZero d0 d1 => true
-    | Expr.ENonZero d0 d1 => true
-    | Expr.EPred d0 => true
-    | Expr.EWiden d0 d1 => false
-    | Expr.ESucceed d0 d1 => false
+    | Expr.EProbe k who org => (probeNegatable k)
     | Expr.EBlock d0 d1 => false
     | Expr.ENil => false
     | Expr.ECons d0 d1 => false
-    | Expr.ELet d0 d1 d2 d3 d4 => false
-    | Expr.ELetU d0 d1 d2 d3 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
     | Expr.EArm d0 d1 d2 => false),
+  executable: true
+}
+
+definition{
+  name: readIsMove,
+  parameters: [kind : ReadKind],
+  result: Bool,
+  body: (match kind
+    | ReadKind.RkMove => true
+    | ReadKind.RkClone => false
+    | ReadKind.RkCopy => false
+    | ReadKind.RkDeref => false
+    | ReadKind.RkUnbox => false),
   executable: true
 }
 
@@ -1876,20 +1817,16 @@ definition{
   parameters: [pat : Pat, value : Expr],
   result: (Option Id),
   body: (match pat
-    | Pat.PWild => (ctor Option.none [Id])
+    | Pat.PLeaf d0 => (ctor Option.none [Id])
     | Pat.PBind d0 => (ctor Option.none [Id])
-    | Pat.PUnit => (ctor Option.none [Id])
     | Pat.PTuple parts => (match value
         | Expr.ELit d0 d1 => (ctor Option.none [Id])
-        | Expr.EMove who org => (match (patHasWild parts)
+        | Expr.ERead k who org => (match (readIsMove k)
+      | Bool.true => (match (patHasWild parts)
       | Bool.true => (ctor Option.some [Id] who)
       | Bool.false => (ctor Option.none [Id]))
-        | Expr.EClone d0 d1 => (ctor Option.none [Id])
-        | Expr.ECopy d0 d1 => (ctor Option.none [Id])
-        | Expr.EDeref d0 d1 => (ctor Option.none [Id])
-        | Expr.ENot d0 d1 => (ctor Option.none [Id])
-        | Expr.EUnbox d0 d1 => (ctor Option.none [Id])
-        | Expr.EBox d0 d1 => (ctor Option.none [Id])
+      | Bool.false => (ctor Option.none [Id]))
+        | Expr.EWrap d0 d1 d2 => (ctor Option.none [Id])
         | Expr.ECall d0 d1 d2 d3 => (ctor Option.none [Id])
         | Expr.EApply d0 d1 d2 d3 => (ctor Option.none [Id])
         | Expr.EConstruct d0 d1 d2 => (ctor Option.none [Id])
@@ -1897,23 +1834,13 @@ definition{
         | Expr.EIf d0 d1 d2 d3 => (ctor Option.none [Id])
         | Expr.EMatch d0 d1 d2 => (ctor Option.none [Id])
         | Expr.EBlockE d0 => (ctor Option.none [Id])
-        | Expr.EUncons d0 => (ctor Option.none [Id])
-        | Expr.EIsZero d0 d1 => (ctor Option.none [Id])
-        | Expr.ENonZero d0 d1 => (ctor Option.none [Id])
-        | Expr.EPred d0 => (ctor Option.none [Id])
-        | Expr.EWiden d0 d1 => (ctor Option.none [Id])
-        | Expr.ESucceed d0 d1 => (ctor Option.none [Id])
+        | Expr.EProbe d0 d1 d2 => (ctor Option.none [Id])
         | Expr.EBlock d0 d1 => (ctor Option.none [Id])
         | Expr.ENil => (ctor Option.none [Id])
         | Expr.ECons d0 d1 => (ctor Option.none [Id])
-        | Expr.ELet d0 d1 d2 d3 d4 => (ctor Option.none [Id])
-        | Expr.ELetU d0 d1 d2 d3 => (ctor Option.none [Id])
+        | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Option.none [Id])
         | Expr.EArm d0 d1 d2 => (ctor Option.none [Id]))
-    | Pat.PNone => (ctor Option.none [Id])
-    | Pat.PSome d0 => (ctor Option.none [Id])
-    | Pat.POk d0 => (ctor Option.none [Id])
-    | Pat.PErr d0 => (ctor Option.none [Id])
-    | Pat.POrdering => (ctor Option.none [Id])
+    | Pat.PWrap d0 d1 => (ctor Option.none [Id])
     | Pat.PAdt d0 d1 d2 => (ctor Option.none [Id])
     | Pat.PNil => (ctor Option.none [Id])
     | Pat.PCons d0 d1 => (ctor Option.none [Id])),
@@ -1929,10 +1856,10 @@ definition{
     | Con.ConSome => (ctor Result.ok [Unit, Bytes] ())
     | Con.ConOk ok error => (match (tyOk cx ok)
       | Result.ok done => (tyOk cx error)
-      | Result.error problem8 => (ctor Result.error [Unit, Bytes] problem8))
+      | Result.error problem7 => (ctor Result.error [Unit, Bytes] problem7))
     | Con.ConErr ok error => (match (tyOk cx ok)
       | Result.ok done => (tyOk cx error)
-      | Result.error problem9 => (ctor Result.error [Unit, Bytes] problem9))
+      | Result.error problem8 => (ctor Result.error [Unit, Bytes] problem8))
     | Con.ConAdt adt constructor => (match (adtArity (project cx decl) adt constructor)
       | Option.none => (ctor Result.error [Unit, Bytes] (cat (text "Adt") (cat (decimal adt) (cat (text "::C") (cat (decimal constructor) (text " is not declared"))))))
       | Option.some arity => (match (arity =? argc)
@@ -1946,7 +1873,7 @@ definition{
     | Con.ConCons => (heapUnit cx (text "a list cell"))
     | Con.ConNil ty => (match (heapUnit cx (text "an empty list"))
       | Result.ok done => (tyOk cx ty)
-      | Result.error problem7 => (ctor Result.error [Unit, Bytes] problem7))),
+      | Result.error problem6 => (ctor Result.error [Unit, Bytes] problem6))),
   executable: true
 }
 
@@ -1956,7 +1883,7 @@ definition{
   result: (Result St Bytes),
   body: (match e
     | Expr.ELit lit org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.ELit lit org)) (text ", is not a fallible value"))))
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ELit lit org)) (text ", is not a fallible value"))))
       | Bool.false => (match lit
         | Lit.LitUnit => (ctor Result.ok [St, Bytes] st)
         | Lit.LitBool => (ctor Result.ok [St, Bytes] st)
@@ -1966,138 +1893,127 @@ definition{
         | Lit.LitStr => (heapSt cx st (text "a string literal"))
         | Lit.LitBytes => (heapSt cx st (text "a byte string literal"))
         | Lit.LitOrdering => (ctor Result.ok [St, Bytes] st))))
-    | Expr.EMove who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EMove who org)) (text ", is not a fallible value"))))
-      | Bool.false => (consume st who)))
-    | Expr.EClone who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EClone who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
+    | Expr.ERead k who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ERead k who org)) (text ", is not a fallible value"))))
+      | Bool.false => (match k
+        | ReadKind.RkMove => (consume st who)
+        | ReadKind.RkClone => (match (readOk st who)
       | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem10 => (ctor Result.error [St, Bytes] problem10))))
-    | Expr.ECopy who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.ECopy who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
+      | Result.error problem9 => (ctor Result.error [St, Bytes] problem9))
+        | ReadKind.RkCopy => (match (readOk st who)
       | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem11 => (ctor Result.error [St, Bytes] problem11))))
-    | Expr.EDeref who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EDeref who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
+      | Result.error problem10 => (ctor Result.error [St, Bytes] problem10))
+        | ReadKind.RkDeref => (match (readOk st who)
       | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem12 => (ctor Result.error [St, Bytes] problem12))))
-    | Expr.ENot inner org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.ENot inner org)) (text ", is not a fallible value"))))
+      | Result.error problem11 => (ctor Result.error [St, Bytes] problem11))
+        | ReadKind.RkUnbox => (match (heapUnit cx (text "a boxed read"))
+      | Result.ok done => (match (readOk st who)
+      | Result.ok again => (ctor Result.ok [St, Bytes] st)
+      | Result.error problem12 => (ctor Result.error [St, Bytes] problem12))
+      | Result.error problem13 => (ctor Result.error [St, Bytes] problem13)))))
+    | Expr.EWrap k inner org => (match k
+        | WrapKind.WkNot => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
       | Bool.false => (match (negatesZero inner)
       | Bool.true => (ctor Result.error [St, Bytes] (text "a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean"))
       | Bool.false => (exprC st cx inner false))))
-    | Expr.EUnbox who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EUnbox who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (heapUnit cx (text "a boxed read"))
-      | Result.ok done => (match (readOk st who)
-      | Result.ok again => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem13 => (ctor Result.error [St, Bytes] problem13))
-      | Result.error problem14 => (ctor Result.error [St, Bytes] problem14))))
-    | Expr.EBox inner org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EBox inner org)) (text ", is not a fallible value"))))
+        | WrapKind.WkBox => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
       | Bool.false => (match (heapUnit cx (text "a box"))
       | Result.ok done => (exprC st cx inner false)
-      | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
+      | Result.error problem14 => (ctor Result.error [St, Bytes] problem14))))
+        | WrapKind.WkWiden => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
+      | Bool.false => (exprC st cx inner false)))
+        | WrapKind.WkSucceed => (exprC st cx inner false))
     | Expr.ECall callee args propagate org => (match propagate
       | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.ECall callee args propagate org)) (text ", is not a fallible value"))))
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ECall callee args propagate org)) (text ", is not a fallible value"))))
       | Bool.false => (match (argsC st cx args)
       | Result.ok s1 => (match callee
       | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
         | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
         | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
-      | Callee.CalRt item => (let path : Bytes := (itemPath item); (match (match (itemHeap item)
+      | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
         | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
         | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
-      | Result.ok done => (callOk s1 cx (itemFallible item) propagate tail (tick path))
+      | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate tail (tick path))
+      | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
       | Result.error problem16 => (ctor Result.error [St, Bytes] problem16))))
-      | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))))
       | Bool.false => (match (argsC st cx args)
       | Result.ok s1 => (match callee
       | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
         | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
         | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
-      | Callee.CalRt item => (let path : Bytes := (itemPath item); (match (match (itemHeap item)
+      | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
         | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
         | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
-      | Result.ok done => (callOk s1 cx (itemFallible item) propagate tail (tick path))
-      | Result.error problem16 => (ctor Result.error [St, Bytes] problem16))))
-      | Result.error problem17 => (ctor Result.error [St, Bytes] problem17)))
+      | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate tail (tick path))
+      | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
+      | Result.error problem16 => (ctor Result.error [St, Bytes] problem16)))
     | Expr.EApply who args propagate org => (match propagate
       | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EApply who args propagate org)) (text ", is not a fallible value"))))
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EApply who args propagate org)) (text ", is not a fallible value"))))
       | Bool.false => (match (readOk st who)
       | Result.ok done => (match (argsC st cx args)
       | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
-      | Result.error problem18 => (ctor Result.error [St, Bytes] problem18))
-      | Result.error problem19 => (ctor Result.error [St, Bytes] problem19))))
+      | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
+      | Result.error problem18 => (ctor Result.error [St, Bytes] problem18))))
       | Bool.false => (match (readOk st who)
       | Result.ok done => (match (argsC st cx args)
       | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
-      | Result.error problem18 => (ctor Result.error [St, Bytes] problem18))
-      | Result.error problem19 => (ctor Result.error [St, Bytes] problem19)))
+      | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
+      | Result.error problem18 => (ctor Result.error [St, Bytes] problem18)))
     | Expr.EConstruct con args org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
       | Bool.false => (match (argsC st cx args)
       | Result.ok s1 => (match (conOk cx con (exprLen args))
       | Result.ok done => (ctor Result.ok [St, Bytes] s1)
-      | Result.error problem20 => (ctor Result.error [St, Bytes] problem20))
-      | Result.error problem21 => (ctor Result.error [St, Bytes] problem21))))
+      | Result.error problem19 => (ctor Result.error [St, Bytes] problem19))
+      | Result.error problem20 => (ctor Result.error [St, Bytes] problem20))))
     | Expr.EPair left right org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EPair left right org)) (text ", is not a fallible value"))))
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EPair left right org)) (text ", is not a fallible value"))))
       | Bool.false => (match (exprC st cx left false)
       | Result.ok s1 => (exprC s1 cx right false)
-      | Result.error problem22 => (ctor Result.error [St, Bytes] problem22))))
+      | Result.error problem21 => (ctor Result.error [St, Bytes] problem21))))
     | Expr.EIf condition thenBranch elseBranch org => (match (exprC st cx condition false)
-      | Result.ok s1 => (let b230 : St := (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (project s1 propagates)}); (match (bindPat b230 (project cx decl) (ctor Pat.PWild))
-      | Result.ok b232 => (match (blockC b232 cx thenBranch tail)
-      | Result.ok b233 => (let r1 : St := (record St {bound := (project b233 bound), scope := (project s1 scope), moved := (unionIds (project s1 moved) (project b233 moved)), parted := (unionParts (project s1 parted) (project b233 parted)), propagates := (project b233 propagates)}); (let b260 : St := (record St {bound := (project r1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (project r1 propagates)}); (match (bindPat b260 (project cx decl) (ctor Pat.PWild))
-      | Result.ok b262 => (match (blockC b262 cx elseBranch tail)
-      | Result.ok b263 => (let r2 : St := (record St {bound := (project b263 bound), scope := (project s1 scope), moved := (unionIds (project r1 moved) (project b263 moved)), parted := (unionParts (project r1 parted) (project b263 parted)), propagates := (project b263 propagates)}); (ctor Result.ok [St, Bytes] r2))
-      | Result.error problem27 => (ctor Result.error [St, Bytes] problem27))
-      | Result.error problem28 => (ctor Result.error [St, Bytes] problem28))))
+      | Result.ok s1 => (let bThen0 : St := (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (project s1 propagates)}); (match (bindPat bThen0 (project cx decl) (ctor Pat.PLeaf (ctor PatLeaf.PlWild)))
+      | Result.ok bThen2 => (match (blockC bThen2 cx thenBranch tail)
+      | Result.ok bThen3 => (let r1 : St := (record St {bound := (project bThen3 bound), scope := (project s1 scope), moved := (unionIds (project s1 moved) (project bThen3 moved)), parted := (unionParts (project s1 parted) (project bThen3 parted)), propagates := (project bThen3 propagates)}); (let bElse0 : St := (record St {bound := (project r1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (project r1 propagates)}); (match (bindPat bElse0 (project cx decl) (ctor Pat.PLeaf (ctor PatLeaf.PlWild)))
+      | Result.ok bElse2 => (match (blockC bElse2 cx elseBranch tail)
+      | Result.ok bElse3 => (let r2 : St := (record St {bound := (project bElse3 bound), scope := (project s1 scope), moved := (unionIds (project r1 moved) (project bElse3 moved)), parted := (unionParts (project r1 parted) (project bElse3 parted)), propagates := (project bElse3 propagates)}); (ctor Result.ok [St, Bytes] r2))
       | Result.error problem24 => (ctor Result.error [St, Bytes] problem24))
-      | Result.error problem25 => (ctor Result.error [St, Bytes] problem25)))
-      | Result.error problem29 => (ctor Result.error [St, Bytes] problem29))
+      | Result.error problem25 => (ctor Result.error [St, Bytes] problem25))))
+      | Result.error problem22 => (ctor Result.error [St, Bytes] problem22))
+      | Result.error problem23 => (ctor Result.error [St, Bytes] problem23)))
+      | Result.error problem26 => (ctor Result.error [St, Bytes] problem26))
     | Expr.EMatch scrutinee arms org => (match (exprC st cx scrutinee false)
       | Result.ok s1 => (armsC s1 cx s1 (project s1 scope) arms tail)
-      | Result.error problem30 => (ctor Result.error [St, Bytes] problem30))
+      | Result.error problem27 => (ctor Result.error [St, Bytes] problem27))
     | Expr.EBlockE inner => (blockC st cx inner tail)
-    | Expr.EUncons who => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EUncons who)) (text ", is not a fallible value"))))
-      | Bool.false => (match (heapUnit cx (text "a list match"))
+    | Expr.EProbe k who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EProbe k who org)) (text ", is not a fallible value"))))
+      | Bool.false => (match k
+        | ProbeKind.PkIsZero => (match (readOk st who)
+      | Result.ok done => (ctor Result.ok [St, Bytes] st)
+      | Result.error problem30 => (ctor Result.error [St, Bytes] problem30))
+        | ProbeKind.PkNonZero => (match (readOk st who)
+      | Result.ok done => (ctor Result.ok [St, Bytes] st)
+      | Result.error problem31 => (ctor Result.error [St, Bytes] problem31))
+        | ProbeKind.PkUncons => (match (heapUnit cx (text "a list match"))
       | Result.ok done => (match (readOk st who)
       | Result.ok again => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem31 => (ctor Result.error [St, Bytes] problem31))
-      | Result.error problem32 => (ctor Result.error [St, Bytes] problem32))))
-    | Expr.EIsZero who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EIsZero who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
+      | Result.error problem28 => (ctor Result.error [St, Bytes] problem28))
+      | Result.error problem29 => (ctor Result.error [St, Bytes] problem29))
+        | ProbeKind.PkPred => (match (readOk st who)
       | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem33 => (ctor Result.error [St, Bytes] problem33))))
-    | Expr.ENonZero who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.ENonZero who org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
-      | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem34 => (ctor Result.error [St, Bytes] problem34))))
-    | Expr.EPred who => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EPred who)) (text ", is not a fallible value"))))
-      | Bool.false => (match (readOk st who)
-      | Result.ok done => (ctor Result.ok [St, Bytes] st)
-      | Result.error problem35 => (ctor Result.error [St, Bytes] problem35))))
-    | Expr.EWiden inner org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (ctor Expr.EWiden inner org)) (text ", is not a fallible value"))))
-      | Bool.false => (exprC st cx inner false)))
-    | Expr.ESucceed inner org => (exprC st cx inner false)
+      | Result.error problem32 => (ctor Result.error [St, Bytes] problem32)))))
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
   executable: true,
   mutual: CheckExpr,
   recursive_argument: e
@@ -2109,13 +2025,8 @@ definition{
   result: (Result St Bytes),
   body: (match b
     | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EMove d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EClone d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENot d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EBox d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
@@ -2123,22 +2034,17 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUncons d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EPred d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlock lets bodyTail => (let saved : (List Id) := (project st scope); (match (letsC st cx lets)
       | Result.ok s1 => (match (exprC s1 cx bodyTail tail)
       | Result.ok s2 => (ctor Result.ok [St, Bytes] (record St {bound := (project s2 bound), scope := saved, moved := (project s2 moved), parted := (project s2 parted), propagates := (project s2 propagates)}))
-      | Result.error problem36 => (ctor Result.error [St, Bytes] problem36))
-      | Result.error problem37 => (ctor Result.error [St, Bytes] problem37)))
+      | Result.error problem33 => (ctor Result.error [St, Bytes] problem33))
+      | Result.error problem34 => (ctor Result.error [St, Bytes] problem34)))
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
   executable: true,
   mutual: CheckExpr,
   recursive_argument: b
@@ -2150,13 +2056,8 @@ definition{
   result: (Result St Bytes),
   body: (match lets
     | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EMove d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EClone d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENot d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EBox d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
@@ -2164,32 +2065,23 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUncons d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EPred d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELet pat ty value org rest => (match (tyOk cx ty)
+    | Expr.ELet pat hasTy ty value org rest => (match (match hasTy
+      | Bool.true => (tyOk cx ty)
+      | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
       | Result.ok done => (match (match (tupleMoveTarget pat value)
       | Option.some who => (consumeParts st who (patTuple pat))
       | Option.none => (exprC st cx value false))
       | Result.ok s1 => (match (bindPat s1 (project cx decl) pat)
       | Result.ok s2 => (letsC s2 cx rest)
-      | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))
-      | Result.error problem39 => (ctor Result.error [St, Bytes] problem39))
-      | Result.error problem40 => (ctor Result.error [St, Bytes] problem40))
-    | Expr.ELetU pat value org rest => (match (match (tupleMoveTarget pat value)
-      | Option.some who => (consumeParts st who (patTuple pat))
-      | Option.none => (exprC st cx value false))
-      | Result.ok s1 => (match (bindPat s1 (project cx decl) pat)
-      | Result.ok s2 => (letsC s2 cx rest)
-      | Result.error problem41 => (ctor Result.error [St, Bytes] problem41))
-      | Result.error problem42 => (ctor Result.error [St, Bytes] problem42))
+      | Result.error problem35 => (ctor Result.error [St, Bytes] problem35))
+      | Result.error problem36 => (ctor Result.error [St, Bytes] problem36))
+      | Result.error problem37 => (ctor Result.error [St, Bytes] problem37))
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
   executable: true,
   mutual: CheckExpr,
   recursive_argument: lets
@@ -2201,13 +2093,8 @@ definition{
   result: (Result St Bytes),
   body: (match args
     | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EMove d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EClone d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENot d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EBox d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
@@ -2215,20 +2102,15 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EUncons d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EPred d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons head tail => (match (exprC st cx head false)
       | Result.ok s1 => (argsC s1 cx tail)
-      | Result.error problem43 => (ctor Result.error [St, Bytes] problem43))
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+      | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
   executable: true,
   mutual: CheckExpr,
   recursive_argument: args
@@ -2240,13 +2122,8 @@ definition{
   result: (Result St Bytes),
   body: (match arms
     | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EMove d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EClone d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ENot d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EBox d0 d1 => (ctor Result.ok [St, Bytes] acc)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] acc)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] acc)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] acc)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] acc)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] acc)
@@ -2254,22 +2131,17 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] acc)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] acc)
     | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EUncons d0 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EPred d0 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [St, Bytes] acc)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] acc)
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] acc)
     | Expr.ENil => (ctor Result.ok [St, Bytes] acc)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] acc)
-    | Expr.EArm pat body rest => (let b440 : St := (record St {bound := (project acc bound), scope := fork, moved := (project before moved), parted := (project before parted), propagates := (project acc propagates)}); (match (bindPat b440 (project cx decl) pat)
-      | Result.ok b442 => (match (blockC b442 cx body tail)
-      | Result.ok b443 => (let r : St := (record St {bound := (project b443 bound), scope := fork, moved := (unionIds (project acc moved) (project b443 moved)), parted := (unionParts (project acc parted) (project b443 parted)), propagates := (project b443 propagates)}); (armsC before cx r fork rest tail))
-      | Result.error problem45 => (ctor Result.error [St, Bytes] problem45))
-      | Result.error problem46 => (ctor Result.error [St, Bytes] problem46)))),
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] acc)
+    | Expr.EArm pat body rest => (let bArm0 : St := (record St {bound := (project acc bound), scope := fork, moved := (project before moved), parted := (project before parted), propagates := (project acc propagates)}); (match (bindPat bArm0 (project cx decl) pat)
+      | Result.ok bArm2 => (match (blockC bArm2 cx body tail)
+      | Result.ok bArm3 => (let r : St := (record St {bound := (project bArm3 bound), scope := fork, moved := (unionIds (project acc moved) (project bArm3 moved)), parted := (unionParts (project acc parted) (project bArm3 parted)), propagates := (project bArm3 propagates)}); (armsC before cx r fork rest tail))
+      | Result.error problem39 => (ctor Result.error [St, Bytes] problem39))
+      | Result.error problem40 => (ctor Result.error [St, Bytes] problem40)))),
+  axioms: [propext],
   executable: true,
   mutual: CheckExpr,
   recursive_argument: arms
@@ -2290,15 +2162,10 @@ definition{
   parameters: [pat : Pat],
   result: (Option Id),
   body: (match pat
-    | Pat.PWild => (ctor Option.none [Id])
+    | Pat.PLeaf d0 => (ctor Option.none [Id])
     | Pat.PBind who => (ctor Option.some [Id] who)
-    | Pat.PUnit => (ctor Option.none [Id])
     | Pat.PTuple d0 => (ctor Option.none [Id])
-    | Pat.PNone => (ctor Option.none [Id])
-    | Pat.PSome d0 => (ctor Option.none [Id])
-    | Pat.POk d0 => (ctor Option.none [Id])
-    | Pat.PErr d0 => (ctor Option.none [Id])
-    | Pat.POrdering => (ctor Option.none [Id])
+    | Pat.PWrap d0 d1 => (ctor Option.none [Id])
     | Pat.PAdt d0 d1 d2 => (ctor Option.none [Id])
     | Pat.PNil => (ctor Option.none [Id])
     | Pat.PCons d0 d1 => (ctor Option.none [Id])),
@@ -2310,23 +2177,13 @@ definition{
   parameters: [ty : Ty],
   result: (Option Nat),
   body: (match ty
-    | Ty.TyUnit => (ctor Option.none [Nat])
-    | Ty.TyBool => (ctor Option.none [Nat])
-    | Ty.TyNat => (ctor Option.none [Nat])
-    | Ty.TyInt => (ctor Option.none [Nat])
+    | Ty.TyLeaf d0 => (ctor Option.none [Nat])
     | Ty.TyFixed d0 => (ctor Option.none [Nat])
-    | Ty.TyOrdering => (ctor Option.none [Nat])
-    | Ty.TyStr => (ctor Option.none [Nat])
-    | Ty.TyBytes => (ctor Option.none [Nat])
-    | Ty.TyOption d0 => (ctor Option.none [Nat])
-    | Ty.TyResult d0 d1 => (ctor Option.none [Nat])
-    | Ty.TyList d0 => (ctor Option.none [Nat])
-    | Ty.TyPair d0 d1 => (ctor Option.none [Nat])
-    | Ty.TyAdt d0 => (ctor Option.none [Nat])
-    | Ty.TyFn n => (ctor Option.some [Nat] n)
-    | Ty.TyRc d0 => (ctor Option.none [Nat])
-    | Ty.TyFallible d0 => (ctor Option.none [Nat])
-    | Ty.TyRef d0 => (ctor Option.none [Nat])
+    | Ty.TyUnary d0 d1 => (ctor Option.none [Nat])
+    | Ty.TyBinary d0 d1 d2 => (ctor Option.none [Nat])
+    | Ty.TyNamed k n => (match (nameIsFn k)
+      | Bool.true => (ctor Option.some [Nat] n)
+      | Bool.false => (ctor Option.none [Nat]))
     | Ty.TyNil => (ctor Option.none [Nat])
     | Ty.TyCons d0 d1 => (ctor Option.none [Nat])),
   executable: true
@@ -2361,13 +2218,8 @@ definition{
   result: (Result (List (Id * Nat)) Bytes),
   body: (match e
     | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMove d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EClone d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENot inner org => (applyExpr types decl inner false)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBox inner org => (applyExpr types decl inner false)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap k inner org => (applyExpr types decl inner false)
     | Expr.ECall callee args propagate org => (applyArgs types decl args)
     | Expr.EApply who args propagate org => (match (typesGet types who)
       | Option.none => (ctor Result.error [(List (Id * Nat)), Bytes] (cat (tick (idText who)) (text " is applied without a function type")))
@@ -2381,27 +2233,21 @@ definition{
     | Expr.EConstruct con args org => (applyArgs types decl args)
     | Expr.EPair left right org => (match (applyExpr types decl left false)
       | Result.ok t1 => (applyExpr t1 decl right false)
-      | Result.error problem47 => (ctor Result.error [(List (Id * Nat)), Bytes] problem47))
+      | Result.error problem41 => (ctor Result.error [(List (Id * Nat)), Bytes] problem41))
     | Expr.EIf condition thenBranch elseBranch org => (match (applyExpr types decl condition false)
       | Result.ok t1 => (match (applyBlock t1 decl thenBranch tail)
       | Result.ok t2 => (applyBlock t2 decl elseBranch tail)
-      | Result.error problem48 => (ctor Result.error [(List (Id * Nat)), Bytes] problem48))
-      | Result.error problem49 => (ctor Result.error [(List (Id * Nat)), Bytes] problem49))
+      | Result.error problem42 => (ctor Result.error [(List (Id * Nat)), Bytes] problem42))
+      | Result.error problem43 => (ctor Result.error [(List (Id * Nat)), Bytes] problem43))
     | Expr.EMatch scrutinee arms org => (match (applyExpr types decl scrutinee false)
       | Result.ok t1 => (applyArms t1 decl arms tail)
-      | Result.error problem50 => (ctor Result.error [(List (Id * Nat)), Bytes] problem50))
+      | Result.error problem44 => (ctor Result.error [(List (Id * Nat)), Bytes] problem44))
     | Expr.EBlockE inner => (applyBlock types decl inner tail)
-    | Expr.EUncons d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPred d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWiden inner org => (applyExpr types decl inner false)
-    | Expr.ESucceed inner org => (applyExpr types decl inner false)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlock d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
@@ -2414,13 +2260,8 @@ definition{
   result: (Result (List (Id * Nat)) Bytes),
   body: (match b
     | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMove d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EClone d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENot d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
@@ -2428,19 +2269,13 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUncons d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPred d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlock lets bodyTail => (match (applyLets types decl lets)
       | Result.ok t1 => (applyExpr t1 decl bodyTail tail)
-      | Result.error problem51 => (ctor Result.error [(List (Id * Nat)), Bytes] problem51))
+      | Result.error problem45 => (ctor Result.error [(List (Id * Nat)), Bytes] problem45))
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
@@ -2453,13 +2288,8 @@ definition{
   result: (Result (List (Id * Nat)) Bytes),
   body: (match lets
     | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMove d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EClone d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENot d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
@@ -2467,21 +2297,15 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUncons d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPred d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlock d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELet pat ty value org rest => (match (applyExpr (typesWith types pat ty) decl value false)
+    | Expr.ELet pat hasTy ty value org rest => (let typed : (List (Id * Nat)) := (match hasTy
+      | Bool.true => (typesWith types pat ty)
+      | Bool.false => types); (match (applyExpr typed decl value false)
       | Result.ok t1 => (applyLets t1 decl rest)
-      | Result.error problem52 => (ctor Result.error [(List (Id * Nat)), Bytes] problem52))
-    | Expr.ELetU pat value org rest => (match (applyExpr types decl value false)
-      | Result.ok t1 => (applyLets t1 decl rest)
-      | Result.error problem53 => (ctor Result.error [(List (Id * Nat)), Bytes] problem53))
+      | Result.error problem46 => (ctor Result.error [(List (Id * Nat)), Bytes] problem46)))
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
@@ -2494,13 +2318,8 @@ definition{
   result: (Result (List (Id * Nat)) Bytes),
   body: (match args
     | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMove d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EClone d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENot d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
@@ -2508,19 +2327,13 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUncons d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPred d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlock d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons head rest => (match (applyExpr types decl head false)
       | Result.ok t1 => (applyArgs t1 decl rest)
-      | Result.error problem54 => (ctor Result.error [(List (Id * Nat)), Bytes] problem54))
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+      | Result.error problem47 => (ctor Result.error [(List (Id * Nat)), Bytes] problem47))
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
@@ -2533,13 +2346,8 @@ definition{
   result: (Result (List (Id * Nat)) Bytes),
   body: (match arms
     | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMove d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EClone d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECopy d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EDeref d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENot d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUnbox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBox d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
@@ -2547,20 +2355,14 @@ definition{
     | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EUncons d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIsZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ENonZero d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPred d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWiden d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ESucceed d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EBlock d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELet d0 d1 d2 d3 d4 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELetU d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EArm pat body rest => (match (applyBlock types decl body tail)
       | Result.ok t1 => (applyArms t1 decl rest tail)
-      | Result.error problem55 => (ctor Result.error [(List (Id * Nat)), Bytes] problem55))),
+      | Result.error problem48 => (ctor Result.error [(List (Id * Nat)), Bytes] problem48))),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: arms
@@ -2575,8 +2377,8 @@ definition{
     | Par.ParCons pat ty rest => (match (tyOk cx ty)
       | Result.ok done => (match (bindPat st (project cx decl) pat)
       | Result.ok s1 => (parsOk cx s1 rest)
-      | Result.error problem56 => (ctor Result.error [St, Bytes] problem56))
-      | Result.error problem57 => (ctor Result.error [St, Bytes] problem57))),
+      | Result.error problem49 => (ctor Result.error [St, Bytes] problem49))
+      | Result.error problem50 => (ctor Result.error [St, Bytes] problem50))),
   executable: true,
   recursive_argument: params
 }
@@ -2608,7 +2410,7 @@ definition{
       | Bool.false => (match (capsUnbox captures)
       | Bool.true => (match (heapUnit cx (text "a boxed capture"))
       | Result.ok done => (disOk cx fnType fallible rest)
-      | Result.error problem58 => (ctor Result.error [Unit, Bytes] problem58))
+      | Result.error problem51 => (ctor Result.error [Unit, Bytes] problem51))
       | Bool.false => (disOk cx fnType fallible rest)))))))),
   executable: true,
   recursive_argument: arms
@@ -2616,43 +2418,45 @@ definition{
 
 definition{
   name: validateItem,
-  parameters: [core : Bool, decl : Decl, item : Def],
+  parameters: [core : Bool, decl : Decl, rows : (List ItemRow), item : Def],
   result: (Result Unit Bytes),
   body: (match item
-    | Def.DEnum name variants org => (rowTysOk (record Cx {core := core, decl := decl, fallible := false}) variants)
-    | Def.DApply fnType parameters result fallible arms org => (let cx : Cx := (record Cx {core := core, decl := decl, fallible := false}); (match (tysOk cx parameters)
+    | Def.DEnum name variants org => (rowTysOk (record Cx {core := core, decl := decl, fallible := false, items := rows}) variants)
+    | Def.DApply fnType parameters result fallible arms org => (let cx : Cx := (record Cx {core := core, decl := decl, fallible := false, items := rows}); (match (tysOk cx parameters)
       | Result.ok done => (match (tyOk cx result)
       | Result.ok again => (disOk cx fnType fallible arms)
-      | Result.error problem59 => (ctor Result.error [Unit, Bytes] problem59))
-      | Result.error problem60 => (ctor Result.error [Unit, Bytes] problem60)))
-    | Def.DFunction name parameters result body org => (let fallible : Bool := (tyIsFallible result); (let cx : Cx := (record Cx {core := core, decl := decl, fallible := fallible}); (match (tyOk cx result)
+      | Result.error problem52 => (ctor Result.error [Unit, Bytes] problem52))
+      | Result.error problem53 => (ctor Result.error [Unit, Bytes] problem53)))
+    | Def.DFunction name parameters result body org => (let fallible : Bool := (tyIsFallible result); (let cx : Cx := (record Cx {core := core, decl := decl, fallible := fallible, items := rows}); (match (tyOk cx result)
       | Result.ok done => (match (parsOk cx (record St {bound := (nil Id), scope := (nil Id), moved := (nil Id), parted := (nil (Id * (List Nat))), propagates := false}) parameters)
       | Result.ok s1 => (match (blockC s1 cx body true)
       | Result.ok s2 => (match (if (project s2 propagates) then (not fallible) else false)
       | Bool.true => (ctor Result.error [Unit, Bytes] (cat (text "arithmetic: ") (cat (tick (idText name)) (text " propagates a failure its result type does not carry"))))
       | Bool.false => (match (applyBlock (paramTypes (nil (Id * Nat)) parameters) decl body fallible)
       | Result.ok types => (ctor Result.ok [Unit, Bytes] ())
-      | Result.error problem61 => (ctor Result.error [Unit, Bytes] problem61)))
-      | Result.error problem62 => (ctor Result.error [Unit, Bytes] problem62))
-      | Result.error problem63 => (ctor Result.error [Unit, Bytes] problem63))
-      | Result.error problem64 => (ctor Result.error [Unit, Bytes] problem64))))
+      | Result.error problem54 => (ctor Result.error [Unit, Bytes] problem54)))
+      | Result.error problem55 => (ctor Result.error [Unit, Bytes] problem55))
+      | Result.error problem56 => (ctor Result.error [Unit, Bytes] problem56))
+      | Result.error problem57 => (ctor Result.error [Unit, Bytes] problem57))))
     | Def.DNil => (ctor Result.ok [Unit, Bytes] ())
     | Def.DCons d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [propext],
   executable: true
 }
 
 definition{
   name: validateItems,
-  parameters: [core : Bool, decl : Decl, defs : Def],
+  parameters: [core : Bool, decl : Decl, rows : (List ItemRow), defs : Def],
   result: (Result Unit Bytes),
   body: (match defs
     | Def.DEnum d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DApply d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DFunction d0 d1 d2 d3 d4 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DNil => (ctor Result.ok [Unit, Bytes] ())
-    | Def.DCons head tail => (match (validateItem core decl head)
-      | Result.ok done => (validateItems core decl tail)
-      | Result.error problem65 => (ctor Result.error [Unit, Bytes] problem65))),
+    | Def.DCons head tail => (match (validateItem core decl rows head)
+      | Result.ok done => (validateItems core decl rows tail)
+      | Result.error problem58 => (ctor Result.error [Unit, Bytes] problem58))),
+  axioms: [propext],
   executable: true,
   recursive_argument: defs
 }
@@ -2661,9 +2465,10 @@ definition{
   name: validateCrate,
   parameters: [krate : Crate],
   result: (Result Unit Bytes),
-  body: (match (declareDefs (record Decl {adts := (nil (Nat * (List (Nat * Nat)))), closures := (nil (Nat * (List (Nat * Nat)))), applies := (nil (Nat * Bool)), functions := (nil (Nat * Bool))}) (project krate items))
-      | Result.ok decl => (validateItems (project krate core) decl (project krate items))
-      | Result.error problem66 => (ctor Result.error [Unit, Bytes] problem66)),
+  body: (let itemRows0 : (List ItemRow) := (cons (record ItemRow {family := 0, stem := (text "nat_add"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 1, stem := (text "nat_sub"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 2, stem := (text "nat_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 3, stem := (text "nat_quot"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 4, stem := (text "nat_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 5, stem := (text "nat_eq"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 6, stem := (text "nat_le"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 7, stem := (text "nat_lt"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 8, stem := (text "nat_succ"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 9, stem := (text "int_add"), form := 0, fallible := true, heap := false}) (nil ItemRow))))))))))); (let itemRows1 : (List ItemRow) := (cons (record ItemRow {family := 10, stem := (text "int_sub"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 11, stem := (text "int_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 12, stem := (text "int_neg"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 13, stem := (text "int_quot"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 14, stem := (text "int_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 15, stem := (text "bool_not"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 16, stem := (text "bool_and"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 17, stem := (text "bool_or"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 18, stem := (text "equal"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 19, stem := (text "compare"), form := 0, fallible := false, heap := false}) itemRows0)))))))))); (let itemRows2 : (List ItemRow) := (cons (record ItemRow {family := 20, stem := (text "checked_add"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 21, stem := (text "checked_sub"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 22, stem := (text "checked_mul"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 23, stem := (text "checked_quot"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 24, stem := (text "checked_neg_"), form := 2, fallible := false, heap := false}) (cons (record ItemRow {family := 25, stem := (text "bit_and"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 26, stem := (text "bit_or"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 27, stem := (text "bit_xor"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 28, stem := (text "bit_not"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 29, stem := (text "shift_left"), form := 1, fallible := false, heap := false}) itemRows1)))))))))); (let itemRows3 : (List ItemRow) := (cons (record ItemRow {family := 30, stem := (text "shift_right"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 31, stem := (text "convert"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 32, stem := (text "append_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 33, stem := (text "append_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 34, stem := (text "length_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 35, stem := (text "length_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 36, stem := (text "length_string"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 37, stem := (text "index_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 38, stem := (text "index_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 39, stem := (text "slice_list"), form := 0, fallible := false, heap := true}) itemRows2)))))))))); (let itemRows4 : (List ItemRow) := (cons (record ItemRow {family := 40, stem := (text "slice_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 41, stem := (text "utf8_encode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 42, stem := (text "utf8_decode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 43, stem := (text "compare_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 44, stem := (text "split_exact"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 45, stem := (text "join"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 46, stem := (text "format_i64"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 47, stem := (text "format_"), form := 2, fallible := false, heap := true}) (cons (record ItemRow {family := 48, stem := (text "parse_int"), form := 0, fallible := true, heap := true}) (cons (record ItemRow {family := 49, stem := (text "parse_"), form := 2, fallible := false, heap := true}) itemRows3)))))))))); (match (declareDefs (record Decl {adts := (nil (Nat * (List (Nat * Nat)))), closures := (nil (Nat * (List (Nat * Nat)))), applies := (nil (Nat * Bool)), functions := (nil (Nat * Bool))}) (project krate items))
+      | Result.ok decl => (validateItems (project krate core) decl itemRows4 (project krate items))
+      | Result.error problem59 => (ctor Result.error [Unit, Bytes] problem59))))))),
+  axioms: [propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
@@ -2675,6 +2480,7 @@ definition{
   body: (match row
     | Row.RowNil => found
     | Row.RowCons number fields rest => (foundRowTys (foundTy found fields) rest)),
+  axioms: [propext],
   executable: true,
   recursive_argument: row
 }
@@ -2686,6 +2492,7 @@ definition{
   body: (match params
     | Par.ParNil => found
     | Par.ParCons pat ty rest => (foundParTys (foundTy found ty) rest)),
+  axioms: [propext],
   executable: true,
   recursive_argument: params
 }
@@ -2695,23 +2502,11 @@ definition{
   parameters: [ty : Ty],
   result: Bool,
   body: (match ty
-    | Ty.TyUnit => false
-    | Ty.TyBool => false
-    | Ty.TyNat => false
-    | Ty.TyInt => false
+    | Ty.TyLeaf d0 => false
     | Ty.TyFixed d0 => false
-    | Ty.TyOrdering => false
-    | Ty.TyStr => false
-    | Ty.TyBytes => false
-    | Ty.TyOption d0 => false
-    | Ty.TyResult d0 d1 => false
-    | Ty.TyList d0 => false
-    | Ty.TyPair d0 d1 => false
-    | Ty.TyAdt d0 => false
-    | Ty.TyFn d0 => true
-    | Ty.TyRc d0 => false
-    | Ty.TyFallible d0 => false
-    | Ty.TyRef d0 => false
+    | Ty.TyUnary d0 d1 => false
+    | Ty.TyBinary d0 d1 d2 => false
+    | Ty.TyNamed k n => (nameIsFn k)
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
   executable: true
@@ -2729,6 +2524,7 @@ definition{
     | Def.DFunction name parameters result body org => (foundExpr (foundTy (foundParTys (foundAt found (text "function") org) parameters) result) body)
     | Def.DNil => found
     | Def.DCons head tail => (foundDefs (foundDefs found head) tail)),
+  axioms: [propext],
   executable: true,
   recursive_argument: defs
 }
@@ -2743,13 +2539,11 @@ definition{
 
 definition{
   name: rowOf,
-  parameters: [table : (List Bytes), construct : Bytes],
-  result: (Option Bytes),
-  body: (let prefix : Bytes := (cat construct (text "=")); (prim list_fold (fun [prefix] (found : (Option Bytes)) (row : Bytes) => (match found
-      | Option.some value => (ctor Option.some [Bytes] value)
-      | Option.none => (match (LexLeanStd.Text::startsWith row prefix)
-      | Bool.true => (ctor Option.some [Bytes] (LexLeanStd.Text::sliceOr row (prim length prefix : Nat) (prim subtract (prim length row : Nat) (prim length prefix : Nat) : Nat)))
-      | Bool.false => (ctor Option.none [Bytes])))) (ctor Option.none [Bytes]) table : (Option Bytes))),
+  parameters: [table : (List (Bytes * (List Bytes))), construct : Bytes],
+  result: (Option (List Bytes)),
+  body: (prim list_fold (fun [construct] (found : (Option (List Bytes))) (row : (Bytes * (List Bytes))) => (match found
+      | Option.some value => (ctor Option.some [(List Bytes)] value)
+      | Option.none => (if (prim equal (first row) construct : Bool) then (ctor Option.some [(List Bytes)] (second row)) else (ctor Option.none [(List Bytes)])))) (ctor Option.none [(List Bytes)]) table : (Option (List Bytes))),
   executable: true
 }
 
@@ -2771,11 +2565,11 @@ definition{
 
 definition{
   name: checkInst,
-  parameters: [table : (List Bytes), elements : (List Bytes), inst : Inst],
+  parameters: [table : (List (Bytes * (List Bytes))), elements : (List Bytes), inst : Inst],
   result: (Option Bytes),
   body: (let construct : Bytes := (project inst construct); (let element : Bytes := (project inst element); (match (rowOf table construct)
       | Option.none => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (text " has no target-semantics correspondence"))))
-      | Option.some elems => (let pieces : (List Bytes) := (LexLeanStd.Text::splitOn elems (44 : UInt8)); (match (bytesHas pieces element)
+      | Option.some pieces => (match (bytesHas pieces element)
       | Bool.true => (match (bytesHas elements element)
       | Bool.true => (let differs : Bool := (not (optKindEq (project inst width) (project inst originWidth))); (let needs : Bool := (match (project inst width)
         | Option.some kind => true
@@ -2783,19 +2577,19 @@ definition{
       | Bool.true => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " works at width ") (cat (optKindDebug (project inst width)) (cat (text ", but ") (cat (tick element) (cat (text " is at ") (optKindDebug (project inst originWidth))))))))))
       | Bool.false => (ctor Option.none [Bytes]))))
       | Bool.false => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " realizes ") (cat (tick element) (text ", which the program does not use")))))))
-      | Bool.false => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " does not realize ") (cat (tick element) (text ", the element it was lowered from"))))))))))),
+      | Bool.false => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " does not realize ") (cat (tick element) (text ", the element it was lowered from")))))))))),
   executable: true
 }
 
 definition{
   name: checkType,
-  parameters: [table : (List Bytes), elements : (List Bytes), construct : Bytes],
+  parameters: [table : (List (Bytes * (List Bytes))), elements : (List Bytes), construct : Bytes],
   result: (Option Bytes),
   body: (match (rowOf table construct)
     | Option.none => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (text " has no target-semantics correspondence"))))
-    | Option.some elems => (let pieces : (List Bytes) := (LexLeanStd.Text::splitOn elems (44 : UInt8)); (match (anyIn pieces elements)
+    | Option.some pieces => (match (anyIn pieces elements)
       | Bool.true => (ctor Option.none [Bytes])
-      | Bool.false => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " realizes none of ") (cat (debugRow pieces) (text ", which the program does not use"))))))))),
+      | Bool.false => (ctor Option.some [Bytes] (cat (text "the construct ") (cat (tick construct) (cat (text " realizes none of ") (cat (debugRow pieces) (text ", which the program does not use")))))))),
   executable: true
 }
 
@@ -2803,7 +2597,7 @@ definition{
   name: correspondCrate,
   parameters: [krate : Crate, elements : (List Bytes)],
   result: (Result Unit Bytes),
-  body: (let table : (List Bytes) := (LexLeanStd.Text::splitOn (text "function=function,export;enum:adt=type:adt;enum:closures=type:fn,expr:closure;apply:dispatch=type:fn,expr:closure;let=expr:let,expr:match,expr:prim,expr:apply,expr:call,expr:closure,expr:cond,expr:field,shape:some,shape:ok,shape:error,shape:cons,shape:adt,shape:succ,shape:zero,shape:unit,shape:true,indirection,overflow;read=expr:var,expr:match,expr:prim,expr:call,expr:apply,expr:closure,expr:first,expr:second,expr:field,expr:cond,shape:true,shape:zero,shape:some,shape:ok,shape:error,shape:cons,shape:adt,export,type:fn,type:adt,type:pair,type:result;box=indirection;destructure:pair=expr:first,expr:second,shape:pair;type:unit=type:unit;type:bool=type:bool;type:nat=type:nat,type:fixed;type:int=type:int,type:fixed;type:fixed=type:fixed;type:ordering=type:ordering;type:string=type:string;type:bytes=type:bytes;type:option=type:option;type:result=type:result;type:list=type:list;type:pair=type:pair;type:adt=type:adt;type:fn=type:fn,expr:closure;type:rc=indirection;type:fallible=overflow;type:ref=export;lit:unit=value:unit,shape:unit,expr:var,expr:call,expr:apply,expr:closure,shape:some,shape:ok,shape:error,shape:cons,shape:adt,export,overflow;lit:bool=value:bool,shape:true,shape:false,expr:cond;lit:nat=value:nat,shape:zero;lit:int=value:int;lit:fixed=value:u8,value:u16,value:u32,value:u64,value:i8,value:i16,value:i32,value:i64;lit:string=value:string;lit:bytes=value:bytes;lit:ordering=value:ordering,shape:lt,shape:eq,shape:gt;construct:none=value:none,shape:none;construct:some=value:some,shape:some;construct:ok=value:ok,shape:ok;construct:err=value:error,shape:error;construct:adt=value:adt,shape:adt;construct:closure=expr:closure;construct:cons=value:list,shape:cons;construct:nil=value:list,shape:nil;construct:pair=value:pair,shape:pair;if=expr:cond,shape:true,shape:zero;match:nat=shape:zero;match:list=shape:nil;match:option=shape:none;match:result=shape:ok;match:ordering=shape:lt;match:adt=shape:adt,expr:field;match:empty=type:fn,type:adt,type:pair,type:result;call:function=expr:call,export;apply=expr:apply;widen=prim:convert;succeed=overflow;call:runtime:succ=shape:succ;call:runtime:nat_add=prim:nat_add;call:runtime:nat_sub=prim:nat_sub;call:runtime:nat_mul=prim:nat_mul;call:runtime:nat_quot=prim:nat_quot;call:runtime:nat_rem=prim:nat_rem;call:runtime:nat_eq=prim:nat_eq;call:runtime:nat_le=prim:nat_le;call:runtime:nat_lt=prim:nat_lt;call:runtime:int_add=prim:int_add;call:runtime:int_sub=prim:int_sub;call:runtime:int_mul=prim:int_mul;call:runtime:int_neg=prim:int_neg;call:runtime:int_quot=prim:int_quot;call:runtime:int_rem=prim:int_rem;call:runtime:bool_not=prim:bool_not;call:runtime:bool_and=prim:bool_and;call:runtime:bool_or=prim:bool_or;call:runtime:equal=prim:equal;call:runtime:compare=prim:compare;call:runtime:checked_add=prim:checked_add;call:runtime:checked_sub=prim:checked_sub;call:runtime:checked_mul=prim:checked_mul;call:runtime:checked_quot=prim:checked_quot;call:runtime:checked_neg=prim:checked_neg;call:runtime:bit_and=prim:bit_and;call:runtime:bit_or=prim:bit_or;call:runtime:bit_xor=prim:bit_xor;call:runtime:bit_not=prim:bit_not;call:runtime:shift_left=prim:shift_left;call:runtime:shift_right=prim:shift_right;call:runtime:convert=prim:convert;call:runtime:append=prim:append;call:runtime:length=prim:length;call:runtime:index=prim:index;call:runtime:slice=prim:slice;call:runtime:utf8_encode=prim:utf8_encode;call:runtime:utf8_decode=prim:utf8_decode;call:runtime:compare_bytes=prim:compare_bytes;call:runtime:split_exact=prim:split_exact;call:runtime:join=prim:join;call:runtime:format_decimal=prim:format_decimal;call:runtime:parse_decimal=prim:parse_decimal") (59 : UInt8)); (let found : Found := (foundDefs (record Found {insts := (nil Inst), types := (nil Bytes)}) (project krate items)); (match (prim list_fold (fun [elements, table] (failure : (Option Bytes)) (inst : Inst) => (match failure
+  body: (let itemRows0 : (List ItemRow) := (cons (record ItemRow {family := 0, stem := (text "nat_add"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 1, stem := (text "nat_sub"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 2, stem := (text "nat_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 3, stem := (text "nat_quot"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 4, stem := (text "nat_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 5, stem := (text "nat_eq"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 6, stem := (text "nat_le"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 7, stem := (text "nat_lt"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 8, stem := (text "nat_succ"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 9, stem := (text "int_add"), form := 0, fallible := true, heap := false}) (nil ItemRow))))))))))); (let itemRows1 : (List ItemRow) := (cons (record ItemRow {family := 10, stem := (text "int_sub"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 11, stem := (text "int_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 12, stem := (text "int_neg"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 13, stem := (text "int_quot"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 14, stem := (text "int_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 15, stem := (text "bool_not"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 16, stem := (text "bool_and"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 17, stem := (text "bool_or"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 18, stem := (text "equal"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 19, stem := (text "compare"), form := 0, fallible := false, heap := false}) itemRows0)))))))))); (let itemRows2 : (List ItemRow) := (cons (record ItemRow {family := 20, stem := (text "checked_add"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 21, stem := (text "checked_sub"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 22, stem := (text "checked_mul"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 23, stem := (text "checked_quot"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 24, stem := (text "checked_neg_"), form := 2, fallible := false, heap := false}) (cons (record ItemRow {family := 25, stem := (text "bit_and"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 26, stem := (text "bit_or"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 27, stem := (text "bit_xor"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 28, stem := (text "bit_not"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 29, stem := (text "shift_left"), form := 1, fallible := false, heap := false}) itemRows1)))))))))); (let itemRows3 : (List ItemRow) := (cons (record ItemRow {family := 30, stem := (text "shift_right"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 31, stem := (text "convert"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 32, stem := (text "append_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 33, stem := (text "append_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 34, stem := (text "length_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 35, stem := (text "length_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 36, stem := (text "length_string"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 37, stem := (text "index_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 38, stem := (text "index_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 39, stem := (text "slice_list"), form := 0, fallible := false, heap := true}) itemRows2)))))))))); (let itemRows4 : (List ItemRow) := (cons (record ItemRow {family := 40, stem := (text "slice_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 41, stem := (text "utf8_encode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 42, stem := (text "utf8_decode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 43, stem := (text "compare_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 44, stem := (text "split_exact"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 45, stem := (text "join"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 46, stem := (text "format_i64"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 47, stem := (text "format_"), form := 2, fallible := false, heap := true}) (cons (record ItemRow {family := 48, stem := (text "parse_int"), form := 0, fallible := true, heap := true}) (cons (record ItemRow {family := 49, stem := (text "parse_"), form := 2, fallible := false, heap := true}) itemRows3)))))))))); (let rows0 : (List (Bytes * (List Bytes))) := (cons ((text "function"), (cons (text "function") (cons (text "export") (nil Bytes)))) (cons ((text "enum:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "enum:closures"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "apply:dispatch"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "let"), (cons (text "expr:let") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:apply") (cons (text "expr:call") (cons (text "expr:closure") (cons (text "expr:cond") (cons (text "expr:field") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "shape:succ") (cons (text "shape:zero") (cons (text "shape:unit") (cons (text "shape:true") (cons (text "indirection") (cons (text "overflow") (nil Bytes))))))))))))))))))))) (cons ((text "read"), (cons (text "expr:var") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "expr:first") (cons (text "expr:second") (cons (text "expr:field") (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))))))))))))))))))))) (nil (Bytes * (List Bytes))))))))); (let rows1 : (List (Bytes * (List Bytes))) := (cons ((text "box"), (cons (text "indirection") (nil Bytes))) (cons ((text "destructure:pair"), (cons (text "expr:first") (cons (text "expr:second") (cons (text "shape:pair") (nil Bytes))))) (cons ((text "type:unit"), (cons (text "type:unit") (nil Bytes))) (cons ((text "type:bool"), (cons (text "type:bool") (nil Bytes))) (cons ((text "type:nat"), (cons (text "type:nat") (cons (text "type:fixed") (nil Bytes)))) (cons ((text "type:int"), (cons (text "type:int") (cons (text "type:fixed") (nil Bytes)))) rows0)))))); (let rows2 : (List (Bytes * (List Bytes))) := (cons ((text "type:fixed"), (cons (text "type:fixed") (nil Bytes))) (cons ((text "type:ordering"), (cons (text "type:ordering") (nil Bytes))) (cons ((text "type:string"), (cons (text "type:string") (nil Bytes))) (cons ((text "type:bytes"), (cons (text "type:bytes") (nil Bytes))) (cons ((text "type:option"), (cons (text "type:option") (nil Bytes))) (cons ((text "type:result"), (cons (text "type:result") (nil Bytes))) rows1)))))); (let rows3 : (List (Bytes * (List Bytes))) := (cons ((text "type:list"), (cons (text "type:list") (nil Bytes))) (cons ((text "type:pair"), (cons (text "type:pair") (nil Bytes))) (cons ((text "type:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "type:fn"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "type:rc"), (cons (text "indirection") (nil Bytes))) (cons ((text "type:fallible"), (cons (text "overflow") (nil Bytes))) rows2)))))); (let rows4 : (List (Bytes * (List Bytes))) := (cons ((text "type:ref"), (cons (text "export") (nil Bytes))) (cons ((text "lit:unit"), (cons (text "value:unit") (cons (text "shape:unit") (cons (text "expr:var") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "overflow") (nil Bytes))))))))))))))) (cons ((text "lit:bool"), (cons (text "value:bool") (cons (text "shape:true") (cons (text "shape:false") (cons (text "expr:cond") (nil Bytes)))))) (cons ((text "lit:nat"), (cons (text "value:nat") (cons (text "shape:zero") (nil Bytes)))) (cons ((text "lit:int"), (cons (text "value:int") (nil Bytes))) (cons ((text "lit:fixed"), (cons (text "value:u8") (cons (text "value:u16") (cons (text "value:u32") (cons (text "value:u64") (cons (text "value:i8") (cons (text "value:i16") (cons (text "value:i32") (cons (text "value:i64") (nil Bytes)))))))))) rows3)))))); (let rows5 : (List (Bytes * (List Bytes))) := (cons ((text "lit:string"), (cons (text "value:string") (nil Bytes))) (cons ((text "lit:bytes"), (cons (text "value:bytes") (nil Bytes))) (cons ((text "lit:ordering"), (cons (text "value:ordering") (cons (text "shape:lt") (cons (text "shape:eq") (cons (text "shape:gt") (nil Bytes)))))) (cons ((text "construct:none"), (cons (text "value:none") (cons (text "shape:none") (nil Bytes)))) (cons ((text "construct:some"), (cons (text "value:some") (cons (text "shape:some") (nil Bytes)))) (cons ((text "construct:ok"), (cons (text "value:ok") (cons (text "shape:ok") (nil Bytes)))) rows4)))))); (let rows6 : (List (Bytes * (List Bytes))) := (cons ((text "construct:err"), (cons (text "value:error") (cons (text "shape:error") (nil Bytes)))) (cons ((text "construct:adt"), (cons (text "value:adt") (cons (text "shape:adt") (nil Bytes)))) (cons ((text "construct:closure"), (cons (text "expr:closure") (nil Bytes))) (cons ((text "construct:cons"), (cons (text "value:list") (cons (text "shape:cons") (nil Bytes)))) (cons ((text "construct:nil"), (cons (text "value:list") (cons (text "shape:nil") (nil Bytes)))) (cons ((text "construct:pair"), (cons (text "value:pair") (cons (text "shape:pair") (nil Bytes)))) rows5)))))); (let rows7 : (List (Bytes * (List Bytes))) := (cons ((text "if"), (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (nil Bytes))))) (cons ((text "match:nat"), (cons (text "shape:zero") (nil Bytes))) (cons ((text "match:list"), (cons (text "shape:nil") (nil Bytes))) (cons ((text "match:option"), (cons (text "shape:none") (nil Bytes))) (cons ((text "match:result"), (cons (text "shape:ok") (nil Bytes))) (cons ((text "match:ordering"), (cons (text "shape:lt") (nil Bytes))) rows6)))))); (let rows8 : (List (Bytes * (List Bytes))) := (cons ((text "match:adt"), (cons (text "shape:adt") (cons (text "expr:field") (nil Bytes)))) (cons ((text "match:empty"), (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))) (cons ((text "call:function"), (cons (text "expr:call") (cons (text "export") (nil Bytes)))) (cons ((text "apply"), (cons (text "expr:apply") (nil Bytes))) (cons ((text "widen"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "succeed"), (cons (text "overflow") (nil Bytes))) rows7)))))); (let rows9 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:succ"), (cons (text "shape:succ") (nil Bytes))) (cons ((text "call:runtime:nat_add"), (cons (text "prim:nat_add") (nil Bytes))) (cons ((text "call:runtime:nat_sub"), (cons (text "prim:nat_sub") (nil Bytes))) (cons ((text "call:runtime:nat_mul"), (cons (text "prim:nat_mul") (nil Bytes))) (cons ((text "call:runtime:nat_quot"), (cons (text "prim:nat_quot") (nil Bytes))) (cons ((text "call:runtime:nat_rem"), (cons (text "prim:nat_rem") (nil Bytes))) rows8)))))); (let rows10 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:nat_eq"), (cons (text "prim:nat_eq") (nil Bytes))) (cons ((text "call:runtime:nat_le"), (cons (text "prim:nat_le") (nil Bytes))) (cons ((text "call:runtime:nat_lt"), (cons (text "prim:nat_lt") (nil Bytes))) (cons ((text "call:runtime:int_add"), (cons (text "prim:int_add") (nil Bytes))) (cons ((text "call:runtime:int_sub"), (cons (text "prim:int_sub") (nil Bytes))) (cons ((text "call:runtime:int_mul"), (cons (text "prim:int_mul") (nil Bytes))) rows9)))))); (let rows11 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:int_neg"), (cons (text "prim:int_neg") (nil Bytes))) (cons ((text "call:runtime:int_quot"), (cons (text "prim:int_quot") (nil Bytes))) (cons ((text "call:runtime:int_rem"), (cons (text "prim:int_rem") (nil Bytes))) (cons ((text "call:runtime:bool_not"), (cons (text "prim:bool_not") (nil Bytes))) (cons ((text "call:runtime:bool_and"), (cons (text "prim:bool_and") (nil Bytes))) (cons ((text "call:runtime:bool_or"), (cons (text "prim:bool_or") (nil Bytes))) rows10)))))); (let rows12 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:equal"), (cons (text "prim:equal") (nil Bytes))) (cons ((text "call:runtime:compare"), (cons (text "prim:compare") (nil Bytes))) (cons ((text "call:runtime:checked_add"), (cons (text "prim:checked_add") (nil Bytes))) (cons ((text "call:runtime:checked_sub"), (cons (text "prim:checked_sub") (nil Bytes))) (cons ((text "call:runtime:checked_mul"), (cons (text "prim:checked_mul") (nil Bytes))) (cons ((text "call:runtime:checked_quot"), (cons (text "prim:checked_quot") (nil Bytes))) rows11)))))); (let rows13 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:checked_neg"), (cons (text "prim:checked_neg") (nil Bytes))) (cons ((text "call:runtime:bit_and"), (cons (text "prim:bit_and") (nil Bytes))) (cons ((text "call:runtime:bit_or"), (cons (text "prim:bit_or") (nil Bytes))) (cons ((text "call:runtime:bit_xor"), (cons (text "prim:bit_xor") (nil Bytes))) (cons ((text "call:runtime:bit_not"), (cons (text "prim:bit_not") (nil Bytes))) (cons ((text "call:runtime:shift_left"), (cons (text "prim:shift_left") (nil Bytes))) rows12)))))); (let rows14 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:shift_right"), (cons (text "prim:shift_right") (nil Bytes))) (cons ((text "call:runtime:convert"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "call:runtime:append"), (cons (text "prim:append") (nil Bytes))) (cons ((text "call:runtime:length"), (cons (text "prim:length") (nil Bytes))) (cons ((text "call:runtime:index"), (cons (text "prim:index") (nil Bytes))) (cons ((text "call:runtime:slice"), (cons (text "prim:slice") (nil Bytes))) rows13)))))); (let rows15 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:utf8_encode"), (cons (text "prim:utf8_encode") (nil Bytes))) (cons ((text "call:runtime:utf8_decode"), (cons (text "prim:utf8_decode") (nil Bytes))) (cons ((text "call:runtime:compare_bytes"), (cons (text "prim:compare_bytes") (nil Bytes))) (cons ((text "call:runtime:split_exact"), (cons (text "prim:split_exact") (nil Bytes))) (cons ((text "call:runtime:join"), (cons (text "prim:join") (nil Bytes))) (cons ((text "call:runtime:format_decimal"), (cons (text "prim:format_decimal") (nil Bytes))) rows14)))))); (let rows16 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:parse_decimal"), (cons (text "prim:parse_decimal") (nil Bytes))) rows15); (let table : (List (Bytes * (List Bytes))) := rows16; (let found : Found := (foundDefs (record Found {insts := (nil Inst), types := (nil Bytes), items := itemRows4}) (project krate items)); (match (prim list_fold (fun [elements, table] (failure : (Option Bytes)) (inst : Inst) => (match failure
       | Option.some message => (ctor Option.some [Bytes] message)
       | Option.none => (checkInst table elements inst))) (ctor Option.none [Bytes]) (reverseInsts (project found insts)) : (Option Bytes))
     | Option.some message => (ctor Result.error [Unit, Bytes] message)
@@ -2811,7 +2605,8 @@ definition{
       | Option.some message => (ctor Option.some [Bytes] message)
       | Option.none => (checkType table elements construct))) (ctor Option.none [Bytes]) (project found types) : (Option Bytes))
       | Option.some message => (ctor Result.error [Unit, Bytes] message)
-      | Option.none => (ctor Result.ok [Unit, Bytes] ()))))),
+      | Option.none => (ctor Result.ok [Unit, Bytes] ()))))))))))))))))))))))))))),
+  axioms: [propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }

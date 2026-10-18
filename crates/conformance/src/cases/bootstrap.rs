@@ -18,6 +18,8 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod rust_validate;
+
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
 
@@ -2107,6 +2109,7 @@ fn case(id: &str) {
             );
             eprintln!("BS-02: passed in {:?}", started.elapsed());
         }
+        "BS-05" => rust_validate::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
