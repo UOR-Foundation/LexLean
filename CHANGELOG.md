@@ -43,7 +43,7 @@ and Unreleased holds what has landed since.
   and, under the pinned Lean, compares the certified packages the production
   export publishes with the committed ones. The compiler's identities are
   still computed by `sha2`; replacing it is stage 2 of #126. The register has
-  415 IDs.
+  416 IDs.
 
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
