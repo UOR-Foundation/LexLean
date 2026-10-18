@@ -58,7 +58,10 @@ fn project(declarations: &[Value]) -> P {
 }
 
 /// The project of `declarations` with the limits lifted or, when `lifted` is
-/// false, as the default configuration states them.
+/// false, as the default configuration states them. The lifted file limit is
+/// above the lower bound of the widest program a family reaches: a match on
+/// 9000 arms has 81 million pairs of arms, which certificate A's cost of 1018
+/// sixteenths a pair bounds at about 5.2 GB.
 fn project_limited(declarations: &[Value], lifted: bool) -> P {
     let project = P::negative("lowering-size-limit");
     let toml = project.read("lexlean.toml");
@@ -66,7 +69,7 @@ fn project_limited(declarations: &[Value], lifted: bool) -> P {
         project.write(
             "lexlean.toml",
             &toml
-                .replace("max_file_bytes = 4194304", "max_file_bytes = 4000000000")
+                .replace("max_file_bytes = 4194304", "max_file_bytes = 16000000000")
                 .replace("max_ir_nodes = 2000000", "max_ir_nodes = 2000000000"),
         );
     }

@@ -7793,7 +7793,8 @@ production/*.eligibility.json              # when a production root exists
 extract/<extraction-module>.lean           # when a production root exists
 extract/process.json                       # when a production root exists
 production/compiler-input.json             # when a production root exists
-preserve/LexLeanPreserve/*/*.lean          # when a production root exists
+preserve/LexLeanPreserve/*/R<i>.lex.tex    # certificate A, as data (§17.17)
+preserve/LexLeanPreserve/*/R<i>/<Target>.lex.tex  # certificate B, as data (§17.17)
 preserve/LexLeanPreserve/*/*/Compose/*.lex.tex  # certificate E, as data (§17.17)
 preserve/program/R<i>.json                 # when a production root exists
 preserve/crate/R<i>.<target>.rs            # when a production root exists
