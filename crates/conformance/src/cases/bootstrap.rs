@@ -768,14 +768,21 @@ fn audit_edges() -> Vec<(String, Vec<String>)> {
     out
 }
 
-/// The corpus of audit outputs: the committed vectors, the edges, then seeded
-/// random outputs up to `runs`.
-fn audit_corpus(runs: usize) -> Vec<Run> {
-    let mut seeded = Seeded(0x9e37_79b9_7f4a_7c15 ^ 0x0061_7564_6974);
+/// The deterministic audit-output vectors: the committed golden vectors and the
+/// boundary edges.
+fn audit_vectors() -> Vec<Run> {
     let (mut out, _, _) = vectors();
     for (stdout, expected) in audit_edges() {
         out.push(audit_run(&stdout, &expected));
     }
+    out
+}
+
+/// The corpus of audit outputs: the committed vectors, the edges, then seeded
+/// random outputs up to `runs`.
+fn audit_corpus(runs: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0x9e37_79b9_7f4a_7c15 ^ 0x0061_7564_6974);
+    let mut out = audit_vectors();
     while out.len() < runs {
         let (stdout, expected) = audit(&mut seeded);
         out.push(audit_run(&stdout, &expected));
@@ -783,10 +790,9 @@ fn audit_corpus(runs: usize) -> Vec<Run> {
     out
 }
 
-/// The corpus of names: the grammar's edges, every byte in first and in later
-/// position, then seeded random names.
-fn name_corpus(runs: usize) -> Vec<Run> {
-    let mut seeded = Seeded(0x0123_4567_89ab_cdef);
+/// The deterministic closed-Lean-name vectors: the grammar's edges and every
+/// single-byte UTF-8 character in first and in later position.
+fn name_vectors() -> Vec<Run> {
     let mut out = Vec::new();
     let one = |out: &mut Vec<Run>, raw: &str| {
         out.push((
@@ -851,9 +857,23 @@ fn name_corpus(runs: usize) -> Vec<Run> {
             one(&mut out, &format!("{character}a"));
         }
     }
+    out
+}
+
+/// The corpus of names: the grammar's edges, every byte in first and in later
+/// position, then seeded random names.
+fn name_corpus(runs: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0x0123_4567_89ab_cdef);
+    let mut out = name_vectors();
     while out.len() < runs {
         let raw = name(&mut seeded);
-        one(&mut out, &raw);
+        out.push((
+            vec![text(&raw)],
+            serde_json::to_value(Value::Bool {
+                value: lexlean::ir::core::is_closed_lean_name(&raw),
+            })
+            .expect("a value is JSON"),
+        ));
     }
     out
 }
@@ -1556,8 +1576,12 @@ fn case(id: &str) {
                     "{root}: the declaration admits exactly the realized effects"
                 );
             }
-            // Every root lowers once; the evaluator runs the committed
-            // vectors and its corpus.
+            // Every root lowers once. On the normative host the evaluator runs
+            // the committed vectors and its seeded corpus; on every host the
+            // rendered rust-std package compiled by the pinned rustc runs the
+            // deterministic vectors (and on the normative host the full seeded
+            // corpus as well).
+            let on_normative_host = support::normative_host();
             let checked = support::checked_project(&project);
             let lowered: BTreeMap<&str, Lowered> = ROOTS
                 .iter()
@@ -1575,30 +1599,33 @@ fn case(id: &str) {
                     name_corpus(names)
                 }
             };
-            let vector_count = golden_runs.len();
-            let disagreements = evaluate(&lowered["parseAuditOutput"], &golden_runs, 5);
-            assert!(
-                disagreements.is_empty(),
-                "the evaluator and verify::axiom disagree on the committed vectors: {disagreements:?}"
-            );
-            eprintln!(
-                "BS-01: {vector_count} committed vectors ({accepted} accepted, {rejected} rejected) agree under the evaluator"
-            );
-            for (root, _) in ROOTS {
-                let runs = corpus(root, EVALUATOR_AUDITS, EVALUATOR_NAMES);
-                let disagreements = evaluate(&lowered[root], &runs, 5);
+            if on_normative_host {
+                let vector_count = golden_runs.len();
+                let disagreements = evaluate(&lowered["parseAuditOutput"], &golden_runs, 5);
                 assert!(
                     disagreements.is_empty(),
-                    "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    "the evaluator and verify::axiom disagree on the committed vectors: {disagreements:?}"
                 );
                 eprintln!(
-                    "BS-01: {root}: {} evaluator runs agree ({:?})",
-                    runs.len(),
-                    started.elapsed()
+                    "BS-01: {vector_count} committed vectors ({accepted} accepted, {rejected} rejected) agree under the evaluator"
                 );
+                for (root, _) in ROOTS {
+                    let runs = corpus(root, EVALUATOR_AUDITS, EVALUATOR_NAMES);
+                    let disagreements = evaluate(&lowered[root], &runs, 5);
+                    assert!(
+                        disagreements.is_empty(),
+                        "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    );
+                    eprintln!(
+                        "BS-01: {root}: {} evaluator runs agree ({:?})",
+                        runs.len(),
+                        started.elapsed()
+                    );
+                }
             }
             // The rendered rust-std package of both roots, compiled by the
-            // pinned rustc, runs the large corpus.
+            // pinned rustc, runs the deterministic vectors on every host and
+            // the large seeded corpus on the normative host.
             let dir = tempfile::Builder::new()
                 .prefix("lexlean-bootstrap-")
                 .tempdir()
@@ -1616,7 +1643,13 @@ fn case(id: &str) {
                 let package =
                     target::package(&manifest.to_file_bytes().expect("canonical manifest"))
                         .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-                let runs = corpus(root, RUSTC_AUDITS, RUSTC_NAMES);
+                let runs = if on_normative_host {
+                    corpus(root, RUSTC_AUDITS, RUSTC_NAMES)
+                } else if root == "parseAuditOutput" {
+                    audit_vectors()
+                } else {
+                    name_vectors()
+                };
                 let arguments: Vec<Vec<Value>> = runs
                     .iter()
                     .map(|(arguments, _)| arguments.clone())
@@ -1701,8 +1734,11 @@ fn case(id: &str) {
                     started.elapsed()
                 );
             }
-            // The gate is armed: each defect planted in a copy of the source
-            // is a disagreement with the oracle.
+            if !support::lean_backed("BS-01") {
+                return;
+            }
+            // The gate is armed on the normative host: each defect planted in a
+            // copy of the source is a disagreement with the oracle.
             for plant in &PLANTS {
                 let planted = P::bootstrap();
                 let source = planted.read_raw("src/AxiomOutput.lex.tex");
@@ -1736,9 +1772,6 @@ fn case(id: &str) {
             // Under the pinned Lean, the production export certifies both
             // roots; its packages are the committed ones and realize the
             // programs the differential ran.
-            if !support::lean_backed("BS-01") {
-                return;
-            }
             let exported = harness::exported("bootstrap");
             let bundle = exported.bundle();
             let packages = harness::tree(&bundle.join("packages"));
@@ -1840,43 +1873,48 @@ fn case(id: &str) {
                 );
             }
 
+            let on_normative_host = support::normative_host();
             let checked = support::checked_project(&project);
             let lowered: BTreeMap<&str, Lowered> = TOKEN_ROOTS
                 .iter()
                 .map(|(root, _)| (*root, lower(&checked, &project, TOKEN_MODULE, root)))
                 .collect();
             let (lex_vectors, audit_vectors) = token_vectors();
-            let disagreements = evaluate(&lowered["lex"], &lex_vectors, 5);
-            assert!(
-                disagreements.is_empty(),
-                "lex: the evaluator and production::preserve::lex disagree on the vectors: {disagreements:?}"
-            );
-            let disagreements = evaluate(&lowered["auditTokens"], &audit_vectors, 5);
-            assert!(
-                disagreements.is_empty(),
-                "auditTokens: the evaluator and production::preserve::audit_tokens disagree on the vectors: {disagreements:?}"
-            );
-            eprintln!(
-                "BS-02: {} lex vectors and {} auditTokens vectors agree under the evaluator ({:?})",
-                lex_vectors.len(),
-                audit_vectors.len(),
-                started.elapsed()
-            );
-            for (root, _) in TOKEN_ROOTS {
-                let runs = token_corpus(root, EVALUATOR_TOKEN_TEXTS);
-                let disagreements = evaluate(&lowered[root], &runs, 5);
+            if on_normative_host {
+                let disagreements = evaluate(&lowered["lex"], &lex_vectors, 5);
                 assert!(
                     disagreements.is_empty(),
-                    "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    "lex: the evaluator and production::preserve::lex disagree on the vectors: {disagreements:?}"
+                );
+                let disagreements = evaluate(&lowered["auditTokens"], &audit_vectors, 5);
+                assert!(
+                    disagreements.is_empty(),
+                    "auditTokens: the evaluator and production::preserve::audit_tokens disagree on the vectors: {disagreements:?}"
                 );
                 eprintln!(
-                    "BS-02: {root}: {} seeded evaluator runs agree ({:?})",
-                    runs.len(),
+                    "BS-02: {} lex vectors and {} auditTokens vectors agree under the evaluator ({:?})",
+                    lex_vectors.len(),
+                    audit_vectors.len(),
                     started.elapsed()
                 );
+                for (root, _) in TOKEN_ROOTS {
+                    let runs = token_corpus(root, EVALUATOR_TOKEN_TEXTS);
+                    let disagreements = evaluate(&lowered[root], &runs, 5);
+                    assert!(
+                        disagreements.is_empty(),
+                        "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    );
+                    eprintln!(
+                        "BS-02: {root}: {} seeded evaluator runs agree ({:?})",
+                        runs.len(),
+                        started.elapsed()
+                    );
+                }
             }
 
-            // Rendered rust-std packages under pinned rustc.
+            // Rendered rust-std packages under pinned rustc: the deterministic
+            // vectors run on every host, and the seeded corpus on the normative
+            // host.
             let dir = tempfile::Builder::new()
                 .prefix("lexlean-bootstrap-tokens-")
                 .tempdir()
@@ -1899,7 +1937,9 @@ fn case(id: &str) {
                 } else {
                     audit_vectors.clone()
                 };
-                runs.extend(token_corpus(root, RUSTC_TOKEN_TEXTS));
+                if on_normative_host {
+                    runs.extend(token_corpus(root, RUSTC_TOKEN_TEXTS));
+                }
                 let arguments: Vec<Vec<Value>> = runs
                     .iter()
                     .map(|(arguments, _)| arguments.clone())
@@ -1985,6 +2025,9 @@ fn case(id: &str) {
                 );
             }
 
+            if !support::lean_backed("BS-02") {
+                return;
+            }
             // Planted defects in TokenAudit.lex.tex.
             for plant in &TOKEN_PLANTS {
                 let planted = P::bootstrap();
@@ -2018,9 +2061,6 @@ fn case(id: &str) {
                 );
             }
 
-            if !support::lean_backed("BS-02") {
-                return;
-            }
             let exported = harness::exported("bootstrap");
             let bundle = exported.bundle();
             let packages = harness::tree(&bundle.join("packages"));

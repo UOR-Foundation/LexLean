@@ -6992,22 +6992,24 @@ association list is in the order of the sorted declaration names, so that a
 duplicated expected name is the rejection `duplicate record for` as it is for
 the oracle's map.
 
-`BS-01` holds both roots to the oracle. The lowered program of
-`parseAuditOutput` is run under the calculus evaluator (§17.14) on every
+`BS-01` holds both roots to the oracle. On every host, the rendered `rust-std`
+packages of both roots (§17.16), compiled by the pinned rustc, are run on every
 committed golden vector of `tests/golden/axiom-parser/` (each line of
 `accepted.txt` and `rejected.txt`, each blank-line separated record of
-`accepted-wrapped.txt`, and each file whole against its declarations), and the
-rendered `rust-std` packages of both roots (§17.16), compiled by the pinned
-rustc, are run on a seeded corpus: records built from the payload grammar and
-its boundaries (names at the edges of the closed grammar, axiom lists of every
-length, every envelope shape and every malformed one, every Unicode white
-space), wrapped at every width, and mutated (a record dropped, duplicated,
-reordered, added, truncated, oversized, or given a stray byte). The outcome
-of a run is the result, the rejection's message, and its declaration, and one
-difference fails the case. Planted defects in the source are each detected by
-the same differential. Under the pinned Lean, the production export (§24.7)
-certifies both roots, and its packages are the committed ones under
-`tests/production-export/bootstrap/`.
+`accepted-wrapped.txt`, and each file whole against its declarations) and the
+boundary edges of the audit-output and Lean-name grammars. On the normative
+host, the lowered programs of both roots are run under the calculus evaluator
+(§17.14) on the committed vectors and a seeded corpus, and the rendered
+`rust-std` packages are also run on the large seeded corpus: records built from
+the payload grammar and its boundaries (names at the edges of the closed
+grammar, axiom lists of every length, every envelope shape and every malformed
+one, every Unicode white space), wrapped at every width, and mutated (a record
+dropped, duplicated, reordered, added, truncated, oversized, or given a stray
+byte). The outcome of a run is the result, the rejection's message, and its
+declaration, and one difference fails the case. Planted defects in the source
+are each detected by the same differential on the normative host, and under the
+pinned Lean the production export (§24.7) certifies both roots, whose packages
+are the committed ones under `tests/production-export/bootstrap/`.
 
 The second component is the preservation lexer and token audit (§17.17), the
 module `TokenAudit`, with two production roots for `rust-std`:
@@ -7043,18 +7045,21 @@ unless it is quoted outside an `@[…]` or `attribute […]` bracket list; every
 `set_option` must name one of the six allowed options as a dotted identifier;
 and every `import` must name a dotted identifier present in `imports`.
 
-`BS-02` holds both roots of `TokenAudit` to the oracle. Their lowered programs
-are run under the calculus evaluator (§17.14) on the first 1,500 characters of
-every module of the shipped preservation library and calculus modules (the
-evaluator interprets the lowered program, so the gate reads a prefix of each
-module), every prefix of the number-lexing corpus of `SP-09`, and every positive and negative vector of the token-audit
-unit tests, and the rendered `rust-std` packages of both roots (§17.16),
-compiled by the pinned rustc, are run on a seeded corpus of generated and
-mutated Lean texts covering comments, literals, radices, scientific numbers,
-quoted and Greek identifiers, attributes, options, imports, commands, and
-control characters. Planted defects in the source are each detected by the same
-differential, and the production export (§24.7) certifies both roots beside
-`AxiomOutput` under `tests/production-export/bootstrap/`.
+`BS-02` holds both roots of `TokenAudit` to the oracle. On every host, the
+rendered `rust-std` packages of both roots (§17.16), compiled by the pinned
+rustc, are run on the deterministic vector corpus: the first 1,500 characters of
+every module of the shipped preservation library and calculus modules, every
+prefix of the number-lexing corpus of `SP-09`, and every positive and negative
+vector of the token-audit unit tests. On the normative host, both roots'
+lowered programs are run under the calculus evaluator (§17.14) on that vector
+corpus and a seeded corpus (the evaluator interprets the lowered program, so
+the gate reads a prefix of each module), the rendered `rust-std` packages are
+also run on the large seeded corpus of generated and mutated Lean texts
+covering comments, literals, radices, scientific numbers, quoted and Greek
+identifiers, attributes, options, imports, commands, and control characters,
+planted defects in the source are each detected by the same differential, and
+the production export (§24.7) certifies both roots beside `AxiomOutput` under
+`tests/production-export/bootstrap/`.
 
 ## 18. Lean backend
 
@@ -9869,8 +9874,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
-| `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
-| `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; both roots' lowered programs under the calculus evaluator agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated and mutated Lean texts with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
+| `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
+| `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
