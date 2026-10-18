@@ -52,7 +52,7 @@ Versions follow SPEC.md §30.1 and are recorded in [CHANGELOG.md](CHANGELOG.md).
 §2.3 fixes `0.1.0` as the initial implementation version and `1.0.0` as the
 first release satisfying the complete specification, so a `0.1.0` tag does not
 claim the §30 release criterion — `cargo xtask release-check` reads that
-criterion and says exactly which parts of it do not yet hold.
+criterion and says exactly which parts of it do not hold.
 
 ## The literal example
 
@@ -190,7 +190,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The bootstrap project: the compiler's own components as language-1.2 source compiled by LexLean's production pipeline to certified Rust packages, the exact axiom-output parser and its closed Lean-name check and the preservation lexer and token audit, each held to the Rust it replaces (the stage-0 oracle) by the committed vectors and a seeded differential of its evaluator and rustc realizations, with planted defects detected and the production export committed | `BS-01`..`BS-02` | `build` |
 | Source packages: a language-1.2 project imports the modules of a locked, content-addressed package of its workspace: `[[source_package]]` and `lexlean-workspace.toml`, the pins in `lexlean.lock` recomputed by every command, imports closed at link, no re-export of a package's production roots, and the package's modules replayed by the importer's `verify` with their origin in the records | `PK-01`..`PK-05` | `build` |
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
-| Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text (context windows, text generators, text classifiers, adapters, and composition follow in their own slices and add their rows then) | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
+| Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text (context windows, text generators, text classifiers, adapters, and composition have no rows) | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
 
 Range rows abbreviate consecutive registered IDs; every individual ID in each range is registered in [`model/ids.toml`](model/ids.toml) at the stated level with its own scenario and test.
 

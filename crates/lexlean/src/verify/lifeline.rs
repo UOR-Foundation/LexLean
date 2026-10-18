@@ -196,7 +196,7 @@ pub struct ChildGroupEnd {
 }
 
 /// End every child process group the library has started in this process and
-/// has not yet seen exit, reporting each (SPEC.md §24.6). Idempotent, and a
+/// has not seen exit, reporting each (SPEC.md §24.6). Idempotent, and a
 /// no-op (an empty return) when no child is live.
 ///
 /// After the call, starting a child in this process fails with `LLV7018`

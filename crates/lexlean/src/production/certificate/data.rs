@@ -1536,7 +1536,7 @@ impl Composer<'_, '_> {
     }
 
     /// Register the container `original` as an auxiliary of the group when
-    /// it nests a type of the block and is not yet registered.
+    /// it nests a type of the block and is not registered.
     fn register_aux(
         &self,
         original: &SemanticType,

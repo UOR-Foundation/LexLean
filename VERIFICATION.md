@@ -3038,7 +3038,7 @@ cases are compiled out on Windows, and `cargo clippy --workspace --all-targets
 --all-features -- -D warnings` was run for `x86_64-unknown-linux-gnu`,
 `x86_64-pc-windows-msvc`, and `aarch64-apple-darwin`, which is how a Windows
 `spawn` that used a `Child` after moving it was found (the first run of this
-branch had not yet reached the host matrix). `conformance_cl_22` holds the
+branch had not reached the host matrix). `conformance_cl_22` holds the
 register, the public functions, the single kill path, and the registered
 `LLV7018` to the source.
 
@@ -3134,7 +3134,7 @@ Planted: the registration lock is released between reading the shutdown state
 and registering the child (`drop(groups)` before `command.spawn()`, the lock
 taken again to push). Command: `cargo test -p lexlean --test end_children
 concurrent_starts_are_ended_or_refused`. Expected: a child that has started and
-is not yet registered is alive when a call returns. The first version of this
+is not registered is alive when a call returns. The first version of this
 case ended the children once and caught the plant in 59 of 60 runs, which is a
 timing assumption; the case now ends them sixty times and the plant was caught
 in 100 of 100 runs, at cycle 0 in the one quoted.
@@ -4543,6 +4543,24 @@ Justfile:86: # TODO: tighten this later
 ```
 
 Removed: the comment was deleted; `audit-deferral` reports nothing deferred.
+
+### audit-deferral reads the whole repository and the prose markers
+
+Found by reading the gate's roots, not by a failure: `audit-deferral` did not read the root documents (`README.md`, `SPEC.md`, `CHANGELOG.md`, `VERIFICATION.md`, `AGENTS.md`), `.github`, `.devcontainer`, `api/`, `oracle/`, or `tooling/`, and its markers were only the code-style ones, so prose that put work in the future passed. It now reads all of them, and the phrases `not yet`, `later release`, `in a later`, `eventually`, and `follow in` (spelled in halves in the gate) are markers. A vendored authority copy is the one file not read: a text pinned by digest (R6) is the authority's words, not ours, and the path is taken from the row that vendors it. Widening it found 25 occurrences, each reworded to a present fact; `SPEC.md` §10.5 lost its promise of a release to come, and the `AU-11` statement changed `a reference to a node not yet written` to `a forward reference to a node` in the register, SPEC.md §31, and the scenario.
+
+Planted, one at a time, each spelled here in halves: `not` + ` yet` in a sentence appended to `README.md`, and `event` + `ually` in a comment appended to `.github/ci-plan.sh`. Command: `cargo xtask validate-model`.
+
+```text
+gate failed: R4: nothing is deferred. None of TODO, FIXME, XXX, unimplemented!, todo!, for now, later version, not yet, later release, in a later, eventually, follow in may appear outside a code span.
+
+README.md:227: The export is not yet supported.
+```
+
+```text
+.github/ci-plan.sh:92: # a fix eventually
+```
+
+Removed: both files were restored; `audit-deferral` reports nothing deferred.
 
 ### audit-errors can fail
 

@@ -390,7 +390,7 @@ pub(crate) fn run(id: &str) {
             formatted.fmt_check_ok();
             formatted.check_ok();
             // A rejection names why its candidates died (§20.1): an infix
-            // entry whose document declaration is not yet available leaves
+            // entry whose document declaration is unavailable leaves
             // no candidate, and the `LLT4001` carries the reason as a note.
             let unavailable = support::f1_project();
             unavailable.edit(

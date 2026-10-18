@@ -61,7 +61,7 @@ Feature: authoring
     Then the semantic IDs and the generated Lean and LaTeX are equal, the source maps name the notation, fmt writes the data form as the notation and leaves the notation unchanged, and language 1.0 and 1.1 refuse it
 
   @AU-11 @build
-  Scenario: Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes.
+  Scenario: Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes.
     Given a committed core module in the notation
     When it is malformed in each way named, and each of its tokens is deleted and duplicated in turn
     Then each is refused with a registered code at a position or links to a module that decodes, and nothing panics
