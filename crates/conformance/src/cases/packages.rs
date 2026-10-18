@@ -764,9 +764,10 @@ fn pk_05() {
         "the pilot holds no module Text of its own"
     );
     let checked = support::checked_project(&project);
-    assert_eq!(
-        checked.modules.keys().cloned().collect::<Vec<_>>(),
-        ["AxiomOutput", "LexLeanStd.Text"]
+    assert!(
+        checked.modules.contains_key("AxiomOutput")
+            && checked.modules.contains_key("LexLeanStd.Text"),
+        "AxiomOutput and LexLeanStd.Text are linked modules of the project"
     );
     assert_eq!(
         checked.modules["LexLeanStd.Text"]
@@ -777,18 +778,25 @@ fn pk_05() {
         "the standard library's Text is a module of the project, from the package"
     );
     let roots = lexlean::production::lower::roots(&checked).expect("roots");
-    let mut names: Vec<String> = roots
+    assert!(
+        roots
+            .iter()
+            .all(|found| found.report.root.starts_with("LexLeanBoot.")),
+        "the standard library's production roots are not roots of the project"
+    );
+    let mut axiom_roots: Vec<String> = roots
         .iter()
+        .filter(|found| found.module == "AxiomOutput")
         .map(|found| found.report.root.clone())
         .collect();
-    names.sort();
+    axiom_roots.sort();
     assert_eq!(
-        names,
+        axiom_roots,
         [
             "LexLeanBoot.AxiomOutput.isClosedLeanName",
             "LexLeanBoot.AxiomOutput.parseAuditOutput"
         ],
-        "the standard library's production roots are not roots of the pilot"
+        "AxiomOutput's production roots are unchanged"
     );
 
     // The copy and the assertion that held it equal to the original are gone,

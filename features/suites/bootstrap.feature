@@ -8,3 +8,11 @@ Feature: bootstrap
     When the project is checked and built, the parser's lowered program is run by the evaluator on every golden vector, both roots' rendered rust-std packages are run on a seeded corpus, a defect is planted in the source, and the project is exported under the pinned Lean
     Then both roots are eligible for rust-std with exactly their declared effects and no run disagrees with the oracle
     And every planted defect is detected, and every exported package is byte-identical to its committed package and realizes the lowered program
+
+  @BS-02 @build
+  Scenario: The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; both roots' lowered programs under the calculus evaluator agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated and mutated Lean texts with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones.
+    Given the committed `bootstrap` project, a 1,500-character prefix of every shipped preservation library and calculus module, the number-lexing corpus, the token-audit unit vectors, and the Rust lexer and token audit `production::preserve` as the oracle
+    When the project is checked and built, both roots' lowered programs are run by the evaluator on the library, calculus modules, number-lexing corpus, and unit vectors, both roots' rendered rust-std packages are run on a seeded corpus, a defect is planted in the source, and the project is exported under the pinned Lean
+    Then both roots are eligible for rust-std with exactly their declared effects and no run disagrees with the oracle
+    And every planted defect is detected, and every exported package is byte-identical to its committed package and realizes the lowered program
+

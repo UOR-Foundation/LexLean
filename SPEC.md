@@ -270,7 +270,7 @@ Every user-visible failure has a registered diagnostic code and a sanctioned exi
 
 ## 7. Repository layout
 
-The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits.
+The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
 
 ```text
 .
@@ -6912,7 +6912,7 @@ differential against that Rust, and is never a source of the Rust.
 
 The project imports the module `Text` of the standard library (§17.22) as a
 source package (§10.5): `bootstrap/lexlean.toml` declares `stdlib` beside it in
-the workspace, `AxiomOutput` imports `LexLeanStd.Text`, and the module is
+the workspace, `AxiomOutput` and `TokenAudit` import `LexLeanStd.Text`, and the module is
 linked, verified, and replayed with the project under the standard library's
 own prefix. Its definitions are ordinary definitions of the project, so the
 project republishes none of the standard library's production roots, and no
@@ -6966,6 +6966,53 @@ difference fails the case. Planted defects in the source are each detected by
 the same differential. Under the pinned Lean, the production export (§24.7)
 certifies both roots, and its packages are the committed ones under
 `tests/production-export/bootstrap/`.
+
+The second component is the preservation lexer and token audit (§17.17), the
+module `TokenAudit`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `lex (text : Bytes) : Result (List Lexeme) Bytes` | `production::preserve::lex` |
+| `auditTokens (text : Bytes) (imports : List Bytes) : Result Unit Bytes` | `production::preserve::audit_tokens` |
+
+`lex` reads the bytes of valid UTF-8 Lean source into a list of `Lexeme`
+structures, each carrying its `kind` (`Ident` of a list of `Segment`s with
+their unquoted `text` and whether each was written `«…»`, `Number`, `Literal`,
+`Command` of its `#`-prefixed word, or `Symbol` of the UTF-8 bytes of its
+character), its zero-based `line`, whether it is `firstOnLine`, and its `start`
+offset in Unicode scalars of the text: line and nested block comments are
+dropped; string, raw string (`r"…"`, `r#"…"#`), and character literals are read
+as `Literal`; numbers are read as the pinned Lean's `numberFnAux` reads them,
+with `0x`, `0b`, and `0o` radices, decimal fractions, exponents, `_` digit
+separators, and tuple field projections after `.`, refusing ambiguous field
+continuations (`p.1_0`, `p.1e5`) and bare dots before identifiers (`1.foo`);
+ identifiers are bounded by `isIdFirst` and `isIdRest` (`Lean.isLetterLike` and
+subscripts included) and joined across `.` only when the next component begins
+with `isIdFirst` or `«`; and an unclosed comment, string, raw string, character
+literal, or quoted name, a quoted name whose body is empty or contains a
+character outside `isIdRest` and `.`, an interpolated string (`s!"…"`), or a
+control character (`U+0000`..`U+001F`, `U+007F`, `U+0080`..`U+009F`) is
+refused with the oracle's exact message. `auditTokens` runs `lex` and checks
+the token stream against the certificate environment: any `Command` is refused;
+any identifier component equal to a forbidden constant (`ofReduceBool`,
+`ofReduceNat`, `sorryAx`), quoted or not, is refused with its dotted name; any
+single-segment identifier equal to one of the 27 forbidden tokens is refused
+unless it is quoted outside an `@[…]` or `attribute […]` bracket list; every
+`set_option` must name one of the six allowed options as a dotted identifier;
+and every `import` must name a dotted identifier present in `imports`.
+
+`BS-02` holds both roots of `TokenAudit` to the oracle. Their lowered programs
+are run under the calculus evaluator (§17.14) on the first 1,500 characters of
+every module of the shipped preservation library and calculus modules (the
+evaluator interprets the lowered program, so the gate reads a prefix of each
+module), every prefix of the number-lexing corpus of `SP-09`, and every positive and negative vector of the token-audit
+unit tests, and the rendered `rust-std` packages of both roots (§17.16),
+compiled by the pinned rustc, are run on a seeded corpus of generated and
+mutated Lean texts covering comments, literals, radices, scientific numbers,
+quoted and Greek identifiers, attributes, options, imports, commands, and
+control characters. Planted defects in the source are each detected by the same
+differential, and the production export (§24.7) certifies both roots beside
+`AxiomOutput` under `tests/production-export/bootstrap/`.
 
 ## 18. Lean backend
 
@@ -9378,7 +9425,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 |---|---|---|---|
 | `RP-01` | `repository` | The repository, crate, executable, metadata, and licenses have the exact LexLean identity specified. | §2 |
 | `RP-02` | `repository` | The repository is derived from the pinned UOR template commit and contains no inherited domain-specific claim logic. | §2.2 |
-| `RP-03` | `repository` | The completed repository has the required file and crate layout. | §7 |
+| `RP-03` | `repository` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. | §7 |
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
 | `RP-06` | `repository` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. | §27.5 |
@@ -9781,6 +9828,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; the parser's lowered program under the calculus evaluator agrees with the Rust parser `verify::axiom` on the result, the rejection message, and the attributed declaration for every committed golden vector (accepted, accepted-wrapped, and rejected); both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated, wrapped, and mutated audit outputs with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
+| `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; both roots' lowered programs under the calculus evaluator agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on a large seeded corpus of generated and mutated Lean texts with no disagreement; a planted defect in the source is detected; and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -9791,7 +9839,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 413.
+**Total required capability IDs:** 414.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
