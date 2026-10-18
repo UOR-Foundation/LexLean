@@ -2710,6 +2710,17 @@ pub(crate) fn run(id: &str) {
                 let text = std::fs::read_to_string(&path).expect("a library module");
                 let module = lexlean::ir::core::CoreModule::from_source(&text, "1.2")
                     .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+                // The use-scan of the derived sparse rows is in the last chunk
+                // of a module, and in no other; the decoder's own mention of
+                // the field is unescaped, the data's is a string in a string.
+                let rendered = lexlean::backend::core::lean_text(&module)
+                    .unwrap_or_else(|error| panic!("{}: {error:?}", path.display()));
+                assert_eq!(
+                    rendered.matches(r#"\"module_scan\""#).count(),
+                    1,
+                    "{}: the use-scan is in the last chunk once",
+                    path.display()
+                );
                 for row in &module.declarations {
                     let last = row.name.rsplit('.').next().unwrap_or(&row.name);
                     let named_like_derived = matches!(last, "splitter" | "else_eq" | "eq_def")
